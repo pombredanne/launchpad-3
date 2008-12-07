@@ -119,6 +119,34 @@ class NamespaceMixin:
             BranchType.HOSTED, branch_name, namespace.owner)
         self.assertEqual(True, namespace.isNameUsed(branch_name))
 
+    def test_findUnusedName_unused(self):
+        # findUnusedName returns the given name if that name is not used.
+        namespace = self.getNamespace()
+        name = self.factory.getUniqueString()
+        unused_name = namespace.findUnusedName(name)
+        self.assertEqual(name, unused_name)
+
+    def test_findUnusedName_used(self):
+        # findUnusedName returns the given name with a numeric suffix if its
+        # already used.
+        namespace = self.getNamespace()
+        name = self.factory.getUniqueString()
+        namespace.createBranch(BranchType.HOSTED, name, namespace.owner)
+        unused_name = namespace.findUnusedName(name)
+        self.assertEqual('%s-1' % name, unused_name)
+
+    def test_findUnusedName_used_twice(self):
+        # findUnusedName returns the given name with a numeric suffix if its
+        # already used.
+        namespace = self.getNamespace()
+        name = self.factory.getUniqueString()
+        namespace.createBranch(BranchType.HOSTED, name, namespace.owner)
+        namespace.createBranch(
+            BranchType.HOSTED, name + '-1', namespace.owner)
+        unused_name = namespace.findUnusedName(name)
+        self.assertEqual('%s-2' % name, unused_name)
+
+
 
 class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `PersonalNamespace`."""
@@ -126,7 +154,7 @@ class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
     layer = DatabaseFunctionalLayer
 
     def getNamespace(self):
-        return PersonalNamespace(self.factory.makePerson())
+        return get_branch_namespace(person=self.factory.makePerson())
 
     def test_name(self):
         # A personal namespace has branches with names starting with
@@ -148,8 +176,9 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
     layer = DatabaseFunctionalLayer
 
     def getNamespace(self):
-        return ProductNamespace(
-            self.factory.makePerson(), self.factory.makeProduct())
+        return get_branch_namespace(
+            person=self.factory.makePerson(),
+            product=self.factory.makeProduct())
 
     def test_name(self):
         # A product namespace has branches with names starting with ~foo/bar.
@@ -173,9 +202,10 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
     layer = DatabaseFunctionalLayer
 
     def getNamespace(self):
-        return PackageNamespace(
-            self.factory.makePerson(), self.factory.makeDistroRelease(),
-            self.factory.makeSourcePackageName())
+        return get_branch_namespace(
+            person=self.factory.makePerson(),
+            distroseries=self.factory.makeDistroRelease(),
+            sourcepackagename=self.factory.makeSourcePackageName())
 
     def test_name(self):
         # A package namespace has branches that start with

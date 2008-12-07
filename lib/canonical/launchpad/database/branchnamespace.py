@@ -43,6 +43,15 @@ class _BaseNamespace:
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 
+    def findUnusedName(self, prefix):
+        """See `IBranchNamespace`."""
+        name = prefix
+        count = 0
+        while self.isNameUsed(name):
+            count += 1
+            name = "%s-%s" % (prefix, count)
+        return name
+
     def getBranches(self):
         """See `IBranchNamespace`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

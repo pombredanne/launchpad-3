@@ -29,6 +29,8 @@ class IBranchNamespace(Interface):
                      whiteboard=None):
         """Create and return an `IBranch` in this namespace."""
 
+    def findUnusedName(prefix):
+        """Find an unused branch name starting with 'prefix'."""
 
     def getBranches():
         """Return the branches in this namespace."""
