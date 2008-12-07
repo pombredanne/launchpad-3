@@ -12,7 +12,7 @@ from itertools import chain
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
 # to change or go away.
-from urllib import splittype
+from urllib import splittype, quote
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -207,15 +207,15 @@ class BugTracker(SQLBase):
 
             return url_pattern % ({
                 'base_url': base_url,
-                'tracker': tracker,
-                'group_id': group_id,
-                'at_id': at_id,
+                'tracker': quote(tracker),
+                'group_id': quote(group_id),
+                'at_id': quote(at_id),
                 })
 
         else:
             return url_pattern % ({
                 'base_url': base_url,
-                'remote_product': remote_product,
+                'remote_product': quote(remote_product),
                 })
 
     def getBugsWatching(self, remotebug):

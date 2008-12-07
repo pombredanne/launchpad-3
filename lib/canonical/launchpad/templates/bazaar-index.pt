@@ -54,8 +54,8 @@
                           version control system.
                           We also import
                           <tal:XXX condition="nothing">
-                            20080222 mpt: This link should be changed to
-                            the URL produced to fix bug 84913:
+                            # XXX mpt 20080222 bug=84913: This link should be changed to
+                            # the URL produced.
                           </tal:XXX>
                           <a href="/+recently-imported-branches">over 1000
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects</a>,
