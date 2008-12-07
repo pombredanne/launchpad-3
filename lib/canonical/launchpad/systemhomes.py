@@ -16,6 +16,7 @@ __all__ = [
 
 __metaclass__ = type
 
+import codecs
 import os
 
 from zope.component import getUtility
@@ -261,10 +262,19 @@ class WebServiceApplication(ServiceRootResource):
         os.path.dirname(os.path.normpath(__file__)),
         'apidoc', 'wadl-%s.xml' % config.instance_name)
 
-    if os.path.exists(_wadl_filename):
-        cached_wadl = open(_wadl_filename).read()
-    else:
-        cached_wadl = None
+    cached_wadl = None
+
+    # Attempt to load the WADL.
+    _wadl_fd = None
+    try:
+        _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
+        try:
+            cached_wadl = _wadl_fd.read()
+        finally:
+            _wadl_fd.close()
+    except IOError:
+        pass
+    del _wadl_fd
 
     def toWADL(self):
         """See `IWebServiceApplication`."""
