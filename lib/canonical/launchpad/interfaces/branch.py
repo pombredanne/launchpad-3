@@ -1200,11 +1200,6 @@ class IBranchSet(Interface):
             None.
         """
 
-    def getHostedBranchesForPerson(person):
-        """Return the hosted branches that the given person can write to."""
-        # XXX: JonathanLange 2008-12-01 spec=package-branches: This API seems
-        # redundant. We can probably delete it.
-
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
