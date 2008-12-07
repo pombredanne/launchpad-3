@@ -16,6 +16,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -27,6 +28,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -229,7 +231,21 @@ class LoginOrRegister:
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if principal is not None and principal.validate(password):
+        if (principal is not None
+            and principal.person.account_status == AccountStatus.DEACTIVATED):
+            self.login_error = _(
+                'The email address belongs to a deactivated account. '
+                'Use the "Forgotten your password" link to reactivate it.')
+        elif (principal is not None
+            and principal.person.account_status == AccountStatus.SUSPENDED):
+            question_link = canonical_url(
+                getUtility(ILaunchpadCelebrities).launchpad,
+                rootsite='answers', view_name='+addquestion')
+            self.login_error = _(
+                'The email address belongs to a suspended account. '
+                'Contact a <a href="%s">Launchpad admin</a> '
+                'about this issue.' % question_link)
+        elif principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
@@ -254,11 +270,6 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
-        elif (principal is not None
-            and principal.person.account_status == AccountStatus.DEACTIVATED):
-            self.login_error = _(
-                'The email address belongs to a deactivated account. '
-                'Use the "Forgotten your password" link to reactivate it.')
         else:
             self.login_error = "The email address and password do not match."
 

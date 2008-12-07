@@ -14,32 +14,33 @@ Ubuntu and its flavours being the first on the list.
 
 And for every distribution we publish most of its attributes.
 
+    >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> distro = distros['entries'][0]
     >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
-    >>> for key, value in sorted(ubuntu.items()):
-    ...     print "%s: %s" % (key, value)
+    >>> pprint_entry(ubuntu)
     active: True
-    active_milestones_collection_link: http://.../ubuntu/active_milestones
-    all_milestones_collection_link: http://.../ubuntu/all_milestones
-    archives_collection_link: http://.../ubuntu/archives
-    current_series_link: http://.../ubuntu/hoary
-    date_created: 2006-10-16T18:31:43.415195+00:00
-    description: Ubuntu is a new approach...
-    display_name: Ubuntu
-    domain_name: ubuntulinux.org
+    active_milestones_collection_link: u'http://.../ubuntu/active_milestones'
+    all_milestones_collection_link: u'http://.../ubuntu/all_milestones'
+    archives_collection_link: u'http://.../ubuntu/archives'
+    bug_reporting_guidelines: None
+    current_series_link: u'http://.../ubuntu/hoary'
+    date_created: u'2006-10-16T18:31:43.415195+00:00'
+    description: u'Ubuntu is a new approach...'
+    display_name: u'Ubuntu'
+    domain_name: u'ubuntulinux.org'
     driver_link: None
     homepage_content: None
-    icon_link: http://.../ubuntu/icon
-    logo_link: http://.../ubuntu/logo
-    main_archive_link: http://.../ubuntu/+archive/primary
-    mugshot_link: http://.../ubuntu/mugshot
-    name: ubuntu
-    owner_link: http://.../~ubuntu-team
-    resource_type_link: http://.../#distribution
-    self_link: http://.../ubuntu
-    series_collection_link: http://.../ubuntu/series
-    summary: Ubuntu is a new approach to Linux Distribution...
-    title: Ubuntu Linux
+    icon_link: u'http://.../ubuntu/icon'
+    logo_link: u'http://.../ubuntu/logo'
+    main_archive_link: u'http://.../ubuntu/+archive/primary'
+    mugshot_link: u'http://.../ubuntu/mugshot'
+    name: u'ubuntu'
+    owner_link: u'http://.../~ubuntu-team'
+    resource_type_link: u'http://.../#distribution'
+    self_link: u'http://.../ubuntu'
+    series_collection_link: u'http://.../ubuntu/series'
+    summary: u'Ubuntu is a new approach to Linux Distribution...'
+    title: u'Ubuntu Linux'
 
 
 == Distribution Custom Operations ==
@@ -63,3 +64,11 @@ distribution that are marked as in development.
     ...     print entry['self_link']
     http://.../ubuntu/hoary
 
+"getSourcePackage" returns a distribution source package for the given
+name.
+
+    >>> alsa_utils = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSourcePackage',
+    ...     name='alsa-utils').jsonBody()
+    >>> print alsa_utils['self_link']
+    http://.../ubuntu/+source/alsa-utils

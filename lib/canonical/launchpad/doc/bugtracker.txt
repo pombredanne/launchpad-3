@@ -312,7 +312,7 @@ For the RT tracker we specify a Queue in which to file a ticket.
 
     >>> example_rt = factory.makeBugTracker(
     ...     'http://rt.example.com', BugTrackerType.RT)
-    >>> print example_rt.getBugFilingLink(42)
+    >>> print example_rt.getBugFilingLink('42')
     http://rt.example.com/Ticket/Create.html?Queue=42
 
 SourceForge and its kin use a Group ID and an ATID to specify which
@@ -320,14 +320,14 @@ product a bug should be filed against.
 
     >>> example_sourceforge = factory.makeBugTracker(
     ...     'http://forge.example.com', BugTrackerType.SOURCEFORGE)
-    >>> print example_sourceforge.getBugFilingLink((123, 456))
+    >>> print example_sourceforge.getBugFilingLink(('123', '456'))
     http://forge.example.com/tracker/?func=add&group_id=123&atid=456
 
 The URL returned by the SourceForge celebrity points to the new version
 of the SourceForge bug tracker.
 
     >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
-    >>> print sourceforge.getBugFilingLink((123, 456))
+    >>> print sourceforge.getBugFilingLink(('123', '456'))
     http://sourceforge.net/tracker2/?func=add&group_id=123&atid=456
 
 Savane uses a single group URL parameter to specify which product the
@@ -374,3 +374,8 @@ As does DebBugs, which is also an email-based bugtracker.
     >>> print debbugs.getBugFilingLink('testproduct')
     None
 
+The remote_product values passed to getBugFilingLink() are URL-encoded
+to ensure that the returned URL is valid.
+
+    >>> print mozilla_bugzilla.getBugFilingLink('@testproduct&')
+    https://bugzilla.mozilla.org/enter_bug.cgi?product=%40testproduct%26

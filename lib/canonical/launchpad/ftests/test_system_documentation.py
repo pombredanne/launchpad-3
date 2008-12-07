@@ -897,7 +897,12 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests_without_logging = [
-        'answer-tracker-emailinterface.txt',
+        # XXX gary 2008-12-06 bug=305856: Spurious test failure discovered on
+        # buildbot, build 40.  Note that, to completely disable the test from
+        # running, the filename has been changed to
+        # answer-tracker-emailinterface.txt.disabled, so when this test is
+        # reinstated it will be need to be changed back.
+        # 'answer-tracker-emailinterface.txt',
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',
