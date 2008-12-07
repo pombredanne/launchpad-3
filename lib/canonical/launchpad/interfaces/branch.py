@@ -1031,13 +1031,6 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def getBranch(owner, product, branch_name):
-        """Return the branch identified by owner/product/branch_name."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This method
-        # isn't really appropriate once we have source package branches. It's
-        # only used in a couple of places, and all of those places are invalid
-        # anyway.
-
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             author=None, summary=None, whiteboard=None, date_created=None,
