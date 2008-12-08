@@ -115,6 +115,17 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(self.popup.getProduct(), branch.product)
         self.assertEqual(expected_name, branch.name)
 
+    def test_makeBranch_used(self):
+        # makeBranch makes up the branch name if the inferred one is already
+        # used.
+        url = self.factory.getUniqueURL()
+        expected_name = self.popup.getBranchNameFromURL(url)
+        self.factory.makeBranch(
+            name=expected_name, product=self.popup.getProduct(),
+            owner=self.popup.getPerson())
+        branch = self.popup.makeBranchFromURL(url)
+        self.assertEqual(expected_name + '-1', branch.name)
+
     def test_makeBranchRequestsMirror(self):
         """makeBranch requests a mirror on the branch it creates."""
         url = self.factory.getUniqueURL()
