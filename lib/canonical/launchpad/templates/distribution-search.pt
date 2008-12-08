@@ -35,11 +35,12 @@
 
   <br />
 
-  <tal:search_requested condition="view/search_requested">
+  <tal:search_requested condition="view/search_requested"
+                        define="batchnav view/batchnav">
 
-    <tal:batch define="batch view/batchnav/currentBatch">
+    <tal:batch define="batch batchnav/currentBatch">
 
-      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
+      <tal:navigation replace="structure batchnav/@@+navigation-links-upper" />
 
       <ul class="sources" tal:condition="batch">
         <li tal:repeat="dsp batch">
@@ -81,7 +82,7 @@
         </li>
       </ul>
 
-      <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
+      <tal:navigation replace="structure batchnav/@@+navigation-links-lower" />
 
       <tal:no_matches condition="not: view/matches">
 

@@ -32,7 +32,7 @@ class PackageSearchViewBase(LaunchpadView):
         """Return whether detailed results should be provided."""
         return self.matches <= 5
 
-    @cachedproperty
+    @property
     def batchnav(self):
         """Return the batch navigator for the search results."""
         return BatchNavigator(self.search_results, self.request)
