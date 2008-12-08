@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchType, IBranchSet, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
@@ -435,6 +435,8 @@ class BranchPullQueueTest(TestCaseWithFactory):
         branch = self.factory.makeBranch(product=product)
         series = removeSecurityProxy(product.development_focus)
         default_branch = self.factory.makeBranch(product=product)
+        default_branch.startMirroring()
+        default_branch.mirrorComplete('rev1')
         series.user_branch = default_branch
         info = self.storage._getBranchPullInfo(branch)
         self.assertEqual(
@@ -745,8 +747,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
         """
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete('rev1')
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch
+        self.assertEqual(product.default_stacked_on_branch, branch)
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):

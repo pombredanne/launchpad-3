@@ -116,6 +116,7 @@ class FakeBranch(FakeDatabaseObject):
         self.private = private
         self.product = product
         self.registrant = registrant
+        self._mirrored = False
 
     @property
     def unique_name(self):
@@ -127,6 +128,12 @@ class FakeBranch(FakeDatabaseObject):
 
     def getPullURL(self):
         pass
+
+    def startMirroring(self):
+        pass
+
+    def mirrorComplete(self, rev_id):
+        self._mirrored = True
 
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
@@ -172,7 +179,13 @@ class FakeProduct(FakeDatabaseObject):
 
     @property
     def default_stacked_on_branch(self):
-        return self.development_focus.user_branch
+        b = self.development_focus.user_branch
+        if self.development_focus.user_branch is None:
+            return None
+        elif b._mirrored:
+            return b
+        else:
+            return None
 
 
 class FakeProductSeries(FakeDatabaseObject):
