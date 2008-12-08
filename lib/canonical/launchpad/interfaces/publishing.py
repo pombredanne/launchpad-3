@@ -567,6 +567,9 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
+    def getByIdAndArchive(id, archive):
+        """Return the source publication matching id AND archive."""
+
     def getBuildsForSources(one_or_more_source_publications):
         """Return all builds related with each given source publication.
 

@@ -187,6 +187,22 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         except NotFoundError:
             return None
 
+    @stepthrough('+sourcepub')
+    def traverse_sourcepub(self, name):
+        try:
+            pub_id = int(name)
+        except ValueError:
+            return None
+
+        # The ID is not enough on its own to identify the publication,
+        # we need to make sure it matches the context archive as well.
+        results = getUtility(IPublishingSet).getByIdAndArchive(
+            pub_id, self.context)
+        if results.count() == 1:
+            return results[0]
+
+        return None
+
     @stepthrough('+upload')
     def traverse_upload_permission(self, name):
         """Traverse the data part of the URL for upload permissions."""

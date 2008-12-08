@@ -39,7 +39,7 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, webservice_error)
+    operation_returns_collection_of, rename_parameters_as, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -219,6 +219,25 @@ class IArchive(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
+    @rename_parameters_as(name="source_name", distroseries="distro_series")
+    @operation_parameters(
+        name=TextLine(title=_("Source package name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Int(title=_("Package Publishing Status"), required=False),
+        distroseries=Reference(
+            # Really IDistroSeries, fixed below to avoid circular import.
+            Interface,
+            title=_("Distroseries name"), required=False),
+        pocket=TextLine(title=_("Pocket name"), required=False),
+        exact_match=Bool(
+            title=_("Exact Match"),
+            description=_("Whether or not to filter source names by exact"
+                          " matching."),
+            required=False))
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False):
@@ -844,3 +863,13 @@ IArchive['syncSources'].queryTaggedValue(
 IArchive['syncSource'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['from_archive'].schema = IArchive
+
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.publishing import (
+    ISourcePackagePublishingHistory)
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['distroseries'].schema = IDistroSeries
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = ISourcePackagePublishingHistory
