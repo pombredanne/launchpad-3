@@ -227,6 +227,8 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
     def test_translateControlPath(self):
         branch = self.factory.makeBranch(owner=self.requester)
         branch.product.development_focus.user_branch = branch
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
         deferred = self.server.translateVirtualPath(
             '~%s/%s/.bzr/control.conf'
             % (branch.owner.name, branch.product.name))

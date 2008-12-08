@@ -142,6 +142,8 @@ class TestFilesystem(TestCaseWithTransport):
         # directories for products that have a default stacked-on branch.
         branch = self.factory.makeBranch()
         branch.product.development_focus.user_branch = branch
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
         transport = self.getTransport()
         control_file = transport.get_bytes(
             '~%s/%s/.bzr/control.conf'
@@ -155,6 +157,8 @@ class TestFilesystem(TestCaseWithTransport):
         # Bazaar needs to be able to open this bzrdir.
         branch = self.factory.makeBranch()
         branch.product.development_focus.user_branch = branch
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
         transport = self.getTransport().clone(
             '~%s/%s' % (self.requester.name, branch.product.name))
         found_bzrdir = BzrDir.open_from_transport(transport)
