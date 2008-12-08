@@ -22,6 +22,7 @@ And for every distribution we publish most of its attributes.
     active_milestones_collection_link: u'http://.../ubuntu/active_milestones'
     all_milestones_collection_link: u'http://.../ubuntu/all_milestones'
     archives_collection_link: u'http://.../ubuntu/archives'
+    bug_reporting_guidelines: None
     current_series_link: u'http://.../ubuntu/hoary'
     date_created: u'2006-10-16T18:31:43.415195+00:00'
     description: u'Ubuntu is a new approach...'
@@ -63,3 +64,11 @@ distribution that are marked as in development.
     ...     print entry['self_link']
     http://.../ubuntu/hoary
 
+"getSourcePackage" returns a distribution source package for the given
+name.
+
+    >>> alsa_utils = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSourcePackage',
+    ...     name='alsa-utils').jsonBody()
+    >>> print alsa_utils['self_link']
+    http://.../ubuntu/+source/alsa-utils
