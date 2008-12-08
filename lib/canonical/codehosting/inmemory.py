@@ -253,6 +253,19 @@ class FakeObjectFactory(ObjectFactory):
         self._product_set._add(product)
         return product
 
+    def enableDefaultStackingForProduct(self, product, branch=None):
+        """XXX write me!"""
+        if branch is None:
+            branch = self.makeBranch(product=product)
+        # 'branch' might be private, so we remove the security proxy to get at
+        # the methods.
+        naked_branch = branch
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete('rev1')
+        # Likewise, we might not have permission to set the user_branch of the
+        # development focus series.
+        naked_series = product.development_focus
+        naked_series.user_branch = branch
 
 class FakeBranchPuller:
 

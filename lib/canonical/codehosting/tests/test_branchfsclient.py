@@ -120,10 +120,7 @@ class TestBranchFileSystemClient(TestCase):
         # We don't want the caching to make us mis-interpret paths in the
         # branch as paths into the control transport.
         branch = self.factory.makeBranch()
-        dev_focus = self.factory.makeBranch(product=branch.product)
-        branch.product.development_focus.user_branch = dev_focus
-        dev_focus.startMirroring()
-        dev_focus.mirrorComplete('rev1')
+        self.factory.enableDefaultStackingForProduct(branch.product)
         deferred = self.client.translatePath(
             '/~' + branch.owner.name + '/' + branch.product.name +
             '/.bzr/format')

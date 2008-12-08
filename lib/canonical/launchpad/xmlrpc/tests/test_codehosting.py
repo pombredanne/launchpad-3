@@ -747,11 +747,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         """
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        series = removeSecurityProxy(product.development_focus)
-        series.user_branch = branch
+        self.factory.enableDefaultStackingForProduct(product, branch)
         self.assertEqual(product.default_stacked_on_branch, branch)
         return product, branch
 

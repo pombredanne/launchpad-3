@@ -226,9 +226,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
     def test_translateControlPath(self):
         branch = self.factory.makeBranch(owner=self.requester)
-        branch.product.development_focus.user_branch = branch
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        self.factory.enableDefaultStackingForProduct(branch.product, branch)
         deferred = self.server.translateVirtualPath(
             '~%s/%s/.bzr/control.conf'
             % (branch.owner.name, branch.product.name))
@@ -513,9 +511,7 @@ class LaunchpadTransportTests:
         transport = self.getTransport()
         branch = self.factory.makeBranch(
             BranchType.HOSTED, owner=self.requester)
-        branch.product.development_focus.user_branch = branch
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        self.factory.enableDefaultStackingForProduct(branch.product, branch)
         return self.assertFiresFailure(
             errors.TransportNotPossible,
             transport.put_bytes,
