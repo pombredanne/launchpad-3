@@ -180,7 +180,7 @@ class FakeProduct(FakeDatabaseObject):
     @property
     def default_stacked_on_branch(self):
         b = self.development_focus.user_branch
-        if self.development_focus.user_branch is None:
+        if b is None:
             return None
         elif b._mirrored:
             return b

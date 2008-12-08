@@ -122,6 +122,8 @@ class TestBranchFileSystemClient(TestCase):
         branch = self.factory.makeBranch()
         dev_focus = self.factory.makeBranch(product=branch.product)
         branch.product.development_focus.user_branch = dev_focus
+        dev_focus.startMirroring()
+        dev_focus.mirrorComplete('rev1')
         deferred = self.client.translatePath(
             '/~' + branch.owner.name + '/' + branch.product.name +
             '/.bzr/format')
