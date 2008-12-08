@@ -21,9 +21,8 @@
   <facet facet="specifications">
 
     <browser:url
-        for="canonical.launchpad.interfaces.ISpecificationBranch"
-        path_expression="string:+branch/${branch/owner/name}/${branch/product_name}/${branch/name}"
-        attribute_to_parent="specification" />
+       for="canonical.launchpad.interfaces.ISpecificationBranch"
+       urldata="canonical.launchpad.browser.specificationbranch.SpecificationBranchURL" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISpecificationBranch"
