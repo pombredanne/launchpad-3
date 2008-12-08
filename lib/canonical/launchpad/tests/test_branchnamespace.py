@@ -146,6 +146,24 @@ class NamespaceMixin:
         unused_name = namespace.findUnusedName(name)
         self.assertEqual('%s-2' % name, unused_name)
 
+    def test_createBranchWithPrefix_unused(self):
+        # createBranch with prefix creates a branch with the same name as the
+        # given prefix if there's no branch with that name already.
+        namespace = self.getNamespace()
+        name = self.factory.getUniqueString()
+        branch = namespace.createBranchWithPrefix(
+            BranchType.HOSTED, name, namespace.owner)
+        self.assertEqual(name, branch.name)
+
+    def test_createBranchWithPrefix_used(self):
+        # createBranch with prefix creates a branch with the same name as the
+        # given prefix if there's no branch with that name already.
+        namespace = self.getNamespace()
+        name = self.factory.getUniqueString()
+        namespace.createBranch(BranchType.HOSTED, name, namespace.owner)
+        branch = namespace.createBranchWithPrefix(
+            BranchType.HOSTED, name, namespace.owner)
+        self.assertEqual(name + '-1', branch.name)
 
 
 class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):

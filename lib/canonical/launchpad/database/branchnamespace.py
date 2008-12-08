@@ -31,6 +31,7 @@ class _BaseNamespace:
                      summary=None, whiteboard=None, date_created=None,
                      branch_format=None, repository_format=None,
                      control_format=None):
+        """See `IBranchNamespace`."""
         owner = self.owner
         product = getattr(self, 'product', None)
         distroseries = getattr(self, 'distroseries', None)
@@ -42,6 +43,21 @@ class _BaseNamespace:
             branch_format=branch_format, repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
+
+    def createBranchWithPrefix(self, branch_type, prefix, registrant,
+                               url=None, title=None,
+                               lifecycle_status=BranchLifecycleStatus.NEW,
+                               summary=None, whiteboard=None,
+                               date_created=None, branch_format=None,
+                               repository_format=None, control_format=None):
+        """See `IBranchNamespace`."""
+        name = self.findUnusedName(prefix)
+        return self.createBranch(
+            branch_type, name, registrant, url=url, title=title,
+            lifecycle_status=lifecycle_status, summary=summary,
+            whiteboard=whiteboard, date_created=date_created,
+            branch_format=branch_format, repository_format=repository_format,
+            control_format=control_format)
 
     def findUnusedName(self, prefix):
         """See `IBranchNamespace`."""
