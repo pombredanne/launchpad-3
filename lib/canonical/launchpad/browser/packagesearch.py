@@ -22,7 +22,7 @@ class PackageSearchViewBase(LaunchpadView):
         """Return whether the current view included a search request."""
         return self.text is not None
 
-    @property
+    @cachedproperty
     def matches(self):
         """Return the number of matched search results."""
         return self.search_results.count()
@@ -32,7 +32,7 @@ class PackageSearchViewBase(LaunchpadView):
         """Return whether detailed results should be provided."""
         return self.matches <= 5
 
-    @property
+    @cachedproperty
     def batchnav(self):
         """Return the batch navigator for the search results."""
         return BatchNavigator(self.search_results, self.request)
