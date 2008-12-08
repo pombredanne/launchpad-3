@@ -32,7 +32,7 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import ZopelessAppServerLayer
+from canonical.testing import ZopelessAppServerLayer, BaseLayer
 from canonical.testing.profiled import profiled
 
 
@@ -78,6 +78,16 @@ class SSHServerLayer(ZopelessAppServerLayer):
     @profiled
     def testTearDown(cls):
         SSHServerLayer._reset()
+        # XXX gary 2008-12-03 bug=304913
+        # The codehosting acceptance tests are intermittently leaving threads
+        # around, apparently because of bzr.  disable_thread_check is a
+        # mechanism to turn off the BaseLayer behavior of causing a test to
+        # fail if it leaves a thread behind.
+        # This comment is found in both
+        # canonical.codehosting.tests.test_acceptance and
+        # canonical.testing.layers
+        BaseLayer.disable_thread_check = True
+
 
 
 class SSHTestCase(TestCaseWithTransport, LoomTestMixin):

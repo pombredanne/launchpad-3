@@ -641,6 +641,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
     field_names = ["merged_revno"]
+    for_input = True
 
     @property
     def initial_values(self):
@@ -664,7 +665,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
         """Update the whiteboard and go back to the source branch."""
         revno = data['merged_revno']
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.context.merged_revno = revno
+            self.context.markAsMerged(merged_revno=revno)
             self.request.response.addNotification(
                 'The proposal\'s merged revision has been updated.')
         else:
