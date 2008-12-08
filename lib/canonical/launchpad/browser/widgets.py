@@ -30,6 +30,8 @@ from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import BranchType, IBranch, IBranchSet
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
@@ -189,9 +191,10 @@ class BranchPopupWidget(SinglePopupWidget):
         if product is None:
             raise NoProductError("Could not find product in LaunchBag.")
         owner = self.getPerson()
-        name = self.getBranchNameFromURL(url)
-        branch = getUtility(IBranchSet).new(
-            BranchType.MIRRORED, name, owner, owner, self.getProduct(), url)
+        name = URI(url).ensureNoSlash().path.split('/')[-1]
+        namespace = get_branch_namespace(person=owner, product=product)
+        branch = namespace.createBranchWithPrefix(
+            BranchType.MIRRORED, name, owner, url=url)
         branch.requestMirror()
         self.request.response.addNotification(
             structured('Registered %s' %
