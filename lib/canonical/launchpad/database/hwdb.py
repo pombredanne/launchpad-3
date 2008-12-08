@@ -602,6 +602,21 @@ class HWDriverSet:
             return self.create(package_name, name, license)
         return link
 
+    def search(self, package_name=None, name=None):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if package_name is not None:
+            if len(package_name) == 0:
+                args.append(Or(HWDriver.package_name == None,
+                               HWDriver.package_name == ''))
+            else:
+                args.append(HWDriver.package_name == package_name)
+        if name != None:
+            args.append(HWDriver.name == name)
+        result_set = store.find(HWDriver, *args)
+        return result_set.order_by(HWDriver.id)
+
 
 class HWDeviceDriverLink(SQLBase):
     """See `IHWDeviceDriverLink`."""
