@@ -10,7 +10,7 @@
         permission="launchpad.View"
         attributes="id branch_type name title summary url whiteboard container
                     mirror_status_message private registrant owner author
-                    reviewer code_reviewer product product_name unique_name
+                    reviewer code_reviewer product unique_name
                     displayname sort_key lifecycle_status last_mirrored
                     last_mirrored_id last_mirror_attempt mirror_failures
                     pull_disabled next_mirror_time last_scanned

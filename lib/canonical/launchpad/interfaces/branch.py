@@ -679,11 +679,6 @@ class IBranch(IHasOwner):
             description=_("The project this branch belongs to.")),
         exported_as='project')
 
-    # XXX: JonathanLange 2008-12-01 spec=package-branches: This needs to be
-    # removed and replaced with the name of the container. It's only used for
-    # URL traversal, so maybe we can work out a smarter way of doing that.
-    product_name = Attribute("The name of the project, or '+junk'.")
-
     # Display attributes
     unique_name = exported(
         Text(title=_('Unique name'), readonly=True,

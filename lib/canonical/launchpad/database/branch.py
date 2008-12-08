@@ -323,13 +323,6 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
 
-    @property
-    def product_name(self):
-        """See `IBranch`."""
-        if self.product is None:
-            return '+junk'
-        return self.product.name
-
     def _getContainerName(self):
         if self.product is not None:
             return self.product.name

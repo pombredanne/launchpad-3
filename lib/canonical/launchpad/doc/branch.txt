@@ -345,18 +345,6 @@ returned.
     123
 
 
-== Branches and products ==
-
-Branch not associated to a product are called "junk" branch and treated for
-navigation purposes as if they were associated to a magic product named
-"+junk".
-
-    >>> factory.makeBranch(product=None).product_name
-    '+junk'
-    >>> factory.makeBranch(product=product).product_name
-    u'product'
-
-
 == Branch names ==
 
 Branches have a display name that is the Branch.title if it's provided, and the
