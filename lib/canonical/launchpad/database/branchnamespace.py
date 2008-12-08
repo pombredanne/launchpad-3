@@ -45,19 +45,10 @@ class _BaseNamespace:
             sourcepackagename=sourcepackagename)
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
-                               url=None, title=None,
-                               lifecycle_status=BranchLifecycleStatus.NEW,
-                               summary=None, whiteboard=None,
-                               date_created=None, branch_format=None,
-                               repository_format=None, control_format=None):
+                               url=None):
         """See `IBranchNamespace`."""
         name = self.findUnusedName(prefix)
-        return self.createBranch(
-            branch_type, name, registrant, url=url, title=title,
-            lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard, date_created=date_created,
-            branch_format=branch_format, repository_format=repository_format,
-            control_format=control_format)
+        return self.createBranch(branch_type, name, registrant, url=url)
 
     def findUnusedName(self, prefix):
         """See `IBranchNamespace`."""

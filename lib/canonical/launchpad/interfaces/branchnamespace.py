@@ -29,10 +29,7 @@ class IBranchNamespace(Interface):
                      whiteboard=None):
         """Create and return an `IBranch` in this namespace."""
 
-    def createBranchWithPrefix(branch_type, prefix, registrant, url=None,
-                               title=None,
-                               lifecycle_status=BranchLifecycleStatus.NEW,
-                               summary=None, whiteboard=None):
+    def createBranchWithPrefix(branch_type, prefix, registrant, url=None):
         """Create and return an `IBranch` with a name starting with 'prefix'.
 
         Use this method to automatically create a branch with an inferred
