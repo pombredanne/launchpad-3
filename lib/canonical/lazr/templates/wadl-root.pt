@@ -206,6 +206,11 @@
         </wadl:doc>
         <link />
       </param>
+      <param style="plain" name="http_etag" path="$['http_etag']">
+        <wadl:doc>
+          The value of the HTTP ETag for this resource.
+        </wadl:doc>
+      </param>
       <param style="plain"
              tal:repeat="field context/wadl_entry:all_fields" required="true"
              tal:attributes="name field/wadl:name;
