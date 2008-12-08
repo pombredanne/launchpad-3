@@ -182,6 +182,9 @@ class BranchPopupWidget(SinglePopupWidget):
         :param url: The URL to mirror.
         :return: An `IBranch`.
         """
+        # XXX: JonathanLange 2008-12-08 spec=package-branches: This method
+        # needs to be rewritten to get the sourcepackage and distroseries out
+        # of the launch bag.
         url = unicode(URI(url).ensureNoSlash())
         if getUtility(IBranchSet).getByUrl(url) is not None:
             raise AlreadyRegisteredError('Already a branch for %r' % (url,))
