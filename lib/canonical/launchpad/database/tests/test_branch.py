@@ -178,6 +178,25 @@ class TestBranch(TestCaseWithFactory):
                 distroseries.name, sourcepackagename.name, branch.name),
             branch.unique_name)
 
+    def test_container_name_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        self.assertEqual('+junk', branch.container.name)
+
+    def test_container_name_product(self):
+        branch = self.factory.makeBranch()
+        self.assertEqual(branch.product.name, branch.container.name)
+
+    def test_container_name_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(
+            '%s/%s/%s' % (
+                distroseries.distribution.name, distroseries.name,
+                sourcepackagename.name),
+            branch.container.name)
+
 
 class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""

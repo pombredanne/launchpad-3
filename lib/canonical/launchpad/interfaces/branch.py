@@ -662,6 +662,10 @@ class IBranch(IHasOwner):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
+    # XXX: JonathanLange 2008-12-08 spec=package-branches: decorates blows up
+    # if we call this 'context'!
+    container = Attribute("The context that this branch belongs to.")
+
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
     # IBranch and we'd get import errors.  IPerson does a similar trick.
