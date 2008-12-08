@@ -680,10 +680,10 @@ def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
 
-    suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
-
-    suite.addTest(make_server_tests(
-            unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
+    # XXX Tim Penhey 2008-12-08: bug 306143
+    # suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
+    # suite.addTest(make_server_tests(
+    #         unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
     # XXX DaniloSegan 2008-10-24: see #288695.
     #suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite
