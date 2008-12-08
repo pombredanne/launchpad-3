@@ -512,6 +512,8 @@ class LaunchpadTransportTests:
         branch = self.factory.makeBranch(
             BranchType.HOSTED, owner=self.requester)
         branch.product.development_focus.user_branch = branch
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
         return self.assertFiresFailure(
             errors.TransportNotPossible,
             transport.put_bytes,
