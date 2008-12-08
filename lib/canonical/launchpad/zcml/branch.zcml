@@ -90,9 +90,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBranch"
-        path_expression="string:${product_name}/${name}"
-        attribute_to_parent="owner"
-        rootsite="code" />
+        urldata="canonical.launchpad.browser.branch.BranchURL" />
 
     <browser:navigation
         module="canonical.launchpad.browser"
