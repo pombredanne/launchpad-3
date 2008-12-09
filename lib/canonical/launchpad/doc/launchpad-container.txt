@@ -103,7 +103,6 @@ But it's not within anything other than its tasks' targets.
 
 A branch is within its product, in case it is associated with one.
 
-    >>> from canonical.launchpad.interfaces.branch import IBranchSet
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> from canonical.launchpad.interfaces.branchnamespace import (
     ...     get_branch_namespace)
