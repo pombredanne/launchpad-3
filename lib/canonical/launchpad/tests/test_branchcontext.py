@@ -18,8 +18,19 @@ class TestJunkContext(TestCaseWithFactory):
 
     def test_name(self):
         # The name of a junk context is '+junk'.
-        context = JunkContext()
+        context = JunkContext(self.factory.makePerson())
         self.assertEqual('+junk', context.name)
+
+    def test_getBranches_empty(self):
+        person = self.factory.makePerson()
+        context = JunkContext(person)
+        self.assertEqual([], list(context.getBranches()))
+
+    def test_getBranches_some(self):
+        person = self.factory.makePerson()
+        context = JunkContext(person)
+        branch = self.factory.makeBranch(owner=person, product=None)
+        self.assertEqual([branch], list(context.getBranches()))
 
 
 class TestPackageContext(TestCaseWithFactory):
@@ -36,6 +47,20 @@ class TestPackageContext(TestCaseWithFactory):
                 distroseries.distribution.name,
                 distroseries.name,
                 sourcepackagename.name), context.name)
+
+    def test_getBranches_empty(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        context = PackageContext(distroseries, sourcepackagename)
+        self.assertEqual([], list(context.getBranches()))
+
+    def test_getBranches_some(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        context = PackageContext(distroseries, sourcepackagename)
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual([branch], list(context.getBranches()))
 
 
 def test_suite():
