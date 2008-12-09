@@ -38,9 +38,9 @@ from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationException, BranchCreationForbidden,
+    BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
     BranchMergeProposalStatus, BranchPersonSearchRestriction,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -986,20 +986,9 @@ class BranchSet:
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
-        if namespace.isNameUsed(name):
-            # XXX: JonathanLange 2008-12-04 spec=package-branches: This error
-            # message logic is incorrect, but the exact text is being tested
-            # in branch-xmlrpc.txt.
-            params = {'name': name}
-            if product is None:
-                params['maybe_junk'] = 'junk '
-                params['context'] = owner.name
-            else:
-                params['maybe_junk'] = ''
-                params['context'] = "%s in %s" % (owner.name, product.name)
-            raise BranchCreationException(
-                'A %(maybe_junk)sbranch with the name "%(name)s" already '
-                'exists for %(context)s.' % params)
+        existing_branch = namespace.getByName(name)
+        if existing_branch is not None:
+            raise BranchExists(existing_branch)
 
         branch = Branch(
             registrant=registrant,
