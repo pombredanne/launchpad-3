@@ -10,11 +10,9 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Search results</h1>
-    </metal:heading>
 
 <div metal:fill-slot="main">
+  <h1>Search results</h1>
 
   <form name="search" method="GET">
     <div>
