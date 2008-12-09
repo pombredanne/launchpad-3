@@ -48,7 +48,7 @@ class CodeReviewCommentMailer(BMPMailer):
     def _getBody(self, email):
         """Return the complete body to use for this email.
 
-        If there was a vote, we prefix "Vote: " to the message.
+        If there was a vote, we prefix "Review: " to the message.
         We always append information about why this message was sent.  If
         there is an existing footer, we append it to that.  Otherwise, we
         we insert a new footer.
@@ -60,7 +60,7 @@ class CodeReviewCommentMailer(BMPMailer):
                 vote_tag = ''
             else:
                 vote_tag = ' ' + self.code_review_comment.vote_tag
-            prefix = 'Vote: %s%s\n' % (
+            prefix = 'Review: %s%s\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         main = self.message.text_contents
         if '\n-- \n' in main:

@@ -1045,12 +1045,6 @@ class IBranchSet(Interface):
         special case of the ~vcs-imports celebrity.
         """
 
-    def getByProductAndName(product, name):
-        """Find all branches in a product with a given name."""
-
-    def getByProductAndNameStartsWith(product, name):
-        """Find all branches in a product a name that starts with `name`."""
-
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 

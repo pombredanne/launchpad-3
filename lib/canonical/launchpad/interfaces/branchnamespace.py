@@ -29,6 +29,20 @@ class IBranchNamespace(Interface):
                      whiteboard=None):
         """Create and return an `IBranch` in this namespace."""
 
+    def createBranchWithPrefix(branch_type, prefix, registrant, url=None):
+        """Create and return an `IBranch` with a name starting with 'prefix'.
+
+        Use this method to automatically create a branch with an inferred
+        name.
+        """
+
+    def findUnusedName(prefix):
+        """Find an unused branch name starting with 'prefix'.
+
+        Note that there is no guarantee that the name returned by this method
+        will remain unused for very long. If you wish to create a branch with
+        a given prefix, use createBranchWithPrefix.
+        """
 
     def getBranches():
         """Return the branches in this namespace."""
