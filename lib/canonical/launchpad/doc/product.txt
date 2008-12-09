@@ -620,8 +620,9 @@ branch is 'stacked' on to a default base branch, called the 'default
 stacked-on branch' in Bazaar terminology. This default stacked-on branch
 is the development focus branch of a product.
 
-A freshly created produch has a development focus series but this has
-no branch set, so the product has no default_stacked_on_branch.
+A freshly created product has a development focus series but this
+series has no branch set, so the product has no
+default_stacked_on_branch.
 
     >>> product = factory.makeProduct()
     >>> print product.development_focus.series_branch
@@ -636,8 +637,6 @@ branch.
     >>> branch = factory.makeBranch(name='trunk')
     >>> print branch.last_mirrored
     None
-
-
     >>> product.development_focus.user_branch = branch
     >>> print product.default_stacked_on_branch
     None
