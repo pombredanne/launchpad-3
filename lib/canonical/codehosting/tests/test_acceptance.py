@@ -182,8 +182,18 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         output, error = self.run_bzr_subprocess(
             ['push', '-d', local_directory, remote_url],
             env_changes={'BZR_SSH': 'paramiko'})
-        #if error:
-        #    print error
+        return output
+
+    def assertCantPush(self, local_directory, remote_url, **options):
+        """
+        XXX
+        """
+        output, error = self.run_bzr_subprocess(
+            ['push', '-d', local_directory, remote_url],
+            env_changes={'BZR_SSH': 'paramiko'}, retcode=3)
+        last_line = error.splitlines()[-1]
+        assert ('ERROR: Permission denied:' in last_line or
+                'ERROR: Transport operation not possible:' in last_line), last_line
         return output
 
     def getLastRevision(self, remote_url):
@@ -507,7 +517,7 @@ class AcceptanceTests(SSHTestCase):
         # Check that testuser can't access the branch.
         remote_url = self.getTransportURL(
             '~landscape-developers/landscape/some-branch')
-        self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
+        self.assertNotBranch(remote_url)
 
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the
@@ -530,10 +540,7 @@ class AcceptanceTests(SSHTestCase):
         # The Bazaar client forwards the error from the SFTP server. We don't
         # care about that error for this test, so just swallow it. The error
         # we care about is the one that cmd_push raises.
-        self.captureStderr(
-            self.assertRaises,
-            (PermissionDenied, TransportNotPossible),
-            self.push, self.local_branch_path, remote_url)
+        self.assertCantPush(self.local_branch_path, remote_url)
         # XXX: JonathanLange 2008-04-07: In the SFTP test, the authserver logs
         # a fault which comes back to us (although a little undesirable). Here
         # we flush the test logs so that it doesn't fail the run.
@@ -547,9 +554,7 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('sabdfl', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.assertRaises(
-            (PermissionDenied, TransportNotPossible),
-            self.push, self.local_branch_path, remote_url)
+        self.assertCantPush(self.local_branch_path, remote_url)
 
     def disable_test_cant_push_to_existing_hosted_branch_with_revisions(self):
         # XXX: JonathanLange 2007-08-07, We shouldn't be able to push to
