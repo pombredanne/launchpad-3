@@ -29,6 +29,7 @@ from zope.interface import alsoProvides, directlyProvides, Interface
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
@@ -304,8 +305,20 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
 
+        # Suspended accounts cannot reset the password.
+        if naked_person.account.status == AccountStatus.SUSPENDED:
+            question_link = canonical_url(
+                getUtility(ILaunchpadCelebrities).launchpad,
+                rootsite='answers', view_name='+addquestion')
+            message = structured(
+                  'Your password cannot be reset because your account is '
+                  'suspended. Contact a <a href="%s">Launchpad admin</a> '
+                  'about this issue.' % question_link)
+            self.request.response.addWarningNotification(message)
+            self.context.consume()
+            return
         # Reset password can be used to reactivate a deactivated account.
-        if naked_person.account.status == AccountStatus.DEACTIVATED:
+        elif naked_person.account.status == AccountStatus.DEACTIVATED:
             naked_person.reactivateAccount(
                 comment="User reactivated the account using reset password.",
                 password=data['password'],

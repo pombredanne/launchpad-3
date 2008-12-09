@@ -246,13 +246,16 @@ class IProject(IHasBugs, ICanGetMilestonesDirectly, IHasAppointedDriver,
             value_type=Reference(Interface)),
         exported_as="projects")
 
-    bug_reporting_guidelines = Text(
-        title=(
-            u"If I\N{right single quotation mark}m reporting a bug, "
-            u"I should include, if possible"),
-        description=(
-            u"These guidelines will be shown to anyone reporting a bug."),
-        required=False, max_length=50000)
+    bug_reporting_guidelines = exported(
+        Text(
+            title=(
+                u"If I\N{right single quotation mark}m reporting a bug, "
+                u"I should include, if possible"),
+            description=(
+                u"These guidelines will be shown to "
+                "anyone reporting a bug."),
+            required=False,
+            max_length=50000))
 
     def getProduct(name):
         """Get a product with name `name`."""

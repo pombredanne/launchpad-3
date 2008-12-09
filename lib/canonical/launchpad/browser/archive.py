@@ -24,7 +24,6 @@ __all__ = [
 import urllib
 
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
@@ -34,7 +33,6 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
@@ -508,7 +506,8 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         return form.Fields(
             Choice(__name__='status_filter', title=_("Status Filter"),
                    vocabulary=self.simplified_status_vocabulary,
-                   required=True, default=self.default_status_filter.value))
+                   required=True, default=self.default_status_filter.value),
+            custom_widget=self.custom_widgets['status_filter'])
 
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
@@ -530,20 +529,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
                  default=[],
                  description=_('Select one or more sources to be submitted '
                                'to an action.')))
-
-    def refreshSelectedSourcesWidget(self):
-        """Refresh 'selected_sources' widget.
-
-        It's called after deletions to eliminate the just-deleted records
-        from the widget presented.
-        """
-        flush_database_caches()
-        self.form_fields = self.form_fields.omit('selected_sources')
-        self.form_fields = (
-            self.createSelectedSourcesField() + self.form_fields)
-        self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False)
 
     @property
     def sources(self):
@@ -985,8 +970,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
          || Release   || RELEASE   ||
          || Security  || SECURITY  ||
          || Default   || UPDATES   ||
-         || Backports || BACKPORTS ||
          || Proposed  || PROPOSED  ||
+         || Backports || BACKPORTS ||
 
         When omitted in the form, this widget defaults for 'Default'
         option when rendered.
@@ -996,18 +981,18 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             _('Basic (only released packages).'))
         security = SimpleTerm(
             PackagePublishingPocket.SECURITY, 'SECURITY',
-            _('Security (basic dependencies and security fixes).'))
+            _('Security (basic dependencies and important security updates).'))
         updates = SimpleTerm(
             PackagePublishingPocket.UPDATES, 'UPDATES',
-            _('Default (security dependencies and tested updates).'))
-        backports = SimpleTerm(
-            PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
-            _('Backports (default dependencies and backports).'))
+            _('Default (security dependencies and recommended updates).'))
         proposed = SimpleTerm(
             PackagePublishingPocket.PROPOSED, 'PROPOSED',
-            _('Proposed (backports dependencies and proposed binaries).'))
+            _('Proposed (default dependencies and proposed updates).'))
+        backports = SimpleTerm(
+            PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
+            _('Backports (default dependencies and unsupported updates).'))
 
-        terms = [release, security, updates, backports, proposed]
+        terms = [release, security, updates, proposed, backports]
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)

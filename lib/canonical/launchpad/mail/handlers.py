@@ -5,6 +5,7 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse
 
+import transaction
 from bzrlib.errors import NotAMergeDirective
 from bzrlib.merge_directive import MergeDirective
 from sqlobject import SQLObjectNotFound
@@ -24,6 +25,9 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
     IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
     IWeaklyAuthenticatedPrincipal, QuestionStatus)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
+from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -178,6 +182,9 @@ def parse_commands(content, command_names):
                 # stop reading any more commands.
                 break
             words = command_string.split(' ')
+            # Commands might end with a colon
+            if words[0].endswith(':'):
+                words[0] = words[0][:-1]
             if len(words) > 0 and words[0] in command_names:
                 commands.append((words[0], words[1:]))
     return commands
@@ -591,7 +598,7 @@ class CodeHandler:
         content = get_main_body(message)
         if content is None:
             return None, None
-        commands = parse_commands(content, ['vote'])
+        commands = parse_commands(content, ['vote', 'review'])
         if len(commands) == 0:
             return None, None
         args = commands[0][1]
@@ -659,15 +666,9 @@ class CodeHandler:
             raise NonLaunchpadTarget()
         if mp_source is None:
             basename = urlparse(md.source_branch)[2].split('/')[-1]
-            name = basename
-            count = 1
-            while not branches.isBranchNameAvailable(
-                submitter, mp_target.product, name):
-                name = '%s-%d' % (basename, count)
-                count += 1
-            mp_source = branches.new(
-                BranchType.REMOTE, name, submitter, submitter,
-                mp_target.product, md.source_branch)
+            namespace = get_branch_namespace(submitter, mp_target.product)
+            mp_source = namespace.createBranchWithPrefix(
+                BranchType.REMOTE, basename, submitter, url=md.source_branch)
         return mp_source, mp_target
 
     def findMergeDirectiveAndComment(self, message):
@@ -700,7 +701,15 @@ class CodeHandler:
         submitter = getUtility(ILaunchBag).user
         comment_text, md = self.findMergeDirectiveAndComment(message)
         source, target = self._acquireBranchesForProposal(md, submitter)
-        bmp = source.addLandingTarget(submitter, target, needs_review=True)
+        if md.patch is not None:
+            diff_source = getUtility(IStaticDiffSource)
+            review_diff = diff_source.acquireFromText(
+                md.base_revision_id, md.revision_id, md.patch)
+            transaction.commit()
+        else:
+            review_diff = None
+        bmp = source.addLandingTarget(submitter, target, needs_review=True,
+                                      review_diff=review_diff)
         if comment_text.strip() == '':
             comment = None
         else:

@@ -26,11 +26,11 @@
   </tal:branch-link>
   <h1>Branch associations</h1>
 
-  <tal:comment condition="nothing">
-    XXX: thumper 2007-07-13
-    This page needs to be updated with fmt:link when bug 119208 has
-    been fully implemented.
-  </tal:comment>
+  <tal:XXX condition="nothing">
+    # XXX: thumper 2007-07-13 bug=119208:
+    # This page needs to be updated with fmt:link when bug 119208 has
+    # been fully implemented.
+  </tal:XXX>
   <tal:not-junk condition="context/product">
     <h2>Project</h2>
     <div class="indented" id="branch-project">
