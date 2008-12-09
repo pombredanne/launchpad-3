@@ -16,6 +16,7 @@ from canonical.launchpad.webapp.uri import URI
 
 
 PYTHON_BUGS_HOSTNAME = 'bugs.python.org'
+MPLAYERHQ_BUGS_HOSTNAME = 'roundup.mplayerhq.hu'
 
 
 def parse_python_status(remote_status):
@@ -242,12 +243,49 @@ class Roundup(ExternalBugTracker):
             _status_lookup_python_1)),       # Failback
         )
 
+    # Status tree for roundup.mplayerhq.hu Roundup instances.
+    _status_lookup_mplayerhq = LookupTree(
+        # status (new)
+        (1, LookupTree(
+                # substatus (new, open)
+                (1, 2, BugTaskStatus.NEW),
+                # substatus (analyzed)
+                (4, BugTaskStatus.TRIAGED),
+                )),
+        # status (open)
+        (2, LookupTree(
+                # substatus (open)
+                (2, BugTaskStatus.NEW),
+                # substatus (reproduced)
+                (3, BugTaskStatus.CONFIRMED),
+                # substatus (analyzed, approved)
+                (4, 6, 7, BugTaskStatus.TRIAGED),
+                # substatus (needs_more_info)
+                (5, BugTaskStatus.INCOMPLETE),
+                # substatus (fixed)
+                (10, BugTaskStatus.FIXCOMMITTED),
+                # substatus (implemented)
+                (13, BugTaskStatus.INPROGRESS),
+                )),
+        # status (closed)
+        (3, LookupTree(
+                # substatus (analyzed, needs_more_info, approved,
+                #            duplicate, invalid, works_for_me, reject)
+                (4, 5, 6, 8, 9, 12, BugTaskStatus.INVALID),
+                # substatus (fixed, implemented, applied)
+                (10, 13, 15, BugTaskStatus.FIXRELEASED),
+                # substatus (wont_fix, wont_implement, reject)
+                (11, 14, 16, BugTaskStatus.WONTFIX),
+                )),
+        )
+
     # Combine custom mappings with the standard mappings, using the
     # remote host as the first key into the tree.
     _status_lookup_titles = (
         'Remote host', 'Roundup status', 'Roundup resolution')
     _status_lookup = LookupTree(
         (PYTHON_BUGS_HOSTNAME, _status_lookup_python),
+        (MPLAYERHQ_BUGS_HOSTNAME, _status_lookup_mplayerhq),
         (_status_lookup_standard,), # Default
         )
 
