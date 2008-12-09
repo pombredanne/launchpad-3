@@ -63,23 +63,6 @@ class AvatarTestCase(TrialTestCase):
         }
 
 
-def exception_names(exceptions):
-    """Return a list of exception names for the given exception list."""
-    if isinstance(exceptions, tuple):
-        names = []
-        for exc in exceptions:
-            names.extend(exception_names(exc))
-    elif exceptions is TransportNotPossible:
-        # Unfortunately, not all exceptions render themselves as their name.
-        # More cases like this may need to be added
-        names = ["Transport operation not possible"]
-    elif exceptions is PermissionDenied:
-        names = ['Permission denied', 'PermissionDenied']
-    else:
-        names = [exceptions.__name__]
-    return names
-
-
 class LoomTestMixin:
     """Mixin to provide Bazaar test classes with limited loom support."""
 

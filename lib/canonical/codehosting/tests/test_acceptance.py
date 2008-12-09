@@ -15,14 +15,15 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    LockFailed, NotBranchError, PermissionDenied, SmartProtocolError,
-    TransportNotPossible)
+    LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.transport import (
+    register_transport, unregister_transport)
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, exception_names, LoomTestMixin)
+    adapt_suite, LoomTestMixin)
 from canonical.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from canonical.codehosting import branch_id_to_path
@@ -89,6 +90,28 @@ class SSHServerLayer(ZopelessAppServerLayer):
         BaseLayer.disable_thread_check = True
 
 
+class DenyingSSHServer:
+
+    schemes = ['bzr+ssh://', 'sftp://']
+    _is_set_up = False
+
+    def setUp(self):
+        """See Server.setUp."""
+        for scheme in self.schemes:
+            register_transport(scheme, self._deny)
+        self._is_set_up = True
+
+    def tearDown(self):
+        """See Server.tearDown."""
+        if not self._is_set_up:
+            return
+        self._is_set_up = False
+        for scheme in self.schemes:
+            unregister_transport(scheme, self._deny)
+
+    def _deny(self, url):
+        1/0
+
 
 class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
     """TestCase class that runs an SSH server as well as the app server."""
@@ -102,6 +125,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         self.server = SSHCodeHostingServer(self.scheme, tac_handler)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
+
+        denying = DenyingSSHServer()
+        denying.setUp()
+        self.addCleanup(denying.tearDown)
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
