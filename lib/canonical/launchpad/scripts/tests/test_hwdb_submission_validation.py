@@ -238,9 +238,11 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                         return
                 else:
                     last_log_messages.append(candidate)
+        expected_messages = ' or '.join(
+            [repr(message) for message in messages])
         failmsg = [
             "No error log message for submission %s (testing %s) contained %s"
-                % (submission_key, test, message)]
+                % (submission_key, test, expected_messages)]
         if last_log_messages:
             failmsg.append('Log messages for the submission:')
             failmsg.extend(last_log_messages)
@@ -1255,7 +1257,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         invalid_content = (
             (
                 '', (
+                    # libxml2 version 1.6.31 (Hardy) message:
                     'Error validating datatype %s' % relax_ng_type,
+                    # libxml2 version 2.6.32 (Intrepid) message:
                     "Type %s doesn't allow value ''" % relax_ng_type,
                     )
                 ),
