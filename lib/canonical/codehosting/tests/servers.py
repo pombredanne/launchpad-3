@@ -168,6 +168,7 @@ class SSHCodeHostingServer(Server):
             sibpath(__file__, 'id_dsa.pub'),
             os.path.join(user_home, '.ssh', 'id_dsa.pub'))
         os.chmod(os.path.join(user_home, '.ssh', 'id_dsa'), 0600)
+        #open(os.path.join(user_home, '.ssh', 'config'), 'w').write("LogLevel DEBUG\n")
         real_home, os.environ['HOME'] = os.environ['HOME'], user_home
         return real_home, user_home
 

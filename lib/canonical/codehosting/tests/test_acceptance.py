@@ -170,22 +170,31 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         push_command.run(remote_url, local_directory)
         return output.getvalue()
 
+    def get_bzr_path(self):
+        return os.path.join(config.root, 'sourcecode', 'bzr', 'bzr')
+
     def push(self, local_directory, remote_url, **options):
         """Push the local branch to the given URL.
 
         This method is used to test the end-to-end behaviour of pushing Bazaar
         branches to the SFTP server.
         """
-        output = StringIO()
-        push_command = cmd_push()
-        push_command.outf = output
-        options['location'] = remote_url
-        self.runInChdir(local_directory, push_command.run, **options)
-        return output.getvalue()
+        output, error = self.run_bzr_subprocess(
+            ['push', '-d', local_directory, remote_url],
+            env_changes={'BZR_SSH': 'paramiko'})
+        #if error:
+        #    print error
+        return output
 
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL."""
-        return bzrlib.branch.Branch.open(remote_url).last_revision()
+        output, error = self.run_bzr_subprocess(
+            ['cat-revision', '-r', 'branch:' + remote_url],
+            env_changes={'BZR_SSH': 'paramiko'})
+        #self.assertEqual('', error)
+        from xml.dom.minidom import parseString
+        dom = parseString(output)
+        return dom.documentElement.attributes['revision_id'].value
 
     def getTransportURL(self, relpath=None, username=None):
         """Return the base URL for the tests."""
