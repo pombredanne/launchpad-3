@@ -477,8 +477,7 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
 
-    # XXX: salgado, 2008-11-05: https://launchpad.net/bugs/294117
-    def disabled_test_push_triggers_mirror_request(self):
+    def test_push_triggers_mirror_request(self):
         # Pushing new data to a branch should trigger a mirror request.
         remote_url = self.getTransportURL(
             '~testuser/+junk/totally-new-branch')
@@ -624,7 +623,7 @@ class SmartserverTests(SSHTestCase):
             self.getTransportURL('~sabdfl/+junk/ro-branch'))
         self.assertEqual(revision, remote_revision)
 
-    def disabled_test_cant_write_to_readonly_branch(self):
+    def test_cant_write_to_readonly_branch(self):
         # XXX: JonathanLange 2008-10-07 bug=269178: Disabled this test due to
         # intermittent, inexplicable failure.
         # We can't write to a read-only branch.
@@ -638,8 +637,7 @@ class SmartserverTests(SSHTestCase):
 
         # Push the local branch to the remote url
         remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
-        self.assertRaises(
-            LockFailed, self.push, self.local_branch_path, remote_url)
+        self.assertCantPush(self.local_branch_path, remote_url)
 
     def test_can_read_mirrored_branch(self):
         # Users should be able to read mirrored branches that they own.
