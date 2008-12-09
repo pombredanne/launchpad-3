@@ -11,7 +11,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.branchcontext import IBranchContainer
+from canonical.launchpad.interfaces.branchcontainer import IBranchContainer
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 

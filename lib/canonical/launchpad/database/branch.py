@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.database.branchcontext import (
+from canonical.launchpad.database.branchcontainer import (
     JunkContainer, PackageContainer)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
@@ -144,7 +144,7 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if self.product is None:
             if self.distroseries is None:
-                return JunkContainer()
+                return JunkContainer(self.owner)
             else:
                 return PackageContainer(
                     self.distroseries, self.sourcepackagename)
