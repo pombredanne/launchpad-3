@@ -235,12 +235,22 @@ class IArchive(IHasOwner):
     @operation_parameters(
         name=TextLine(title=_("Source package name"), required=False),
         version=TextLine(title=_("Version"), required=False),
-        status=Int(title=_("Package Publishing Status"), required=False),
+        status=Choice(
+            title=_('Package Publishing Status'),
+            description=_('The status of this publishing record'),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType, 
+            required=False),
         distroseries=Reference(
             # Really IDistroSeries, fixed below to avoid circular import.
             Interface,
             title=_("Distroseries name"), required=False),
-        pocket=TextLine(title=_("Pocket name"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
         exact_match=Bool(
             title=_("Exact Match"),
             description=_("Whether or not to filter source names by exact"
@@ -900,13 +910,20 @@ IArchive['syncSource'].queryTaggedValue(
 
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.publishing import (
-    ISourcePackagePublishingHistory)
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus)
 IArchive['getPublishedSources'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['distroseries'].schema = IDistroSeries
 IArchive['getPublishedSources'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = ISourcePackagePublishingHistory
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['status'].vocabulary = PackagePublishingStatus
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
 
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.

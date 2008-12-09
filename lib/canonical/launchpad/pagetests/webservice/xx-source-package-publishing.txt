@@ -31,7 +31,7 @@ Search by publishing status:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     status=2).jsonBody()
+    ...     status="Published").jsonBody()
     >>> print_publications(pubs)
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
@@ -47,7 +47,7 @@ Search by distroseries and pocket:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     distro_series=warty['self_link'], pocket=0).jsonBody()
+    ...     distro_series=warty['self_link'], pocket="Release").jsonBody()
     >>> print_publications(pubs)
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
