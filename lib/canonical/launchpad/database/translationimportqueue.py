@@ -599,20 +599,65 @@ class TranslationImportQueue:
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
 
-    def _findMostExactMatch(self, entries):
-        """Evaluate the specificity of the entries.
+    def _findMatchingEntry(self, path, importer, potemplate, pofile,
+                           sourcepackagename, distroseries, productseries):
+        """Find an entry that best matches the given parameters, if such an
+        entry exists.
 
-        Check if the first entry is unique in its specificity. If not, an
-        exception is raised. An exception is used because None is needed to
-        indicate an empty list.
-        There are three cases from less to more specific:
+        When the user uploads a file, we need to figure out whether to update
+        an existing entry or create a new one.  There may be zero, one, or
+        multiple entries that match the new upload.  If it's more than one,
+        that will be because one matching entry is more specific than the
+        other.  'More specific' refers to how well the import location has
+        been specified for this entry.  There are three cases, ordered from
+        least specific to most specific:
+
         1. potemplate and pofile are None,
         2. potemplate is not None but pofile is None,
         3. potemplate and pofile are both not None.
 
-        :param entries: A list of TranslationImportQueueEntry objects, sorted
-            by specificity.
-        :return: The first entry or None."""
+        If no exactly matching entry can be found, the next more specific
+        entry is chosen, if it exists. If there is more than one such entry,
+        there is no best choice and `TranslationImportQueueConflictError`
+        is raised.
+
+        :return: The matching entry or None, if no matching entry was found
+            at all."""
+
+        # Find possible candidates by querying the database.
+        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
+        queries.append(
+            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
+        # Deopending on how specific the new entry is, potemplate and pofile
+        # may be None.
+        if potemplate is not None:
+            queries.append(
+                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
+                    potemplate))
+        if pofile is not None:
+            queries.append(
+                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
+        if sourcepackagename is not None:
+            # The import is related with a sourcepackage and a distribution.
+            queries.append(
+                'TranslationImportQueueEntry.sourcepackagename = %s' % (
+                    sqlvalues(sourcepackagename)))
+            queries.append(
+                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
+                    distroseries))
+        else:
+            # The import is related with a productseries.
+            assert productseries is not None, (
+                'sourcepackagename and productseries cannot be both None at'
+                ' the same time.')
+
+            queries.append(
+                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
+                    productseries))
+        # Order the results by level of specificity.
+        entries = TranslationImportQueueEntry.select(
+                ' AND '.join(queries),
+                orderBy="potemplate IS NULL DESC, pofile IS NULL DESC")
 
         # Deal with the simple cases.
         if entries.count() == 0:
@@ -620,12 +665,17 @@ class TranslationImportQueue:
         if entries.count() == 1:
             return entries[0]
 
-        # At least two entries are available, so check if they are equal in
-        # specificity.
-        if (entries[0].pofile is None) == (entries[1].pofile is None):
-            if ((entries[0].potemplate is None) ==
-                (entries[1].potemplate is None)):
-                raise TranslationImportQueueConflictError
+        # Check that the top two entries differ in levels of specificity.
+        # Other entries don't matter because they are either of the same
+        # or even greater specificity, as specified in the query.
+        pofile_specificity_is_equal = (
+            (entries[0].pofile is None) == (entries[1].pofile is None))
+        potemplate_specificity_is_equal = (
+            (entries[0].potemplate is None) ==
+            (entries[1].potemplate is None))
+        if pofile_specificity_is_equal and potemplate_specificity_is_equal:
+            raise TranslationImportQueueConflictError
+
         return entries[0]
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
@@ -666,47 +716,9 @@ class TranslationImportQueue:
             name=filename, size=size, file=file,
             contentType=format_importer.content_type)
 
-        # Check if we got already this request from this user.
-        # The following query selects entries from the queue that match
-        # this request OR are more specific. There are three cases from
-        # less to more specific:
-        # 1. potemplate and pofile are None,
-        # 2. potemplate is not None but pofile is None,
-        # 3. potemplate and pofile are both not None.
-        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
-        queries.append(
-            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
-        if potemplate is not None:
-            queries.append(
-                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
-                    potemplate))
-        if pofile is not None:
-            queries.append(
-                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
-        if sourcepackagename is not None:
-            # The import is related with a sourcepackage and a distribution.
-            queries.append(
-                'TranslationImportQueueEntry.sourcepackagename = %s' % (
-                    sqlvalues(sourcepackagename)))
-            queries.append(
-                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
-                    distroseries))
-        else:
-            # The import is related with a productseries.
-            assert productseries is not None, (
-                'sourcepackagename and productseries cannot be both None at'
-                ' the same time.')
-
-            queries.append(
-                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
-                    productseries))
-        # Query and order by level of specificity.
-        entries = TranslationImportQueueEntry.select(
-                ' AND '.join(queries),
-                orderBy="potemplate IS NULL DESC, pofile IS NULL DESC")
-        # Evaluate the result
         try:
-            entry = self._findMostExactMatch(entries)
+            entry = self._findMatchingEntry(path, importer, potemplate,
+                    pofile, sourcepackagename, distroseries, productseries)
         except TranslationImportQueueConflictError:
             return None
         if entry is None:

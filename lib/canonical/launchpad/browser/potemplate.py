@@ -260,9 +260,14 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 self.upload()
 
     def upload(self):
-        """Handle a form submission to change the contents of the template."""
-        # XXX henninge 20008-12-03 bug=192925: This code is doubled for
-        # productseries and pofile and should be unified into one.
+        """Handle a form submission to change the contents of the template.
+
+        Uploads may fail if there are already entries with the same path name
+        and uploader (importer) in the queue and the new upload cannot be
+        safely matched to any of them.  The user will be informed about the
+        failure with a warning message."""
+        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # productseries and pofile and should be unified.
         file = self.request.form.get('file')
         if not isinstance(file, FileUpload):
             if not file:
@@ -347,6 +352,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                         num,
                         canonical_url(self.context.translationtarget))))
                 if len(conflicts) > 0:
+                    ul_conflicts = "<ul><li>%s</li></ul>" % (
+                        "</li><li>".join(map(cgi.escape, conflicts)))
                     self.request.response.addWarningNotification(
                         structured(
                         "%d files could not be uploaded because their "
@@ -358,10 +365,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                         "want to upload to, and select the upload option "
                         "from there.<br /> "
                         "The conflicting file names were:<br /> "
-                        "<ul><li>%s</li></ul>" %(
-                             len(conflicts),
-                             "</li><li>".join(
-                                map(cgi.escape,conflicts)))))
+                        "%s" % (len(conflicts), ul_conflicts)))
             else:
                 if len(conflicts) == 0:
                     self.request.response.addWarningNotification(

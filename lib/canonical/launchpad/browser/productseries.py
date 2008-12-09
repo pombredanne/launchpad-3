@@ -382,9 +382,13 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
     def translationsUpload(self):
         """Upload new translatable resources related to this IProductSeries.
-        """
-        # XXX henninge 20008-12-03 bug=192925: This code is doubled for
-        # potemplate and pofile and should be unified into one.
+
+        Uploads may fail if there are already entries with the same path name
+        and uploader (importer) in the queue and the new upload cannot be
+        safely matched to any of them.  The user will be informed about the
+        failure with a warning message."""
+        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # potemplate and pofile and should be unified.
 
         file = self.request.form['file']
         if not isinstance(file, FileUpload):
@@ -464,6 +468,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                         num,
                         canonical_url(self.context))))
                 if len(conflicts) > 0:
+                    ul_conflicts = "<ul><li>%s</li></ul>" % (
+                        "</li><li>".join(map(cgi.escape, conflicts)))
                     self.request.response.addWarningNotification(
                         structured(
                         "%d files could not be uploaded because their "
@@ -475,10 +481,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                         "want to upload to, and select the upload option "
                         "from there.<br /> "
                         "The conflicting file names were:<br /> "
-                        "<ul><li>%s</li></ul>" %(
-                             len(conflicts),
-                             "</li><li>".join(
-                                map(cgi.escape,conflicts)))))
+                        "%s" % (len(conflicts), ul_conflicts)))
             else:
                 if len(conflicts) == 0:
                     self.request.response.addWarningNotification(

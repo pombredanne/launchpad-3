@@ -1084,8 +1084,7 @@ We will need this helper function to print the queue content.
     ...         template = 'None'
     ...         if entry.potemplate is not None:
     ...             template = entry.potemplate.name
-    ...         print '%s | %s | %s' % (
-    ...             context, template, entry.path)
+    ...         print '%s | %s | %s' % (context, template, entry.path)
 
 Current entries in the queue are:
 
@@ -1133,26 +1132,30 @@ It is possible to update the content of an entry in the queue.
     ...     return None
     >>> from zope.security.proxy import removeSecurityProxy
     >>> transaction.commit()
-    >>> existing_entry = removeSecurityProxy(
-    ...                      getFirstEvoEntryByPath(queue, 'foo.pot'))
+
+    >>> existing_entry = getFirstEvoEntryByPath(queue, 'foo.pot')
+    >>> existing_entry = removeSecurityProxy(existing_entry)
     >>> print existing_entry.content.read()
     Foo template
-    >>> entry = removeSecurityProxy(translationimportqueue.addOrUpdateEntry(
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     "foo.pot", "New content", is_published, rosetta_experts,
     ...     productseries=evolution_productseries,
-    ...     potemplate=evolution_22_test_template))
+    ...     potemplate=evolution_22_test_template)
+    >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
     >>> entry is existing_entry
     True
     >>> print entry.content.read()
     New content
 
-Not specifying the potemplate in this situation still selects entry 35 on a
-best match basis. The entry is updated.
+Not specifying the potemplate in this situation still selects the same entry
+on a best match basis. The entry is updated.
 
-    >>> entry = removeSecurityProxy(translationimportqueue.addOrUpdateEntry(
+    >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     "foo.pot", "Even newer content", is_published, rosetta_experts,
-    ...     productseries=evolution_productseries))
+    ...     productseries=evolution_productseries)
+    >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
     >>> entry is existing_entry
     True
@@ -1161,10 +1164,11 @@ best match basis. The entry is updated.
 
 Same goes for pofile entries.
 
-    >>> existing_entry = removeSecurityProxy(
-    ...                      getFirstEvoEntryByPath(queue, 'es.po'))
+    >>> existing_entry = getFirstEvoEntryByPath(queue, 'es.po')
+    >>> existing_entry = removeSecurityProxy(existing_entry)
     >>> print existing_entry.content.read()
     Spanish translation
+
     >>> entry = removeSecurityProxy(translationimportqueue.addOrUpdateEntry(
     ...     "es.po", "New po content", is_published, rosetta_experts,
     ...     productseries=evolution_productseries))
@@ -1208,9 +1212,10 @@ updated.
 Ambiguity is also resolved when a file is uploaded to the product first and
 then to a specific template.
 
-    >>> existing_entry = removeSecurityProxy(queue.addOrUpdateEntry(
+    >>> existing_entry = queue.addOrUpdateEntry(
     ...     "bar.pot", "Bar content", is_published, rosetta_experts,
-    ...     productseries=evolution_productseries))
+    ...     productseries=evolution_productseries)
+    >>> existing_entry = removeSecurityProxy(existing_entry)
     >>> entry = queue.addOrUpdateEntry(
     ...     "bar.pot", "Bar content", is_published, rosetta_experts,
     ...     productseries=evolution_productseries,
@@ -1227,9 +1232,10 @@ These files are put into different entries.
 
 When uploading to the prouct now, the best matching entry is updated.
 
-    >>> entry = removeSecurityProxy(queue.addOrUpdateEntry(
+    >>> entry = queue.addOrUpdateEntry(
     ...     "bar.pot", "New bar content", is_published, rosetta_experts,
-    ...     productseries=evolution_productseries))
+    ...     productseries=evolution_productseries)
+    >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
     >>> entry is existing_entry
     True
