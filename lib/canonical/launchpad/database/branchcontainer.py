@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'JunkContainer',
     'PackageContainer',
+    'PersonContainer',
     ]
 
 from zope.component import getUtility
@@ -14,22 +14,6 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.branchcontainer import IBranchContainer
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-
-class JunkContainer:
-    implements(IBranchContainer)
-
-    name = '+junk'
-
-    def __init__(self, person):
-        self.person = person
-
-    def getBranches(self):
-        from canonical.launchpad.database import Branch
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            Branch, Branch.owner == self.person, Branch.product == None,
-            Branch.distroseries == None, Branch.sourcepackagename == None)
 
 
 class PackageContainer:
@@ -52,3 +36,19 @@ class PackageContainer:
             self.distroseries.distribution.name,
             self.distroseries.name,
             self.sourcepackagename.name)
+
+
+class PersonContainer:
+    implements(IBranchContainer)
+
+    name = '+junk'
+
+    def __init__(self, person):
+        self.person = person
+
+    def getBranches(self):
+        from canonical.launchpad.database import Branch
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            Branch, Branch.owner == self.person, Branch.product == None,
+            Branch.distroseries == None, Branch.sourcepackagename == None)
