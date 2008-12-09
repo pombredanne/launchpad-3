@@ -1278,6 +1278,8 @@ def website_request_to_web_service_request(website_request):
     """
     body = website_request.bodyStream.getCacheStream().read()
     environ = dict(website_request._environ)
+    # Zope picks up on SERVER_URL when setting the _app_server attribute
+    # of the new request.
     environ['SERVER_URL'] = website_request.getApplicationURL()
     web_service_request = WebServiceClientRequest(body, environ)
     web_service_request.setVirtualHostRoot(names=["api", "beta"])

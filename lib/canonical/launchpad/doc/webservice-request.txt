@@ -1,15 +1,14 @@
 Most of the time, web service requests come through the web service
 layer. But there are times when a request that came through the
-website neeeds to be treated as a web service request. The
-website_request_to_web_service_request method can make the
-transformation.
+website neeeds to be treated as a web service request. It's easy to
+adapt a normal request into an IWebServiceLayer request.
 
-    >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadTestRequest, website_request_to_web_service_request)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.lazr.interfaces.rest import WebServiceLayer
 
     >>> website_request = LaunchpadTestRequest(
     ...     SERVER_URL="http://launchpad.dev/")
-    >>> request = website_request_to_web_service_request(website_request)
+    >>> request = WebServiceLayer(website_request)
     >>> request
     <canonical.launchpad.webapp.servers.WebServiceClientRequest ...>
     >>> request.getApplicationURL()
@@ -19,7 +18,7 @@ This works for HTTPS requests as well as HTTP requests:
 
     >>> website_request = LaunchpadTestRequest(
     ...     SERVER_URL="https://launchpad.dev/")
-    >>> request = website_request_to_web_service_request(website_request)
+    >>> request = WebServiceLayer(website_request)
     >>> request
     <canonical.launchpad.webapp.servers.WebServiceClientRequest ...>
     >>> request.getApplicationURL()
