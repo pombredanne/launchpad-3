@@ -147,6 +147,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -295,6 +296,11 @@ class BranchTraversalMixin:
                 # addition to the user) to identify the branch, and as such
                 # the product isnt't being added to the bag by the internals.
                 getUtility(IOpenLaunchBag).add(branch.product)
+
+                if branch.product.name != product_name:
+                    # This branch was accessed through one of its product's
+                    # aliases, so we must redirect to its canonical URL.
+                    return self.redirectSubTree(canonical_url(branch))
             return branch
         else:
             return super(BranchTraversalMixin, self).traverse(product_name)
@@ -2873,7 +2879,7 @@ class PersonEditWikiNamesView(LaunchpadView):
         context = self.context
         wikinameset = getUtility(IWikiNameSet)
 
-        for w in context.allwikis:
+        for w in context.wiki_names:
             # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
@@ -4571,15 +4577,26 @@ class PersonRelatedSoftwareView(LaunchpadView):
         spec_count, and question_count.
         """
         projects = []
+        user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
-        for pillarname in self._related_projects()[:max_projects]:
+        pillarnames = self._related_projects()[:max_projects]
+        products = [pillarname.pillar for pillarname in pillarnames
+                    if IProduct.providedBy(pillarname.pillar)]
+        bugtask_set = getUtility(IBugTaskSet)
+        product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
+            user, products)
+        for pillarname in pillarnames:
+            pillar = pillarname.pillar
             project = {}
-            project['title'] = pillarname.pillar.title
-            project['url'] = canonical_url(pillarname.pillar)
-            project['bug_count'] = pillarname.pillar.open_bugtasks.count()
-            project['spec_count'] = pillarname.pillar.specifications().count()
-            project['question_count'] = (
-                pillarname.pillar.searchQuestions().count())
+            project['title'] = pillar.title
+            project['url'] = canonical_url(pillar)
+            if IProduct.providedBy(pillar):
+                project['bug_count'] = product_bugtask_counts.get(pillar.id,
+                                                                  0)
+            else:
+                project['bug_count'] = pillar.open_bugtasks.count()
+            project['spec_count'] = pillar.specifications().count()
+            project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)
         return projects
 

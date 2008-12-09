@@ -13,6 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.locals import Join
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
@@ -80,8 +81,7 @@ class Archive(SQLBase):
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
-            assert self.purpose == ArchivePurpose.COPY, (
-                "Only COPY archives can be renamed.")
+            assert self.is_copy, "Only COPY archives can be renamed."
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
@@ -97,6 +97,8 @@ class Archive(SQLBase):
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+
+    publish = BoolCol(dbName='publish', notNull=True, default=True)
 
     private = BoolCol(dbName='private', notNull=True, default=False)
 
@@ -154,6 +156,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.PPA
 
     @property
+    def is_copy(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.COPY
+
+    @property
     def title(self):
         """See `IArchive`."""
         if self.is_ppa:
@@ -161,7 +168,16 @@ class Archive(SQLBase):
             if self.private:
                 title = "Private %s" % title
             return title
-        return '%s for %s' % (self.purpose.title, self.distribution.title)
+        elif self.is_copy:
+            if self.private:
+                title = ("Private copy archive %s for %s" %
+                         (self.name, self.owner.displayname))
+            else:
+                title = ("Copy archive %s for %s" %
+                         (self.name, self.owner.displayname))
+            return title
+        else:
+            return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
     def series_with_sources(self):
@@ -218,8 +234,8 @@ class Archive(SQLBase):
         try:
             postfix = archive_postfixes[self.purpose]
         except KeyError:
-            raise AssertionError("archive_url unknown for purpose: %s" %
-                self.purpose)
+            raise AssertionError(
+                "archive_url unknown for purpose: %s" % self.purpose)
         return urlappend(config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
@@ -599,6 +615,7 @@ class Archive(SQLBase):
     def allowUpdatesToReleasePocket(self):
         """See `IArchive`."""
         purposeToPermissionMap = {
+            ArchivePurpose.COPY : True,
             ArchivePurpose.PARTNER : True,
             ArchivePurpose.PPA : True,
             ArchivePurpose.PRIMARY : False,
@@ -739,6 +756,7 @@ class Archive(SQLBase):
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
+        assert not self.is_copy, "Uploads to copy archives are not allowed."
         if self.is_ppa:
             return user.inTeam(self.owner)
         else:
@@ -1006,40 +1024,49 @@ class ArchiveSet:
     def new(self, purpose, owner, name=None, distribution=None,
             description=None):
         """See `IArchiveSet`."""
+        # XXX, al-maisan, 2008-11-19, bug #299856: copy archives are to be
+        # created with the "publish" flag turned off.
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
         if name is None:
             name = self._getDefaultArchiveNameByPurpose(purpose)
 
+        # Copy archives are to be instantiated with the 'publish' flag turned
+        # off.
+        if purpose == ArchivePurpose.COPY:
+            publish = False
+        else:
+            publish = True
+
         return Archive(
             owner=owner, distribution=distribution, name=name,
-            description=description, purpose=purpose)
+            description=description, purpose=purpose, publish=publish)
 
     def __iter__(self):
         """See `IArchiveSet`."""
         return iter(Archive.select())
 
-    @property
-    def number_of_ppa_sources(self):
+    def getNumberOfPPASourcesForDistribution(self, distribution):
         cur = cursor()
         query = """
              SELECT SUM(sources_cached) FROM Archive
-             WHERE purpose = %s AND private = FALSE
-        """ % sqlvalues(ArchivePurpose.PPA)
+             WHERE purpose = %s AND private = FALSE AND
+                   distribution = %s
+        """ % sqlvalues(ArchivePurpose.PPA, distribution)
         cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
             return 0
         return int(size)
 
-    @property
-    def number_of_ppa_binaries(self):
+    def getNumberOfPPABinariesForDistribution(self, distribution):
         cur = cursor()
         query = """
              SELECT SUM(binaries_cached) FROM Archive
-             WHERE purpose = %s AND private = FALSE
-        """ % sqlvalues(ArchivePurpose.PPA)
+             WHERE purpose = %s AND private = FALSE AND
+                   distribution = %s
+        """ % sqlvalues(ArchivePurpose.PPA, distribution)
         cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
@@ -1062,13 +1089,17 @@ class ArchiveSet:
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(
+        origin = (
+            Archive,
+            Join(SourcePackagePublishingHistory,
+                 SourcePackagePublishingHistory.archive == Archive.id),)
+        results = store.using(*origin).find(
             Archive,
             Archive.signing_key == None,
             Archive.purpose == ArchivePurpose.PPA,
             Archive.enabled == True)
         results.order_by(Archive.date_created)
-        return results
+        return results.config(distinct=True)
 
     def getLatestPPASourcePublicationsForDistribution(self, distribution):
         """See `IArchiveSet`."""

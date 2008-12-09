@@ -1102,8 +1102,11 @@ class RegisterProposalStatus(EnumeratedType):
 
 class RegisterProposalSchema(Interface):
     """The schema to define the form for registering a new merge proposal."""
-    use_template(IBranchMergeProposal,
-                 include=['target_branch'])
+    target_branch = Choice(
+        title=_('Target Branch'),
+        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
+        description=_(
+            "The branch that the source branch will be merged into."))
 
     comment = Text(
         title=_('Initial Comment'), required=False,
@@ -1151,19 +1154,19 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         source_branch = self.context
         target_branch = data['target_branch']
 
+        review_requests = []
+        reviewer = data.get('reviewer')
+        if reviewer is not None:
+            review_requests.append((reviewer, data.get('review_type')))
+
         try:
             # Always default to needs review until we have the wonder of AJAX
             # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                needs_review=True)
-            reviewer = data.get('reviewer')
-            if reviewer is not None:
-                proposal.nominateReviewer(
-                    reviewer, self.user, data.get('review_type'))
-            initial_comment = data.get('comment')
-            if initial_comment is not None:
-                proposal.createComment(self.user, None, initial_comment)
+                needs_review=True, initial_comment=data.get('comment'),
+                review_requests=review_requests)
+
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))

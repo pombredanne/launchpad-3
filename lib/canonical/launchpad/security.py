@@ -1346,8 +1346,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
 
-        # If it's a PPA only allow its owner.
-        if self.obj.archive.is_ppa:
+        # If it's a PPA or a copy archive only allow its owner.
+        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
             return (self.obj.archive.owner and
                     user.inTeam(self.obj.archive.owner))
 
@@ -1363,6 +1363,9 @@ class EditBuildRecord(AdminByBuilddAdmin):
 
 class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
+
+    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
+    # otherwise users are likely to get 403 errors, or worse.
 
     def checkAuthenticated(self, user):
         """Private restricts to admins and archive members."""

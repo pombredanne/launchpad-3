@@ -609,7 +609,7 @@ class IBranch(IHasOwner):
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
-                        "This controls who can modify the branch.")))
+                          "This controls who can modify the branch.")))
 
     reviewer = exported(
         PublicPersonChoice(
@@ -619,6 +619,22 @@ class IBranch(IHasOwner):
             description=_("The reviewer of a branch is the person or team "
                           "that is responsible for reviewing proposals and "
                           "merging into this branch.")))
+
+    # XXX: JonathanLange 2008-11-24: Export these.
+    distroseries = Choice(
+        title=_("Distribution Series"), required=False,
+        vocabulary='DistroSeries',
+        description=_(
+            "The distribution series that this branch belongs to. Branches "
+            "do not have to belong to a distribution series, they can also "
+            "belong to a project or be junk branches."))
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=True,
+        vocabulary='SourcePackageName',
+        description=_(
+            "The source package that this is a branch of. Source package "
+            "branches always belong to a distribution series."))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -756,9 +772,11 @@ class IBranch(IHasOwner):
         "The BranchMergeProposals where this branch is the dependent branch. "
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
+
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
-                         needs_review=False):
+                         needs_review=False, initial_comment=None,
+                         review_requests=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -777,6 +795,9 @@ class IBranch(IHasOwner):
             merge request.
         :param needs_review: Used to specify the the proposal is ready for
             review right now.
+        :param initial_comment: An optional initial comment can be added
+            when adding the new target.
+        :param review_requests: An optional list of (`Person`, review_type).
         """
 
     def getStackedBranches():
@@ -987,16 +1008,18 @@ class IBranchSet(Interface):
     def getBranch(owner, product, branch_name):
         """Return the branch identified by owner/product/branch_name."""
 
-    def new(branch_type, name, registrant, owner, product, url, title=None,
-            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None):
+    def new(branch_type, name, registrant, owner, product=None, url=None,
+            title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            author=None, summary=None, whiteboard=None, date_created=None,
+            distroseries=None, sourcepackagename=None):
         """Create a new branch.
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
 
-        If product is None (indicating a +junk branch) then the owner must not
-        be a team, except for the special case of the ~vcs-imports celebrity.
+        If product, distroseries and sourcepackagename are None (indicating a
+        +junk branch) then the owner must not be a team, except for the
+        special case of the ~vcs-imports celebrity.
         """
 
     def getByProductAndName(product, name):
@@ -1026,6 +1049,20 @@ class IBranchSet(Interface):
         supermirror URL on http://bazaar.launchpad.net/.
 
         Return the default value if no match was found.
+        """
+
+    def getByLPPath(path):
+        """Find the branch associated with an lp: path.
+
+        Recognized formats:
+        "~owner/product/name" (same as unique name)
+        "product/series" (branch associated with a product series)
+        "product" (development focus of product)
+
+        :return: a tuple of `IBranch`, extra_path, series.  Series is the
+            series, if any, used to perform the lookup.
+        :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
+            of `LaunchpadFault`.
         """
 
     def getBranchesToScan():

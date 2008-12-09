@@ -1,27 +1,32 @@
-  Edit a given KarmaAction.
+= The actions that give karma to people =
 
+The list of actions that may give karma to someone can be seen at
+/karmaaction, but only LP admins can access that page.
 
-  Logged in as name16 we go to the /karmaaction page to see the list of
-  KarmaActions we have.
+    >>> user_browser.open('http://launchpad.dev/karmaaction')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...launchpad.Admin...
 
-  >>> print http(r"""
-  ... GET /karmaaction HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> admin_browser.open('http://launchpad.dev/karmaaction')
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'karmas'))
+    Category        Action          Points
+    bugs            Bug Accepted    5
+    ...
 
+From there you can edit any of those actions.
 
-  Then we click on one to edit it.
+    >>> admin_browser.getLink('Bug Accepted').click()
+    >>> admin_browser.title
+    'Edit karma action'
 
-  >>> print http(r"""
-  ... GET /karmaaction/bugcreated HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...New Bug Filed...
-  ...
+    >>> admin_browser.getControl('Title').value = 'Bug accepted'
+    >>> admin_browser.getControl('Points').value = '1'
+    >>> admin_browser.getControl('Change').click()
 
-
-
+    >>> admin_browser.title
+    'Karma actions'
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'karmas'))
+    Category        Action          Points
+    bugs            Bug accepted    1
+    ...

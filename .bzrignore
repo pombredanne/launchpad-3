@@ -36,3 +36,4 @@ xxx-report.*
 lib/canonical/launchpad/apidoc/wadl-development.xml
 lib/canonical/launchpad/apidoc/wadl-test-playground.xml
 trace.log
+test-appserver-layer-trace.log

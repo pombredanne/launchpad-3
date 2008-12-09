@@ -33,8 +33,15 @@
           replace="structure link/render" />
       </div>
 
-      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url">url</a></h2>
+      <h2 style="margin-top: 0">
+        URL:
+        <a tal:condition="ppa_active"
+           tal:attributes="href context/archive_url"
+           tal:content="context/archive_url">url</a>
+        <tal:no-link
+           condition="not: ppa_active"
+           content="context/archive_url">url</tal:no-link>
+      </h2>
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
@@ -50,23 +57,35 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
-      <h2>apt sources.list entries</h2>
+      <div tal:condition="ppa_active">
 
-      <tal:entries replace="structure view/sources_list_entries" />
+        <h2>apt sources.list entries</h2>
+
+        <tal:entries replace="structure view/sources_list_entries" />
+
+        <p id="signing-key"
+	   tal:define="signing_key context/signing_key"
+	   tal:condition="signing_key">
+          This repository is signed with
+          <a tal:attributes="href signing_key/keyserverURL">
+            <code tal:content="signing_key/fingerprint">
+              0123456789012345678901234567890123456789
+            </code>
+          </a> OpenPGP key.
+          Follow <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories">these instructions</a> if you want to
+	  install packages from this PPA.
+        </p>
+
+      </div>
 
       <div id="ppa-dependencies" tal:condition="context/dependencies">
 
         <h3>PPA dependencies</h3>
 
-        <p class="warning message">When installing packages from
-          this PPA you may need to enable one or more of the following
-          PPAs, which have been considered for building packages in
-          this context.</p>
-
         <ul>
            <li tal:repeat="dependency context/dependencies">
              <a tal:attributes="href dependency/dependency/fmt:url"
-                tal:content="dependency/dependency/title" />
+                tal:content="dependency/title" />
              (included <span
                tal:replace="dependency/date_created/fmt:displaydate" />)
            </li>
@@ -82,10 +101,15 @@
 
       <tal:active_ppa condition="ppa_active">
 
-      <tal:contents tal:define="archive context">
+      <!--Disabled section due to performance issues. -->
+      <tal:contents tal:define="archive context"
+                    tal:condition="python: False">
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
+      <p id="package_counters" class="discreet">
+        Package counters and estimated archive size temporarily unavailable.
+      </p>
 
       <div class="actions" style="float:right;">
         <tal:builds

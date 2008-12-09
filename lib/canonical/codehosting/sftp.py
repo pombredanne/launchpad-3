@@ -50,6 +50,13 @@ class FatLocalTransport(LocalTransport):
     We need these so that we can implement SFTP over a Bazaar transport.
     """
 
+    def clone(self, offset=None):
+        if offset is None:
+            abspath = self.base
+        else:
+            abspath = self.abspath(offset)
+        return FatLocalTransport(abspath)
+
     def writeChunk(self, name, offset, data):
         """Write a chunk of data to file `name` at `offset`."""
         abspath = self._abspath(name)

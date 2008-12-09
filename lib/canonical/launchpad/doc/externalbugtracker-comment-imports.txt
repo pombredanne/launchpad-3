@@ -268,9 +268,7 @@ getImportedBugMessages(). Messages that are linked to the bug watch but
 don't have a remote_comment_id are comments waiting to be pushed to the
 remote tracker and will not be returned by getImportedBugMessages()
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> factory = LaunchpadObjectFactory()
     >>> bug_watch2 = factory.makeBugWatch('42')
     >>> bug_watch2.bug.newMessage(
     ...     owner=bug_watch2.bug.owner, subject='None',
