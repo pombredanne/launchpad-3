@@ -22,3 +22,12 @@ class IBranchContainer(Interface):
 
     def getBranches():
         """Return the branches in this container."""
+
+    # TODO: add lifecycle_statuses filter
+    # TODO: add visible_by_user filter
+    # TODO: add sort_by option
+    # TODO: add quantity / limit option
+    # TODO: add getTargetBranchesForUsersMergeProposals, whatever that is.
+    # TODO: add subscribed-by-user filter
+    # TODO: add owned-by-user filter
+    # TODO: add registered-by-user filter
