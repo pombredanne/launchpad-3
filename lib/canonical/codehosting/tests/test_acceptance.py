@@ -26,7 +26,8 @@ from canonical.codehosting.tests.helpers import (
     adapt_suite, LoomTestMixin)
 from canonical.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting import (
+    branch_id_to_path, get_bzr_path, get_bzr_plugins_path)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
@@ -171,36 +172,38 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         return output.getvalue()
 
     def get_bzr_path(self):
-        return os.path.join(config.root, 'sourcecode', 'bzr', 'bzr')
+        return get_bzr_path()
 
-    def push(self, local_directory, remote_url, **options):
+    def push(self, local_directory, remote_url, use_existing_dir=False):
         """Push the local branch to the given URL.
 
         This method is used to test the end-to-end behaviour of pushing Bazaar
         branches to the SFTP server.
         """
+        args = ['push', '-d', local_directory, remote_url]
+        if use_existing_dir:
+            args.append('--use-existing-dir')
         output, error = self.run_bzr_subprocess(
-            ['push', '-d', local_directory, remote_url],
-            env_changes={'BZR_SSH': 'paramiko'})
+            args, env_changes={'BZR_SSH': 'paramiko',
+                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()})
         return output
 
-    def assertCantPush(self, local_directory, remote_url, **options):
+    def assertCantPush(self, local_directory, remote_url):
         """
-        XXX
+        
         """
         output, error = self.run_bzr_subprocess(
             ['push', '-d', local_directory, remote_url],
-            env_changes={'BZR_SSH': 'paramiko'}, retcode=3)
-        last_line = error.splitlines()[-1]
-        assert ('ERROR: Permission denied:' in last_line or
-                'ERROR: Transport operation not possible:' in last_line), last_line
-        return output
+            env_changes={'BZR_SSH': 'paramiko',
+                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()}, retcode=3)
+        return error.splitlines()[-1]
 
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL."""
         output, error = self.run_bzr_subprocess(
             ['cat-revision', '-r', 'branch:' + remote_url],
-            env_changes={'BZR_SSH': 'paramiko'})
+            env_changes={'BZR_SSH': 'paramiko',
+                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()})
         #self.assertEqual('', error)
         from xml.dom.minidom import parseString
         dom = parseString(output)
@@ -300,7 +303,8 @@ class AcceptanceTests(SSHTestCase):
         """Assert that there's no branch at 'url'."""
         output, error = self.run_bzr_subprocess(
             ['cat-revision', '-r', 'branch:' + url],
-            env_changes={'BZR_SSH': 'paramiko'},
+            env_changes={'BZR_SSH': 'paramiko',
+                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
             retcode=3)
         last_line = error.splitlines()[-1]
         assert 'ERROR: Not a branch:' in last_line
@@ -540,7 +544,10 @@ class AcceptanceTests(SSHTestCase):
         # The Bazaar client forwards the error from the SFTP server. We don't
         # care about that error for this test, so just swallow it. The error
         # we care about is the one that cmd_push raises.
-        self.assertCantPush(self.local_branch_path, remote_url)
+        last_line = self.assertCantPush(self.local_branch_path, remote_url)
+        assert ('ERROR: Permission denied:' in last_line or
+                'ERROR: Transport operation not possible:' in last_line), last_line
+
         # XXX: JonathanLange 2008-04-07: In the SFTP test, the authserver logs
         # a fault which comes back to us (although a little undesirable). Here
         # we flush the test logs so that it doesn't fail the run.
@@ -554,7 +561,9 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('sabdfl', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.assertCantPush(self.local_branch_path, remote_url)
+        last_line = self.assertCantPush(self.local_branch_path, remote_url)
+        assert ('ERROR: Permission denied:' in last_line or
+                'ERROR: Transport operation not possible:' in last_line), last_line
 
     def disable_test_cant_push_to_existing_hosted_branch_with_revisions(self):
         # XXX: JonathanLange 2007-08-07, We shouldn't be able to push to
@@ -647,12 +656,10 @@ class SmartserverTests(SSHTestCase):
         # does not exist (the other error message possibilities are covered by
         # unit tests).
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
-        error = self.assertRaises(
-            PermissionDenied,
-            self.push, self.local_branch_path, remote_url)
         message = "Project 'no-such-product' does not exist."
+        last_line = self.assertCantPush(self.local_branch_path, remote_url)
         self.assertTrue(
-            message in str(error), '%r not in %r' % (message, str(error)))
+            message in last_line, '%r not in %r' % (message, last_line))
 
 
 def make_server_tests(base_suite, servers):
