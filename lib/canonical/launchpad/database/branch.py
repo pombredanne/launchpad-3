@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchcontainer import (
-    PackageContainer, PersonContainer)
+    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -149,7 +149,7 @@ class Branch(SQLBase):
                 return PackageContainer(
                     self.distroseries, self.sourcepackagename)
         else:
-            return self.product
+            return ProductContainer(self.product)
 
     @property
     def revision_history(self):
