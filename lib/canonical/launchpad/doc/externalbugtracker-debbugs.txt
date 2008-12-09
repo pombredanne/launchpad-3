@@ -101,17 +101,12 @@ tested later.
     308994: open important
 
 The lastchecked attribute got updated for each bug watch, so no more
-watches are in need of an update. However, one watch will still be
-returned by getBugWatchesNeedingUpdate() because it has unpushed
-comments (see Pushing comments to DebBugs, below).
+watches are in need of an update.
 
     >>> flush_database_updates()
     >>> watches = debbugs.getBugWatchesNeedingUpdate(23)
     >>> watches.count()
-    1
-
-    >>> print watches[0].remotebug, watches[0].unpushed_comments.count()
-    308994 6
+    0
 
 And the linked bugtasks got updated:
 
