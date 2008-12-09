@@ -7,33 +7,33 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.database.branchcontext import (
-    JunkContext, PackageContext)
+    JunkContainer, PackageContainer)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class TestJunkContext(TestCaseWithFactory):
+class TestJunkContainer(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def test_name(self):
         # The name of a junk context is '+junk'.
-        context = JunkContext(self.factory.makePerson())
+        context = JunkContainer(self.factory.makePerson())
         self.assertEqual('+junk', context.name)
 
     def test_getBranches_empty(self):
         person = self.factory.makePerson()
-        context = JunkContext(person)
+        context = JunkContainer(person)
         self.assertEqual([], list(context.getBranches()))
 
     def test_getBranches_some(self):
         person = self.factory.makePerson()
-        context = JunkContext(person)
+        context = JunkContainer(person)
         branch = self.factory.makeBranch(owner=person, product=None)
         self.assertEqual([branch], list(context.getBranches()))
 
 
-class TestPackageContext(TestCaseWithFactory):
+class TestPackageContainer(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -41,7 +41,7 @@ class TestPackageContext(TestCaseWithFactory):
         # The name of a package context is distro/series/sourcepackage
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
-        context = PackageContext(distroseries, sourcepackagename)
+        context = PackageContainer(distroseries, sourcepackagename)
         self.assertEqual(
             '%s/%s/%s' % (
                 distroseries.distribution.name,
@@ -51,13 +51,13 @@ class TestPackageContext(TestCaseWithFactory):
     def test_getBranches_empty(self):
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
-        context = PackageContext(distroseries, sourcepackagename)
+        context = PackageContainer(distroseries, sourcepackagename)
         self.assertEqual([], list(context.getBranches()))
 
     def test_getBranches_some(self):
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
-        context = PackageContext(distroseries, sourcepackagename)
+        context = PackageContainer(distroseries, sourcepackagename)
         branch = self.factory.makeBranch(
             distroseries=distroseries, sourcepackagename=sourcepackagename)
         self.assertEqual([branch], list(context.getBranches()))

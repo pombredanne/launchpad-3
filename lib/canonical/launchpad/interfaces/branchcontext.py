@@ -4,12 +4,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'IBranchContext',
+    'IBranchContainer',
     ]
 
 from zope.interface import Interface, Attribute
 
 
-class IBranchContext(Interface):
+class IBranchContainer(Interface):
 
     name = Attribute("The name of the context.")

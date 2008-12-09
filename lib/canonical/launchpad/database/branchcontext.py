@@ -1,23 +1,23 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Branch contexts."""
+"""Branch containers."""
 
 __metaclass__ = type
 __all__ = [
-    'JunkContext',
-    'PackageContext',
+    'JunkContainer',
+    'PackageContainer',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.branchcontext import IBranchContext
+from canonical.launchpad.interfaces.branchcontext import IBranchContainer
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
-class JunkContext:
-    implements(IBranchContext)
+class JunkContainer:
+    implements(IBranchContainer)
 
     name = '+junk'
 
@@ -32,8 +32,8 @@ class JunkContext:
             Branch.distroseries == None, Branch.sourcepackagename == None)
 
 
-class PackageContext:
-    implements(IBranchContext)
+class PackageContainer:
+    implements(IBranchContainer)
 
     def __init__(self, distroseries, sourcepackagename):
         self.distroseries = distroseries
