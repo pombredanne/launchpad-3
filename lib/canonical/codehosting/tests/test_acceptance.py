@@ -288,7 +288,12 @@ class AcceptanceTests(SSHTestCase):
 
     def assertNotBranch(self, url):
         """Assert that there's no branch at 'url'."""
-        self.assertRaises(NotBranchError, bzrlib.branch.Branch.open, url)
+        output, error = self.run_bzr_subprocess(
+            ['cat-revision', '-r', 'branch:' + url],
+            env_changes={'BZR_SSH': 'paramiko'},
+            retcode=3)
+        last_line = error.splitlines()[-1]
+        assert 'ERROR: Not a branch:' in last_line
 
     def addRevisionToBranch(self, branch):
         """Add a new revision in the database to the given database branch."""
