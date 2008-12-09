@@ -299,6 +299,9 @@ class CodeImportNewView(CodeImportBaseView):
         # Check for an existing branch owned by the vcs-imports
         # for the product and name specified.
         if data.get('product') and data.get('branch_name'):
+            # XXX: JonathanLange 2008-11-27 spec=package-branches: This should
+            # just create the branch and then catch the
+            # BranchCreationException.
             existing_branch = getUtility(IBranchSet).getBranch(
                 getUtility(ILaunchpadCelebrities).vcs_imports,
                 data['product'],

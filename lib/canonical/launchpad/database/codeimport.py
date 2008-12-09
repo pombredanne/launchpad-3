@@ -195,6 +195,9 @@ class CodeImportSet:
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         branch_set = getUtility(IBranchSet)
         if branch_set.getBranch(vcs_imports, product, branch_name):
+            # XXX: JonathanLange 2008-11-27 spec=package-branches: This should
+            # just create the branch, catch the BranchCreationException and
+            # then re-raise with a better error message.
             raise BranchCreationException(
                 "A branch already exists for the %s project owned by "
                 "vcs-imports with the name %s" % (product.name, branch_name))

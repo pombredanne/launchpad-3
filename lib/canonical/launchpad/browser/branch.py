@@ -529,6 +529,9 @@ class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
     def validate_branch_name(self, owner, product, branch_name):
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Don't look
+        # before you leap. Instead try to create the branch and then populate
+        # the error field.
         if not getUtility(IBranchSet).isBranchNameAvailable(
             owner, product, branch_name):
             # There is a branch that has the branch_name specified already.

@@ -1058,7 +1058,8 @@ class BranchSet:
 
     def getByUniqueName(self, unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name."""
-        # import locally to avoid circular imports
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
+        # source package branches.
         match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
         if match is None:
             return default
@@ -1072,6 +1073,9 @@ class BranchSet:
 
     @staticmethod
     def _getByUniqueNameElements(owner_name, product_name, branch_name):
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Not sure why
+        # this is using direct SQL instead of Storm. Also not sure whether
+        # this method makes sense in source package branch land.
         if product_name == '+junk':
             query = ("Branch.owner = Person.id"
                      + " AND Branch.product IS NULL"
@@ -1090,6 +1094,11 @@ class BranchSet:
     @classmethod
     def getByLPPath(klass, path):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This
+        # implementation needs to be updated to handle five-part source
+        # package branches and three-part source package branches. Might also
+        # be a good idea to support the +dev alias (or whatever the spec
+        # suggests).
         path_segments = path.split('/', 3)
         series_name = None
         if len(path_segments) > 3:
@@ -1160,6 +1169,8 @@ class BranchSet:
         # Left-join Product so that we still publish +junk branches.
         prejoin = store.using(
             LeftJoin(Branch, Product, Branch.product == Product.id), Person)
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This pre-join
+        # isn't good enough to handle source package branches.
         return (branch for (owner, product, branch) in prejoin.find(
             (Person, Product, Branch),
             Branch.branch_type != BranchType.REMOTE,
@@ -1400,6 +1411,9 @@ class BranchSet:
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Why the hell is
+        # this using SQL? In any case, we want to change this to allow source
+        # packages.
         return Branch.select("""
             BranchMergeProposal.target_branch = Branch.id
             AND BranchMergeProposal.registrant = %s
