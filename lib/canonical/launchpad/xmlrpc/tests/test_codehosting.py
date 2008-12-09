@@ -432,12 +432,12 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # on, then _getBranchPullInfo returns (id, url, unique_name,
         # default_branch_unique_name).
         product = self.factory.makeProduct()
-        self.factory.enableDefaultStackingForProduct(product)
+        default_branch = self.factory.enableDefaultStackingForProduct(product)
         branch = self.factory.makeBranch(product=product)
         info = self.storage._getBranchPullInfo(branch)
         self.assertEqual(
             (branch.id, branch.getPullURL(), branch.unique_name,
-             '/' + product.default_stacked_on_branch.unique_name), info)
+             '/' + default_branch.unique_name), info)
 
     def test_getBranchPullInfo_private_branch(self):
         # We don't want to stack mirrored branches onto private branches:

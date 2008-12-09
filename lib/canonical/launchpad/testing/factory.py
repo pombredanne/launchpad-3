@@ -449,6 +449,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         # development focus series.
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.user_branch = branch
+        return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,

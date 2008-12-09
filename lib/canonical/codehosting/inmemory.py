@@ -258,6 +258,7 @@ class FakeObjectFactory(ObjectFactory):
             branch = self.makeBranch(product=product)
         branch._mirrored = True
         product.development_focus.user_branch = branch
+        return branch
 
 class FakeBranchPuller:
 
