@@ -833,11 +833,6 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def getBranch(self, owner, product, branch_name):
-        """See `IBranchSet`."""
-        return Branch.selectOneBy(
-            owner=owner, product=product, name=branch_name)
-
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
 
@@ -1366,17 +1361,6 @@ class BranchSet:
                 Product, Branch.product == Product.id)]
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
-
-    def getHostedBranchesForPerson(self, person):
-        """See `IBranchSet`."""
-        branches = Branch.select("""
-            Branch.branch_type = %s
-            AND Branch.owner IN (
-            SELECT TeamParticipation.team
-            FROM TeamParticipation
-            WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(BranchType.HOSTED, person))
-        return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):

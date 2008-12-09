@@ -84,28 +84,6 @@ class TestBranchSet(TestCase):
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
         self.assertEqual(original_branches[1:], latest_branches)
 
-    def test_getHostedBranchesForPerson(self):
-        """The hosted branches for a person are all of the branches without
-        urls that are owned by that person, or a team that the person is in.
-        """
-        branch_owner = getUtility(IPersonSet).get(12)
-        login_person(branch_owner)
-        try:
-            branch_set = getUtility(IBranchSet)
-            branches = sorted(
-                branch.unique_name for branch in
-                branch_set.getHostedBranchesForPerson(branch_owner))
-            expected = [
-                u'~landscape-developers/landscape/trunk',
-                u'~name12/gnome-terminal/mirrored',
-                u'~name12/gnome-terminal/pushed',
-                u'~name12/gnome-terminal/scanned',
-                u'~name12/landscape/feature-x',
-                ]
-            self.assertEqual(expected, branches)
-        finally:
-            logout()
-
 
 class TestBranchSetNew(TestCaseWithFactory):
     """Tests for BranchSet.new()."""
@@ -1048,35 +1026,6 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         """One user can't create +junk branches owned by another."""
         self.assertPolicyCheckRaises(
             BranchCreatorNotOwner, self.albert, self.doug)
-
-
-class TestBranchSetGetBranches(TestCase):
-    """Make sure that the branch set gets the correct branches."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
-
-    def test_get_branch(self):
-        factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch()
-        self.assertEqual(
-            branch,
-            BranchSet().getBranch(branch.owner, branch.product, branch.name))
-
-    def test_get_junk_branch(self):
-        factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch(product=None)
-        self.assertTrue(branch.product is None)
-        self.assertEqual(
-            branch,
-            BranchSet().getBranch(branch.owner, None, branch.name))
 
 
 def test_suite():
