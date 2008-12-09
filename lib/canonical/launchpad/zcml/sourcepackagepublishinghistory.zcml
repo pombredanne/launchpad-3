@@ -51,6 +51,13 @@
       />
   </browser:pages>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
+    path_expression="string:+sourcepub"
+    attribute_to_parent="archive"
+    urldata="canonical.launchpad.browser.publishing.SourcePublicationURL"
+  />
+
   <!-- SourcePackageFilePublishing -->
   <class class="canonical.launchpad.database.SourcePackageFilePublishing">
     <allow
