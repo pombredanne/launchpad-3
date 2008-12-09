@@ -248,6 +248,9 @@ class BugWatch(SQLBase):
         store = Store.of(self)
         # If a comment is linked to a bug watch and has a
         # remote_comment_id, it means it's imported.
+        # XXX gmb 2008-12-09 bug 244768:
+        #     The Not() needs to be in this find() call due to bug
+        #     244768; we should remove it once that is solved.
         return store.find(
             BugMessage,
             BugMessage.bug == self.bug.id,
