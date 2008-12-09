@@ -432,7 +432,12 @@ class LaunchpadObjectFactory(ObjectFactory):
         return branch
 
     def enableDefaultStackingForProduct(self, product, branch=None):
-        """XXX write me!"""
+        """Give 'product' a default stacked-on branch.
+
+        :param product: The product to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.  If not supplied, a fresh branch will be created.
+        """
         if branch is None:
             branch = self.makeBranch(product=product)
         # 'branch' might be private, so we remove the security proxy to get at
