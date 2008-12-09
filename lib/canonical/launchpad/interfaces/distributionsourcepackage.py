@@ -73,14 +73,13 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "Return a list of CURRENT publishing records for this source "
         "package in this distribution.")
 
-    binary_package_names = exported(
-        TextLine(
-            title=_("Binary packages associated with this source."),
-            description=_(
-                "A space-separated string of all the binary package "
-                "names associated with this source package in this "
-                "distribution."),
-            readonly=True))
+    binary_package_names = TextLine(
+        title=_("Binary packages associated with this source."),
+        description=_(
+            "A space-separated string of all the binary package "
+            "names associated with this source package in this "
+            "distribution."),
+        readonly=True)
 
     def __getitem__(version):
         """Should map to getVersion."""

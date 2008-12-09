@@ -14,6 +14,7 @@ __all__ = [
     'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
+    'BranchExists',
     'BranchFormat',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
@@ -343,6 +344,28 @@ MIRROR_TIME_INCREMENT = timedelta(hours=6)
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
+
+
+class BranchExists(BranchCreationException):
+    """Raised when creating a branch that already exists."""
+
+    def __init__(self, existing_branch):
+        # XXX: JonathanLange 2008-12-04 spec=package-branches: This error
+        # message logic is incorrect, but the exact text is being tested
+        # in branch-xmlrpc.txt.
+        params = {'name': existing_branch.name}
+        if existing_branch.product is None:
+            params['maybe_junk'] = 'junk '
+            params['context'] = existing_branch.owner.name
+        else:
+            params['maybe_junk'] = ''
+            params['context'] = '%s in %s' % (
+                existing_branch.owner.name, existing_branch.product.name)
+        message = (
+            'A %(maybe_junk)sbranch with the name "%(name)s" already exists '
+            'for %(context)s.' % params)
+        self.existing_branch = existing_branch
+        BranchCreationException.__init__(self, message)
 
 
 class CannotDeleteBranch(Exception):
@@ -1008,13 +1031,6 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def getBranch(owner, product, branch_name):
-        """Return the branch identified by owner/product/branch_name."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This method
-        # isn't really appropriate once we have source package branches. It's
-        # only used in a couple of places, and all of those places are invalid
-        # anyway.
-
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             author=None, summary=None, whiteboard=None, date_created=None,
@@ -1028,12 +1044,6 @@ class IBranchSet(Interface):
         +junk branch) then the owner must not be a team, except for the
         special case of the ~vcs-imports celebrity.
         """
-
-    def getByProductAndName(product, name):
-        """Find all branches in a product with a given name."""
-
-    def getByProductAndNameStartsWith(product, name):
-        """Find all branches in a product a name that starts with `name`."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -1183,11 +1193,6 @@ class IBranchSet(Interface):
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
         """
-
-    def getHostedBranchesForPerson(person):
-        """Return the hosted branches that the given person can write to."""
-        # XXX: JonathanLange 2008-12-01 spec=package-branches: This API seems
-        # redundant. We can probably delete it.
 
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.

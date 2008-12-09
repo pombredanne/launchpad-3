@@ -182,6 +182,9 @@ def parse_commands(content, command_names):
                 # stop reading any more commands.
                 break
             words = command_string.split(' ')
+            # Commands might end with a colon
+            if words[0].endswith(':'):
+                words[0] = words[0][:-1]
             if len(words) > 0 and words[0] in command_names:
                 commands.append((words[0], words[1:]))
     return commands
@@ -595,7 +598,7 @@ class CodeHandler:
         content = get_main_body(message)
         if content is None:
             return None, None
-        commands = parse_commands(content, ['vote'])
+        commands = parse_commands(content, ['vote', 'review'])
         if len(commands) == 0:
             return None, None
         args = commands[0][1]
@@ -663,15 +666,9 @@ class CodeHandler:
             raise NonLaunchpadTarget()
         if mp_source is None:
             basename = urlparse(md.source_branch)[2].split('/')[-1]
-            name = basename
-            count = 1
             namespace = get_branch_namespace(submitter, mp_target.product)
-            while namespace.isNameUsed(name):
-                name = '%s-%d' % (basename, count)
-                count += 1
-            mp_source = branches.new(
-                BranchType.REMOTE, name, submitter, submitter,
-                mp_target.product, md.source_branch)
+            mp_source = namespace.createBranchWithPrefix(
+                BranchType.REMOTE, basename, submitter, url=md.source_branch)
         return mp_source, mp_target
 
     def findMergeDirectiveAndComment(self, message):
