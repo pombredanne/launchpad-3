@@ -35,10 +35,9 @@
 
   <br />
 
-  <tal:search_requested condition="view/search_requested"
-                        define="batchnav view/batchnav">
+  <tal:search_requested condition="view/search_requested">
 
-    <tal:batch define="batch batchnav/currentBatch">
+    <tal:batch define="batchnav view/batchnav;batch batchnav/currentBatch">
 
       <tal:navigation replace="structure batchnav/@@+navigation-links-upper" />
 
