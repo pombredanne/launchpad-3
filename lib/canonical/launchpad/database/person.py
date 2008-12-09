@@ -1455,12 +1455,7 @@ class Person(
 
         expires = self.defaultexpirationdate
         tm = TeamMembership.selectOneBy(person=person, team=self)
-        if tm is not None:
-            # We can't use tm.setExpirationDate() here because the reviewer
-            # here will be the member themselves when they join an OPEN team.
-            tm.dateexpires = expires
-            tm.setStatus(status, reviewer, comment)
-        else:
+        if tm is None:
             tm = TeamMembershipSet().new(
                 person, self, status, reviewer, dateexpires=expires,
                 comment=comment)
@@ -1468,6 +1463,11 @@ class Person(
             # creation has been flushed to the database.
             tm_id = tm.id
             notify(event(person, self))
+        else:
+            # We can't use tm.setExpirationDate() here because the reviewer
+            # here will be the member themselves when they join an OPEN team.
+            tm.dateexpires = expires
+            tm.setStatus(status, reviewer, comment)
 
         if not person.is_team and may_subscribe_to_list:
             person.autoSubscribeToMailingList(self.mailing_list,

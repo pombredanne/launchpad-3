@@ -180,6 +180,9 @@ def parse_commands(content, command_names):
                 # stop reading any more commands.
                 break
             words = command_string.split(' ')
+            # Commands might end with a colon
+            if words[0].endswith(':'):
+                words[0] = words[0][:-1]
             if len(words) > 0 and words[0] in command_names:
                 commands.append((words[0], words[1:]))
     return commands
@@ -593,7 +596,7 @@ class CodeHandler:
         content = get_main_body(message)
         if content is None:
             return None, None
-        commands = parse_commands(content, ['vote'])
+        commands = parse_commands(content, ['vote', 'review'])
         if len(commands) == 0:
             return None, None
         args = commands[0][1]

@@ -180,7 +180,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE)
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
-        self.assertEqual('Vote: Approve', ctrl.body.splitlines()[0])
+        self.assertEqual('Review: Approve', body.splitlines()[0])
         self.assertEqual(ctrl.body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
@@ -190,7 +190,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
-        self.assertEqual('Vote: Approve dbtag', ctrl.body.splitlines()[0])
+        self.assertEqual('Review: Approve dbtag', body.splitlines()[0])
         self.assertEqual(ctrl.body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
