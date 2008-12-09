@@ -91,6 +91,7 @@ class SSHServerLayer(ZopelessAppServerLayer):
 
 
 class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
+    """TestCase class that runs an SSH server as well as the app server."""
 
     layer = SSHServerLayer
     scheme = None
@@ -112,32 +113,6 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def __str__(self):
         return self.id()
-
-    def assertTransportRaises(self, exception, f, *args, **kwargs):
-        """A version of assertRaises() that also catches SmartProtocolError.
-
-        If SmartProtocolError is raised, the error message must
-        contain the exception name.  This is to cover Bazaar's
-        handling of unexpected errors in the smart server.
-        """
-        # XXX: JonathanLange 2008-10-16 bug=246792: This helper should not be
-        # needed, but some of the exceptions we raise (such as
-        # PermissionDenied) are not yet handled by the smart server protocol
-        # as of Bazaar 1.7.
-        names = exception_names(exception)
-        try:
-            f(*args, **kwargs)
-        except SmartProtocolError, inst:
-            for name in names:
-                if name in str(inst):
-                    break
-            else:
-                raise self.failureException("%s not raised" % names)
-            return inst
-        except exception, inst:
-            return inst
-        else:
-            raise self.failureException("%s not raised" % names)
 
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
@@ -626,7 +601,7 @@ class SmartserverTests(SSHTestCase):
         # does not exist (the other error message possibilities are covered by
         # unit tests).
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
-        error = self.assertTransportRaises(
+        error = self.assertRaises(
             PermissionDenied,
             self.push, self.local_branch_path, remote_url)
         message = "Project 'no-such-product' does not exist."
@@ -680,10 +655,9 @@ def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
 
-    # XXX Tim Penhey 2008-12-08: bug 306143
-    # suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
-    # suite.addTest(make_server_tests(
-    #         unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
+    suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
+    suite.addTest(make_server_tests(
+            unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
     # XXX DaniloSegan 2008-10-24: see #288695.
     #suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite
