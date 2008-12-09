@@ -185,7 +185,15 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             args.append('--use-existing-dir')
         output, error = self.run_bzr_subprocess(
             args, env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()})
+                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
+            allow_plugins=True,
+            retcode=None)
+        ## print
+        ## print 'error:'
+        ## print error
+        ## print
+        ## print 'output:'
+        ## print output
         return output
 
     def assertCantPush(self, local_directory, remote_url):
@@ -203,7 +211,9 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         output, error = self.run_bzr_subprocess(
             ['cat-revision', '-r', 'branch:' + remote_url],
             env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()})
+                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
+            allow_plugins=True,
+            )
         #self.assertEqual('', error)
         from xml.dom.minidom import parseString
         dom = parseString(output)
@@ -305,6 +315,7 @@ class AcceptanceTests(SSHTestCase):
             ['cat-revision', '-r', 'branch:' + url],
             env_changes={'BZR_SSH': 'paramiko',
                                'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
+            allow_plugins=True,
             retcode=3)
         last_line = error.splitlines()[-1]
         assert 'ERROR: Not a branch:' in last_line
