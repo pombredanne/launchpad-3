@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Interface for branch containers."""
 
 __metaclass__ = type
 __all__ = [
@@ -11,5 +11,14 @@ from zope.interface import Interface, Attribute
 
 
 class IBranchContainer(Interface):
+    """A container of branches.
 
-    name = Attribute("The name of the context.")
+    A product contains branches, a source package on a distroseries contains
+    branches, and a person contains branches in two different ways ('branches
+    owned' and 'junk branches').
+    """
+
+    name = Attribute("The name of the container.")
+
+    def getBranches():
+        """Return the branches in this container."""
