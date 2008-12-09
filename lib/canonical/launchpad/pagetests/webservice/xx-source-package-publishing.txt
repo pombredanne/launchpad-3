@@ -56,23 +56,23 @@ Each source publication exposes a number of properties:
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
-    archive_link: u'http://.../~cprov/+archive'            
-    component_name: u'main'                                                   
-    datecreated: u'2007-07-09T12:00:00+00:00'                                 
-    datemadepending: None                                                     
-    datepublished: u'2007-07-09T12:00:01+00:00'                               
-    dateremoved: None                                                         
-    datesuperseded: None                                                      
-    displayname: u'iceweasel 1.0 in warty'                                    
-    distroseries_link: u'http://.../ubuntu/warty'          
-    pocket: u'Release'                                                        
-    removal_comment: None                                                     
-    removed_by_link: None                                                     
+    archive_link: u'http://.../~cprov/+archive'
+    component_name: u'main'
+    datecreated: u'2007-07-09T12:00:00+00:00'
+    datemadepending: None
+    datepublished: u'2007-07-09T12:00:01+00:00'
+    dateremoved: None
+    datesuperseded: None
+    displayname: u'iceweasel 1.0 in warty'
+    distroseries_link: u'http://.../ubuntu/warty'
+    pocket: u'Release'
+    removal_comment: None
+    removed_by_link: None
     resource_type_link: u'http://.../#source_package_publishing_history'
-    scheduleddeletiondate: None                                               
-    section_name: u'editors'                                                  
+    scheduleddeletiondate: None
+    section_name: u'editors'
     self_link: u'http://.../~cprov/+archive/+sourcepub/28' 
-    source_package_name: u'iceweasel'                                         
+    source_package_name: u'iceweasel'
     source_package_version: u'1.0'
     status: u'Published'
 
