@@ -130,6 +130,7 @@ class LaunchpadRadioWidget(RadioWidget):
             values = []
 
         items = self.renderItemsWithValues(values)
+        return items
         if not self.context.required:
             kwargs = {
                 'index': None,
