@@ -129,12 +129,6 @@ class FakeBranch(FakeDatabaseObject):
     def getPullURL(self):
         pass
 
-    def startMirroring(self):
-        pass
-
-    def mirrorComplete(self, rev_id):
-        self._mirrored = True
-
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
 
@@ -257,15 +251,8 @@ class FakeObjectFactory(ObjectFactory):
         """XXX write me!"""
         if branch is None:
             branch = self.makeBranch(product=product)
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = branch
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the user_branch of the
-        # development focus series.
-        naked_series = product.development_focus
-        naked_series.user_branch = branch
+        branch._mirrored = True
+        product.development_focus.user_branch = branch
 
 class FakeBranchPuller:
 

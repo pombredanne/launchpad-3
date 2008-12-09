@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchType, IBranchSet, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
@@ -432,16 +432,12 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # on, then _getBranchPullInfo returns (id, url, unique_name,
         # default_branch_unique_name).
         product = self.factory.makeProduct()
+        self.factory.enableDefaultStackingForProduct(product)
         branch = self.factory.makeBranch(product=product)
-        series = removeSecurityProxy(product.development_focus)
-        default_branch = self.factory.makeBranch(product=product)
-        default_branch.startMirroring()
-        default_branch.mirrorComplete('rev1')
-        series.user_branch = default_branch
         info = self.storage._getBranchPullInfo(branch)
         self.assertEqual(
             (branch.id, branch.getPullURL(), branch.unique_name,
-             '/' + default_branch.unique_name), info)
+             '/' + product.default_stacked_on_branch.unique_name), info)
 
     def test_getBranchPullInfo_private_branch(self):
         # We don't want to stack mirrored branches onto private branches:
