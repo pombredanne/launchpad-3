@@ -833,11 +833,6 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def getBranch(self, owner, product, branch_name):
-        """See `IBranchSet`."""
-        return Branch.selectOneBy(
-            owner=owner, product=product, name=branch_name)
-
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
 
@@ -1367,17 +1362,6 @@ class BranchSet:
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
 
-    def getHostedBranchesForPerson(self, person):
-        """See `IBranchSet`."""
-        branches = Branch.select("""
-            Branch.branch_type = %s
-            AND Branch.owner IN (
-            SELECT TeamParticipation.team
-            FROM TeamParticipation
-            WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(BranchType.HOSTED, person))
-        return branches
-
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See `IBranchSet`."""
@@ -1389,15 +1373,6 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
             orderBy=['-date_created', '-id'])
-
-    def getByProductAndName(self, product, name):
-        """See `IBranchSet`."""
-        return Branch.selectBy(name=name, product=product.id)
-
-    def getByProductAndNameStartsWith(self, product, name):
-        """See `IBranchSet`."""
-        return Branch.select(
-            'product = %s AND name LIKE %s' % sqlvalues(product, name + '%%'))
 
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""

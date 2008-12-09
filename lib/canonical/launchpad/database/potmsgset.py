@@ -250,6 +250,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return self._getExternalTranslationMessages(language, used=False)
 
+    @property
     def flags(self):
         if self.flagscomment is None:
             return []
@@ -321,7 +322,7 @@ class POTMsgSet(SQLBase):
         # to know if gettext is unhappy with the input.
         try:
             helpers.validate_translation(
-                original_texts, translations, self.flags())
+                original_texts, translations, self.flags)
         except gettextpo.error:
             if ignore_errors:
                 # The translations are stored anyway, but we set them as

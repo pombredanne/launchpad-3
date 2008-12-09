@@ -1031,13 +1031,6 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def getBranch(owner, product, branch_name):
-        """Return the branch identified by owner/product/branch_name."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This method
-        # isn't really appropriate once we have source package branches. It's
-        # only used in a couple of places, and all of those places are invalid
-        # anyway.
-
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             author=None, summary=None, whiteboard=None, date_created=None,
@@ -1051,12 +1044,6 @@ class IBranchSet(Interface):
         +junk branch) then the owner must not be a team, except for the
         special case of the ~vcs-imports celebrity.
         """
-
-    def getByProductAndName(product, name):
-        """Find all branches in a product with a given name."""
-
-    def getByProductAndNameStartsWith(product, name):
-        """Find all branches in a product a name that starts with `name`."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -1206,11 +1193,6 @@ class IBranchSet(Interface):
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
         """
-
-    def getHostedBranchesForPerson(person):
-        """Return the hosted branches that the given person can write to."""
-        # XXX: JonathanLange 2008-12-01 spec=package-branches: This API seems
-        # redundant. We can probably delete it.
 
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
