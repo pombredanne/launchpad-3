@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.database.branchcontainer import (
-    PersonContainer, PackageContainer)
+    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -60,6 +60,27 @@ class TestPersonContainer(TestCaseWithFactory):
         person = self.factory.makePerson()
         context = PersonContainer(person)
         branch = self.factory.makeBranch(owner=person, product=None)
+        self.assertEqual([branch], list(context.getBranches()))
+
+
+class TestProductContainer(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_name(self):
+        product = self.factory.makeProduct()
+        context = ProductContainer(product)
+        self.assertEqual(product.name, context.name)
+
+    def test_getBranches_empty(self):
+        product = self.factory.makeProduct()
+        context = ProductContainer(product)
+        self.assertEqual([], list(context.getBranches()))
+
+    def test_getBranches_some(self):
+        product = self.factory.makeProduct()
+        context = ProductContainer(product)
+        branch = self.factory.makeBranch(product=product)
         self.assertEqual([branch], list(context.getBranches()))
 
 

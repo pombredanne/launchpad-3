@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'PackageContainer',
     'PersonContainer',
+    'ProductContainer',
     ]
 
 from zope.component import getUtility
@@ -52,3 +53,17 @@ class PersonContainer:
         return store.find(
             Branch, Branch.owner == self.person, Branch.product == None,
             Branch.distroseries == None, Branch.sourcepackagename == None)
+
+
+class ProductContainer:
+    implements(IBranchContainer)
+
+    def __init__(self, product):
+        self.product = product
+
+    def getBranches(self):
+        return self.product.branches
+
+    @property
+    def name(self):
+        return self.product.name
