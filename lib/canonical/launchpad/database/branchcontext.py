@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Branch contexts."""
 
 __metaclass__ = type
 __all__ = [
