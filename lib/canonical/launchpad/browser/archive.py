@@ -961,7 +961,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             _('Basic (only released packages).'))
         security = SimpleTerm(
             PackagePublishingPocket.SECURITY, 'SECURITY',
-            _('Security (basic dependencies and important security updates).'))
+            _('Security (basic dependencies and important security '
+              'updates).'))
         updates = SimpleTerm(
             PackagePublishingPocket.UPDATES, 'UPDATES',
             _('Default (security dependencies and recommended updates).'))

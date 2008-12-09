@@ -37,9 +37,7 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported, export_read_operation,
-    export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, webservice_error)
+    export_as_webservice_entry, exported)
 
 
 #
