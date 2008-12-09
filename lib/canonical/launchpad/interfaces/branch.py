@@ -7,12 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     'BadBranchSearchContext',
+    'bazaar_identity',
     'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
+    'BranchExists',
     'BranchFormat',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
@@ -37,7 +39,8 @@ __all__ = [
     'MIRROR_TIME_INCREMENT',
     'RepositoryFormat',
     'UICreatableBranchType',
-    'UnknownBranchTypeError'
+    'UnknownBranchTypeError',
+    'user_has_special_branch_access',
     ]
 
 from cgi import escape
@@ -78,7 +81,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
@@ -199,6 +203,9 @@ class BranchFormat(DBEnumeratedType):
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
     BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
+
+    BZR_LOOM_3 = DBItem(
+        107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
 
 
 class RepositoryFormat(DBEnumeratedType):
@@ -337,6 +344,28 @@ MIRROR_TIME_INCREMENT = timedelta(hours=6)
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
+
+
+class BranchExists(BranchCreationException):
+    """Raised when creating a branch that already exists."""
+
+    def __init__(self, existing_branch):
+        # XXX: JonathanLange 2008-12-04 spec=package-branches: This error
+        # message logic is incorrect, but the exact text is being tested
+        # in branch-xmlrpc.txt.
+        params = {'name': existing_branch.name}
+        if existing_branch.product is None:
+            params['maybe_junk'] = 'junk '
+            params['context'] = existing_branch.owner.name
+        else:
+            params['maybe_junk'] = ''
+            params['context'] = '%s in %s' % (
+                existing_branch.owner.name, existing_branch.product.name)
+        message = (
+            'A %(maybe_junk)sbranch with the name "%(name)s" already exists '
+            'for %(context)s.' % params)
+        self.existing_branch = existing_branch
+        BranchCreationException.__init__(self, message)
 
 
 class CannotDeleteBranch(Exception):
@@ -603,7 +632,7 @@ class IBranch(IHasOwner):
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
-                        "This controls who can modify the branch.")))
+                          "This controls who can modify the branch.")))
 
     reviewer = exported(
         PublicPersonChoice(
@@ -613,6 +642,22 @@ class IBranch(IHasOwner):
             description=_("The reviewer of a branch is the person or team "
                           "that is responsible for reviewing proposals and "
                           "merging into this branch.")))
+
+    # XXX: JonathanLange 2008-11-24: Export these.
+    distroseries = Choice(
+        title=_("Distribution Series"), required=False,
+        vocabulary='DistroSeries',
+        description=_(
+            "The distribution series that this branch belongs to. Branches "
+            "do not have to belong to a distribution series, they can also "
+            "belong to a project or be junk branches."))
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=True,
+        vocabulary='SourcePackageName',
+        description=_(
+            "The source package that this is a branch of. Source package "
+            "branches always belong to a distribution series."))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -630,6 +675,9 @@ class IBranch(IHasOwner):
             description=_("The project this branch belongs to.")),
         exported_as='project')
 
+    # XXX: JonathanLange 2008-12-01 spec=package-branches: This needs to be
+    # removed and replaced with the name of the container. It's only used for
+    # URL traversal, so maybe we can work out a smarter way of doing that.
     product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
@@ -750,9 +798,11 @@ class IBranch(IHasOwner):
         "The BranchMergeProposals where this branch is the dependent branch. "
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
+
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
-                         needs_review=False):
+                         needs_review=False, initial_comment=None,
+                         review_requests=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -771,6 +821,9 @@ class IBranch(IHasOwner):
             merge request.
         :param needs_review: Used to specify the the proposal is ready for
             review right now.
+        :param initial_comment: An optional initial comment can be added
+            when adding the new target.
+        :param review_requests: An optional list of (`Person`, review_type).
         """
 
     def getStackedBranches():
@@ -978,26 +1031,19 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def getBranch(owner, product, branch_name):
-        """Return the branch identified by owner/product/branch_name."""
-
-    def new(branch_type, name, registrant, owner, product, url, title=None,
-            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None):
+    def new(branch_type, name, registrant, owner, product=None, url=None,
+            title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            author=None, summary=None, whiteboard=None, date_created=None,
+            distroseries=None, sourcepackagename=None):
         """Create a new branch.
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
 
-        If product is None (indicating a +junk branch) then the owner must not
-        be a team, except for the special case of the ~vcs-imports celebrity.
+        If product, distroseries and sourcepackagename are None (indicating a
+        +junk branch) then the owner must not be a team, except for the
+        special case of the ~vcs-imports celebrity.
         """
-
-    def getByProductAndName(product, name):
-        """Find all branches in a product with a given name."""
-
-    def getByProductAndNameStartsWith(product, name):
-        """Find all branches in a product a name that starts with `name`."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -1022,9 +1068,26 @@ class IBranchSet(Interface):
         Return the default value if no match was found.
         """
 
+    def getByLPPath(path):
+        """Find the branch associated with an lp: path.
+
+        Recognized formats:
+        "~owner/product/name" (same as unique name)
+        "product/series" (branch associated with a product series)
+        "product" (development focus of product)
+
+        :return: a tuple of `IBranch`, extra_path, series.  Series is the
+            series, if any, used to perform the lookup.
+        :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
+            of `LaunchpadFault`.
+        """
+
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+    # XXX: This seems like a strangely motivated method. It gets passed many
+    # products and returns a list summaries for each of them. It's really an
+    # implementation detail, not an API.
     def getActiveUserBranchSummaryForProducts(products):
         """Return the branch count and last commit time for the products.
 
@@ -1131,9 +1194,6 @@ class IBranchSet(Interface):
             None.
         """
 
-    def getHostedBranchesForPerson(person):
-        """Return the hosted branches that the given person can write to."""
-
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
@@ -1148,6 +1208,8 @@ class IBranchSet(Interface):
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
+        # to change for source package branches.
 
     def getPullQueue(branch_type):
         """Return a queue of branches to mirror using the puller.
@@ -1157,15 +1219,8 @@ class IBranchSet(Interface):
 
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targeted before."""
-
-    def isBranchNameAvailable(owner, product, branch_name):
-        """Is the specified branch_name valid for the owner and product.
-
-        :param owner: A `Person` who may be an individual or team.
-        :param product: A `Product` or None for a junk branch.
-        :param branch_name: The proposed branch name.
-        """
-
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
+        # to change for source package branches.
 
 
 class IBranchDelta(Interface):
@@ -1349,3 +1404,52 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
+
+
+def bazaar_identity(branch, associated_series, is_dev_focus):
+    """Return the shortest lp: style branch identity."""
+    use_series = None
+    lp_prefix = config.codehosting.bzr_lp_prefix
+    # XXX: TimPenhey 2008-05-06 bug=227602
+    # Since at this stage the launchpad name resolution is not
+    # authenticated, we can't resolve series branches that end
+    # up pointing to private branches, so don't show short names
+    # for the branch if it is private.
+
+    # It is possible for +junk branches to be related to a product
+    # series.  However we do not show the shorter name for these
+    # branches as it would be giving extra authority to them.  When
+    # the owner of these branches realises that they want other people
+    # to be able to commit to them, the branches will need to have a
+    # team owner.  When this happens, they will no longer be able to
+    # stay as junk branches, and will need to be associated with a
+    # product.  In this way +junk branches associated with product
+    # series should be self limiting.  We are not looking to enforce
+    # extra strictness in this case, but instead let it manage itself.
+    if not branch.private and branch.product is not None:
+        if is_dev_focus:
+            return lp_prefix + branch.product.name
+
+        for series in associated_series:
+            if (use_series is None or
+                series.datecreated > use_series.datecreated):
+                use_series = series
+    # If there is no series, use the prefix with the unique name.
+    if use_series is None:
+        return lp_prefix + branch.unique_name
+    else:
+        return "%(prefix)s%(product)s/%(series)s" % {
+            'prefix': lp_prefix,
+            'product': use_series.product.name,
+            'series': use_series.name}
+
+
+def user_has_special_branch_access(user):
+    """Admins and bazaar experts have special access.
+
+    :param user: A 'Person' or None.
+    """
+    if user is None:
+        return False
+    celebs = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)

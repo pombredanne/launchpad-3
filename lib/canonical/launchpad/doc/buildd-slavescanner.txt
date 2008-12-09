@@ -1061,7 +1061,7 @@ sources_list.
 
     >>> a_builder.dispatchBuildCandidate(partner_candidate)
     ensurepresent called, url=...
-    ensurepresent called, url=http://localhost:58000/106/foo_666.dsc
+    ensurepresent called, url=http://localhost:58000/.../foo_666.dsc
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary

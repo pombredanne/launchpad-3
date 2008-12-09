@@ -15,6 +15,7 @@ __all__ = [
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
@@ -551,11 +552,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    allwikis = exported(
-        CollectionField(title=_("All WikiNames of this Person."),
-                        readonly=True, required=False,
-                        value_type=Reference(schema=IWikiName)),
-        exported_as='wiki_names')
+    wiki_names = exported(
+        CollectionField(
+            title=_("All WikiNames of this Person, sorted alphabetically by "
+                    "URL."),
+            readonly=True, required=False,
+            value_type=Reference(schema=IWikiName)))
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
                         readonly=True, required=False,
@@ -709,8 +711,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    archive = Attribute(
-        "The Archive owned by this person, his PPA.")
+    archive = exported(
+        Reference(title=_("Personal Package Archive"),
+                  description=_("The Archive owned by this person, his PPA."),
+                  schema=Interface)) # Really IArchive, see archive.py
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -833,6 +837,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         The product_name may be None.
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
+        # longer appropriate, given source package branches. It's used in
+        # browser/person.py, browser/specification.py.
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
@@ -1046,17 +1053,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def addLanguage(language):
         """Add a language to this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
-        If the given language is already present, and IntegrityError will be
-        raised. This will be fixed soon; here's the discussion on this topic:
-        https://launchpad.ubuntu.com/malone/bugs/1317.
+        If the given language is one of the user's preferred languages
+        already, nothing will happen.
         """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
         """

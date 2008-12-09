@@ -166,6 +166,36 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
         self.assertEqual('ebailiwick', bmp.all_comments[0].vote_tag)
 
+    def test_processVoteColon(self):
+        """Process respects the vote: command."""
+        mail = self.factory.makeSignedMessage(body=' vote: Abstain EBAILIWICK')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('ebailiwick', bmp.all_comments[0].vote_tag)
+
+    def test_processReview(self):
+        """Process respects the review command."""
+        mail = self.factory.makeSignedMessage(body=' review Abstain ROAR!')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('roar!', bmp.all_comments[0].vote_tag)
+
+    def test_processReviewColon(self):
+        """Process respects the review: command."""
+        mail = self.factory.makeSignedMessage(body=' review: Abstain ROAR!')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('roar!', bmp.all_comments[0].vote_tag)
+
     def test_processWithExistingVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
@@ -203,7 +233,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler.process(mail, email_addr, None)
         notification = pop_notifications()[0]
         self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Vote: Abstain ebailiwick\n'
+        expected_body = ('Review: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
                          '-- \n'
                          '%s\n'
@@ -255,6 +285,30 @@ class TestCodeHandler(TestCaseWithFactory):
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.APPROVE)
         self.assertEqual(vote_tag, 'DB TAG')
+
+    def test_getVoteWithColon(self):
+        """getVote should return the same whether vote or vote: is used."""
+        mail = self.factory.makeSignedMessage(body=' vote: apPRoVe')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+        self.assertEqual(vote_tag, None)
+
+    def test_getVoteUseReview(self):
+        """getVote checks for the review command as well as vote."""
+        mail = self.factory.makeSignedMessage(body=' review apPRoVe')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+        self.assertEqual(vote_tag, None)
+
+    def test_getVoteUseReviewWithColon(self):
+        """getVote checks for the review command as well as vote."""
+        mail = self.factory.makeSignedMessage(body=' review: apPRoVe')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+        self.assertEqual(vote_tag, None)
 
     def test_getBranchMergeProposal(self):
         """The correct BranchMergeProposal is returned for the address."""
@@ -322,7 +376,8 @@ class TestCodeHandler(TestCaseWithFactory):
                 target_branch.unique_name)
         return MergeDirective2(
             'revid', 'sha', 0, 0, target_branch_url,
-            source_branch=source_branch_url, base_revision_id='base-revid')
+            source_branch=source_branch_url, base_revision_id='base-revid',
+            patch='booga')
 
     def test_acquireBranchesForProposal(self):
         """Ensure CodeHandler._acquireBranchesForProposal works."""
@@ -441,6 +496,7 @@ class TestCodeHandler(TestCaseWithFactory):
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source_branch, bmp.source_branch)
         self.assertEqual(target_branch, bmp.target_branch)
+        self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
 

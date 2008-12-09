@@ -9,6 +9,7 @@ import os
 import shutil
 import stat
 import tempfile
+import transaction
 import unittest
 
 from zope.component import getUtility
@@ -19,13 +20,26 @@ from canonical.archivepublisher.publishing import (
     getPublisher, Publisher)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces.archivesigningkey import (
+    IArchiveSigningKey)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IPersonSet, PackagePublishingPocket, PackagePublishingStatus)
+from canonical.zeca.ftests.harness import ZecaTestSetup
 
 
-class TestPublisher(TestNativePublishingBase):
+class TestPublisherBase(TestNativePublishingBase):
+    """Basic setUp for `TestPublisher` classes.
+
+    Extends `TestNativePublishingBase` already.
+    """
 
     def setUp(self):
         """Override cprov PPA distribution to 'ubuntutest'."""
@@ -36,6 +50,10 @@ class TestPublisher(TestNativePublishingBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         naked_archive = removeSecurityProxy(cprov.archive)
         naked_archive.distribution = self.ubuntutest
+
+
+class TestPublisher(TestPublisherBase):
+    """Testing `Publisher` behaviour."""
 
     def assertDirtyPocketsContents(self, expected, dirty_pockets):
         contents = [(str(dr_name), pocket.name) for dr_name, pocket in
@@ -913,6 +931,105 @@ class TestPublisher(TestNativePublishingBase):
                 (mode & (stat.S_IROTH | stat.S_IRGRP)),
                 (stat.S_IROTH | stat.S_IRGRP),
                 "%s is not world/group readable." % file)
+
+
+class TestPublisherRepositorySignatures(TestPublisherBase):
+    """Testing `Publisher` signature behaviour."""
+
+    archive_publisher = None
+
+    def tearDown(self):
+        """Purge the archive root location. """
+        if self.archive_publisher is not None:
+            shutil.rmtree(self.archive_publisher._config.distsroot)
+
+    def setupPublisher(self, archive):
+        """Setup a `Publisher` instance for the given archive."""
+        allowed_suites = []
+        self.archive_publisher = getPublisher(
+            archive, allowed_suites, self.logger)
+
+
+    def _publishArchive(self, archive):
+        """Publish a test source in the given archive.
+
+        Publish files in pool, generate archive indexes and release files.
+        """
+        self.setupPublisher(archive)
+        pub_source = self.getPubSource(archive=archive)
+
+        self.archive_publisher.A_publish(False)
+        transaction.commit()
+        self.archive_publisher.C_writeIndexes(False)
+        self.archive_publisher.D_writeReleaseFiles(False)
+
+    @property
+    def suite_path(self):
+        return os.path.join(
+            self.archive_publisher._config.distsroot, 'breezy-autotest')
+
+    @property
+    def release_file_path(self):
+        return os.path.join(self.suite_path, 'Release')
+
+    @property
+    def release_file_signature_path(self):
+        return os.path.join(self.suite_path, 'Release.gpg')
+
+    @property
+    def public_key_path(self):
+        return os.path.join(
+            self.archive_publisher._config.distsroot, 'key.gpg')
+
+    def testRepositorySignatureWithNoSigningKey(self):
+        """Check publisher behaviour when signing repositories.
+
+        Repository signing procedure is skipped for archive with no
+        'signing_key'.
+        """
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        self.assertTrue(cprov.archive.signing_key is None)
+
+        self._publishArchive(cprov.archive)
+
+        # Release file exist but it doesn't have any signature.
+        self.assertTrue(os.path.exists(self.release_file_path))
+        self.assertFalse(os.path.exists(self.release_file_signature_path))
+
+    def testRepositorySignatureWithSigningKey(self):
+        """Check publisher behaviour when signing repositories.
+
+        When the 'signing_key' is available every modified suite Release
+        file gets signed with a detached signature name 'Release.gpg'.
+        """
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        self.assertTrue(cprov.archive.signing_key is None)
+
+        # Start the test keyserver, so the signing_key can be uploaded.
+        z = ZecaTestSetup()
+        z.setUp()
+
+        # Set a signing key for Celso's PPA.
+        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
+        self.assertTrue(cprov.archive.signing_key is not None)
+
+        self._publishArchive(cprov.archive)
+
+        # Both, Release and Release.gpg exist.
+        self.assertTrue(os.path.exists(self.release_file_path))
+        self.assertTrue(os.path.exists(self.release_file_signature_path))
+
+        # Release file signature is correct and was done by Celso's PPA
+        # signing_key.
+        signature = getUtility(IGPGHandler).getVerifiedSignature(
+            open(self.release_file_path).read(),
+            open(self.release_file_signature_path).read())
+        self.assertEqual(
+            signature.fingerprint, cprov.archive.signing_key.fingerprint)
+
+        # All done, turn test-keyserver off.
+        z.tearDown()
 
 
 def test_suite():

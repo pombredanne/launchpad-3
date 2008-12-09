@@ -4,17 +4,18 @@
 
 import unittest
 
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.event.branchmergeproposal import (
+    NewCodeReviewCommentEvent)
 from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 class TestCodeReviewComment(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         source = self.factory.makeBranch(title='source-branch')
         target = self.factory.makeBranch(
             product=source.product, title='target-branch')
@@ -40,7 +41,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
         self.assertEqual(comment, self.bmp.root_comment)
-        self.assertEqual('Re: Proposed merge of '
+        self.assertEqual('Re: [Merge] '
             'lp://dev/~person-name2/product-name8/branch4 into '
             'lp://dev/~person-name13/product-name8/branch15',
             comment.message.subject)
@@ -99,8 +100,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Creating a CodeReviewComment should trigger a notification."""
         message = self.factory.makeMessage()
         self.assertNotifies(
-            SQLObjectCreatedEvent, self.bmp.createCommentFromMessage, message,
-            None, None)
+            NewCodeReviewCommentEvent, self.bmp.createCommentFromMessage,
+            message, None, None)
 
 
 def test_suite():

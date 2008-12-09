@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailnotification import (
-    generate_bug_add_email, MailWrapper, construct_bug_notification,
+    generate_bug_add_email, MailWrapper, BugNotificationBuilder,
     get_bugmail_from_address)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
@@ -109,9 +109,10 @@ def construct_email_notifications(bug_notifications):
                 (address, recipient)
                 for address, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
+    bug_notification_builder = BugNotificationBuilder(bug)
     for address, recipient in recipients.items():
         reason = recipient.reason_body
-        rationale_header = recipient.reason_header
+        rationale = recipient.reason_header
 
         body_data = {
             'content': mail_wrapper.format(content),
@@ -138,9 +139,9 @@ def construct_email_notifications(bug_notifications):
             email_template = 'bug-notification.txt'
 
         body = get_email_template(email_template) % body_data
-        msg = construct_bug_notification(
-            bug, from_address, address, body,
-            subject, email_date, rationale_header, references, msgid)
+        msg = bug_notification_builder.build(
+            from_address, address, body, subject, email_date,
+            rationale, references, msgid)
         messages.append(msg)
 
     return bug_notifications, messages
