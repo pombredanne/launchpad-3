@@ -864,10 +864,12 @@ special = {
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,
         ),
-    'google-service-stub.txt': LayeredDocFileSuite(
-            '../doc/google-service-stub.txt',
-            layer=GoogleServiceLayer,
-            ),
+    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
+    # multiple spurious problems with layer and test.
+    # 'google-service-stub.txt': LayeredDocFileSuite(
+    #         '../doc/google-service-stub.txt',
+    #         layer=GoogleServiceLayer,
+    #         ),
     'karmacache.txt': LayeredDocFileSuite(
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,

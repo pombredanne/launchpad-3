@@ -311,7 +311,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> proposal.source_branch.title = 'baz'
     >>> proposal.target_branch.title = 'qux'
     >>> test_tales("proposal/fmt:link", proposal=proposal)
-    u'<a href="...">Proposed merge of
+    u'<a href="...">[Merge]
     lp://dev/~person-name38/product-name30/branch40 into
     lp://dev/~person-name24/product-name30/branch26</a>'
 
