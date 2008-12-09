@@ -38,9 +38,9 @@ from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationException, BranchCreationForbidden,
+    BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
     BranchMergeProposalStatus, BranchPersonSearchRestriction,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -52,6 +52,8 @@ from canonical.launchpad.interfaces import (
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
@@ -831,11 +833,6 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def getBranch(self, owner, product, branch_name):
-        """See `IBranchSet`."""
-        return Branch.selectOneBy(
-            owner=owner, product=product, name=branch_name)
-
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
 
@@ -981,17 +978,12 @@ class BranchSet:
 
         # Make sure that the new branch has a unique name if not a junk
         # branch.
-        if not self.isBranchNameAvailable(owner, product, name):
-            params = {'name': name}
-            if product is None:
-                params['maybe_junk'] = 'junk '
-                params['context'] = owner.name
-            else:
-                params['maybe_junk'] = ''
-                params['context'] = "%s in %s" % (owner.name, product.name)
-            raise BranchCreationException(
-                'A %(maybe_junk)sbranch with the name "%(name)s" already '
-                'exists for %(context)s.' % params)
+        namespace = get_branch_namespace(
+            owner, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        existing_branch = namespace.getByName(name)
+        if existing_branch is not None:
+            raise BranchExists(existing_branch)
 
         branch = Branch(
             registrant=registrant,
@@ -1370,17 +1362,6 @@ class BranchSet:
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
 
-    def getHostedBranchesForPerson(self, person):
-        """See `IBranchSet`."""
-        branches = Branch.select("""
-            Branch.branch_type = %s
-            AND Branch.owner IN (
-            SELECT TeamParticipation.team
-            FROM TeamParticipation
-            WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(BranchType.HOSTED, person))
-        return branches
-
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See `IBranchSet`."""
@@ -1392,15 +1373,6 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
             orderBy=['-date_created', '-id'])
-
-    def getByProductAndName(self, product, name):
-        """See `IBranchSet`."""
-        return Branch.selectBy(name=name, product=product.id)
-
-    def getByProductAndNameStartsWith(self, product, name):
-        """See `IBranchSet`."""
-        return Branch.select(
-            'product = %s AND name LIKE %s' % sqlvalues(product, name + '%%'))
 
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
@@ -1421,11 +1393,6 @@ class BranchSet:
             """ % sqlvalues(user, product),
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
-
-    def isBranchNameAvailable(self, owner, product, branch_name):
-        """See `IBranchSet`."""
-        branch = self.getBranch(owner, product, branch_name)
-        return branch is None
 
 
 class BranchQueryBuilder:
