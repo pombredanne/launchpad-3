@@ -339,33 +339,50 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     potemplate=self.context))
 
             if num > 0:
+                if num == 1:
+                    plural_s = ''
+                    itthey = 'it'
+                else:
+                    plural_s = 's'
+                    itthey = 'they'
                 self.request.response.addInfoNotification(
                     structured(
-                    'Thank you for your upload. %d files from the tarball '
+                    'Thank you for your upload. %d file%s from the tarball '
                     'will be automatically '
                     'reviewed in the next few hours.  If that is not enough '
-                    'to determine whether and where your files should '
-                    'be imported, they will be reviewed manually by an '
+                    'to determine whether and where your file%s should '
+                    'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        num,
-                        canonical_url(self.context.translationtarget))))
+                        num, plural_s, plural_s, itthey,
+                        canonical_url(self.context))))
                 if len(conflicts) > 0:
-                    ul_conflicts = "<ul><li>%s</li></ul>" % (
-                        "</li><li>".join(map(cgi.escape, conflicts)))
+                    if len(conflicts) == 1:
+                        warning = (
+                            "A file could not be uploaded because its "
+                            "name matched multiple existing uploads, for "
+                            "different templates." )
+                        ul_conflicts = (
+                            "The conflicting file name was:<br /> "
+                            "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
+                    else:
+                        warning = (
+                            "%d files could not be uploaded because their "
+                            "names matched multiple existing uploads, for "
+                            "different templates." % len(conflicts))
+                        ul_conflicts = (
+                            "The conflicting file names were:<br /> "
+                            "<ul><li>%s</li></ul>" % (
+                            "</li><li>".join(map(cgi.escape, conflicts))))
                     self.request.response.addWarningNotification(
                         structured(
-                        "%d files could not be uploaded because their "
-                        "names matched multiple existing uploads, for "
-                        "different templates.  This makes it "
+                        warning + "  This makes it "
                         "impossible to determine which template the new "
                         "upload was for.  Try uploading to a specific "
                         "template: visit the page for the template that you "
                         "want to upload to, and select the upload option "
-                        "from there.<br /> "
-                        "The conflicting file names were:<br /> "
-                        "%s" % (len(conflicts), ul_conflicts)))
+                        "from there.<br />"+ ul_conflicts))
             else:
                 if len(conflicts) == 0:
                     self.request.response.addWarningNotification(

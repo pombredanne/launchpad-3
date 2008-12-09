@@ -599,7 +599,7 @@ class TranslationImportQueue:
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
 
-    def _findMatchingEntry(self, path, importer, potemplate, pofile,
+    def _getMatchingEntry(self, path, importer, potemplate, pofile,
                            sourcepackagename, distroseries, productseries):
         """Find an entry that best matches the given parameters, if such an
         entry exists.
@@ -628,7 +628,7 @@ class TranslationImportQueue:
         queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
         queries.append(
             'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
-        # Deopending on how specific the new entry is, potemplate and pofile
+        # Depending on how specific the new entry is, potemplate and pofile
         # may be None.
         if potemplate is not None:
             queries.append(
@@ -717,7 +717,7 @@ class TranslationImportQueue:
             contentType=format_importer.content_type)
 
         try:
-            entry = self._findMatchingEntry(path, importer, potemplate,
+            entry = self._getMatchingEntry(path, importer, potemplate,
                     pofile, sourcepackagename, distroseries, productseries)
         except TranslationImportQueueConflictError:
             return None
