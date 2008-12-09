@@ -1,8 +1,8 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Object, Text
+from zope.schema import Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pomsgid import IPOMsgID
@@ -56,6 +56,8 @@ class IPOTMsgSet(Interface):
     sourcecomment = Attribute("The source code comments this set has.")
 
     flagscomment = Attribute("The flags this set has.")
+
+    flags = Attribute("List of flags that apply to this message.")
 
     singular_text = Text(
         title=_("The singular text for this message."), readonly=True)
@@ -152,9 +154,6 @@ class IPOTMsgSet(Interface):
             no message is to be updated.  This can happen when updating a
             translation credits message without the is_imported parameter set.
         """
-
-    def flags():
-        """Return a list of flags on this set."""
 
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' or None after doing some sanitization.
