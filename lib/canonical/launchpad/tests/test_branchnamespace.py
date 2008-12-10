@@ -13,7 +13,8 @@ from canonical.launchpad.database.branchnamespace import (
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, lookup_branch_namespace, IBranchNamespace)
+    get_branch_namespace, IBranchNamespace, lookup_branch_namespace,
+    InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import NoSuchDistribution
 from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.person import NoSuchPerson
@@ -345,6 +346,58 @@ class TestGetNamespace(TestCaseWithFactory):
             '~%s/%s/%s/no-such-spn' % (
                 person.name, distroseries.distribution.name,
                 distroseries.name))
+
+    def test_lookup_invalid_name(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            InvalidNamespace, lookup_branch_namespace, person.name)
+
+    def test_lookup_short_name_person_only(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            InvalidNamespace, lookup_branch_namespace, '~' + person.name)
+
+    def test_lookup_short_name_person_and_distro(self):
+        # We can't tell the difference between ~user/distro,
+        # ~user/no-such-product and ~user/no-such-distro, so we just raise
+        # NoSuchProduct, which is perhaps the most common case.
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        self.assertRaises(
+            NoSuchProduct, lookup_branch_namespace,
+            '~%s/%s' % (person.name, distroseries.distribution.name))
+
+    def test_lookup_short_name_distroseries(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        self.assertRaises(
+            InvalidNamespace, lookup_branch_namespace,
+            '~%s/%s/%s' % (
+                person.name, distroseries.distribution.name,
+                distroseries.name))
+
+    def test_lookup_long_name_junk(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            InvalidNamespace, lookup_branch_namespace,
+            '~%s/+junk/foo' % person.name)
+
+    def test_lookup_long_name_product(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            InvalidNamespace, lookup_branch_namespace,
+            '~%s/%s/foo' % (person.name, product.name))
+
+    def test_lookup_long_name_sourcepackage(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        self.assertRaises(
+            InvalidNamespace, lookup_branch_namespace,
+            '~%s/%s/%s/%s/foo' % (
+                person.name, distroseries.distribution.name,
+                distroseries.name, sourcepackagename.name))
 
 
 def test_suite():

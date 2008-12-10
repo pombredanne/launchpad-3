@@ -5,9 +5,10 @@
 __metaclass__ = type
 __all__ = [
     'get_branch_namespace',
-    'lookup_branch_namespace',
     'IBranchNamespace',
     'IBranchNamespaceSet',
+    'InvalidNamespace',
+    'lookup_branch_namespace',
     ]
 
 from zope.component import getUtility
@@ -87,13 +88,32 @@ def get_branch_namespace(person, product=None, distroseries=None,
         person, product, distroseries, sourcepackagename)
 
 
+class InvalidNamespace(Exception):
+    """Raised when someone tries to lookup a namespace with a bad name.
+
+    By 'bad', we mean that the name is unparseable. It might be too short, too
+    long or malformed in some other way.
+    """
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(
+            self, "Cannot understand namespace name: '%s'" % (name,))
+
+
 def lookup_branch_namespace(namespace_name):
     tokens = iter(namespace_name.split('/'))
-    person_name = tokens.next()[1:]
+    person_name = tokens.next()
+    if not person_name.startswith('~'):
+        raise InvalidNamespace(namespace_name)
+    person_name = person_name[1:]
     person = getUtility(IPersonSet).getByName(person_name)
     if person is None:
         raise NoSuchPerson(person_name)
-    product_name = tokens.next()
+    try:
+        product_name = tokens.next()
+    except StopIteration:
+        raise InvalidNamespace(namespace_name)
     product = distribution = distroseries = sourcepackagename = None
     if product_name == '+junk':
         product = None
@@ -112,8 +132,18 @@ def lookup_branch_namespace(namespace_name):
                 distribution, distroseries_name)
             if distroseries is None:
                 raise NoSuchDistroSeries(distroseries_name)
+            try:
+                sourcepackagename_name = tokens.next()
+            except StopIteration:
+                raise InvalidNamespace(namespace_name)
             sourcepackagename = getUtility(ISourcePackageNameSet)[
-                tokens.next()]
+                sourcepackagename_name]
+    try:
+        tokens.next()
+    except StopIteration:
+        pass
+    else:
+        raise InvalidNamespace(namespace_name)
     return get_branch_namespace(
         person, product=product, distroseries=distroseries,
         sourcepackagename=sourcepackagename)
