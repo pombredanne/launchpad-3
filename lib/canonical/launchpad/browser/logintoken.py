@@ -304,8 +304,19 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
 
+        # Suspended accounts cannot reset the password.
+        if naked_person.account.status == AccountStatus.SUSPENDED:
+            email_link = (
+                'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
+            message = structured(
+                  'Your password cannot be reset because your account is '
+                  'suspended. Contact a <a href="%s">Launchpad admin</a> '
+                  'about this issue.' % email_link)
+            self.request.response.addWarningNotification(message)
+            self.context.consume()
+            return
         # Reset password can be used to reactivate a deactivated account.
-        if naked_person.account.status == AccountStatus.DEACTIVATED:
+        elif naked_person.account.status == AccountStatus.DEACTIVATED:
             naked_person.reactivateAccount(
                 comment="User reactivated the account using reset password.",
                 password=data['password'],

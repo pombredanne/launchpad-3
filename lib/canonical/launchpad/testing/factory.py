@@ -431,9 +431,29 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
+    def enableDefaultStackingForProduct(self, product, branch=None):
+        """Give 'product' a default stacked-on branch.
+
+        :param product: The product to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.  If not supplied, a fresh branch will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch(product=product)
+        # 'branch' might be private, so we remove the security proxy to get at
+        # the methods.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete('rev1')
+        # Likewise, we might not have permission to set the user_branch of the
+        # development focus series.
+        naked_series = removeSecurityProxy(product.development_focus)
+        naked_series.user_branch = branch
+        return branch
+
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
-                                product=None):
+                                product=None, review_diff=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
@@ -446,7 +466,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch, dependent_branch=dependent_branch)
+            registrant, target_branch, dependent_branch=dependent_branch,
+            review_diff=review_diff)
 
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
@@ -631,12 +652,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
-    def makeBugTracker(self):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
-        base_url = 'http://%s.example.com/' % self.getUniqueString()
         owner = self.makePerson()
+
+        if base_url is None:
+            base_url = 'http://%s.example.com/' % self.getUniqueString()
+        if bugtrackertype is None:
+            bugtrackertype = BugTrackerType.BUGZILLA
+
         return getUtility(IBugTrackerSet).ensureBugTracker(
-            base_url, owner, BugTrackerType.BUGZILLA)
+            base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""

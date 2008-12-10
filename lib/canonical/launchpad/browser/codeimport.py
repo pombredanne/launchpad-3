@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IBranchSet, ICodeImport,
     ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
-from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branch import BranchExists, IBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
@@ -246,10 +246,28 @@ class CodeImportNewView(CodeImportBaseView):
             cvs_module=data['cvs_module'],
             review_status=status)
 
+    def _setBranchExists(self, existing_branch):
+        """Set a field error indicating that the branch already exists."""
+        self.setFieldError(
+           'branch_name',
+            structured("""
+            There is already an existing import for
+            <a href="%(product_url)s">%(product_name)s</a>
+            with the name of
+            <a href="%(branch_url)s">%(branch_name)s</a>.""",
+                       product_url=canonical_url(existing_branch.product),
+                       product_name=existing_branch.product.name,
+                       branch_url=canonical_url(existing_branch),
+                       branch_name=existing_branch.name))
+
     @action(_('Request Import'), name='request_import')
     def request_import_action(self, action, data):
         """Create the code_import, and subscribe the user to the branch."""
-        code_import = self._create_import(data, None)
+        try:
+            code_import = self._create_import(data, None)
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch)
+            return
 
         # Subscribe the user.
         code_import.branch.subscribe(
@@ -272,8 +290,12 @@ class CodeImportNewView(CodeImportBaseView):
             condition=_showApprove)
     def approve_action(self, action, data):
         """Create the code_import, and subscribe the user to the branch."""
-        code_import = self._create_import(
-            data, CodeImportReviewStatus.REVIEWED)
+        try:
+            code_import = self._create_import(
+                data, CodeImportReviewStatus.REVIEWED)
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch)
+            return
 
         # Don't subscribe the requester as they are an import operator.
         self.next_url = canonical_url(code_import.branch)
@@ -295,26 +317,6 @@ class CodeImportNewView(CodeImportBaseView):
             self._validateSVN(data.get('svn_branch_url'))
         else:
             raise AssertionError('Unknown revision control type.')
-
-        # Check for an existing branch owned by the vcs-imports
-        # for the product and name specified.
-        if data.get('product') and data.get('branch_name'):
-            existing_branch = getUtility(IBranchSet).getBranch(
-                getUtility(ILaunchpadCelebrities).vcs_imports,
-                data['product'],
-                data['branch_name'])
-            if existing_branch is not None:
-                self.setFieldError(
-                    'branch_name',
-                    structured("""
-                    There is already an existing import for
-                    <a href="%(product_url)s">%(product_name)s</a>
-                    with the name of
-                    <a href="%(branch_url)s">%(branch_name)s</a>.""",
-                    product_url=canonical_url(existing_branch.product),
-                    product_name=existing_branch.product.name,
-                    branch_url=canonical_url(existing_branch),
-                    branch_name=existing_branch.name))
 
 
 class EditCodeImportForm(Interface):

@@ -134,6 +134,10 @@ class BranchMergeProposal(SQLBase):
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
+
+    review_diff = ForeignKey(
+        foreignKey='StaticDiff', notNull=False, default=None)
+
     reviewed_revision_id = StringCol(default=None)
 
     commit_message = StringCol(default=None)
@@ -183,7 +187,7 @@ class BranchMergeProposal(SQLBase):
     @property
     def title(self):
         """See `IBranchMergeProposal`."""
-        return "Proposed merge of %(source)s into %(target)s" % {
+        return "[Merge] %(source)s into %(target)s" % {
             'source': self.source_branch.bzr_identity,
             'target': self.target_branch.bzr_identity}
 

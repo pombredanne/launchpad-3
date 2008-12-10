@@ -432,10 +432,8 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # on, then _getBranchPullInfo returns (id, url, unique_name,
         # default_branch_unique_name).
         product = self.factory.makeProduct()
+        default_branch = self.factory.enableDefaultStackingForProduct(product)
         branch = self.factory.makeBranch(product=product)
-        series = removeSecurityProxy(product.development_focus)
-        default_branch = self.factory.makeBranch(product=product)
-        series.user_branch = default_branch
         info = self.storage._getBranchPullInfo(branch)
         self.assertEqual(
             (branch.id, branch.getPullURL(), branch.unique_name,
@@ -745,8 +743,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         """
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
-        series = removeSecurityProxy(product.development_focus)
-        series.user_branch = branch
+        self.factory.enableDefaultStackingForProduct(product, branch)
+        self.assertEqual(product.default_stacked_on_branch, branch)
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):
