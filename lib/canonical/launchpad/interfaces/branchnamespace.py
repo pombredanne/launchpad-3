@@ -15,14 +15,6 @@ from zope.component import getUtility
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
-from canonical.launchpad.interfaces.distribution import (
-    IDistributionSet, NoSuchDistribution)
-from canonical.launchpad.interfaces.distroseries import (
-    IDistroSeriesSet, NoSuchDistroSeries)
-from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
-from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
-from canonical.launchpad.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
 
 
 class IBranchNamespace(Interface):
@@ -81,11 +73,20 @@ class IBranchNamespaceSet(Interface):
     def get(person, product, distroseries, sourcepackagename):
         """Return the appropriate `IBranchNamespace` for the given objects."""
 
+    def lookup(namespace_name):
+        """Return the `IBranchNamespace` for 'namespace_name'.
 
-def get_branch_namespace(person, product=None, distroseries=None,
-                         sourcepackagename=None):
-    return getUtility(IBranchNamespaceSet).get(
-        person, product, distroseries, sourcepackagename)
+        :raise InvalidNamespace: if namespace_name cannot be parsed.
+        :raise NoSuchPerson: if the person referred to cannot be found.
+        :raise NoSuchProduct: if the product referred to cannot be found.
+        :raise NoSuchDistribution: if the distribution referred to cannot be
+            found.
+        :raise NoSuchDistroSeries: if the distroseries referred to cannot be-
+            found.
+        :raise NoSuchSourcePackageName: if the sourcepackagename referred to
+            cannot be found.
+        :return: An `IBranchNamespace`.
+        """
 
 
 class InvalidNamespace(Exception):
@@ -101,49 +102,11 @@ class InvalidNamespace(Exception):
             self, "Cannot understand namespace name: '%s'" % (name,))
 
 
+def get_branch_namespace(person, product=None, distroseries=None,
+                         sourcepackagename=None):
+    return getUtility(IBranchNamespaceSet).get(
+        person, product, distroseries, sourcepackagename)
+
+
 def lookup_branch_namespace(namespace_name):
-    tokens = iter(namespace_name.split('/'))
-    person_name = tokens.next()
-    if not person_name.startswith('~'):
-        raise InvalidNamespace(namespace_name)
-    person_name = person_name[1:]
-    person = getUtility(IPersonSet).getByName(person_name)
-    if person is None:
-        raise NoSuchPerson(person_name)
-    try:
-        product_name = tokens.next()
-    except StopIteration:
-        raise InvalidNamespace(namespace_name)
-    product = distribution = distroseries = sourcepackagename = None
-    if product_name == '+junk':
-        product = None
-    else:
-        product = getUtility(IProductSet).getByName(product_name)
-        if product is None:
-            try:
-                distroseries_name = tokens.next()
-            except StopIteration:
-                raise NoSuchProduct(product_name)
-            distribution = getUtility(IDistributionSet).getByName(
-                product_name)
-            if distribution is None:
-                raise NoSuchDistribution(product_name)
-            distroseries = getUtility(IDistroSeriesSet).queryByName(
-                distribution, distroseries_name)
-            if distroseries is None:
-                raise NoSuchDistroSeries(distroseries_name)
-            try:
-                sourcepackagename_name = tokens.next()
-            except StopIteration:
-                raise InvalidNamespace(namespace_name)
-            sourcepackagename = getUtility(ISourcePackageNameSet)[
-                sourcepackagename_name]
-    try:
-        tokens.next()
-    except StopIteration:
-        pass
-    else:
-        raise InvalidNamespace(namespace_name)
-    return get_branch_namespace(
-        person, product=product, distroseries=distroseries,
-        sourcepackagename=sourcepackagename)
+    return getUtility(IBranchNamespaceSet).lookup(namespace_name)

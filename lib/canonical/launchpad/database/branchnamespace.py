@@ -18,7 +18,16 @@ from zope.interface import implements
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, IBranchSet)
-from canonical.launchpad.interfaces.branchnamespace import IBranchNamespace
+from canonical.launchpad.interfaces.branchnamespace import (
+    IBranchNamespace, InvalidNamespace)
+from canonical.launchpad.interfaces.distribution import (
+    IDistributionSet, NoSuchDistribution)
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeriesSet, NoSuchDistroSeries)
+from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
+from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -173,3 +182,50 @@ class BranchNamespaceSet:
             return PackageNamespace(person, distroseries, sourcepackagename)
         else:
             return PersonalNamespace(person)
+
+    def lookup(self, namespace_name):
+        tokens = iter(namespace_name.split('/'))
+        person_name = tokens.next()
+        if not person_name.startswith('~'):
+            raise InvalidNamespace(namespace_name)
+        person_name = person_name[1:]
+        person = getUtility(IPersonSet).getByName(person_name)
+        if person is None:
+            raise NoSuchPerson(person_name)
+        try:
+            product_name = tokens.next()
+        except StopIteration:
+            raise InvalidNamespace(namespace_name)
+        product = distribution = distroseries = sourcepackagename = None
+        if product_name == '+junk':
+            product = None
+        else:
+            product = getUtility(IProductSet).getByName(product_name)
+            if product is None:
+                try:
+                    distroseries_name = tokens.next()
+                except StopIteration:
+                    raise NoSuchProduct(product_name)
+                distribution = getUtility(IDistributionSet).getByName(
+                    product_name)
+                if distribution is None:
+                    raise NoSuchDistribution(product_name)
+                distroseries = getUtility(IDistroSeriesSet).queryByName(
+                    distribution, distroseries_name)
+                if distroseries is None:
+                    raise NoSuchDistroSeries(distroseries_name)
+                try:
+                    sourcepackagename_name = tokens.next()
+                except StopIteration:
+                    raise InvalidNamespace(namespace_name)
+                sourcepackagename = getUtility(ISourcePackageNameSet)[
+                    sourcepackagename_name]
+        try:
+            tokens.next()
+        except StopIteration:
+            pass
+        else:
+            raise InvalidNamespace(namespace_name)
+        return self.get(
+            person, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
