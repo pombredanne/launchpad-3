@@ -1109,6 +1109,19 @@ package copy request:
     status: NEW
     ...
 
+The requestPackageCopy method can also take an optional suite name:
+
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor,
+    ...     suite="hoary-updates");
+    >>> print pcr
+    Package copy request
+    source = primary/hoary/-/UPDATES
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other

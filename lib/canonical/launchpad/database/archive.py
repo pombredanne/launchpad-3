@@ -877,7 +877,7 @@ class Archive(SQLBase):
         """See `IArchive`."""
         if suite is not None:
             # Note: a NotFoundError will be raised if it is not found.
-            distroseries, pocket = distribution.getDistroSeriesAndPocket(
+            distroseries, pocket = self.distribution.getDistroSeriesAndPocket(
                 suite)
         else:
             distroseries = self.distribution.currentseries

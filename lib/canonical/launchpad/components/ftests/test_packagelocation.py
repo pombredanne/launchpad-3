@@ -7,8 +7,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
-from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
