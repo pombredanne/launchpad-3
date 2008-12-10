@@ -138,14 +138,10 @@
     template="../templates/specification-givefeedback.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
-    fields="person essential"
-    label="Subscribe someone else"
-    arguments="person essential"
     permission="launchpad.AnyPerson"
     template="../templates/specification-addsubscriber.pt"
     />
