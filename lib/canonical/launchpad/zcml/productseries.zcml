@@ -252,35 +252,23 @@
         permission="launchpad.Edit"
         />
 
-    <browser:editform
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesReviewView"
         facet="overview"
-        label="Review product series details"
-        fields="product name"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        >
-        <browser:widget
-            field="name"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="20" />
-    </browser:editform>
+        template="../templates/productseries-review.pt"
+        />
 
-    <browser:generalform
+    <browser:page
         name="+addpackage"
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.PackagingAddView"
-        schema="canonical.launchpad.interfaces.IPackaging"
-        label="Add distribution packaging record"
-        fields="distroseries sourcepackagename packaging"
-        keyword_arguments="distroseries sourcepackagename packaging"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt" >
-    </browser:generalform>
+    </browser:page>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"

@@ -65,6 +65,51 @@ we only have 3 PPAs in sampledata they are all presented.
 Nothing suitable in the sampledata, check the end of this document for
 further tests.
 
+== Other distributions PPAs ==
+
+Currently we only support PPAs for ubuntu, although the '+ppas' page
+is presented for other distribution.
+
+    >>> anon_browser.open("http://launchpad.dev/debian")
+    >>> anon_browser.getLink("PPAs").click()
+    >>> print anon_browser.title
+    Debian GNU/Linux Personal Package Archives
+
+Those pages present coherent data for a distribution with no PPAs.
+
+PPA supported architectures reflects what we have in sampledata.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    PPA supported series
+    3.1 "Sarge" - frozen
+    3.0 "Woody" - current
+      i386 (official)
+
+Archive and package counter are empty.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
+    Statistics
+    Debian does not have any registered PPA.
+
+'Latest uploads' section is not presented.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
+    None
+
+'Most active' section is not presented.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    None
+
+The 'search' form is also suppresed.
+
+    >>> anon_browser.getControl('Search', index=0).click()
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Search'
+
 
 == Searching PPAs ==
 
@@ -74,6 +119,8 @@ Description, Sources and Binaries, the latter two being a count.
 The default search shows only active (those with, at least one,
 PENDING or PUBLISHED source record) PPAs.
 
+    >>> anon_browser.open("http://launchpad.dev/ubuntu")
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
@@ -227,15 +274,12 @@ and the select control that lets you update them:
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    3 source packages
-    (9.5 MiB)
-    3 binary packages
-    (3 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -418,20 +462,108 @@ any package ever published in the context PPA.
 
 == Empty PPAs ==
 
-An empty PPA lists no packages and uses apt sources lines for the
-distribution's current release, as a guess.
+An empty PPA doesn't list any packages and it also doesn't present the
+'apt sources lines ' widget and the repository 'URL' since they would
+link to a repository that doesn't exist yet.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
     >>> print extract_text(anon_browser.contents)
     PPA for No Privileges Person
     ...
+    This archive is public
+    PPA for No Privileges Person
     URL: http://ppa.launchpad.dev/no-priv/ubuntu
-    ...
-    deb http://ppa.launchpad.dev/no-priv/ubuntu hoary main
-    deb-src http://ppa.launchpad.dev/no-priv/ubuntu hoary main
-    ...
+    I am not allowed to say, I have no privs.
+    Packages
     This PPA does not contain any packages yet.
     ...
+
+Note that the 'URL' page section contains the URL to the repository
+but it's not linkified.
+
+    >>> anon_browser.getLink("http://ppa.launchpad.dev/no-priv/ubuntu")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The "sources list" widget isn't presented for empty PPAs either.
+
+    >>> sources_list = find_tag_by_id(
+    ...     anon_browser.contents, 'sources-list-entries')
+    >>> print sources_list
+    None
+
+Users will only be able to see it for PPAs that have, at least, one
+published source.
+
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> login(ANONYMOUS)
+    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> sources_list = find_tag_by_id(
+    ...     anon_browser.contents, 'sources-list-entries')
+    >>> print extract_text(sources_list)
+    deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
+    deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
+
+Also the repository URL is an actual link.
+
+    >>> print anon_browser.getLink(
+    ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
+    http://ppa.launchpad.dev/no-priv/ubuntu
+
+
+== PPA signing key ==
+
+PPA signing keys are automatically generated and set sometime after
+the PPA creation. While the signing key isn't available nothing is
+presented to the users.
+
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'signing-key')
+    None
+
+We will set a signing key for 'No Privileges' PPA as if it got
+generated by our key-generation script (see doc/archive-signing.txt
+for more information).
+
+    >>> from canonical.launchpad.interfaces import IGPGKeySet
+    >>> from canonical.launchpad.interfaces import IPersonSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> a_key = getUtility(IGPGKeySet).get(1)
+    >>> no_priv.archive.signing_key = a_key
+    >>> logout()
+
+Now that 'No privileges' PPA has a signing key, a text with the key
+reference (fingerprint) and a pointer to the setup instructions in the
+help wiki are presented in the PPA index page.
+
+    >>> anon_browser.reload()
+
+    >>> signing_key_section = find_tag_by_id(
+    ...     anon_browser.contents, 'signing-key')
+
+    >>> print extract_text(signing_key_section)
+    This repository is signed with
+    ABCDEF0123456789ABCDDCBA0000111112345678 OpenPGP key.
+    Follow these instructions if you want to install packages from this PPA.
+
+The key fingerprint links to the actual key available in the ubuntu
+keyserver.
+
+    >>> print anon_browser.getLink(
+    ...     'ABCDEF0123456789ABCDDCBA0000111112345678').url
+    http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&op=index
+
+Another link in this section point users to the expanded instructions
+about how to use the signing_key.
+
+    >>> print anon_browser.getLink('these instructions').url
+    https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories
 
 
 == PPA Builds ==
@@ -464,15 +596,12 @@ properly.
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    1 source package
-    (9.5 MiB)
-    1 binary package
-    (0 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
@@ -659,8 +788,6 @@ can check how it looks.
 
     >>> publishToTeamPPA(team_name="ubuntu-team")
 
-    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
-
     >>> logout()
     >>> transaction.commit()
 
@@ -684,4 +811,3 @@ PPA itself.
     >>> anon_browser.getLink('Celso Providelo').click()
     >>> print anon_browser.title
     PPA for Celso Providelo
-

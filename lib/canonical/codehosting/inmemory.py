@@ -10,15 +10,18 @@ __all__ = [
 
 from xmlrpclib import Fault
 
+from bzrlib.urlutils import escape, unescape
+
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
-    datetime_from_tuple, LAUNCHPAD_SERVICES)
+    datetime_from_tuple, LAUNCHPAD_SERVICES, iter_split)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -81,13 +84,17 @@ class ObjectSet:
     def __iter__(self):
         return self._objects.itervalues()
 
+    def _find(self, **kwargs):
+        [(key, value)] = kwargs.items()
+        for obj in self:
+            if getattr(obj, key) == value:
+                return obj
+
     def get(self, id):
         return self._objects.get(id, None)
 
     def getByName(self, name):
-        for obj in self:
-            if obj.name == name:
-                return obj
+        return self._find(name=name)
 
 
 class FakeBranch(FakeDatabaseObject):
@@ -110,6 +117,7 @@ class FakeBranch(FakeDatabaseObject):
         self.private = private
         self.product = product
         self.registrant = registrant
+        self._mirrored = False
 
     @property
     def unique_name(self):
@@ -163,6 +171,16 @@ class FakeProduct(FakeDatabaseObject):
     def __init__(self, name):
         self.name = name
         self.development_focus = FakeProductSeries()
+
+    @property
+    def default_stacked_on_branch(self):
+        b = self.development_focus.user_branch
+        if b is None:
+            return None
+        elif b._mirrored:
+            return b
+        else:
+            return None
 
 
 class FakeProductSeries(FakeDatabaseObject):
@@ -230,6 +248,18 @@ class FakeObjectFactory(ObjectFactory):
         self._product_set._add(product)
         return product
 
+    def enableDefaultStackingForProduct(self, product, branch=None):
+        """Give 'product' a default stacked-on branch.
+
+        :param product: The product to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.  If not supplied, a fresh branch will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch(product=product)
+        branch._mirrored = True
+        product.development_focus.user_branch = branch
+        return branch
 
 class FakeBranchPuller:
 
@@ -321,8 +351,18 @@ class FakeBranchFilesystem:
         self._product_set = product_set
         self._factory = factory
 
-    def createBranch(self, requester_id, owner_name, product_name,
-                     branch_name):
+    def createBranch(self, requester_id, branch_path):
+        if not branch_path.startswith('/'):
+            return faults.InvalidPath(branch_path)
+        try:
+            escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
+            branch_tokens = escaped_path.split('/')
+            owner_name, product_name, branch_name = branch_tokens
+        except ValueError:
+            return Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                "Cannot create branch at '%s'" % branch_path)
+        owner_name = owner_name[1:]
         owner = self._person_set.getByName(owner_name)
         if owner is None:
             return Fault(
@@ -386,10 +426,7 @@ class FakeBranchFilesystem:
     def getBranchInformation(self, requester_id, user_name, product_name,
                              branch_name):
         unique_name = '~%s/%s/%s' % (user_name, product_name, branch_name)
-        branch = None
-        for possible_match in self._branch_set:
-            if possible_match.unique_name == unique_name:
-                branch = possible_match
+        branch = self._branch_set._find(unique_name=unique_name)
         if branch is None:
             return '', ''
         if not self._canRead(requester_id, branch):
@@ -416,6 +453,61 @@ class FakeBranchFilesystem:
         if not self._canRead(requester_id, branch):
             return ''
         return '/' + product.development_focus.user_branch.unique_name
+
+    def _serializeControlDirectory(self, requester, product_path,
+                                   trailing_path):
+        try:
+            owner_name, product_name, bazaar = product_path.split('/')
+        except ValueError:
+            # Wrong number of segments -- can't be a product.
+            return
+        if bazaar != '.bzr':
+            return
+        product = self._product_set.getByName(product_name)
+        if product is None:
+            return
+        default_branch = product.default_stacked_on_branch
+        if default_branch is None:
+            return
+        if not self._canRead(requester, default_branch):
+            return
+        return (
+            CONTROL_TRANSPORT,
+            {'default_stack_on': escape('/' + default_branch.unique_name)},
+            '/'.join([bazaar, trailing_path]))
+
+    def _serializeBranch(self, requester_id, branch, trailing_path):
+        if not self._canRead(requester_id, branch):
+            return None
+        elif branch.branch_type == BranchType.REMOTE:
+            return None
+        else:
+            return (
+                BRANCH_TRANSPORT,
+                {'id': branch.id,
+                 'writable': self._canWrite(requester_id, branch),
+                 }, trailing_path)
+
+    def translatePath(self, requester_id, path):
+        if not path.startswith('/'):
+            return faults.InvalidPath(path)
+        stripped_path = path.strip('/')
+        for first, second in iter_split(stripped_path, '/'):
+            first = unescape(first).encode('utf-8')
+            # Is it a branch?
+            branch = self._branch_set._find(unique_name=first)
+            if branch is not None:
+                branch = self._serializeBranch(requester_id, branch, second)
+                if branch is None:
+                    break
+                return branch
+
+            # Is it a product?
+            product = self._serializeControlDirectory(
+                requester_id, first, second)
+            if product:
+                return product
+        return faults.PathTranslationError(path)
 
 
 class InMemoryFrontend:

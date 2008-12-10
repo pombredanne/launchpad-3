@@ -109,17 +109,27 @@
 
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
 
+    <script tal:condition="view/user|nothing"
+     tal:content="structure string:LP.client.links.me =
+       '${view/user/fmt:api_url}';">
+    </script>
+
+    <script tal:condition="context/webservice:is_entry"
+     tal:content="structure string:LP.client.cache.context =
+       ${context/webservice:json_entry};">
+    </script>
+
     <tal:needs_json tal:condition="request/needs_json">
       <script type="text/javascript"
         tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
       <script type="text/javascript"
         tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
     </tal:needs_json>
-    <tal:comment condition="nothing">
-      XXX: salgado, 2008-08-19: For some reason the 2.122 and above versions of
-      the gmap javascript don't work properly when displaying a team's map, so we
-      use v=2.121 rather than v=2 for now.
-    </tal:comment>
+    <tal:XXX condition="nothing">
+      # XXX: salgado, 2008-08-19: For some reason the 2.122 and above versions of
+      # the gmap javascript don't work properly when displaying a team's map, so we
+      # use v=2.121 rather than v=2 for now.
+    </tal:XXX>
     <tal:needs-gmap2 condition="request/needs_gmap2">
       <tal:devmode condition="devmode">
         <script type="text/javascript"
@@ -246,7 +256,9 @@
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
-                              <!-- XXX Mark Shuttleworth 2007-04-30: Obsolete -->
+                             <tal:XXX condition="nothing">
+                              # XXX Mark Shuttleworth 2007-04-30: Obsolete
+                             </tal:XXX>
                             </metal:block>
                           </div>
                           <tal:notifications
@@ -340,7 +352,7 @@
         <iframe
           id="help-pane-content"
           class="invisible"
-          src="javascript:false;"></iframe>
+          src="javascript:void(0);"></iframe>
       </div>
       <div id="help-footer">
         <span id="help-close"></span>

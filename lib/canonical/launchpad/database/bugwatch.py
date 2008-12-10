@@ -16,9 +16,10 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
+from storm.expr import Not
 from storm.store import Store
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -202,19 +203,28 @@ class BugWatch(SQLBase):
 
         return message % error_data
 
+    @property
+    def unpushed_comments(self):
+        """Return the unpushed comments for this `BugWatch`."""
+        store = Store.of(self)
+        bug_messages = store.find(
+            BugMessage,
+            BugMessage.bug == self.bug,
+            BugMessage.bugwatch == self,
+            BugMessage.remote_comment_id == None)
+
+        return bug_messages
+
     def hasComment(self, comment_id):
         """See `IBugWatch`."""
-        query = """
-            BugMessage.message = Message.id
-            AND BugMessage.remote_comment_id = %s
-            AND BugMessage.bugwatch = %s
-        """ % sqlvalues(comment_id, self)
+        store = Store.of(self)
+        bug_messages = store.find(
+            BugMessage,
+            BugMessage.bug == self.bug.id,
+            BugMessage.bugwatch == self.id,
+            BugMessage.remote_comment_id == comment_id)
 
-        # XXX 2008-02-13 gmb:
-        #     This might be more efficient if we used an EXISTS query.
-        comment = BugMessage.selectOne(query, clauseTables=['Message'])
-
-        return comment is not None
+        return bug_messages.any() is not None
 
     def addComment(self, comment_id, message):
         """See `IBugWatch`."""
@@ -236,10 +246,16 @@ class BugWatch(SQLBase):
     def getImportedBugMessages(self):
         """See `IBugWatch`."""
         store = Store.of(self)
-        # If a comment is linked to a bug watch, it means it's imported.
+        # If a comment is linked to a bug watch and has a
+        # remote_comment_id, it means it's imported.
+        # XXX gmb 2008-12-09 bug 244768:
+        #     The Not() needs to be in this find() call due to bug
+        #     244768; we should remove it once that is solved.
         return store.find(
             BugMessage,
-            BugMessage.bug == self.bug.id, BugMessage.bugwatch == self.id)
+            BugMessage.bug == self.bug.id,
+            BugMessage.bugwatch == self.id,
+            Not(BugMessage.remote_comment_id == None))
 
 
 class BugWatchSet(BugSetBase):

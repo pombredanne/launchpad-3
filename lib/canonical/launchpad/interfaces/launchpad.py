@@ -33,7 +33,6 @@ __all__ = [
     'IBazaarApplication',
     'ICrowd',
     'IFeedsApplication',
-    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -124,6 +123,8 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
     lp_translations = Attribute("The Launchpad Translations product.")
+    ppa_key_guard = Attribute("The PPA signing keys owner.")
+
 
 class ICrowd(Interface):
 
@@ -238,10 +239,6 @@ class IAuthApplication(Interface):
 
 class IFeedsApplication(ILaunchpadApplication):
     """Launchpad Feeds application root."""
-
-
-class IHWDBApplication(ILaunchpadApplication):
-    """Hardware database application application root."""
 
 
 class IPasswordResets(IPersistent):

@@ -24,13 +24,15 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import Alias, AutoTables, Join, LeftJoin, SQL
+from storm.expr import And, Alias, AutoTables, Join, LeftJoin, SQL
+
 from storm.sqlobject import SQLObjectResultSet
 
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements, alsoProvides
+from zope.interface.interfaces import IMethod
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
@@ -289,30 +291,24 @@ class NullBugTask(BugTaskMixin):
         else:
             raise AssertionError('Unknown NullBugTask: %r.' % self)
 
-        # Set a bunch of attributes to None, because it doesn't make
+        # Make us provide the interface by setting all required attributes
+        # to None, and define the methods as raising NotImplementedError.
+        # The attributes are set to None because it doesn't make
         # sense for these attributes to have a value when there is no
         # real task there. (In fact, it may make sense for these
         # values to be non-null, but I haven't yet found a use case
         # for it, and I don't think there's any point on designing for
         # that until we've encountered one.)
-        self.id = None
-        self.age = None
-        self.milestone = None
-        self.status = None
-        self.statusexplanation = None
-        self.importance = None
-        self.assignee = None
-        self.bugwatch = None
-        self.owner = None
-        self.conjoined_master = None
-        self.conjoined_slave = None
+        def this_is_a_null_bugtask_method(*args, **kwargs):
+            raise NotImplementedError
 
-        self.datecreated = None
-        self.date_assigned = None
-        self.date_confirmed = None
-        self.date_last_updated = None
-        self.date_inprogress = None
-        self.date_closed = None
+        for name, spec in INullBugTask.namesAndDescriptions(True):
+            if not hasattr(self, name):
+                if IMethod.providedBy(spec):
+                    value = this_is_a_null_bugtask_method
+                else:
+                    value = None
+                setattr(self, name, value)
 
     @property
     def title(self):
@@ -1078,11 +1074,12 @@ def get_bug_privacy_filter(user):
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
     return """
-        (Bug.private = FALSE OR Bug.id in (
+        (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
              WHERE TeamParticipation.person = %(personid)s AND
-                   BugSubscription.person = TeamParticipation.team))
+                   BugSubscription.person = TeamParticipation.team AND
+                   BugSubscription.bug = Bug.id))
                      """ % sqlvalues(personid=user.id)
 
 
@@ -1936,6 +1933,33 @@ class BugTaskSet:
 
         return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def getOpenBugTasksPerProduct(self, user, products):
+        """See `IBugTaskSet`."""
+        # Local import of Bug to avoid import loop.
+        from canonical.launchpad.database.bug import Bug
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [
+            Bug,
+            Join(BugTask, BugTask.bug == Bug.id),
+            ]
+
+        product_ids = [product.id for product in products]
+        conditions = And(BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+                         Bug.duplicateof == None,
+                         BugTask.productID.is_in(product_ids))
+
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter != '':
+            conditions = And(conditions, privacy_filter)
+        result = store.using(*origin).find(
+            (BugTask.productID, SQL('COUNT(*)')),
+            conditions)
+
+        result = result.group_by(BugTask.productID)
+        # The result will return a list of product ids and counts,
+        # which will be converted into key-value pairs in the dictionary.
+        return dict(result)
 
     def getOrderByColumnDBName(self, col_name):
         """See `IBugTaskSet`."""

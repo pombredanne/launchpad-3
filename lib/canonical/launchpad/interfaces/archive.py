@@ -20,17 +20,20 @@ __all__ = [
     'IDistributionArchive',
     'IPPA',
     'IPPAActivateForm',
+    'MAIN_ARCHIVE_PURPOSES',
+    'ALLOW_RELEASE_BUILDS',
     'PocketNotFound',
     'SourceNotFound',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Text, TextLine)
+    Bool, Choice, Datetime, Int, Object, List, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
@@ -39,7 +42,7 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, webservice_error)
+    operation_returns_collection_of, rename_parameters_as, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -90,7 +93,7 @@ class IArchive(IHasOwner):
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
-            description=_("""The PPA owner.""")))
+            description=_("""The archive owner.""")))
 
     name = exported(
         TextLine(
@@ -100,16 +103,20 @@ class IArchive(IHasOwner):
 
     description = exported(
         Text(
-            title=_("PPA contents description"), required=False,
-            description=_("A short description of contents of this PPA.")))
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
-        description=_("Whether the PPA is enabled or not."))
+        description=_("Whether the archive is enabled or not."))
+
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
 
     private = Bool(
         title=_("Private"), required=False,
-        description=_("Whether the PPA is private to the owner or not."))
+        description=_("Whether the archive is private to the owner or not."))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -153,6 +160,9 @@ class IArchive(IHasOwner):
             title=_("The distribution that uses or is used by this "
                     "archive.")))
 
+    signing_key = Object(
+        title=_('Repository sigining key.'), required=False, schema=IGPGKey)
+
     dependencies = Attribute(
         "Archive dependencies recorded for this archive and ordered by owner "
         "displayname.")
@@ -164,6 +174,8 @@ class IArchive(IHasOwner):
     archive_url = Attribute("External archive URL.")
 
     is_ppa = Attribute("True if this archive is a PPA.")
+
+    is_copy = Attribute("True if this archive is a copy archive.")
 
     title = exported(
         Text(title=_("Archive Title."), required=False))
@@ -219,6 +231,35 @@ class IArchive(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
+    @rename_parameters_as(name="source_name", distroseries="distro_series")
+    @operation_parameters(
+        name=TextLine(title=_("Source package name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Choice(
+            title=_('Package Publishing Status'),
+            description=_('The status of this publishing record'),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType, 
+            required=False),
+        distroseries=Reference(
+            # Really IDistroSeries, fixed below to avoid circular import.
+            Interface,
+            title=_("Distroseries name"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        exact_match=Bool(
+            title=_("Exact Match"),
+            description=_("Whether or not to filter source names by exact"
+                          " matching."),
+            required=False))
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False):
@@ -676,8 +717,7 @@ class IArchiveEditDependenciesForm(Interface):
     """Schema used to edit dependencies settings within a archive."""
 
     dependency_candidate = Choice(
-        title=_('PPA Dependency'), required=False, vocabulary='PPA',
-        description=_("Add a new PPA dependency."))
+        title=_('Add PPA dependency'), required=False, vocabulary='PPA')
 
 
 class IArchiveSet(Interface):
@@ -685,11 +725,17 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    number_of_ppa_sources = Attribute(
-        'Number of published sources in public PPAs.')
+    def getNumberOfPPASourcesForDistribution(distribution):
+        """Return the number of sources for PPAs in a given distribution.
 
-    number_of_ppa_binaries = Attribute(
-        'Number of published binaries in public PPAs.')
+        Only public and published sources are considered.
+        """
+
+    def getNumberOfPPABinariesForDistribution(distribution):
+        """Return the number of binaries for PPAs in a given distribution.
+
+        Only public and published sources are considered.
+        """
 
     def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
@@ -732,6 +778,12 @@ class IArchiveSet(Interface):
         """Return all PPAs the given user can participate.
 
         The result is ordered by PPA owner's displayname.
+        """
+
+    def getPPAsPendingSigningKey():
+        """Return all PPAs pending signing key generation.
+
+        The result is ordered by archive creation date.
         """
 
     def getLatestPPASourcePublicationsForDistribution(distribution):
@@ -807,6 +859,17 @@ class ArchivePurpose(DBEnumeratedType):
         """)
 
 
+MAIN_ARCHIVE_PURPOSES = (
+    ArchivePurpose.PRIMARY,
+    ArchivePurpose.PARTNER,
+    )
+
+ALLOW_RELEASE_BUILDS = (
+    ArchivePurpose.PARTNER,
+    ArchivePurpose.PPA,
+    ArchivePurpose.COPY,
+    )
+
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -844,3 +907,26 @@ IArchive['syncSources'].queryTaggedValue(
 IArchive['syncSource'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['from_archive'].schema = IArchive
+
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.publishing import (
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus)
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['distroseries'].schema = IDistroSeries
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = ISourcePackagePublishingHistory
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['status'].vocabulary = PackagePublishingStatus
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
+
+# This is patched here to avoid even more circular imports in
+# interfaces/person.py.
+from canonical.launchpad.interfaces.person import IPersonPublic
+IPersonPublic['archive'].schema = IArchive
+

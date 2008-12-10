@@ -98,11 +98,11 @@
                   <div>
                     Registered by <a
                       tal:replace="structure view/pillar/owner/fmt:link">Foo Bar</a>
-                    <tal:comment condition="nothing">
+                    <tal:XXX condition="nothing">
                       # XXX sinzui 2008-05-27:
                       # Product and Project still use the wrong name for
                       # date_created.
-                    </tal:comment>
+                    </tal:XXX>
                     <span
                       tal:define="date_created view/pillar/datecreated|view/pillar/date_created|nothing"
                       tal:attributes="title date_created/fmt:datetime"

@@ -21,6 +21,7 @@ from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
+from bzrlib import urlutils
 
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
@@ -34,6 +35,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 from canonical.launchpad.webapp.uri import URI
@@ -267,7 +269,7 @@ class BranchMailer:
                 contents = ('%d revisions were removed from the branch.'
                             % number_removed)
             # No diff is associated with the removed email.
-            self.pending_emails.append((contents, '', None))
+            self.pending_emails.append((contents, '', None, 'removed'))
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
         """Generate an email for a revision for later sending.
@@ -301,7 +303,7 @@ class BranchMailer:
             subject = '[Branch %s] Rev %s: %s' % (
                 self.db_branch.unique_name, sequence, first_line)
             self.pending_emails.append(
-                (message, revision_diff, subject))
+                (message, revision_diff, subject, sequence))
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
@@ -335,12 +337,12 @@ class BranchMailer:
                        ' in the revision history of the branch.' %
                        revisions)
             send_branch_revision_notifications(
-                self.db_branch, self.email_from, message, '', None)
+                self.db_branch, self.email_from, message, '', None, 'initial')
         else:
-            for message, diff, subject in self.pending_emails:
+            for message, diff, subject, revno in self.pending_emails:
                 send_branch_revision_notifications(
                     self.db_branch, self.email_from, message, diff,
-                    subject)
+                    subject, revno)
 
         self.trans_manager.commit()
 
@@ -348,27 +350,45 @@ class BranchMailer:
 class BranchMergeDetectionHandler:
     """Handle merge detection events."""
 
+    def __init__(self, logger=None):
+        if logger is None:
+            logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
+
+    def _markSourceBranchMerged(self, source):
+        # If the source branch is a series branch, then don't change the
+        # lifecycle status of it at all.
+        if source.associatedProductSeries().count() > 0:
+            return
+        # In other cases, we now want to update the lifecycle status of the
+        # source branch to merged.
+        self.logger.info("%s now Merged.", source.bzr_identity)
+        source.lifecycle_status = BranchLifecycleStatus.MERGED
+
     def mergeProposalMerge(self, proposal):
         """Handle a detected merge of a proposal."""
+        self.logger.info(
+            'Merge detected: %s => %s',
+            proposal.source_branch.bzr_identity,
+            proposal.target_branch.bzr_identity)
         proposal.markAsMerged()
-        proposal.source_branch.lifecycle_status = (
-            BranchLifecycleStatus.MERGED)
+        # Don't update the source branch unless the target branch is a series
+        # branch.
+        if proposal.target_branch.associatedProductSeries().count() == 0:
+            return
+        self._markSourceBranchMerged(proposal.source_branch)
 
     def mergeOfTwoBranches(self, source, target):
         """Handle the merge of source into target."""
         # If the target branch is not the development focus, then don't update
         # the status of the source branch.
+        self.logger.info(
+            'Merge detected: %s => %s',
+            source.bzr_identity, target.bzr_identity)
         dev_focus = target.product.development_focus
         if target != dev_focus.user_branch:
             return
-        # If the source branch is a series branch, then don't change the
-        # lifecycle status of it at all.
-        if source.associatedProductSeries().count() > 0:
-            return
-
-        # In other cases, we now want to update the lifecycle status of the
-        # source branch to merged.
-        source.lifecycle_status = BranchLifecycleStatus.MERGED
+        self._markSourceBranchMerged(source)
 
 
 class WarehouseBranchPolicy(BranchPolicy):
@@ -384,6 +404,14 @@ class WarehouseBranchPolicy(BranchPolicy):
         uri = URI(url)
         if uri.scheme != 'lp-mirrored':
             raise InvalidStackedBranchURL(url)
+
+    def transformFallbackLocation(self, branch, url):
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        We're happy to open stacked branches in the usual manner, but want to
+        go on checking the URLs of any branches we then open.
+        """
+        return urlutils.join(branch.base, url), True
 
 
 def iter_list_chunks(a_list, size):
@@ -410,7 +438,7 @@ class BzrSync:
         self.db_branch = branch
         self._bug_linker = BugBranchLinker(self.db_branch)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
-        self._merge_handler = BranchMergeDetectionHandler()
+        self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch, handling locking.
@@ -504,6 +532,7 @@ class BzrSync:
         # last_scanned_revision is in the ancestry, then mark it as merged.
         branches = getUtility(IBranchSet).getBranchesForContext(
             context=self.db_branch.product,
+            visible_by_user=LAUNCHPAD_SERVICES,
             lifecycle_statuses=(
                 BranchLifecycleStatus.NEW,
                 BranchLifecycleStatus.DEVELOPMENT,

@@ -72,9 +72,8 @@ mailing list.
 
 You may not register a mailing list for a person.
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> login('foo.bar@canonical.com')
-    >>> anne = new_person('Anne')
+    >>> anne = factory.makePersonByName('Anne')
     >>> login(ANONYMOUS)
     >>> list_set.new(anne, anne)
     Traceback (most recent call last):
@@ -94,7 +93,7 @@ mailing list.
 
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
-    >>> bart = new_person('Bart')
+    >>> bart = factory.makePersonByName('Bart')
     >>> team_two.addMember(anne, bart, status=TeamMembershipStatus.ADMIN)
     >>> login(ANONYMOUS)
     >>> flush_database_updates()
@@ -137,7 +136,7 @@ The mailing list's registrant does not change even if the team's owner
 changes.
 
     >>> login('foo.bar@canonical.com')
-    >>> cris = new_person('Cris')
+    >>> cris = factory.makePersonByName('Cris')
     >>> team_one.teamowner = cris
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
@@ -181,7 +180,7 @@ participate in the Mailing List Experts team.
     >>> mailing_list_experts = getUtility(
     ...     ILaunchpadCelebrities).mailing_list_experts
     >>> login('foo.bar@canonical.com')
-    >>> dirk = new_person('Dirk')
+    >>> dirk = factory.makePersonByName('Dirk')
     >>> login(ANONYMOUS)
     >>> dirk.hasParticipationEntryFor(mailing_list_experts)
     False
@@ -451,7 +450,8 @@ You cannot turn a team with a mailing list into a private team.
     >>> team_one.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     Traceback (most recent call last):
     ...
-    ValueError: This team cannot be made private since it is referenced by a mailinglist.
+    ImmutableVisibilityError: This team cannot be made private since it is
+    referenced by a mailing list.
 
 However, you can give a private team a mailing list.
 
@@ -473,7 +473,8 @@ Once a private team has a mailing list though, it cannot be made public.
     >>> thereminists.visibility = PersonVisibility.PUBLIC
     Traceback (most recent call last):
     ...
-    ValueError: This team cannot be made public since it has a mailing list
+    ImmutableVisibilityError: This team cannot be made public since it has a
+    mailing list
 
 
 == Welcome messages ==

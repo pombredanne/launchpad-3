@@ -5,12 +5,15 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePublishingRecordView',
-    'SourcePublishingRecordSelectableView',
     'BinaryPublishingRecordView',
+    'SourcePublicationURL',
+    'SourcePublishingRecordSelectableView',
+    'SourcePublishingRecordView',
     ]
 
 from operator import attrgetter
+
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
@@ -20,6 +23,24 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     BuildStatus, PackagePublishingStatus)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+
+class SourcePublicationURL:
+    """Dynamic URL declaration for `ISourcePackagePublishingHistory`"""
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        return self.context.archive
+
+    @property
+    def path(self):
+        return u"+sourcepub/%s" % self.context.id
 
 
 class BasePublishingRecordView(LaunchpadView):
@@ -124,6 +145,14 @@ class BasePublishingRecordView(LaunchpadView):
         </script>
         """ % (self.context.id, self.context.id)
 
+    @property
+    def removal_comment(self):
+        """Return the removal comment or 'None provided'."""
+        removal_comment = self.context.removal_comment
+        if removal_comment is None or not removal_comment.strip():
+            removal_comment = u'None provided.'
+
+        return removal_comment
 
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
