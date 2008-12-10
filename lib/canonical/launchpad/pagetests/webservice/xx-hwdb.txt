@@ -119,11 +119,11 @@ the given optional parameters package_name and name. (See
 doc/hwdb-device-tables.txt for details about the underlying table
 HWDriver.)
 
-    >>> # All driver records from the sample data have package_name ==
-    >>> # 'linux-image-2.6.24-19-generic'; let's add some driver records
-    >>> # with different package names, so that we can see how filtering
-    >>> # by name works.
-    >>>
+All driver records from the sample data have package_name ==
+'linux-image-2.6.24-19-generic'; let's add some driver records
+with different package names, so that we can see how filtering
+by name works.
+
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
     >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
@@ -223,7 +223,7 @@ returned.
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/8'
 
 If we specify an empty package name, those drivers are returned where
-package_name is an empty string or None.
+a package_name is not recorded.
 
     >>> drivers = webservice.get(
     ...     '/+hwdb?ws.op=drivers&package_name=').jsonBody()

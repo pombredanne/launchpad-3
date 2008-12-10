@@ -618,7 +618,8 @@ class IHWDriver(Interface):
         TextLine(
             title=u'Package Name', required=False,
             description=_("The name of the package written without spaces in "
-                          "lowercase letters and numbers.")))
+                          "lowercase letters and numbers."),
+            default=u''))
 
     name = exported(
         TextLine(

@@ -1061,7 +1061,7 @@ example a Ghostscript driver of a printer or a Sane scanner backend.
     GNU GPL v2
 
 The submitted data does not need to contain package information for all
-drivers, hence the field package_name may be None or the empyty string
+drivers, hence the field package_name may be None or the empty string
 (see below).
 
     >>> driver2 = driver_set.create(package_name=None,
@@ -1173,8 +1173,10 @@ given parameters.
     ...    print driver.package_name, driver.name
     linux-image-2.6.24-19-generic ahci
 
-If package_name is an empty string, those driver records are returned,
-where the package name is None or an empty string.
+If package_name is an empty string, driver records are returned where
+the package name is not recorded (which is denoted by None or the
+empty string. See also bug 306265: Disallow the column value
+HWDriver.package_name=null).
 
     >>> drivers = driver_set.search(package_name='')
     >>> for driver in drivers:
@@ -1204,6 +1206,7 @@ records.
     None whatever
     u'' something_else
     u'linux-image-generic' foo
+
 
 == HWDeviceDriverLink ==
 
