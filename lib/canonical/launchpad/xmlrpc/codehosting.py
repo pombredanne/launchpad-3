@@ -27,12 +27,14 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.branchnamespace import (
+    InvalidNamespace, lookup_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
     READ_ONLY, WRITABLE)
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
+from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
@@ -210,32 +212,28 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return faults.InvalidPath(branch_path)
             escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
             try:
-                branch_tokens = escaped_path.split('/')
-                personName, productName, branchName = branch_tokens
+                namespace_name, branch_name = escaped_path.rsplit('/', 1)
             except ValueError:
                 return Fault(
                     PERMISSION_DENIED_FAULT_CODE,
                     "Cannot create branch at '%s'" % branch_path)
-            personName = personName[1:]
-            owner = getUtility(IPersonSet).getByName(personName)
-            if owner is None:
+            try:
+                namespace = lookup_branch_namespace(namespace_name)
+            except InvalidNamespace:
+                return Fault(
+                    PERMISSION_DENIED_FAULT_CODE,
+                    "Cannot create branch at '%s'" % branch_path)
+            except NoSuchPerson, e:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "User/team '%s' does not exist." % personName)
-
-            if productName == '+junk':
-                product = None
-            else:
-                product = getUtility(IProductSet).getByName(productName)
-                if product is None:
-                    return Fault(
-                        NOT_FOUND_FAULT_CODE,
-                        "Project '%s' does not exist." % productName)
-
+                    "User/team '%s' does not exist." % e.name)
+            except NoSuchProduct, e:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Project '%s' does not exist." % e.name)
             try:
-                branch = getUtility(IBranchSet).new(
-                    BranchType.HOSTED, branchName, requester, owner,
-                    product, None, None, author=requester)
+                branch = namespace.createBranch(
+                    BranchType.HOSTED, branch_name, requester)
             except (BranchCreationException, LaunchpadValidationError), e:
                 return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
             else:
