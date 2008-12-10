@@ -156,8 +156,15 @@ getPermissionsForPerson returns all the permissions that a user has.
     ...     ubuntutest['main_archive_link'], 'getPermissionsForPerson',
     ...     person=ubuntu_team['self_link']).jsonBody()
 
+    >>> def permission_entry_sort_key(entry):
+    ...      return (entry['permission'],
+    ...              entry['person_link'],
+    ...              entry['component_name'],
+    ...              entry['source_package_name']),
+
     >>> def show_permission_entries(permissions):
-    ...     for entry in sorted(permissions['entries']):
+    ...     for entry in sorted(permissions['entries'],
+    ...                         key=permission_entry_sort_key):
     ...         print entry['permission']
     ...         print entry['person_link']
     ...         print entry['component_name']
@@ -266,9 +273,9 @@ component.
     http://.../ubuntu/+archive/primary/+upload/name12.restricted
 
     >>> show_component_permissions()
+    Archive Upload Rights ...~name12 restricted None
     Archive Upload Rights ...~ubuntu-team main None
     Archive Upload Rights ...~ubuntu-team restricted None
-    Archive Upload Rights ...~name12 restricted None
     Archive Upload Rights ...~ubuntu-team universe None
 
 deleteComponentUploader() removes that permission:

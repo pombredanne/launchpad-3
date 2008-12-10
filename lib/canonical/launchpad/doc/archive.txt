@@ -103,15 +103,17 @@ asserts the archive is indeed a COPY and if the name is valid.
 We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> rebuild_owner = factory.makePerson(
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen')
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     owner=rebuild_owner, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
 
 By default, copy archives are created with their 'publish' flag
 turned off, so that the publisher ignores them.
 
-    >>> rebuild_archive.publish == False
-    True
+    >>> rebuild_archive.publish
+    False
 
 Only 'valid' (traversable) names can be set.
 
@@ -127,6 +129,28 @@ Valid names work as expected.
     there-we-go
 
     >>> login(ANONYMOUS)
+
+Please note that copy archive titles include the owner name as well as
+the archive's name.
+
+    >>> rebuild_archive.title
+    u'Copy archive there-we-go for J\xc3\xbcrgen'
+
+The "is_copy" property allows us to ask an archive whether it's a copy
+archive.
+
+    >>> rebuild_archive.is_copy
+    True
+
+    >>> cprov_archive.is_copy
+    False
+
+Uploads to copy archives are not allowed.
+
+    >>> rebuild_archive.canUpload(cprov)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Uploads to copy archives are not allowed.
 
 
 == Published Source and Binary Lookup ==
@@ -859,6 +883,12 @@ The `IArchiveDependency` object simply maps the desired relationship.
     >>> print archive_dependency.dependency.title
     PPA for Mark Shuttleworth
 
+The `IArchiveDependency` object itself implement a 'title'
+property. For PPA dependencies the title defaults to the PPA title.
+
+    >>> print archive_dependency.title
+    PPA for Mark Shuttleworth
+
 The archive dependency is immediately recorded on Celso's PPA.
 
     >>> print_dependencies(cprov.archive)
@@ -917,6 +947,12 @@ COPY.
     ...     ubuntu.main_archive, PackagePublishingPocket.UPDATES,
     ...     getUtility(IComponentSet)['universe'])
 
+Other dependencies than PPAs have an extended 'title', which includes
+the target 'pocket' and 'component'.
+
+    >>> print primary_dependency.title
+    Primary Archive for Ubuntu Linux - UPDATES - universe
+
 See further implications of archive dependencies in
 doc/archive-dependencies.txt.
 
@@ -934,7 +970,6 @@ Thus archive dependency removal can be performed simply by passing the
 dependency target.
 
     >>> no_priv.archive.removeArchiveDependency(ubuntu.main_archive)
-
 
 Non-PPA dependencies can have empty 'component' ...
 
@@ -1810,3 +1845,35 @@ Copy package3 1.0 explicitly:
     >>> print sabdfl_three.sourcepackagerelease.version
     1.0
 
+
+== Publish flag ==
+
+Every archive has a "publish" flag that governs whether it should be
+published or not. Upon creation that flag is false for copy archives but
+true for all other archive types.
+
+    >>> gentoo = getUtility(IDistributionSet)['gentoo']
+    >>> gentoo_primary = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PRIMARY,
+    ...     distribution=gentoo, name='gentoo-primary')
+    >>> gentoo_primary.publish
+    True
+
+    >>> gentoo_partner = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PARTNER,
+    ...     distribution=gentoo, name='gentoo-partner')
+    >>> gentoo_partner.publish
+    True
+
+The 'sandbox archive' is a PPA that was newly created above.
+
+    >>> sandbox_archive.is_ppa
+    True
+    >>> sandbox_archive.publish
+    True
+
+    >>> gentoo_copy = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     distribution=gentoo, name='gentoo-copy')
+    >>> gentoo_copy.publish
+    False

@@ -20,6 +20,8 @@ __all__ = [
     'IDistributionArchive',
     'IPPA',
     'IPPAActivateForm',
+    'MAIN_ARCHIVE_PURPOSES',
+    'ALLOW_RELEASE_BUILDS',
     'PocketNotFound',
     'SourceNotFound',
     ]
@@ -173,7 +175,7 @@ class IArchive(IHasOwner):
 
     is_ppa = Attribute("True if this archive is a PPA.")
 
-    is_copy = Attribute("True if this archive as a COPY archive.")
+    is_copy = Attribute("True if this archive is a copy archive.")
 
     title = exported(
         Text(title=_("Archive Title."), required=False))
@@ -707,8 +709,7 @@ class IArchiveEditDependenciesForm(Interface):
     """Schema used to edit dependencies settings within a archive."""
 
     dependency_candidate = Choice(
-        title=_('PPA Dependency'), required=False, vocabulary='PPA',
-        description=_("Add a new PPA dependency."))
+        title=_('Add PPA dependency'), required=False, vocabulary='PPA')
 
 
 class IArchiveSet(Interface):
@@ -865,6 +866,17 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
 
+
+MAIN_ARCHIVE_PURPOSES = (
+    ArchivePurpose.PRIMARY,
+    ArchivePurpose.PARTNER,
+    )
+
+ALLOW_RELEASE_BUILDS = (
+    ArchivePurpose.PARTNER,
+    ArchivePurpose.PPA,
+    ArchivePurpose.COPY,
+    )
 
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.

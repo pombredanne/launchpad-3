@@ -7,7 +7,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
@@ -22,6 +23,49 @@ class TestPackageLocation(TestCaseWithFactory):
         """Use a helper method to setup a `PackageLocation` object."""
         return build_package_location(
             distribution_name, suite, purpose, person_name, archive_name)
+
+#    def testSetupLocationForCOPY(self):
+#        """`PackageLocation` for COPY archives."""
+#        location = self.getPackageLocation()
+
+#        # The copy archive in the sample data is associated with the
+#        # 'ubuntutest' distribution.
+#        location.distribution = getUtility(
+#            IDistributionSet).getByName('ubuntutest')
+#        # Set a distroseries that's valid for the 'ubuntutest' distribution.
+#        location.distroseries = location.distribution['hoary-test']
+#        # Now get the sample copy archive.
+#        ubuntu = getUtility(IDistributionSet)['ubuntu']
+#        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+#        copy_archive = getUtility(IArchiveSet).new(
+#            owner=sabdfl, purpose=ArchivePurpose.COPY,
+#            distribution=ubuntu, name='now-comes-the-mystery')
+#        self.assertTrue(copy_archive is not None)
+#        location.archive = copy_archive
+#        # Make sure the string representation shows both the copy archive
+#        # owner name as well as the archive's name.
+#        self.assertEqual(
+#            str(location), 'sabdfl/now-comes-the-mystery: hoary-test-RELEASE')
+
+    def testSetupLocationForCOPY(self):
+        """`PackageLocation` for COPY archives."""
+        # First create a copy archive for the default Ubuntu primary
+        ubuntu = self.getPackageLocation().distribution
+
+        returned_location = self.factory.makeCopyArchiveLocation(
+            distribution=ubuntu)
+        copy_archive = returned_location.archive
+
+        location = self.getPackageLocation(purpose=ArchivePurpose.COPY,
+                                           archive_name=copy_archive.name)
+        self.assertEqual(location.distribution.name, 'ubuntu')
+        self.assertEqual(location.distroseries.name, 'hoary')
+        self.assertEqual(location.pocket.name, 'RELEASE')
+        self.assertEqual(location.archive.title,
+                         'Generalized copy archive for Ubuntu Linux')
+        import pdb;pdb.set_trace()
+        test = str(location)
+        i = 1
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""
@@ -50,23 +94,6 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.pocket.name, 'RELEASE')
         self.assertEqual(location.archive.title,
                          'Partner Archive for Ubuntu Linux')
-
-    def testSetupLocationForCOPY(self):
-        """`PackageLocation` for COPY archives."""
-        # First create a copy archive for the default Ubuntu primary
-        ubuntu = self.getPackageLocation().distribution
-
-        returned_location = self.factory.makeCopyArchiveLocation(
-            distribution=ubuntu)
-        copy_archive = returned_location.archive
-
-        location = self.getPackageLocation(purpose=ArchivePurpose.COPY,
-                                           archive_name=copy_archive.name)
-        self.assertEqual(location.distribution.name, 'ubuntu')
-        self.assertEqual(location.distroseries.name, 'hoary')
-        self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
-                         'Generalized copy archive for Ubuntu Linux')
 
     def testSetupLocationUnknownDistribution(self):
         """`PackageLocationError` is raised on unknown distribution."""

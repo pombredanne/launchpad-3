@@ -152,6 +152,34 @@ Simple keys are shown without quotes, to aid readability, and default
 branches are shown with '*' as the key.
 
 
+== Pruning ==
+
+During tree creation, branches which have keys that already appear in
+earlier branches are cloned and have those already seen keys
+pruned. If all keys are removed from a branch it is discarded.
+
+The third branch in the following tree is discarded because 'Snack'
+already appears as a key in the first branch. The fourth branch is
+cloned then modified to remove the 'Lunch' key which already appeared
+in the second branch. The default branch is left unchanged; only
+branches with keys are candidates for being discarded.
+
+  >>> pruned_tree = LookupTree(
+  ...     ('Snack', 'Crisps'),
+  ...     ('Lunch', 'Bread'),
+  ...     ('Snack', 'Mars Bar'),
+  ...     ('Lunch', 'Dinner', 'Soup'),
+  ...     ('Eat more fruit and veg',),
+  ...     )
+  >>> print pruned_tree.describe()
+  tree(
+      branch(Snack => 'Crisps')
+      branch(Lunch => 'Bread')
+      branch(Dinner => 'Soup')
+      branch(* => 'Eat more fruit and veg')
+      )
+
+
 == Documentation ==
 
 You can discover the minimum and maximum depth of a tree.
