@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
 import transaction
 import unittest
 
@@ -15,7 +16,6 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)
 from canonical.launchpad.database import MessageSet
-from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler, InvalidBranchMergeProposalAddress,
@@ -25,7 +25,8 @@ from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
     mail_handlers, MaloneHandler)
 from canonical.launchpad.mail.helpers import parse_commands
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from canonical.launchpad.testing import (
+    login, login_person, TestCase, TestCaseWithFactory)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
@@ -184,23 +185,11 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertFalse(self.code_handler.process(mail,
             'mp+0@code.launchpad.dev', None))
 
-    def test_processFailure(self):
-        """When process fails, it returns False."""
-        code_handler = CodeHandler()
-        # Induce unexpected failure
-        def raise_value_error(*args, **kwargs):
-            raise ValueError('Bad value')
-        code_handler._getVote = raise_value_error
-        mail = self.factory.makeSignedMessage('<my-id>')
-        bmp = self.factory.makeBranchMergeProposal()
-        email_addr = bmp.address
-        self.switchDbUser(config.processmail.dbuser)
-        self.assertRaises(ValueError, code_handler.process, mail,
-            email_addr, None)
-
     def test_processBadVote(self):
         """process handles bad votes properly."""
         mail = self.factory.makeSignedMessage(body=' vote badvalue')
+        # Make sure that the correct user principal is there.
+        login(mail['From'])
         bmp = self.factory.makeBranchMergeProposal()
         # Remove the notifications sent about the new proposal.
         pop_notifications()
@@ -209,13 +198,32 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertTrue(self.code_handler.process(
             mail, email_addr, None), "Didn't return True")
         notification = pop_notifications()[0]
-        self.assertEqual('Unsupported vote', notification['subject'])
-        self.assertEqual(
-            'Your comment was not accepted because the string "badvalue" is'
-            ' not a supported voting value.  The following values are'
-            ' supported: abstain, approve, disapprove, needs_fixing, '
-            'resubmit.',
-            notification.get_payload(decode=True))
+        self.assertEqual('Submit Request Failure', notification['subject'])
+        # The returned message is a multipart message, the first part is
+        # the message, and the second is the original message.
+        message, original = notification.get_payload()
+        self.assertEqual(dedent("""\
+        An error occurred while processing a mail you sent to Launchpad's email
+        interface.
+
+        Failing command:
+            vote badvalue
+
+        Error message:
+
+        The 'review' command expects any of the following arguments:
+        abstain, approve, disapprove, needs_fixing, resubmit
+
+        For example:
+
+            review needs_fixing
+
+
+        -- 
+        For more information about using Launchpad by e-mail, see
+        https://help.launchpad.net/EmailInterface
+        or send an email to help@launchpad.net"""),
+                                message.get_payload(decode=True))
         self.assertEqual(mail['From'], notification['To'])
 
     def test_getReplyAddress(self):
@@ -458,17 +466,6 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', None)
         self.assertEqual(target, source.landing_targets[0].target_branch)
-
-
-    def test_getVoteNoCommand(self):
-        """getVote returns None, None when no command is supplied."""
-        # XXX: change this to check commands from body
-        mail = self.factory.makeSignedMessage(body='')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, None)
-        self.assertEqual(vote_tag, None)
-
 
 
 class TestVoteEmailCommand(TestCase):

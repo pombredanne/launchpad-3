@@ -104,8 +104,8 @@ class VoteEmailCommand(CodeReviewEmailCommand):
             # If the word doesn't match, check aliases that we allow.
             context.vote = self._vote_alias.get(vote_string)
             if context.vote is None:
-                valid_votes = sorted(
-                    v.name.lower() for v in CodeReviewVote.items.items)
+                valid_votes = ', '.join(sorted(
+                    v.name.lower() for v in CodeReviewVote.items.items))
                 raise EmailProcessingError(
                     get_error_message(
                         'dbschema-command-wrong-argument.txt',
@@ -245,14 +245,14 @@ class CodeHandler:
                 filealias=file_alias,
                 parsed_message=mail)
             comment = merge_proposal.createCommentFromMessage(
-                message, context.vote, context.vote_tag)
+                message, context.vote, context.vote_tags)
 
         except IncomingEmailError, error:
             send_process_error_notification(
                 str(user.preferredemail.email),
                 'Submit Request Failure',
                 error.message, mail, error.failing_command)
-            transaction.rollback()
+            transaction.abort()
         return True
 
     @staticmethod
