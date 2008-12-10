@@ -175,11 +175,15 @@ class CodeEmailCommands(EmailCommandCollection):
         'reviewer': AddReviewerEmailCommand,
         }
 
-    def names(self):
-        return self._commands.keys()
-
-
-code_email_commands = CodeEmailCommands()
+    @classmethod
+    def getCommands(klass, message_body):
+        """Extract the commands from the message body."""
+        if message_body is None:
+            return []
+        commands = [klass.get(name=name, string_args=args) for
+                    name, args in parse_commands(message_body,
+                                                 klass._commands.keys())]
+        return sorted(commands, key=operator.attrgetter('sort_order'))
 
 
 class CodeHandler:
@@ -216,7 +220,7 @@ class CodeHandler:
 
         user = getUtility(ILaunchBag).user
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
-        commands = self.getCommands(mail, merge_proposal)
+        commands = CodeEmailCommands.getCommands(get_main_body(mail))
         try:
             if len(commands) > 0:
                 ensure_not_weakly_authenticated(mail, 'code review')
@@ -250,16 +254,6 @@ class CodeHandler:
                 error.message, mail, error.failing_command)
             transaction.rollback()
         return True
-
-    def getCommands(self, signed_message, merge_proposal):
-        """Get the command objects to process the message."""
-        content = get_main_body(signed_message)
-        if content is None:
-            return []
-        commands = [code_email_commands.get(name=name, string_args=args) for
-                    name, args in parse_commands(content,
-                                                 code_email_commands.names())]
-        return sorted(commands, key=operator.attrgettr('order'))
 
     @staticmethod
     def _getReplyAddress(mail):
