@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces.distroseries import (
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+    ISourcePackageNameSet, NoSuchSourcePackageName)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -203,31 +203,54 @@ class BranchNamespaceSet:
         data['person'] = data['person'][1:]
         return data
 
+    def _findOrRaise(self, error, name, finder, *args):
+        if name is None:
+            return None
+        args = list(args)
+        args.append(name)
+        result = finder(*args)
+        if result is None:
+            raise error(name)
+        return result
+
+    def _findPerson(self, person_name):
+        return self._findOrRaise(
+            NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
+
+    def _findProduct(self, product_name):
+        if product_name == '+junk':
+            return None
+        return self._findOrRaise(
+            NoSuchProduct, product_name,
+            getUtility(IProductSet).getByName)
+
+    def _findDistribution(self, distribution_name):
+        return self._findOrRaise(
+            NoSuchDistribution, distribution_name,
+            getUtility(IDistributionSet).getByName)
+
+    def _findDistroSeries(self, distribution, distroseries_name):
+        return self._findOrRaise(
+            NoSuchDistroSeries, distroseries_name,
+            getUtility(IDistroSeriesSet).queryByName, distribution)
+
+    def _findSourcePackageName(self, sourcepackagename_name):
+        return self._findOrRaise(
+            NoSuchSourcePackageName, sourcepackagename_name,
+            getUtility(ISourcePackageNameSet).queryByName)
+
+    def _realize(self, names):
+        data = {}
+        data['person'] = self._findPerson(names['person'])
+        data['product'] = self._findProduct(names['product'])
+        distribution = self._findDistribution(names['distribution'])
+        data['distroseries'] = self._findDistroSeries(
+            distribution, names['distroseries'])
+        data['sourcepackagename'] = self._findSourcePackageName(
+            names['sourcepackagename'])
+        return data
+
     def lookup(self, namespace_name):
-        data = self._parse(namespace_name)
-        person = getUtility(IPersonSet).getByName(data['person'])
-        if person is None:
-            raise NoSuchPerson(data['person'])
-        if data['product'] == '+junk':
-            return self.get(person)
-        if data['product'] is not None:
-            product = getUtility(IProductSet).getByName(data['product'])
-            if product is None:
-                raise NoSuchProduct(data['product'])
-            return self.get(person, product=product)
-
-        distribution = getUtility(IDistributionSet).getByName(
-            data['distribution'])
-        if distribution is None:
-            raise NoSuchDistribution(data['distribution'])
-
-        distroseries = getUtility(IDistroSeriesSet).queryByName(
-            distribution, data['distroseries'])
-        if distroseries is None:
-            raise NoSuchDistroSeries(data['distroseries'])
-
-        sourcepackagename = getUtility(ISourcePackageNameSet)[
-            data['sourcepackagename']]
-        return self.get(
-            person, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+        names = self._parse(namespace_name)
+        data = self._realize(names)
+        return self.get(**data)
