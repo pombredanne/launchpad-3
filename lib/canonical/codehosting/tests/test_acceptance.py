@@ -10,12 +10,12 @@ from StringIO import StringIO
 import os
 import sys
 import unittest
+from xml.dom.minidom import parseString
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
+    PermissionDenied, TransportNotPossible)
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import (
     register_transport, unregister_transport)
@@ -34,7 +34,7 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import ZopelessAppServerLayer, BaseLayer
+from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
 
 
@@ -80,15 +80,6 @@ class SSHServerLayer(ZopelessAppServerLayer):
     @profiled
     def testTearDown(cls):
         SSHServerLayer._reset()
-        # XXX gary 2008-12-03 bug=304913
-        # The codehosting acceptance tests are intermittently leaving threads
-        # around, apparently because of bzr.  disable_thread_check is a
-        # mechanism to turn off the BaseLayer behavior of causing a test to
-        # fail if it leaves a thread behind.
-        # This comment is found in both
-        # canonical.codehosting.tests.test_acceptance and
-        # canonical.testing.layers
-        BaseLayer.disable_thread_check = True
 
 
 class DenyingSSHServer:
@@ -159,41 +150,29 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         finally:
             os.chdir(old_dir)
 
-    def branch(self, remote_url, local_directory):
-        """Branch from the given URL to a local directory.
-
-        This method is used to test the end-to-end behaviour of pushing Bazaar
-        branches to the SSH server.
-        """
-        args = ['branch', remote_url, local_directory]
-        output, error = self.run_bzr_subprocess(
+    def _run_bzr(self, args, retcode=0):
+        """XXX"""
+        return self.run_bzr_subprocess(
             args, env_changes={'BZR_SSH': 'paramiko',
                                'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
-            allow_plugins=True)
+            allow_plugins=True, retcode=retcode)
+
+    def branch(self, remote_url, local_directory):
+        """Branch from the given URL to a local directory.
+        """
+        self._run_bzr(['branch', remote_url, local_directory])
 
     def get_bzr_path(self):
+        """Override `.get_bzr_path` to return the 'bzr' from sourcecode."""
         return get_bzr_path()
 
     def push(self, local_directory, remote_url, use_existing_dir=False):
         """Push the local branch to the given URL.
-
-        This method is used to test the end-to-end behaviour of pushing Bazaar
-        branches to the SFTP server.
         """
         args = ['push', '-d', local_directory, remote_url]
         if use_existing_dir:
             args.append('--use-existing-dir')
-        output, error = self.run_bzr_subprocess(
-            args, env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
-            allow_plugins=True)
-        ## print
-        ## print 'error:'
-        ## print error
-        ## print
-        ## print 'output:'
-        ## print output
-        return output
+        self._run_bzr(['branch', remote_url, local_directory])
 
     def assertCantPush(self, local_directory, remote_url):
         """
@@ -207,14 +186,13 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL."""
+        #
         output, error = self.run_bzr_subprocess(
             ['cat-revision', '-r', 'branch:' + remote_url],
             env_changes={'BZR_SSH': 'paramiko',
                                'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
             allow_plugins=True,
             )
-        #self.assertEqual('', error)
-        from xml.dom.minidom import parseString
         dom = parseString(output)
         return dom.documentElement.attributes['revision_id'].value
 
@@ -557,13 +535,6 @@ class AcceptanceTests(SSHTestCase):
         assert ('ERROR: Permission denied:' in last_line or
                 'ERROR: Transport operation not possible:' in last_line), last_line
 
-        # XXX: JonathanLange 2008-04-07: In the SFTP test, the authserver logs
-        # a fault which comes back to us (although a little undesirable). Here
-        # we flush the test logs so that it doesn't fail the run.
-        flushLoggedErrors = getattr(self, 'flushLoggedErrors', None)
-        if flushLoggedErrors is not None:
-            flushLoggedErrors()
-
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -624,8 +595,6 @@ class SmartserverTests(SSHTestCase):
         self.assertEqual(revision, remote_revision)
 
     def test_cant_write_to_readonly_branch(self):
-        # XXX: JonathanLange 2008-10-07 bug=269178: Disabled this test due to
-        # intermittent, inexplicable failure.
         # We can't write to a read-only branch.
         ro_branch_url = self.createBazaarBranch(
             'sabdfl', '+junk', 'ro-branch')
@@ -679,13 +648,8 @@ def make_server_tests(base_suite, servers):
 
 def make_smoke_tests(base_suite):
     from bzrlib import tests
-    try:
-        from bzrlib.tests.repository_implementations import (
-            all_repository_format_scenarios,
-        )
-    except ImportError:
-        from bzrlib.tests.per_repository import (
-            all_repository_format_scenarios,
+    from bzrlib.tests.per_repository import (
+        all_repository_format_scenarios,
         )
     excluded_scenarios = [
         # RepositoryFormat4 is not initializable (bzrlib raises TestSkipped
@@ -719,6 +683,5 @@ def test_suite():
     suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
-    # XXX DaniloSegan 2008-10-24: see #288695.
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite

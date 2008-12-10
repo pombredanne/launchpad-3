@@ -6,3 +6,10 @@
 * basically remove imports of bzrlib from test_acceptance
 * maybe install bzr+ssh, sftp transports that whinge
 * don't worry about sampledata dependence for now.
+
+bugs i'm fixing:
+ 306143 "Disabled codehosting acceptance tests"
+ 269178 "spurious failure in
+   test_acceptance.SmartserverTests.test_cant_write_to_readonly_branch"
+ 288695 "SmokeTest spurious failure in PQM"
+ 304913 codehosting acceptance tests leave threads around
