@@ -159,48 +159,53 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             os.chdir(old_dir)
 
     def _run_bzr(self, args, retcode=0):
-        """XXX"""
+        """Call run_bzr_subprocess with some common options.
+
+        We always want to force the subprocess to do its ssh communication
+        with paramiko (because OpenSSH doesn't respect the $HOME environment
+        variable) and we want to load the plugins that are in rocketfuel
+        (mainly so we can test the loom support).
+        """
         return self.run_bzr_subprocess(
             args, env_changes={'BZR_SSH': 'paramiko',
                                'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
             allow_plugins=True, retcode=retcode)
 
     def branch(self, remote_url, local_directory):
-        """Branch from the given URL to a local directory.
-        """
+        """Branch from the given URL to a local directory."""
         self._run_bzr(['branch', remote_url, local_directory])
 
     def get_bzr_path(self):
-        """Override `.get_bzr_path` to return the 'bzr' from sourcecode."""
+        """See `bzrlib.tests.TestCase.get_bzr_path`.
+
+        We override this to return the 'bzr' executable from sourcecode.
+        """
         return get_bzr_path()
 
     def push(self, local_directory, remote_url, use_existing_dir=False):
-        """Push the local branch to the given URL.
-        """
+        """Push the local branch to the given URL."""
         args = ['push', '-d', local_directory, remote_url]
         if use_existing_dir:
             args.append('--use-existing-dir')
         output, error = self._run_bzr(args)
 
     def assertCantPush(self, local_directory, remote_url):
+        """Check that we cannot push from 'local_directory' to 'remote_url'.
+
+        :return: The last line of the stderr from the subprocess, which will
+            be the 'bzr: ERROR: <repr of Exception>' line.
         """
-        
-        """
-        output, error = self.run_bzr_subprocess(
-            ['push', '-d', local_directory, remote_url],
-            env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()}, retcode=3)
+        output, error = self._run_bzr(
+            ['push', '-d', local_directory, remote_url], retcode=3)
         return error.splitlines()[-1]
 
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL."""
-        #
-        output, error = self.run_bzr_subprocess(
-            ['cat-revision', '-r', 'branch:' + remote_url],
-            env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
-            allow_plugins=True,
-            )
+        # This is foul.  If revision-info took a -d argument, it would be much
+        # easier (and also work in the case of the null revision at the other
+        # end).
+        output, error = self._run_bzr(
+            ['cat-revision', '-r', 'branch:' + remote_url])
         dom = parseString(output)
         return dom.documentElement.attributes['revision_id'].value
 
@@ -273,6 +278,9 @@ class SmokeTest(SSHTestCase):
         # Push up a new branch.
         remote_url = self.getTransportURL('~testuser/+junk/new-branch')
         self.push(self.first_tree, remote_url)
+        # The way that getLastRevision is currently implemented doesn't work
+        # with empty branches.  When it can be rewritten to use revision-info,
+        # the next line can be re-enabled.
         #self.assertBranchesMatch(self.first_tree, remote_url)
 
         # Commit to it.
@@ -296,12 +304,8 @@ class AcceptanceTests(SSHTestCase):
 
     def assertNotBranch(self, url):
         """Assert that there's no branch at 'url'."""
-        output, error = self.run_bzr_subprocess(
-            ['cat-revision', '-r', 'branch:' + url],
-            env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
-            allow_plugins=True,
-            retcode=3)
+        output, error = self._run_bzr(
+            ['cat-revision', '-r', 'branch:' + url], retcode=3)
         last_line = error.splitlines()[-1]
         assert 'ERROR: Not a branch:' in last_line
 

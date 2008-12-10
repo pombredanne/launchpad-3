@@ -1,13 +1,12 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Servers used in codehosting tests."""
+"""Server used in codehosting acceptance tests."""
 
 __metaclass__ = type
 
 __all__ = [
     'CodeHostingTac',
     'SSHCodeHostingServer',
-    'make_launchpad_server',
     ]
 
 
