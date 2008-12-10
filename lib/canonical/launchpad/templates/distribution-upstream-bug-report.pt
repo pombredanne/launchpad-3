@@ -83,8 +83,8 @@
         against it.
       </tal:no-bugs>
 
-      <p class="informational message" tal:condition="view/data"
-         style="width: 40%">See the
+      <p tal:condition="view/data">
+        See the
         <a href="https://wiki.ubuntu.com/Bugs/Upstream/UpstreamReport"
           >UpstreamReport wiki page</a>
         for information on how to read this report.
