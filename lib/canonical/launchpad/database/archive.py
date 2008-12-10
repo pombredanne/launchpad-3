@@ -875,19 +875,20 @@ class Archive(SQLBase):
     def requestPackageCopy(self, target_location, requestor, suite=None,
         copy_binaries=False, reason=None):
         """See `IArchive`."""
-        if suite is not None:
+        if suite is None:
+            distroseries = self.distribution.currentseries
+            pocket = PackagePublishingPocket.RELEASE
+        else:
             # Note: a NotFoundError will be raised if it is not found.
             distroseries, pocket = self.distribution.getDistroSeriesAndPocket(
                 suite)
-        else:
-            distroseries = self.distribution.currentseries
-            pocket = PackagePublishingPocket.RELEASE
 
         source_location = PackageLocation(self, self.distribution,
-            distroseries, pocket)
+                                          distroseries, pocket)
 
-        return getUtility(IPackageCopyRequestSet).new(source_location,
-            target_location, requestor, copy_binaries, reason)
+        return getUtility(IPackageCopyRequestSet).new(
+            source_location, target_location, requestor, copy_binaries,
+            reason)
 
     def syncSources(self, source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):
@@ -1213,11 +1214,10 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         extra_exprs = []
 
-        if purposes is not None:
-            try:
-                purposes = tuple(purposes)
-            except TypeError:
-                purposes = (purposes,)
+        # If a single purpose is passed in, convert it into a tuple,
+        # otherwise assume a list was passed in.
+        if purposes in ArchivePurpose:
+            purposes = (purposes,)
 
         if purposes:
             extra_exprs.append(Archive.purpose.is_in(purposes))

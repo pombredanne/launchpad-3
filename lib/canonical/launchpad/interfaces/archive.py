@@ -562,7 +562,7 @@ class IArchive(IHasOwner):
         """
 
     def requestPackageCopy(target_location, requestor, suite=None,
-        copy_binaries=False, reason=None):
+                           copy_binaries=False, reason=None):
         """Return a new `PackageCopyRequest` for this archive.
 
         :param target_location: the archive location to which the packages
@@ -576,7 +576,7 @@ class IArchive(IHasOwner):
             as well.
         :param reason: The reason for this package copy request.
 
-        :raises NotFoundError if the provided suite is not found for this
+        :raises NotFoundError: if the provided suite is not found for this
             archive's distribution.
 
         :return The new `IPackageCopyRequest`
@@ -827,7 +827,7 @@ class IArchiveSet(Interface):
         :param purposes: An optional achive purpose or list of purposes with
             which to filter the results.
 
-        :return A queryset of all the archives for the given
+        :return: A queryset of all the archives for the given
             distribution matching the given params.
         """
 

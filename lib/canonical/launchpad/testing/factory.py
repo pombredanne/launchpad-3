@@ -145,7 +145,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         name=None):
         """Create and return a new arbitrary location for copy packages."""
         copy_archive = self._makeArchive(distribution, owner, name,
-            ArchivePurpose.COPY)
+                                         ArchivePurpose.COPY)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -998,7 +998,11 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def _makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
-        """Create and return a new arbitrary archive."""
+        """Create and return a new arbitrary archive.
+
+        Note: this shouldn't generally be used except by other factory
+        methods such as makeCopyArchiveLocation.
+        """
         if distribution is None:
             distribution = self.makeDistribution()
         if owner is None:

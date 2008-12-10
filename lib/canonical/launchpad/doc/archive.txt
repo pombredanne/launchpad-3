@@ -1111,9 +1111,9 @@ package copy request:
 
 The requestPackageCopy method can also take an optional suite name:
 
-    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor,
-    ...     suite="hoary-updates");
-    >>> print pcr
+    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
+    ...     target, requestor, suite="hoary-updates");
+    >>> print package_copy_request
     Package copy request
     source = primary/hoary/-/UPDATES
     target = my-copy-archive/hoary/-/RELEASE
@@ -1594,47 +1594,66 @@ which can be used to get archives of a specific purpose(s) for a distribution
 (note: the sample data currently contains one copy archive for ubuntu, and
 one has been created above):
 
+First create a function to print the names of a set of archives:
+
+    >>> def print_archive_names(archives):
+    ...     names = [archive.name for archive in archives]
+    ...     names.sort()
+    ...     for name in names:
+    ...         print name
+
     >>> archive_set = getUtility(IArchiveSet)
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=ArchivePurpose.COPY)
-    >>> ubuntu_copy_archives.count()
-    2
+    >>> print_archive_names(ubuntu_copy_archives)
+    my-copy-archive
+    there-we-go
+
 
 The method `getArchivesForDistribution` can also be used with multiple
 purposes. First we'll check how many partner archives are in the DB:
 
-    >>> archive_set.getArchivesForDistribution(
-    ...     ubuntu, purposes=ArchivePurpose.PARTNER).count()
-    1
+    >>> partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.PARTNER)
+    >>> print_archive_names(partner_archives)
+    partner
 
 And then use `getArchivesForDistribution` to get all copy and partner
 archives:
     >>> copy_n_partner_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
-    >>> copy_n_partner_archives.count()
-    3
+    >>> print_archive_names(copy_n_partner_archives)
+    my-copy-archive
+    partner
+    there-we-go
 
 After we create three copy archives for ubuntu, the
 `getArchivesForDistribution` finds the relevant COPY archives:
 
-    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu)
-    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu)
-    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu)
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="ultimate-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="fine-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="copy-r-us")
 
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY])
-    >>> ubuntu_copy_archives.count()
-    5
+    >>> print_archive_names(ubuntu_copy_archives)
+    copy-r-us
+    fine-copy
+    my-copy-archive
+    there-we-go
+    ultimate-copy
+
 
 The `getArchivesForDistribution` method can also be used to get an
 archive using an archive name:
 
     >>> primary_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, name='primary')
-    >>> primary_archives.count()
-    1
-    >>> primary_archives[0].name
-    u'primary'
+    >>> print_archive_names(primary_archives)
+    primary
 
 
 == Archive Permission Checking ==
