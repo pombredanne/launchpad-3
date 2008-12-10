@@ -2,16 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-* basically remove imports of bzrlib from test_acceptance
-* maybe install bzr+ssh, sftp transports that whinge
-* don't worry about sampledata dependence for now.
-
-bugs i'm fixing:
- 269178 "spurious failure in
-   test_acceptance.SmartserverTests.test_cant_write_to_readonly_branch"
- 288695 "SmokeTest spurious failure in PQM"
- 294117 "AcceptanceTests.test_push_triggers_mirror_request(sftp)
-   leaves uncollectable garbage behind"
- 304913 "codehosting acceptance tests leave threads around"
- 306143 "Disabled codehosting acceptance tests"

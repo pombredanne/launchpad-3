@@ -591,7 +591,8 @@ class SmartserverTests(SSHTestCase):
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
         message = "Project 'no-such-product' does not exist."
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
-        self.assertIn(message, last_line)
+        self.assertTrue(
+            message in last_line, '%r not in %r' % (message, last_line))
 
 
 def make_server_tests(base_suite, servers):
