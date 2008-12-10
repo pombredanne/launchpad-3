@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchNamespaceSet',
     'get_namespace',
     'PackageNamespace',
     'PersonalNamespace',

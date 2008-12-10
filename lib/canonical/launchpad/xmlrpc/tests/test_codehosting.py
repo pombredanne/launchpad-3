@@ -615,6 +615,27 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE, message, fault)
 
+    def test_createBranch_source_package(self):
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/%s/%s/%s' % (
+            owner.name,
+            distroseries.distribution.name,
+            distroseries.name,
+            sourcepackagename.name,
+            branch_name)
+        branch_id = self.branchfs.createBranch(owner.id, escape(unique_name))
+        login(ANONYMOUS)
+        branch = self.branch_set.get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual(distroseries, branch.distroseries)
+        self.assertEqual(sourcepackagename, branch.sourcepackagename)
+        self.assertEqual(branch_name, branch.name)
+        self.assertEqual(owner, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
+
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
         # branches, we get the database id of the branch, and a flag saying
