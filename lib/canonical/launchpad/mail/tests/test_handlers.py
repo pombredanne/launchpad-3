@@ -16,12 +16,14 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.ftests import login_person
+from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
-    CodeHandler, InvalidBranchMergeProposalAddress, InvalidVoteString,
-    MissingMergeDirective)
+    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler, InvalidBranchMergeProposalAddress,
+    InvalidVoteString, MissingMergeDirective, NonLaunchpadTarget,
+    UpdateStatusEmailCommand, VoteEmailCommand)
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
-    mail_handlers, MaloneHandler, NonLaunchpadTarget)
+    mail_handlers, MaloneHandler)
 from canonical.launchpad.mail.helpers import parse_commands
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -46,6 +48,18 @@ class TestParseCommands(TestCase):
         self.assertEqual(
             [('command', [])], parse_commands(' command', ['command']))
 
+    def test_parse_commands_args(self):
+        """Commands indented with spaces are recognized."""
+        self.assertEqual(
+            [('command', ['arg1', 'arg2'])],
+            parse_commands(' command arg1 arg2', ['command']))
+
+    def test_parse_commands_args_quoted(self):
+        """Commands indented with spaces are recognized."""
+        self.assertEqual(
+            [('command', ['"arg1', 'arg2"'])],
+            parse_commands(' command "arg1 arg2"', ['command']))
+
     def test_parse_commandsTabIndent(self):
         """Commands indented with tabs are recognized.
 
@@ -66,6 +80,62 @@ class TestParseCommands(TestCase):
         self.assertEqual(
             [('command', []), ('command', [])],
             parse_commands(' command\n done commands\n command', ['command']))
+
+
+class TestGetCodeEmailCommands(TestCase):
+    """Test CodeEmailCommands.getCommands."""
+
+    def test_no_message(self):
+        # Null in, empty list out.
+        self.assertEqual([], CodeEmailCommands.getCommands(None))
+
+    def test_vote_command(self):
+        # Check that the vote command is correctly created.
+        [command] = CodeEmailCommands.getCommands(" vote approve tag me")
+        self.assertIsInstance(command, VoteEmailCommand)
+        self.assertEqual('vote', command.name)
+        self.assertEqual(['approve', 'tag', 'me'], command.string_args)
+
+    def test_status_command(self):
+        # Check that the update status command is correctly created.
+        [command] = CodeEmailCommands.getCommands(" status approved")
+        self.assertIsInstance(command, UpdateStatusEmailCommand)
+        self.assertEqual('status', command.name)
+        self.assertEqual(['approved'], command.string_args)
+
+    def test_reviewer_command(self):
+        # Check that the add review command is correctly created.
+        [command] = CodeEmailCommands.getCommands(
+            " reviewer test@canonical.com db")
+        self.assertIsInstance(command, AddReviewerEmailCommand)
+        self.assertEqual('reviewer', command.name)
+        self.assertEqual(['test@canonical.com', 'db'], command.string_args)
+
+    def test_ignored_commands(self):
+        # Check that other "commands" are not created.
+        self.assertEqual([], CodeEmailCommands.getCommands(
+            " not-a-command\n spam"))
+
+    def test_vote_commands_come_first(self):
+        # Vote commands come before either status or reviewer commands.
+        message_body = """
+            status approved
+            vote approve db
+            """
+        vote_command, status_command = CodeEmailCommands.getCommands(
+            message_body)
+        self.assertIsInstance(vote_command, VoteEmailCommand)
+        self.assertIsInstance(status_command, UpdateStatusEmailCommand)
+
+        message_body = """
+            reviewer foo.bar
+            vote reject
+            """
+        vote_command, reviewer_command = CodeEmailCommands.getCommands(
+            message_body)
+
+        self.assertIsInstance(vote_command, VoteEmailCommand)
+        self.assertIsInstance(reviewer_command, AddReviewerEmailCommand)
 
 
 class TestCodeHandler(TestCaseWithFactory):
@@ -213,51 +283,6 @@ class TestCodeHandler(TestCaseWithFactory):
                          (canonical_url(bmp), bmp.source_branch.bzr_identity))
         self.assertEqual(expected_body, notification.get_payload(decode=True))
 
-    def test_getVoteNoCommand(self):
-        """getVote returns None, None when no command is supplied."""
-        mail = self.factory.makeSignedMessage(body='')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, None)
-        self.assertEqual(vote_tag, None)
-
-    def test_getVoteNoArgs(self):
-        """getVote returns None, None when no arguments are supplied."""
-        mail = self.factory.makeSignedMessage(body=' vote')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, None)
-        self.assertEqual(vote_tag, None)
-
-    def test_getVoteOneArg(self):
-        """getVote returns vote, None when only a vote is supplied."""
-        mail = self.factory.makeSignedMessage(body=' vote apPRoVe')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.APPROVE)
-        self.assertEqual(vote_tag, None)
-
-    def test_getVoteDisapprove(self):
-        """getVote returns disapprove when it is specified."""
-        mail = self.factory.makeSignedMessage(body=' vote dIsAppRoVe')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
-
-    def test_getVoteBadValue(self):
-        """getVote returns vote, None when only a vote is supplied."""
-        mail = self.factory.makeSignedMessage(body=' vote badvalue')
-        self.switchDbUser(config.processmail.dbuser)
-        self.assertRaises(InvalidVoteString, self.code_handler._getVote, mail)
-
-    def test_getVoteThreeArg(self):
-        """getVote returns vote, vote_tag when both are supplied."""
-        mail = self.factory.makeSignedMessage(body=' vote apPRoVe DB TAG')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.APPROVE)
-        self.assertEqual(vote_tag, 'DB TAG')
-
     def test_getBranchMergeProposal(self):
         """The correct BranchMergeProposal is returned for the address."""
         bmp = self.factory.makeBranchMergeProposal()
@@ -272,41 +297,6 @@ class TestCodeHandler(TestCaseWithFactory):
                           self.code_handler.getBranchMergeProposal, '')
         self.assertRaises(InvalidBranchMergeProposalAddress,
                           self.code_handler.getBranchMergeProposal, 'mp+abc@')
-
-    def test_getVoteApproveAlias(self):
-        """Test the approve alias of +1."""
-        mail = self.factory.makeSignedMessage(body=' vote +1')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.APPROVE)
-
-    def test_getVoteAbstainAlias(self):
-        """Test the abstain alias of 0."""
-        mail = self.factory.makeSignedMessage(body=' vote 0')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
-
-    def test_getVoteAbstainAliasPlus(self):
-        """Test the abstain alias of +0."""
-        mail = self.factory.makeSignedMessage(body=' vote +0')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
-
-    def test_getVoteAbstainAliasMinus(self):
-        """Test the abstain alias of -0."""
-        mail = self.factory.makeSignedMessage(body=' vote -0')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
-
-    def test_getVoteDisapproveAlias(self):
-        """Test the disapprove alias of -1."""
-        mail = self.factory.makeSignedMessage(body=' vote -1')
-        self.switchDbUser(config.processmail.dbuser)
-        vote, vote_tag = self.code_handler._getVote(mail)
-        self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):
@@ -468,6 +458,82 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', None)
         self.assertEqual(target, source.landing_targets[0].target_branch)
+
+
+    def test_getVoteNoCommand(self):
+        """getVote returns None, None when no command is supplied."""
+        # XXX: change this to check commands from body
+        mail = self.factory.makeSignedMessage(body='')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, None)
+        self.assertEqual(vote_tag, None)
+
+
+
+class TestVoteEmailCommand(TestCase):
+    """Test the vote and tag processing of the VoteEmailCommand."""
+
+    # We don't need no stinking layer.
+
+    def setUp(self):
+        class FakeExecutionContext:
+            vote = None
+            vote_tag = None
+        self.context = FakeExecutionContext()
+
+    def test_getVoteNoArgs(self):
+        """getVote returns None, None when no arguments are supplied."""
+        command = VoteEmailCommand('vote', [])
+        self.assertRaises(EmailProcessingError, command.execute, self.context)
+
+    def assertVoteAndTag(self, expected_vote, expected_tag, command):
+        """Execute the command and check the resulting vote and tag."""
+        command.execute(self.context)
+        self.assertEqual(expected_vote, self.context.vote)
+        if expected_tag is None:
+            self.assertIs(None, self.context.vote_tag)
+        else:
+            self.assertEqual(expected_tag, self.context.vote_tag)
+
+    def test_getVoteOneArg(self):
+        """getVote returns vote, None when only a vote is supplied."""
+        command = VoteEmailCommand('vote', ['apPRoVe'])
+        self.assertVoteAndTag(CodeReviewVote.APPROVE, None, command)
+
+    def test_getVoteDisapprove(self):
+        """getVote returns disapprove when it is specified."""
+        command = VoteEmailCommand('vote', ['dIsAppRoVe'])
+        self.assertVoteAndTag(CodeReviewVote.DISAPPROVE, None, command)
+
+    def test_getVoteBadValue(self):
+        """getVote returns vote, None when only a vote is supplied."""
+        command = VoteEmailCommand('vote', ['badvalue'])
+        self.assertRaises(EmailProcessingError, command.execute, self.context)
+
+    def test_getVoteThreeArg(self):
+        """getVote returns vote, vote_tag when both are supplied."""
+        command = VoteEmailCommand('vote', ['apPRoVe', 'DB', 'TAG'])
+        self.assertVoteAndTag(CodeReviewVote.APPROVE, 'DB TAG', command)
+
+    def test_getVoteApproveAlias(self):
+        """Test the approve alias of +1."""
+        command = VoteEmailCommand('vote', ['+1'])
+        self.assertVoteAndTag(CodeReviewVote.APPROVE, None, command)
+
+    def test_getVoteAbstainAlias(self):
+        """Test the abstain alias of 0."""
+        command = VoteEmailCommand('vote', ['0'])
+        self.assertVoteAndTag(CodeReviewVote.ABSTAIN, None, command)
+        command = VoteEmailCommand('vote', ['+0'])
+        self.assertVoteAndTag(CodeReviewVote.ABSTAIN, None, command)
+        command = VoteEmailCommand('vote', ['-0'])
+        self.assertVoteAndTag(CodeReviewVote.ABSTAIN, None, command)
+
+    def test_getVoteDisapproveAlias(self):
+        """Test the disapprove alias of -1."""
+        command = VoteEmailCommand('vote', ['-1'])
+        self.assertVoteAndTag(CodeReviewVote.DISAPPROVE, None, command)
 
 
 class TestMaloneHandler(TestCaseWithFactory):
