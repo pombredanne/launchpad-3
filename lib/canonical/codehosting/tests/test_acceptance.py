@@ -1,5 +1,4 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0101
 
 """Acceptance tests for Supermirror SFTP server's bzr support."""
 
@@ -154,23 +153,37 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         args = ['push', '-d', local_directory, remote_url]
         if use_existing_dir:
             args.append('--use-existing-dir')
-        output, error = self._run_bzr(args)
+        self._run_bzr(args)
 
-    def assertCantPush(self, local_directory, remote_url):
+    def assertCantPush(self, local_directory, remote_url, error_messages=()):
         """Check that we cannot push from 'local_directory' to 'remote_url'.
+
+        In addition, if a list of messages is supplied as the error_messages
+        argument, check that the bzr client printed one of these messages
+        which shouldn't include the 'bzr: ERROR:' part of the message.
 
         :return: The last line of the stderr from the subprocess, which will
             be the 'bzr: ERROR: <repr of Exception>' line.
         """
         output, error = self._run_bzr(
             ['push', '-d', local_directory, remote_url], retcode=3)
-        return error.splitlines()[-1]
+        # This will be the will be the 'bzr: ERROR: <repr of Exception>' line.
+        last_error_line = error.splitlines()[-1]
+        if not error_messages:
+            return last_error_line
+        for msg in error_messages:
+            if last_error_line.startswith('bzr: ERROR: ' + msg):
+                return last_error_line
+        self.fail(
+            "Error message %r didn't match any of those supplied."
+            % last_error_line)
 
     def getLastRevision(self, remote_url):
-        """Get the last revision at the given URL."""
-        # This is foul.  If revision-info took a -d argument, it would be much
-        # easier (and also work in the case of the null revision at the other
-        # end).
+        """Get the last revision ID at the given URL."""
+        # XXX MichaelHudson, 2008-12-11: This is foul.  If revision-info took
+        # a -d argument, it would be much easier (and also work in the case of
+        # the null revision at the other end).  Bzr 1.11's revision-info has a
+        # -d option, so when we have that in rocketfuel we can rewrite this.
         output, error = self._run_bzr(
             ['cat-revision', '-r', 'branch:' + remote_url])
         dom = parseString(output)
@@ -245,9 +258,10 @@ class SmokeTest(SSHTestCase):
         # Push up a new branch.
         remote_url = self.getTransportURL('~testuser/+junk/new-branch')
         self.push(self.first_tree, remote_url)
-        # The way that getLastRevision is currently implemented doesn't work
-        # with empty branches.  When it can be rewritten to use revision-info,
-        # the next line can be re-enabled.
+        # XXX MichaelHudson, 2008-12-11: The way that getLastRevision is
+        # currently implemented doesn't work with empty branches.  When it can
+        # be rewritten to use revision-info, the next line can be re-enabled.
+        # See comment in getLastRevision for more.
         #self.assertBranchesMatch(self.first_tree, remote_url)
 
         # Commit to it.
@@ -489,12 +503,9 @@ class AcceptanceTests(SSHTestCase):
             'testuser', 'firefox', 'some-branch', BranchType.MIRRORED)
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        # The Bazaar client forwards the error from the SFTP server. We don't
-        # care about that error for this test, so just swallow it. The error
-        # we care about is the one that cmd_push raises.
-        last_line = self.assertCantPush(self.local_branch_path, remote_url)
-        assert ('ERROR: Permission denied:' in last_line or
-                'ERROR: Transport operation not possible:' in last_line), last_line
+        self.assertCantPush(
+            self.local_branch_path, remote_url,
+            ['Permission denied:', 'Transport operation not possible:'])
 
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
@@ -502,9 +513,9 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('sabdfl', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        last_line = self.assertCantPush(self.local_branch_path, remote_url)
-        assert ('ERROR: Permission denied:' in last_line or
-                'ERROR: Transport operation not possible:' in last_line), last_line
+        self.assertCantPush(
+            self.local_branch_path, remote_url,
+            ['Permission denied:', 'Transport operation not possible:'])
 
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
@@ -580,8 +591,7 @@ class SmartserverTests(SSHTestCase):
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
         message = "Project 'no-such-product' does not exist."
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
-        self.assertTrue(
-            message in last_line, '%r not in %r' % (message, last_line))
+        self.assertIn(message, last_line)
 
 
 def make_server_tests(base_suite, servers):
