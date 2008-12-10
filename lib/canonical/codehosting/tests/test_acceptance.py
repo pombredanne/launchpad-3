@@ -14,8 +14,6 @@ from xml.dom.minidom import parseString
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.errors import (
-    PermissionDenied, TransportNotPossible)
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import (
     register_transport, unregister_transport)
@@ -297,24 +295,6 @@ class AcceptanceTests(SSHTestCase):
         last_line = error.splitlines()[-1]
         assert 'ERROR: Not a branch:' in last_line
 
-    def addRevisionToBranch(self, branch):
-        """Add a new revision in the database to the given database branch."""
-        # We don't care who the author is. Just find someone.
-        author = database.RevisionAuthor.selectFirst(orderBy='id')
-        revision = database.Revision(
-            revision_id='rev1', log_body='', revision_date=UTC_NOW,
-            revision_author=author, owner=branch.owner)
-        database.BranchRevision(branch=branch, sequence=1, revision=revision)
-        return revision
-
-    def captureStderr(self, function, *args, **kwargs):
-        real_stderr, sys.stderr = sys.stderr, StringIO()
-        try:
-            ret = function(*args, **kwargs)
-        finally:
-            captured_stderr, sys.stderr = sys.stderr, real_stderr
-        return ret, captured_stderr.getvalue()
-
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
                            branch_type=BranchType.HOSTED, private=False):
         """Create a new branch in the database."""
@@ -544,22 +524,6 @@ class AcceptanceTests(SSHTestCase):
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
         assert ('ERROR: Permission denied:' in last_line or
                 'ERROR: Transport operation not possible:' in last_line), last_line
-
-    def disable_test_cant_push_to_existing_hosted_branch_with_revisions(self):
-        # XXX: JonathanLange 2007-08-07, We shouldn't be able to push to
-        # branches that have revisions in the database but not actual files:
-        # it's a pathological case.
-        #
-        # However, at the moment we don't provide any checking for this. We
-        # should in the future. Until then, this test is disabled.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
-        self.addRevisionToBranch(branch)
-        remote_url = self.getTransportURL(branch.unique_name)
-        LaunchpadZopelessTestSetup().txn.commit()
-        self.assertRaises(
-            (PermissionDenied, TransportNotPossible),
-            self.push, self.local_branch_path, remote_url)
 
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
