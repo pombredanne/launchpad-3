@@ -13,11 +13,10 @@ import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib.transport import (
-    register_transport, unregister_transport)
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
+from canonical.codehosting.bzrutils import DenyingServer
 from canonical.codehosting.tests.helpers import (
     adapt_suite, LoomTestMixin)
 from canonical.codehosting.tests.servers import (
@@ -78,38 +77,6 @@ class SSHServerLayer(ZopelessAppServerLayer):
         SSHServerLayer._reset()
 
 
-class DenyingServer:
-    """Temporarily prevent creation of transports for certain URL schemes."""
-
-    _is_set_up = False
-
-    def __init__(self, schemes):
-        """Set up the instance.
-
-        :param schemes: The schemes to disallow creation of transports for.
-        """
-        self.schemes = schemes
-
-    def setUp(self):
-        """Prevent transports being created for specified schemes."""
-        for scheme in self.schemes:
-            register_transport(scheme, self._deny)
-        self._is_set_up = True
-
-    def tearDown(self):
-        """Re-enable creation of transports for specified schemes."""
-        if not self._is_set_up:
-            return
-        self._is_set_up = False
-        for scheme in self.schemes:
-            unregister_transport(scheme, self._deny)
-
-    def _deny(self, url):
-        """Prevent creation of transport for 'url'."""
-        raise AssertionError(
-            "Creation of transport for %r is currently forbidden" % url)
-
-
 class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
     """TestCase class that runs an SSH server as well as the app server."""
 
@@ -126,9 +93,9 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         # Prevent creation of in-process sftp:// and bzr+ssh:// transports --
         # such connections tend to leak threads and occasionally create
         # uncollectable garbage.
-        denying = DenyingServer(['bzr+ssh://', 'sftp://'])
-        denying.setUp()
-        self.addCleanup(denying.tearDown)
+        ssh_denier = DenyingServer(['bzr+ssh://', 'sftp://'])
+        ssh_denier.setUp()
+        self.addCleanup(ssh_denier.tearDown)
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
