@@ -28,6 +28,10 @@ class SpecificationSubscriptionAddView(LaunchpadFormView):
         self.context.subscribe(data['person'], self.user, data['essential'])
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationSubscriptionEditView(LaunchpadEditFormView):
 
