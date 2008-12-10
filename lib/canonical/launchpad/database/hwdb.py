@@ -575,12 +575,12 @@ class HWDriver(SQLBase):
     implements(IHWDriver)
     _table = 'HWDriver'
 
-    # XXX bug 306265; package_name should be declared notNull=True.
-    # This fixes the ambiguity that "package_name is None" as well as
-    # "package_name == ''" can indicate "we don't know to which package
-    # this driver belongs", moreover, it gives a more clear meaning to
-    # the parameter value package_name='' in webservice API calls.
-    # Abel Deuring 2008-12-10.
+    # XXX: Abel Deuring 2008-12-10 bug=306265: package_name should
+    # be declared notNull=True. This fixes the ambiguity that
+    # "package_name is None" as well as "package_name == ''" can
+    # indicate "we don't know to which package this driver belongs",
+    # moreover, it gives a more clear meaning to the parameter value
+    #package_name='' in webservice API calls.
     package_name = StringCol(notNull=False)
     name = StringCol(notNull=True)
     license = EnumCol(enum=License, notNull=False)
