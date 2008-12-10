@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branchnamespace import (
@@ -13,8 +14,8 @@ from canonical.launchpad.database.branchnamespace import (
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespace, lookup_branch_namespace,
-    InvalidNamespace)
+    get_branch_namespace, IBranchNamespace, IBranchNamespaceSet,
+    lookup_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import NoSuchDistribution
 from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.person import NoSuchPerson
@@ -256,10 +257,14 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         self.assertEqual(person, namespace.owner)
 
 
-class TestGetNamespace(TestCaseWithFactory):
+class TestNamespaceSet(TestCaseWithFactory):
     """Tests for `get_namespace`."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.namespace_set = getUtility(IBranchNamespaceSet)
 
     def test_get_personal(self):
         person = self.factory.makePerson()
@@ -347,15 +352,17 @@ class TestGetNamespace(TestCaseWithFactory):
                 person.name, distroseries.distribution.name,
                 distroseries.name))
 
+    def assertInvalidName(self, name):
+        """Assert that 'name' is an invalid namespace name."""
+        self.assertRaises(InvalidNamespace, self.namespace_set.parse, name)
+
     def test_lookup_invalid_name(self):
         person = self.factory.makePerson()
-        self.assertRaises(
-            InvalidNamespace, lookup_branch_namespace, person.name)
+        self.assertInvalidName(person.name)
 
     def test_lookup_short_name_person_only(self):
         person = self.factory.makePerson()
-        self.assertRaises(
-            InvalidNamespace, lookup_branch_namespace, '~' + person.name)
+        self.assertInvalidName('~' + person.name)
 
     def test_lookup_short_name_person_and_distro(self):
         # We can't tell the difference between ~user/distro,
@@ -370,31 +377,25 @@ class TestGetNamespace(TestCaseWithFactory):
     def test_lookup_short_name_distroseries(self):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
-        self.assertRaises(
-            InvalidNamespace, lookup_branch_namespace,
+        self.assertInvalidName(
             '~%s/%s/%s' % (
                 person.name, distroseries.distribution.name,
                 distroseries.name))
 
     def test_lookup_long_name_junk(self):
         person = self.factory.makePerson()
-        self.assertRaises(
-            InvalidNamespace, lookup_branch_namespace,
-            '~%s/+junk/foo' % person.name)
+        self.assertInvalidName('~%s/+junk/foo' % person.name)
 
     def test_lookup_long_name_product(self):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        self.assertRaises(
-            InvalidNamespace, lookup_branch_namespace,
-            '~%s/%s/foo' % (person.name, product.name))
+        self.assertInvalidName('~%s/%s/foo' % (person.name, product.name))
 
     def test_lookup_long_name_sourcepackage(self):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
-        self.assertRaises(
-            InvalidNamespace, lookup_branch_namespace,
+        self.assertInvalidName(
             '~%s/%s/%s/%s/foo' % (
                 person.name, distroseries.distribution.name,
                 distroseries.name, sourcepackagename.name))
@@ -402,4 +403,3 @@ class TestGetNamespace(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
