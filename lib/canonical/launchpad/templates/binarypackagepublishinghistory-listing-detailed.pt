@@ -1,13 +1,12 @@
 <div class="boardComment">
 
-  <tal:comment condition="nothing">
-    <!-- XXX: cprov 20071018
-      The template should be kept in sync with its respective source
-      replacement (sourcepackagepublishinghistory-listing-detailed.pt).
-      In the future we should be able to refactor both in a single
-      template macro, see bug #153885.
-    -->
-  </tal:comment>
+  <tal:XXX condition="nothing">
+    # XXX: cprov 20071018 bug=153885
+    # The template should be kept in sync with its respective source
+    # replacement (sourcepackagepublishinghistory-listing-detailed.pt).
+    # In the future we should be able to refactor both in a single
+    # template macro, see bug #153885.
+  </tal:XXX>
 
   <div class="boardCommentDetails">
     <strong>

@@ -472,14 +472,23 @@ A new device record is created by IHWDeviceSet.create.
     ...                                    product_name=product_name)
 
 Bus and vendor ID are not directly stored as HWDevice attributes; we can
-access them, as well as the vendor name, via the attribute bus_vendor,
-which references HWVendorID.
+access them, as well as the vendor name, either via the attribute
+bus_vendor, which references HWVendorID...
 
     >>> print usb_controller.bus_vendor.bus.title
     PCI
     >>> print usb_controller.bus_vendor.vendor_id_for_bus
     0x8086
     >>> print usb_controller.bus_vendor.vendor_name.name
+    Intel
+
+...or via the (read-only) HWDevice properties bus, vendor_id, vendor_name.
+
+    >>> print usb_controller.bus.title
+    PCI
+    >>> print usb_controller.vendor_id
+    0x8086
+    >>> print usb_controller.vendor_name
     Intel
 
 Other attributes stored in HWDevice are the product ID, the product name,
@@ -922,6 +931,62 @@ parameters or creates a new one, if no existing record matches.
     Some other scanner
     >>> print device3.variant
     Some other scanner
+
+    >>> device4 = device_set.getOrCreate(bus=HWBus.USB,
+    ...                                  vendor_id='0x07b3',
+    ...                                  product_id='0x0015',
+    ...                                  product_name='OpticPro U24')
+    >>> print device4.bus_vendor.bus.title
+    USB
+    >>> print device4.bus_vendor.vendor_id_for_bus
+    0x07b3
+    >>> print device4.bus_product_id
+    0x0015
+    >>> print device4.name
+    OpticPro U24
+    >>> print device4.variant
+    None
+
+
+HWDeviceSet.getByID() returns a HWDevice record with the given database ID.
+
+    >>> device = device_set.getByID(1)
+    >>> print device.id
+    1
+    >>> print device.vendor_id
+    MSI
+    >>> print device.bus_product_id
+    MS-7369
+
+HWDeviceSet.getByID() returns None if no record with the passed ID exists.
+
+    >>> device = device_set.getByID(1000000)
+    >>> print device
+    None
+
+HWDeviceSet.search() returns all devices with a given bus and vendor ID.
+
+    >>> devices = device_set.search(bus=HWBus.USB, vendor_id='0x07b3')
+    >>> for device in devices:
+    ...     print device.bus.title, device.vendor_id, device.bus_product_id,
+    ...     print device.variant
+    USB 0x07b3 0x0017 None
+    USB 0x07b3 0x0017 OpticPro UT12
+    USB 0x07b3 0x0017 OpticPro UT16
+    USB 0x07b3 0x0017 Some other scanner
+    USB 0x07b3 0x0015 None
+
+Searching can be limited to a single product ID.
+
+    >>> devices = device_set.search(
+    ...     bus=HWBus.USB, vendor_id='0x07b3', product_id='0x0017')
+    >>> for device in devices:
+    ...     print device.bus.title, device.vendor_id, device.bus_product_id,
+    ...     print device.variant
+    USB 0x07b3 0x0017 None
+    USB 0x07b3 0x0017 OpticPro UT12
+    USB 0x07b3 0x0017 OpticPro UT16
+    USB 0x07b3 0x0017 Some other scanner
 
 
 == HWDeviceNameVariant ==

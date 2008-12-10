@@ -116,6 +116,7 @@ class FakeBranch(FakeDatabaseObject):
         self.private = private
         self.product = product
         self.registrant = registrant
+        self._mirrored = False
 
     @property
     def unique_name(self):
@@ -172,7 +173,13 @@ class FakeProduct(FakeDatabaseObject):
 
     @property
     def default_stacked_on_branch(self):
-        return self.development_focus.user_branch
+        b = self.development_focus.user_branch
+        if b is None:
+            return None
+        elif b._mirrored:
+            return b
+        else:
+            return None
 
 
 class FakeProductSeries(FakeDatabaseObject):
@@ -240,6 +247,18 @@ class FakeObjectFactory(ObjectFactory):
         self._product_set._add(product)
         return product
 
+    def enableDefaultStackingForProduct(self, product, branch=None):
+        """Give 'product' a default stacked-on branch.
+
+        :param product: The product to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.  If not supplied, a fresh branch will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch(product=product)
+        branch._mirrored = True
+        product.development_focus.user_branch = branch
+        return branch
 
 class FakeBranchPuller:
 

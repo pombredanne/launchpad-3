@@ -12,9 +12,10 @@
     <require
         permission="zope.Public"
         attributes="bug bugtasks bugtracker datecreated getLastErrorMessage
-                    hasComment id last_error_type lastchanged lastchecked
-                    needscheck owner remote_importance remotebug remotestatus
-                    title url getImportedBugMessages" />
+                    hasComment unpushed_comments id last_error_type
+                    lastchanged lastchecked needscheck owner
+                    remote_importance remotebug remotestatus title url
+                    getImportedBugMessages" />
     <require
         permission="launchpad.AnyPerson"
         attributes="destroySelf"

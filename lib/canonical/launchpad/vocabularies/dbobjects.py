@@ -2003,14 +2003,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
             assert obj.active, 'Inactive object %s %d' % (
                     obj.__class__.__name__, obj.id
                     )
-            if obj.product is not None:
-                obj = obj.product
-            elif obj.distribution is not None:
-                obj = obj.distribution
-            elif obj.project is not None:
-                obj = obj.project
-            else:
-                raise AssertionError('Broken PillarName')
+            obj = obj.pillar
 
         # It is a hack using the class name here, but it works
         # fine and avoids an ugly if statement.
@@ -2024,10 +2017,19 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
-    _filter = AND(OR(
-            PillarName.q.distributionID != None,
-            PillarName.q.productID != None
-            ), PillarName.q.active == True)
+    _filter = """
+        -- An active product/distro.
+        (active IS TRUE
+         AND (product IS NOT NULL OR distribution IS NOT NULL)
+        )
+        OR
+        -- Or an alias for an active product/distro.
+        (alias_for IN (
+            SELECT id FROM PillarName
+            WHERE active IS TRUE AND 
+                (product IS NOT NULL OR distribution IS NOT NULL))
+        )
+        """
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):
