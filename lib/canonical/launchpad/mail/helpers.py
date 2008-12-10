@@ -211,4 +211,4 @@ def ensure_not_weakly_authenticated(signed_msg, context):
             error_message = get_error_message(
                 'key-not-registered.txt', import_url=import_url,
                 context=context)
-            raise IncomingEmailError(error_message)
+        raise IncomingEmailError(error_message)

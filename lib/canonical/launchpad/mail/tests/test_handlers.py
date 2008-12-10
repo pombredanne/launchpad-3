@@ -18,8 +18,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
-    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler, InvalidBranchMergeProposalAddress,
-    InvalidVoteString, MissingMergeDirective, NonLaunchpadTarget,
+    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
+    InvalidBranchMergeProposalAddress,
+    MissingMergeDirective, NonLaunchpadTarget,
     UpdateStatusEmailCommand, VoteEmailCommand)
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
