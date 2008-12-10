@@ -400,6 +400,24 @@ class TestNamespaceSet(TestCaseWithFactory):
                 person.name, distroseries.distribution.name,
                 distroseries.name, sourcepackagename.name))
 
+    def test_parse_junk_namespace(self):
+        self.assertEqual(
+            dict(person='foo', product='+junk', distroseries=None,
+                 distribution=None, sourcepackagename=None),
+            self.namespace_set.parse('~foo/+junk'))
+
+    def test_parse_product_namespace(self):
+        self.assertEqual(
+            dict(person='foo', product='bar', distroseries=None,
+                 distribution=None, sourcepackagename=None),
+            self.namespace_set.parse('~foo/bar'))
+
+    def test_parse_package_namespace(self):
+        self.assertEqual(
+            dict(person='foo', product=None, distribution='ubuntu',
+                 distroseries='jaunty', sourcepackagename='foo'),
+            self.namespace_set.parse('~foo/ubuntu/jaunty/foo'))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
