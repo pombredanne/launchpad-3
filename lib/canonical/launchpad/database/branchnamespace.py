@@ -183,7 +183,8 @@ class BranchNamespaceSet:
         else:
             return PersonalNamespace(person)
 
-    def _parse(self, namespace_name):
+    def parse(self, namespace_name):
+        """See `IBranchNamespaceSet`."""
         data = dict(
             person=None, product=None, distribution=None, distroseries=None,
             sourcepackagename=None)
@@ -202,6 +203,12 @@ class BranchNamespaceSet:
             raise InvalidNamespace(namespace_name)
         data['person'] = data['person'][1:]
         return data
+
+    def lookup(self, namespace_name):
+        """See `IBranchNamespaceSet`."""
+        names = self.parse(namespace_name)
+        data = self._realize(names)
+        return self.get(**data)
 
     def _findOrRaise(self, error, name, finder, *args):
         if name is None:
@@ -249,8 +256,3 @@ class BranchNamespaceSet:
         data['sourcepackagename'] = self._findSourcePackageName(
             names['sourcepackagename'])
         return data
-
-    def lookup(self, namespace_name):
-        names = self._parse(namespace_name)
-        data = self._realize(names)
-        return self.get(**data)

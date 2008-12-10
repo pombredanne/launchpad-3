@@ -88,6 +88,14 @@ class IBranchNamespaceSet(Interface):
         :return: An `IBranchNamespace`.
         """
 
+    def parse(namespace_name):
+        """Parse 'namespace_name' into its components.
+
+        :raise InvalidNamespace: if the name is too long, too short or is
+            malformed.
+        :return: A dict with keys matching each component in 'namespace_name'.
+        """
+
 
 class InvalidNamespace(Exception):
     """Raised when someone tries to lookup a namespace with a bad name.
