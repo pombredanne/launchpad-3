@@ -6,7 +6,7 @@ __all__ = ['Translator', 'TranslatorSet']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, StringCol
 
 from canonical.launchpad.interfaces import \
     ITranslator, ITranslatorSet
@@ -33,14 +33,16 @@ class Translator(SQLBase):
         dbName='translator', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    documentation_url = StringCol(notNull=False, default=None)
 
 
 class TranslatorSet:
     implements(ITranslatorSet)
 
-    def new(self, translationgroup, language, translator):
+    def new(self, translationgroup, language, translator, documentation_url):
         return Translator(
             translationgroup=translationgroup,
             language=language,
-            translator=translator)
+            translator=translator,
+            documentation_url=documentation_url)
 

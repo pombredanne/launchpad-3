@@ -4,7 +4,8 @@ __metaclass__ = type
 
 import cgi
 
-from canonical.launchpad.interfaces import ITranslator
+from canonical.launchpad.interfaces.translator import ITranslator
+from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -19,15 +20,19 @@ class TranslatorEditView(LaunchpadEditFormView):
     """View class to edit ITranslationGroup objects"""
 
     schema = ITranslator
-    field_names = ['language', 'translator']
+    field_names = ['language', 'translator', 'documentation_url']
 
     @action("Change")
     def change_action(self, action, data):
         """Edit the translator that does translations for a given language."""
+        documentation_url = data.get('documentation_url')
+        if documentation_url is not None:
+            data['documentation_url'] = documentation_url.strip()
         self.updateContextFromData(data)
 
     def validate(self, data):
-        """Don't allow to change the language if it's already in the group."""
+        """Don't allow to change the language if it's already in the group.
+        Enforce valid URLs."""
         language = data.get('language')
         translation_group = self.context.translationgroup
         existing_translator = translation_group.query_translator(language)
@@ -43,6 +48,11 @@ class TranslatorEditView(LaunchpadEditFormView):
                 structured(
                     '%s is already a translator for this language' %
                     existing_translator_link))
+        documentation_url = data.get('documentation_url')        
+        if (documentation_url is not None and documentation_url != "" and
+            not validate_url(documentation_url.strip(), ['http', 'https'])):
+            self.setFieldError('documentation_url',
+                'This is not a valid documentation URL.')
 
     @property
     def next_url(self):

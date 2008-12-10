@@ -10,7 +10,7 @@ from canonical.launchpad.fields import PublicPersonChoice
 
 from zope.interface import Interface, Attribute
 
-from zope.schema import Choice, Datetime, Int
+from zope.schema import Choice, Datetime, Int, Text
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 
@@ -42,6 +42,10 @@ class ITranslator(Interface):
         vocabulary='ValidPersonOrTeam',
         description=_("The translation team (or individual supervisor) to "
             "be responsible for the language in this group."))
+    documentation_url = Text(
+        title=_('Documentation URL'), required=False,
+        description=_("URL with documentation for translation work done "
+                      "here: process, vocabulary standards, caveats."))
 
 
 class ITranslatorSet(IAddFormCustomization):
@@ -49,6 +53,6 @@ class ITranslatorSet(IAddFormCustomization):
 
     title = Attribute('Title')
 
-    def new(translationgroup, language, translator):
+    def new(translationgroup, language, translator, documentation_url):
         """Create a new `ITranslator` for a `TranslationGroup`."""
 

@@ -17,12 +17,14 @@ import operator
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
-    NotFoundError
-    )
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroup, ITranslationGroupSet)
+from canonical.launchpad.interfaces.translator import (
+    ITranslator, ITranslatorSet)
+from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
@@ -53,7 +55,8 @@ class TranslationGroupView:
             result.append({'lang': item.language.englishname,
                            'person': item.translator,
                            'code': item.language.code,
-                           'datecreated': item.datecreated})
+                           'datecreated': item.datecreated,
+                           'documentation_url': item.documentation_url})
         result.sort(key=operator.itemgetter('lang'))
         return result
 
@@ -62,7 +65,7 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
     """View class for the "appoint a translator" page"""
 
     schema = ITranslator
-    field_names = ['language', 'translator']
+    field_names = ['language', 'translator', 'documentation_url']
 
     @action("Add", name="add")
     def add_action(self, action, data):
@@ -75,14 +78,24 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         """
         language = data.get('language')
         translator = data.get('translator')
-        getUtility(ITranslatorSet).new(self.context, language, translator)
+        documentation_url = data.get('documentation_url')
+        if documentation_url is not None:
+            documentation_url = documentation_url.strip()
+        getUtility(ITranslatorSet).new(
+            self.context, language, translator, documentation_url)
 
     def validate(self, data):
-        """Do not allow new translators for already existing languages."""
+        """Do not allow new translators for already existing languages.
+        Enforce valid URLs."""
         language = data.get('language')
         if self.context.query_translator(language):
             self.setFieldError('language',
                 "There is already a translator for this language")
+        documentation_url = data.get('documentation_url')
+        if (documentation_url is not None and documentation_url != "" and
+            not validate_url(documentation_url.strip(), ['http', 'https'])):
+            self.setFieldError('documentation_url',
+                'This is not a valid documentation URL.')
 
     @property
     def next_url(self):
