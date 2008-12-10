@@ -431,6 +431,26 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
+    def enableDefaultStackingForProduct(self, product, branch=None):
+        """Give 'product' a default stacked-on branch.
+
+        :param product: The product to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.  If not supplied, a fresh branch will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch(product=product)
+        # 'branch' might be private, so we remove the security proxy to get at
+        # the methods.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete('rev1')
+        # Likewise, we might not have permission to set the user_branch of the
+        # development focus series.
+        naked_series = removeSecurityProxy(product.development_focus)
+        naked_series.user_branch = branch
+        return branch
+
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
                                 product=None, review_diff=None):
