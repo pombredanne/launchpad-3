@@ -985,7 +985,7 @@ class ArchiveSet:
 
          * PRIMARY: 'primary';
          * PARTNER: 'partner';
-         * PPA: 'ppa'.
+         * PPA: 'default'.
 
         :param purpose: queried `ArchivePurpose`.
 
@@ -996,7 +996,7 @@ class ArchiveSet:
         """
         name_by_purpose = {
             ArchivePurpose.PRIMARY: 'primary',
-            ArchivePurpose.PPA: 'ppa',
+            ArchivePurpose.PPA: 'default',
             ArchivePurpose.PARTNER: 'partner',
             }
 

@@ -324,6 +324,10 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
+        return self.traverse_ppa()
+
+    @stepto('+ppa')
+    def traverse_ppa(self):
         if self.request.stepstogo:
             # If the URL has a PPA name in it, use that.
             ppa_name = self.request.stepstogo.consume()

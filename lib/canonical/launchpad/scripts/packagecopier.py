@@ -347,7 +347,7 @@ class PackageCopier(SoyuzScript):
             action='store', help='Destination PPA owner name.')
 
         self.parser.add_option(
-            '--to-ppa-name', dest='to_ppa_name', default='ppa',
+            '--to-ppa-name', dest='to_ppa_name', default='default',
             action='store', help='Destination PPA name.')
 
         self.parser.add_option(
@@ -503,7 +503,7 @@ class UnembargoSecurityPackage(PackageCopier):
 
         self.parser.add_option(
             "--ppa-name", dest="archive_name",
-            default="ppa", action="store",
+            default="default", action="store",
             help="Private PPA name.")
 
     def setUpCopierOptions(self):
