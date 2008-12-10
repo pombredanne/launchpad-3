@@ -4,7 +4,7 @@ __metaclass__ = type
 __all__ = [
     'EmailCommand',
     'EmailCommandCollection',
-    'emailcommands',
+    'BugEmailCommands',
     'get_error_message']
 
 from zope.component import getUtility
@@ -847,23 +847,25 @@ class NoSuchCommand(KeyError):
 class EmailCommandCollection:
     """A collection of email commands."""
 
-    def names(self):
+    @classmethod
+    def names(klass):
         """Returns all the command names."""
-        return self._commands.keys()
+        return klass._commands.keys()
 
-    def get(self, name, string_args):
+    @classmethod
+    def get(klass, name, string_args):
         """Returns a command object with the given name and arguments.
 
         If a command with the given name can't be found, a NoSuchCommand
         error is raised.
         """
-        command_class = self._commands.get(name)
+        command_class = klass._commands.get(name)
         if command_class is None:
             raise NoSuchCommand(name)
         return command_class(name, string_args)
 
 
-class EmailCommands(EmailCommandCollection):
+class BugEmailCommands(EmailCommandCollection):
     """A collection of email commands."""
 
     _commands = {
@@ -884,6 +886,3 @@ class EmailCommands(EmailCommandCollection):
         'priority': ReplacedByImportanceCommand,
         'tag': TagEmailCommand,
     }
-
-
-emailcommands = EmailCommands()

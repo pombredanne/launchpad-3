@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces import (
     IMessageSet, IQuestionSet, ISpecificationSet,
     QuestionStatus)
 from canonical.launchpad.mail.codehandler import CodeHandler
-from canonical.launchpad.mail.commands import emailcommands, get_error_message
+from canonical.launchpad.mail.commands import (
+    BugEmailCommands, get_error_message)
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
     IncomingEmailError, parse_commands, reformat_wiki_text)
@@ -53,8 +54,9 @@ class MaloneHandler:
         content = get_main_body(signed_msg)
         if content is None:
             return []
-        return [emailcommands.get(name=name, string_args=args) for
-                name, args in parse_commands(content, emailcommands.names())]
+        return [BugEmailCommands.get(name=name, string_args=args) for
+                name, args in parse_commands(content,
+                                             BugEmailCommands.names())]
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
@@ -68,7 +70,7 @@ class MaloneHandler:
 
             if user.lower() == 'new':
                 # A submit request.
-                commands.insert(0, emailcommands.get('bug', ['new']))
+                commands.insert(0, BugEmailCommands.get('bug', ['new']))
                 if signed_msg.signature is None:
                     raise IncomingEmailError(
                         get_error_message('not-gpg-signed.txt'))
@@ -79,7 +81,7 @@ class MaloneHandler:
                 # handle the possible errors that can occur while getting
                 # the bug.
                 add_comment_to_bug = True
-                commands.insert(0, emailcommands.get('bug', [user]))
+                commands.insert(0, BugEmailCommands.get('bug', [user]))
             elif user.lower() == 'help':
                 from_user = getUtility(ILaunchBag).user
                 if from_user is not None:
