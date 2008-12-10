@@ -33,7 +33,6 @@ __all__ = [
     'IBazaarApplication',
     'ICrowd',
     'IFeedsApplication',
-    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -240,10 +239,6 @@ class IAuthApplication(Interface):
 
 class IFeedsApplication(ILaunchpadApplication):
     """Launchpad Feeds application root."""
-
-
-class IHWDBApplication(ILaunchpadApplication):
-    """Hardware database application application root."""
 
 
 class IPasswordResets(IPersistent):
