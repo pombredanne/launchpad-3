@@ -21,9 +21,9 @@ import threading
 import unittest
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
+from bzrlib.errors import FileExists
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestCaseWithTransport, TestNotApplicable, TestSkipped
+from bzrlib.tests import TestNotApplicable, TestSkipped
 
 from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
