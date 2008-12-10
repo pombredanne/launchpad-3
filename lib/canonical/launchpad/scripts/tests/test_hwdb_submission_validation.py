@@ -221,7 +221,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(
             result, None,
             'The test %s failed: The parsing result is not None.' % test)
-        if isinstance(messages, str) or isinstance(messages, unicode):
+        if isinstance(messages, basestring):
             messages = (messages, )
         last_log_messages = []
         for r in self.handler.records:
@@ -239,7 +239,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 else:
                     last_log_messages.append(candidate)
         expected_messages = ' or '.join(
-            [repr(message) for message in messages])
+            repr(message) for message in messages)
         failmsg = [
             "No error log message for submission %s (testing %s) contained %s"
                 % (submission_key, test, expected_messages)]
