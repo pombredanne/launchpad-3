@@ -877,9 +877,6 @@ class Archive(SQLBase):
         """See `IArchive`."""
         if suite is not None:
             # Note: a NotFoundError will be raised if it is not found.
-            # Question for cprov: would it be better to refactor the similar
-            # code in build_package_location into a class method of 
-            # PackageLocation and call that instead?
             distroseries, pocket = distribution.getDistroSeriesAndPocket(
                 suite)
         else:
