@@ -14,10 +14,12 @@ from zope.component import getUtility
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.distribution import (
+    IDistributionSet, NoSuchDistribution)
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeriesSet, NoSuchDistroSeries)
+from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
+from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 
@@ -86,21 +88,32 @@ def get_branch_namespace(person, product=None, distroseries=None,
 
 
 def lookup_branch_namespace(namespace_name):
-    tokens = namespace_name.split('/')
-    person_name = tokens[0][1:]
+    tokens = iter(namespace_name.split('/'))
+    person_name = tokens.next()[1:]
     person = getUtility(IPersonSet).getByName(person_name)
-    product_name = tokens[1]
+    if person is None:
+        raise NoSuchPerson(person_name)
+    product_name = tokens.next()
     product = distribution = distroseries = sourcepackagename = None
     if product_name == '+junk':
         product = None
     else:
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
+            try:
+                distroseries_name = tokens.next()
+            except StopIteration:
+                raise NoSuchProduct(product_name)
             distribution = getUtility(IDistributionSet).getByName(
                 product_name)
+            if distribution is None:
+                raise NoSuchDistribution(product_name)
             distroseries = getUtility(IDistroSeriesSet).queryByName(
-                distribution, tokens[2])
-            sourcepackagename = getUtility(ISourcePackageNameSet)[tokens[3]]
+                distribution, distroseries_name)
+            if distroseries is None:
+                raise NoSuchDistroSeries(distroseries_name)
+            sourcepackagename = getUtility(ISourcePackageNameSet)[
+                tokens.next()]
     return get_branch_namespace(
         person, product=product, distroseries=distroseries,
         sourcepackagename=sourcepackagename)

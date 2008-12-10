@@ -13,6 +13,7 @@ __all__ = [
     'IProductSet',
     'License',
     'LicenseStatus',
+    'NoSuchProduct',
     ]
 
 import sets
@@ -714,3 +715,11 @@ class IProductReviewSearch(Interface):
 
     subscription_modified_before = Date(
         title=_("and"), required=False)
+
+
+class NoSuchProduct(Exception):
+    """Raised when we try to find a product that doesn't exist."""
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(self, "No such product '%s'." % (name,))

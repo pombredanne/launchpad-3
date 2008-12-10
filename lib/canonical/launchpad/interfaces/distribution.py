@@ -11,6 +11,7 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoSuchDistribution',
     ]
 
 from zope.schema import Choice, Datetime, Text, TextLine
@@ -496,6 +497,14 @@ class IDistributionSet(Interface):
     def new(name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
         """Creaste a new distribution."""
+
+
+class NoSuchDistribution(Exception):
+    """Raised when we try to find a distribution that doesn't exist."""
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(self, "No such distribution '%s'." % (name,))
 
 
 # Monkey patching to fix circular imports.

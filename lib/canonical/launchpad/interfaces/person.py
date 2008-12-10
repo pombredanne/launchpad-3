@@ -26,6 +26,7 @@ __all__ = [
     'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
+    'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -1976,6 +1977,14 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class NoSuchPerson(Exception):
+    """Raised when we try to look up an IPerson that doesn't exist."""
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(self, "No such person '%s'." % (name,))
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

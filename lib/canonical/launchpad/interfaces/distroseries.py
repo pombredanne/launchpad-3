@@ -11,6 +11,7 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
+    'NoSuchDistroSeries',
     ]
 
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
@@ -701,3 +702,12 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
+
+
+class NoSuchDistroSeries(Exception):
+    """Raised when we try to find a DistroSeries that doesn't exist."""
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(
+            self, "No such distribution series '%s'." % (name,))

@@ -14,6 +14,12 @@ from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, lookup_branch_namespace, IBranchNamespace)
+from canonical.launchpad.interfaces.distribution import NoSuchDistribution
+from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
+from canonical.launchpad.interfaces.person import NoSuchPerson
+from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -282,6 +288,12 @@ class TestGetNamespace(TestCaseWithFactory):
         self.assertIsInstance(namespace, PersonalNamespace)
         self.assertEqual(person, namespace.owner)
 
+    def test_lookup_personal_not_found(self):
+        # lookup_branch_namespace raises NoSuchPerson error if the given
+        # person doesn't exist.
+        self.assertRaises(
+            NoSuchPerson, lookup_branch_namespace, '~no-such-person/+junk')
+
     def test_lookup_product(self):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
@@ -290,6 +302,12 @@ class TestGetNamespace(TestCaseWithFactory):
         self.assertIsInstance(namespace, ProductNamespace)
         self.assertEqual(person, namespace.owner)
         self.assertEqual(product, removeSecurityProxy(namespace).product)
+
+    def test_lookup_product_not_found(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            NoSuchProduct, lookup_branch_namespace,
+            '~%s/no-such-product' % person.name)
 
     def test_lookup_package(self):
         person = self.factory.makePerson()
@@ -304,6 +322,29 @@ class TestGetNamespace(TestCaseWithFactory):
         namespace = removeSecurityProxy(namespace)
         self.assertEqual(distroseries, namespace.distroseries)
         self.assertEqual(sourcepackagename, namespace.sourcepackagename)
+
+    def test_lookup_package_no_distribution(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            NoSuchDistribution, lookup_branch_namespace,
+            '~%s/no-such-distro/whocares/whocares' % person.name)
+
+    def test_lookup_package_no_distroseries(self):
+        person = self.factory.makePerson()
+        distribution = self.factory.makeDistribution()
+        self.assertRaises(
+            NoSuchDistroSeries, lookup_branch_namespace,
+            '~%s/%s/no-such-series/whocares/whocares'
+            % (person.name, distribution.name))
+
+    def test_lookup_package_no_source_package(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        self.assertRaises(
+            NoSuchSourcePackageName, lookup_branch_namespace,
+            '~%s/%s/%s/no-such-spn' % (
+                person.name, distroseries.distribution.name,
+                distroseries.name))
 
 
 def test_suite():
