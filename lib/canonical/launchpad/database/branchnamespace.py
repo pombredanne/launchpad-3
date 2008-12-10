@@ -183,49 +183,51 @@ class BranchNamespaceSet:
         else:
             return PersonalNamespace(person)
 
+    def _parse(self, namespace_name):
+        data = dict(
+            person=None, product=None, distribution=None, distroseries=None,
+            sourcepackagename=None)
+        tokens = namespace_name.split('/')
+        if len(tokens) == 2:
+            data['person'] = tokens[0]
+            data['product'] = tokens[1]
+        elif len(tokens) == 4:
+            data['person'] = tokens[0]
+            data['distribution'] = tokens[1]
+            data['distroseries'] = tokens[2]
+            data['sourcepackagename'] = tokens[3]
+        else:
+            raise InvalidNamespace(namespace_name)
+        if not data['person'].startswith('~'):
+            raise InvalidNamespace(namespace_name)
+        data['person'] = data['person'][1:]
+        return data
+
     def lookup(self, namespace_name):
-        tokens = iter(namespace_name.split('/'))
-        person_name = tokens.next()
-        if not person_name.startswith('~'):
-            raise InvalidNamespace(namespace_name)
-        person_name = person_name[1:]
-        person = getUtility(IPersonSet).getByName(person_name)
+        data = self._parse(namespace_name)
+        person = getUtility(IPersonSet).getByName(data['person'])
         if person is None:
-            raise NoSuchPerson(person_name)
-        try:
-            product_name = tokens.next()
-        except StopIteration:
-            raise InvalidNamespace(namespace_name)
-        product = distribution = distroseries = sourcepackagename = None
-        if product_name == '+junk':
-            product = None
-        else:
-            product = getUtility(IProductSet).getByName(product_name)
+            raise NoSuchPerson(data['person'])
+        if data['product'] == '+junk':
+            return self.get(person)
+        if data['product'] is not None:
+            product = getUtility(IProductSet).getByName(data['product'])
             if product is None:
-                try:
-                    distroseries_name = tokens.next()
-                except StopIteration:
-                    raise NoSuchProduct(product_name)
-                distribution = getUtility(IDistributionSet).getByName(
-                    product_name)
-                if distribution is None:
-                    raise NoSuchDistribution(product_name)
-                distroseries = getUtility(IDistroSeriesSet).queryByName(
-                    distribution, distroseries_name)
-                if distroseries is None:
-                    raise NoSuchDistroSeries(distroseries_name)
-                try:
-                    sourcepackagename_name = tokens.next()
-                except StopIteration:
-                    raise InvalidNamespace(namespace_name)
-                sourcepackagename = getUtility(ISourcePackageNameSet)[
-                    sourcepackagename_name]
-        try:
-            tokens.next()
-        except StopIteration:
-            pass
-        else:
-            raise InvalidNamespace(namespace_name)
+                raise NoSuchProduct(data['product'])
+            return self.get(person, product=product)
+
+        distribution = getUtility(IDistributionSet).getByName(
+            data['distribution'])
+        if distribution is None:
+            raise NoSuchDistribution(data['distribution'])
+
+        distroseries = getUtility(IDistroSeriesSet).queryByName(
+            distribution, data['distroseries'])
+        if distroseries is None:
+            raise NoSuchDistroSeries(data['distroseries'])
+
+        sourcepackagename = getUtility(ISourcePackageNameSet)[
+            data['sourcepackagename']]
         return self.get(
-            person, product=product, distroseries=distroseries,
+            person, distroseries=distroseries,
             sourcepackagename=sourcepackagename)

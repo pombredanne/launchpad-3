@@ -335,7 +335,7 @@ class TestGetNamespace(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         self.assertRaises(
             NoSuchDistroSeries, lookup_branch_namespace,
-            '~%s/%s/no-such-series/whocares/whocares'
+            '~%s/%s/no-such-series/whocares'
             % (person.name, distribution.name))
 
     def test_lookup_package_no_source_package(self):
