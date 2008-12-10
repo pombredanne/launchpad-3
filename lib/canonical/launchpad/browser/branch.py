@@ -50,6 +50,7 @@ from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
+    BranchExists,
     BranchType,
     BranchVisibilityRule,
     CodeImportJobState,
@@ -69,6 +70,8 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     UICreatableBranchType,
     )
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
@@ -528,24 +531,36 @@ class BranchInProductView(BranchView):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def validate_branch_name(self, owner, product, branch_name):
-        if not getUtility(IBranchSet).isBranchNameAvailable(
-            owner, product, branch_name):
-            # There is a branch that has the branch_name specified already.
-            if owner == self.user:
-                prefix = "You already have"
-            else:
-                prefix = "%s already has" % cgi.escape(owner.displayname)
+    def _setBranchExists(self, existing_branch):
+        # XXX: JonathanLange 2008-12-04 spec=package-branches: Assumes that
+        # branches have products, which is now wrong.
+        owner = existing_branch.owner
+        product = existing_branch.product
+        branch_name = existing_branch.name
+        if owner == self.user:
+            prefix = "You already have"
+        else:
+            prefix = "%s already has" % cgi.escape(owner.displayname)
 
-            if product is None:
-                message = (
-                    "%s a junk branch called <em>%s</em>."
-                    % (prefix, branch_name))
-            else:
-                message = (
-                    "%s a branch for <em>%s</em> called "
-                    "<em>%s</em>." % (prefix, product.name, branch_name))
-            self.setFieldError('name', structured(message))
+        if product is None:
+            message = (
+                "%s a junk branch called <em>%s</em>."
+                % (prefix, branch_name))
+        else:
+            message = (
+                "%s a branch for <em>%s</em> called "
+                "<em>%s</em>." % (prefix, product.name, branch_name))
+        self.setFieldError('name', structured(message))
+
+    def validate_branch_name(self, owner, product, branch_name):
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Don't look
+        # before you leap. Instead try to create the branch and then populate
+        # the error field.
+        namespace = get_branch_namespace(owner, product=product)
+        existing_branch = namespace.getByName(branch_name)
+        if existing_branch is not None:
+            # There is a branch that has the branch_name specified already.
+            self._setBranchExists(existing_branch)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -927,6 +942,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(data['product'])
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch)
         else:
             self.next_url = canonical_url(self.branch)
 
@@ -942,9 +959,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     def validate(self, data):
         owner = data['owner']
-        if 'name' in data:
-            self.validate_branch_name(
-                owner, data.get('product'), data['name'])
 
         if not self.user.inTeam(owner):
             self.setFieldError(

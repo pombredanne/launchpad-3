@@ -449,6 +449,18 @@ class HWDevice(SQLBase):
     name = StringCol(notNull=True)
     submissions = IntCol(notNull=True)
 
+    @property
+    def bus(self):
+        return self.bus_vendor.bus
+
+    @property
+    def vendor_id(self):
+        return self.bus_vendor.vendor_id_for_bus
+
+    @property
+    def vendor_name(self):
+        return self.bus_vendor.vendor_name.name
+
     def _create(self, id, **kw):
         bus_vendor = kw.get('bus_vendor')
         if bus_vendor is None:
@@ -509,6 +521,23 @@ class HWDeviceSet:
             return self.create(bus, vendor_id, product_id, product_name,
                                variant)
         return device
+
+    def getByID(self, id):
+        """See `IHWDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDevice, HWDevice.id == id).one()
+
+    def search(self, bus, vendor_id, product_id=None):
+        """See `IHWDeviceSet`."""
+        bus_vendor = HWVendorIDSet().getByBusAndVendorID(bus, vendor_id)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if product_id is not None:
+            args.append(HWDevice.bus_product_id == product_id)
+        result_set = store.find(
+            HWDevice, HWDevice.bus_vendor == bus_vendor, *args)
+        result_set.order_by(HWDevice.id)
+        return result_set
 
 
 class HWDeviceNameVariant(SQLBase):
