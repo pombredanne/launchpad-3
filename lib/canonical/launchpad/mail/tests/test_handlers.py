@@ -479,7 +479,7 @@ class TestVoteEmailCommand(TestCase):
     def setUp(self):
         class FakeExecutionContext:
             vote = None
-            vote_tag = None
+            vote_tags = None
         self.context = FakeExecutionContext()
 
     def test_getVoteNoArgs(self):
@@ -492,9 +492,9 @@ class TestVoteEmailCommand(TestCase):
         command.execute(self.context)
         self.assertEqual(expected_vote, self.context.vote)
         if expected_tag is None:
-            self.assertIs(None, self.context.vote_tag)
+            self.assertIs(None, self.context.vote_tags)
         else:
-            self.assertEqual(expected_tag, self.context.vote_tag)
+            self.assertEqual(expected_tag, self.context.vote_tags)
 
     def test_getVoteOneArg(self):
         """getVote returns vote, None when only a vote is supplied."""
