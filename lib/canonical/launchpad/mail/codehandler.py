@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, UserNotBranchReviewer)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
+from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -92,7 +93,7 @@ class VoteEmailCommand(CodeReviewEmailCommand):
             raise EmailProcessingError(
                 get_error_message(
                     'num-arguments-mismatch.txt',
-                    command_name=self.name,
+                    command_name='review',
                     num_arguments_expected='one or more',
                     num_arguments_got='0'))
 
@@ -182,6 +183,7 @@ class CodeEmailCommands(EmailCommandCollection):
 
     _commands = {
         'vote': VoteEmailCommand,
+        'review': VoteEmailCommand,
         'status': UpdateStatusEmailCommand,
         'reviewer': AddReviewerEmailCommand,
         }
@@ -353,7 +355,15 @@ class CodeHandler:
         submitter = getUtility(ILaunchBag).user
         comment_text, md = self.findMergeDirectiveAndComment(message)
         source, target = self._acquireBranchesForProposal(md, submitter)
-        bmp = source.addLandingTarget(submitter, target, needs_review=True)
+        if md.patch is not None:
+            diff_source = getUtility(IStaticDiffSource)
+            review_diff = diff_source.acquireFromText(
+                md.base_revision_id, md.revision_id, md.patch)
+            transaction.commit()
+        else:
+            review_diff = None
+        bmp = source.addLandingTarget(submitter, target, needs_review=True,
+                                      review_diff=review_diff)
         if comment_text.strip() == '':
             comment = None
         else:

@@ -28,63 +28,12 @@ from canonical.launchpad.mail.codehandler import (
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
     mail_handlers, MaloneHandler)
-from canonical.launchpad.mail.helpers import parse_commands
 from canonical.launchpad.testing import (
     login, login_person, TestCase, TestCaseWithFactory)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-
-
-class TestParseCommands(TestCase):
-    """Test the ParseCommands function."""
-
-    def test_parse_commandsEmpty(self):
-        """Empty messages have no commands."""
-        self.assertEqual([], parse_commands('', ['command']))
-
-    def test_parse_commandsNoIndent(self):
-        """Commands with no indent are not commands."""
-        self.assertEqual([], parse_commands('command', ['command']))
-
-    def test_parse_commandsSpaceIndent(self):
-        """Commands indented with spaces are recognized."""
-        self.assertEqual(
-            [('command', [])], parse_commands(' command', ['command']))
-
-    def test_parse_commands_args(self):
-        """Commands indented with spaces are recognized."""
-        self.assertEqual(
-            [('command', ['arg1', 'arg2'])],
-            parse_commands(' command arg1 arg2', ['command']))
-
-    def test_parse_commands_args_quoted(self):
-        """Commands indented with spaces are recognized."""
-        self.assertEqual(
-            [('command', ['"arg1', 'arg2"'])],
-            parse_commands(' command "arg1 arg2"', ['command']))
-
-    def test_parse_commandsTabIndent(self):
-        """Commands indented with tabs are recognized.
-
-        (Tabs?  What are we, make?)
-        """
-        self.assertEqual(
-            [('command', [])], parse_commands('\tcommand', ['command']))
-
-    def test_parse_commandsDone(self):
-        """The 'done' pseudo-command halts processing."""
-        self.assertEqual(
-            [('command', []), ('command', [])],
-            parse_commands(' command\n command', ['command']))
-        self.assertEqual(
-            [('command', [])],
-            parse_commands(' command\n done\n command', ['command']))
-        # done takes no arguments.
-        self.assertEqual(
-            [('command', []), ('command', [])],
-            parse_commands(' command\n done commands\n command', ['command']))
 
 
 class TestGetCodeEmailCommands(TestCase):
@@ -99,6 +48,13 @@ class TestGetCodeEmailCommands(TestCase):
         [command] = CodeEmailCommands.getCommands(" vote approve tag me")
         self.assertIsInstance(command, VoteEmailCommand)
         self.assertEqual('vote', command.name)
+        self.assertEqual(['approve', 'tag', 'me'], command.string_args)
+
+    def test_review_as_vote_command(self):
+        # Check that the vote command is correctly created.
+        [command] = CodeEmailCommands.getCommands(" review approve tag me")
+        self.assertIsInstance(command, VoteEmailCommand)
+        self.assertEqual('review', command.name)
         self.assertEqual(['approve', 'tag', 'me'], command.string_args)
 
     def test_status_command(self):
@@ -251,6 +207,36 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
         self.assertEqual('ebailiwick', bmp.all_comments[0].vote_tag)
 
+    def test_processVoteColon(self):
+        """Process respects the vote: command."""
+        mail = self.factory.makeSignedMessage(body=' vote: Abstain EBAILIWICK')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('ebailiwick', bmp.all_comments[0].vote_tag)
+
+    def test_processReview(self):
+        """Process respects the review command."""
+        mail = self.factory.makeSignedMessage(body=' review Abstain ROAR!')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('roar!', bmp.all_comments[0].vote_tag)
+
+    def test_processReviewColon(self):
+        """Process respects the review: command."""
+        mail = self.factory.makeSignedMessage(body=' review: Abstain ROAR!')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('roar!', bmp.all_comments[0].vote_tag)
+
     def test_processWithExistingVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
@@ -288,7 +274,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler.process(mail, email_addr, None)
         notification = pop_notifications()[0]
         self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Vote: Abstain ebailiwick\n'
+        expected_body = ('Review: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
                          '-- \n'
                          '%s\n'
@@ -327,7 +313,8 @@ class TestCodeHandler(TestCaseWithFactory):
                 target_branch.unique_name)
         return MergeDirective2(
             'revid', 'sha', 0, 0, target_branch_url,
-            source_branch=source_branch_url, base_revision_id='base-revid')
+            source_branch=source_branch_url, base_revision_id='base-revid',
+            patch='booga')
 
     def test_acquireBranchesForProposal(self):
         """Ensure CodeHandler._acquireBranchesForProposal works."""
@@ -446,6 +433,7 @@ class TestCodeHandler(TestCaseWithFactory):
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source_branch, bmp.source_branch)
         self.assertEqual(target_branch, bmp.target_branch)
+        self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
 

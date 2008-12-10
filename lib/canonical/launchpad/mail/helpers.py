@@ -158,8 +158,12 @@ def parse_commands(content, command_names):
                 # stop reading any more commands.
                 break
             words = command_string.split(' ')
-            if len(words) > 0 and words[0] in command_names:
-                commands.append((words[0], words[1:]))
+            if len(words) > 0:
+                first = words.pop(0)
+                if first.endswith(':'):
+                    first = first[:-1]
+                if first in command_names:
+                    commands.append((first, words))
     return commands
 
 

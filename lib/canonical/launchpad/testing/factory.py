@@ -433,7 +433,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
-                                product=None):
+                                product=None, review_diff=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
@@ -446,7 +446,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch, dependent_branch=dependent_branch)
+            registrant, target_branch, dependent_branch=dependent_branch,
+            review_diff=review_diff)
 
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
@@ -631,12 +632,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
-    def makeBugTracker(self):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
-        base_url = 'http://%s.example.com/' % self.getUniqueString()
         owner = self.makePerson()
+
+        if base_url is None:
+            base_url = 'http://%s.example.com/' % self.getUniqueString()
+        if bugtrackertype is None:
+            bugtrackertype = BugTrackerType.BUGZILLA
+
         return getUtility(IBugTrackerSet).ensureBugTracker(
-            base_url, owner, BugTrackerType.BUGZILLA)
+            base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
