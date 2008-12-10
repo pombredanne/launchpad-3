@@ -1059,7 +1059,6 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         rendered_values = set()
         count = 0
 
-
         # Render normal values.
         for term in self.vocabulary.searchForTerms(self.getSearchQuery()):
             selected = term.value in values

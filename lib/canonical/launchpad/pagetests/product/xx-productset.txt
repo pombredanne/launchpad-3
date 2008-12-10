@@ -39,10 +39,10 @@ be left unspecified to get results with either value.
     ...     for option in control.displayOptions:
     ...         print option.decode('utf-8').encode('ascii', 'replace'),
     ...     print
-    ?(no value) ?True ?False
-    ?(no value) ?True ?False
-    ?(no value) ?True ?False
-    ?(no value) ?Empty ?Not Empty
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?Empty ?Not Empty
 
 The default form values will search for active projects that have not
 been reviewed and that have an Other/Open-Source or Other/Proprietary
