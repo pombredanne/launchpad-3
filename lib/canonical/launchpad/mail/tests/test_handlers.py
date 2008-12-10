@@ -15,10 +15,13 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
+    CodeReviewEmailCommandExecutionContext,
     InvalidBranchMergeProposalAddress,
     MissingMergeDirective, NonLaunchpadTarget,
     UpdateStatusEmailCommand, VoteEmailCommand)
@@ -141,6 +144,7 @@ class TestGetCodeEmailCommands(TestCase):
 
 
 class TestCodeHandler(TestCaseWithFactory):
+    """Test the code email hander."""
 
     layer = LaunchpadZopelessLayer
 
@@ -532,6 +536,172 @@ class TestVoteEmailCommand(TestCase):
         """Test the disapprove alias of -1."""
         command = VoteEmailCommand('vote', ['-1'])
         self.assertVoteAndTag(CodeReviewVote.DISAPPROVE, None, command)
+
+
+class TestUpdateStatusEmailCommand(TestCaseWithFactory):
+    """Test the UpdateStatusEmailCommand."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+        self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        # Default the user to be the target branch owner, so they are
+        # authorised to update the status.
+        self.context = CodeReviewEmailCommandExecutionContext(
+            self.merge_proposal, self.merge_proposal.target_branch.owner)
+        transaction.commit()
+        self.layer.switchDbUser(config.processmail.dbuser)
+
+    def tearDown(self):
+        setSecurityPolicy(self._old_policy)
+
+    def test_numberOfArguments(self):
+        # The command needs one and only one arg.
+        command = UpdateStatusEmailCommand('status', [])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, self.context)
+        self.assertEqual(
+            "The 'status' argument expects 1 argument(s). It got 0.\n",
+            str(error))
+        command = UpdateStatusEmailCommand('status', ['approve', 'spam'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, self.context)
+        self.assertEqual(
+            "The 'status' argument expects 1 argument(s). It got 2.\n",
+            str(error))
+
+    def test_status_approved(self):
+        # Test that approve sets the status of the merge proposal.
+        self.assertNotEqual(
+            BranchMergeProposalStatus.CODE_APPROVED,
+            self.merge_proposal.queue_status)
+        command = UpdateStatusEmailCommand('status', ['approved'])
+        command.execute(self.context)
+        self.assertEqual(
+            BranchMergeProposalStatus.CODE_APPROVED,
+            self.merge_proposal.queue_status)
+        # The vote is also set if it wasn't before.
+        self.assertEqual(CodeReviewVote.APPROVE, self.context.vote)
+
+    def test_status_approved_doesnt_override_vote(self):
+        # Test that approve sets the status of the merge proposal.
+        self.context.vote = CodeReviewVote.NEEDS_FIXING
+        command = UpdateStatusEmailCommand('status', ['approved'])
+        command.execute(self.context)
+        self.assertEqual(
+            BranchMergeProposalStatus.CODE_APPROVED,
+            self.merge_proposal.queue_status)
+        self.assertEqual(CodeReviewVote.NEEDS_FIXING, self.context.vote)
+
+    def test_status_rejected(self):
+        # Test that rejected sets the status of the merge proposal.
+        self.assertNotEqual(
+            BranchMergeProposalStatus.REJECTED,
+            self.merge_proposal.queue_status)
+        command = UpdateStatusEmailCommand('status', ['rejected'])
+        command.execute(self.context)
+        self.assertEqual(
+            BranchMergeProposalStatus.REJECTED,
+            self.merge_proposal.queue_status)
+        # The vote is also set if it wasn't before.
+        self.assertEqual(CodeReviewVote.DISAPPROVE, self.context.vote)
+
+    def test_status_rejected_doesnt_override_vote(self):
+        # Test that approve sets the status of the merge proposal.
+        self.context.vote = CodeReviewVote.NEEDS_FIXING
+        command = UpdateStatusEmailCommand('status', ['rejected'])
+        command.execute(self.context)
+        self.assertEqual(
+            BranchMergeProposalStatus.REJECTED,
+            self.merge_proposal.queue_status)
+        self.assertEqual(CodeReviewVote.NEEDS_FIXING, self.context.vote)
+
+    def test_unknown_status(self):
+        # Unknown status values will cause an email response to the user.
+        command = UpdateStatusEmailCommand('status', ['bob'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, self.context)
+        self.assertEqual(
+            "The 'status' command expects any of the following arguments:\n"
+            "approved, rejected\n\n"
+            "For example:\n\n"
+            "    status approved\n",
+            str(error))
+
+    def test_not_a_reviewer(self):
+        # If the user is not a reviewer, they can not update the status.
+        self.context.user = self.context.merge_proposal.registrant
+        command = UpdateStatusEmailCommand('status', ['approve'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, self.context)
+        target = self.merge_proposal.target_branch.bzr_identity
+        self.assertEqual(
+            "You are not a reviewer for the branch %s.\n" % target,
+            str(error))
+
+
+class TestAddReviewerEmailCommand(TestCaseWithFactory):
+    """Test the AddReviewerEmailCommand."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+        self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        # Default the user to be the target branch owner, so they are
+        # authorised to update the status.
+        self.context = CodeReviewEmailCommandExecutionContext(
+            self.merge_proposal, self.merge_proposal.target_branch.owner)
+        self.reviewer = self.factory.makePerson()
+        transaction.commit()
+        self.layer.switchDbUser(config.processmail.dbuser)
+
+    def tearDown(self):
+        setSecurityPolicy(self._old_policy)
+
+    def test_numberOfArguments(self):
+        # The command needs at least one arg.
+        command = AddReviewerEmailCommand('reviewer', [])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, self.context)
+        self.assertEqual(
+            "The 'reviewer' argument expects one or more argument(s). "
+            "It got 0.\n",
+            str(error))
+
+    def test_add_reviewer(self):
+        # The simple case is to add a reviewer with no tags.
+        command = AddReviewerEmailCommand('reviewer', [self.reviewer.name])
+        command.execute(self.context)
+        [vote_ref] = list(self.context.merge_proposal.votes)
+        self.assertEqual(self.reviewer, vote_ref.reviewer)
+        self.assertEqual(self.context.user, vote_ref.registrant)
+        self.assertIs(None, vote_ref.review_type)
+        self.assertIs(None, vote_ref.comment)
+
+    def test_add_reviewer_with_tags(self):
+        # The simple case is to add a reviewer with no tags.
+        command = AddReviewerEmailCommand(
+            'reviewer', [self.reviewer.name, 'DB', 'Foo'])
+        command.execute(self.context)
+        [vote_ref] = list(self.context.merge_proposal.votes)
+        self.assertEqual(self.reviewer, vote_ref.reviewer)
+        self.assertEqual(self.context.user, vote_ref.registrant)
+        self.assertEqual('db foo', vote_ref.review_type)
+        self.assertIs(None, vote_ref.comment)
+
+    def test_unknown_reviewer(self):
+        # An unknown user raises.
+        command = AddReviewerEmailCommand('reviewer', ['unknown@example.com'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, self.context)
+        self.assertEqual(
+            "There's no such person with the specified name or email: "
+            "unknown@example.com\n",
+            str(error))
 
 
 class TestMaloneHandler(TestCaseWithFactory):

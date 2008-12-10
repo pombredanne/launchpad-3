@@ -15,7 +15,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter)
+    IBranchMergeProposalGetter, UserNotBranchReviewer)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
@@ -130,21 +130,28 @@ class UpdateStatusEmailCommand(CodeReviewEmailCommand):
         # Grab the latest rev_id from the source branch.
         # This is what the browser code does right now.
         rev_id = context.merge_proposal.source_branch.last_scanned_id
-        if new_status == 'approved':
-            if self.context.vote is None:
-                self.context.vote = CodeReviewVote.APPROVE
-            self.context.merge_proposal.approveBranch(self.user, rev_id)
-        elif new_status == 'rejected':
-            if self.context.vote is None:
-                self.context.vote = CodeReviewVote.DISAPPROVE
-            self.context.merge_proposal.rejectBranch(self.user, rev_id)
-        else:
+        try:
+            if new_status in ('approved', 'approve'):
+                if context.vote is None:
+                    context.vote = CodeReviewVote.APPROVE
+                context.merge_proposal.approveBranch(context.user, rev_id)
+            elif new_status in ('rejected', 'reject'):
+                if context.vote is None:
+                    context.vote = CodeReviewVote.DISAPPROVE
+                context.merge_proposal.rejectBranch(context.user, rev_id)
+            else:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'dbschema-command-wrong-argument.txt',
+                        command_name=self.name,
+                        arguments='approved, rejected',
+                        example_argument='approved'))
+        except UserNotBranchReviewer:
             raise EmailProcessingError(
                 get_error_message(
-                    'dbschema-command-wrong-argument.txt',
+                    'user-not-reviewer.txt',
                     command_name=self.name,
-                    arguments='approved, rejected',
-                    example_argument='approved'))
+                    target=context.merge_proposal.target_branch.bzr_identity))
 
 
 class AddReviewerEmailCommand(CodeReviewEmailCommand):
@@ -159,11 +166,15 @@ class AddReviewerEmailCommand(CodeReviewEmailCommand):
                     num_arguments_expected='one or more',
                     num_arguments_got='0'))
 
-        reviewer = get_person_or_team(self.string_args.pop())
-        review_tags = ' '.join(self.string_args)
+        # Pop the first arg as the reviewer.
+        reviewer = get_person_or_team(self.string_args.pop(0))
+        if len(self.string_args) > 0:
+            review_tags = ' '.join(self.string_args)
+        else:
+            review_tags = None
 
-        self.context.merge_proposal.nominateReviewer(
-            reviewer, self.context.user, review_tags)
+        context.merge_proposal.nominateReviewer(
+            reviewer, context.user, review_tags)
 
 
 class CodeEmailCommands(EmailCommandCollection):

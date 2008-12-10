@@ -5,6 +5,7 @@ __metaclass__ = type
 import unittest
 
 from zope.interface import directlyProvides, directlyProvidedBy
+from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.interfaces.mail import (
     IWeaklyAuthenticatedPrincipal)
@@ -72,5 +73,6 @@ class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
 
 def test_suite():
     suite = unittest.TestSuite()
+    suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite

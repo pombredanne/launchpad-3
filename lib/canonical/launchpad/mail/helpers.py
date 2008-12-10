@@ -177,7 +177,7 @@ def get_error_message(filename, **interpolation_items):
     return error_template % interpolation_items
 
 
-def get_person_or_team(self, person_name_or_email):
+def get_person_or_team(person_name_or_email):
     """Get the `Person` from the vocabulary.
 
     :raises: EmailProcessingError if person not found.
