@@ -16,11 +16,13 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.ftests import login_person
+from canonical.launchpad.mail.codehandler import (
+    CodeHandler, InvalidBranchMergeProposalAddress, InvalidVoteString,
+    MissingMergeDirective)
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
-    CodeHandler, InvalidBranchMergeProposalAddress, InvalidVoteString,
-    mail_handlers, MaloneHandler, NonLaunchpadTarget, parse_commands,
-    MissingMergeDirective)
+    mail_handlers, MaloneHandler, NonLaunchpadTarget)
+from canonical.launchpad.mail.helpers import parse_commands
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
