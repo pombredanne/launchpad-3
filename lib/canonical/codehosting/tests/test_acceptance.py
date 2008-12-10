@@ -6,9 +6,7 @@
 __metaclass__ = type
 
 import atexit
-from StringIO import StringIO
 import os
-import sys
 import unittest
 from xml.dom.minidom import parseString
 import xmlrpclib
@@ -182,7 +180,7 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         args = ['push', '-d', local_directory, remote_url]
         if use_existing_dir:
             args.append('--use-existing-dir')
-        self._run_bzr(['branch', remote_url, local_directory])
+        output, error = self._run_bzr(args)
 
     def assertCantPush(self, local_directory, remote_url):
         """
