@@ -69,8 +69,11 @@ class TestParseCommands(TestCase):
     def test_parse_commands_optional_colons(self):
         """Colons at the end of commands are accepted and stripped."""
         self.assertEqual(
-            [('command', ['arg1', 'arg2']), ('foo', [])],
-            parse_commands(' command: arg1\n foo:"', ['command', 'foo']))
+            [('command', ['arg1', 'arg2'])],
+            parse_commands(' command: arg1 arg2', ['command']))
+        self.assertEqual(
+            [('command', [])],
+            parse_commands(' command:', ['command']))
 
 
 class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
