@@ -80,19 +80,26 @@ class SSHServerLayer(ZopelessAppServerLayer):
         SSHServerLayer._reset()
 
 
-class DenyingSSHServer:
+class DenyingServer:
+    """Temporarily prevent creation of transports for certain URL schemes."""
 
-    schemes = ['bzr+ssh://', 'sftp://']
     _is_set_up = False
 
+    def __init__(self, schemes):
+        """Set up the instance.
+
+        :param schemes: The schemes to disallow creation of transports for.
+        """
+        self.schemes = schemes
+
     def setUp(self):
-        """See Server.setUp."""
+        """Prevent transports being created for specified schemes."""
         for scheme in self.schemes:
             register_transport(scheme, self._deny)
         self._is_set_up = True
 
     def tearDown(self):
-        """See Server.tearDown."""
+        """Re-enable creation of transports for specified schemes."""
         if not self._is_set_up:
             return
         self._is_set_up = False
@@ -100,7 +107,9 @@ class DenyingSSHServer:
             unregister_transport(scheme, self._deny)
 
     def _deny(self, url):
-        1/0
+        """Prevent creation of transport for 'url'."""
+        raise AssertionError(
+            "Creation of transport for %r is currently forbidden" % url)
 
 
 class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
@@ -116,7 +125,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
 
-        denying = DenyingSSHServer()
+        # Prevent creation of in-process sftp:// and bzr+ssh:// transports --
+        # such connections tend to leak threads and occasionally create
+        # uncollectable garbage.
+        denying = DenyingServer(['bzr+ssh://', 'sftp://'])
         denying.setUp()
         self.addCleanup(denying.tearDown)
 
