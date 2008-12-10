@@ -6,12 +6,14 @@ __metaclass__ = type
 
 import unittest
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.database.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespace)
+    get_branch_namespace, lookup_branch_namespace, IBranchNamespace)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -271,6 +273,37 @@ class TestGetNamespace(TestCaseWithFactory):
             person=person, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
         self.assertIsInstance(namespace, PackageNamespace)
+
+    def test_lookup_personal(self):
+        # lookup_branch_namespace returns a personal namespace if given a junk
+        # path.
+        person = self.factory.makePerson()
+        namespace = lookup_branch_namespace('~%s/+junk' % person.name)
+        self.assertIsInstance(namespace, PersonalNamespace)
+        self.assertEqual(person, namespace.owner)
+
+    def test_lookup_product(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = lookup_branch_namespace(
+            '~%s/%s' % (person.name, product.name))
+        self.assertIsInstance(namespace, ProductNamespace)
+        self.assertEqual(person, namespace.owner)
+        self.assertEqual(product, removeSecurityProxy(namespace).product)
+
+    def test_lookup_package(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        namespace = lookup_branch_namespace(
+            '~%s/%s/%s/%s' % (
+                person.name, distroseries.distribution.name,
+                distroseries.name, sourcepackagename.name))
+        self.assertIsInstance(namespace, PackageNamespace)
+        self.assertEqual(person, namespace.owner)
+        namespace = removeSecurityProxy(namespace)
+        self.assertEqual(distroseries, namespace.distroseries)
+        self.assertEqual(sourcepackagename, namespace.sourcepackagename)
 
 
 def test_suite():

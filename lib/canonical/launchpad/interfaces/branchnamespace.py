@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'get_branch_namespace',
+    'lookup_branch_namespace',
     'IBranchNamespace',
     'IBranchNamespaceSet',
     ]
@@ -13,6 +14,12 @@ from zope.component import getUtility
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 
 
 class IBranchNamespace(Interface):
@@ -76,3 +83,24 @@ def get_branch_namespace(person, product=None, distroseries=None,
                          sourcepackagename=None):
     return getUtility(IBranchNamespaceSet).get(
         person, product, distroseries, sourcepackagename)
+
+
+def lookup_branch_namespace(namespace_name):
+    tokens = namespace_name.split('/')
+    person_name = tokens[0][1:]
+    person = getUtility(IPersonSet).getByName(person_name)
+    product_name = tokens[1]
+    product = distribution = distroseries = sourcepackagename = None
+    if product_name == '+junk':
+        product = None
+    else:
+        product = getUtility(IProductSet).getByName(product_name)
+        if product is None:
+            distribution = getUtility(IDistributionSet).getByName(
+                product_name)
+            distroseries = getUtility(IDistroSeriesSet).queryByName(
+                distribution, tokens[2])
+            sourcepackagename = getUtility(ISourcePackageNameSet)[tokens[3]]
+    return get_branch_namespace(
+        person, product=product, distroseries=distroseries,
+        sourcepackagename=sourcepackagename)
