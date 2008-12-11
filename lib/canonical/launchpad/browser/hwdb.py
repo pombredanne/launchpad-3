@@ -20,8 +20,8 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
 from canonical.launchpad.interfaces.hwdb import (
-    IHWDBApplication, IHWDeviceSet, IHWSubmissionForm, IHWSubmissionSet,
-    IHWSystemFingerprintSet)
+    IHWDBApplication, IHWDeviceSet, IHWDriverSet, IHWSubmissionForm,
+    IHWSubmissionSet, IHWSystemFingerprintSet)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -191,6 +191,14 @@ class HWDBApplicationNavigation(Navigation):
         except ValueError:
             raise NotFoundError('invalid value for ID: %r' % id)
         return getUtility(IHWDeviceSet).getByID(id)
+
+    @stepthrough('+driver')
+    def traverse_driver(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            raise NotFoundError('invalid value for ID: %r' % id)
+        return getUtility(IHWDriverSet).getByID(id)
 
 
 class HWDBFingerprintSetView(LaunchpadView):
