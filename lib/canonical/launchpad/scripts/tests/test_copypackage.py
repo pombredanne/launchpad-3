@@ -716,7 +716,7 @@ class TestCopyPackage(TestCase):
 
         self.assertRaisesWithContent(
             PackageLocationError,
-            "Could not find a PPA for slatibartfast",
+            "Could not find a PPA for slatibartfast named default",
             copy_helper.mainTask)
 
     def testCrossPartnerCopiesFails(self):
@@ -838,6 +838,7 @@ class TestCopyPackage(TestCase):
         # Now we can invoke the unembargo script and check its results.
         test_args = [
             "--ppa", "cprov",
+            "--ppa-name", "default",
             "-s", "%s" % ppa_source.distroseries.name + "-security",
             "foo"
             ]

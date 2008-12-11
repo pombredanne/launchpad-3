@@ -16,6 +16,8 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, UserNotBranchReviewer)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
@@ -314,15 +316,9 @@ class CodeHandler:
             raise NonLaunchpadTarget()
         if mp_source is None:
             basename = urlparse(md.source_branch)[2].split('/')[-1]
-            name = basename
-            count = 1
-            while not branches.isBranchNameAvailable(
-                submitter, mp_target.product, name):
-                name = '%s-%d' % (basename, count)
-                count += 1
-            mp_source = branches.new(
-                BranchType.REMOTE, name, submitter, submitter,
-                mp_target.product, md.source_branch)
+            namespace = get_branch_namespace(submitter, mp_target.product)
+            mp_source = namespace.createBranchWithPrefix(
+                BranchType.REMOTE, basename, submitter, url=md.source_branch)
         return mp_source, mp_target
 
     def findMergeDirectiveAndComment(self, message):

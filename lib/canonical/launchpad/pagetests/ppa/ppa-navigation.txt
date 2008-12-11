@@ -6,7 +6,7 @@ link on the PPA owner page.
     >>> anon_browser.open('http://launchpad.dev/~cprov')
     >>> anon_browser.getLink('Personal Package Archive').click()
     >>> anon_browser.url
-    'http://launchpad.dev/~cprov/+archive'
+    'http://launchpad.dev/~cprov/+ppa/default'
     >>> anon_browser.title
     'PPA for Celso Providelo'
 
@@ -31,13 +31,13 @@ the 'View build records' link.
     >>> anon_browser.title
     'Builds for PPA for Celso Providelo'
     >>> anon_browser.url
-    'http://launchpad.dev/~cprov/+archive/+builds'
+    'http://launchpad.dev/~cprov/+ppa/default/+builds'
 
 The user could return to the 'PPA' overview by using the 'View PPA'
 link:
 
     >>> anon_browser.getLink('Personal Package Archive').url
-    'http://launchpad.dev/~cprov/+archive'
+    'http://launchpad.dev/~cprov/+ppa/default'
 
 The user can navigate to an individual build details:
 
@@ -63,14 +63,14 @@ From that page the user could return either to the build records listing
 or the PPA overview.
 
     >>> anon_browser.getLink('View build records').url
-    'http://launchpad.dev/~cprov/+archive/+builds'
+    'http://launchpad.dev/~cprov/+ppa/default/+builds'
     >>> anon_browser.getLink('View PPA').url
-    'http://launchpad.dev/~cprov/+archive'
+    'http://launchpad.dev/~cprov/+ppa/default'
 
 When the number of packages in the PPA is large the user will see them
 displayed in batches.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive?batch=1')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+ppa/default?batch=1')
 
 Since he is on the first page, the 'First' and 'Previous' links are
 inactive:
@@ -116,7 +116,7 @@ This is the last page, so the next and last links are inactive.
 The 'First' and 'Previous' links, however, are now active.
 
     >>> anon_browser.getLink('First').url
-    'http://launchpad.dev/%7Ecprov/+archive/+index?start=0&batch=1'
+    'http://launchpad.dev/%7Ecprov/+ppa/default/+index?start=0&batch=1'
 
     >>> anon_browser.getLink('Previous').url
-    'http://launchpad.dev/%7Ecprov/+archive/+index?start=1&batch=1'
+    'http://launchpad.dev/%7Ecprov/+ppa/default/+index?start=1&batch=1'
