@@ -30,6 +30,8 @@ from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import BranchType, IBranch, IBranchSet
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
@@ -122,28 +124,6 @@ class BranchPopupWidget(SinglePopupWidget):
 
     displayWidth = '35'
 
-    def _getUsedNumbers(self, branch_set, product, name):
-        """Iterate over numbers that have previously been appended to name.
-
-        Finds all of the branches in `product` that have name like 'name-%'.
-        It iterates over all of those, yielding numbers that occur after the
-        final dash of such names.
-
-        This lets us easily pick a number that *hasn't* been used.
-        """
-        similar_branches = branch_set.getByProductAndNameStartsWith(
-            product, name + '-')
-        # 0 is always used, so that if there are no names like 'name-N', we
-        # will start with name-1.
-        yield 0
-        for branch in similar_branches:
-            last_token = branch.name.split('-')[-1]
-            try:
-                yield int(last_token)
-            except ValueError:
-                # It's not an integer, so we don't care.
-                pass
-
     def getBranchNameFromURL(self, url):
         """Return a branch name based on `url`.
 
@@ -151,16 +131,7 @@ class BranchPopupWidget(SinglePopupWidget):
         already another branch of that name on the product, then we'll try to
         find a unique name by appending numbers.
         """
-        name = URI(url).ensureNoSlash().path.split('/')[-1]
-        product = self.getProduct()
-        branch_set = getUtility(IBranchSet)
-        if branch_set.getByProductAndName(product, name).count() == 0:
-            return name
-
-        # Get a unique name that's `name` plus a number.
-        next_number = max(self._getUsedNumbers(branch_set, product, name)) + 1
-        name = '%s-%s' % (name, next_number)
-        return name
+        return URI(url).ensureNoSlash().path.split('/')[-1]
 
     def getPerson(self):
         """Return the person in the context, if any."""
@@ -180,6 +151,9 @@ class BranchPopupWidget(SinglePopupWidget):
         :param url: The URL to mirror.
         :return: An `IBranch`.
         """
+        # XXX: JonathanLange 2008-12-08 spec=package-branches: This method
+        # needs to be rewritten to get the sourcepackage and distroseries out
+        # of the launch bag.
         url = unicode(URI(url).ensureNoSlash())
         if getUtility(IBranchSet).getByUrl(url) is not None:
             raise AlreadyRegisteredError('Already a branch for %r' % (url,))
@@ -190,8 +164,9 @@ class BranchPopupWidget(SinglePopupWidget):
             raise NoProductError("Could not find product in LaunchBag.")
         owner = self.getPerson()
         name = self.getBranchNameFromURL(url)
-        branch = getUtility(IBranchSet).new(
-            BranchType.MIRRORED, name, owner, owner, self.getProduct(), url)
+        namespace = get_branch_namespace(person=owner, product=product)
+        branch = namespace.createBranchWithPrefix(
+            BranchType.MIRRORED, name, owner, url=url)
         branch.requestMirror()
         self.request.response.addNotification(
             structured('Registered %s' %
