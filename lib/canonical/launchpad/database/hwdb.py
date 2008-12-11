@@ -449,6 +449,18 @@ class HWDevice(SQLBase):
     name = StringCol(notNull=True)
     submissions = IntCol(notNull=True)
 
+    @property
+    def bus(self):
+        return self.bus_vendor.bus
+
+    @property
+    def vendor_id(self):
+        return self.bus_vendor.vendor_id_for_bus
+
+    @property
+    def vendor_name(self):
+        return self.bus_vendor.vendor_name.name
+
     def _create(self, id, **kw):
         bus_vendor = kw.get('bus_vendor')
         if bus_vendor is None:
@@ -510,6 +522,23 @@ class HWDeviceSet:
                                variant)
         return device
 
+    def getByID(self, id):
+        """See `IHWDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDevice, HWDevice.id == id).one()
+
+    def search(self, bus, vendor_id, product_id=None):
+        """See `IHWDeviceSet`."""
+        bus_vendor = HWVendorIDSet().getByBusAndVendorID(bus, vendor_id)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if product_id is not None:
+            args.append(HWDevice.bus_product_id == product_id)
+        result_set = store.find(
+            HWDevice, HWDevice.bus_vendor == bus_vendor, *args)
+        result_set.order_by(HWDevice.id)
+        return result_set
+
 
 class HWDeviceNameVariant(SQLBase):
     """See `IHWDeviceNameVariant`."""
@@ -546,6 +575,12 @@ class HWDriver(SQLBase):
     implements(IHWDriver)
     _table = 'HWDriver'
 
+    # XXX: Abel Deuring 2008-12-10 bug=306265: package_name should
+    # be declared notNull=True. This fixes the ambiguity that
+    # "package_name is None" as well as "package_name == ''" can
+    # indicate "we don't know to which package this driver belongs",
+    # moreover, it gives a more clear meaning to the parameter value
+    #package_name='' in webservice API calls.
     package_name = StringCol(notNull=False)
     name = StringCol(notNull=True)
     license = EnumCol(enum=License, notNull=False)
@@ -572,6 +607,26 @@ class HWDriverSet:
         if link is None:
             return self.create(package_name, name, license)
         return link
+
+    def search(self, package_name=None, name=None):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if package_name is not None:
+            if len(package_name) == 0:
+                args.append(Or(HWDriver.package_name == None,
+                               HWDriver.package_name == ''))
+            else:
+                args.append(HWDriver.package_name == package_name)
+        if name != None:
+            args.append(HWDriver.name == name)
+        result_set = store.find(HWDriver, *args)
+        return result_set.order_by(HWDriver.id)
+
+    def getByID(self, id):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDriver, HWDriver.id == id).one()
 
 
 class HWDeviceDriverLink(SQLBase):
