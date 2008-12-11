@@ -3,7 +3,7 @@
 
 == Setup ==
 
-    >>> import email, re
+    >>> import email
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -20,7 +20,8 @@ This test verifies the basic claim a GPG key workflow.
 Start out with a clean page containing no imported keys:
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
+    >>> browser.open("http://launchpad.dev/~name12/+edit")
+    >>> browser.getLink('OpenPGP Keys').click()
     >>> browser.title
     "Sample Person's OpenPGP keys"
     >>> browser.getControl(name='DEACTIVATE_GPGKEY')
@@ -82,27 +83,26 @@ the clear text instructions contain the expected URLs pointing to more help.
     <BLANKLINE>
     The Launchpad Team
 
-    >>> from canonical.launchpad.webapp.interaction import setupInteraction
-    >>> setupInteraction(None)
+Import the secret keys needed for this test:
 
     >>> from canonical.launchpad.interfaces import IGPGHandler
     >>> from zope.component import getUtility
-    >>> gpghandler = getUtility(IGPGHandler)
-
-Import the secret keys needed for this test:
 
     >>> from canonical.launchpad.ftests import (
-    ...     import_secret_test_key, decrypt_content, sign_content)
+    ...     import_secret_test_key, decrypt_content)
+
+
+    >>> gpghandler = getUtility(IGPGHandler)
+
+    >>> login(ANONYMOUS)
     >>> import_secret_test_key('test@canonical.com.sec')
+    >>> logout()
 
 'cipher_body' is a message encrypted with the just-imported
 1024D/DFD20543 OpenPGP key, we need to access the current IGpghandler
 instance to access this key and decrypt the message.
 
     >>> body = decrypt_content(cipher_body, 'test')
-
-    >>> from zope.security.management import endInteraction
-    >>> endInteraction()
 
 Extract the token URL from the email:
 
@@ -139,10 +139,12 @@ Make sure that UIDs were properly processed; in particular, check that
 "sample.revoked@canonical.com", the revoked UID in the key, wasn't
 added as an email address:
 
+    >>> from canonical.launchpad.testing.pages import strip_label
+
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
     >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
-    >>> sorted(control.displayOptions)
-    ['\xa0sample.person@canonical.com', '\xa0testtest@canonical.com']
+    >>> [strip_label(label) for label in sorted(control.displayOptions)]
+    ['sample.person@canonical.com', 'testtest@canonical.com']
 
 Verify that the key was imported with the "can encrypt" flag set:
 
@@ -250,11 +252,13 @@ If he refuses to sign the text, he gets an error message.
 
 If he signs a different text, he gets an error message.
 
+    >>> login(ANONYMOUS)
     >>> import_secret_test_key('sign.only@canonical.com.sec')
-    >>> from canonical.launchpad.ftests import sign_content
-    >>> bad = sign_content(
+    >>> bad = gpghandler.signContent(
     ...     'This is not the verification message!',
     ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
+    >>> logout()
+
     >>> browser.getControl('Signed text').value = bad
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
@@ -289,9 +293,12 @@ message. The following text was signed with the key DFD20543:
 
 If he signs the text correctly, he is redirected to his home page.
 
-    >>> good = sign_content(
+    >>> login(ANONYMOUS)
+    >>> good = gpghandler.signContent(
     ...     str(verification_content),
     ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
+    >>> logout()
+
     >>> browser.getControl('Signed text').value = good
     >>> browser.getControl('Continue').click()
     >>> browser.url
@@ -335,7 +342,7 @@ Coming to his senses, he asks for a re-validation of the key.
 
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
-    A message has been sent to test@canonical.com with instructions 
+    A message has been sent to test@canonical.com with instructions
     to reactivate these key(s): 1024D/17B05A8F
 
 He opens the page and checks that the key is displayed as pending

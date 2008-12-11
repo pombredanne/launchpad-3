@@ -10,8 +10,18 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
+from zope.schema import Int, TextLine
 
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_operation_as, export_read_operation,
+    exported, operation_parameters, operation_returns_collection_of,
+    rename_parameters_as)
+
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
@@ -23,12 +33,19 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
     `IDistribution.getSourcePackage()`.
     """
 
-    distribution = Attribute("The distribution.")
+    export_as_webservice_entry()
+
+    distribution = exported(
+        Reference(IDistribution, title=_("The distribution.")))
     sourcepackagename = Attribute("The source package name.")
 
-    name = Attribute("The source package name as text")
-    displayname = Attribute("Display name for this package.")
-    title = Attribute("Title for this package.")
+    name = exported(
+        TextLine(title=_("The source package name as text"), readonly=True))
+    displayname = exported(
+        TextLine(title=_("Display name for this package."), readonly=True),
+        exported_as="display_name")
+    title = exported(
+        TextLine(title=_("Title for this package."), readonly=True))
 
     currentrelease = Attribute(
         "The latest published SourcePackageRelease of a source package with "
@@ -56,9 +73,13 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "Return a list of CURRENT publishing records for this source "
         "package in this distribution.")
 
-    binary_package_names = Attribute(
-        "A string of al the binary package names associated with this source "
-        "package in this distribution.")
+    binary_package_names = TextLine(
+        title=_("Binary packages associated with this source."),
+        description=_(
+            "A space-separated string of all the binary package "
+            "names associated with this source package in this "
+            "distribution."),
+        readonly=True)
 
     def __getitem__(version):
         """Should map to getVersion."""
@@ -94,6 +115,14 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         on how this criteria will be centrally encoded.
         """)
 
+    @rename_parameters_as(quantity='limit')
+    @operation_parameters(
+        quantity=Int(
+            title=_("The maximum number of bug tasks to return"),
+            min=1))
+    @operation_returns_collection_of(IBugTask)
+    @export_operation_as(name="getBugTasks")
+    @export_read_operation()
     def bugtasks(quantity=None):
         """Bug tasks on this source package, sorted newest first.
 
@@ -114,4 +143,3 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
-

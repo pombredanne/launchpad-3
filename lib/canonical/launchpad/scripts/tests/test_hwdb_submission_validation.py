@@ -205,7 +205,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     # Moreover, many lines of the messages are more than 80 characters
     # long.
 
-    def assertErrorMessage(self, submission_key, result, message, test):
+    def assertErrorMessage(self, submission_key, result, messages, test):
         """Search for message in the log entries for submission_key.
 
         assertErrorMessage requires that
@@ -221,6 +221,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(
             result, None,
             'The test %s failed: The parsing result is not None.' % test)
+        if isinstance(messages, basestring):
+            messages = (messages, )
         last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
@@ -228,16 +230,19 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             candidate = r.getMessage()
             if candidate.startswith('Parsing submission %s:'
                                     % submission_key):
-                if re.search(
-                    '(:\d+: element .*?: )?Relax-NG validity error : %s$'
-                    % re.escape(message),
-                             candidate, re.MULTILINE):
-                    return
+                for message in messages:
+                    if re.search(
+                        '(:\d+: element .*?: )?Relax-NG validity error : %s$'
+                        % re.escape(message),
+                        candidate, re.MULTILINE):
+                        return
                 else:
                     last_log_messages.append(candidate)
+        expected_messages = ' or '.join(
+            repr(message) for message in messages)
         failmsg = [
             "No error log message for submission %s (testing %s) contained %s"
-                % (submission_key, test, message)]
+                % (submission_key, test, expected_messages)]
         if last_log_messages:
             failmsg.append('Log messages for the submission:')
             failmsg.extend(last_log_messages)
@@ -958,7 +963,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                      ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
                      ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
                      ('long', 'integer', None, None),
-                     ('int', 'int', -2**31, 2**31-1))
+                     ('int', 'long', -2**63, 2**63-1))
         for property_type, relax_ng_type, min_value, max_value in type_info:
             self._testIntegerProperty(
                 property_type, relax_ng_type, min_value, max_value)
@@ -1249,16 +1254,27 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         property_template, needs_name_attribute = (
             self._setupContainerTag('property', 'foo', property_type))
         valid_content = ('0', '1')
-        invalid_content = (('', 'Error validating datatype %s'
-                                    % relax_ng_type),
-                           ('1.1', "Type %s doesn't allow "
-                                       "value '1.1'"
-                                       % relax_ng_type),
-                           ('nonsense', "Type %s doesn't allow "
-                                            "value 'nonsense'"
-                                            % relax_ng_type),
-                           ('<nonsense/>',
-                            'Datatype element value has child elements'))
+        invalid_content = (
+            (
+                '', (
+                    # libxml2 version 1.6.31 (Hardy) message:
+                    'Error validating datatype %s' % relax_ng_type,
+                    # libxml2 version 2.6.32 (Intrepid) message:
+                    "Type %s doesn't allow value ''" % relax_ng_type,
+                    )
+                ),
+            (
+                '1.1', "Type %s doesn't allow value '1.1'" % relax_ng_type
+                ),
+            (
+                'nonsense',
+                "Type %s doesn't allow value 'nonsense'" % relax_ng_type
+                ),
+            (
+                '<nonsense/>',
+                'Datatype element value has child elements'
+                )
+            )
         self.assertValidatesTextValue(value_type, needs_name_attribute,
                                       valid_content, invalid_content,
                                       property_template)
@@ -1279,7 +1295,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
             ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
             ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
-            ('int', 'int', -2**31, 2**31-1),
+            ('int', 'long', -2**63, 2**63-1),
             ('long', 'integer', None, None))
         for value_type, relax_ng_type, min_allowed, max_allowed in int_types:
             self._testIntegerValueTag(property_type, value_type,

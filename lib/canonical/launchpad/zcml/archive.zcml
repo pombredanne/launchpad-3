@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- Archive -->
-  <content class="canonical.launchpad.database.Archive">
+  <class class="canonical.launchpad.database.Archive">
     <allow interface="canonical.launchpad.interfaces.IArchive"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <require
@@ -15,9 +15,9 @@
     <require
       permission="launchpad.Admin"
       set_attributes="authorized_size buildd_secret distribution enabled
-                      private name require_virtualized"
+                      private name require_virtualized signing_key"
       />
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IArchive"
@@ -30,6 +30,12 @@
       provides="canonical.launchpad.webapp.badge.IHasBadges"
       factory="canonical.launchpad.browser.ArchiveBadges"
       permission="zope.Public"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.archive.IArchive"
+      provides="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"
+      factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"
       />
 
   <browser:menus
@@ -155,9 +161,9 @@
 
 
   <!-- ArchiveSet -->
-  <content class="canonical.launchpad.database.ArchiveSet">
+  <class class="canonical.launchpad.database.ArchiveSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.ArchiveSet"

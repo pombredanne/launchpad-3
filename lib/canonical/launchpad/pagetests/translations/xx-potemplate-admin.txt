@@ -107,8 +107,8 @@ an admin to administer it.
   False
   >>> admin_browser.getControl(name='field.path').value
   'po/evolution-2.2.pot'
-  >>> from zope.app import datetimeutils
-  >>> old_date_last_updated = datetimeutils.parseDatetimetz(
+  >>> from zope import datetime as zope_datetime
+  >>> old_date_last_updated = zope_datetime.parseDatetimetz(
   ...     admin_browser.getControl('Date for last update').value)
   >>> old_date_last_updated.isoformat()
   '2005-08-25T15:27:55.264235+00:00'
@@ -116,7 +116,7 @@ an admin to administer it.
 And that we are able to POST it.
 
   >>> admin_browser.getControl('Translation domain').value = 'foo'
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> admin_browser.getControl('Change').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
 
@@ -127,7 +127,7 @@ value.
   >>> admin_browser.getLink('Administer').click()
   >>> admin_browser.getControl('Translation domain').value
   'foo'
-  >>> datetimeutils.parseDatetimetz(admin_browser.getControl(
+  >>> zope_datetime.parseDatetimetz(admin_browser.getControl(
   ...     'Date for last update').value) > old_date_last_updated
   True
 
@@ -135,7 +135,7 @@ We can also change the switch to note whether the template must be
 exported as part of language packs.
 
   >>> admin_browser.getControl(name='field.languagepack').value = True
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> admin_browser.getControl('Change').click()
 
 Finally, let's rename 'evolution-2.2' to 'evolution-renamed'.
 
@@ -152,6 +152,6 @@ above.
 And now let's get back to renaming.
 
   >>> admin_browser.getControl(name='field.name').value = 'evolution-renamed'
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> admin_browser.getControl('Change').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed

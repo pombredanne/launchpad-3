@@ -119,9 +119,7 @@
       <tr>
         <td>add</td>
         <td><img alt="" src="/@@/add" /></td>
-        <td rowspan="2">
-          An action that will add data to the system.
-        </td>
+        <td>An action that will add data to the system.</td>
       </tr>
       <tr>
         <td>arrowUp</td>
@@ -178,6 +176,21 @@
         <td><img alt="" src="/@@/crowd-large" /></td>
       </tr>
       <tr>
+        <td>delete-icon</td>
+        <td><img alt="" src="/@@/trash-icon" /></td>
+        <td>Icon to delete objects permanently from the system.</td>
+      </tr>
+      <tr>
+        <td>delete-large</td>
+        <td><img alt="" src="/@@/trash-large" /></td>
+        <td>Icon to delete objects permanently from the system.</td>
+      </tr>
+      <tr>
+        <td>delete-logo</td>
+        <td><img alt="" src="/@@/trash-logo" /></td>
+        <td>Icon to delete objects permanently from the system.</td>
+      </tr>
+      <tr>
         <td>distribution-badge</td>
         <td><img alt="" src="/@@/distribution-badge" /></td>
         <td rowspan="4">An operating system compiled from various software.</td>
@@ -223,6 +236,19 @@
       <tr>
         <td>error-large</td>
         <td><img alt="" src="/@@/error-large" /></td>
+      </tr>
+      <tr>
+        <td>flame-icon</td>
+        <td><img alt="" src="/@@/flame-icon" /></td>
+        <td>Currently used to show a bug affecting many users.</td>
+      </tr>
+      <tr>
+        <td>flame-large</td>
+        <td><img alt="" src="/@@/flame-large" /></td>
+      </tr>
+      <tr>
+        <td>flame-logo</td>
+        <td><img alt="" src="/@@/flame-logo" /></td>
       </tr>
       <tr>
         <td>info</td>
@@ -426,33 +452,35 @@
       <tr>
         <td>meeting</td>
         <td><img alt="" src="/@@/meeting" /></td>
-        <td rowspan="3">A meeting or sprint.</td>
+        <td>A meeting or sprint.</td>
       </tr>
       <tr>
         <td>meeting-logo</td>
         <td><img alt="" src="/@@/meeting-logo" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>meeting-mugshot</td>
         <td><img alt="" src="/@@/meeting-mugshot" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>mentoring</td>
         <td><img alt="" src="/@@/mentoring" /></td>
-        <td rowspan="2">A bug or blueprint for which mentoring has been
+        <td>A bug or blueprint for which mentoring has been
           offered.
         </td>
       </tr>
       <tr>
         <td>mentoring-large</td>
         <td><img alt="" src="/@@/mentoring-large" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>milestone</td>
         <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
-        bug or feature has been targeted. <i>XXX should rename this to
-        "milestone"?</i></td>
+        bug or feature has been targeted.</td>
       </tr>
       <tr>
         <td>team-badge</td>
@@ -466,14 +494,17 @@
       <tr>
         <td>team</td>
         <td><img alt="" src="/@@/team" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>team-logo</td>
         <td><img alt="" src="/@@/team-logo" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>team-mugshot</td>
         <td><img alt="" src="/@@/team-mugshot" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>treeCollapsed</td>
@@ -498,6 +529,7 @@
       <tr>
         <td>warning-large</td>
         <td><img alt="" src="/@@/warning-large" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>yes</td>
@@ -574,6 +606,11 @@
         <td>bug-unknown</td>
         <td><img src="/@@/bug-unknown" /></td>
         <td>A bug with importance "unknown"</td>
+      </tr>
+      <tr>
+        <td>bug-dupe</td>
+        <td><img src="/@@/bug-dupe-icon" /></td>
+        <td>A bug which is a duplicate of another</td>
       </tr>
       <tr>
         <td>cve</td>
@@ -660,26 +697,32 @@
       <tr>
         <td>blueprint-essential</td>
         <td><img src="/@@/blueprint-essential" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>blueprint-high</td>
         <td><img src="/@@/blueprint-high" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>blueprint-medium</td>
         <td><img src="/@@/blueprint-medium" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>blueprint-low</td>
         <td><img src="/@@/blueprint-low" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>blueprint-not</td>
         <td><img src="/@@/blueprint-not" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>blueprint-undefined</td>
         <td><img src="/@@/blueprint-undefined" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>bounty</td>
@@ -704,11 +747,22 @@
       <tr>
         <td>branch</td>
         <td><img src="/@@/branch" /></td>
-        <td rowspan="2">A branch, or line of development.</td>
+        <td>A branch, or line of development.</td>
       </tr>
       <tr>
         <td>branch-large</td>
         <td><img src="/@@/branch-large" /></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>merge-proposal-icon</td>
+        <td><img src="/@@/merge-proposal-icon" /></td>
+        <td>Represents a merge proposal.</td>
+      </tr>
+      <tr>
+        <td>merge-proposal-large</td>
+        <td><img src="/@@/merge-proposal-large" /></td>
+        <td></td>
       </tr>
       <tr>
         <td>

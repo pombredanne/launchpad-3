@@ -12,6 +12,7 @@ __all__ = [
     'FloatFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
+    'SetFieldMarshaller',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
     'TextFieldMarshaller',
@@ -27,7 +28,7 @@ import urllib
 
 import simplejson
 
-from zope.app.datetimeutils import DateTimeError, DateTimeParser
+from zope.datetime import DateTimeError, DateTimeParser
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
@@ -220,7 +221,8 @@ class BytesFieldMarshaller(SimpleFieldMarshaller):
 
         Marshall as a link to the byte storage resource.
         """
-        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
+        return "%s/%s" % (canonical_url(entry.context, self.request),
+                          self.field.__name__)
 
     def _marshall_from_request(self, value):
         """See `SimpleFieldMarshaller`.
@@ -313,7 +315,7 @@ class DateFieldMarshaller(DateTimeFieldMarshaller):
 
 
 class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
-    """A marshaller for List, Tuple, Set and other AbstractCollections.
+    """A marshaller for AbstractCollections.
 
     It looks up the marshaller for its value-type, to handle its contained
     elements.
@@ -344,7 +346,7 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
 
         # In AbstractCollection subclasses, _type contains the type object,
         # which can be used as a factory.
-        return self.field._type(
+        return self._python_collection_factory(
             self.value_marshaller.marshall_from_json_data(item)
             for item in value)
 
@@ -360,9 +362,16 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         if not isinstance(value, list):
             value = [value]
-        return self.field._type(
+        return self._python_collection_factory(
             self.value_marshaller.marshall_from_request(item)
             for item in value)
+
+    @property
+    def _python_collection_factory(self):
+        """Create the appropriate python collection from a list."""
+        # In AbstractCollection subclasses, _type contains the type object,
+        # which can be used as a factory.
+        return self.field._type
 
     def unmarshall(self, entry, value):
         """See `SimpleFieldMarshaller`.
@@ -372,6 +381,14 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         return [self.value_marshaller.unmarshall(entry, item)
                for item in value]
+
+
+class SetFieldMarshaller(AbstractCollectionFieldMarshaller):
+    """Marshaller for sets."""
+
+    @property
+    def _python_collection_factory(self):
+        return set
 
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
@@ -391,7 +408,8 @@ class CollectionFieldMarshaller(SimpleFieldMarshaller):
 
         This returns a link to the scoped collection.
         """
-        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
+        return "%s/%s" % (canonical_url(entry.context, self.request),
+                          self.field.__name__)
 
 
 def VocabularyLookupFieldMarshaller(field, request):
@@ -458,7 +476,7 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         """
         repr_value = None
         if value is not None:
-            repr_value = canonical_url(value)
+            repr_value = canonical_url(value, self.request)
         return repr_value
 
     def _marshall_from_json_data(self, value):

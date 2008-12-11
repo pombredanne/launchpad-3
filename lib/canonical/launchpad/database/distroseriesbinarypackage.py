@@ -6,17 +6,23 @@ __all__ = [
     'DistroSeriesBinaryPackage',
     ]
 
+from storm.expr import Desc
+from storm.store import Store
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces import (
-    IDistroSeriesBinaryPackage)
+from canonical.launchpad.database.archive import Archive
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
+from canonical.launchpad.database.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
-
+from canonical.launchpad.interfaces.distroseriesbinarypackage import (
+    IDistroSeriesBinaryPackage)
 
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".
@@ -68,7 +74,10 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         cache = self.cache
         if cache is None:
-            return None
+            return "No summary available for %s in %s %s." % (
+                self.name,
+                self.distribution.name,
+                self.distroseries.name)
         return cache.summary
 
     @property
@@ -76,7 +85,10 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         cache = self.cache
         if cache is None:
-            return None
+            return "No description available for %s in %s %s." % (
+                self.name,
+                self.distribution.name,
+                self.distroseries.name)
         return cache.description
 
     @property
@@ -101,3 +113,43 @@ class DistroSeriesBinaryPackage:
             a.distroarchseries.architecturetag,
             a.datecreated))
 
+    @property
+    def last_published(self):
+        """See `IDistroSeriesBinaryPackage`."""
+        # Import here so as to avoid circular import.
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        store = Store.of(self.distroseries)
+
+        publishing_history = store.find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseries == self.distroseries,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.binarypackagename == self.binarypackagename,
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.dateremoved == None)
+
+        last_published_history = publishing_history.order_by(
+            Desc(BinaryPackagePublishingHistory.datepublished)).first()
+
+        if last_published_history is None:
+            return None
+        else:
+            return last_published_history.distroarchseriesbinarypackagerelease
+
+    @property
+    def last_sourcepackagerelease(self):
+        """See `IDistroSeriesBinaryPackage`."""
+        last_published = self.last_published
+        if last_published is None:
+            return None
+
+        src_pkg_release = last_published.build.sourcepackagerelease
+
+        return DistroSeriesSourcePackageRelease(
+            self.distroseries, src_pkg_release)

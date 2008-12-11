@@ -279,6 +279,9 @@ class POFileUploadView(POFileView):
 
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
+        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # productseries and potemplate and should be unified.
+
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
@@ -342,11 +345,14 @@ class POFileUploadView(POFileView):
 
         self.request.response.addInfoNotification(
             structured(
-            'Thank you for your upload. The translation content will be'
-            ' imported soon into Launchpad. You can track its status from the'
-            ' <a href="%s/+imports">Translation Import Queue</a>' %
-                canonical_url(self.context.potemplate.translationtarget)))
-
+            'Thank you for your upload.  It will be automatically '
+            'reviewed in the next hours.  If that is not '
+            'enough to determine whether and where your file '
+            'should be imported, it will be reviewed manually by an '
+            'administrator in the coming few days.  You can track '
+            'your upload\'s status in the '
+            '<a href="%s/+imports">Translation Import Queue</a>' %(
+            canonical_url(self.context.potemplate.translationtarget))))
 
 class POFileTranslateView(BaseTranslationView):
     """The View class for a `POFile` or a `DummyPOFile`.
@@ -514,23 +520,20 @@ class POFileTranslateView(BaseTranslationView):
         if self.search_text is not None:
             self.show = 'all'
 
-        if self.show not in (
-            'translated', 'untranslated', 'all', 'need_review',
-            'changed_in_launchpad', 'new_suggestions'):
-            # XXX: kiko 2006-09-27: Should this be an UnexpectedFormData?
+        # Functions that deliver the correct message counts for each
+        # valid option value.
+        count_functions = {
+            'all': self.context.messageCount,
+            'translated': self.context.translatedCount,
+            'untranslated': self.context.untranslatedCount,
+            'new_suggestions': self.context.unreviewedCount,
+            'changed_in_launchpad': self.context.updatesCount,
+            }
+
+        if self.show not in count_functions:
             self.show = self.DEFAULT_SHOW
-        if self.show == 'all':
-            self.shown_count = self.context.messageCount()
-        elif self.show == 'translated':
-            self.shown_count = self.context.translatedCount()
-        elif self.show == 'untranslated':
-            self.shown_count = self.context.untranslatedCount()
-        elif self.show == 'new_suggestions':
-            self.shown_count = self.context.unreviewedCount()
-        elif self.show == 'changed_in_launchpad':
-            self.shown_count = self.context.updatesCount()
-        else:
-            raise AssertionError("Bug in _initializeShowOption")
+
+        self.shown_count = count_functions[self.show]()
 
         # Changing the "show" option resets batching.
         old_show_option = self.request.form.get('old_show')

@@ -24,7 +24,7 @@ from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, queryView
+from zope.component import getUtility, queryMultiAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 
@@ -54,6 +54,7 @@ __all__ = [
     'LaunchpadBrowserPublication'
     ]
 
+METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -67,7 +68,7 @@ class LoginRoot:
     def publishTraverse(self, request, name):
         if not request.getTraversalStack():
             root_object = getUtility(ILaunchpadRoot)
-            view = queryView(root_object, name, request)
+            view = queryMultiAdapter((root_object, request), name=name)
             return view
         else:
             return self
@@ -328,6 +329,15 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.pageid', pageid.encode('ASCII'))
 
+        if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
+            # this is a direct call on a C-defined method such as __repr__ or
+            # dict.__setitem__.  Apparently publishing this is possible and
+            # acceptable, at least in the case of
+            # canonical.launchpad.webapp.servers.PrivateXMLRPCPublication.
+            # mapply cannot handle these methods because it cannot introspect
+            # them.  We'll just call them directly.
+            return ob(*request.getPositionalArguments())
+
         return mapply(ob, request.getPositionalArguments(), request)
 
     def afterCall(self, request, ob):
@@ -358,6 +368,9 @@ class LaunchpadBrowserPublication(
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
+        elif txn.isDoomed():
+            txn.abort() # Sends an abort to the database, even though
+            # transaction is still doomed.
         else:
             txn.commit()
 
@@ -440,6 +453,27 @@ class LaunchpadBrowserPublication(
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
             request.response.setResult('')
+
+    def beginErrorHandlingTransaction(self, request, ob, note):
+        """Hook for when a new view is started to handle an exception.
+
+        We need to add an additional behavior to the usual Zope behavior.
+        We must restart the request timer.  Otherwise we can get OOPS errors
+        from our exception views inappropriately.
+        """
+        super(LaunchpadBrowserPublication,
+              self).beginErrorHandlingTransaction(request, ob, note)
+        # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to
+        # only clear the SQL records and timeout when we are preparing for a
+        # view (or a side effect). Otherwise, we don't want to clear the
+        # records because they are what the error reporting utility uses to
+        # create OOPS reports with the SQL commands that led up to the error.
+        # At the moment, we can only distinguish based on the "note" argument:
+        # an undocumented argument of this undocumented method.
+        if note in ('application error-handling',
+                    'application error-handling side-effect'):
+            da.clear_request_started()
+            da.set_request_started()
 
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication

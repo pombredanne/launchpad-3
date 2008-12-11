@@ -221,20 +221,85 @@ Sample Person can't access the file.
     ...
     Unauthorized
 
-'No Privileges' users, the PPA owner, can download the file.
+The 'No Privileges' user, the PPA owner, can download the DSC file.
 
     >>> no_priv_browser.open(file_lp_url)
 
 And its informations match the library file.
 
-    >>> no_priv_browser.contents == file_content
-    True
+    >>> print file_content
+    I do not care about sources.
+    >>> print file_size
+    28
+    >>> print file_mimetype
+    application/text
 
-    >>> no_priv_browser.headers['content-length'] == file_size
-    True
+    >>> print no_priv_browser.contents
+    I do not care about sources.
+    >>> print no_priv_browser.headers['content-length']
+    28
+    >>> print no_priv_browser.headers['content-type']
+    application/text
 
-    >>> no_priv_browser.headers['content-type'] == file_mimetype
-    True
+Gzipped package diffs ('.diff.gz') and buildlogs ('.txt.gz') are
+treated differently from the other files. Since we want their contents
+to be rendered inline by the browsers we override their 'content-encoding'
+and 'content-type' to 'gzip' and 'text/plain', respectively.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> buildlog_content = buildlog.read()
+    >>> buildlog_size = str(buildlog.content.filesize)
+    >>> buildlog_lp_url = str(
+    ...     'http://launchpad.dev/~no-priv/+archive/+build/%d/+files/%s' %
+    ...     (build.id, buildlog.filename))
+
+    >>> diff_content = package_diff.diff_content.read()
+    >>> diff_size = str(package_diff.diff_content.content.filesize)
+    >>> diff_lp_url = str(
+    ...     'http://launchpad.dev/~no-priv/+archive/+files/%s' %
+    ...     package_diff.diff_content.filename)
+
+    >>> logout()
+
+Restricted buildlogs are served with the pristine content and size,
+but 'content-type' and 'content-encoding' are modified.
+
+    >>> no_priv_browser.open(buildlog_lp_url)
+
+    >>> print buildlog_content
+    bogus buildlog
+    >>> print buildlog_size
+    14
+
+    >>> print no_priv_browser.contents
+    bogus buildlog
+    >>> print no_priv_browser.headers['content-length']
+    14
+
+    >>> print no_priv_browser.headers['content-type']
+    text/plain
+    >>> print no_priv_browser.headers['content-encoding']
+    gzip
+
+The same happens for package diffs.
+
+    >>> no_priv_browser.open(diff_lp_url)
+
+    >>> print diff_content
+    bogus diff
+    >>> print diff_size
+    10
+
+    >>> print no_priv_browser.contents
+    bogus diff
+    >>> print no_priv_browser.headers['content-length']
+    10
+
+    >>> print no_priv_browser.headers['content-type']
+    text/plain
+    >>> print no_priv_browser.headers['content-encoding']
+    gzip
 
 When the PPA and the `LibraryFileAlias` become public, the +files/
 proxy redirects to the public http url.
@@ -254,12 +319,12 @@ proxy redirects to the public http url.
     >>> logout()
 
     >>> print file_librarian_url
-    http://localhost:58000/94/test-pkg_1.0.dsc
+    http://localhost:58000/.../test-pkg_1.0.dsc
 
     >>> print http(r"""
     ... GET %s HTTP/1.1
     ... """ % file_lp_url.replace('http://launchpad.dev', ''))
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/94/test-pkg_1.0.dsc
-    ...
+    Location: http://localhost:58000/95/test-pkg_1.0.dsc
+    <BLANKLINE>

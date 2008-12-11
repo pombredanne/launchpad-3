@@ -16,9 +16,7 @@ from canonical.launchpad.webapp import canonical_url
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are created."""
-    if event.user is None:
-        return
-    BMPMailer.forCreation(merge_proposal, event.user).sendAll()
+    BMPMailer.forCreation(merge_proposal, merge_proposal.registrant).sendAll()
 
 
 def send_merge_proposal_modified_notifications(merge_proposal, event):
@@ -28,6 +26,24 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
     mailer = BMPMailer.forModification(
         event.object_before_modification, merge_proposal, event.user)
     if mailer is not None:
+        mailer.sendAll()
+
+
+def send_review_requested_notifications(vote_reference, event):
+    """Notify the reviewer that they have been requested to review."""
+    # XXX: rockstar - 9 Oct 2008 - If the reviewer is a team, don't send
+    # email.  This is to stop the abuse of a user spamming all members of
+    # a team by requesting them to review a (possibly unrelated) branch.
+    # Ideally we'd come up with a better solution, but I can't think of
+    # one yet.  In all other places we are emailing subscribers directly
+    # rather than people that haven't subscribed.
+    # See bug #281056. (affects IBranchMergeProposal)
+    if not vote_reference.reviewer.is_team:
+        reason = RecipientReason.forReviewer(
+            vote_reference, vote_reference.reviewer)
+        mailer = BMPMailer.forReviewRequest(
+            reason, vote_reference.branch_merge_proposal,
+            vote_reference.registrant)
         mailer.sendAll()
 
 
@@ -61,15 +77,15 @@ class RecipientReason:
         merge_proposal = vote_reference.branch_merge_proposal
         branch = merge_proposal.source_branch
         return klass(vote_reference.reviewer, recipient, branch,
-                     merge_proposal, 'reviewer',
+                     merge_proposal, 'Reviewer',
                      '%(entity_is)s requested to review %(merge_proposal)s.')
 
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
-        source = self.merge_proposal.source_branch.displayname
-        target = self.merge_proposal.target_branch.displayname
+        source = self.merge_proposal.source_branch.bzr_identity
+        target = self.merge_proposal.target_branch.bzr_identity
         template_values = {
-            'branch_name': self.branch.displayname,
+            'branch_name': self.branch.bzr_identity,
             'entity_is': 'You are',
             'merge_proposal': (
                 'the proposed merge of %s into %s' % (source, target))
@@ -87,10 +103,16 @@ class BMPMailer(BaseMailer):
     """Send mailings related to BranchMergeProposal events."""
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
-                 from_address, delta=None, message_id=None):
+                 from_address, delta=None, message_id=None,
+                 requested_reviews=None, comment=None, review_diff=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id)
         self.merge_proposal = merge_proposal
+        if requested_reviews is None:
+            requested_reviews = []
+        self.requested_reviews = requested_reviews
+        self.comment = comment
+        self.review_diff = review_diff
 
     def sendAll(self):
         BaseMailer.sendAll(self)
@@ -111,13 +133,18 @@ class BMPMailer(BaseMailer):
         """
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
+
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
         from_address = klass._format_user_address(from_user)
+
         return klass(
             '%(proposal_title)s',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
-            from_address, message_id=get_msgid())
+            from_address, message_id=get_msgid(),
+            requested_reviews=merge_proposal.votes,
+            comment=merge_proposal.root_comment,
+            review_diff=merge_proposal.review_diff)
 
     @classmethod
     def forModification(klass, old_merge_proposal, merge_proposal, from_user):
@@ -166,16 +193,45 @@ class BMPMailer(BaseMailer):
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
 
+    def _addAttachments(self, ctrl):
+        if self.review_diff is not None:
+            ctrl.addAttachment(
+                self.review_diff.diff.text, content_type='text/x-diff',
+                inline=True, filename='review.diff')
+
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
+        # Expand the requested reviews.
         params = BaseMailer._getTemplateParams(self, email)
         params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
-            'source_branch': self.merge_proposal.source_branch.displayname,
-            'target_branch': self.merge_proposal.target_branch.displayname,
+            'source_branch': self.merge_proposal.source_branch.bzr_identity,
+            'target_branch': self.merge_proposal.target_branch.bzr_identity,
             'proposal_title': self.merge_proposal.title,
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',
-            'whiteboard': self.merge_proposal.whiteboard
+            'comment': '',
+            'gap': '',
+            'reviews': '',
+            'whiteboard': '', # No more whiteboard.
             })
+
+        requested_reviews = []
+        for review in self.requested_reviews:
+            reviewer = review.reviewer
+            if review.review_type is None:
+                requested_reviews.append(reviewer.unique_displayname)
+            else:
+                requested_reviews.append(
+                    "%s: %s" % (reviewer.unique_displayname,
+                                review.review_type))
+        if len(requested_reviews) > 0:
+            requested_reviews.insert(0, 'Requested reviews:')
+            params['reviews'] = ('\n    '.join(requested_reviews))
+
+        if self.comment is not None:
+            params['comment'] = (self.comment.message.text_contents)
+            if len(requested_reviews) > 0:
+                params['gap'] = '\n\n'
+
         return params

@@ -27,7 +27,7 @@ He sees hints to the existence of staging, the user guide and the tour:
     >>> user_browser.getLink("staging.launchpad.net").url
     'https://staging.launchpad.net/'
     >>> user_browser.getLink("our user handbook").url
-    'https://help.launchpad.net/FeatureHighlights'
+    'https://help.launchpad.net/FrontPage#user-guide'
     >>> user_browser.getLink("take our guided tour").url
     'https://launchpad.net/+tour'
 
@@ -62,11 +62,13 @@ his project a soon as he submits the form.
     ...     'documentDescription')
     >>> for tag in tags:
     ...     print extract_text(tag)
-    Form filling fun! The more information you provide out here, the more
-    attention and collaboration your project will be able to attract.
-    And there's no wait: once registered, you can immediately
-    start using your project to track bugs, code, translations (and
-    more).
+    Want to test drive Launchpad?  Use  staging.launchpad.net, our code
+    staging instance. You can use that server to create sample projects,
+    file random bugs and even push throw-away branches, all without disturbing 
+    the community actively using Launchpad.
+    The more information you provide here, the more attention and
+    collaboration your project will be able to attract. You can edit these
+    details later on your project's page.
 
 URLs are validated in the form. Sample Person gets it wrong when filling
 it out:
@@ -88,7 +90,7 @@ it out:
     >>> user_browser.getControl(
     ...     'Download URL').value = 'http://www.testing.com/download/'
     >>> user_browser.getControl(
-    ...     'Programming Language').value = 'Visual Python++, C'
+    ...     'Programming Languages').value = 'Visual Python++, C'
     >>> user_browser.getControl('Summary').value = 'This is the summary'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
@@ -173,7 +175,7 @@ since the field is not required.
     >>> user_browser.getControl(
     ...     'Download URL').value = 'http://www.testing.com/download/'
     >>> user_browser.getControl(
-    ...     'Programming Language').value = 'Visual Python++, C'
+    ...     'Programming Languages').value = 'Visual Python++, C'
     >>> user_browser.getControl('Summary').value = 'This is the summary'
     >>> user_browser.getControl(name='field.licenses').value = [
     ...     'OTHER_PROPRIETARY']

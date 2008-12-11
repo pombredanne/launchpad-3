@@ -4,9 +4,9 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
   <div id="working-on"
-       tal:define="bugtasks view/getBugsInProgress;
-                   specs context/assigned_specs_in_progress"
-       tal:condition="bugtasks|specs|nothing">
+       tal:define="bugtasks view/assigned_bugs_in_progress;
+                   specs view/assigned_specs_in_progress"
+       tal:condition="view/has_assigned_bugs_or_specs_in_progress">
     <div class="section">
       <div class="portlet">
         <h2>Working on&#8230;</h2>
@@ -30,13 +30,13 @@
               tal:replace="structure spec/@@+listing-simple" />
         </table>
         <div>
-          <tal:comment condition="nothing">
-            <!-- XXX: Guilherme Salgado 2007-02-12:
-                 This link should point to a list of the in-progress specs
-                 assigned to this person, but we don't have a way to list that
-                 right now, so we'll have to list all incomplete specs assigned
-                 to the person. -->
-          </tal:comment>
+          <tal:XXX condition="nothing">
+            # XXX: Guilherme Salgado 2007-02-12:
+            # This link should point to a list of the in-progress specs
+            # assigned to this person, but we don't have a way to list that
+            # right now, so we'll have to list all incomplete specs assigned
+            # to the person.
+          </tal:XXX>
           <a
             tal:attributes="href string:${context/fmt:url}/+specs?role=assignee">
             &raquo; Show all assigned blueprints

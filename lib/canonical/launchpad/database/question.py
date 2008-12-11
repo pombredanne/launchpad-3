@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Question models."""
@@ -27,13 +27,14 @@ from zope.security.proxy import isinstance as zope_isinstance
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import LeftJoin
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
     IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
-    ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
-    IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
+    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IProductSet,
+    IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
 from canonical.launchpad.interfaces.sourcepackagename import (
@@ -48,8 +49,6 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
-from canonical.launchpad.database.bugtask import (
-    search_value_to_where_condition)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.questionbug import QuestionBug
@@ -61,7 +60,6 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr import DBItem, Item
 
@@ -642,7 +640,7 @@ class QuestionSet:
         if datecreated is None:
             datecreated = UTC_NOW
         if language is None:
-            language = getUtility(ILanguageSet)['en']
+            language = getUtility(ILaunchpadCelebrities).english
         question = Question(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,
@@ -1132,17 +1130,73 @@ class QuestionTargetMixin:
             clauseTables=['Question'], distinct=True))
 
     @property
+    def _store(self):
+        return Store.of(self)
+
+    @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=operator.attrgetter('displayname'))
+        return self.direct_answer_contacts
+
+    @property
+    def answer_contacts_with_languages(self):
+        """Answer contacts with their languages pre-filled.
+
+        Same as answer_contacts but with each of them having its languages
+        pre-filled so that we don't need to hit the DB again to get them.
+        """
+        return self.direct_answer_contacts_with_languages
+
+    def _getConditionsToQueryAnswerContacts(self):
+        """The SQL conditions to query this target's answer contacts."""
+        conditions = []
+        for key, value in self.getTargetTypes().items():
+            if value is None:
+                constraint = "AnswerContact.%s IS NULL" % key
+            else:
+                constraint = "AnswerContact.%s = %s" % (key, value.id)
+            conditions.append(constraint)
+        return " AND ".join(conditions)
 
     @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
-        return self.answer_contacts
+        from canonical.launchpad.database.person import Person
+        origin = [AnswerContact,
+                  LeftJoin(Person, AnswerContact.person == Person.id)]
+        conditions = self._getConditionsToQueryAnswerContacts()
+        results = self._store.using(*origin).find(Person, conditions)
+        return list(results.order_by(Person.displayname))
+
+    @property
+    def direct_answer_contacts_with_languages(self):
+        """Direct answer contacts with their languages pre-filled.
+
+        Same as direct_answer_contacts but with each of them having its
+        languages pre-filled so that we don't need to hit the DB again to get
+        them.
+        """
+        from canonical.launchpad.database.person import (
+            Person, PersonLanguage)
+        origin = [
+            AnswerContact,
+            LeftJoin(Person, AnswerContact.person == Person.id),
+            LeftJoin(PersonLanguage,
+                     AnswerContact.personID == PersonLanguage.personID),
+            LeftJoin(Language,
+                     PersonLanguage.language == Language.id)]
+        columns = [Person, Language]
+        conditions = self._getConditionsToQueryAnswerContacts()
+        results = self._store.using(*origin).find(tuple(columns), conditions)
+        D = {}
+        for person, language in results:
+            if person not in D:
+                D[person] = []
+            if language is not None:
+                D[person].append(language)
+        for person, languages in D.items():
+            person.setLanguagesCache(languages)
+        return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
     def addAnswerContact(self, person):
         """See `IQuestionTarget`."""
@@ -1151,7 +1205,7 @@ class QuestionTargetMixin:
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        assert person.languages.count() > 0, (
+        assert len(person.languages) > 0, (
             "An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
@@ -1161,12 +1215,13 @@ class QuestionTargetMixin:
 
     def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
         """Return the Persons or Teams who are AnswerContacts."""
-        answer_contacts = AnswerContact.select(
+        constraints.append("""Person.id = AnswerContact.person""")
+        clause_tables.append('AnswerContact')
+        # Avoid a circular import of Person, which imports the mixin.
+        from canonical.launchpad.database.person import Person
+        return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
-            distinct=True)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=operator.attrgetter('displayname'))
+            orderBy=['displayname'], distinct=True)
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
@@ -1235,9 +1290,9 @@ class QuestionTargetMixin:
     def getSupportedLanguages(self):
         """See `IQuestionTarget`."""
         languages = set()
-        for contact in self.answer_contacts:
+        for contact in self.answer_contacts_with_languages:
             languages |= set(contact.languages)
-        languages.add(getUtility(ILanguageSet)['en'])
+        languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(
             lang for lang in languages if not is_english_variant(lang))
         return languages

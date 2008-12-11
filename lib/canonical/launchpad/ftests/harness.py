@@ -8,6 +8,7 @@ canonical.testing
 
 __metaclass__ = type
 
+
 from zope.app.testing.functional import FunctionalTestSetup
 
 from canonical.database.sqlbase import ZopelessTransactionManager

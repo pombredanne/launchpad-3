@@ -18,6 +18,7 @@ __all__ = [
     'ShippingRequestSetNavigation',
     'ShippingRequestsView',
     'StandardShipItRequestAddView',
+    'StandardShipItRequestEditView',
     'StandardShipItRequestSetNavigation',
     'StandardShipItRequestsView']
 
@@ -28,7 +29,7 @@ from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError, IInputWidget
 from zope.app.form.utility import setUpWidgets
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
@@ -38,7 +39,7 @@ from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -49,9 +50,9 @@ from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, IShipItApplication, IShipItReportSet,
     IShipItSurveySet, IShippingRequestSet, IShippingRequestUser,
-    IShippingRunSet, IStandardShipItRequestSet, ShipItArchitecture,
-    ShipItConstants, ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
-    ShippingRequestStatus, UnexpectedFormData)
+    IShippingRunSet, IStandardShipItRequest, IStandardShipItRequestSet,
+    ShipItArchitecture, ShipItConstants, ShipItDistroSeries, ShipItFlavour,
+    ShipItSurveySchema, ShippingRequestStatus, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
@@ -345,7 +346,12 @@ class ShipItRequestView(GeneralFormView):
             field_values[field_name] = quantities[arch]
         return field_values
 
-    def standardShipItRequests(self):
+    @cachedproperty
+    def has_multiple_options(self):
+        return len(self.standard_options) > 1
+
+    @cachedproperty
+    def standard_options(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
         requests = getUtility(IStandardShipItRequestSet).getByFlavour(
             self.flavour, self.user)
@@ -409,7 +415,7 @@ class ShipItRequestView(GeneralFormView):
                     'Expected an id but got "%s"' % ordertype)
         if self.current_order_standard_id:
             return self.current_order_standard_id
-        for standardrequest in self.standardShipItRequests():
+        for standardrequest in self.standard_options:
             if standardrequest.isdefault:
                 return standardrequest.id
 
@@ -754,6 +760,20 @@ class StandardShipItRequestAddView(AddView):
             flavour, quantityx86, quantityamd64, quantityppc, isdefault,
             user_description)
         notify(ObjectCreatedEvent(request))
+
+
+class StandardShipItRequestEditView(LaunchpadEditFormView):
+    """Edit an existing Standard ShipIt Request."""
+
+    schema = IStandardShipItRequest
+    field_names = ["flavour", "quantityx86", "quantityamd64",
+                   "user_description", "isdefault"]
+    label = "Edit standard option"
+
+    @action(_("Change"), name="change")
+    def action_change(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(getUtility(IStandardShipItRequestSet))
 
 
 class ShippingRequestAdminMixinView:
@@ -1161,6 +1181,7 @@ class ShipItSurveyView(LaunchpadFormView):
 
     schema = ShipItSurveySchema
     custom_widget('environment', LabeledMultiCheckBoxWidget)
+    custom_widget('platform', CheckBoxMatrixWidget, column_count=2)
     custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
     custom_widget('used_in', LabeledMultiCheckBoxWidget)
     custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)

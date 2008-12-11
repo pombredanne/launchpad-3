@@ -7,12 +7,13 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
+    'is_valid_transition',
     ]
 
 from email.Utils import make_msgid
 
+from storm.expr import And
 from storm.store import Store
-from zope.app.event.objectevent import ObjectEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -32,14 +33,15 @@ from canonical.launchpad.database.codereviewvote import (
     CodeReviewVoteReference)
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.event.branchmergeproposal import (
+    BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalApprovedEvent,
-    IBranchMergeProposalGetter, IBranchMergeProposalRejectedEvent,
-    UserNotBranchReviewer, WrongBranchMergeProposal)
+    BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
+    WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
@@ -78,6 +80,29 @@ VALID_TRANSITION_GRAPH = {
     }
 
 
+def is_valid_transition(proposal, from_state, next_state, user=None):
+    """Is it valid for the proposal to move to next_state from from_state?"""
+    # Trivial acceptance case.
+    if from_state == next_state:
+        return True
+
+    [wip, needs_review, code_approved, rejected,
+     merged, merge_failed, queued, superseded
+     ] = BranchMergeProposalStatus.items
+    # Transitioning to code approved, rejected or queued from
+    # work in progress, needs review or merge failed needs the
+    # user to be a valid reviewer, other states are fine.
+    valid_reviewer = proposal.isPersonValidReviewer(user)
+    if (next_state == rejected and not valid_reviewer):
+        return False
+    elif (next_state in (code_approved, queued) and
+          from_state in (wip, needs_review, merge_failed)
+          and not valid_reviewer):
+        return False
+
+    return next_state in VALID_TRANSITION_GRAPH[from_state]
+
+
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
@@ -109,6 +134,10 @@ class BranchMergeProposal(SQLBase):
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
+
+    review_diff = ForeignKey(
+        foreignKey='StaticDiff', notNull=False, default=None)
+
     reviewed_revision_id = StringCol(default=None)
 
     commit_message = StringCol(default=None)
@@ -158,9 +187,9 @@ class BranchMergeProposal(SQLBase):
     @property
     def title(self):
         """See `IBranchMergeProposal`."""
-        return "Proposed merge of %(source)s into %(target)s" % {
-            'source': self.source_branch.displayname,
-            'target': self.target_branch.displayname}
+        return "[Merge] %(source)s into %(target)s" % {
+            'source': self.source_branch.bzr_identity,
+            'target': self.target_branch.bzr_identity}
 
     @property
     def all_comments(self):
@@ -194,22 +223,24 @@ class BranchMergeProposal(SQLBase):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
                     subscription, recipient, self, rationale)
+        # Add in all the individuals that have been asked for a review,
+        # or who have reviewed.  These people get added to the recipients
+        # with the rationale of "Reviewer".
+        # Don't add a team reviewer to the recipients as they are only going
+        # to get emails normally if they are subscribed to one of the
+        # branches, and if they are subscribed, they'll be getting this email
+        # aleady.
+        for review in self.votes:
+            reviewer = review.reviewer
+            if not reviewer.is_team:
+                recipients[reviewer] = RecipientReason.forReviewer(
+                    review, reviewer)
+
         return recipients
 
     def isValidTransition(self, next_state, user=None):
         """See `IBranchMergeProposal`."""
-        [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, queued, superseded
-         ] = BranchMergeProposalStatus.items
-        # Transitioning to code approved, rejected or queued from
-        # work in progress, needs review or merge failed needs the
-        # user to be a valid reviewer, other states are fine.
-        if (next_state in (code_approved, rejected, queued) and
-            self.queue_status in (wip, needs_review, merge_failed)):
-            if not self.isPersonValidReviewer(user):
-                return False
-
-        return next_state in VALID_TRANSITION_GRAPH[self.queue_status]
+        return is_valid_transition(self, self.queue_status, next_state, user)
 
     def _transitionToState(self, next_state, user=None):
         """Update the queue_status of the proposal.
@@ -232,6 +263,9 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.date_review_requested = None
+        self.reviewer = None
+        self.date_reviewed = None
+        self.reviewed_revision_id = None
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
@@ -260,6 +294,7 @@ class BranchMergeProposal(SQLBase):
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
+        old_state = self.queue_status
         if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
@@ -269,18 +304,18 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = UTC_NOW
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
+        notify(BranchMergeProposalStatusChangeEvent(
+                self, reviewer, old_state, next_state))
 
     def approveBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
-        notify(BranchMergeProposalApprovedEvent(self, reviewer))
 
     def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
-        notify(BranchMergeProposalRejectedEvent(self, reviewer))
 
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
@@ -391,17 +426,22 @@ class BranchMergeProposal(SQLBase):
         return proposal
 
     def nominateReviewer(self, reviewer, registrant, review_type=None,
-                         _date_created=DEFAULT):
+                         _date_created=DEFAULT, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
-        vote_reference = CodeReviewVoteReference.selectOneBy(
-            branch_merge_proposal=self, reviewer=reviewer)
+        # Return the existing vote reference or create a new one.
+        # Lower case the review type.
+        if review_type is not None:
+            review_type = review_type.lower()
+        vote_reference = self.getUsersVoteReference(reviewer, review_type)
         if vote_reference is None:
             vote_reference = CodeReviewVoteReference(
-            branch_merge_proposal=self,
-            registrant=registrant,
-            reviewer=reviewer,
-            date_created=_date_created)
+                branch_merge_proposal=self,
+                registrant=registrant,
+                reviewer=reviewer,
+                date_created=_date_created)
         vote_reference.review_type = review_type
+        if _notify_listeners:
+            notify(ReviewerNominatedEvent(vote_reference))
         return vote_reference
 
     def deleteProposal(self):
@@ -429,8 +469,12 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence', limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
-                      vote_tag=None, parent=None, _date_created=DEFAULT):
+                      review_type=None, parent=None, _date_created=DEFAULT,
+                      _notify_listeners=True):
         """See `IBranchMergeProposal`."""
+        #:param _date_created: The date the message was created.  Provided
+        #    only for testing purposes, as it can break
+        # BranchMergeProposal.root_message.
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is not None:
@@ -452,28 +496,79 @@ class BranchMergeProposal(SQLBase):
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
         chunk = MessageChunk(message=message, content=content, sequence=1)
-        return self.createCommentFromMessage(message, vote, vote_tag)
+        return self.createCommentFromMessage(
+            message, vote, review_type, _notify_listeners=_notify_listeners)
 
-    def createCommentFromMessage(self, message, vote, vote_tag):
+    def getUsersVoteReference(self, user, review_type=None):
+        """Get the existing vote reference for the given user."""
+        # Lower case the review type.
+        if review_type is not None:
+            review_type = review_type.lower()
+        if user is None:
+            return None
+        if user.is_team:
+            query = And(CodeReviewVoteReference.reviewer == user,
+                        CodeReviewVoteReference.review_type == review_type)
+        else:
+            query = CodeReviewVoteReference.reviewer == user
+        return Store.of(self).find(
+            CodeReviewVoteReference,
+            CodeReviewVoteReference.branch_merge_proposal == self,
+            query).one()
+
+    def _getVoteReference(self, user, review_type):
+        """Get the vote reference for the user.
+
+        The returned vote reference will either:
+          * the existing vote reference for the user
+          * a vote reference of the same type that has been requested of a
+            team that the user is a member of
+          * a new vote reference for the user
+        """
+        # Firstly look for a vote reference for the user.
+        ref = self.getUsersVoteReference(user)
+        if ref is not None:
+            return ref
+        # Get all the unclaimed CodeReviewVoteReferences with the review_type
+        # specified.
+        refs = Store.of(self).find(
+            CodeReviewVoteReference,
+            CodeReviewVoteReference.branch_merge_proposal == self,
+            CodeReviewVoteReference.review_type == review_type,
+            CodeReviewVoteReference.comment == None)
+        for ref in refs:
+            if user.inTeam(ref.reviewer):
+                return ref
+        # Create a new reference.
+        return CodeReviewVoteReference(
+            branch_merge_proposal=self,
+            registrant=user,
+            reviewer=user,
+            review_type=review_type)
+
+    def createCommentFromMessage(self, message, vote, review_type,
+                                 _notify_listeners=True):
         """See `IBranchMergeProposal`."""
+        # Lower case the review type.
+        if review_type is not None:
+            review_type = review_type.lower()
         code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
-            vote_tag=vote_tag)
-        notify(SQLObjectCreatedEvent(code_review_message))
+            vote_tag=review_type)
         # Get the appropriate CodeReviewVoteReference for the reviewer.
         # If there isn't one, then create one, otherwise set the comment
         # reference.
         if vote is not None:
-            vote_reference = CodeReviewVoteReference.selectOneBy(
-                branch_merge_proposal=self, reviewer=message.owner)
-            if vote_reference is None:
-                CodeReviewVoteReference(
-                    branch_merge_proposal=self,
-                    registrant=message.owner,
-                    reviewer=message.owner,
-                    comment=code_review_message)
-            else:
-                vote_reference.comment = code_review_message
+            vote_reference = self._getVoteReference(
+                message.owner, review_type)
+            # Just set the reviewer and review type again on the off chance
+            # that the user has edited the review_type or claimed a team
+            # review.
+            vote_reference.reviewer = message.owner
+            vote_reference.review_type = review_type
+            vote_reference.comment = code_review_message
+        if _notify_listeners:
+            notify(NewCodeReviewCommentEvent(code_review_message))
         return code_review_message
 
 
@@ -534,9 +629,13 @@ class BranchMergeProposalGetter:
         # First get the count of comments.
         query = """
             SELECT bmp.id, count(crm.*)
-            FROM BranchMergeProposal bmp, CodeReviewMessage crm
+            FROM BranchMergeProposal bmp, CodeReviewMessage crm,
+                 Message m, MessageChunk mc
             WHERE bmp.id IN %s
               AND bmp.id = crm.branch_merge_proposal
+              AND crm.message = m.id
+              AND mc.message = m.id
+              AND mc.content is not NULL
             GROUP BY bmp.id
             """ % ids
         comment_counts = dict(store.execute(query))
@@ -624,21 +723,3 @@ class BranchMergeProposalQueryBuilder:
                 """ % {'tables': ', '.join(self._tables),
                        'where_clause': ' AND '.join(self._where_clauses)})
         return query
-
-
-class BranchMergeProposalReviewedEvent(ObjectEvent):
-    """A reviewer has approved or rejected the proposed merge."""
-
-    def __init__(self, proposal, reviewer):
-        ObjectEvent.__init__(self, proposal)
-        self.reviewer = reviewer
-
-
-class BranchMergeProposalApprovedEvent(BranchMergeProposalReviewedEvent):
-    """See `IBranchMergeProposalApprovedEvent`."""
-    implements(IBranchMergeProposalApprovedEvent)
-
-
-class BranchMergeProposalRejectedEvent(BranchMergeProposalReviewedEvent):
-    """See `IBranchMergeProposalRejectedEvent`."""
-    implements(IBranchMergeProposalRejectedEvent)

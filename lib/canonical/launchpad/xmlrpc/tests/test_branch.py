@@ -232,8 +232,8 @@ class TestExpandURL(TestCaseWithFactory):
         # branch corresponding to the start of the URL.
         # This means the users will probably get a normal Bazaar 'no such
         # branch' error when they try a command like 'bzr cat
-        # lp:path/to/branch/README.txt', which probably is the least surprising
-        # thing that we can do.
+        # lp:path/to/branch/README.txt', which probably is the least
+        # surprising thing that we can do.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch_name = self.factory.getUniqueString()
@@ -253,7 +253,7 @@ class TestExpandURL(TestCaseWithFactory):
             'foo/bar/baz', faults.InvalidBranchIdentifier('foo/bar/baz'))
         self.assertFault(
             'foo/bar/baz/qux',
-            faults.InvalidBranchIdentifier('foo/bar/baz'))
+            faults.InvalidBranchIdentifier('foo/bar/baz/qux'))
 
         # Should be invalid even if the branch exists.
         trunk = self.product.development_focus.user_branch

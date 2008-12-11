@@ -371,7 +371,7 @@ description.
     ...     u'field.owner': u'test@canonical.com',
     ...     u'field.priority': u'0',
     ...     u'field.description': u'This is a new description',
-    ...     u'UPDATE_SUBMIT': u'Change'}
+    ...     u'field.actions.change': u'Change'}
     >>> potemplate_view = create_view(
     ...     potemplate, '+edit', form=form, layer=TranslationsLayer)
     >>> potemplate_view.request.method = 'POST'
@@ -383,11 +383,8 @@ Let's see the description we have atm:
 
 We do the update and see the karma being assigned.
 
-    >>> status = potemplate_view.update()
+    >>> status = potemplate_view.initialize()
     Karma added: action=translationtemplatedescriptionchanged, product=evolution
-
-    >>> status
-    u'Updated on ${date_time}'
 
 And the new one is:
 

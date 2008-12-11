@@ -16,7 +16,7 @@ import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
 
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
@@ -24,7 +24,7 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
+from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
@@ -59,7 +59,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
@@ -221,6 +221,7 @@ class Bug(SQLBase):
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
+    users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
     def indexed_messages(self):
@@ -392,10 +393,23 @@ class Bug(SQLBase):
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        return BugSubscription.select("""
-            Person.id = BugSubscription.person AND
-            BugSubscription.bug = %d""" % self.id,
-            orderBy="displayname", clauseTables=["Person"])
+        # Cache valid persons so that <person>.is_valid_person can
+        # return from the cache. This operation was previously done at
+        # the same time as retrieving the bug subscriptions (as a left
+        # join). However, this ran slowly (far from optimal query
+        # plan), so we're doing it as two queries now.
+        valid_persons = Store.of(self).find(
+            ValidPersonCache,
+            ValidPersonCache.id == BugSubscription.personID,
+            BugSubscription.bug == self)
+        # Suck in all the records so that they're actually cached.
+        list(valid_persons)
+        # Do the main query.
+        return Store.of(self).find(
+            BugSubscription,
+            BugSubscription.personID == Person.id,
+            BugSubscription.bug == self).order_by(
+            Func('person_sort_key', Person.displayname, Person.name))
 
     def getDirectSubscribers(self, recipients=None):
         """See `IBug`.
@@ -613,14 +627,16 @@ class Bug(SQLBase):
             notification.syncUpdate()
 
     def newMessage(self, owner=None, subject=None,
-                   content=None, parent=None, bugwatch=None):
+                   content=None, parent=None, bugwatch=None,
+                   remote_comment_id=None):
         """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
         MessageChunk(message=msg, content=content, sequence=1)
 
-        bugmsg = self.linkMessage(msg, bugwatch)
+        bugmsg = self.linkMessage(
+            msg, bugwatch, remote_comment_id=remote_comment_id)
         if not bugmsg:
             return
 
@@ -722,6 +738,13 @@ class Bug(SQLBase):
             bugcve = BugCve(bug=self, cve=cve)
             notify(SQLObjectCreatedEvent(bugcve, user=user))
             return bugcve
+
+    # XXX intellectronica 2008-11-06 Bug #294858:
+    # See canonical.launchpad.interfaces.bug
+    def linkCVEAndReturnNothing(self, cve, user):
+        """See `IBug`."""
+        self.linkCVE(cve, user)
+        return None
 
     def unlinkCVE(self, cve, user=None):
         """See `IBug`."""
@@ -1135,7 +1158,11 @@ class Bug(SQLBase):
 
     def isUserAffected(self, user):
         """See `IBug`."""
-        return bool(self._getAffectedUser(user))
+        bap = self._getAffectedUser(user)
+        if bap is not None:
+            return bap.affected
+        else:
+            return None
 
     def _flushAndInvalidate(self):
         """Flush all changes to the store and re-read `self` from the DB."""
@@ -1143,30 +1170,16 @@ class Bug(SQLBase):
         store.flush()
         store.invalidate(self)
 
-    def markUserAffected(self, user):
+    def markUserAffected(self, user, affected=True):
         """See `IBug`."""
-        if not self.isUserAffected(user):
-            # Mark the user as affected by this bug.
-            # A trigger on insert will increment `users_affected_count`.
-            BugAffectsPerson(bug=self, person=user)
-            # Flush and invalidate, so that the new BugAffectsPerson
-            # will be inserted into the DB and the change to
-            # users_affected_count (which is maintained by a trigger)
-            # will be reflected.
+        bap = self._getAffectedUser(user)
+        if bap is None:
+            BugAffectsPerson(bug=self, person=user, affected=affected)
             self._flushAndInvalidate()
-
-    def unmarkUserAffected(self, user):
-        """See `IBug`."""
-        bugAffectsPerson = self._getAffectedUser(user)
-        if bugAffectsPerson is not None:
-            # Unmark the user as affected by this bug.
-            # A trigger on insert will increment `users_affected_count`.
-            bugAffectsPerson.destroySelf()
-            # Flush and invalidate, so that the new BugAffectsPerson
-            # will be inserted into the DB and the change to
-            # users_affected_count (which is maintained by a trigger)
-            # will be reflected.
-            self._flushAndInvalidate()
+        else:
+            if bap.affected != affected:
+                bap.affected = affected
+                self._flushAndInvalidate()
 
 
 class BugSet:
@@ -1368,3 +1381,4 @@ class BugAffectsPerson(SQLBase):
     """A bug is marked as affecting a user."""
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    affected = BoolCol(notNull=True, default=True)

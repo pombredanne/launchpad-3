@@ -87,13 +87,11 @@ admin or expert, but he is one of the owners of a translation group.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    ...     IDistributionSet, ILaunchpadCelebrities, IPersonSet)
 
     >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
     >>> login('foo.bar@canonical.com')
     >>> personset = getUtility(IPersonSet)
-    >>> factory = LaunchpadObjectFactory()
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     >>> carlos = personset.getByName('carlos')
@@ -135,6 +133,23 @@ translations.
     >>> can_download_translations(gussie_browser)
     True
 
+User "cprov" is neither a member of the translation group nor a Rosetta expert.
+
+    >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
+    >>> login('foo.bar@canonical.com')
+    >>> cprov = personset.getByName('cprov')
+    >>> cprov.inTeam(group.owner)
+    False
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+    >>> cprov.inTeam(rosetta_experts)
+    False
+    >>> logout()
+
+"cprov" is able to download translations as an Ubuntu uploader.
+
+    >>> ubuntu_member_browser = setupBrowser(auth='Basic cprov@ubuntu.com:cprov')
+    >>> can_download_translations(ubuntu_member_browser)
+    True
 
 == Making the request ==
 

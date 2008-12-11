@@ -230,14 +230,6 @@ class IBuild(Interface):
         "The PackageUpload for this build, or None if there is "
         "no build.")
 
-    component_dependencies = Attribute(
-        "Return a dictionary which maps a component name to a list of "
-        "component names it could depend of.")
-
-    ogre_components = Attribute(
-        "The components this build is allowed to use. It returns a string "
-        "that can be used directly at the end of sources.list lines.")
-
     def retry():
         """Restore the build record to its initial state.
 
@@ -349,7 +341,7 @@ class IBuildSet(Interface):
     def getBuildsForBuilder(builder_id, status=None, name=None):
         """Return build records touched by a builder.
 
-        If status is provided, only builders with that status will
+        If status is provided, only builds with that status will
         be returned. If name is passed, return only build which the
         sourcepackagename matches (SQL LIKE).
         """

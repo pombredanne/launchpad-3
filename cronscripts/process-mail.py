@@ -5,7 +5,7 @@
 
 import _pythonpath
 
-from zope.component.exceptions import ComponentLookupError
+from zope.component.interfaces import ComponentLookupError
 
 from canonical.config import config
 from canonical.launchpad.scripts.base import (

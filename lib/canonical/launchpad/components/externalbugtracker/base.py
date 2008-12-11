@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BugNotFound',
+    'BugTrackerAuthenticationError',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
     'BugWatchUpdateWarning',
@@ -28,7 +29,6 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.components import treelookup
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.interfaces.bugwatch import BugWatchErrorType
 from canonical.launchpad.interfaces.externalbugtracker import (
     IExternalBugTracker)
 
@@ -80,6 +80,10 @@ class BugTrackerConnectError(BugWatchUpdateError):
 
     def __str__(self):
         return "%s: %s" % (self.url, self.error)
+
+
+class BugTrackerAuthenticationError(BugTrackerConnectError):
+    """Launchpad couldn't authenticate with the remote bugtracker."""
 
 
 #

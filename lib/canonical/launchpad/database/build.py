@@ -25,6 +25,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
+from canonical.launchpad.components.archivedependencies import (
+    get_components_for_building)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
@@ -231,32 +233,6 @@ class Build(SQLBase):
         self.upload_log = None
         self.dependencies = None
         self.createBuildQueueEntry()
-
-    @property
-    def component_dependencies(self):
-        """See `IBuild`."""
-        # XXX cprov 20080204: if a new component is opened/selected for
-        # ubuntu this dictionary will have to be updated. Ideally we
-        # should model ogre in the database, but since a new component
-        # will also require other changes in code, we will simple let this
-        # marked for future reference.
-        return {
-            'main': ['main'],
-            'restricted': ['main', 'restricted'],
-            'universe': ['main', 'universe'],
-            'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
-            'partner' : ['partner'],
-            }
-
-    @property
-    def ogre_components(self):
-        """See `IBuild`."""
-        # Builds targeted to BACKPORTS are allowed to depend on any
-        # component, exactly as if they were published in 'multiverse'.
-        if self.pocket == PackagePublishingPocket.BACKPORTS:
-            return self.component_dependencies['multiverse']
-
-        return self.component_dependencies[self.current_component.name]
 
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
@@ -476,8 +452,9 @@ class Build(SQLBase):
         # Moreover, PARTNER and PPA component domain is single, i.e,
         # PARTNER only contains packages in 'partner' component and PPAs
         # only contains packages in 'main' component.
+        ogre_components = get_components_for_building(self)
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component not in self.ogre_components):
+            dep_candidate.component not in ogre_components):
             return False
 
         return True
@@ -695,8 +672,7 @@ class Build(SQLBase):
         elif filename.endswith('_log.txt'):
             file_object = self.upload_log
         else:
-            raise AssertionError(
-                "'%s' filename and/or extension is not supported." % filename)
+            raise NotFoundError(filename)
 
         if file_object is not None and file_object.filename == filename:
             return file_object
@@ -782,13 +758,12 @@ class BuildSet:
 
         self._handleOptionalParams(queries, status, name)
 
+        # This code MUST match the logic in the Build security adapter,
+        # otherwise users are likely to get 403 errors, or worse.
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
         if user is not None:
-            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-                    or
-                    user.inTeam(
-                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 queries.append("""
                 (Archive.private = FALSE
                  OR %s IN (SELECT TeamParticipation.person
@@ -799,23 +774,10 @@ class BuildSet:
         else:
             queries.append("Archive.private = FALSE")
 
-        # Ordering according status
-        # * SUPERSEDED & All by -datecreated
-        # * FULLYBUILT & FAILURES by -datebuilt
-        # It should present the builds in a more natural order.
-        if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
-        else:
-            orderBy = ["-Build.datebuilt"]
-
-        # all orders fallback to id if the primary order doesn't succeed
-        orderBy.append("id")
-
-
         queries.append("builder=%s" % builder_id)
 
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy=orderBy)
+                            orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None):

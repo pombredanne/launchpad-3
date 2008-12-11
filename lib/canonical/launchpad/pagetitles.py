@@ -193,7 +193,9 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
-branchmergeproposal_edit = 'Edit proposal to merge branch'
+branchmergeproposal_edit = ViewLabel()
+
+branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'
 
@@ -204,6 +206,8 @@ branchmergeproposal_request_review = ViewLabel()
 branchmergeproposal_resubmit = ViewLabel()
 
 branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_vote = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
 
@@ -443,6 +447,9 @@ codeofconduct_list = 'Ubuntu Codes of Conduct'
 codereviewcomment_index = 'Code review comment'
 
 codereviewcomment_reply = 'Reply to code review comment'
+
+def contact_user(context, view):
+    return view.specific_contact_title_text
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -1057,6 +1064,8 @@ product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
+productrelease_delete = ContextTitle('Delete %s in Launchpad')
+
 productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
@@ -1077,6 +1086,8 @@ productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
+
+productseries_review = ContextTitle('Review %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -1312,12 +1323,6 @@ specification_dependency = 'Create a blueprint dependency'
 
 specification_deptree = 'Complete dependency tree'
 
-specification_milestone = 'Target feature to milestone'
-
-specification_people = 'Change blueprint assignee, drafter, and reviewer'
-
-specification_priority = 'Change blueprint priority'
-
 specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
@@ -1331,8 +1336,6 @@ specification_requestfeedback = 'Request feedback on this blueprint'
 specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
-
-specification_status = 'Edit blueprint status'
 
 specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
 
@@ -1417,6 +1420,9 @@ team_leave = ContextBrowsername('Leave %s')
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
+
+team_mailinglist_subscribers = ContextBrowsername(
+    'Mailing list subscribers for the %s team')
 
 team_map = ContextBrowsername('Map of %s participants')
 

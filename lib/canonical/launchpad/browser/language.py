@@ -13,16 +13,14 @@ __all__ = [
     'LanguageView',
     ]
 
-import operator
-
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
-from zope.formlib import form
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, NotFoundError)
+    ILanguageSet, ILanguage)
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu,
@@ -115,7 +113,7 @@ class LanguageAddView(LaunchpadFormView):
                 'code', 'There is already a language with that code.')
 
 
-class LanguageView(LaunchpadView):
+class LanguageView(TranslationsMixin, LaunchpadView):
     """View class to render main ILanguage page."""
 
     @cachedproperty

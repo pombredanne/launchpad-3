@@ -18,7 +18,8 @@ __all__ = [
 import sets
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Object, Set, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -117,7 +118,7 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
+    ILaunchpadUsage, IMakesAnnouncements, ISpecificationTarget, IPillar):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -147,8 +148,8 @@ class IProductPublic(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("Project owner, it can either a valid Person or "
-                          "Team inside Launchpad context.")))
+            description=_("The person or team who maintains the project "
+                          "information in Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
@@ -156,8 +157,8 @@ class IProductPublic(
             required=True,
             readonly=True,
             vocabulary='ValidPersonOrTeam',
-            description=_("Project registrant, a valid Person "
-                          "within Launchpad context.")))
+            description=_("This person registered the project in "
+                          "Launchpad.")))
 
     driver = exported(
         PublicPersonChoice(
@@ -209,7 +210,7 @@ class IProductPublic(
                 development. Don't repeat anything from the Summary.""")))
 
     datecreated = exported(
-        TextLine(
+        Datetime(
             title=_('Date Created'),
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
@@ -252,7 +253,7 @@ class IProductPublic(
 
     programminglang = exported(
         TextLine(
-            title=_('Programming Language'),
+            title=_('Programming Languages'),
             required=False,
             description=_("""A comma delimited list of programming
                 languages used for this project.""")),
@@ -437,7 +438,8 @@ class IProductPublic(
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
-                                  subscription_months, whiteboard=None):
+                                  subscription_months, whiteboard=None,
+                                  current_datetime=None):
         """Redeem a voucher and extend the subscription expiration date.
 
         The voucher must have already been verified to be redeemable.
@@ -447,6 +449,7 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
+        :param current_datetime: Current time.  Will be datetime.now() if not specified.
         :return: None
         """
 
@@ -523,11 +526,11 @@ class IProductSet(Interface):
         raised.
         """
 
-    def getByName(name, default=None, ignore_inactive=False):
+    def getByName(name, ignore_inactive=False):
         """Return the product with the given name, ignoring inactive products
         if ignore_inactive is True.
 
-        Return the default value if there is no such product.
+        Return None if there is no such product.
         """
 
     def getProductsWithBranches(num_products=None):

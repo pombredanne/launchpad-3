@@ -28,9 +28,25 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> print ubuntu.name
     ubuntu
 
-Or, to grab one by name, use:
+Or, to grab one by name, use either getByName() or __getitem__().  They both
+can be used to look up distributions by their aliases too.
 
     >>> gentoo = distroset.getByName("gentoo")
+    >>> gentoo.name
+    u'gentoo'
+    >>> distroset["gentoo"].name
+    u'gentoo'
+
+    # Need to login as an LP admin to set a project's aliases.
+    >>> login('foo.bar@canonical.com')
+    >>> gentoo.setAliases(['jackass'])
+    >>> gentoo.aliases
+    [u'jackass']
+    >>> login(ANONYMOUS)
+    >>> distroset['jackass'].name
+    u'gentoo'
+    >>> distroset.getByName('jackass').name
+    u'gentoo'
 
 Let's make sure a distribution object properly implements its interfaces.
 
@@ -183,6 +199,20 @@ in it, and therefore guessPackageNames will still fail:
     ...
     NotFoundError: u'Package pmount not published in Gentoo'
 
+It will find packages that are at the PENDING publishing state in addition
+to PUBLISHED ones:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(ubuntu['breezy-autotest'])
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="pendingpackage",
+    ...     status=PackagePublishingStatus.PENDING)
+    >>> (source, binary) = ubuntu.guessPackageNames("pendingpackage")
+    >>> print source.name
+    pendingpackage
+
 It also works if we look for a package name which is the name of both
 binary and source packages but for which only the source is published:
 
@@ -256,19 +286,23 @@ The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
 
     >>> packages = ubuntu.searchSourcePackages("mozilla")
-    >>> print len(packages)
+    >>> print packages.count()
     1
 
 The search also matches on exact package names which fti doesn't like,
 and even on substrings:
 
     >>> packages = ubuntu.searchSourcePackages("linux-source-2.6.15")
-    >>> print len(packages)
+    >>> print packages.count()
     1
-    >>> packages = ubuntu.searchSourcePackages("nux-sour")
-    >>> print len(packages)
-    1
-
+    >>> packages = ubuntu.searchSourcePackages('a')
+    >>> for dsp in packages:
+    ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: mozilla-firefox
+    DistributionSourcePackage: netapplet
+    DistributionSourcePackage: alsa-utils
+    DistributionSourcePackage: foobar
+    DistributionSourcePackage: commercialpackage
 
 === Finding distroseriess and pockets from distribution names ===
 

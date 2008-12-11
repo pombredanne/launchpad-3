@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -13,7 +14,8 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branch import (
+    IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -35,6 +37,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
@@ -42,8 +46,7 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
-from canonical.launchpad.interfaces.hwdb import (
-    IHWSubmission, IHWSubmissionSet)
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -52,7 +55,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.milestone import IMilestone
-from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthAccessToken, IOAuthRequestToken)
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
@@ -60,7 +64,7 @@ from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from canonical.launchpad.interfaces.person import (
-    IPerson, ITeam, PersonVisibility)
+    IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -148,6 +152,7 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 
@@ -165,6 +170,7 @@ class ViewPillar(AuthorizationBase):
         else:
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.launchpad_developers)
                     or user.inTeam(celebrities.admin))
 
 
@@ -190,6 +196,11 @@ class EditOAuthAccessToken(AuthorizationBase):
     def checkAuthenticated(self, user):
         return (self.obj.person == user
                 or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+
+
+class EditOAuthRequestToken(EditOAuthAccessToken):
+    permission = 'launchpad.Edit'
+    usedfor = IOAuthRequestToken
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -721,6 +732,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of a distribution should be able to edit its source
+    package information"""
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins))
+
+
 class AdminDistroSeries(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
@@ -1170,16 +1193,27 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.ExpensiveRequest'
     usedfor = ISourcePackage
 
+    def _userInAnyOfTheTeams(self, user, archive_permissions):
+        if archive_permissions is None or len(archive_permissions) == 0:
+            return False
+        for permission in archive_permissions:
+            if user.inTeam(permission.person):
+                return True
+        return False
+
     def checkAuthenticated(self, user):
         """Define who may download these translations.
 
         Admins and Translations admins have access, as does the owner of
-        the translation group (if applicable).
+        the translation group (if applicable) and distribution uploaders.
         """
-        translation_group = self.obj.distribution.translationgroup
+        distribution = self.obj.distribution
+        translation_group = distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            # User is part of the 'driver' team for the distribution.
+            (self._userInAnyOfTheTeams(user, distribution.uploaders)) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
@@ -1314,8 +1348,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
 
-        # If it's a PPA only allow its owner.
-        if self.obj.archive.is_ppa:
+        # If it's a PPA or a copy archive only allow its owner.
+        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
             return (self.obj.archive.owner and
                     user.inTeam(self.obj.archive.owner))
 
@@ -1332,10 +1366,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
 class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
 
+    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
+    # otherwise users are likely to get 403 errors, or worse.
+
     def checkAuthenticated(self, user):
-        """Private restricts to admins, BuilddAdmins, archive members."""
+        """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
             # Anyone can see non-private archives.
+            return True
+
+        if user.inTeam(self.obj.archive.owner):
+            # Anyone in the PPA team gets the nod.
+            return True
+
+        # LP admins may also see it.
+        lp_admin = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(lp_admin):
             return True
 
         # If the permission check on the sourcepackagerelease for this
@@ -1347,7 +1393,8 @@ class ViewBuildRecord(EditBuildRecord):
         if auth_spr.checkAuthenticated(user):
             return True
 
-        return EditBuildRecord.checkAuthenticated(self, user)
+        # You're not a celebrity, get out of here.
+        return False
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the build if it's not private."""
@@ -1454,8 +1501,7 @@ class AccessBranch(AuthorizationBase):
         for subscriber in branch.subscribers:
             if user.inTeam(subscriber):
                 return True
-        celebs = getUtility(ILaunchpadCelebrities)
-        return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+        return user_has_special_branch_access(user)
 
     def checkAuthenticated(self, user, checked_branches=None):
         if checked_branches is None:
@@ -1490,10 +1536,8 @@ class EditBranch(AuthorizationBase):
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
-                user.inTeam(celebs.admin) or
-                user.inTeam(celebs.bazaar_experts))
+                user_has_special_branch_access(user))
 
 
 class AdminBranch(AuthorizationBase):
@@ -1781,7 +1825,8 @@ class ViewSourcePackageRelease(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
         for archive in self.obj._cached_published_archives:
-            if check_permission('launchpad.View', archive):
+            auth_archive = ViewArchive(archive)
+            if auth_archive.checkAuthenticated(user):
                 return True
         return False
 
@@ -1851,4 +1896,28 @@ class ViewEmailAddress(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
+
+
+class EditArchivePermissionSet(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IArchivePermissionSet
+
+    def checkAuthenticated(self, user):
+        """Users must be an admin or a member of the tech board."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if user.inTeam(celebrities.admin):
+            return True
+
+        techboard = getUtility(IPersonSet).getByName("techboard")
+        if techboard is None:
+            # We expect techboard to be present but it's not.  Log an
+            # OOPS.
+            error = AssertionError(
+                "'techboard' team is missing, has it been renamed?")
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info)
+            return False
+        return user.inTeam(techboard)

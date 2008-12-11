@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -121,7 +121,7 @@ class IProject(IHasBugs, ICanGetMilestonesDirectly, IHasAppointedDriver,
                           "and how it is organised and coordinated.")))
 
     datecreated = exported(
-        TextLine(
+        Datetime(
             title=_('Date Created'),
             description=_(
                 "The date this project group was created in Launchpad."),
@@ -246,13 +246,16 @@ class IProject(IHasBugs, ICanGetMilestonesDirectly, IHasAppointedDriver,
             value_type=Reference(Interface)),
         exported_as="projects")
 
-    bug_reporting_guidelines = Text(
-        title=(
-            u"If I\N{right single quotation mark}m reporting a bug, "
-            u"I should include, if possible"),
-        description=(
-            u"These guidelines will be shown to anyone reporting a bug."),
-        required=False, max_length=50000)
+    bug_reporting_guidelines = exported(
+        Text(
+            title=(
+                u"If I\N{right single quotation mark}m reporting a bug, "
+                u"I should include, if possible"),
+            description=(
+                u"These guidelines will be shown to "
+                "anyone reporting a bug."),
+            required=False,
+            max_length=50000))
 
     def getProduct(name):
         """Get a product with name `name`."""

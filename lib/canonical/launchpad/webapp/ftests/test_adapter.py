@@ -2,12 +2,16 @@
 """Run launchpad.database functional doctests"""
 
 __metaclass__ = type
-
+import unittest
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
 
 def test_suite():
-    return LayeredDocFileSuite(
-        'test_adapter.txt',
-        layer=LaunchpadFunctionalLayer)
-
+    return unittest.TestSuite((
+        LayeredDocFileSuite(
+            'test_adapter.txt',
+            layer=LaunchpadFunctionalLayer),
+        LayeredDocFileSuite(
+            'test_adapter_timeout.txt',
+            layer=PageTestLayer),
+        ))

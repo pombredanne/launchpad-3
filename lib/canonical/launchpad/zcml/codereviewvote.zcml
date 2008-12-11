@@ -5,8 +5,14 @@
   xmlns:zope="http://namespaces.zope.org/zope"
   i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.CodeReviewVoteReference">
+  <class class="canonical.launchpad.database.CodeReviewVoteReference">
     <allow interface="canonical.launchpad.interfaces.ICodeReviewVoteReference" />
-  </content>
+  </class>
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ICodeReviewVoteReference
+         canonical.launchpad.event.interfaces.IReviewerNominatedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_review_requested_notifications" />
+
 
 </configure>

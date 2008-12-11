@@ -7,7 +7,6 @@ bad faith, or all messages in a specific POFile, and so on.
 
     >>> script = "scripts/rosetta/remove-translations-by.py"
     >>> login('foo.bar@canonical.com')
-    >>> factory = LaunchpadObjectFactory()
 
 In this example, we have a template with Dutch and German translations.
 
@@ -112,8 +111,10 @@ The long list of matching options we gave above indicated exactly 1
 message.
 
     >>> print err
-    DEBUG Executing SQL: ...
-    INFO Deleting 1 message(s).
+    DEBUG Sample of messages to be deleted follows.
+    DEBUG   [message] [unmasks]
+    DEBUG   ...       --
+    INFO  Deleting 1 message(s).
 
 Combining the --language-code option with --not-language inverts the
 language match: delete messages in any language except the given one.
@@ -125,6 +126,42 @@ the same messages as before, minus one Dutch one.
 
     >>> print_pofile_contents(nl_pofile)
     Bericht 931
+
+    >>> print_pofile_contents(de_pofile)
+    Nachricht 931
+    Und jetzt auf deutsch.
+
+
+== Dry runs ==
+
+Deleting messages is scary.  You should not do it lightly.  The script
+has a --dry-run option that stops it from committing its changes to the
+database.
+
+    >>> (returncode, out, err) = run_script(script, [
+    ...     '-vvv',
+    ...     '--potemplate=%s' % de_pofile.potemplate.id,
+    ...     '--force',
+    ...     '--dry-run',
+    ...     ])
+
+    >>> returncode
+    0
+
+    >>> out
+    ''
+
+    >>> print err
+    WARNING Safety override in effect.  Deleting translations for template ...
+    INFO    Dry run only.  Not really deleting.
+    DEBUG   Sample of messages to be deleted follows.
+    DEBUG   [message] [unmasks]
+    DEBUG   ...       --
+    DEBUG   ...       --
+    DEBUG   ...       --
+    INFO    Deleting 3 message(s).
+
+The "deleted" messages are still there.
 
     >>> print_pofile_contents(de_pofile)
     Nachricht 931

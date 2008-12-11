@@ -13,7 +13,6 @@ import unittest
 
 from cStringIO import StringIO
 from urllib import urlopen
-
 import psycopg2
 
 from zope.component import getUtility, ComponentLookupError

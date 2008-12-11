@@ -88,6 +88,13 @@ def uploaderTearDown(test):
     # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
+
+def archivepublisherSetUp(test):
+    """Setup the archive publisher script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
+
+
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
@@ -128,8 +135,10 @@ def cveSetUp(test):
     setUp(test)
 
 def statisticianSetUp(test):
+    test_dbuser = config.statistician.dbuser
+    test.globs['test_dbuser'] = test_dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
 def statisticianTearDown(test):
     tearDown(test)
@@ -362,6 +371,10 @@ special = {
             '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer,
+            ),
+    'archive-signing.txt': LayeredDocFileSuite(
+            '../doc/archive-signing.txt',
+            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
             ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
@@ -781,14 +794,6 @@ special = {
             tearDown=zopelessLaunchpadSecurityTearDown,
             layer=LaunchpadZopelessLayer,
             ),
-    # Also run the pillar.txt doctest under the Zopeless layer.
-    # This exposed bug #149632.
-    'pillar.txt-zopeless': LayeredDocFileSuite(
-            '../doc/pillar.txt',
-            setUp=setUp, tearDown=tearDown,
-            #layer=ExperimentalLaunchpadZopelessLayer
-            layer=LaunchpadZopelessLayer
-            ),
     'openid-fetcher.txt': LayeredDocFileSuite(
             '../doc/openid-fetcher.txt',
             stdout_logging=False,
@@ -859,14 +864,18 @@ special = {
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,
         ),
-    'google-service-stub.txt': LayeredDocFileSuite(
-            '../doc/google-service-stub.txt',
-            layer=GoogleServiceLayer,
-            ),
+    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
+    # multiple spurious problems with layer and test.
+    # 'google-service-stub.txt': LayeredDocFileSuite(
+    #         '../doc/google-service-stub.txt',
+    #         layer=GoogleServiceLayer,
+    #         ),
     'karmacache.txt': LayeredDocFileSuite(
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
+    'filebug-data-parser.txt': LayeredDocFileSuite(
+        '../doc/filebug-data-parser.txt')
     }
 
 
@@ -890,7 +899,12 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests_without_logging = [
-        'answer-tracker-emailinterface.txt',
+        # XXX gary 2008-12-06 bug=305856: Spurious test failure discovered on
+        # buildbot, build 40.  Note that, to completely disable the test from
+        # running, the filename has been changed to
+        # answer-tracker-emailinterface.txt.disabled, so when this test is
+        # reinstated it will be need to be changed back.
+        # 'answer-tracker-emailinterface.txt',
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',

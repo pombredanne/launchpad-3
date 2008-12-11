@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import unittest
 
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getMultiAdapter, getUtility
 
 from canonical.config import config

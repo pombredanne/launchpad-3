@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- Distribution -->
-  <content class="canonical.launchpad.database.Distribution">
+  <class class="canonical.launchpad.database.Distribution">
     <allow interface="canonical.launchpad.interfaces.IDistributionPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -29,6 +29,12 @@
     <require
       permission="launchpad.TranslationsAdmin"
       set_attributes="language_pack_admin"
+      />
+    <!-- IHasAliases -->
+    <allow attributes="aliases" />
+    <require
+      permission="launchpad.Admin"
+      attributes="setAliases"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
@@ -63,7 +69,7 @@
     <require
         permission="launchpad.Edit"
         attributes="setBugSupervisor" />
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IDistribution"
@@ -222,6 +228,15 @@
     template="../templates/distribution-newmirror.pt">
   </browser:page>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="zope.Public"
+    name="+search"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionPackageSearchView"
+    template="../templates/distribution-search.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.DistributionView"
@@ -235,11 +250,6 @@
       name="+series"
       facet="overview"
       template="../templates/distribution-series.pt"
-      />
-    <browser:page
-      name="+search"
-      facet="overview"
-      template="../templates/distribution-search.pt"
       />
     <browser:page
       name="+builds"
@@ -496,9 +506,9 @@
     />
 
   <!-- DistributionSet -->
-  <content class="canonical.launchpad.database.DistributionSet">
+  <class class="canonical.launchpad.database.DistributionSet">
     <allow interface="canonical.launchpad.interfaces.IDistributionSet"/>
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.DistributionSet"

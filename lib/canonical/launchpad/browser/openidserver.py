@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """OpenID server."""
 
@@ -16,10 +16,13 @@ from time import time
 from BeautifulSoup import BeautifulSoup
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.session.interfaces import ISession, IClientIdManager
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
+from zope.publisher.interfaces import BadRequest
+from zope.session.interfaces import ISession, IClientIdManager
 from zope.security.proxy import isinstance as zisinstance
 
+from openid.extensions import pape
 from openid.message import registerNamespaceAlias
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
@@ -31,7 +34,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
-    OpenIDPersistentIdentity)
+    OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
@@ -45,9 +48,9 @@ from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
-from canonical.launchpad.webapp.login import logInPerson, logoutPerson
+from canonical.launchpad.webapp.login import (
+    logInPerson, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
@@ -87,7 +90,7 @@ class OpenIDMixin:
     def __init__(self, context, request):
         super(OpenIDMixin, self).__init__(context, request)
         store_factory = getUtility(ILaunchpadOpenIDStoreFactory)
-        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+        self.server_url = CurrentOpenIDEndPoint.getServiceURL()
         self.openid_server = Server(store_factory(), self.server_url)
 
     @property
@@ -109,7 +112,18 @@ class OpenIDMixin:
                 query[key.encode('US-ASCII')] = value.encode('US-ASCII')
         return query
 
+    @cachedproperty('_rpconfig')
+    def rpconfig(self):
+        return getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+            self.openid_request.trust_root)
+
     def getSession(self):
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it
+            # safe to set session values.
+            allowUnauthenticatedSession(self.request,
+                                        duration=timedelta(minutes=60))
         return ISession(self.request)[SESSION_PKG_KEY]
 
     @staticmethod
@@ -250,21 +264,52 @@ class OpenIDMixin:
             if team is None or not team.isTeam():
                 continue
             # Control access to private teams
-            if team.visibility != PersonVisibility.PUBLIC:
-                # XXX jamesh 2008-02-14 bug=174076:
-
-                # We should have fine grained control of which RPs can
-                # query for which teams, but for now we will let any
-                # RP with an OpenIDRPconfig perform such queries.
-                rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
-                    self.openid_request.trust_root)
-                if rpconfig is None:
-                    continue
+            if (team.visibility != PersonVisibility.PUBLIC
+                and (self.rpconfig is None
+                    or not self.rpconfig.can_query_any_team)):
+                continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
         openid_response.fields.setArg(
             LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
+
+    def shouldReauthenticate(self):
+        """Should the user re-enter their password?
+
+        Return True if the user entered their password more than
+        max_auth_age seconds ago. Return False otherwise.
+
+        The max_auth_age parameter is defined in the OpenID Provider 
+        Authentication Policy Extension.
+        http://openid.net/specs/openid-provider-authentication-policy-extension-1_0-07.html
+
+        This parameter contains the maximum number of seconds before which
+        an authenticated user must enter their password again. By default,
+        there is no such maximum and if the user is logged in Launchpad, they
+        can simply click-through to Sign In the relaying party.
+
+        But if the relaying party provides a value for that parameter, the
+        user most have logged in not more than that number of seconds ago,
+        Otherwise, they'll have to enter their password again.
+        """
+        assert self.user is not None, (
+            'Must be logged in to query for max_auth_age check')
+        pape_request = pape.Request.fromOpenIDRequest(self.openid_request)
+
+        # If there is no parameter, the login is valid.
+        if pape_request is None or pape_request.max_auth_age is None:
+            return False
+
+        try:
+            max_auth_age = int(pape_request.max_auth_age)
+        except ValueError:
+            raise BadRequest(
+                'pape:max_auth_age parameter should be an '
+                'integer: %s' % max_auth_age)
+
+        cutoff = datetime.utcnow() - timedelta(seconds=max_auth_age)
+        return self._getLoginTime() <= cutoff
 
     def renderOpenIDResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
@@ -308,11 +353,24 @@ class OpenIDMixin:
 
         self.checkTeamMembership(response)
 
+        # XXX flacoste 2008-11-13 bug=297816
+        # Add auth_time information. We need a newer version
+        # of python-openid to use this.
+        # last_login = self._getLoginTime()
+        #pape_response = pape.Response(
+        #    auth_time=last_login.strftime('%Y-%m-%dT%H:%M:%SZ'))
+        #response.addExtension(pape_response)
+
         rp_summary_set = getUtility(IOpenIDRPSummarySet)
         rp_summary_set.record(
             self.user.account, self.openid_request.trust_root)
 
         return response
+
+    def _getLoginTime(self):
+        """Return the last login time of the user."""
+        authdata = ISession(self.request)['launchpad.authenticateduser']
+        return authdata['logintime']
 
     def createFailedResponse(self):
         """Create a failed assertion OpenIDResponse.
@@ -371,6 +429,8 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
                 return self.showLoginPage()
             if not self.isIdentityOwner():
                 openid_response = self.createFailedResponse()
+            elif self.shouldReauthenticate():
+                return self.showLoginPage()
             elif self.isAuthorized():
                 # User is logged in and the site is authorized.
                 openid_response = self.createPositiveResponse()
@@ -424,7 +484,7 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
         return (self.openid_request.idSelect() or
-                OpenIDPersistentIdentity.supportsURL(identity))
+                CurrentOpenIDEndPoint.supportsURL(identity))
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""

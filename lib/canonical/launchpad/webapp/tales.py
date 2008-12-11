@@ -18,9 +18,10 @@ from datetime import datetime, timedelta
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
 from zope.app import zapi
+from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.app.traversing.interfaces import ITraversable, IPathAdapter
+from zope.traversing.interfaces import ITraversable, IPathAdapter
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
@@ -67,28 +68,19 @@ class TraversalError(NotFoundError):
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
-       CONTEXTS/menu:facet       gives the facet menu of the nearest object
-                                 along the canonical url chain that has an
-                                 IFacetMenu adapter.
+    The facet menu can be accessed with an expression like:
 
+        tal:define="facetmenu view/menu:facet"
+
+    which gives the facet menu of the nearest object along the canonical url
+    chain that has an IFacetMenu adapter.
     """
 
     def __init__(self, context):
         self._tales_context = context
-        if zope_isinstance(context, dict):
-            # We have what is probably a CONTEXTS dict.
-            # We get the context out of here, and use that for self.context.
-            # We also want to see if the view has a __launchpad_facetname__
-            # attribute.
-
-            # XXX sinzui 2008-05-06 bug=226952: Zope 3.4 will not adapt a
-            # dict to a view object. Templates must switch to 'view'.
-            self._context = context['context']
-            self.view = context['view']
-            self._request = context['request']
-            self._selectedfacetname = getattr(
-                self.view, '__launchpad_facetname__', None)
-        elif zope_isinstance(context, LaunchpadView):
+        if zope_isinstance(context, (LaunchpadView, BrowserView)):
+            # The view is a LaunchpadView or a SimpleViewClass from a
+            # template. The facet is added to the call by the ZCML.
             self.view = context
             self._context = self.view.context
             self._request = self.view.request
@@ -201,7 +193,7 @@ class MenuAPI:
                 context, INavigationMenu, name=selectedfacetname)
         except NoCanonicalUrl:
             menu = None
-        if menu is None:
+        if menu is None or menu.disabled:
             return {}
         else:
             menu.request = self._request
@@ -407,8 +399,11 @@ class ObjectFormatterAPI:
 
     implements(ITraversable)
 
-    # The names which can be traversed further (e.g context/fmg:url/+edit).
-    traversable_names = {'link': 'link', 'url': 'url'}
+    # Although we avoid mutables as class attributes, the two ones below are
+    # constants, so it's not a problem. We might want to use something like
+    # frozenset (http://code.activestate.com/recipes/414283/) here, though.
+    # The names which can be traversed further (e.g context/fmt:url/+edit).
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {}
 
@@ -424,6 +419,15 @@ class ObjectFormatterAPI:
         url = canonical_url(
             self._context, path_only_if_possible=True, view_name=view_name)
         return url
+
+    def api_url(self, context):
+        """Return the object's (partial) canonical web service URL.
+
+        This method returns everything that goes after the web service
+        version number. It's the same as 'url', but without any view
+        name.
+        """
+        return self.url()
 
     def traverse(self, name, furtherPath):
         if name in self.traversable_names:
@@ -1008,6 +1012,17 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
         'title-link': 'titleLink'}
 
+    def traverse(self, name, furtherPath):
+        """Special case traversal to support multiple link formats."""
+        for link_name, func in (('project-link', self.projectLink),
+                           ('title-link', self.titleLink),
+                           ('bzr-link', self.bzrLink)):
+            if name == link_name:
+                extra_path = '/'.join(reversed(furtherPath))
+                del furtherPath[:]
+                return func(extra_path)
+        return ObjectFormatterAPI.traverse(self, name, furtherPath)
+
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
@@ -1017,12 +1032,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             title = branch.title
         else:
             title = "(no title)"
-        if branch.author is not None:
-            author = branch.author.name
-        else:
-            author = branch.owner.name
         return {
-            'author': author,
+            'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
             'title': cgi.escape(title),
@@ -1036,6 +1047,13 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
             '&nbsp;%(unique_name)s</a>' % self._args(view_name))
+
+    def bzrLink(self, view_name):
+        """A hyperlinked branch icon with the unique name."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '<img src="/@@/branch" alt=""/>'
+            '&nbsp;%(bzr_identity)s</a>' % self._args(view_name))
 
     def projectLink(self, view_name):
         """A hyperlinked branch icon with the name and title."""
@@ -2115,12 +2133,15 @@ class FormattersAPI:
         if not self._stringtoformat:
             return self._stringtoformat
         else:
+            linkified_text = re_substitute(self._re_linkify,
+                self._linkify_substitution, break_long_words,
+                cgi.escape(self._stringtoformat))
             return ('<pre style="'
                     'white-space: -moz-pre-wrap;'
                     'white-space: -o-pre-wrap;'
                     'word-wrap: break-word;'
                     '">%s</pre>'
-                    % cgi.escape(self._stringtoformat)
+                    % linkified_text
                     )
 
     # Match lines that start with one or more quote symbols followed
