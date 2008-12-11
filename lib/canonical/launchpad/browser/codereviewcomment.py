@@ -52,10 +52,32 @@ class CodeReviewCommentView(LaunchpadView):
     # Show comment expanders?
     show_expanders = False
 
+    @cachedproperty
+    def all_attachments(self):
+        return [chunk for chunk in self.context.message.chunks
+                if chunk.blob is not None]
 
-class CodeReviewCommentSummary(LaunchpadView):
+    @cachedproperty
+    def display_attachments(self):
+        # Attachments to show.
+        import pdb; pdb.set_trace()
+        good_mimetypes = set(['text/plain', 'text/x-diff', 'text/x-patch'])
+        return [chunk for chunk in self.all_attachments
+                if ((chunk.blob.mimetype in good_mimetypes) or
+                    chunk.blob.filename.endswith('.diff') or
+                    chunk.blob.filename.endswith('.patch'))]
+
+    @cachedproperty
+    def other_attachments(self):
+        # Attachments to not show.
+        import pdb; pdb.set_trace()
+        good_ones = self.display_attachments
+        return [chunk for chunk in self.all_attachments
+                if chunk not in good_ones]
+
+
+class CodeReviewCommentSummary(CodeReviewCommentView):
     """Summary view of a CodeReviewComment"""
-    __used_for__ = ICodeReviewComment
 
     # How many lines do we show in the main view?
     SHORT_MESSAGE_LENGTH = 3

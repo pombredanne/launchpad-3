@@ -39,6 +39,15 @@
             tal:content="expander_text">full message</a>)
           </tal:long-message>
         </tal:short-message-view>
+        <tal:good-attachments repeat="attachment view/display_attachments">
+          <div class="attachment">
+            <h4>Filename: <tal:filename replace="attachment.blob.filename"/></h4>
+            <tal:content replace="attachment.blob.read"/>
+          </div>
+        </tal:good-attachments>
+        <tal:other-attachments repeat="attachment view/other_attachments">
+          <!-- <tal:filename replace="attachment.blob.filename"/> <tal:contenttype replace="attachment.blob.mimetype"/>  -->
+        </tal:other-attachments>
       </div>
     </div>
   </metal:macro>
