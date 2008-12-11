@@ -636,6 +636,44 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(owner, branch.registrant)
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
+    def test_createBranch_invalid_distro(self):
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
+            owner.name, distroseries.name, sourcepackagename.name,
+            branch_name)
+        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        message = "No such distribution 'ningnangnong'."
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
+    def test_createBranch_invalid_distroseries(self):
+        owner = self.factory.makePerson()
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/ningnangnong/%s/%s' % (
+            owner.name, distribution.name, sourcepackagename.name,
+            branch_name)
+        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        message = "No such distribution series 'ningnangnong'."
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
+    def test_createBranch_invalid_sourcepackagename(self):
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
+            owner.name, distroseries.distribution.name, distroseries.name,
+            branch_name)
+        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        message = "No such source package 'ningnangnong'."
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
         # branches, we get the database id of the branch, and a flag saying

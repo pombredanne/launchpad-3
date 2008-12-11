@@ -430,10 +430,24 @@ class FakeBranchFilesystem:
                     "Project %r does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
+            if distro is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "No such distribution '%s'." % (data['distribution'],))
             distroseries = self._distroseries_set.getByName(
                 data['distroseries'])
+            if distroseries is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "No such distribution series '%s'."
+                    % (data['distroseries'],))
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
+            if sourcepackagename is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "No such source package '%s'."
+                    % (data['sourcepackagename'],))
         else:
             return Fault(
                 PERMISSION_DENIED_FAULT_CODE,

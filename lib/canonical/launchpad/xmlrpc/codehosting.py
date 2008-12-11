@@ -33,9 +33,13 @@ from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
     READ_ONLY, WRITABLE)
+from canonical.launchpad.interfaces.distribution import NoSuchDistribution
+from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
+from canonical.launchpad.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -231,6 +235,12 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
                     "Project '%s' does not exist." % e.name)
+            except (NoSuchDistribution, NoSuchDistroSeries), e:
+                return Fault(NOT_FOUND_FAULT_CODE, str(e))
+            except NoSuchSourcePackageName, e:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "No such source package '%s'." % (e.name,))
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
