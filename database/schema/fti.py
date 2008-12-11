@@ -432,7 +432,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         ## plpy.debug('11 query is %s' % repr(query))
 
         # An &,| or ! followed by another boolean.
-        query = re.sub(r"(?u)\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
+        query = re.sub(r"(?ux) \s* ( [\&\|\!] ) [\s\&\|]+", r"\1", query)
         ## plpy.debug('12 query is %s' % repr(query))
 
         # Leading & or |

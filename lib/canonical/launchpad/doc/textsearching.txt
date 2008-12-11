@@ -434,6 +434,14 @@ or invalid leading operators
     >>> ftq(")foo(")
     foo <=> 'foo'
 
+    Bug #160236
+
+    >>> ftq("foo&&bar-baz")
+    foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
+
+    >>> ftq("foo||bar.baz")
+    foo|((bar&baz)|barbaz) <=> 'foo' | ( 'bar' & 'baz' | 'barbaz' )
+
 
 Phrase Searching
 ----------------
