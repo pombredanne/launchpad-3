@@ -602,7 +602,8 @@ possible.
     []
 
     >>> comment_message = factory.makeMessage(
-    ...     "A test message", "That hasn't been pushed")
+    ...     "A test message", "That hasn't been pushed",
+    ...     owner=sample_person)
     >>> bug_message = bug_watches[-1].addComment(None, comment_message)
 
     >>> bug_watch_updater._getRemoteIdsToCheck(
