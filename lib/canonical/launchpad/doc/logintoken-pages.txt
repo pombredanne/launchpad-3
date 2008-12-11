@@ -139,7 +139,7 @@ account to ACTIVE, nor will it reset his password.
     <DBItem AccountStatus.SUSPENDED, ...>
 
     >>> login_token = login_token_set.new(
-    ...     former_user, 'suspended-user@canonical.com',
+    ...     suspended_user, 'suspended-user@canonical.com',
     ...     'suspended-user@canonical.com', LoginTokenType.PASSWORDRECOVERY)
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
@@ -298,14 +298,11 @@ The existing Account, Person and EmailAddress are updated.
 
 == Creating a new account cannot reactivate a suspended profile ==
 
-An existing account that is SUSPENDED cannot be reactivated using
-by claiming the email address during account creation.
-
-The suspended user who could not reset his password above cannot
-implicitly reactivate his account by creating a new account.
+An existing account that is SUSPENDED cannot be reactivated by claiming
+the email address during account creation.
 
     >>> login_token = login_token_set.new(
-    ...     former_user, 'suspended-user@canonical.com',
+    ...     suspended_user, 'suspended-user@canonical.com',
     ...     'suspended-user@canonical.com', LoginTokenType.NEWACCOUNT)
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
