@@ -42,7 +42,7 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, webservice_error)
+    operation_returns_collection_of, rename_parameters_as, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -231,6 +231,35 @@ class IArchive(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
+    @rename_parameters_as(name="source_name", distroseries="distro_series")
+    @operation_parameters(
+        name=TextLine(title=_("Source package name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Choice(
+            title=_('Package Publishing Status'),
+            description=_('The status of this publishing record'),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType, 
+            required=False),
+        distroseries=Reference(
+            # Really IDistroSeries, fixed below to avoid circular import.
+            Interface,
+            title=_("Distroseries name"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        exact_match=Bool(
+            title=_("Exact Match"),
+            description=_("Whether or not to filter source names by exact"
+                          " matching."),
+            required=False))
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False):
@@ -915,6 +944,23 @@ IArchive['syncSources'].queryTaggedValue(
 IArchive['syncSource'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['from_archive'].schema = IArchive
+
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.publishing import (
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus)
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['distroseries'].schema = IDistroSeries
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = ISourcePackagePublishingHistory
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['status'].vocabulary = PackagePublishingStatus
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
 
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.

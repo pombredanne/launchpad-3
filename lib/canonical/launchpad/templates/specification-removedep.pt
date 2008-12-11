@@ -12,9 +12,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-dependencies" />
-</metal:leftportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -23,7 +23,7 @@
         <a tal:attributes="href context/fmt:url" tal:content="context/title" />
       </div>
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
       This will <em>remove</em> the dependency on the selected blueprint.

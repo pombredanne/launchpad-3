@@ -48,7 +48,7 @@ so the targeting should NOT be automatically approved.
   ...
   ... would be great to have, but has high risk
   ... -----------------------------26999413214087432371486976730
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ...
   ... Continue
   ... -----------------------------26999413214087432371486976730--
@@ -91,7 +91,7 @@ OK, we will also pitch the e4x spec to the same series:
   ...
   ... would be great to have, but has high risk
   ... -----------------------------26999413214087432371486976730
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ...
   ... Continue
   ... -----------------------------26999413214087432371486976730--
@@ -179,7 +179,7 @@ because we are an admin, then we will move it back.
   ...
   ... would be great to have, but has high risk
   ... -----------------------------26999413214087432371486976730
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ...
   ... Continue
   ... -----------------------------26999413214087432371486976730--
@@ -220,7 +220,7 @@ And lets put it back:
   ...
   ... would be great to have, but has high risk
   ... -----------------------------26999413214087432371486976730
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ...
   ... Continue
   ... -----------------------------26999413214087432371486976730--

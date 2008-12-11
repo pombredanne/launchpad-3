@@ -75,7 +75,7 @@ a notification is produced when the comment is created.
     To: Subscriber Person <subscriber@example.com>
     Reply-To: mp+1@code.launchpad.dev
     Subject: Please merge
-    Vote: Approve DB
+    Review: Approve DB
     This patch is very nice.
     --...
     You are subscribed to branch ~person-name.../product-name.../branch....

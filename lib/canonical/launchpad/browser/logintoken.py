@@ -29,7 +29,6 @@ from zope.interface import alsoProvides, directlyProvides, Interface
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
@@ -307,13 +306,12 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         # Suspended accounts cannot reset the password.
         if naked_person.account.status == AccountStatus.SUSPENDED:
-            question_link = canonical_url(
-                getUtility(ILaunchpadCelebrities).launchpad,
-                rootsite='answers', view_name='+addquestion')
+            email_link = (
+                'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
             message = structured(
                   'Your password cannot be reset because your account is '
                   'suspended. Contact a <a href="%s">Launchpad admin</a> '
-                  'about this issue.' % question_link)
+                  'about this issue.' % email_link)
             self.request.response.addWarningNotification(message)
             self.context.consume()
             return
