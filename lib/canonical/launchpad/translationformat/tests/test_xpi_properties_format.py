@@ -222,7 +222,9 @@ ucci\u00F3n
 
 class MockFile:
     """`TranslationFileData` boiled down to its essence for this test."""
-    def __init__(self, path='test.properties', messages=[]):
+    def __init__(self, path='test.properties', messages=None):
+        if messages is None:
+            messages = []
         self.path = path
         self.messages = messages
 
