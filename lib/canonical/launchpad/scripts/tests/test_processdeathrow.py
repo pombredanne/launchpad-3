@@ -112,7 +112,7 @@ class TestProcessDeathRow(TestCase):
         # will be able to remove it. The other files can remain missing
         # in order to test if deathrow can cope with not-found files.
         self.ppa_test_folder = os.path.join(
-            config.personalpackagearchive.root, "cprov")
+            config.personalpackagearchive.root, "cprov", cprov.archive.name)
         package_folder = os.path.join(
             self.ppa_test_folder, "ubuntutest/pool/main/i/iceweasel")
         os.makedirs(package_folder)

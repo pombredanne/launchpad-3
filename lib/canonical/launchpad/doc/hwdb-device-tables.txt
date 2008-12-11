@@ -1061,7 +1061,8 @@ example a Ghostscript driver of a printer or a Sane scanner backend.
     GNU GPL v2
 
 The submitted data does not need to contain package information for all
-drivers, hence the field package_name may be None.
+drivers, hence the field package_name may be None or the empty string
+(see below).
 
     >>> driver2 = driver_set.create(package_name=None,
     ...                             name='whatever',
@@ -1076,13 +1077,13 @@ drivers, hence the field package_name may be None.
 Since we also do not always know the license of a driver, the license
 may too be None.
 
-    >>> driver3 = driver_set.create(package_name=None,
+    >>> driver3 = driver_set.create(package_name='',
     ...                             name='something_else',
     ...                             license=None)
     >>> print driver3.name
     something_else
-    >>> print driver3.package_name
-    None
+    >>> print repr(driver3.package_name)
+    u''
     >>> print driver3.license
     None
 
@@ -1150,6 +1151,77 @@ the given parameters or creates a new one, if no existing record matches.
     foo
     >>> print driver.package_name
     linux-image-generic
+
+IHWDriverSet.search() returns a sequence of driver records matching the
+given parameters.
+
+    >>> drivers = driver_set.search(package_name='linux-image-generic')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    linux-image-generic usb
+    linux-image-generic foo
+
+    >>> drivers = driver_set.search(name='usb')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic usb
+    linux-image-generic usb
+
+    >>> drivers = driver_set.search(
+    ...     package_name='linux-image-2.6.24-19-generic', name='ahci')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic ahci
+
+If package_name is an empty string, driver records are returned where
+the package name is not recorded (which is denoted by None or the
+empty string. See also bug 306265: Disallow the column value
+HWDriver.package_name=null).
+
+    >>> drivers = driver_set.search(package_name='')
+    >>> for driver in drivers:
+    ...    print repr(driver.package_name), driver.name
+    None whatever
+    u'' something_else
+
+    >>> drivers = driver_set.search(package_name='', name='whatever')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    None whatever
+
+If no parameters are specific, IHWDriverSet.search() returns all driver
+records.
+
+    >>> drivers = driver_set.search()
+    >>> for driver in drivers:
+    ...    print repr(driver.package_name), driver.name
+    u'linux-image-2.6.24-19-generic' ehci_hcd
+    u'linux-image-2.6.24-19-generic' usb
+    u'linux-image-2.6.24-19-generic' usb-storage
+    u'linux-image-2.6.24-19-generic' sd
+    u'linux-image-2.6.24-19-generic' hub
+    u'linux-image-2.6.24-19-generic' ahci
+    u'linux-image-2.6.24-19-generic' sr
+    u'linux-image-generic' usb
+    None whatever
+    u'' something_else
+    u'linux-image-generic' foo
+
+HWDriverSet.getByID() returns a HWDriver record with the given database ID.
+
+    >>> driver = driver_set.getByID(1)
+    >>> print driver.id
+    1
+    >>> print driver.package_name
+    linux-image-2.6.24-19-generic
+    >>> print driver.name
+    ehci_hcd
+
+HWDriverSet.getByID() returns None if no record with the passed ID exists.
+
+    >>> driver = driver_set.getByID(1000000)
+    >>> print driver
+    None
 
 
 == HWDeviceDriverLink ==
