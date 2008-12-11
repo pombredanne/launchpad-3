@@ -54,26 +54,24 @@ class CodeReviewCommentView(LaunchpadView):
 
     @cachedproperty
     def all_attachments(self):
-        return [chunk for chunk in self.context.message.chunks
+        return [chunk.blob for chunk in self.context.message.chunks
                 if chunk.blob is not None]
 
     @cachedproperty
     def display_attachments(self):
         # Attachments to show.
-        import pdb; pdb.set_trace()
         good_mimetypes = set(['text/plain', 'text/x-diff', 'text/x-patch'])
-        return [chunk for chunk in self.all_attachments
-                if ((chunk.blob.mimetype in good_mimetypes) or
-                    chunk.blob.filename.endswith('.diff') or
-                    chunk.blob.filename.endswith('.patch'))]
+        return [attachment for attachment in self.all_attachments
+                if ((attachment.mimetype in good_mimetypes) or
+                    attachment.filename.endswith('.diff') or
+                    attachment.filename.endswith('.patch'))]
 
     @cachedproperty
     def other_attachments(self):
         # Attachments to not show.
-        import pdb; pdb.set_trace()
         good_ones = self.display_attachments
-        return [chunk for chunk in self.all_attachments
-                if chunk not in good_ones]
+        return [attachment for attachment in self.all_attachments
+                if attachment not in good_ones]
 
 
 class CodeReviewCommentSummary(CodeReviewCommentView):

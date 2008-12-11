@@ -40,13 +40,13 @@
           </tal:long-message>
         </tal:short-message-view>
         <tal:good-attachments repeat="attachment view/display_attachments">
-          <div class="attachment">
-            <h4>Filename: <tal:filename replace="attachment.blob.filename"/></h4>
-            <tal:content replace="attachment.blob.read"/>
+          <div class="boardComment attachment" tal:define="body_text python:str(attachment.read())">
+            <div class="boardCommentDetails filename"><a tal:content="attachment/filename" tal:attributes="href attachment/getURL"/></div>
+            <div class="boardCommentBody attachmentBody" tal:content="structure body_text/fmt:nice_pre"/>
           </div>
         </tal:good-attachments>
         <tal:other-attachments repeat="attachment view/other_attachments">
-          <!-- <tal:filename replace="attachment.blob.filename"/> <tal:contenttype replace="attachment.blob.mimetype"/>  -->
+          <tal:comment replace="structure string:<!-- '${attachment/filename}' '${attachment/mimetype}' -->"/>
         </tal:other-attachments>
       </div>
     </div>
