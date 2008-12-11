@@ -14,6 +14,7 @@ from canonical.archiveuploader.tests.test_uploadprocessor import (
 from canonical.config import config
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError)
+from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -443,6 +444,81 @@ class TestCopyPackage(TestCase):
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
         self.assertEqual(len(copied_source.getBuilds()), 0)
 
+    def _setupArchitectureGrowingScenario(self, architecturehintlist="all"):
+        """  """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        # Ubuntu/warty only supports i386.
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+        active_warty_architectures = [
+            arch.architecturetag for arch in warty.architectures
+            if arch.getChroot()]
+        self.assertEqual(
+            sorted(active_warty_architectures), ['i386'])
+
+        # Setup ubuntu/hoary supporting i386 and hppa architetures.
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
+        active_hoary_architectures = [
+            arch.architecturetag for arch in hoary.architectures]
+        self.assertEqual(
+            sorted(active_hoary_architectures), ['hppa', 'i386'])
+
+        # We will create an architecture-specific source and its binaries
+        # for i386 in ubuntu/warty. They will be copied over.
+        ppa_source = test_publisher.getPubSource(
+            sourcename='boing', version='1.0', distroseries=warty,
+            architecturehintlist=architecturehintlist,
+            status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def testCopyArchitectureIndependentBinaries(self):
+        """Architecture independent binaries are propagated in the detination.
+
+        In the case when the destination distroseries supports more
+        architectures than the source (distroseries), `copy-package`
+        correctly identifies it and propagates architecture independent
+        binaries to the new architectures.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        self._setupArchitectureGrowingScenario()
+
+        # In terms of supported architectures, both warty & hoary supports
+        # i386 and hppa. We will create hoary/amd64 so we can verify if
+        # architecture independent binaries copied from warty will also
+        # end up in the new architecture.
+        amd64_family = ProcessorFamily.selectOneBy(name='amd64')
+        hoary = ubuntu.getSeries('hoary')
+        hoary_amd64 = hoary.newArch('amd64', amd64_family, True, hoary.owner)
+
+        # Copy the source and binaries from warty to hoary.
+        copy_helper = self.getCopier(
+            sourcename='boing', include_binaries=True,
+            from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 4)
+
+        # The source and the only existing binary were correctly copied.
+        # No build was created, but the architecture independent binary
+        # was propagated to the new architecture (hoary/amd64).
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary)
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+
+        self.assertEqual(len(copied_source.getBuilds()), 0)
+
+        architectures_with_binaries = [
+            binary.distroarchseries.architecturetag
+            for binary in copied_source.getPublishedBinaries()]
+        self.assertEqual(
+            architectures_with_binaries, ['amd64', 'hppa', 'i386'])
+
     def testCopyCreatesMissingBuilds(self):
         """Copying source and binaries also create missing builds.
 
@@ -452,31 +528,7 @@ class TestCopyPackage(TestCase):
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
-        # Ubuntu/warty only supports i386.
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        active_warty_architectures = [
-            arch.architecturetag for arch in warty.architectures
-            if arch.getChroot()]
-        self.assertEqual(active_warty_architectures, ['i386'])
-
-        # We will create an architecture-specific source and its binaries
-        # for i386 in ubuntu/warty. They will be copied over.
-        ppa_source = test_publisher.getPubSource(
-            sourcename='boing', version='1.0', architecturehintlist='any',
-            distroseries=warty, status=PackagePublishingStatus.PUBLISHED)
-        ppa_binaries = test_publisher.getPubBinaries(
-            pub_source=ppa_source, distroseries=warty,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Setup ubuntu/hoary supporting i386 and hppa architetures.
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher.addFakeChroots(hoary)
-        active_hoary_architectures = [
-            arch.architecturetag for arch in hoary.architectures
-            if arch.getChroot()]
-        self.assertEqual(
-            sorted(active_hoary_architectures), ['hppa', 'i386'])
+        self._setupArchitectureGrowingScenario(architecturehintlist="any")
 
         copy_helper = self.getCopier(
             sourcename='boing', include_binaries=True,
@@ -488,6 +540,7 @@ class TestCopyPackage(TestCase):
         self.checkCopies(copied, target_archive, 2)
 
         # The source and the only existing binary were correctly copied.
+        hoary = ubuntu.getSeries('hoary')
         [copied_source] = ubuntu.main_archive.getPublishedSources(
             name='boing', distroseries=hoary)
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
