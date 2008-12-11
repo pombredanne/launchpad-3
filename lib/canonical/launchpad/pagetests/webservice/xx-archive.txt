@@ -1,11 +1,10 @@
 = Archives =
 
 For archives we publish a subset of their attributes.
-This works for PPAs:
 
-    >>> cprov_archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+ppa/default").jsonBody()
     >>> print cprov_archive['self_link']
-    http://.../~cprov/+archive
+    http://.../~cprov/+ppa/default
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
@@ -14,7 +13,7 @@ This works for PPAs:
     name: u'default'
     owner_link: u'http://.../~cprov'
     resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+archive'
+    self_link: u'http://.../~cprov/+ppa/default'
     title: u'PPA for Celso Providelo'
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
