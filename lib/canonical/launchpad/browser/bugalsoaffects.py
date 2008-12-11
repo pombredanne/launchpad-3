@@ -595,8 +595,10 @@ class IAddBugTaskWithUpstreamLinkForm(IAddBugTaskForm):
     check is left to the view, in part so that better error messages
     can be provided.
     """
+    # link_upstream_how must have required=False, since
+    # ProductBugTaskCreationStep doesn't always display a form input for it.
     link_upstream_how = Choice(
-        title=_('How'), required=True,
+        title=_('How'), required=False,
         vocabulary=LinkUpstreamHowOptions,
         default=LinkUpstreamHowOptions.LINK_UPSTREAM,
         description=_("How to link to an upstream bug."))
@@ -620,7 +622,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how', LaunchpadRadioWidget)
+    custom_widget('link_upstream_how', LaunchpadRadioWidget,
+                  _displayItemForMissingValue=False)
     custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
     custom_widget('upstream_email_address_done',
                   StrippedTextWidget, displayWidth=42)
@@ -702,12 +705,12 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         items = widget.renderItems(current_value)
 
         # The items list is returned in the same order as the
-        # self.context.vocabulary.items list. It is important that
-        # IAddBugTaskWithUpstreamLinkForm.link_upstream_how has required=True
+        # widget.vocabulary enumerator. It is important that
+        # link_upstream_how has _displayItemForMissingValue=False
         # so that renderItems() doesn't return an extra radio button which
-        # signifies that no value is selected.
-        return dict((entry.name, items[i])
-                    for i, entry in enumerate(self.context.vocabulary.items))
+        # prevents it from matching widget.vocabulary's ordering.
+        return dict((entry.token, items[i])
+                    for i, entry in enumerate(widget.vocabulary))
 
     def main_action(self, data):
         link_upstream_how = data.get('link_upstream_how')
