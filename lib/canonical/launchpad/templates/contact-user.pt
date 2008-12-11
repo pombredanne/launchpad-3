@@ -11,16 +11,11 @@
 >
   <body>
     <div metal:fill-slot="main">
-      <tal:allowed tal:condition="view/contact_is_allowed">
+      <tal:allowed tal:condition="view/contact_is_possible">
         <div metal:use-macro="context/@@launchpad_form/form">
           <div metal:fill-slot="extra_info">
-            <p>You can send an email message to
-            <tal:person
-             tal:content="context/displayname">Anne Person</tal:person>
-            through Launchpad.  The message will be sent to
-            <tal:person
-             tal:content="context/displayname">Anne Person</tal:person>'s
-            preferred email address (even if hidden), and the <em>From:</em>
+            <p tal:content="view/recipients/description"/>
+            <p>The <em>From:</em>
             field of the received message will include your address as
             specified below.  If you do not want
             <tal:person
@@ -37,6 +32,9 @@
           <tal:next_try
             tal:content="view/next_try/fmt:displaydate">X</tal:next_try>
         </p>
+      </tal:disallowed>
+      <tal:disallowed tal:condition="not:view/has_valid_email_address">
+        <p tal:content="view/recipients/description"/>
       </tal:disallowed>
     </div>
   </body>

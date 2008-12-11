@@ -5077,44 +5077,86 @@ class EmailToPersonView(LaunchpadFormView):
     def label(self):
         return 'Contact ' + self.context.displayname
 
-    @action(_('Send'), name='send')
-    def action_send(self, action, data):
-        """Send an email to the user."""
-        sender_email = data['field.from_'].email
-        subject = data['subject']
-        message = data['message']
+    @cachedproperty
+    def recipients(self):
+        class recipients:
+            description = None
+            email = None
+        # XXX sinzui 2008-12-11: view.user should be the same user.
+        user = getUtility(ILaunchBag).user
         # When the recipient is hiding her email addresses, the security proxy
         # will prevent direct access to the .email attribute of the preferred
         # email.  Bypass this restriction.
-        recipient_email = removeSecurityProxy(self.context.preferredemail)
+        preferredemail = removeSecurityProxy(self.context.preferredemail)
         # recipient_email will be None in the case where we're contacting a
         # team, but that team has no contact address.  In that case, we send a
         # message to each team member individually.
-        if recipient_email is None:
+        if preferredemail is None:
             # It's possible that we're on a person's page and that person has
             # no preferred email address.  This should never happen in
             # practice, but it's possible that old data may not satisfy the
             # constraint that all users must have a preferred email address.
             # Because of that, we don't assert the condition here, we just do
             # nothing but issue an error notice.
-            if not self.context.is_team:
-                self.request.response.addErrorNotification(
-                    _('Your message was not sent because the recipient '
-                      'does not have a preferred email address.'))
-                self.next_url = canonical_url(self.context)
-                return
-            recipients_email = []
-            for person in self.context.allmembers:
-                if not person.is_team and person.preferredemail is not None:
-                    # This is either a team or a person without a preferred
-                    # email, so don't send a notification.
-                    recipients_email.append(
-                        removeSecurityProxy(person.preferredemail).email)
+            recipients.email = []
+            if self.context.is_team:
+                if user.inTeam(self.context):
+                    # XXX sinzui 2008-12-11: replace this loop with a query
+                    # to get teh count
+                    for person in self.context.allmembers:
+                        if (not person.is_team
+                            and person.preferredemail is not None):
+                            # This is either a team or a person without a
+                            # preferred email, so don't send a notification.
+                            naked_email = removeSecurityProxy(
+                                person.preferredemail)
+                            recipients.email.append(naked_email.email)
+                    recipients.description = (
+                        'You will be contacting %d members on the team.'
+                        % len(recipients.email))
+                else:
+                    # A non-member can only send emails to a single person to
+                    # hinder spam and to prevent leaking membership
+                    # information for private teams when the members reply.
+                    owner = self.context.teamowner
+                    while owner.is_team:
+                        owner = owner.teamowner
+                    naked_email = removeSecurityProxy(owner.preferredemail)
+                    recipients.email = [naked_email.email]
+                    recipients.description = (
+                        'Since you are not a member of the team, you will '
+                        'only be allowed to contact the team owner, %s (%s).'
+                        % (owner.displayname, owner.name))
+            if len(recipients.email) == 0:
+                recipients.description = (
+                    '%s (%s) does not have an email address.'
+                    % (self.context.displayname, self.context.name))
         else:
-            recipients_email = [recipient_email.email]
+            recipients.email = [preferredemail.email]
+            recipients.description = (
+                'You will be contacting %s (%s) using their preferred '
+                'email address.'
+                % (self.context.displayname, self.context.name))
+
+        assert recipients.description is not None
+        return recipients
+
+    @action(_('Send'), name='send')
+    def action_send(self, action, data):
+        """Send an email to the user."""
+        sender_email = data['field.from_'].email
+        subject = data['subject']
+        message = data['message']
+
+        if len(self.recipients.email) == 0 and not self.context.is_team:
+            self.request.response.addErrorNotification(
+                _('Your message was not sent because the recipient '
+                  'does not have a preferred email address.'))
+            self.next_url = canonical_url(self.context)
+            return
         try:
             send_direct_contact_email(
-                sender_email, recipients_email, subject, message)
+                sender_email, self.recipients.email, subject, message)
         except QuotaReachedError, error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
@@ -5138,6 +5180,14 @@ class EmailToPersonView(LaunchpadFormView):
     def contact_is_allowed(self):
         """Whether the sender is allowed to send this email or not."""
         return IDirectEmailAuthorization(self.user).is_allowed
+
+    @property
+    def has_valid_email_address(self):
+        return len(self.recipients.email) > 0
+
+    @property
+    def contact_is_possible(self):
+        return self.contact_is_allowed and self.has_valid_email_address
 
     @property
     def next_try(self):
