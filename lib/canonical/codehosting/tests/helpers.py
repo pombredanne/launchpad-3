@@ -21,9 +21,9 @@ import threading
 import unittest
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
+from bzrlib.errors import FileExists
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestCaseWithTransport, TestNotApplicable, TestSkipped
+from bzrlib.tests import TestNotApplicable, TestSkipped
 
 from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
@@ -61,23 +61,6 @@ class AvatarTestCase(TrialTestCase):
                       {'id': 3, 'name': 'test-team'}],
             'initialBranches': [(2, []), (3, [])]
         }
-
-
-def exception_names(exceptions):
-    """Return a list of exception names for the given exception list."""
-    if isinstance(exceptions, tuple):
-        names = []
-        for exc in exceptions:
-            names.extend(exception_names(exc))
-    elif exceptions is TransportNotPossible:
-        # Unfortunately, not all exceptions render themselves as their name.
-        # More cases like this may need to be added
-        names = ["Transport operation not possible"]
-    elif exceptions is PermissionDenied:
-        names = ['Permission denied', 'PermissionDenied']
-    else:
-        names = [exceptions.__name__]
-    return names
 
 
 class LoomTestMixin:

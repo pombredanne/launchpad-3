@@ -430,7 +430,7 @@ class IHWVendorIDSet(Interface):
 VENDOR_ID_DESCRIPTION = u"""Allowed values of the vendor ID depend on the
 bus of the device.
 
-Vendor IDs of PCI, PCCard and USB devices are hexdecimal string
+Vendor IDs of PCI, PCCard and USB devices are hexadecimal string
 representations of 16 bit integers in the format '0x01ab': The prefix
 '0x', followed by exactly 4 digits; where a digit is one of the
 characters 0..9, a..f. The characters A..F are not allowed.
@@ -444,7 +444,7 @@ IDs for other buses may be arbitrary strings.
 PRODUCT_ID_DESCRIPTION = u"""Allowed values of the product ID depend on the
 bus of the device.
 
-Product IDs of PCI, PCCard and USB devices are hexdecimal string
+Product IDs of PCI, PCCard and USB devices are hexadecimal string
 representations of 16 bit integers in the format '0x01ab': The prefix
 '0x', followed by exactly 4 digits; where a digit is one of the
 characters 0..9, a..f. The characters A..F are not allowed.
@@ -609,17 +609,28 @@ class IHWDeviceNameVariantSet(Interface):
 
 class IHWDriver(Interface):
     """Information about a device driver."""
+    export_as_webservice_entry()
 
-    package_name = TextLine(title=u'Package Name', required=False,
-        description=_("The name of the package written without spaces in "
-                      "lowercase letters and numbers."))
+    id = exported(
+        Int(title=u'Driver ID', required=True, readonly=True))
 
-    name = TextLine(title=u'Driver Name', required=True,
-        description=_("The name of the driver written without spaces in "
-                      "lowercase letters and numbers."))
+    package_name = exported(
+        TextLine(
+            title=u'Package Name', required=False,
+            description=_("The name of the package written without spaces in "
+                          "lowercase letters and numbers."),
+            default=u''))
 
-    license = Choice(title=u'License of the Driver',
-                     required=False, vocabulary=License)
+    name = exported(
+        TextLine(
+            title=u'Driver Name', required=True,
+            description=_("The name of the driver written without spaces in "
+                          "lowercase letters and numbers.")))
+
+    license = exported(
+        Choice(
+            title=u'License of the Driver', required=False,
+            vocabulary=License))
 
 
 class IHWDriverSet(Interface):
@@ -651,6 +662,29 @@ class IHWDriverSet(Interface):
         :param license: The license of the driver.
         :return: An IHWDriver instance or None, if no record exists for
             the given parameters.
+        """
+
+    def search(package_name=None, name=None):
+        """Return the drivers matching the given parameters.
+
+        :param package_name: The name of the packages containing the driver.
+            If package_name is not given or None, the result set is
+            not limited to a specific package name.
+            If package_name == '', those records are returned where
+            record.package_name == '' or record.package_name is None.
+            Otherwise only records matching the given name are returned.
+        :param name: The name of the driver.
+            If name is not given or None, the result set is not limited to
+            a specific driver name.
+            Otherwise only records matching the given name are returned.
+        :return: A sequence of IHWDriver instances.
+        """
+
+    def getByID(self, id):
+        """Return an IHWDriver record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWDriver instance.
         """
 
 
@@ -769,4 +803,25 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     @operation_returns_collection_of(IHWDevice)
     @export_read_operation()
     def devices(bus, vendor_id, product_id=None):
-        """Return the set of devices"""
+        """Return the set of devices."""
+
+    @operation_parameters(
+        package_name=TextLine(
+            title=u'The name of the package containing the driver.',
+            required=False,
+            description=
+                u'If package_name is omitted, all driver records '
+                'returned, optionally limited to those matching the '
+                'parameter name. If package_name is '' (empty string), '
+                'those records are returned where package_name is '' or '
+                'None.'),
+        name=TextLine(
+            title=u'The name of the driver.', required=False,
+            description=
+                u'If name is omitted, all driver records are '
+                'returned, optionally limited to those matching the '
+                'parameter package_name.'))
+    @operation_returns_collection_of(IHWDriver)
+    @export_read_operation()
+    def drivers(package_name=None, name=None):
+        """Return the set of drivers."""
