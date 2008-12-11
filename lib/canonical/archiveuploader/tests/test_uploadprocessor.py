@@ -147,7 +147,7 @@ class TestUploadProcessorBase(unittest.TestCase):
                 excName = str(excClass)
             raise self.failureException, "%s not raised" % excName
 
-    def setupBreezy(self):
+    def setupBreezy(self, name="breezy"):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
@@ -155,11 +155,14 @@ class TestUploadProcessorBase(unittest.TestCase):
 
         Also sets 'changeslist' and 'nominatedarchindep' properly and
         creates a chroot for breezy-autotest/i386 distroarchseries.
+
+        :param name: supply the name of the distroseries if you don't want
+            it to be called "breezy"
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
         self.breezy = self.ubuntu.newSeries(
-            'breezy', 'Breezy Badger',
+            name, 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
         breezy_i386 = self.breezy.newArch(
