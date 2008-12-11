@@ -5,8 +5,8 @@ __metaclass__ = type
 import unittest
 from textwrap import dedent
 
-from canonical.launchpad.translationformat.mozilla_xpi_exporter import (
-    PropertiesExporter)
+from canonical.launchpad.translationformat.xpi_properties_exporter import (
+    XpiPropertiesSubExporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     PropertyFile)
 from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
@@ -236,10 +236,10 @@ class MockMessage:
 
 
 class PropertyFileExportTest(unittest.TestCase):
-    """Test XPI `PropertiesExporter`."""
+    """Test XPI `XpiPropertiesSubExporter`."""
 
     def setUp(self):
-        self.exporter = PropertiesExporter()
+        self.exporter = XpiPropertiesSubExporter()
 
     def test_properties_export(self):
         # Test plain export of an XPI properties file.
@@ -254,7 +254,7 @@ class PropertyFileExportTest(unittest.TestCase):
             /* comment */
             id=translation
             """).strip()
-        self.assertEqual(self.exporter(file), expected)
+        self.assertEqual(self.exporter.export(file), expected)
 
     def test_escape(self):
         # Test escaping in properties files.
@@ -271,7 +271,7 @@ class PropertyFileExportTest(unittest.TestCase):
             f\\\\oo=b\\\\ar
             """).strip()
     
-        self.assertEqual(self.exporter(file).strip(), expected)
+        self.assertEqual(self.exporter.export(file).strip(), expected)
 
     def test_escape_comment(self):
         # Test escaping of comments in properties files.  Not fancy like
@@ -285,7 +285,7 @@ class PropertyFileExportTest(unittest.TestCase):
             foo=bar
             """).strip()
 
-        self.assertEqual(self.exporter(file).strip(), expected)
+        self.assertEqual(self.exporter.export(file).strip(), expected)
 
 
 def test_suite():
