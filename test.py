@@ -18,6 +18,7 @@ $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
 import sys, os, time, logging, warnings, re
 
+
 if os.getsid(0) == os.getsid(os.getppid()):
     # We need to become the process group leader so test_on_merge.py
     # can reap its children.
