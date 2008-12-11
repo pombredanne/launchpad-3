@@ -8,9 +8,10 @@ from zope.interface import directlyProvides, directlyProvidedBy
 from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.interfaces.mail import (
-    IWeaklyAuthenticatedPrincipal)
+    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated, IncomingEmailError, parse_commands)
+    ensure_not_weakly_authenticated, get_person_or_team,
+    IncomingEmailError, parse_commands)
 from canonical.launchpad.testing import (
     login_person, TestCase, TestCaseWithFactory)
 from canonical.testing import DatabaseFunctionalLayer
@@ -128,6 +129,49 @@ class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
             "Please go to\n"
             "http://launchpad.dev/~eric/+editpgpkeys to import your key.\n",
             error.message)
+
+
+class TestGetPersonOrTeam(TestCaseWithFactory):
+    """Test the get_person_or_team function."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
+
+    def test_by_name(self):
+        # The user's launchpad name can be used to get them.
+        eric = self.factory.makePerson(name="eric")
+        self.assertEqual(eric, get_person_or_team('eric'))
+
+    def test_by_email(self):
+        # The user's launchpad name can be used to get them.
+        eric = self.factory.makePerson(email="eric@example.com")
+        self.assertEqual(eric, get_person_or_team('eric@example.com'))
+
+    def test_not_found(self):
+        # An unknown user raises an EmailProcessingError.
+        error = self.assertRaises(
+            EmailProcessingError,
+            get_person_or_team,
+            'unknown-user')
+        self.assertEqual(
+            "There's no such person with the specified name or email: "
+            "unknown-user\n", str(error))
+
+    def test_team_by_name(self):
+        # A team can also be gotten by name.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner, name='fooix-devs')
+        self.assertEqual(team, get_person_or_team('fooix-devs'))
+
+    def test_team_by_email(self):
+        # The team's contact email address can also be used to get the team.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=owner, email='fooix-devs@lists.example.com')
+        self.assertEqual(
+            team, get_person_or_team('fooix-devs@lists.example.com'))
 
 
 def test_suite():
