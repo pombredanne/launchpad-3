@@ -283,6 +283,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             if not include_binaries:
                 source_copy.createMissingBuilds()
                 continue
+        else:
+            source_copy = source_in_destination[0]
 
         # Copy missing suitable binaries.
         for binary in source.getBuiltBinaries():
@@ -303,6 +305,10 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
                 binary_copy = binary.copyTo(
                         destination_series, pocket, archive)
                 copies.append(binary_copy)
+
+        # Always ensure the needed builds exist in the copy destination
+        # after copying the binaries.
+        source_copy.createMissingBuilds()
 
     return copies
 

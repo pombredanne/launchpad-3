@@ -443,6 +443,66 @@ class TestCopyPackage(TestCase):
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
         self.assertEqual(len(copied_source.getBuilds()), 0)
 
+    def testCopyCreatesMissingBuilds(self):
+        """Copying source and binaries also create missing builds.
+
+        When source and binaries are copied to a distroseries which supports
+        more architectures than the one where they were built, copy-package
+        should create builds for the new architectures.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        # Ubuntu/warty only supports i386.
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+        active_warty_architectures = [
+            arch.architecturetag for arch in warty.architectures
+            if arch.getChroot()]
+        self.assertEqual(active_warty_architectures, ['i386'])
+
+        # We will create an architecture-specific source and its binaries
+        # for i386 in ubuntu/warty. They will be copied over.
+        ppa_source = test_publisher.getPubSource(
+            sourcename='boing', version='1.0', architecturehintlist='any',
+            distroseries=warty, status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Setup ubuntu/hoary supporting i386 and hppa architetures.
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
+        active_hoary_architectures = [
+            arch.architecturetag for arch in hoary.architectures
+            if arch.getChroot()]
+        self.assertEqual(
+            sorted(active_hoary_architectures), ['hppa', 'i386'])
+
+        copy_helper = self.getCopier(
+            sourcename='boing', include_binaries=True,
+            from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        # Copy the source and the i386 binary from warty to hoary.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
+
+        # The source and the only existing binary were correctly copied.
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary)
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+
+        [copied_binary] = copied_source.getPublishedBinaries()
+        self.assertEqual(
+            copied_binary.displayname, 'foo-bin 1.0 in hoary i386')
+
+        # A new build was created in the hoary context for the *extra*
+        # architecture (hppa).
+        [new_build] = copied_source.getBuilds()
+        self.assertEqual(
+            new_build.title,
+            'hppa build of boing 1.0 in ubuntu hoary RELEASE')
+
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.
 
@@ -922,11 +982,14 @@ class TestCopyPackage(TestCase):
         and security pockets.
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
         cprov = getUtility(IPersonSet).getByName("cprov")
 
+        warty = ubuntu.getSeries('warty')
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
+
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
 
         def create_source(version, archive, pocket):
             source = test_publisher.getPubSource(
