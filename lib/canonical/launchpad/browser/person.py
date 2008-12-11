@@ -2500,7 +2500,10 @@ class PersonView(LaunchpadView, FeedsMixin):
     def contactuser_link_title(self):
         """Return the appropriate +contactuser link title for the tooltip."""
         if self.context.is_team:
-            return 'Send an email to this team through Launchpad'
+            if self.user.inTeam(self.context):
+                return 'Send an email to your team through Launchpad'
+            else:
+                return 'Send an email to this team through Launchpad'
         elif self.viewing_own_page:
             return 'Send an email to yourself through Launchpad'
         else:
@@ -5082,8 +5085,8 @@ class EmailToPersonView(LaunchpadFormView):
         class recipients:
             description = None
             email = None
-        # XXX sinzui 2008-12-11: view.user should be the same user.
-        user = getUtility(ILaunchBag).user
+            def __repr__(self):
+                return "<recipents %s '%s'>" % (self.email, self.description)
         # When the recipient is hiding her email addresses, the security proxy
         # will prevent direct access to the .email attribute of the preferred
         # email.  Bypass this restriction.
@@ -5100,7 +5103,7 @@ class EmailToPersonView(LaunchpadFormView):
             # nothing but issue an error notice.
             recipients.email = []
             if self.context.is_team:
-                if user.inTeam(self.context):
+                if self.user.inTeam(self.context):
                     # XXX sinzui 2008-12-11: replace this loop with a query
                     # to get teh count
                     for person in self.context.allmembers:
@@ -5201,7 +5204,10 @@ class EmailToPersonView(LaunchpadFormView):
     def specific_contact_title_text(self):
         """Return the appropriate pagetitle."""
         if self.context.is_team:
-            return 'Contact this team'
+            if self.user.inTeam(self.context):
+                return 'Contact your team'
+            else:
+                return 'Contact this team'
         elif self.context == self.user:
             return 'Contact yourself'
         else:

@@ -347,30 +347,177 @@ at the head of each table.
     '1 package'
 
 
-== Contacting the person ==
+== Person contacting another person ==
 
-For consistency and testing purposes, the "+contactuser" page is available
-even when someone is looking at their own profile page.  The wording on the
-tooltip is different though.
+The PersonView provides information to make the link to contact a user.
+No Privileges Person can send a message to Sample Person, even though
+Sample Person has hidden his email addresses.
 
     >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(mark, '+index')
+    >>> sample_person.hide_email_addresses
+    True
+
+    >>> view = create_initialized_view(sample_person, '+index')
     >>> print view.contactuser_link_title
     Send an email to this user through Launchpad
+
+The EmailToPersonView provides many properties to the page template
+to explain exactly who is being contacted.
+
+# XXX sinzui 2008-12-11: view.recipients.description is not sane for Person.
+
+    >>> view = create_initialized_view(sample_person, '+contactuser')
+    >>> print view.label
+    Contact Sample Person
+    >>> print view.specific_contact_title_text
+    Contact this user
+    >>> print view.recipients.description
+    You will be contacting Sample Person (name12) using their preferred
+    email address.
+    >>> view.recipients.email
+    [u'test@canonical.com']
+
+The view provides three properties to determine if the user being contacted
+has a valid email address, and if contact is allowed. The is_possible
+property is True when both as_valid_email_address and contact_is_allowed
+is True.
+
+    >>> view.has_valid_email_address
+    True
+    >>> view.contact_is_allowed
+    True
+    >>> view.contact_is_possible
+    True
+
+
+== Person contacting himself ==
+
+For consistency and testing purposes, the "+contactuser" page is available
+even when someone is looking at his own profile page.  The wording on the
+tooltip is different though. No Privileges Person can send a message to
+himself.
 
     >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
     >>> view = create_initialized_view(no_priv, '+index')
     >>> print view.contactuser_link_title
     Send an email to yourself through Launchpad
 
-This is true even when the user is hiding their email addresses.
+The EmailToPersonView provides the explanations of who is being contacted.
 
-    >>> name12 = person_set.getByName('name12')
-    >>> view = create_initialized_view(name12, '+index')
+    >>> view = create_initialized_view(no_priv, '+contactuser')
+    >>> print view.label
+    Contact No Privileges Person
+    >>> print view.specific_contact_title_text
+    Contact yourself
+    >>> print view.recipients.description
+    You will be contacting No Privileges Person (no-priv) using their
+    preferred email address.
+    >>> view.recipients.email
+    [u'no-priv@canonical.com']
+
+And the state of the view shows that No Privileges Person can contact
+himself.
+
+    >>> view.has_valid_email_address
+    True
+    >>> view.contact_is_allowed
+    True
+    >>> view.contact_is_possible
+    True
+
+
+== Non-member contacting a Team ==
+
+Users can contact teams, but the behaviour depends upon whether the
+user is a member of the team. No Privileges Person is not a member of
+the Landscape Developers team.
+
+    >>> view = create_initialized_view(landscape_developers, '+index')
     >>> print view.contactuser_link_title
-    Send an email to this user through Launchpad
+    Send an email to this team through Launchpad
+
+The EmailToPersonView can be used by non-members to contact the
+team owner.
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> print view.label
+    Contact Landscape Developers
+    >>> print view.specific_contact_title_text
+    Contact this team
+    >>> print view.recipients.description
+    Since you are not a member of the team, you will only be allowed to
+    contact the team owner, Sample Person (name12).
+    >>> view.recipients.email
+    [u'test@canonical.com']
+
+The view provides three properties to determine if the user being contacted
+has a valid email address, and if contact is allowed. The is_possible
+property is True when both as_valid_email_address and contact_is_allowed
+is True.
+
+    >>> view.has_valid_email_address
+    True
+    >>> view.contact_is_allowed
+    True
+    >>> view.contact_is_possible
+    True
+
+
+== Member contacting a Team ==
+
+Members can contact their team. How they are contacted depends upon
+whether the team's contact address is set. Sample Person can contact
+his team Landscape developers even though they do not have a contact
+address.
 
     >>> login('test@canonical.com')
-    >>> view = create_initialized_view(name12, '+index')
+    >>> view = create_initialized_view(landscape_developers, '+index')
     >>> print view.contactuser_link_title
-    Send an email to yourself through Launchpad
+    Send an email to your team through Launchpad
+
+The EmailToPersonView can be used by members to contact their team.
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> print view.label
+    Contact Landscape Developers
+    >>> print view.specific_contact_title_text
+    Contact your team
+    >>> print view.recipients.description
+    You will be contacting 2 members on the team.
+    >>> sorted(view.recipients.email)
+    [u'guilherme.salgado@canonical.com', u'test@canonical.com']
+
+The view provides three properties to determine if the user being contacted
+has a valid email address, and if contact is allowed. The is_possible
+property is True when both as_valid_email_address and contact_is_allowed
+is True.
+
+    >>> view.has_valid_email_address
+    True
+    >>> view.contact_is_allowed
+    True
+    >>> view.contact_is_possible
+    True
+
+EmailToPersonView will use the contact address when the team has one.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus, IEmailAddressSet)
+
+    >>> email_address_set = getUtility(IEmailAddressSet)
+    >>> email_address = email_address_set.new(
+    ...     'landscapers@canonical.com',
+    ...     person=landscape_developers,
+    ...     status=EmailAddressStatus.VALIDATED)
+    >>> landscape_developers.setContactAddress(email_address)
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> print view.label
+    Contact Landscape Developers
+    >>> print view.specific_contact_title_text
+    Contact your team
+    >>> print view.recipients.description
+    You will be contacting Landscape Developers (landscape-developers) using
+    their preferred email address.
+    >>> view.recipients.email
+    [u'landscapers@canonical.com']
