@@ -623,6 +623,11 @@ class HWDriverSet:
         result_set = store.find(HWDriver, *args)
         return result_set.order_by(HWDriver.id)
 
+    def getByID(self, id):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDriver, HWDriver.id == id).one()
+
 
 class HWDeviceDriverLink(SQLBase):
     """See `IHWDeviceDriverLink`."""

@@ -1207,6 +1207,22 @@ records.
     u'' something_else
     u'linux-image-generic' foo
 
+HWDriverSet.getByID() returns a HWDriver record with the given database ID.
+
+    >>> driver = driver_set.getByID(1)
+    >>> print driver.id
+    1
+    >>> print driver.package_name
+    linux-image-2.6.24-19-generic
+    >>> print driver.name
+    ehci_hcd
+
+HWDriverSet.getByID() returns None if no record with the passed ID exists.
+
+    >>> driver = driver_set.getByID(1000000)
+    >>> print driver
+    None
+
 
 == HWDeviceDriverLink ==
 

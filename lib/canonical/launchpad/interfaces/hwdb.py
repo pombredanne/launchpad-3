@@ -680,6 +680,13 @@ class IHWDriverSet(Interface):
         :return: A sequence of IHWDriver instances.
         """
 
+    def getByID(self, id):
+        """Return an IHWDriver record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWDriver instance.
+        """
+
 
 class IHWDeviceDriverLink(Interface):
     """Link a device with a driver."""

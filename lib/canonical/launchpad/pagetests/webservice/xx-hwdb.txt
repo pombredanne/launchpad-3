@@ -276,3 +276,29 @@ match both values.
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
+
+Single drivers can be retrieved too.
+
+    >>> pprint_entry(webservice.get('/+hwdb/+driver/1').jsonBody())
+    id: 1
+    license: None
+    name: u'ehci_hcd'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
+
+A 404 error is returned, when a non-existent ID is passed in the URL...
+
+    >>> print webservice.get('/+hwdb/+driver/1000000')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'1000000'
+
+...and when an otherwise invalid ID is passed.
+
+    >>> print webservice.get('/+hwdb/+driver/nonsense')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'nonsense'
