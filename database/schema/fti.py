@@ -382,6 +382,10 @@ def setup(con, configuration=DEFAULT_CONFIG):
         # Any remaining - characters are spurious
         query = query.replace('-','')
 
+        # Remove unpartnered bracket on the left and right
+        query = re.sub(r"(?ux) ^ ( [^(]* ) \)", r"(\1)", query)
+        query = re.sub(r"(?ux) \( ( [^)]* ) $", r"(\1)", query)
+
         # Remove spurious brackets
         query = re.sub(r"(?u)\(([^\&\|]*?)\)", r" \1 ", query)
         ## plpy.debug('5 query is %s' % repr(query))
