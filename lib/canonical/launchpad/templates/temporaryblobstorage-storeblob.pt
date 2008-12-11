@@ -12,19 +12,12 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
-
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Use this form to store a BLOB in Launchpad for a short interval before

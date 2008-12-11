@@ -152,6 +152,7 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 
@@ -169,6 +170,7 @@ class ViewPillar(AuthorizationBase):
         else:
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.launchpad_developers)
                     or user.inTeam(celebrities.admin))
 
 
@@ -1894,6 +1896,7 @@ class ViewEmailAddress(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 
