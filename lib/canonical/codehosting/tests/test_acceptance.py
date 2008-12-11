@@ -633,11 +633,11 @@ def make_smoke_tests(base_suite):
 
 
 def test_suite():
-    base_suite = unittest.makeSuite(AcceptanceTests)
+#    base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
 
-    suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
-    suite.addTest(make_server_tests(
-            unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
-    suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
+#    suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
+#    suite.addTest(make_server_tests(
+#            unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
+#    suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite
