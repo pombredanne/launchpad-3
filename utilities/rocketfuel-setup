@@ -373,7 +373,7 @@ public_branch = bzr+ssh://bazaar.launchpad.net/~${lpusername}/launchpad
 public_branch:policy = appendpath
 smtp_server = smtp.canonical.com:587
 smtp_username = canonical
-smtp_password = figandleaves
+smtp_password = <find me at https://wiki.canonical.com/EmailSetup>
 push_location = lp:~${lpusername}/launchpad
 push_location:policy = appendpath
 review_list = Launchpad Reviews <launchpad-reviews@lists.canonical.com>
@@ -461,6 +461,12 @@ fi
 echo "
 Thank you for using this script. You can improve it for everyone by
 committing changes to LP in utilities/rocketfuel-setup.
+
+Before you can submit branches to PQM, you need to visit:
+https://wiki.canonical.com/EmailSetup
+and find the current SMTP server password and enter it in the appropriate
+place in $HOME/.bazaar/locations.conf
+Alternatively, configure it to use your own SMTP server locally.
 
 You should use the following commands to manage your Rocketfuel:
 
