@@ -714,9 +714,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner, data, comment, filename, content_type=content_type)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
-            attachment_contents=None, force_transfer_encoding=False):
+            attachment_contents=None, force_transfer_encoding=False,
+            email_address=None):
         mail = SignedMessage()
-        mail['From'] = self.getUniqueEmailAddress()
+        if email_address is None:
+            person = self.makePerson()
+            email_address = person.preferredemail.email
+        mail['From'] = email_address
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
