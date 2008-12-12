@@ -5082,11 +5082,16 @@ class EmailToPersonView(LaunchpadFormView):
 
     @cachedproperty
     def recipients(self):
-        class recipients:
-            description = None
-            email = None
+        class Recipients:
+            def __init__(self):
+                self.description = None
+                self.email = None
+                # The To-header should indicate whether the email is intended
+                # for a single person or for a team.
+                self.to_header_name = None
             def __repr__(self):
                 return "<recipents %s '%s'>" % (self.email, self.description)
+        recipients = Recipients()
         # When the recipient is hiding her email addresses, the security proxy
         # will prevent direct access to the .email attribute of the preferred
         # email.  Bypass this restriction.
@@ -5137,13 +5142,26 @@ class EmailToPersonView(LaunchpadFormView):
                     '%s (%s) does not have an email address.'
                     % (self.context.display %name, self.context.name))
         else:
-            # The recipient is a user.
+            # The recipient is a user or team with a preferred email address.
             recipients.email = [preferredemail.email]
             recipients.description = (
                 'You are contacting %s (%s).' %
                 (self.context.displayname, self.context.name))
 
+        if self.context.is_team:
+            if self.user.inTeam(self.context):
+                recipients.to_header_name = '%s team (Launchpad.net)' % (
+                    self.context.displayname)
+            else:
+                recipients.to_header_name = (
+                    'Owner of %s team (Launchpad.net)'
+                    % self.context.displayname)
+        else:
+            recipients.to_header_name = '%s (Launchpad.net)' % (
+                self.context.displayname)
+
         assert recipients.description is not None
+        assert recipients.to_header_name is not None
         return recipients
 
     @action(_('Send'), name='send')
@@ -5153,7 +5171,7 @@ class EmailToPersonView(LaunchpadFormView):
         subject = data['subject']
         message = data['message']
 
-        if len(self.recipients.email) == 0 and not self.context.is_team:
+        if len(self.recipients.email) == 0:
             self.request.response.addErrorNotification(
                 _('Your message was not sent because the recipient '
                   'does not have a preferred email address.'))
@@ -5161,7 +5179,8 @@ class EmailToPersonView(LaunchpadFormView):
             return
         try:
             send_direct_contact_email(
-                sender_email, self.recipients.email, subject, message)
+                sender_email, self.recipients.email,
+                self.recipients.to_header_name, subject, message)
         except QuotaReachedError, error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(

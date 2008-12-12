@@ -369,6 +369,8 @@ to explain exactly who is being contacted.
     Contact Sample Person
     >>> print view.specific_contact_title_text
     Contact this user
+    >>> print view.recipients.to_header_name
+    Sample Person (Launchpad.net)
     >>> print view.recipients.description
     You are contacting Sample Person (name12).
     >>> view.recipients.email
@@ -418,6 +420,8 @@ team owner.
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
     Contact this team
+    >>> print view.recipients.to_header_name
+    Owner of Landscape Developers team (Launchpad.net)
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team
     owner, Sample Person (name12).
@@ -429,7 +433,7 @@ team owner.
 
 Members can contact their team. How they are contacted depends upon
 whether the team's contact address is set. Sample Person can contact
-his team Landscape developers even though they do not have a contact
+his team, Landscape developers, even though they do not have a contact
 address.
 
     >>> login('test@canonical.com')
@@ -444,6 +448,8 @@ The EmailToPersonView can be used by members to contact their team.
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
     Contact your team
+    >>> print view.recipients.to_header_name
+    Landscape Developers team (Launchpad.net)
     >>> print view.recipients.description
     You are contacting 2 members of the Landscape Developers
     (landscape-developers) team directly.
@@ -479,7 +485,7 @@ The EmailToPersonView provides two properties that check that the user
 is_allowed to send emails because he has not exceeded the daily quota. The
 next_try property is the date when the user will be allowed to send emails
 again. The is_possible property is True when both contact_is_allowed and
-as_valid_email_address are True.
+has_valid_email_address are True.
 
     >>> view.contact_is_allowed
     True
@@ -491,7 +497,7 @@ as_valid_email_address are True.
 The EmailToPersonView has_valid_email_address property that is normally
 True, but when the user being contact does not have a valid address,
 the value is False. The contact_is_possible property will also be False
-is valid_email_address False.
+if valid_email_address is False.
 
     >>> view.has_valid_email_address
     True

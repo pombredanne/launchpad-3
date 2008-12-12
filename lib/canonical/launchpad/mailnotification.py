@@ -1885,7 +1885,8 @@ def encode(value):
     return Header(value.encode(charset), charset)
 
 
-def send_direct_contact_email(sender_email, recipients_email, subject, body):
+def send_direct_contact_email(
+    sender_email, recipients_email, to_header_name, subject, body):
     """Send a direct user-to-user email.
 
     :param sender_email: The email address of the sender.
@@ -1926,8 +1927,10 @@ def send_direct_contact_email(sender_email, recipients_email, subject, body):
     additions = [
         u'',
         u'-- ',
-        u'This message was sent by Launchpad via the Contact user/team',
-        u'link on your profile page.  For more information see',
+        u'This message was sent from Launchpad by',
+        u'%s (%s)' % (sender.displayname, canonical_url(sender)),
+        u'using the Contact user/team link on your profile page.',
+        u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ]
     body += u'\n'.join(additions)
@@ -1941,7 +1944,7 @@ def send_direct_contact_email(sender_email, recipients_email, subject, body):
         recipient_name = str(encode(recipient.displayname))
         message = MIMEText(encoded_body, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
-        message['To'] = formataddr((recipient_name, recipient_email))
+        message['To'] = formataddr((to_header_name, recipient_email))
         message['Subject'] = subject_header
         message['Message-ID'] = make_msgid('launchpad')
         message['X-Launchpad-Message-Rationale'] = 'ContactViaWeb'

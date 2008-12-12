@@ -28,13 +28,13 @@ Salgado receives the email message from No Priv.
     >>> len(to_addrs)
     1
     >>> print to_addrs[0]
-    Guilherme Salgado <guilherme.salgado@canonical.com>
+    "Guilherme Salgado \(Launchpad.net\)" <guilherme.salgado@canonical.com>
     >>> print raw_msg
     Content-Type: text/plain; charset="us-ascii"
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
     From: No Privileges Person <no-priv@canonical.com>
-    To: Guilherme Salgado <guilherme.salgado@canonical.com>
+    To: "Guilherme Salgado \(Launchpad.net\)" <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
     Message-ID: ...
     X-Launchpad-Message-Rationale: ContactViaWeb
@@ -49,9 +49,11 @@ Salgado receives the email message from No Priv.
     X-Launchpad-Hash: ...
     <BLANKLINE>
     Just saying hello
-    -- 
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    --
+    This message was sent from Launchpad by
+    No Privileges Person (http://launchpad.dev/~no-priv)
+    using the Contact user/team link on your profile page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 No Priv starts to send another message to Salgado, but then changes her mind.
@@ -91,7 +93,7 @@ alternative addresses.
     MIME-Version: 1.0
     Content-Transfer-Encoding: 7bit
     From: Sample Person <testing@canonical.com>
-    To: Guilherme Salgado <guilherme.salgado@canonical.com>
+    To: "Guilherme Salgado \(Launchpad.net\)" <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
     Message-ID: ...
     X-Launchpad-Message-Rationale: ContactViaWeb
@@ -106,9 +108,11 @@ alternative addresses.
     X-Launchpad-Hash: ...
     <BLANKLINE>
     Hello again
-    -- 
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    --
+    This message was sent from Launchpad by
+    Sample Person (http://launchpad.dev/~name12)
+    using the Contact user/team link on your profile page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 
