@@ -356,7 +356,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
                         num, plural_s, plural_s, itthey,
-                        canonical_url(self.context))))
+                        canonical_url(self.context.translationtarget))))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (

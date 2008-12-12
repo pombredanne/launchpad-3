@@ -547,7 +547,7 @@ class BranchMergeProposal(SQLBase):
             review_type=review_type)
 
     def createCommentFromMessage(self, message, vote, review_type,
-                                 _notify_listeners=True):
+                                 original_email=None, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         # Lower case the review type.
         if review_type is not None:
@@ -568,7 +568,8 @@ class BranchMergeProposal(SQLBase):
             vote_reference.review_type = review_type
             vote_reference.comment = code_review_message
         if _notify_listeners:
-            notify(NewCodeReviewCommentEvent(code_review_message))
+            notify(NewCodeReviewCommentEvent(
+                    code_review_message, original_email))
         return code_review_message
 
 

@@ -84,10 +84,8 @@ class ComponentNotFound(Exception):
     webservice_error(400) #Bad request.
 
 
-class IArchive(IHasOwner):
-    """An Archive interface"""
-    export_as_webservice_entry()
-
+class IArchivePublic(IHasOwner):
+    """An Archive interface for publicly available operations."""
     id = Attribute("The archive ID.")
 
     owner = exported(
@@ -481,6 +479,12 @@ class IArchive(IHasOwner):
         queue for items with 'component'.
         """
 
+    # The following three factory methods are not in the
+    # IArchiveEditRestricted interface because the rights to use them
+    # does not depend on edit permissions to the archive.  The code they
+    # contain does all the necessary security checking and is well
+    # tested in xx-archive.txt and archivepermissions.txt.
+
     @operation_parameters(
         person=Reference(schema=IPerson),
         source_package_name=TextLine(
@@ -590,6 +594,9 @@ class IArchive(IHasOwner):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+
+class IArchiveEditRestricted(Interface):
+    """Archive interface for operations restricted by edit privilege."""
     @operation_parameters(
         source_names=List(
             title=_("Source package names"),
@@ -667,6 +674,10 @@ class IArchive(IHasOwner):
         :raises CannotCopy: if there is a problem copying.
         """
 
+
+class IArchive(IArchivePublic, IArchiveEditRestricted):
+    """Main Archive interface."""
+    export_as_webservice_entry()
 
 
 class IPPA(IArchive):
