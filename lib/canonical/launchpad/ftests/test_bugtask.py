@@ -14,7 +14,8 @@ from canonical.launchpad.ftests.bug import create_old_bug, sync_bugtasks
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugSet, IBugTaskSet, IBugWatchSet, IDistributionSet,
     ILaunchBag, IProductSet, IProjectSet, IUpstreamBugTask)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
@@ -23,7 +24,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
     It also acts as a helper class, which makes related doctests more
     readable, since they can use methods from this class.
     """
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def __init__(self, methodName='runTest', helper_only=False):
         """If helper_only is True, set up it only as a helper class."""
@@ -218,7 +219,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
 
 class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
     """Test `BugTaskSet.findExpirableBugTasks()` behaviour."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Setup the zope interaction and create expirable bugtasks."""
@@ -288,6 +289,43 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
         self.assertRaises(
             AssertionError, self.bugtaskset.findExpirableBugTasks,
             0, self.user, target=[])
+
+
+class BugTaskSetTest(unittest.TestCase):
+    """Test `BugTaskSet` methods."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        login(ANONYMOUS)
+
+    def test_getBugTasks(self):
+        """ IBugTaskSet.getBugTasks() returns a dictionary mapping the given
+        bugs to their bugtasks. It does that in a single query, to avoid
+        hitting the DB again when getting the bugs' tasks.
+        """
+        factory = LaunchpadObjectFactory()
+        bug1 = factory.makeBug()
+        factory.makeBugTask(bug1)
+        bug2 = factory.makeBug()
+        factory.makeBugTask(bug2)
+        factory.makeBugTask(bug2)
+
+        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks(
+            [bug1.id, bug2.id])
+        # The bugtasks returned by getBugTasks() are exactly the same as the
+        # ones returned by bug.bugtasks, obviously.
+        self.failUnlessEqual(
+            set(bugs_and_tasks[bug1]).difference(bug1.bugtasks),
+            set([]))
+        self.failUnlessEqual(
+            set(bugs_and_tasks[bug2]).difference(bug2.bugtasks),
+            set([]))
+
+    def test_getBugTasks_with_empty_list(self):
+        # When given an empty list of bug IDs, getBugTasks() will return an
+        # empty dictionary.
+        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks([])
+        self.failUnlessEqual(bugs_and_tasks, {})
 
 
 def test_suite():
