@@ -152,6 +152,7 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 
@@ -169,6 +170,7 @@ class ViewPillar(AuthorizationBase):
         else:
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.launchpad_developers)
                     or user.inTeam(celebrities.admin))
 
 
@@ -1346,8 +1348,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
 
-        # If it's a PPA only allow its owner.
-        if self.obj.archive.is_ppa:
+        # If it's a PPA or a copy archive only allow its owner.
+        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
             return (self.obj.archive.owner and
                     user.inTeam(self.obj.archive.owner))
 
@@ -1894,6 +1896,7 @@ class ViewEmailAddress(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 

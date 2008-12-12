@@ -9,27 +9,23 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLRelatedJoin, StringCol,
-    SQLObjectNotFound)
+    BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import SQL, Join
 from storm.store import Store
 
+from canonical.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
-
-from canonical.database.sqlbase import (
-    quote, quote_like, SQLBase, sqlvalues, cursor)
-
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.constants import UTC_NOW
-
+from canonical.database.sqlbase import (
+    quote, quote_like, SQLBase, sqlvalues, cursor)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.binarypackagename import (
-    BinaryPackageName)
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
@@ -60,9 +56,7 @@ from canonical.launchpad.database.question import (
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
-from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.database.sourcepackagename import (
-    SourcePackageName)
+from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.structuralsubscription import (
@@ -70,25 +64,45 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.url import urlparse
-
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchivePermissionSet,
-    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
-    ISourcePackageName, IStructuralSubscriptionTarget, MirrorContent,
-    MirrorStatus, NotFoundError, PackagePublishingStatus, PackageUploadStatus,
-    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermissionSet)
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.distribution import (
+    IDistribution, IDistributionSet)
+from canonical.launchpad.interfaces.distributionmirror import (
+    MirrorContent, MirrorStatus)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
+from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.publishing import active_publishing_status
-
-from canonical.archivepublisher.debversion import Version
-
+from canonical.launchpad.interfaces.publishing import (
+    active_publishing_status, PackagePublishingStatus)
+from canonical.launchpad.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageName)
+from canonical.launchpad.interfaces.specification import (
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from canonical.launchpad.interfaces.translationgroup import (
+    TranslationPermission)
 from canonical.launchpad.validators.name import sanitize_name, valid_name
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+from canonical.launchpad.webapp.url import urlparse
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -206,7 +220,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return Archive.select("""
             Distribution = %s AND
-            Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
+            Purpose IN %s""" % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES)
             )
 
     @cachedproperty
@@ -908,7 +922,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
         # be short like "at", both things which users do search for.
-        store = Store.of(self)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,

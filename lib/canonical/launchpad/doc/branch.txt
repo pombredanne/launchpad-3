@@ -78,7 +78,6 @@ registered as an utility.
 
 The 'get' method on the branch set fetches branches by ID.
 
-    >>> factory = LaunchpadObjectFactory()
     >>> branch = factory.makeBranch(name='foobar')
     >>> print branchset.get(branch.id).name
     foobar
@@ -175,7 +174,7 @@ team, however.
     ...     url=None)
     Traceback (most recent call last):
       ...
-    BranchCreationNoTeamOwnedJunkBranches: Cannot create team-owned junk ...
+    BranchCreationNoTeamOwnedJunkBranches: ...
 
 The ~vcs-imports celebrity team is exempt from this restriction to
 allow the creation of code import branches without an associated
@@ -268,7 +267,7 @@ existing branches.
 Now we create a few branches that we pretend were updated in a
 definite order.
 
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> from canonical.launchpad.testing import time_counter
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))

@@ -52,10 +52,23 @@ class CodeReviewCommentView(LaunchpadView):
     # Show comment expanders?
     show_expanders = False
 
+    @cachedproperty
+    def all_attachments(self):
+        return self.context.getAttachments()
 
-class CodeReviewCommentSummary(LaunchpadView):
+    @cachedproperty
+    def display_attachments(self):
+        # Attachments to show.
+        return self.all_attachments[0]
+
+    @cachedproperty
+    def other_attachments(self):
+        # Attachments to not show.
+        return self.all_attachments[1]
+
+
+class CodeReviewCommentSummary(CodeReviewCommentView):
     """Summary view of a CodeReviewComment"""
-    __used_for__ = ICodeReviewComment
 
     # How many lines do we show in the main view?
     SHORT_MESSAGE_LENGTH = 3

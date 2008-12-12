@@ -20,6 +20,8 @@ __all__ = [
     'IDistributionArchive',
     'IPPA',
     'IPPAActivateForm',
+    'MAIN_ARCHIVE_PURPOSES',
+    'ALLOW_RELEASE_BUILDS',
     'PocketNotFound',
     'SourceNotFound',
     ]
@@ -40,7 +42,7 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, webservice_error)
+    operation_returns_collection_of, rename_parameters_as, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -82,10 +84,8 @@ class ComponentNotFound(Exception):
     webservice_error(400) #Bad request.
 
 
-class IArchive(IHasOwner):
-    """An Archive interface"""
-    export_as_webservice_entry()
-
+class IArchivePublic(IHasOwner):
+    """An Archive interface for publicly available operations."""
     id = Attribute("The archive ID.")
 
     owner = exported(
@@ -173,6 +173,8 @@ class IArchive(IHasOwner):
 
     is_ppa = Attribute("True if this archive is a PPA.")
 
+    is_copy = Attribute("True if this archive is a copy archive.")
+
     title = exported(
         Text(title=_("Archive Title."), required=False))
 
@@ -227,6 +229,35 @@ class IArchive(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
+    @rename_parameters_as(name="source_name", distroseries="distro_series")
+    @operation_parameters(
+        name=TextLine(title=_("Source package name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Choice(
+            title=_('Package Publishing Status'),
+            description=_('The status of this publishing record'),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType, 
+            required=False),
+        distroseries=Reference(
+            # Really IDistroSeries, fixed below to avoid circular import.
+            Interface,
+            title=_("Distroseries name"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        exact_match=Bool(
+            title=_("Exact Match"),
+            description=_("Whether or not to filter source names by exact"
+                          " matching."),
+            required=False))
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False):
@@ -448,6 +479,12 @@ class IArchive(IHasOwner):
         queue for items with 'component'.
         """
 
+    # The following three factory methods are not in the
+    # IArchiveEditRestricted interface because the rights to use them
+    # does not depend on edit permissions to the archive.  The code they
+    # contain does all the necessary security checking and is well
+    # tested in xx-archive.txt and archivepermissions.txt.
+
     @operation_parameters(
         person=Reference(schema=IPerson),
         source_package_name=TextLine(
@@ -557,6 +594,9 @@ class IArchive(IHasOwner):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+
+class IArchiveEditRestricted(Interface):
+    """Archive interface for operations restricted by edit privilege."""
     @operation_parameters(
         source_names=List(
             title=_("Source package names"),
@@ -635,6 +675,10 @@ class IArchive(IHasOwner):
         """
 
 
+class IArchive(IArchivePublic, IArchiveEditRestricted):
+    """Main Archive interface."""
+    export_as_webservice_entry()
+
 
 class IPPA(IArchive):
     """Marker interface so traversal works differently for PPAs."""
@@ -684,8 +728,7 @@ class IArchiveEditDependenciesForm(Interface):
     """Schema used to edit dependencies settings within a archive."""
 
     dependency_candidate = Choice(
-        title=_('PPA Dependency'), required=False, vocabulary='PPA',
-        description=_("Add a new PPA dependency."))
+        title=_('Add PPA dependency'), required=False, vocabulary='PPA')
 
 
 class IArchiveSet(Interface):
@@ -724,8 +767,13 @@ class IArchiveSet(Interface):
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
-    def getPPAByDistributionAndOwnerName(distribution, name):
-        """Return a single PPA the given (distribution, name) pair."""
+    def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
+        """Return a single PPA.
+        
+        :param distribution: The context IDistribution.
+        :param person_name: The context IPerson.
+        :param ppa_name: The name of the archive (PPA)
+        """
 
     def getByDistroPurpose(distribution, purpose, name=None):
         """Return the IArchive with the given distribution and purpose.
@@ -827,6 +875,17 @@ class ArchivePurpose(DBEnumeratedType):
         """)
 
 
+MAIN_ARCHIVE_PURPOSES = (
+    ArchivePurpose.PRIMARY,
+    ArchivePurpose.PARTNER,
+    )
+
+ALLOW_RELEASE_BUILDS = (
+    ArchivePurpose.PARTNER,
+    ArchivePurpose.PPA,
+    ArchivePurpose.COPY,
+    )
+
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -864,6 +923,23 @@ IArchive['syncSources'].queryTaggedValue(
 IArchive['syncSource'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['from_archive'].schema = IArchive
+
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.publishing import (
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus)
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['distroseries'].schema = IDistroSeries
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = ISourcePackagePublishingHistory
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['status'].vocabulary = PackagePublishingStatus
+IArchive['getPublishedSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
 
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.

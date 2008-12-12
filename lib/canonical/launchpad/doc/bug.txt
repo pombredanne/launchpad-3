@@ -726,6 +726,20 @@ Editing the external bug watch.
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
+Adding a comment imported from an external bugtracker.
+
+    >>> remote_comment = firefox_bug.newMessage(
+    ...     owner=current_user(),
+    ...     subject="blah blah blah again",
+    ...     content="blah blah blah blah remotely",
+    ...     bugwatch=bugwatch,
+    ...     remote_comment_id='blah'
+    ...     )
+
+    >>> imported_message = bugwatch.getImportedBugMessages()[0]
+    >>> print imported_message.message.text_contents
+    blah blah blah blah remotely
+
 Subscribing and unsubscribing does *not* trigger an update of
 IBug.date_last_updated.
 
@@ -963,8 +977,6 @@ Users can mark bugs as affecting or not affecting them. For each bug we
 then keep a count of the number of users affected by it, as well as the
 number of users not affected by it.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> test_bug = factory.makeBug()
     >>> affected_user = factory.makePerson()
     >>> unaffected_user = factory.makePerson()

@@ -13,6 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.locals import Join
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
@@ -80,8 +81,7 @@ class Archive(SQLBase):
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
-            assert self.purpose == ArchivePurpose.COPY, (
-                "Only COPY archives can be renamed.")
+            assert self.is_copy, "Only COPY archives can be renamed."
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
@@ -156,6 +156,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.PPA
 
     @property
+    def is_copy(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.COPY
+
+    @property
     def title(self):
         """See `IArchive`."""
         if self.is_ppa:
@@ -163,7 +168,16 @@ class Archive(SQLBase):
             if self.private:
                 title = "Private %s" % title
             return title
-        return '%s for %s' % (self.purpose.title, self.distribution.title)
+        elif self.is_copy:
+            if self.private:
+                title = ("Private copy archive %s for %s" %
+                         (self.name, self.owner.displayname))
+            else:
+                title = ("Copy archive %s for %s" %
+                         (self.name, self.owner.displayname))
+            return title
+        else:
+            return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
     def series_with_sources(self):
@@ -215,14 +229,16 @@ class Archive(SQLBase):
             else:
                 url = config.personalpackagearchive.base_url
             return urlappend(
-                url, self.owner.name + '/' + self.distribution.name)
+                url, "/".join(
+                    (self.owner.name, self.name, self.distribution.name)))
 
         try:
             postfix = archive_postfixes[self.purpose]
         except KeyError:
-            raise AssertionError("archive_url unknown for purpose: %s" %
-                self.purpose)
-        return urlappend(config.archivepublisher.base_url,
+            raise AssertionError(
+                "archive_url unknown for purpose: %s" % self.purpose)
+        return urlappend(
+            config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
     def getPubConfig(self):
@@ -238,7 +254,8 @@ class Archive(SQLBase):
             else:
                 pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
-                pubconf.distroroot, self.owner.name, self.distribution.name)
+                pubconf.distroroot, self.owner.name, self.name,
+                self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
@@ -601,6 +618,7 @@ class Archive(SQLBase):
     def allowUpdatesToReleasePocket(self):
         """See `IArchive`."""
         purposeToPermissionMap = {
+            ArchivePurpose.COPY : True,
             ArchivePurpose.PARTNER : True,
             ArchivePurpose.PPA : True,
             ArchivePurpose.PRIMARY : False,
@@ -741,6 +759,7 @@ class Archive(SQLBase):
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
+        assert not self.is_copy, "Uploads to copy archives are not allowed."
         if self.is_ppa:
             return user.inTeam(self.owner)
         else:
@@ -945,14 +964,17 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
 
-    def getPPAByDistributionAndOwnerName(self, distribution, name):
+    def getPPAByDistributionAndOwnerName(self, distribution, person_name,
+                                         ppa_name):
         """See `IArchiveSet`"""
         query = """
             Archive.purpose = %s AND
             Archive.distribution = %s AND
             Person.id = Archive.owner AND
+            Archive.name = %s AND
             Person.name = %s
-        """ % sqlvalues(ArchivePurpose.PPA, distribution, name)
+        """ % sqlvalues(
+                ArchivePurpose.PPA, distribution, ppa_name, person_name)
 
         return Archive.selectOne(query, clauseTables=['Person'])
 
@@ -1008,6 +1030,8 @@ class ArchiveSet:
     def new(self, purpose, owner, name=None, distribution=None,
             description=None):
         """See `IArchiveSet`."""
+        # XXX, al-maisan, 2008-11-19, bug #299856: copy archives are to be
+        # created with the "publish" flag turned off.
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
@@ -1071,13 +1095,17 @@ class ArchiveSet:
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(
+        origin = (
+            Archive,
+            Join(SourcePackagePublishingHistory,
+                 SourcePackagePublishingHistory.archive == Archive.id),)
+        results = store.using(*origin).find(
             Archive,
             Archive.signing_key == None,
             Archive.purpose == ArchivePurpose.PPA,
             Archive.enabled == True)
         results.order_by(Archive.date_created)
-        return results
+        return results.config(distinct=True)
 
     def getLatestPPASourcePublicationsForDistribution(self, distribution):
         """See `IArchiveSet`."""

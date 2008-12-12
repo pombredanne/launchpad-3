@@ -7,8 +7,11 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet)
 from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -17,10 +20,33 @@ class TestPackageLocation(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def getPackageLocation(self, distribution_name='ubuntu', suite=None,
-                           purpose=None, person_name=None):
+                           purpose=None, person_name=None, ppa_name=None):
         """Use a helper method to setup a `PackageLocation` object."""
         return build_package_location(
-            distribution_name, suite, purpose, person_name)
+            distribution_name, suite, purpose, person_name, ppa_name)
+
+    def testSetupLocationForCOPY(self):
+        """`PackageLocation` for COPY archives."""
+        location = self.getPackageLocation()
+
+        # The copy archive in the sample data is associated with the
+        # 'ubuntutest' distribution.
+        location.distribution = getUtility(
+            IDistributionSet).getByName('ubuntutest')
+        # Set a distroseries that's valid for the 'ubuntutest' distribution.
+        location.distroseries = location.distribution['hoary-test']
+        # Now get the sample copy archive.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        copy_archive = getUtility(IArchiveSet).new(
+            owner=sabdfl, purpose=ArchivePurpose.COPY,
+            distribution=ubuntu, name='now-comes-the-mystery')
+        self.assertTrue(copy_archive is not None)
+        location.archive = copy_archive
+        # Make sure the string representation shows both the copy archive
+        # owner name as well as the archive's name.
+        self.assertEqual(
+            str(location), 'sabdfl/now-comes-the-mystery: hoary-test-RELEASE')
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""
@@ -34,7 +60,8 @@ class TestPackageLocation(unittest.TestCase):
     def testSetupLocationForPPA(self):
         """`PackageLocation` for PPA archives."""
         location = self.getPackageLocation(purpose=ArchivePurpose.PPA,
-                                           person_name='cprov')
+                                           person_name='cprov',
+                                           ppa_name="default")
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -70,7 +97,8 @@ class TestPackageLocation(unittest.TestCase):
             PackageLocationError,
             self.getPackageLocation,
             purpose=ArchivePurpose.PPA,
-            person_name='beeblebrox')
+            person_name='beeblebrox',
+            ppa_name="default")
 
     def testSetupLocationUnknownPPA(self):
         """`PackageLocationError` is raised on unknown PPA."""
@@ -78,7 +106,8 @@ class TestPackageLocation(unittest.TestCase):
             PackageLocationError,
             self.getPackageLocation,
             purpose=ArchivePurpose.PPA,
-            person_name='kiko')
+            person_name='kiko',
+            ppa_name="default")
 
     def testSetupLocationPPANotMatchingDistribution(self):
         """`PackageLocationError` is raised when PPA does not match the
@@ -88,7 +117,8 @@ class TestPackageLocation(unittest.TestCase):
             self.getPackageLocation,
             distribution_name='ubuntutest',
             purpose=ArchivePurpose.PPA,
-            person_name='cprov')
+            person_name='cprov',
+            ppa_name="default")
 
     def testComparison(self):
         """Check if PackageLocation objects can be compared."""
@@ -124,7 +154,7 @@ class TestPackageLocation(unittest.TestCase):
 
         location_cprov_ppa = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PPA,
-            person_name='cprov')
+            person_name='cprov', ppa_name="default")
         self.assertNotEqual(location_cprov_ppa, location_ubuntutest)
 
         location_ubuntu_partner = self.getPackageLocation(
@@ -157,7 +187,7 @@ class TestPackageLocation(unittest.TestCase):
 
         location_cprov_ppa = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PPA,
-            person_name='cprov')
+            person_name='cprov', ppa_name="default")
         self.assertEqual(
             str(location_cprov_ppa),
             'cprov: hoary-RELEASE')

@@ -163,14 +163,14 @@
               href="/distros">distribution registered in Launchpad</a>, you should file the bug
               against that specific distribution. 
 
-              <tal:comment replace="nothing">
-                <!-- XXX: Graham Binns 2007-07-12 bug=125574: 
-                     The formatting of this next paragraph seems a little 
-                     odd when seen in the context of a product that does not
-                     use Malone and does not specify another bug tracker.
-                     For an example of this, see
-                     http://bugs.launchpad.dev/thunderbird/+filebug. -->
-              </tal:comment>
+              <tal:XXX condition="nothing">
+                # XXX: Graham Binns 2007-07-12 bug=125574:
+                # The formatting of this next paragraph seems a little
+                # odd when seen in the context of a product that does not
+                # use Malone and does not specify another bug tracker.
+                # For an example of this, see
+                # http://bugs.launchpad.dev/thunderbird/+filebug.
+              </tal:XXX>
               <p class="helpwanted message">Launchpad doesn't know of
               any distribution packages that include upstream <span
               tal:replace="product_or_distro/displayname" />. You can
@@ -205,12 +205,12 @@
 
           </ul>
 
-          <tal:comment replace="nothing">
-            <!-- XXX: kiko 2007-03-14: 
-                 We shouldn't be using feedback@launchpad.net, but we have
-                 no way of allowing people to go around changing product
-                 bugtracker details, so for now it will have to do. -->
-          </tal:comment>
+          <tal:XXX condition="nothing">
+            # XXX: kiko 2007-03-14:
+            # We shouldn't be using feedback@launchpad.net, but we have no
+            # way of allowing people to go around changing product bugtracker
+            # details, so for now it will have to do.
+          </tal:XXX>
           <p tal:condition="not: bugtracker" class="helpwanted message">
               Launchpad doesn't know what bug tracker <span
               tal:replace="product_or_distro/displayname">Alsa Utils</span>

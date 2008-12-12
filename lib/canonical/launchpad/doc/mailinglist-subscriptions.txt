@@ -13,8 +13,6 @@ people, a team and its team mailing list.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email)
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> anne = factory.makePersonByName('Anne')
 
 Anne gets two email addresses.  One is her preferred address...

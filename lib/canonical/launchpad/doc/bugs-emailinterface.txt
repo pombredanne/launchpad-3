@@ -64,10 +64,8 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
-    >>> factory = LaunchpadObjectFactory()
     >>> def process_email(raw_mail):
     ...     msg = email.message_from_string(raw_mail, _class=MockSignedMessage)
     ...     if not msg.has_key('Message-Id'):
@@ -1824,7 +1822,7 @@ The sent message contains two parts:
 The first part is the error message, explaining what went wrong.
 
     >>> print failure_msg.get_payload(decode=True)
-    An error occurred while processing a mail you sent to Malone's email
+    An error occurred while processing a mail you sent to Launchpad's email
     interface.
     <BLANKLINE>
     Failing command:
@@ -1835,8 +1833,8 @@ The first part is the error message, explaining what went wrong.
     Some error message.
     <BLANKLINE>
     --
-    For more information about using Malone by e-mail, see
-    https://help.launchpad.net/BugTrackerEmailInterface
+    For more information about using Launchpad by e-mail, see
+    https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 
 The second part is the message that the user sent, which caused the
@@ -1965,7 +1963,7 @@ failure in an email.
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
     >>> print failure_msg.get_payload(decode=True)
-    An error occurred while processing a mail you sent to Malone's email
+    An error occurred while processing a mail you sent to Launchpad's email
     interface.
     <BLANKLINE>
     Failing command:
@@ -1976,8 +1974,8 @@ failure in an email.
     There's no such person with the specified name or email: nonexistentuser
     <BLANKLINE>
     --
-    For more information about using Malone by e-mail, see
-    https://help.launchpad.net/BugTrackerEmailInterface
+    For more information about using Launchpad by e-mail, see
+    https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 
 We send another email to the same bug, selecting the same bug task. The
@@ -2013,7 +2011,7 @@ And the sender receives an email to let them know about the failing
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
     >>> print failure_msg.get_payload(decode=True)
-    An error occurred while processing a mail you sent to Malone's email
+    An error occurred while processing a mail you sent to Launchpad's email
     interface.
     <BLANKLINE>
     Failing command:
@@ -2028,8 +2026,8 @@ And the sender receives an email to let them know about the failing
         security yes
     <BLANKLINE>
     --
-    For more information about using Malone by e-mail, see
-    https://help.launchpad.net/BugTrackerEmailInterface
+    For more information about using Launchpad by e-mail, see
+    https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 
 
