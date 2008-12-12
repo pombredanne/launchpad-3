@@ -6,11 +6,12 @@
 
   <!-- Archive -->
   <class class="canonical.launchpad.database.Archive">
-    <allow interface="canonical.launchpad.interfaces.IArchive"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.archive.IArchivePublic"/>
     <require
       permission="launchpad.Edit"
       set_attributes="description whiteboard"
+      interface="canonical.launchpad.interfaces.archive.IArchiveEditRestricted"
       />
     <require
       permission="launchpad.Admin"
