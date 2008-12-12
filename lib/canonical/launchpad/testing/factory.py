@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 from email.Encoders import encode_base64
 from email.Utils import make_msgid, formatdate
 from email.Message import Message as EmailMessage
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 
@@ -453,7 +455,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
-                                product=None, review_diff=None):
+                                product=None, review_diff=None,
+                                initial_comment=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
@@ -467,7 +470,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch,
-            review_diff=review_diff)
+            review_diff=review_diff, initial_comment=initial_comment)
 
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
@@ -1104,3 +1107,37 @@ class LaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
+
+    def makeEmailMessage(self, body=None, sender=None, to=None,
+                         attachments=None):
+        """Make an email message with possible attachments.
+
+        :param attachments: Should be an interable of tuples containing
+           (filename, content-type, payload)
+        """
+        if sender is None:
+            sender = self.makePerson()
+        if body is None:
+            body = self.getUniqueString('body')
+        if to is None:
+            to = self.getUniqueEmailAddress()
+
+        msg = MIMEMultipart()
+        msg['Message-Id'] = make_msgid('launchpad')
+        msg['Date'] = formatdate()
+        msg['To'] = to
+        msg['From'] = sender.preferredemail.email
+        msg['Subject'] = 'Sample'
+
+        if attachments is None:
+            msg.set_payload(body)
+        else:
+            msg.attach(MIMEText(body))
+            for filename, content_type, payload in attachments:
+                attachment = EmailMessage()
+                attachment.set_payload(payload)
+                attachment['Content-Type'] = content_type
+                attachment['Content-Disposition'] = (
+                    'attachment; filename="%s"' % filename)
+                msg.attach(attachment)
+        return msg

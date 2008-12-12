@@ -267,7 +267,7 @@ class CodeHandler:
                 filealias=file_alias,
                 parsed_message=mail)
             comment = merge_proposal.createCommentFromMessage(
-                message, context.vote, context.vote_tags)
+                message, context.vote, context.vote_tags, mail)
 
         except IncomingEmailError, error:
             send_process_error_notification(
