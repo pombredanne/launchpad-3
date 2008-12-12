@@ -53,7 +53,7 @@ class CodeReviewCommentMailer(BMPMailer):
                     self.attachments.append(part)
 
     @classmethod
-    def forCreation(klass, code_review_comment, original_email):
+    def forCreation(klass, code_review_comment, original_email=None):
         """Return a mailer for CodeReviewComment creation."""
         merge_proposal = code_review_comment.branch_merge_proposal
         recipients = merge_proposal.getNotificationRecipients(
