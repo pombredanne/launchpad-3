@@ -445,7 +445,14 @@ class TestCopyPackage(TestCase):
         self.assertEqual(len(copied_source.getBuilds()), 0)
 
     def _setupArchitectureGrowingScenario(self, architecturehintlist="all"):
-        """  """
+        """Prepare distroseries with different sets of architectures.
+
+        Ubuntu/warty has i386 and hppa, but only i386 is supported.
+        Ubuntu/hoary has i386 and hppa and both are supported.
+
+        Also create source and binary(ies) publication set called 'boing'
+        according to the given 'architecturehintlist'.
+        """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
         # Ubuntu/warty only supports i386.
