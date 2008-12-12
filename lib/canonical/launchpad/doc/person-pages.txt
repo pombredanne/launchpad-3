@@ -468,12 +468,37 @@ EmailToPersonView will use the contact address when the team has one.
     >>> print view.specific_contact_title_text
     Contact your team
     >>> print view.recipients.description
-    You are contacting Landscape Developers (landscape-developers).
+    You are contacting the Landscape Developers (landscape-developers) team.
     >>> view.recipients.email
     [u'landscapers@canonical.com']
 
 
 == Contact this user/team quotas and valid addresses ==
+
+The EmailToPersonView has_valid_email_address property is normally
+True. The is_possible property is True when both contact_is_allowed and
+as_valid_email_address are both True.
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> view.has_valid_email_address
+    True
+    >>> view.contact_is_possible
+    True
+
+But when the user being contact does not have a valid address, the value
+is False. The contact_is_possible property will also be False when
+valid_email_address False. Users cannot hack the URL of non-active users
+to send them emails.
+
+    >>> nonactive_user = person_set.getByName('nsv')
+    >>> nonactive_user.account.status
+    <DBItem AccountStatus.NOACCOUNT, ...>
+
+    >>> view = create_initialized_view(nonactive_user, '+contactuser')
+    >>> view.has_valid_email_address
+    False
+    >>> view.contact_is_possible
+    False
 
 The EmailToPersonView provides two properties that check that the user
 is_allowed to send emails because he has not exceeded the daily quota. The
@@ -481,6 +506,7 @@ next_try property is the date when the user will be allowed to send emails
 again. The is_possible property is True when both contact_is_allowed and
 as_valid_email_address are True.
 
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
     >>> view.contact_is_allowed
     True
     >>> view.next_try
@@ -488,12 +514,4 @@ as_valid_email_address are True.
     >>> view.contact_is_possible
     True
 
-The EmailToPersonView has_valid_email_address property that is normally
-True, but when the user being contact does not have a valid address,
-the value is False. The contact_is_possible property will also be False
-is valid_email_address False.
 
-    >>> view.has_valid_email_address
-    True
-    >>> view.contact_is_possible
-    True
