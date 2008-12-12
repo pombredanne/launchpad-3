@@ -13,6 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.store import Store
 from storm.locals import Join
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -24,6 +25,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.distributionsourcepackagecache import (
@@ -53,6 +55,8 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.interfaces.sourcepackagename import (
@@ -868,6 +872,24 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def requestPackageCopy(self, target_location, requestor, suite=None,
+        copy_binaries=False, reason=None):
+        """See `IArchive`."""
+        if suite is None:
+            distroseries = self.distribution.currentseries
+            pocket = PackagePublishingPocket.RELEASE
+        else:
+            # Note: a NotFoundError will be raised if it is not found.
+            distroseries, pocket = self.distribution.getDistroSeriesAndPocket(
+                suite)
+
+        source_location = PackageLocation(self, self.distribution,
+                                          distroseries, pocket)
+
+        return getUtility(IPackageCopyRequestSet).new(
+            source_location, target_location, requestor, copy_binaries,
+            reason)
+
     def syncSources(self, source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
@@ -1186,3 +1208,26 @@ class ArchiveSet:
                     status_and_counters[key] += status_counter
 
         return status_and_counters
+
+    def getArchivesForDistribution(self, distribution, name=None,
+        purposes=None):
+        """See `IArchiveSet`."""
+        extra_exprs = []
+
+        # If a single purpose is passed in, convert it into a tuple,
+        # otherwise assume a list was passed in.
+        if purposes in ArchivePurpose:
+            purposes = (purposes,)
+
+        if purposes:
+            extra_exprs.append(Archive.purpose.is_in(purposes))
+
+        if name is not None:
+            extra_exprs.append(Archive.name == name)
+
+        query = Store.of(distribution).find(
+            Archive,
+            Archive.distribution == distribution,
+            *extra_exprs)
+
+        return query

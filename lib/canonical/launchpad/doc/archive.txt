@@ -1091,6 +1091,37 @@ Then a lookup on Celso's PPA will find it.
     True
 
 
+== Creating a package copy request from an IArchive ==
+
+The IArchive interface includes a convenience method for creating a
+package copy request:
+
+    >>> requestor = factory.makePerson(name='me-copy')
+    >>> target = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...     name='my-copy-archive')
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor)
+    >>> print pcr
+    Package copy request
+    source = primary/hoary/-/RELEASE
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
+The requestPackageCopy method can also take an optional suite name:
+
+    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
+    ...     target, requestor, suite="hoary-updates");
+    >>> print package_copy_request
+    Package copy request
+    source = primary/hoary/-/UPDATES
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other
@@ -1241,7 +1272,7 @@ including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    15
+    16
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
@@ -1554,6 +1585,75 @@ archive.
     pending    0
     succeeded  1
     total      1
+
+
+== A general way to get specific archives for a distribution ==
+
+IArchiveSet also includes the helper method `getArchivesForDistribution`
+which can be used to get archives of a specific purpose(s) for a distribution
+(note: the sample data currently contains one copy archive for ubuntu, and
+one has been created above):
+
+First create a function to print the names of a set of archives:
+
+    >>> def print_archive_names(archives):
+    ...     names = [archive.name for archive in archives]
+    ...     names.sort()
+    ...     for name in names:
+    ...         print name
+
+    >>> archive_set = getUtility(IArchiveSet)
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.COPY)
+    >>> print_archive_names(ubuntu_copy_archives)
+    my-copy-archive
+    there-we-go
+
+
+The method `getArchivesForDistribution` can also be used with multiple
+purposes. First we'll check how many partner archives are in the DB:
+
+    >>> partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.PARTNER)
+    >>> print_archive_names(partner_archives)
+    partner
+
+And then use `getArchivesForDistribution` to get all copy and partner
+archives:
+    >>> copy_n_partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
+    >>> print_archive_names(copy_n_partner_archives)
+    my-copy-archive
+    partner
+    there-we-go
+
+After we create three copy archives for ubuntu, the
+`getArchivesForDistribution` finds the relevant COPY archives:
+
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="ultimate-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="fine-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="copy-r-us")
+
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY])
+    >>> print_archive_names(ubuntu_copy_archives)
+    copy-r-us
+    fine-copy
+    my-copy-archive
+    there-we-go
+    ultimate-copy
+
+
+The `getArchivesForDistribution` method can also be used to get an
+archive using an archive name:
+
+    >>> primary_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, name='primary')
+    >>> print_archive_names(primary_archives)
+    primary
 
 
 == Archive Permission Checking ==
