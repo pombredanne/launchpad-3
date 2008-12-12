@@ -7,31 +7,11 @@
   <!-- Archive -->
   <class class="canonical.launchpad.database.Archive">
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
-    <allow
-      attributes="id owner name description enabled publish private
-                  require_virtualized authorized_size whiteboard purpose
-                  buildd_secret sources_cached binaries_cached
-                  package_description_cache distribution signing_key
-                  dependencies expanded_archive_dependencies archive_url
-                  is_ppa is_copy title series_with_sources number_of_sources
-                  number_of_binaries sources_size binaries_size estimated_size
-                  total_count pending_count succeeded_count building_count
-                  failed_count date_created getPubConfig getPublishedSources
-                  getSourcesForDeletion getPublishedOnDiskBinaries
-                  getAllPublishedBinaries allowUpdatesToReleasePocket
-                  updateArchiveCache findDepCandidateByName
-                  getArchiveDependency removeArchiveDependency
-                  addArchiveDependency getPermissions getPermissionsForPerson
-                  getUploadersForPackage getUploadersForComponent
-                  getQueueAdminsForComponent getComponentsForQueueAdmin
-                  canUpload canAdministerQueue newPackageUploader
-                  newComponentUploader newQueueAdmin deletePackageUploader
-                  deleteComponentUploader deleteQueueAdmin getFileByName"
-      />
+    <allow interface="canonical.launchpad.interfaces.archive.IArchivePublic"/>
     <require
       permission="launchpad.Edit"
       set_attributes="description whiteboard"
-      attributes="syncSource syncSources"
+      interface="canonical.launchpad.interfaces.archive.IArchiveEditRestricted"
       />
     <require
       permission="launchpad.Admin"
