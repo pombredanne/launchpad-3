@@ -192,6 +192,12 @@
           did not return any results.
         </p>
 
+        <p id="no-page-service" tal:condition="not: view/has_page_service">
+          The page search service was not available when this search was
+          performed. <a tal:attributes="href view/url">Search again</a>
+          to see the matching pages.
+        </p>
+
       </tal:wants-results>
  
       <div id="no-search" tal:condition="not:view/text">
