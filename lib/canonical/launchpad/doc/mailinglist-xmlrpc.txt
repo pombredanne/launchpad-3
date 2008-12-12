@@ -23,8 +23,8 @@ Mailing lists are always tied -- one-to-one -- to teams.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, MailingListStatus)
-    >>> personset = getUtility(IPersonSet)
-    >>> no_priv = personset.getByName('no-priv')
+    >>> person_set = getUtility(IPersonSet)
+    >>> no_priv = person_set.getByName('no-priv')
     >>> team_one = factory.makeTeam(no_priv, name='team-one')
     >>> team_two = factory.makeTeam(no_priv, name='team-two')
     >>> commit()
@@ -49,7 +49,7 @@ the lists with a custom welcome message.
 A mailing list in the REGISTERED state must be reviewed and approved by a
 Launchpad administrator before Mailman will be told to create it.
 
-    >>> carlos = personset.getByName('carlos')
+    >>> carlos = person_set.getByName('carlos')
     >>> list_one.review(carlos, MailingListStatus.APPROVED)
     >>> list_two.review(carlos, MailingListStatus.APPROVED)
     >>> commit()
@@ -142,8 +142,8 @@ Let's create another team mailing list and request its deactivation, to show
 what happens if a deactivation fails.  First, set things up behind the
 scenes.
 
-    >>> ddaa = personset.getByName('ddaa')
-    >>> team_three = personset.newTeam(ddaa, 'team-three', 'Team Three')
+    >>> ddaa = person_set.getByName('ddaa')
+    >>> team_three = person_set.newTeam(ddaa, 'team-three', 'Team Three')
     >>> list_three = list_set.new(team_three)
     >>> list_three.review(carlos, MailingListStatus.APPROVED)
     >>> commit()
@@ -189,10 +189,10 @@ supported is changing the list's welcome message.  Because deactivated and
 failed mailing lists cannot be re-activated without manual intervention, let's
 create a couple more teams and mailing lists.
 
-    >>> team_four = personset.newTeam(ddaa, 'team-four', 'Team Four')
+    >>> team_four = person_set.newTeam(ddaa, 'team-four', 'Team Four')
     >>> list_four = list_set.new(team_four)
     >>> list_four.review(carlos, MailingListStatus.APPROVED)
-    >>> team_five = personset.newTeam(ddaa, 'team-five', 'Team Five')
+    >>> team_five = person_set.newTeam(ddaa, 'team-five', 'Team Five')
     >>> list_five = list_set.new(team_five)
     >>> list_five.review(carlos, MailingListStatus.APPROVED)
     >>> commit()
@@ -362,13 +362,20 @@ list archive is allowed.
     True
 
     >>> from canonical.launchpad.interfaces.person import PersonVisibility
-    >>> team_public = factory.makeTeam(
+    >>> team_not_public = factory.makeTeam(
     ...     no_priv, name='team-not-public',
     ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
     >>> mailinglist_api.isTeamPublic('team-not-public')
     False
 
-If there is not team with the given name, an error is raised.
+    # If the visibility of a public team is changed to anything other than
+    # public, it's not report as public anymore, just like if it were not
+    # public since its creation.
+    >>> team_public.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> mailinglist_api.isTeamPublic('team-public')
+    False
+
+If there is no team with the given name, an error is raised.
 
     >>> mailinglist_api.isTeamPublic('team-non-existent')
     Traceback (most recent call last):
