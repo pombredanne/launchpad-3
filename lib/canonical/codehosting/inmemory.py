@@ -14,7 +14,8 @@ from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
-from canonical.launchpad.interfaces.branch import BranchType, IBranch
+from canonical.launchpad.interfaces.branch import (
+    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
     PERMISSION_DENIED_FAULT_CODE)
@@ -440,7 +441,8 @@ class FakeBranchFilesystem:
             if owner.isTeam():
                 return Fault(
                     PERMISSION_DENIED_FAULT_CODE,
-                    'Cannot create team-owned junk branches.')
+                    BranchCreationNoTeamOwnedJunkBranches.error_message)
+            product = None
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
             if product is None:

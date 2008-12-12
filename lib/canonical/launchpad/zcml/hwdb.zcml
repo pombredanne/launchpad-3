@@ -152,8 +152,13 @@
     <class class="canonical.launchpad.database.HWDriver">
         <allow
             interface="canonical.launchpad.interfaces.IHWDriver" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDriver"
+        path_expression="string:+driver/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWDriverSet"
