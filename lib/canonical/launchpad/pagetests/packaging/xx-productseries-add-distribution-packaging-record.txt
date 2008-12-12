@@ -27,7 +27,7 @@
   ...
   ... 1
   ... -----------------------------1000417103532496791590743664
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ...
   ... Continue
   ... -----------------------------1000417103532496791590743664--
@@ -66,7 +66,7 @@
   ...
   ... 1
   ... -----------------------------2047034390275580538431124302
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ...
   ... Continue
   ... -----------------------------2047034390275580538431124302--

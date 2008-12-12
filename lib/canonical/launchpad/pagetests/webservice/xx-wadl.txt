@@ -258,6 +258,7 @@ utilities/create-lp-wadl.py does: clear out the cache on the class.
 
     >>> wadl = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    >>> wadl = wadl.decode('UTF-8')
 
     >>> len(wadl) > len(test_wadl)
     True
@@ -273,7 +274,8 @@ We can examine the real wadl now.
 
     # We need to replace the nbsp entity, because the validator
     # doesn't support embedded definition.
-    >>> wadl_schema.validate(wadl.replace('&nbsp;', '&#160;'))
+    >>> wadl_schema.validate(
+    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
     True
     >>> wadl_schema.error_log
     ''
@@ -350,10 +352,11 @@ for every link in the JSON representation.
     ...     return tag.attrib['name']
 
     >>> params = sorted([param for param in service_root_repr], key=name_attrib)
-    >>> (bug_set_param, cve_set_param, distro_set_param, me_param,
-    ...  person_set_param, pillar_param, project_group_set_param,
-    ...  project_set_param, resource_type_param) = params
 
+    >>> (bug_set_param, cve_set_param, distro_set_param, hwdb_param,
+    ...  me_param, person_set_param, pillar_param,
+    ...  project_group_set_param, project_set_param,
+    ...  resource_type_param) = params
     >>> person_set_param.tag
     '...param'
     >>> person_set_param.attrib['name']

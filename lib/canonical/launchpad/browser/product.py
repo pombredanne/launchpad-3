@@ -1713,7 +1713,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             if author.person is None:
                 committers.add((None, author.name))
             else:
-                committers.add((author.person.name, None))
+                committers.add((author.personID, None))
         return len(committers)
 
     @cachedproperty

@@ -45,10 +45,11 @@ For distroseries we publish a subset of its attributes.
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(current_series)
-    active: True                                                              
+    active: True
     active_milestones_collection_link:
         u'http://.../ubuntu/hoary/active_milestones'
     all_milestones_collection_link: u'http://.../ubuntu/hoary/all_milestones'
+    bug_reporting_guidelines: None
     changeslist: u'hoary-changes@ubuntu.com'
     date_created: u'2006-10-16T18:31:43.483559+00:00'
     datereleased: None
