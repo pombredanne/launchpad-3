@@ -511,6 +511,12 @@ Google. The LaunchpadSearchView will display the other searches and
 show a message explaining that the user can search again to find
 matching pages.
 
+    >>> from zope.error.interfaces import IErrorReportingUtility
+
+    >>> error_utility = getUtility(IErrorReportingUtility)
+    >>> prior_oops_id = getattr(
+    ...     error_utility.getLastOopsReport(), 'id', 'none')
+
     >>> search_view = getSearchView(
     ...     form={'field.text': 'gnomebaker'})
     >>> search_view.has_matches
@@ -529,10 +535,9 @@ link to try the search again
 An oops was reported by the view so that the GoogleResponseError can be
 tracked.
 
-    >>> from zope.error.interfaces import IErrorReportingUtility
-
-    >>> error_utility = getUtility(IErrorReportingUtility)
     >>> oops = error_utility.getLastOopsReport()
+    >>> oops.id != prior_oops_id
+    True
     >>> oops.type
     'GoogleResponseError'
     >>> oops.value
