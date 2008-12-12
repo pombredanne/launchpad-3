@@ -16,6 +16,7 @@ from canonical.launchpad.components.packagelocation import (
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.archivearch import IArchiveArchSet
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.interfaces.packagecopyrequest import (
