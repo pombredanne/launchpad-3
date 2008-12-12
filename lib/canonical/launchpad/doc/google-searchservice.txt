@@ -441,7 +441,7 @@ a PageMatch.
 If no matches are found in the response, and there are more than 20
 possible matches, an error is raised. Unlike the previous example, there
 are lots of results; there is a possibility that the GSP version is
-incompatible. This example has says has 1000 matches, but none of the R
+incompatible. This example says it has 1000 matches, but none of the R
 tags can be parsed (because the markup was changed to use RESULT).
 
     >>> gsp_xml_file_name = path.join(

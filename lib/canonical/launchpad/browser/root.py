@@ -148,7 +148,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         Set the state of the search_params and matches.
         """
         super(LaunchpadSearchView, self).__init__(context, request)
-        self.no_page_service = False
+        self.has_page_service = True
         self._bug = None
         self._question = None
         self._person_or_team = None
@@ -276,6 +276,15 @@ class LaunchpadSearchView(LaunchpadFormView):
                  self.person_or_team, self.has_shipit, self.pages)
         return self.containsMatchingKind(kinds)
 
+    @property
+    def url(self):
+        """Return the requested URL."""
+        if 'QUERY_STRING' in self.request:
+            query_string = self.request['QUERY_STRING']
+        else:
+            query_string = ''
+        return self.request.getURL() + '?' + query_string
+
     def containsMatchingKind(self, kinds):
         """Return True if one of the items in kinds is not None, or False."""
         for kind in kinds:
@@ -377,7 +386,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         except GoogleResponseError:
             error_utility = getUtility(IErrorReportingUtility)
             error_utility.raising(sys.exc_info(), self.request)
-            self.no_page_service = True
+            self.has_page_service = False
             return None
         if len(page_matches) == 0:
             return None

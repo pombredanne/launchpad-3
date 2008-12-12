@@ -251,7 +251,9 @@ explains that the search can be performed again to find matching pages.
     >>> print find_tag_by_id(anon_browser.contents, 'no-page-service')
     <p id="no-page-service">
     The page search service was not available when this search was
-    performed. <a href="">Search again</a> to see the matching pages.
+    performed.
+    <a href="http://launchpad.dev/+search?field.text=gnomebaker">Search
+    again</a> to see the matching pages.
     </p>
 
 

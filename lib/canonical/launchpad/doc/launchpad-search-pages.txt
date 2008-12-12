@@ -31,7 +31,15 @@ when there is no search text.
 When text is not None, the title indicates what was searched.
 
     >>> def getSearchView(form):
-    ...     request = LaunchpadTestRequest(form=form)
+    ...     search_param_list = []
+    ...     for name in sorted(form):
+    ...         value = form[name]
+    ...         search_param_list.append('%s=%s' % (name, value))
+    ...     query_string = '&'.join(search_param_list)
+    ...     request = LaunchpadTestRequest(
+    ...         SERVER_URL='http://launchpad.dev/+search',
+    ...         QUERY_STRING=query_string,
+    ...         form=form)
     ...     search_view = getMultiAdapter((root, request), name="+search")
     ...     search_view.initialize()
     ...     return search_view
@@ -380,11 +388,11 @@ search terms.
     <...GoogleBatchNavigator ...>
 
 The GoogleSearchService may not be available due to connectivity problems.
-The view's no_page_service attribute reports when the search was performed
-without Google page matches.
+The view's has_page_service attribute reports when the search was performed
+with Google page matches.
 
-    >>> search_view.no_page_service
-    False
+    >>> search_view.has_page_service
+    True
 
 The batch navigation heading is created by the view. The heading
 property returns a 2-tuple of singular and plural heading. There
@@ -487,8 +495,8 @@ GoogleSearchService and PageMatch objects.
 
 == No page matches ==
 
-When an empty PageMatches object is by the GoogleSearchService to the
-view, there are no matches to show.
+When an empty PageMatches object is returned by the GoogleSearchService to
+the view, there are no matches to show.
 
     >>> search_view = getSearchView(
     ...     form={'field.text': 'no-meaningful'})
@@ -509,10 +517,16 @@ matching pages.
     True
     >>> search_view.pillar.displayname
     u'gnomebaker'
-    >>> search_view.no_page_service
-    True
+    >>> search_view.has_page_service
+    False
 
-An oops was reported by the view so that GoogleResponseError can be
+The view provides the requested URL so that the template can make a
+link to try the search again
+
+    >>> print search_view.url
+    http://launchpad.dev/+search?field.text=gnomebaker
+
+An oops was reported by the view so that the GoogleResponseError can be
 tracked.
 
     >>> from zope.error.interfaces import IErrorReportingUtility
