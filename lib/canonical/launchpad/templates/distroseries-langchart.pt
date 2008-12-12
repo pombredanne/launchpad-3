@@ -3,18 +3,20 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<tal:hide-translations condition="context/hide_all_translations">
-  <p>
-    Translation status for <tal:distroseries replace="context/displayname" />
-    is not available because we are updating translations in bulk. You will
-    be able to see the status once the update process is finished. Try again
-    in several hours.
-  </p>
-  <p>
-    We apologise for the inconvenience.
-  </p>
-</tal:hide-translations>
-<tal:no-hide-translations condition="not:context/hide_all_translations">
+
+  <metal:admin  tal:condition="context/required:launchpad.Admin">
+    <p tal:condition="context/hide_all_translations" class="visibility-notice">
+      <strong>Translations for this series are currently hidden.</strong>
+    </p>
+  </metal:admin>
+  <metal:not-admin tal:condition="not:context/required:launchpad.Admin">
+    <!--
+      If translations are hidden, trigger exception that takes us straight
+      to the "translations for this series are not available" page.
+    -->
+    <metal:check-available tal:omit-tag="context/checkTranslationsViewable" />
+  </metal:not-admin>
+
   <table class="sortable listing" width="100%" id="languagestats">
     <thead>
       <tr>
@@ -77,5 +79,4 @@
       </tr>
     </tbody>
   </table>
-</tal:no-hide-translations>
 </tal:root>

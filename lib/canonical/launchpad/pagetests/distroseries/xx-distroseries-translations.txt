@@ -77,28 +77,24 @@ Once the administrator hides all translations...
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/hoary
 
-... the translation status page will not display any languages.
+...a notice about the fact shows up on the overview page.
 
-    >>> admin_browser.getLink('Spanish')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> notices = find_tags_by_class(
+    ...     admin_browser.contents, 'visibility-notice')
+    >>> for notice in notices:
+    ...     print extract_text(notice)
+    Translations for this series are currently hidden.
 
-    >>> main_content = find_main_content(admin_browser.contents)
-    >>> 'hoary/+lang/' in main_content
-    False
-
-And the page tells the user that the translations are not available.
+Now, the translation status page will no longer display any languages to
+regular users.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> main_content = find_main_content(user_browser.contents)
-    >>> print main_content.findNext('p').renderContents()
-    Translation status for Hoary is not available because we are updating
-    translations in bulk. You will be able to see the status once the update
-    process is finished. Try again in several hours.
+    Traceback (most recent call last):
+    ...
+    TranslationUnavailable: ...
 
 Also, if the user tries to navigate directly to launchpad pages,
-the system tells him that he's not allowed to see those pages.
+the system tells them that they're not allowed to see those pages.
 
     >>> user_browser.handleErrors = True
     >>> user_browser.open(
@@ -108,9 +104,8 @@ the system tells him that he's not allowed to see those pages.
     HTTPError: HTTP Error 503: Service Unavailable
     >>> main_content = find_main_content(user_browser.contents)
     >>> print main_content.findNext('p').renderContents()
-    The page you are trying to use is not available because we are
-    updating translations in bulk. You will be able to use this page once
-    the update process is finished. Try again in several hours.
+    Translations for this release series are not available yet.
+
     >>> user_browser.handleErrors = False
 
 Although, an administrator can see the same page.

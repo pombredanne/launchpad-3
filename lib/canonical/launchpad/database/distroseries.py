@@ -101,7 +101,8 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, TranslationUnavailable)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -662,6 +663,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Unknown architecture %s for %s %s' % (
                 archtag, self.distribution.name, self.name))
         return item
+
+    def checkTranslationsViewable(self):
+        """See `IDistroSeries`."""
+        if not self.hide_all_translations:
+            # Yup, viewable.
+            return
+
+        future = [
+            DistroSeriesStatus.EXPERIMENTAL,
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FUTURE,
+            ]
+        if self.status in future:
+            raise TranslationUnavailable(
+                "Translations for this release series are not available yet.")
+        elif self.status == DistroSeriesStatus.OBSOLETE:
+            raise TranslationUnavailable(
+                "This release series is obsolete.  Its translations are no "
+                "longer available.")
+        else:
+            raise TranslationUnavailable(
+                "Translations for this release series are not currently "
+                "available.  Please come back soon.")
 
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
