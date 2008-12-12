@@ -803,7 +803,11 @@ Binary pending publications also moves PPA to the pending-publication
 state:
 
       >>> cprov_bin = cprov.archive.getAllPublishedBinaries()[0]
-      >>> bin_pub = cprov_bin.copyTo(warty, pocket_release, cprov.archive)
+      >>> [bin_pub, other_pub] = cprov_bin.copyTo(
+      ...     warty, pocket_release, cprov.archive)
+
+      >>> other_pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+
       >>> print bin_pub.status.name
       PENDING
 

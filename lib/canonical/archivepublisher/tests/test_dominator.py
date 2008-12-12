@@ -221,11 +221,10 @@ class TestDominator(TestNativePublishingBase):
         # to check if the lookup is indeed restricted to the dominated
         # archive. See bug #237845 for further information.
         cprov = getUtility(IPersonSet).getByName('cprov')
-        for pub_binary in pub_binaries_archindep:
-            pub_binary.copyTo(
-                self.breezy_autotest,
-                PackagePublishingPocket.RELEASE,
-                cprov.archive)
+        i386_pub.copyTo(
+            self.breezy_autotest,
+            PackagePublishingPocket.RELEASE,
+            cprov.archive)
         cprov_foo_binaries = cprov.archive.getAllPublishedBinaries(name='foo')
         self.assertEqual(cprov_foo_binaries.count(), 2)
 

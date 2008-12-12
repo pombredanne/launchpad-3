@@ -262,7 +262,7 @@ Then we can copy source and binary from PRIMARY archive to Celso's PPA:
 
     >>> cprov_src = foo_pub_src.copyTo(
     ...    hoary, pocket_release, cprov.archive)
-    >>> cprov_bin = foo_pub_binaries[0].copyTo(
+    >>> [cprov_bin] = foo_pub_binaries[0].copyTo(
     ...    hoary, pocket_release, cprov.archive)
     >>> cprov_src.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> cprov_bin.secure_record.status = PackagePublishingStatus.PUBLISHED
@@ -316,7 +316,7 @@ suite in Celso's PPA.
     >>> warty = ubuntu.getSeries('warty')
     >>> copied_source = cprov_foo_src.copyTo(
     ...    warty, pocket_release, cprov.archive)
-    >>> copied_binary = cprov_foo_bin.copyTo(
+    >>> [copied_binary] = cprov_foo_bin.copyTo(
     ...    warty, pocket_release, cprov.archive)
     >>> copied_source.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> copied_binary.secure_record.status = PackagePublishingStatus.PUBLISHED
@@ -346,7 +346,7 @@ to Mark Shuttleworth's PPA.
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl_src = cprov_foo_src.copyTo(
     ...    hoary, pocket_release, sabdfl.archive)
-    >>> sabdfl_bin = cprov_foo_bin.copyTo(
+    >>> [sabdfl_bin] = cprov_foo_bin.copyTo(
     ...    hoary, pocket_release, sabdfl.archive)
     >>> sabdfl_src.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> sabdfl_bin.secure_record.status = PackagePublishingStatus.PUBLISHED
