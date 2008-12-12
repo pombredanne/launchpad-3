@@ -92,7 +92,7 @@ class TestPopulateArchiveScript(TestCase):
         # Command line arguments required for the invocation of the
         # 'populate-archive.py' script.
         extra_args = [
-            '-a', 'i386',
+            '-a', 'x86',
             '--from-distribution', distro_name, '--from-suite', 'hoary',
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', name, '--to-user', 'salgado', '--reason',
@@ -216,7 +216,7 @@ class TestPopulateArchiveScript(TestCase):
         # The colons in the name make it invalid.
         invalid_archive_name = "ra//%s" % now
 
-        extra_args = ['-a', 'i386']
+        extra_args = ['-a', 'x86']
         self.runScript(
             extra_args=extra_args,
             archive_name=invalid_archive_name,
@@ -234,7 +234,7 @@ class TestPopulateArchiveScript(TestCase):
         """
         now = int(time.time())
         invalid_suite = "suite/:/%s" % now
-        extra_args = ['-a', 'i386']
+        extra_args = ['-a', 'x86']
         self.runScript(
             extra_args=extra_args,
             suite=invalid_suite,
@@ -250,7 +250,7 @@ class TestPopulateArchiveScript(TestCase):
         """
         now = int(time.time())
         invalid_user = "user//%s" % now
-        extra_args = ['-a', 'i386']
+        extra_args = ['-a', 'x86']
         self.runScript(
             extra_args=extra_args,
             user=invalid_user,
@@ -299,7 +299,7 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
-            exception_text="Invalid architecture tag: 'wintel'")
+            exception_text="Invalid processor family: 'wintel'")
 
     def testMissingProcessorFamily(self):
         """Try copy archive population without specifying architecture tags.
@@ -331,7 +331,7 @@ class TestPopulateArchiveScript(TestCase):
         #   * the '-a' command line parameter is cumulative in nature
         #     i.e. the 'hppa' architecture tag specified after the 'i386'
         #     tag does not overwrite the latter but is added to it.
-        extra_args = ['-a', 'i386', '-a', 'hppa']
+        extra_args = ['-a', 'x86', '-a', 'hppa']
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
 
