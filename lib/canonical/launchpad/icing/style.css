@@ -1323,7 +1323,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   float: right;
 }
 .codereviewcomment {font: 120% monospace;}
-.codereviewcomment .filename {
+.codereviewcomment .attachment {
   background-color: #f6f6f6;
 }
 .back-link { margin-top: 3em; }
