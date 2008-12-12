@@ -473,7 +473,7 @@ EmailToPersonView will use the contact address when the team has one.
     [u'landscapers@canonical.com']
 
 
-== Contact this user/team quotas and valid addresses ==
+== Contact this user/team valid addresses and quotas ==
 
 The EmailToPersonView has_valid_email_address property is normally
 True. The is_possible property is True when both contact_is_allowed and
@@ -514,4 +514,6 @@ as_valid_email_address are True.
     >>> view.contact_is_possible
     True
 
+The daily quota is set to 3 emails per day. See the "Bypassing the quota"
+in `foaf/xx-user-to-user.txt` to see how these two attributes are used.
 
