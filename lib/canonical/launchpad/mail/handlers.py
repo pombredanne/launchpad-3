@@ -584,7 +584,7 @@ class CodeHandler:
             filealias=file_alias,
             parsed_message=mail)
         comment = merge_proposal.createCommentFromMessage(
-            message, vote, vote_tag)
+            message, vote, vote_tag, mail)
         return True
 
     @staticmethod
