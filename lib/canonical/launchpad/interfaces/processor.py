@@ -39,3 +39,10 @@ class IProcessorFamilySet(Interface):
 
         :return: A `IProcessorFamily` instance if found, None otherwise.
         """
+    def getByProcessorName(name):
+        """Given a processor name return the ProcessorFamily it belongs to.
+
+        :param name: The name of the processor to look for.
+
+        :return: A `IProcessorFamily` instance if found, None otherwise.
+        """

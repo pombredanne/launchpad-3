@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IProcessor, IProcessorFamily, IProcessorFamilySet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
+from storm.expr import And
 
 class Processor(SQLBase):
     implements(IProcessor)
@@ -47,8 +47,16 @@ class ProcessorFamilySet:
         # will return a result set that's either empty or contains just one
         # ProcessorFamily row.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        rset = store.find(ProcessorFamily, name=name)
-        if rset.count() == 0:
-            return None
-        else:
-            return rset[0]
+        rset = store.find(ProcessorFamily, ProcessorFamily.name == name)
+        return rset.one()
+
+    def getByProcessorName(self, name):
+        """Please see `IProcessorFamilySet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        rset = store.find(
+            ProcessorFamily,
+            Processor.name == name, Processor.family == ProcessorFamily.id)
+        # Each `Processor` is associated with exactly one `ProcessorFamily`
+        # but there is also the possibility that the user specified a name for
+        # a non-existent processor.
+        return rset.one()

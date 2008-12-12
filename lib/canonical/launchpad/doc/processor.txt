@@ -21,3 +21,19 @@ Conversely, accessing an existing processor family yields the instance.
     u'Intel 386 compatible chips'
     >>> pf.description
     u'Bring back the 8086!'
+
+It is also possible to get the processor family for a given processor.
+
+    >>> pf = pfs.getByProcessorName('386')
+    >>> pf.name
+    u'x86'
+    >>> pf.title
+    u'Intel 386 compatible chips'
+    >>> pf.description
+    u'Bring back the 8086!'
+
+In case where the user specifies a non-existent processor name ... XXX
+
+    >>> pf = pfs.getByProcessorName('wintel')
+    >>> pf is None
+    True

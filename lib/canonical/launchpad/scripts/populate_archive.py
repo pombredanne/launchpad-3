@@ -66,17 +66,17 @@ class ArchivePopulator(SoyuzScript):
         :param include_binaries: whether binaries should be copied as well.
         :param arch_tags: architecture tags for which to create builds.
         """
-        def loadProcessorFamilies(proc_family_names):
+        def loadProcessorFamilies(arch_tags):
             """Load processor families for specified architecture tags."""
             proc_family_set = getUtility(IProcessorFamilySet)
-            proc_families = []
-            for name in proc_family_names:
-                proc_family = proc_family_set.getByName(name)
+            proc_families = set()
+            for name in arch_tags:
+                proc_family = proc_family_set.getByProcessorName(name)
                 if proc_family is None:
                     raise SoyuzScriptError(
-                        "Invalid processor family name: '%s'" % name)
+                        "Invalid architecture tag: '%s'" % name)
                 else:
-                    proc_families.append(proc_family)
+                    proc_families.add(proc_family)
 
             return proc_families
 
@@ -151,7 +151,8 @@ class ArchivePopulator(SoyuzScript):
 
         # Create builds for the cloned packages.
         self._createMissingBuilds(
-            the_destination.distroseries, the_destination.archive, arch_tags)
+            the_destination.distroseries, the_destination.archive,
+            self.options.arch_tags)
 
     def mainTask(self):
         """Main function entry point."""
