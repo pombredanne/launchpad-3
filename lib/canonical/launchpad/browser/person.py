@@ -5104,8 +5104,8 @@ class EmailToPersonView(LaunchpadFormView):
             recipients.email = []
             if self.context.is_team:
                 if self.user.inTeam(self.context):
-                    # XXX sinzui 2008-12-11: replace this loop with a query
-                    # to get teh count
+                    # XXX sinzui 2008-12-11:
+                    # Replace this loop with a query to get the addresses.
                     for person in self.context.allmembers:
                         if (not person.is_team
                             and person.preferredemail is not None):
@@ -5115,8 +5115,10 @@ class EmailToPersonView(LaunchpadFormView):
                                 person.preferredemail)
                             recipients.email.append(naked_email.email)
                     recipients.description = (
-                        'You will be contacting %d members on the team.'
-                        % len(recipients.email))
+                        'You are contacting %d members of the %s (%s) '
+                        'team directly.' %
+                        (len(recipients.email), self.context.displayname,
+                         self.context.name))
                 else:
                     # A non-member can only send emails to a single person to
                     # hinder spam and to prevent leaking membership
@@ -5127,19 +5129,19 @@ class EmailToPersonView(LaunchpadFormView):
                     naked_email = removeSecurityProxy(owner.preferredemail)
                     recipients.email = [naked_email.email]
                     recipients.description = (
-                        'Since you are not a member of the team, you will '
-                        'only be allowed to contact the team owner, %s (%s).'
-                        % (owner.displayname, owner.name))
+                        'You are contacting the %s (%s) team owner, %s (%s).'
+                         % (self.context.displayname, self.context.name,
+                            owner.displayname, owner.name))
             if len(recipients.email) == 0:
                 recipients.description = (
                     '%s (%s) does not have an email address.'
-                    % (self.context.displayname, self.context.name))
+                    % (self.context.display %name, self.context.name))
         else:
+            # The recipient is a user.
             recipients.email = [preferredemail.email]
             recipients.description = (
-                'You will be contacting %s (%s) using their preferred '
-                'email address.'
-                % (self.context.displayname, self.context.name))
+                'You are contacting %s (%s).' %
+                (self.context.displayname, self.context.name))
 
         assert recipients.description is not None
         return recipients
