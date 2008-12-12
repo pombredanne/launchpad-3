@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.processor import IProcessorFamilySet
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from canonical.launchpad.validators.name import valid_name
@@ -64,6 +65,21 @@ class ArchivePopulator(SoyuzScript):
         :param include_binaries: whether binaries should be copied as well.
         :param arch_tags: architecture tags for which to create builds.
         """
+        def loadProcessorFamilies(proc_family_names):
+            """Load processor families for specified architecture tags."""
+            proc_family_set = getUtility(IProcessorFamilySet)
+            proc_families = []
+            for name in proc_family_names:
+                proc_family = proc_family_set.getByName(name)
+                if proc_family is None:
+                    raise SoyuzScriptError(
+                        "Invalid processor family name: '%s'" % name)
+                else:
+                    proc_families.append(proc_family)
+
+            return proc_families
+
+            
         def build_location(distro, suite, component):
             """Build and return package location."""
             if suite is not None:
@@ -95,8 +111,14 @@ class ArchivePopulator(SoyuzScript):
         copy_archive = getUtility(IArchiveSet).getByDistroAndName(
             the_destination.distribution, to_archive)
 
+        def setProcFamiliesForArchive(archive, proc_families):
+            """Associate the archive with the processor families."""
+
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
+            # Load the processor families for the specified architecture tags
+            # from the database.
+            proc_families = loadProcessorFamilies(self.options.arch_tags)
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, to_archive,
                 the_destination.distribution, reason)
@@ -124,6 +146,10 @@ class ArchivePopulator(SoyuzScript):
         """Main function entry point."""
         def not_specified(option):
             return (option is None or option == '')
+
+        if not_specified(self.options.arch_tags):
+            raise SoyuzScriptError(
+                "error: build architecture(s) not specified.")
 
         if not_specified(self.options.from_distribution):
             raise SoyuzScriptError(

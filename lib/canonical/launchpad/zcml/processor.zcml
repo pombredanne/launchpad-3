@@ -20,4 +20,9 @@
         />
   </class>
 
+  <securedutility
+    class="canonical.launchpad.database.processor.ProcessorFamilySet"
+    provides="canonical.launchpad.interfaces.processor.IProcessorFamilySet">
+    <allow interface="canonical.launchpad.interfaces.processor.IProcessorFamilySet" />
+  </securedutility>
 </configure>
