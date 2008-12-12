@@ -5078,11 +5078,19 @@ class EmailToPersonView(LaunchpadFormView):
 
     @property
     def label(self):
+        """The form label."""
         return 'Contact ' + self.context.displayname
 
     @cachedproperty
     def recipients(self):
+        """The recipients of the email message.
+
+        :return: recipients is an object that two attributes:
+            description: a summary of who or which team is being contacted.
+            emails: a list of addresses that will be used to send the message.
+        """
         class recipients:
+            """Who is being contacted."""
             description = None
             email = None
 
@@ -5182,6 +5190,7 @@ class EmailToPersonView(LaunchpadFormView):
 
     @property
     def cancel_url(self):
+        """The return URL."""
         return canonical_url(self.context)
 
     @property
@@ -5191,10 +5200,12 @@ class EmailToPersonView(LaunchpadFormView):
 
     @property
     def has_valid_email_address(self):
+        """Whether there is a contact address."""
         return len(self.recipients.email) > 0
 
     @property
     def contact_is_possible(self):
+        """Whether there is a contact address and the user can send email."""
         return self.contact_is_allowed and self.has_valid_email_address
 
     @property
