@@ -29,7 +29,7 @@ class SpecificationBranchURL:
 
     implements(ICanonicalUrlData)
 
-    rootsite = None
+    rootsite = "blueprints"
 
     def __init__(self, specification_branch):
         self.branch = specification_branch.branch

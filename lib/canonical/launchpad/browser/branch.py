@@ -115,8 +115,9 @@ class BranchURL:
 class BranchPrimaryContext:
     """The primary context is the product if there is one."""
 
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: If I'm implementing
-    # IBranchContext, then what should I do with this?
+    # XXX: JonathanLange 2008-12-08 spec=package-branches: Not sure what
+    # should happen to this class, given that IBranchContainer does something
+    # fairly similar.
 
     implements(IPrimaryContext)
 

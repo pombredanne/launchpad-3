@@ -9,12 +9,9 @@ __all__ = [
     'ProductContainer',
     ]
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.branchcontainer import IBranchContainer
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class PackageContainer:
@@ -24,15 +21,9 @@ class PackageContainer:
         self.distroseries = distroseries
         self.sourcepackagename = sourcepackagename
 
-    def getBranches(self):
-        from canonical.launchpad.database import Branch
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            Branch, Branch.distroseries == self.distroseries,
-            Branch.sourcepackagename == self.sourcepackagename)
-
     @property
     def name(self):
+        """See `IBranchContainer`."""
         return '%s/%s/%s' % (
             self.distroseries.distribution.name,
             self.distroseries.name,
@@ -47,13 +38,6 @@ class PersonContainer:
     def __init__(self, person):
         self.person = person
 
-    def getBranches(self):
-        from canonical.launchpad.database import Branch
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            Branch, Branch.owner == self.person, Branch.product == None,
-            Branch.distroseries == None, Branch.sourcepackagename == None)
-
 
 class ProductContainer:
     implements(IBranchContainer)
@@ -61,9 +45,7 @@ class ProductContainer:
     def __init__(self, product):
         self.product = product
 
-    def getBranches(self):
-        return self.product.branches
-
     @property
     def name(self):
+        """See `IBranchContainer`."""
         return self.product.name
