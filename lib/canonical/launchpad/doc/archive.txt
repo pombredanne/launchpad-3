@@ -514,6 +514,45 @@ and 'exact_match' flag:
     >>> status_lookup.count()
     2
 
+== getBuildCounters ==
+
+`IArchive`.getBuildCounters allows callsites to quickly present
+the number of builds in pre-defined status for a given `IArchive`.
+
+    >>> def print_build_counters(build_counters):
+    ...     sorted_keys = sorted(build_counters.keys())
+    ...     for key in sorted_keys:
+    ...         print key, build_counters[key]
+
+Build counters for Celso's PPA.
+
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    pending    0
+    succeeded  3
+    superseded 0
+    total      4
+
+Build counters for ubuntu primary archive.
+
+    >>> print_build_counters(ubuntu.main_archive.getBuildCounters())
+    failed     5
+    pending    2
+    succeeded  8
+    superseded 3
+    total      18
+
+An option argument can be used to exclude any builds that have the status
+`NEEDSBUILD` (useful in some circumstances where a build that needs to be
+built isn't really considered to be a build):
+
+    >>> print_build_counters(
+    ...     ubuntu.main_archive.getBuildCounters(exclude_needsbuild=True))
+    failed 5
+    pending 1
+    succeeded 8
+    superseded 3
+    total 17
 
 == Package Counters ==
 
@@ -521,7 +560,7 @@ IArchive provides properties to calculate the number and the size of
 the packages (sources and binaries) currently published in the
 archive. They are based in the publication lookup methods.
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     3
     >>> cprov_archive.number_of_binaries
     3
@@ -538,7 +577,7 @@ in the archive (+1kbytes for each publication)
     ...     cprov_archive.sources_size + cprov_archive.binaries_size)
 
     >>> number_of_publications = (
-    ...     cprov_archive.number_of_sources +
+    ...     cprov_archive.number_of_sources_published +
     ...     cprov_archive.number_of_binaries)
     >>> indexes_size = number_of_publications * 1024
 
@@ -602,14 +641,14 @@ see if the counter decreases.
 Superseding a source package and verifying that the source counter
 decreases.
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     3
     >>> superseded = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(superseded)
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     2
 
 Superseding a binary package and verifying that the binary counter

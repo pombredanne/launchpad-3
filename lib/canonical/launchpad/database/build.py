@@ -929,3 +929,48 @@ class BuildSet:
         return Build.select(
             query, orderBy=["-datecreated", "id"],
             clauseTables=["Archive"])
+
+    def getStatusSummaryForBuilds(self, builds):
+        """See `IBuildSet`."""
+        # Create a small helper function to collect the builds for a given
+        # list of build states:
+        def collect_builds(states):
+            wanted = []
+            for state in states:
+                candidates = [build for build in builds
+                                if build.buildstate == state]
+                wanted.extend(candidates)
+            return wanted
+
+        failed_states = (
+            BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
+            BuildStatus.CHROOTWAIT, BuildStatus.FAILEDTOUPLOAD)
+
+        failed = collect_builds(failed_states)
+        needsbuild = collect_builds((BuildStatus.NEEDSBUILD,))
+        building = collect_builds((BuildStatus.BUILDING,))
+
+        if len(building) != 0:
+            return {
+                'status': 'building',
+                'status_desc': 'There are some builds currently building.',
+                'builds': building
+            }
+        elif len(needsbuild) != 0:
+            return {
+                'status': 'needsbuild',
+                'status_desc': 'There are some builds waiting to be built.',
+                'builds': needsbuild
+            }
+        elif len(failed) != 0:
+            return {
+                'status': 'failed',
+                'status_desc': 'There were build failures.',
+                'builds': failed
+            }
+        else:
+            return {
+                'status': 'succeeded',
+                'status_desc': 'All builds succeeded.',
+                'builds': builds
+            }

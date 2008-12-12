@@ -382,6 +382,28 @@ class IBuildSet(Interface):
         :return: a list of `IBuild` records not target to PPA archives.
         """
 
+    def getStatusSummaryForBuilds(builds):
+        """Return a summary of the build status for the given builds.
+
+        The returned summary includes a status, a description of
+        that status and the builds related to the status.
+
+        :param builds: A list of build records.
+
+        :return: A dict consisting of the build status summary for the
+            given builds. For example:
+                {
+                    'status': 'succeeded',
+                    'status_desc':'All builds succeeded.'
+                    'builds': [build1, build2]
+                } or
+                {
+                    'status': 'building',
+                    'status_desc': 'There are some builds currently building.'
+                    'builds':[build3]
+                }
+        """
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""

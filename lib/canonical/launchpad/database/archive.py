@@ -13,8 +13,8 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.store import Store
 from storm.locals import Join
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
@@ -424,6 +424,11 @@ class Archive(SQLBase):
     @property
     def number_of_sources(self):
         """See `IArchive`."""
+        return self.getPublishedSources().count()
+
+    @property
+    def number_of_sources_published(self):
+        """See `IArchive`."""
         return self.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED).count()
 
@@ -613,7 +618,8 @@ class Archive(SQLBase):
         # 'cruft' represents the increase in the size of the archive
         # indexes related to each publication. We assume it is around 1K
         # but that's over-estimated.
-        cruft = (self.number_of_sources + self.number_of_binaries) * 1024
+        cruft = (
+            self.number_of_sources_published + self.number_of_binaries) * 1024
         return size + cruft
 
     def allowUpdatesToReleasePocket(self):
@@ -757,6 +763,63 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
+
+    def getBuildCounters(self, exclude_needsbuild=False):
+        """See `IArchiveSet`."""
+        cur = cursor()
+
+        # Include or exclude NEEDSBUILD builds as appropriate
+        where_clause = "WHERE archive = %s" % sqlvalues(self)
+        if exclude_needsbuild:
+            where_clause += " AND buildstate <> %s" % sqlvalues(
+                BuildStatus.NEEDSBUILD)
+
+        query = """
+            SELECT buildstate, count(id) FROM Build
+            %s
+            GROUP BY buildstate ORDER BY buildstate;
+        """ % where_clause
+        cur.execute(query)
+        result = cur.fetchall()
+
+        status_map = {
+            'failed': (
+                BuildStatus.CHROOTWAIT,
+                BuildStatus.FAILEDTOBUILD,
+                BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.MANUALDEPWAIT,
+                ),
+            'pending': [
+                BuildStatus.BUILDING,
+                ],
+            'succeeded': (
+                BuildStatus.FULLYBUILT,
+                ),
+            'superseded': (
+                BuildStatus.SUPERSEDED,
+                ),
+            }
+
+        # If we weren't asked to exclude builds in the NEEDSBUILD status,
+        # then include them with the 'pending' builds
+        if not exclude_needsbuild:
+            status_map['pending'].append(BuildStatus.NEEDSBUILD)
+
+        status_and_counters = {}
+
+        # Set 'total' counter
+        status_and_counters['total'] = sum(
+            [counter for status, counter in result])
+
+        # Set each counter according 'status_map'
+        for key, status in status_map.iteritems():
+            status_and_counters[key] = 0
+            for status_value, status_counter in result:
+                status_values = [item.value for item in status]
+                if status_value in status_values:
+                    status_and_counters[key] += status_counter
+
+        return status_and_counters
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
@@ -1210,7 +1273,7 @@ class ArchiveSet:
         return status_and_counters
 
     def getArchivesForDistribution(self, distribution, name=None,
-        purposes=None):
+                                   purposes=None):
         """See `IArchiveSet`."""
         extra_exprs = []
 

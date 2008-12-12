@@ -183,6 +183,8 @@ class IArchive(IHasOwner):
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
+        'The number of sources in the context archive.')
+    number_of_sources_published = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
         'The number of binaries published in the context archive.')
@@ -324,6 +326,33 @@ class IArchive(IHasOwner):
                              matching.
 
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
+        """
+
+    @operation_parameters(
+        exclude_needsbuild=Bool(
+            title=_("Exclude builds with state NEEDSBUILD"), required=False))
+    @export_read_operation()
+    def getBuildCounters(exclude_needsbuild=False):
+        """Return a dictionary containing the build counters for an archive.
+
+        This is necessary currently because the IArchive.failed_builds etc.
+        counters are not in use.
+
+        The returned dictionary contains the follwoing keys and values:
+
+         * 'total': total number of builds (includes SUPERSEDED);
+         * 'pending': number of builds in BUILDING or NEEDSBUILD state;
+         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
+           CHROOTWAIT and FAILEDTOUPLOAD state;
+         * 'succeeded': number of SUCCESSFULLYBUILT builds.
+         * 'superseded': number of SUPERSEDED builds.
+
+        :param exclude_needsbuild: Indicates whether to exclude builds with
+            the status NEEDSBUILD in the pending and total counts. This is
+            useful in situations where a build that hasn't started isn't
+            considered a build by the user.
+
+        :return: a dictionary with the 4 keys specified above.
         """
 
     def allowUpdatesToReleasePocket():
