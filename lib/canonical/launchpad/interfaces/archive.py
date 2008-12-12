@@ -480,9 +480,10 @@ class IArchivePublic(IHasOwner):
         """
 
     # The following three factory methods are not in the
-    # IArchiveEditRestricted interface because they don't modify archive
-    # records.  The code they contain does all the necessary security
-    # checking and is well tested in xx-archive.txt.
+    # IArchiveEditRestricted interface because the rights to use them
+    # does not depend on edit permissions to the archive.  The code they
+    # contain does all the necessary security checking and is well
+    # tested in xx-archive.txt and archivepermissions.txt.
 
     @operation_parameters(
         person=Reference(schema=IPerson),
