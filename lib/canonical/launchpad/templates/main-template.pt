@@ -294,7 +294,7 @@
           <a tal:condition="not:request/lp:person" href="/+tour"
           >What is Launchpad?</a>
           <a tal:condition="request/lp:person" href="/feedback"
-          >Talk to us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
+          >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
         <div id="lp-arcana">
             &copy;&nbsp;2004-2008&nbsp;<a
