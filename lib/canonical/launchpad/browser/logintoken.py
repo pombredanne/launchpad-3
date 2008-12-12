@@ -153,6 +153,27 @@ class BaseLoginTokenView(OpenIDMixin):
         self.next_url = canonical_url(self.context.requester)
         self.context.consume()
 
+    def accountWasSuspended(self, naked_person, reason):
+        """Return True if the person's account was SUSPENDED, otherwise False.
+
+        When the account was SUSPENDED, the Warning Notification with the
+        reason is added to the request's response. The LoginToken is consumed.
+
+        :param naked_person: An unproxied Person.
+        :param reason: A sentence that explains why the SUSPENDED account
+            cannot be used.
+        """
+        if naked_person.account.status != AccountStatus.SUSPENDED:
+            return False
+        suspended_account_mailto = (
+            'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
+        message = structured(
+              '%s Contact a <a href="%s">Launchpad admin</a> '
+              'about this issue.' % (reason, suspended_account_mailto))
+        self.request.response.addWarningNotification(message)
+        self.context.consume()
+        return True
+
 
 class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
 
@@ -304,16 +325,10 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
 
-        # Suspended accounts cannot reset the password.
-        if naked_person.account.status == AccountStatus.SUSPENDED:
-            email_link = (
-                'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
-            message = structured(
-                  'Your password cannot be reset because your account is '
-                  'suspended. Contact a <a href="%s">Launchpad admin</a> '
-                  'about this issue.' % email_link)
-            self.request.response.addWarningNotification(message)
-            self.context.consume()
+        # Suspended accounts cannot reset their password.
+        reason = ('Your password cannot be reset because your account '
+            'is suspended.')
+        if self.accountWasSuspended(naked_person, reason):
             return
         # Reset password can be used to reactivate a deactivated account.
         elif naked_person.account.status == AccountStatus.DEACTIVATED:
@@ -745,6 +760,11 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             # password, to avoid removing the security proxy, but it didn't
             # work, so I'm leaving this hack for now.
             naked_person = removeSecurityProxy(person)
+            # Suspended accounts cannot reactivate their profile.
+            reason = ('This profile cannot be claimed because the account '
+                'is suspended.')
+            if self.accountWasSuspended(naked_person, reason):
+                return
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
             naked_person.activateAccount(

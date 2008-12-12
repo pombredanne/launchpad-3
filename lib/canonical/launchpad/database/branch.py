@@ -897,8 +897,7 @@ class BranchSet:
             # ~vcs-imports.
             if (owner.isTeam() and
                 owner != getUtility(ILaunchpadCelebrities).vcs_imports):
-                raise BranchCreationNoTeamOwnedJunkBranches(
-                    "Cannot create team-owned junk branches.")
+                raise BranchCreationNoTeamOwnedJunkBranches()
             # All junk branches are public.
             return PUBLIC_BRANCH
         # First check if the owner has a defined visibility rule.

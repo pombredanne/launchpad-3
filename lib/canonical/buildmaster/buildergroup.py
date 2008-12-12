@@ -304,13 +304,14 @@ class BuilderGroup:
         # Build the right UPLOAD_PATH so the distribution and archive
         # can be correctly found during the upload:
         #  * For non-PPA: <distribution>/[FILES]
-        #  * For PPA:     ~<person>/<distribution>/[FILES]
+        #  * For PPA:     ~<person>/<ppa_name>/<distribution>/[FILES]
         distribution_name = queueItem.build.distribution.name
         if queueItem.build.archive.purpose != ArchivePurpose.PPA:
             target_path = "%s" % distribution_name
         else:
             archive = queueItem.build.archive
-            target_path = "~%s/%s" % (archive.owner.name, distribution_name)
+            target_path = "~%s/%s/%s" % (
+                archive.owner.name, archive.name, distribution_name)
         upload_path = os.path.join(upload_dir, target_path)
         os.makedirs(upload_path)
 
