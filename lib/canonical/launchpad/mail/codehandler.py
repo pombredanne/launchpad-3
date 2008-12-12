@@ -56,6 +56,13 @@ class MissingMergeDirective(Exception):
 
 
 class CodeReviewEmailCommandExecutionContext:
+    """Passed as the only parameter to each code review email command.
+
+    The execution context is created once for each email and then passed to
+    each command object as the execution parameter.  The resulting vote and
+    vote tags in the context are used in the final code review comment
+    creation.
+    """
 
     def __init__(self, merge_proposal, user):
         self.merge_proposal = merge_proposal
