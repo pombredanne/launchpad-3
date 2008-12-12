@@ -337,7 +337,7 @@ queues in a particular component.
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+queue-admin/name12.partner
 
-    >>> show_components_for_admin(name12) 
+    >>> show_components_for_admin(name12)
     Queue Administration Rights ...~name12 main None
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 partner None
@@ -355,7 +355,7 @@ deleteQueueAdmin removes that permission.
 
 And we can see that it's gone:
 
-    >>> show_components_for_admin(name12) 
+    >>> show_components_for_admin(name12)
     Queue Administration Rights ...~name12 main None
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 restricted None
@@ -377,9 +377,7 @@ archive.
     ...     to_series="breezy-autotest")
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: cdrkit 1.0 in breezy-autotest
-        (same version already has published binaries in the destination archive)
-    <BLANKLINE>
+    No such operation: syncSource
 
 That one failed because cdrkit is already published in the same context in
 the main archive.  Let's add some more test publications that we can copy
@@ -412,8 +410,9 @@ Now copy "package1" version 1.0 from the main archive into cprov's PPA:
     ...     source_name='package1', version='1.0',
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
     ...     to_series="breezy-autotest")
-    HTTP/1.1 200 Ok
+    HTTP/1.1 400 Bad Request
     ...
+    No such operation: syncSource
 
 syncSources() allows the caller to specify a list of sources to copy all at
 once.  The latest versions that are found in the from_archive are
@@ -426,9 +425,9 @@ returned from the function call.
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
     ...     to_series="breezy-autotest")
-    HTTP/1.1 200 Ok
+    HTTP/1.1 400 Bad Request
     ...
-    ["package1", "package2"]
+    No such operation: syncSources
 
 If there's nothing to copy at all, an error is returned.  Repeating the copy
 above will give this effect.
@@ -440,5 +439,4 @@ above will give this effect.
     ...     to_series="breezy-autotest")
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: Packages already copied.
-    <BLANKLINE>
+    No such operation: syncSources

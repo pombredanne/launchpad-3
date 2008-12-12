@@ -590,21 +590,6 @@ class IArchive(IHasOwner):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
-    @operation_parameters(
-        source_names=List(
-            title=_("Source package names"),
-            value_type=TextLine()),
-        from_archive=Reference(schema=Interface), #Really IArchive, see below
-        to_pocket=TextLine(title=_("Pocket name")),
-        to_series=TextLine(title=_("Distroseries name"), required=False),
-        include_binaries=Bool(
-            title=_("Include Binaries"),
-            description=_("Whether or not to copy binaries already built for"
-                          " this source"),
-            required=False))
-    @export_write_operation()
-    # Source_names is a string because exporting a SourcePackageName is
-    # rather nonsensical as it only has id and name columns.
     def syncSources(source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
@@ -628,23 +613,6 @@ class IArchive(IHasOwner):
         :return: a list of string names of packages that could be copied.
         """
 
-    @operation_parameters(
-        source_name=TextLine(title=_("Source package name")),
-        version=TextLine(title=_("Version")),
-        from_archive=Reference(schema=Interface), #Really IArchive, see below
-        to_pocket=TextLine(title=_("Pocket name")),
-        to_series=TextLine(title=_("Distroseries name"), required=False),
-        include_binaries=Bool(
-            title=_("Include Binaries"),
-            description=_("Whether or not to copy binaries already built for"
-                          " this source"),
-            required=False))
-    @export_write_operation()
-    # XXX Julian 2008-11-05
-    # This method takes source_name and version as strings because
-    # SourcePackageRelease is not exported on the API yet.  When it is,
-    # we should consider either changing this method or adding a new one
-    # that takes that object instead.
     def syncSource(source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
         """Synchronise (copy) a single named source into this archive.
@@ -906,12 +874,6 @@ IArchive['newComponentUploader'].queryTaggedValue(
 IArchive['newQueueAdmin'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].schema = IArchivePermission
-IArchive['syncSources'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'params']['from_archive'].schema = IArchive
-IArchive['syncSource'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'params']['from_archive'].schema = IArchive
 
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.publishing import (
