@@ -1691,9 +1691,17 @@ hoary:
 
 Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
 can ask syncSources to synchronise these packages into sabdfl's PPA in the
-release pocket:
+release pocket, but to do so we must have edit permissions on the archive.
 
     >>> sources = ["package1", "package2"]
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+Let's log in as sabdfl and it will work:
+
+    >>> login("mark@hbd.com")
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
     [u'package1', u'package2']
     >>> [sabdfl_one] = sabdfl.archive.getPublishedSources(name="package1")
@@ -1762,8 +1770,19 @@ as it's potentially dangerous, since through the API there is no "are
 you sure!" type transaction.
 
 When copying a single package, if we supply a package name of "pack" it will
-only match one of the test packages we created above rather than all of them:
+only match one of the test packages we created above rather than all of them.
 
+As with syncSources() you need to have edit permission on the archive.
+
+    >>> login(ANONYMOUS)
+    >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+    
+Login as sabdfl to continue.
+
+    >>> login("mark@hbd.com")
     >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
     >>> [pack] = sabdfl.archive.getPublishedSources(
     ...     name="pack", exact_match=True)
