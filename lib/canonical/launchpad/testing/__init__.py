@@ -165,6 +165,28 @@ class TestCase(unittest.TestCase):
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
 
+    def assertRaises(self, excClass, callableObj, *args, **kwargs):
+        """Assert that a callable raises a particular exception.
+
+        :param excClass: As for the except statement, this may be either an
+            exception class, or a tuple of classes.
+        :param callableObj: A callable, will be passed ``*args`` and
+            ``**kwargs``.
+
+        Returns the exception so that you can examine it.
+        """
+        try:
+            callableObj(*args, **kwargs)
+        except excClass, e:
+            return e
+        else:
+            if getattr(excClass,'__name__', None) is not None:
+                excName = excClass.__name__
+            else:
+                # probably a tuple
+                excName = str(excClass)
+            raise self.failureException, "%s not raised" % excName
+
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
         """Check if the given exception is raised with given content.
