@@ -304,7 +304,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             if binary_in_destination.count() == 0:
                 binary_copy = binary.copyTo(
                         destination_series, pocket, archive)
-                copies.append(binary_copy)
+                copies.extend(binary_copy)
 
         # Always ensure the needed builds exist in the copy destination
         # after copying the binaries.
@@ -504,7 +504,7 @@ class UnembargoSecurityPackage(PackageCopier):
 
     def setUpCopierOptions(self):
         """Set up options needed by PackageCopier.
-        
+
         :return: False if there is a problem with the options.
         """
         # Set up the options for PackageCopier that are needed in addition
