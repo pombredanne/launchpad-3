@@ -69,7 +69,7 @@ class TestMessageSet(unittest.TestCase):
                     (1, message3)]
         self.assertEqual(expected, flattened)
 
-    def test_fromEmail_keeps_attachements(self):
+    def test_fromEmail_keeps_attachments(self):
         """Test that the parsing of the email keeps the attachments."""
         # Build a simple multipart message with a plain text first part
         # and an text/x-diff attachment.

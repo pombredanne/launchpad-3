@@ -121,7 +121,7 @@ class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
         # empty lists.
         comment = self.bmp.createComment(
             self.bmp.registrant, 'Subject', content='Some content')
-        self.assertEquals(([], []), comment.getAttachments())
+        self.assertEqual(([], []), comment.getAttachments())
 
     def _makeCommentFromEmailWithAttachment(self, filename, content_type):
         # Make an email message with an attachment, and create a code
@@ -138,21 +138,21 @@ class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
         comment = self._makeCommentFromEmailWithAttachment(
             'some.txt', 'text/plain')
         email_body, attachment = comment.message.chunks
-        self.assertEquals(([attachment.blob], []), comment.getAttachments())
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
 
     def test_getAttachments_text_xdiff_are_displayed(self):
         # text/x-diff attachments are displayed.
         comment = self._makeCommentFromEmailWithAttachment(
             'some.txt', 'text/x-diff')
         email_body, attachment = comment.message.chunks
-        self.assertEquals(([attachment.blob], []), comment.getAttachments())
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
 
     def test_getAttachments_text_xpatch_are_displayed(self):
         # text/x-patch attachments are displayed.
         comment = self._makeCommentFromEmailWithAttachment(
             'some.txt', 'text/x-patch')
         email_body, attachment = comment.message.chunks
-        self.assertEquals(([attachment.blob], []), comment.getAttachments())
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
 
     def test_getAttachments_others(self):
         # Attachments with other content types are not considered display
@@ -160,12 +160,12 @@ class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
         comment = self._makeCommentFromEmailWithAttachment(
             'some.txt', 'application/octet-stream')
         email_body, attachment = comment.message.chunks
-        self.assertEquals(([], [attachment.blob]), comment.getAttachments())
+        self.assertEqual(([], [attachment.blob]), comment.getAttachments())
 
         comment = self._makeCommentFromEmailWithAttachment(
             'pic.jpg', 'image/jpeg')
         email_body, attachment = comment.message.chunks
-        self.assertEquals(([], [attachment.blob]), comment.getAttachments())
+        self.assertEqual(([], [attachment.blob]), comment.getAttachments())
 
     def test_getAttachments_diff_or_patch_filename_overrides(self):
         # If the filename ends with .diff or .patch, then we consider these
@@ -173,12 +173,12 @@ class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
         comment = self._makeCommentFromEmailWithAttachment(
             'some.diff', 'application/octet-stream')
         email_body, attachment = comment.message.chunks
-        self.assertEquals(([attachment.blob], []), comment.getAttachments())
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
 
         comment = self._makeCommentFromEmailWithAttachment(
             'some.patch', 'application/octet-stream')
         email_body, attachment = comment.message.chunks
-        self.assertEquals(([attachment.blob], []), comment.getAttachments())
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
 
 
 

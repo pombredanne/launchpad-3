@@ -198,7 +198,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
                          mailer.message.text_contents.splitlines())
 
     def test_mailer_attachments(self):
-        """Ensure that vote tags are displayed."""
+        # Ensure that the attachments are attached.
+        # Only attachments that we would show in the web ui are attached,
+        # so the diff should be attached, and the jpeg image not.
         msg = self.factory.makeEmailMessage(
             body='This is the body of the email.',
             attachments=[
