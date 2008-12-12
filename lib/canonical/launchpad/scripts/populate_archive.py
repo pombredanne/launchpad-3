@@ -79,7 +79,12 @@ class ArchivePopulator(SoyuzScript):
 
             return proc_families
 
-            
+        def set_archive_architectures(archive, proc_families):
+            """Associate the archive with the processor families."""
+            aa_set = getUtility(IArchiveArchSet)
+            for proc_family in proc_families:
+                ignore_this = aa_set.new(archive, proc_family)
+
         def build_location(distro, suite, component):
             """Build and return package location."""
             if suite is not None:
@@ -117,12 +122,17 @@ class ArchivePopulator(SoyuzScript):
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
             # Load the processor families for the specified architecture tags
-            # from the database.
+            # from the database. This will fail if an invalid processor family
+            # name was specified on the command line i.e. it should be done
+            # before creating the copy archive.
             proc_families = loadProcessorFamilies(self.options.arch_tags)
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, to_archive,
                 the_destination.distribution, reason)
             the_destination.archive = copy_archive
+            # Associate the newly created copy archive with the processor
+            # families specified by the user.
+            set_archive_architectures(copy_archive, proc_families)
         else:
             raise SoyuzScriptError(
                 "A copy archive named '%s' exists already" % to_archive)
