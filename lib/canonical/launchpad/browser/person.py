@@ -2503,7 +2503,7 @@ class PersonView(LaunchpadView, FeedsMixin):
             if self.user.inTeam(self.context):
                 return 'Send an email to your team through Launchpad'
             else:
-                return 'Send an email to this team through Launchpad'
+                return "Send an email to this team's owner through Launchpad"
         elif self.viewing_own_page:
             return 'Send an email to yourself through Launchpad'
         else:
@@ -5050,6 +5050,22 @@ class IEmailToPerson(Interface):
         title=_('Message'), required=True, readonly=False)
 
 
+class Recipients:
+    """Who is being contacted."""
+    def __init__(self):
+        self.description = None
+        self.email = []
+
+    def appendEmail(self, email_address):
+        """Add the email from the EmailAddress to the list of emails.
+
+        :param email_address: an EmailAddress, possibly wrapped
+            by a SecurityProxy.
+        :type email_address: EmailAddress.
+        """
+        self.email.append(removeSecurityProxy(email_address).email)
+
+
 class EmailToPersonView(LaunchpadFormView):
     """The 'Contact this user' page."""
 
@@ -5085,36 +5101,20 @@ class EmailToPersonView(LaunchpadFormView):
     def recipients(self):
         """The recipients of the email message.
 
-        :return: recipients is an object that two attributes:
+        :return: recipients is an object with two attributes:
             description: a summary of who or which team is being contacted.
             emails: a list of addresses that will be used to send the message.
+        :rtype: `Recipients`.
         """
-        class recipients:
-            """Who is being contacted."""
-            description = None
-            email = None
-
-            def __repr__(self):
-                return "<recipients %s '%s'>" % (self.email, self.description)
-
-        # When the recipient is hiding her email addresses, the security proxy
-        # will prevent direct access to the .email attribute of the preferred
-        # email.  Bypass this restriction.
-        preferredemail = removeSecurityProxy(self.context.preferredemail)
-        recipients.email = []
-        if self.context.is_valid_person and preferredemail is not None:
-            recipients.email = [preferredemail.email]
+        recipients = Recipients()
+        if self.context.is_valid_person:
+            recipients.appendEmail(self.context.preferredemail)
             recipients.description = (
                 'You are contacting %s (%s).' %
                 (self.context.displayname, self.context.name))
         elif self.context.is_team:
             if self.user.inTeam(self.context):
-                if preferredemail is not None:
-                    recipients.email = [preferredemail.email]
-                    recipients.description = (
-                        'You are contacting the %s (%s) team.' %
-                        (self.context.displayname, self.context.name))
-                else:
+                if self.context.preferredemail is None:
                     # Contact each member.
                     # XXX sinzui 2008-12-11:
                     # Replace this loop with a query to get the addresses.
@@ -5123,14 +5123,21 @@ class EmailToPersonView(LaunchpadFormView):
                             and person.preferredemail is not None):
                             # This is either a team or a person without a
                             # preferred email, so don't send a notification.
-                            naked_email = removeSecurityProxy(
-                                person.preferredemail)
-                            recipients.email.append(naked_email.email)
+                            recipients.appendEmail(person.preferredemail)
+                    if len(recipients.email) == 1:
+                        plural_suffix = ''
+                    else:
+                        plural_suffix = 's'
                     recipients.description = (
-                        'You are contacting %d members of the %s (%s) '
+                        'You are contacting %d member%s of the %s (%s) '
                         'team directly.' %
-                        (len(recipients.email), self.context.displayname,
-                         self.context.name))
+                        (len(recipients.email), plural_suffix,
+                         self.context.displayname, self.context.name))
+                else:
+                    recipients.appendEmail(self.context.preferredemail)
+                    recipients.description = (
+                        'You are contacting the %s (%s) team.' %
+                        (self.context.displayname, self.context.name))
             else:
                 # A non-member can only send emails to a single person to
                 # hinder spam and to prevent leaking membership
@@ -5138,8 +5145,7 @@ class EmailToPersonView(LaunchpadFormView):
                 owner = self.context.teamowner
                 while owner.is_team:
                     owner = owner.teamowner
-                naked_email = removeSecurityProxy(owner.preferredemail)
-                recipients.email = [naked_email.email]
+                recipients.appendEmail(owner.preferredemail)
                 recipients.description = (
                     'You are contacting the %s (%s) team owner, %s (%s).' %
                     (self.context.displayname, self.context.name,
@@ -5150,7 +5156,7 @@ class EmailToPersonView(LaunchpadFormView):
         if len(recipients.email) == 0:
             # It's possible that this a person's page and that person
             # has no preferred email address.  It is possible that old
-            # data may not be valid, or the someone is crafting a URL to
+            # data may not be valid, or that someone is crafting a URL to
             # access a non-active user.
             recipients.description = (
                 '%s (%s) does not have an email address.' %
@@ -5164,7 +5170,7 @@ class EmailToPersonView(LaunchpadFormView):
         subject = data['subject']
         message = data['message']
 
-        if len(self.recipients.email) == 0 and not self.context.is_team:
+        if len(self.recipients.email) == 0:
             self.request.response.addErrorNotification(
                 _('Your message was not sent because the recipient '
                   'does not have a preferred email address.'))

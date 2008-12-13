@@ -387,7 +387,7 @@ himself.
     >>> print view.contactuser_link_title
     Send an email to yourself through Launchpad
 
-The EmailToPersonView provides the explanations of who is being contacted.
+The EmailToPersonView provides the explanation about who is being contacted.
 
     >>> view = create_initialized_view(no_priv, '+contactuser')
     >>> print view.label
@@ -408,7 +408,7 @@ the Landscape Developers team.
 
     >>> view = create_initialized_view(landscape_developers, '+index')
     >>> print view.contactuser_link_title
-    Send an email to this team through Launchpad
+    Send an email to this team's owner through Launchpad
 
 The EmailToPersonView can be used by non-members to contact the
 team owner.
@@ -450,6 +450,22 @@ The EmailToPersonView can be used by members to contact their team.
     >>> sorted(view.recipients.email)
     [u'guilherme.salgado@canonical.com', u'test@canonical.com']
 
+If there is only one member of the team, who must therefore be the user
+sending the email, and also be the team owner, The view provides a special
+message just for him.
+
+    >>> vanity_team = factory.makeTeam(
+    ...     sample_person, displayname='Vanity', name='vanity')
+    >>> view = create_initialized_view(vanity_team, '+contactuser')
+    >>> print view.label
+    Contact Vanity
+    >>> print view.specific_contact_title_text
+    Contact your team
+    >>> print view.recipients.description
+    You are contacting 1 member of the Vanity (vanity) team directly.
+    >>> sorted(view.recipients.email)
+    [u'test@canonical.com']
+
 EmailToPersonView will use the contact address when the team has one.
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
@@ -476,8 +492,8 @@ EmailToPersonView will use the contact address when the team has one.
 == Contact this user/team valid addresses and quotas ==
 
 The EmailToPersonView has_valid_email_address property is normally
-True. The is_possible property is True when both contact_is_allowed and
-as_valid_email_address are both True.
+True. The is_possible property is True when contact_is_allowed and
+has_valid_email_address are both True.
 
     >>> view = create_initialized_view(landscape_developers, '+contactuser')
     >>> view.has_valid_email_address
@@ -488,7 +504,7 @@ as_valid_email_address are both True.
 But when the user being contact does not have a valid address, the value
 is False. The contact_is_possible property will also be False when
 valid_email_address False. Users cannot hack the URL of non-active users
-to send them emails.
+to attempt to send them emails.
 
     >>> nonactive_user = person_set.getByName('nsv')
     >>> nonactive_user.account.status
@@ -506,14 +522,6 @@ next_try property is the date when the user will be allowed to send emails
 again. The is_possible property is True when both contact_is_allowed and
 as_valid_email_address are True.
 
-    >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> view.contact_is_allowed
-    True
-    >>> view.next_try
-    datetime.datetime...
-    >>> view.contact_is_possible
-    True
-
-The daily quota is set to 3 emails per day. See the "Bypassing the quota"
-in `foaf/xx-user-to-user.txt` to see how these two attributes are used.
+The daily quota is set to 3 emails per day. See the "Message quota"
+in `doc/user-to-user.txt` to see how these two attributes are used.
 
