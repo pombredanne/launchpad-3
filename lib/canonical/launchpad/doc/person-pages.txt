@@ -373,7 +373,7 @@ to explain exactly who is being contacted.
     Sample Person (Launchpad.net)
     >>> print view.recipients.description
     You are contacting Sample Person (name12).
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'test@canonical.com']
 
 
@@ -398,7 +398,7 @@ The EmailToPersonView provides the explanations of who is being contacted.
     Contact yourself
     >>> print view.recipients.description
     You are contacting No Privileges Person (no-priv).
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'no-priv@canonical.com']
 
 
@@ -425,7 +425,7 @@ team owner.
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team
     owner, Sample Person (name12).
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'test@canonical.com']
 
 
@@ -469,13 +469,14 @@ EmailToPersonView will use the contact address when the team has one.
     >>> landscape_developers.setContactAddress(email_address)
 
     >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> view.stop = True
     >>> print view.label
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
     Contact your team
     >>> print view.recipients.description
     You are contacting Landscape Developers (landscape-developers).
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'landscapers@canonical.com']
 
 
