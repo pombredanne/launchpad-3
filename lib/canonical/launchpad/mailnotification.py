@@ -1938,10 +1938,6 @@ def send_direct_contact_email(
     # Craft and send one message per recipient.
     message = None
     for recipient_email in recipients_email:
-        recipient = person_set.getByEmail(recipient_email)
-        assert recipient is not None, (
-            'No person for recipient %s' % recipient_email)
-        recipient_name = str(encode(recipient.displayname))
         message = MIMEText(encoded_body, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
         message['To'] = formataddr((to_header_name, recipient_email))
