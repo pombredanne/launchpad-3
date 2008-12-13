@@ -5087,13 +5087,21 @@ class EmailToPersonView(LaunchpadFormView):
                 self.description = None
                 # The email attribute will be an iterator.
                 self.email = None
-                self.count = None
                 # The To-header should indicate whether the email is intended
                 # for a single person or for a team.
                 self.to_header_name = None
             def __repr__(self):
                 return "<recipents %s '%s'>" % (self.email, self.description)
         recipients = Recipients()
+        class MemberWrapper:
+            def __init__(self, team):
+                self.team = team
+            def __len__(self):
+                return self.team.getMembersWithPreferredEmailsCount()
+            def __iter__(self):
+                for person in self.team.getMembersWithPreferredEmails():
+                    naked_email = removeSecurityProxy(person.preferredemail)
+                    yield naked_email.email
         # When the recipient is hiding her email addresses, the security proxy
         # will prevent direct access to the .email attribute of the preferred
         # email.  Bypass this restriction.
@@ -5110,21 +5118,13 @@ class EmailToPersonView(LaunchpadFormView):
             # nothing but issue an error notice.
             if self.context.is_team:
                 if self.user.inTeam(self.context):
-                    recipients.count = (
-                        self.context.getMembersWithPreferredEmailsCount())
-                    def MemberIterator():
-                        for person in (
-                            self.context.getMembersWithPreferredEmails()):
-                            naked_email = removeSecurityProxy(
-                                person.preferredemail)
-                            yield naked_email.email
                     # This actually instantiates a generator, so the function
                     # won't be executed until it is iterated over.
-                    recipients.email = member_iterator()
+                    recipients.email = MemberWrapper(self.context)
                     recipients.description = (
                         'You are contacting %d members of the %s (%s) '
                         'team directly.' %
-                        (recipients.count, self.context.displayname,
+                        (len(recipients.email), self.context.displayname,
                          self.context.name))
                 else:
                     # A non-member can only send emails to a single person to
@@ -5134,23 +5134,20 @@ class EmailToPersonView(LaunchpadFormView):
                     while owner.is_team:
                         owner = owner.teamowner
                     naked_email = removeSecurityProxy(owner.preferredemail)
-                    recipients.email = iter([naked_email.email])
-                    recipients.count = 1
+                    recipients.email = [naked_email.email]
                     recipients.description = (
                         'You are contacting the %s (%s) team owner, %s (%s).'
                          % (self.context.displayname, self.context.name,
                             owner.displayname, owner.name))
             else:
-                recipients.email = iter([])
-                recipients.count = 0
-            if recipients.count == 0:
+                recipients.email = []
+            if len(recipients.email) == 0:
                 recipients.description = (
                     '%s (%s) does not have an email address.'
                     % (self.context.displayname, self.context.name))
         else:
             # The recipient is a user or team with a preferred email address.
-            recipients.email = iter([preferredemail.email])
-            recipients.count = 1
+            recipients.email = [preferredemail.email]
             recipients.description = (
                 'You are contacting %s (%s).' %
                 (self.context.displayname, self.context.name))
@@ -5169,13 +5166,7 @@ class EmailToPersonView(LaunchpadFormView):
 
         assert recipients.description is not None
         assert recipients.to_header_name is not None
-        assert recipients.count is not None
-        # Make sure that recipients.email is an iterator for a
-        # consistent interface.
-        try:
-            recipients.email = iter(recipients.email)
-        except TypeError:
-            raise TypeError(repr(recipients.email))
+        assert recipients.email is not None
         return recipients
 
     @action(_('Send'), name='send')
@@ -5185,7 +5176,7 @@ class EmailToPersonView(LaunchpadFormView):
         subject = data['subject']
         message = data['message']
 
-        if self.recipients.count == 0:
+        if len(self.recipients.email) == 0:
             self.request.response.addErrorNotification(
                 _('Your message was not sent because the recipient '
                   'does not have a preferred email address.'))
@@ -5221,7 +5212,7 @@ class EmailToPersonView(LaunchpadFormView):
 
     @property
     def has_valid_email_address(self):
-        return self.recipients.count > 0
+        return len(self.recipients.email) > 0
 
     @property
     def contact_is_possible(self):

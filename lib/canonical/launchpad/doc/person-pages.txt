@@ -469,7 +469,6 @@ EmailToPersonView will use the contact address when the team has one.
     >>> landscape_developers.setContactAddress(email_address)
 
     >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> view.stop = True
     >>> print view.label
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
