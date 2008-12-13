@@ -9,31 +9,31 @@ instances by name.
 
 The attempt to access a non-existing processor family yields None.
 
-    >>> pfs.getByName('this-processor-family-does-not-exist') is None
-    True
+    >>> print pfs.getByName('this-processor-family-does-not-exist')
+    None
 
 Conversely, accessing an existing processor family yields the instance.
 
-    >>> pf = pfs.getByName('x86')
-    >>> pf.name
+    >>> family = pfs.getByName('x86')
+    >>> family.name
     u'x86'
-    >>> pf.title
+    >>> family.title
     u'Intel 386 compatible chips'
-    >>> pf.description
+    >>> family.description
     u'Bring back the 8086!'
 
 It is also possible to get the processor family for a given processor.
 
-    >>> pf = pfs.getByProcessorName('386')
-    >>> pf.name
+    >>> family = pfs.getByProcessorName('386')
+    >>> family.name
     u'x86'
-    >>> pf.title
+    >>> family.title
     u'Intel 386 compatible chips'
-    >>> pf.description
+    >>> family.description
     u'Bring back the 8086!'
 
-In case where the user specifies a non-existent processor name ... XXX
+In case where the user specifies a non-existent processor name the return
+value will be None.
 
-    >>> pf = pfs.getByProcessorName('wintel')
-    >>> pf is None
-    True
+    >>> print pfs.getByProcessorName('wintel')
+    None

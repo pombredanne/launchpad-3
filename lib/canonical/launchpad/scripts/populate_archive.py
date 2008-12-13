@@ -137,7 +137,7 @@ class ArchivePopulator(SoyuzScript):
 
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
-        pcr = getUtility(IPackageCopyRequestSet).new(
+        getUtility(IPackageCopyRequestSet).new(
             the_origin, the_destination, registrant,
             copy_binaries=include_binaries, reason=unicode(reason))
 
@@ -158,7 +158,7 @@ class ArchivePopulator(SoyuzScript):
 
         if not_specified(self.options.proc_families):
             raise SoyuzScriptError(
-                "error: build architecture(s) not specified.")
+                "error: processor families not specified.")
 
         if not_specified(self.options.from_distribution):
             raise SoyuzScriptError(

@@ -290,8 +290,8 @@ class TestPopulateArchiveScript(TestCase):
 
         self.assertTrue(len(build_spns) == 0)
 
-    def testInvalidProcessorName(self):
-        """Try copy archive population with invalid architecture tags.
+    def testInvalidProcessorFamilyName(self):
+        """Try copy archive population with an invalid processor family name.
 
         This test should provoke a `SoyuzScriptError` exception.
         """
@@ -302,13 +302,13 @@ class TestPopulateArchiveScript(TestCase):
             exception_text="Invalid processor family: 'wintel'")
 
     def testMissingProcessorFamily(self):
-        """Try copy archive population without specifying architecture tags.
+        """Try copy archive population without a sngle processor family name.
 
         This test should provoke a `SoyuzScriptError` exception.
         """
         copy_archive = self.runScript(
             exception_type=SoyuzScriptError,
-            exception_text="error: build architecture(s) not specified.")
+            exception_text="error: processor families not specified.")
 
     def testMultipleDistroArchSeriesSpecified(self):
         """Try copy archive population with multiple architecture tags.
