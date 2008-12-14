@@ -357,10 +357,14 @@ class TestNamespaceSet(TestCaseWithFactory):
         self.assertRaises(InvalidNamespace, self.namespace_set.parse, name)
 
     def test_lookup_invalid_name(self):
+        # Namespace paths must start with a tilde. Thus, lookup will raise an
+        # InvalidNamespace error if it is given a path without one.
         person = self.factory.makePerson()
         self.assertInvalidName(person.name)
 
     def test_lookup_short_name_person_only(self):
+        # Given a path that only has a person in it, lookup will raise an
+        # InvalidNamespace error.
         person = self.factory.makePerson()
         self.assertInvalidName('~' + person.name)
 
@@ -375,6 +379,8 @@ class TestNamespaceSet(TestCaseWithFactory):
             '~%s/%s' % (person.name, distroseries.distribution.name))
 
     def test_lookup_short_name_distroseries(self):
+        # Given a too-short path to a package branch namespace, lookup will
+        # raise an InvalidNamespace error.
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         self.assertInvalidName(
@@ -383,15 +389,20 @@ class TestNamespaceSet(TestCaseWithFactory):
                 distroseries.name))
 
     def test_lookup_long_name_junk(self):
+        # Given a too-long personal path, lookup will raise an
+        # InvalidNamespace error.
         person = self.factory.makePerson()
         self.assertInvalidName('~%s/+junk/foo' % person.name)
 
     def test_lookup_long_name_product(self):
+        # Given a too-long product path, lookup will raise an InvalidNamespace
+        # error.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         self.assertInvalidName('~%s/%s/foo' % (person.name, product.name))
 
     def test_lookup_long_name_sourcepackage(self):
+        # Given a too-long name, lookup will raise an InvalidNamespace error.
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -401,18 +412,25 @@ class TestNamespaceSet(TestCaseWithFactory):
                 distroseries.name, sourcepackagename.name))
 
     def test_parse_junk_namespace(self):
+        # parse takes a path to a personal (i.e. junk) branch namespace and
+        # returns a dict that has the person field set but all others set to
+        # None.
         self.assertEqual(
             dict(person='foo', product='+junk', distroseries=None,
                  distribution=None, sourcepackagename=None),
             self.namespace_set.parse('~foo/+junk'))
 
     def test_parse_product_namespace(self):
+        # parse take a path to a product branch namespace and returns a dict
+        # with the product set and the distro-related keys set to None.
         self.assertEqual(
             dict(person='foo', product='bar', distroseries=None,
                  distribution=None, sourcepackagename=None),
             self.namespace_set.parse('~foo/bar'))
 
     def test_parse_package_namespace(self):
+        # parse takes a path to a package branch namespace and returns a dict
+        # with the distro-related keys populated, and the product set to None.
         self.assertEqual(
             dict(person='foo', product=None, distribution='ubuntu',
                  distroseries='jaunty', sourcepackagename='foo'),
