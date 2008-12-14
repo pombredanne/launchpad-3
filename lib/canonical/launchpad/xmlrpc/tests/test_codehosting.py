@@ -615,6 +615,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
             PERMISSION_DENIED_FAULT_CODE, message, fault)
 
     def test_createBranch_source_package(self):
+        # createBranch can take the path to a source package branch and create
+        # it with all the right attributes.
         owner = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -636,6 +638,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_invalid_distro(self):
+        # If createBranch is called with the path to a non-existent distro, it
+        # will return a Fault saying so in plain English.
         owner = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -649,6 +653,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
             NOT_FOUND_FAULT_CODE, message, fault)
 
     def test_createBranch_invalid_distroseries(self):
+        # If createBranch is called with the path to a non-existent
+        # distroseries, it will return a Fault saying so.
         owner = self.factory.makePerson()
         distribution = self.factory.makeDistribution()
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -662,6 +668,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
             NOT_FOUND_FAULT_CODE, message, fault)
 
     def test_createBranch_invalid_sourcepackagename(self):
+        # If createBranch is called with the path to an invalid source
+        # package, it will return a Fault saying so.
         owner = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         branch_name = self.factory.getUniqueString()
