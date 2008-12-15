@@ -195,6 +195,7 @@ class WebServiceLayer(IDefaultBrowserLayer):
 class ITemplateCache(Interface):
     """A cache of objects to be presented to a templating system."""
 
+
 class IByteStorage(Interface):
     """A sequence of bytes stored on the server.
 
