@@ -453,6 +453,7 @@ class TestNamespaceSet(TestCaseWithFactory):
             dict(person='foo', product=None, distribution=None,
                  distroseries=None, sourcepackagename=None, branch='bar'),
             parsed)
+        self.assertEqual('README', trailing)
 
 
 def test_suite():
