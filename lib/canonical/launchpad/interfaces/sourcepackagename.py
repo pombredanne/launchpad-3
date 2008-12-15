@@ -15,8 +15,8 @@ from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 
 class ISourcePackageName(Interface):
