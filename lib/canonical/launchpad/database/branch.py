@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchcontainer import (
     PackageContainer, PersonContainer, ProductContainer)
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -73,7 +74,7 @@ from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
+    NoSuchPersonWithName, NoSuchSeries)
 
 
 class Branch(SQLBase):
