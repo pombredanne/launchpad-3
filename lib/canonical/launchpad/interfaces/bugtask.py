@@ -1084,6 +1084,12 @@ class IBugTaskSet(Interface):
         if the user doesn't have the permission to view this bug.
         """
 
+    def getBugTasks(bug_ids):
+        """Return the bugs with the given IDs and all of its bugtasks.
+
+        :return: A dictionary mapping the bugs to their bugtasks.
+        """
+
     def getBugTaskBadgeProperties(bugtasks):
         """Return whether the bugtasks should have badges.
 

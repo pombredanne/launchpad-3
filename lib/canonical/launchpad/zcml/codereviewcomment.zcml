@@ -51,6 +51,7 @@
   <browser:pages
       facet="branches"
       for="canonical.launchpad.interfaces.ICodeReviewComment"
+      class="canonical.launchpad.browser.CodeReviewCommentView"
       permission="zope.Public">
     <browser:page
         name="+index"
