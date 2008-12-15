@@ -115,8 +115,6 @@ class WebLayerAPI:
         request = WebServiceLayer(get_current_browser_request())
         if queryAdapter(self.context, IEntry):
             resource = EntryResource(self.context, request)
-        elif queryAdapter(self.context, ICollection):
-            resource = CollectionResource(self.context, request)
         else:
             # Just dump it as JSON.
             resource = self.context
