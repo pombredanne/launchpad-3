@@ -21,6 +21,8 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+BZR_VERSION_INFO = bzr-version-info.py
+
 XSLTPROC=xsltproc
 WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
 WADL_XSL = lib/launchpadlib/wadl-to-refhtml.xsl
@@ -42,14 +44,13 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-$(WADL_FILE): bzr-version-info.py
-	LPCONFIG=$(LPCONFIG) $(PYTHON) \
-	    ./utilities/create-lp-wadl.py > $(WADL_FILE)
+$(WADL_FILE): $(BZR_VERSION_INFO)
+	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py > $@
 
 $(API_INDEX): $(WADL_FILE) $(WADL_XSL)
 	$(XSLTPROC) $(WADL_XSL) $(WADL_FILE) > $@
 
-apidoc: $(API_INDEX)
+apidoc: compile $(API_INDEX)
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 
@@ -120,13 +121,13 @@ pagetests: build
 
 inplace: build
 
-build: bzr-version-info.py compile apidoc
+build: $(BZR_VERSION_INFO) compile apidoc
 
 compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
-		 $(PYTHON) -t buildmailman.py
+	    $(PYTHON) -t buildmailman.py
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -187,10 +188,10 @@ scan_branches: rewritemap
 
 sync_branches: pull_branches scan_branches
 
-bzr-version-info.py:
+$(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
-support_files: $(WADL_FILE) bzr-version-info.py
+support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before
@@ -251,7 +252,7 @@ clean:
 	$(RM) -r lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) $(WADL_FILE) $(API_INDEX)
-	$(RM) bzr-version-info.py
+	$(RM) $(BZR_VERSION_INFO)
 
 realclean: clean
 	$(RM) TAGS tags
@@ -264,9 +265,11 @@ clean_codehosting:
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:
+	mkdir -p doc/zcml/namespaces.zope.org
 	PYTHONPATH=$(PWD)/src:$(PYTHONPATH) $(PYTHON) \
-	    ./sourcecode/zope/configuration/stxdocs.py \
-	    -f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
+	    ./sourcecode/zope/src/zope/configuration/stxdocs.py \
+	    -f sourcecode/zope/src/zope/app/zcmlfiles/meta.zcml \
+	    -o doc/zcml/namespaces.zope.org
 
 potemplates: launchpad.pot
 
@@ -287,7 +290,8 @@ copy-certificates:
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
 copy-apache-config:
-	cp configs/development/local-launchpad-apache /etc/apache2/sites-available/local-launchpad
+	cp configs/development/local-launchpad-apache \
+	    /etc/apache2/sites-available/local-launchpad
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
@@ -304,9 +308,9 @@ TAGS:
 tags:
 	ctags -R lib
 
-.PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
-		ftest_build ftest_inplace test_build test_inplace pagetests \
-		check check_merge schema default launchpad.pot \
-		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches check_loggerhead_on_merge reload-apache \
-		check_launchpad_storm_on_merge
+.PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop	\
+	start run ftest_build ftest_inplace test_build test_inplace	\
+	pagetests check check_merge schema default launchpad.pot	\
+	check_launchpad_on_merge check_merge_ui pull rewritemap scan	\
+	sync_branches check_loggerhead_on_merge reload-apache		\
+	check_launchpad_storm_on_merge
