@@ -22,15 +22,13 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus,
-    DEFAULT_BRANCH_STATUS_IN_LISTING)
+    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branch import (BranchSet,
     BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
      DeleteCodeImport, DeletionCallable, DeletionOperation)
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal,
-    )
+    BranchMergeProposal)
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
@@ -42,7 +40,7 @@ from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
+    NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 

@@ -50,7 +50,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
+    bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
+    user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -72,7 +73,7 @@ from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
+    NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
 
 class Branch(SQLBase):
