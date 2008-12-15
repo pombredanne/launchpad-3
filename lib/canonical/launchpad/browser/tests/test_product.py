@@ -109,7 +109,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
             datetime.now(pytz.UTC) - timedelta(days=30),
             timedelta(days=1))
         self.factory.makeRevisionsForBranch(
-            branch, count=100, author='cthulu@example.com',
+            branch, author='cthulu@example.com',
             date_generator=date_generator)
 
         view = getMultiAdapter(
