@@ -111,8 +111,19 @@ class IBranchNamespaceSet(Interface):
         :return: A dict with keys matching each component in 'namespace_name'.
         """
 
-    def parseBranchPath(namespace_path):
-        """Parse 'namespace_path' into a namespace dict and a trailing path.
+    def parseBranchPath(branch_path):
+        """Parse 'branch_path' into a namespace dict and a trailing path.
+
+        See `IBranchNamespaceSet.parse` for what we mean by 'namespace dict'.
+
+        Since some paths can be parsed as either package branch paths or
+        product branch paths, this method yields possible parses of the given
+        path.
+
+        :param branch_path: A path to or within a branch. This will often, but
+            not always, include a '.bzr' segment.
+        :return: An iterator that yields '(namespace_dict, branch_name,
+            trailing_path)' for all valid parses of 'branch_path'.
         """
 
 
