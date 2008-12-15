@@ -50,7 +50,7 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
         expected_unique_name = namespace.getBranchName(branch_name)
-        registrant = namespace.owner
+        registrant = removeSecurityProxy(namespace).owner
         branch = namespace.createBranch(
             BranchType.HOSTED, branch_name, registrant)
         self.assertEqual(
@@ -61,7 +61,7 @@ class NamespaceMixin:
         # except for the ones that define the namespace.
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
-        registrant = namespace.owner
+        registrant = removeSecurityProxy(namespace).owner
         title = self.factory.getUniqueString()
         summary = self.factory.getUniqueString()
         whiteboard = self.factory.getUniqueString()
@@ -92,7 +92,8 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
         branch = namespace.createBranch(
-            BranchType.HOSTED, branch_name, namespace.owner)
+            BranchType.HOSTED, branch_name,
+            removeSecurityProxy(namespace).owner)
         self.assertEqual([branch], list(namespace.getBranches()))
 
     def test_getByName_default(self):
@@ -113,7 +114,8 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
         branch = namespace.createBranch(
-            BranchType.HOSTED, branch_name, namespace.owner)
+            BranchType.HOSTED, branch_name,
+            removeSecurityProxy(namespace).owner)
         match = namespace.getByName(branch_name)
         self.assertEqual(branch, match)
 
@@ -126,7 +128,8 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
         branch = namespace.createBranch(
-            BranchType.HOSTED, branch_name, namespace.owner)
+            BranchType.HOSTED, branch_name,
+            removeSecurityProxy(namespace).owner)
         self.assertEqual(True, namespace.isNameUsed(branch_name))
 
     def test_findUnusedName_unused(self):
@@ -141,7 +144,8 @@ class NamespaceMixin:
         # already used.
         namespace = self.getNamespace()
         name = self.factory.getUniqueString()
-        namespace.createBranch(BranchType.HOSTED, name, namespace.owner)
+        namespace.createBranch(
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
         unused_name = namespace.findUnusedName(name)
         self.assertEqual('%s-1' % name, unused_name)
 
@@ -150,9 +154,11 @@ class NamespaceMixin:
         # already used.
         namespace = self.getNamespace()
         name = self.factory.getUniqueString()
-        namespace.createBranch(BranchType.HOSTED, name, namespace.owner)
         namespace.createBranch(
-            BranchType.HOSTED, name + '-1', namespace.owner)
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
+        namespace.createBranch(
+            BranchType.HOSTED, name + '-1',
+            removeSecurityProxy(namespace).owner)
         unused_name = namespace.findUnusedName(name)
         self.assertEqual('%s-2' % name, unused_name)
 
@@ -162,7 +168,7 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         name = self.factory.getUniqueString()
         branch = namespace.createBranchWithPrefix(
-            BranchType.HOSTED, name, namespace.owner)
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
         self.assertEqual(name, branch.name)
 
     def test_createBranchWithPrefix_used(self):
@@ -170,9 +176,10 @@ class NamespaceMixin:
         # given prefix if there's no branch with that name already.
         namespace = self.getNamespace()
         name = self.factory.getUniqueString()
-        namespace.createBranch(BranchType.HOSTED, name, namespace.owner)
+        namespace.createBranch(
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
         branch = namespace.createBranchWithPrefix(
-            BranchType.HOSTED, name, namespace.owner)
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
         self.assertEqual(name + '-1', branch.name)
 
 
@@ -195,7 +202,7 @@ class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
         # The person passed to a personal namespace is the owner.
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
-        self.assertEqual(person, namespace.owner)
+        self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
 
 class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
@@ -221,7 +228,7 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         namespace = ProductNamespace(person, product)
-        self.assertEqual(person, namespace.owner)
+        self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
 
 class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
@@ -254,7 +261,7 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = PackageNamespace(person, distroseries, sourcepackagename)
-        self.assertEqual(person, namespace.owner)
+        self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
 
 class TestNamespaceSet(TestCaseWithFactory):
@@ -292,7 +299,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         person = self.factory.makePerson()
         namespace = lookup_branch_namespace('~%s/+junk' % person.name)
         self.assertIsInstance(namespace, PersonalNamespace)
-        self.assertEqual(person, namespace.owner)
+        self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
     def test_lookup_personal_not_found(self):
         # lookup_branch_namespace raises NoSuchPerson error if the given
@@ -306,7 +313,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         namespace = lookup_branch_namespace(
             '~%s/%s' % (person.name, product.name))
         self.assertIsInstance(namespace, ProductNamespace)
-        self.assertEqual(person, namespace.owner)
+        self.assertEqual(person, removeSecurityProxy(namespace).owner)
         self.assertEqual(product, removeSecurityProxy(namespace).product)
 
     def test_lookup_product_not_found(self):
@@ -324,7 +331,7 @@ class TestNamespaceSet(TestCaseWithFactory):
                 person.name, distroseries.distribution.name,
                 distroseries.name, sourcepackagename.name))
         self.assertIsInstance(namespace, PackageNamespace)
-        self.assertEqual(person, namespace.owner)
+        self.assertEqual(person, removeSecurityProxy(namespace).owner)
         namespace = removeSecurityProxy(namespace)
         self.assertEqual(distroseries, namespace.distroseries)
         self.assertEqual(sourcepackagename, namespace.sourcepackagename)

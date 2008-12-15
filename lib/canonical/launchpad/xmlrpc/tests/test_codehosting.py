@@ -648,7 +648,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             owner.name, distroseries.name, sourcepackagename.name,
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
-        message = "No such distribution 'ningnangnong'."
+        message = "No such distribution: 'ningnangnong'."
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -663,7 +663,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             owner.name, distribution.name, sourcepackagename.name,
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
-        message = "No such distribution series 'ningnangnong'."
+        message = "No such distribution series: 'ningnangnong'."
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -677,7 +677,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             owner.name, distroseries.distribution.name, distroseries.name,
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
-        message = "No such source package 'ningnangnong'."
+        message = "No such source package: 'ningnangnong'."
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 

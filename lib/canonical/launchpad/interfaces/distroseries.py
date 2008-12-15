@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
@@ -704,10 +705,7 @@ class IDistroSeriesSet(Interface):
         """
 
 
-class NoSuchDistroSeries(Exception):
+class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
 
-    def __init__(self, name):
-        self.name = name
-        Exception.__init__(
-            self, "No such distribution series '%s'." % (name,))
+    _message_prefix = "No such distribution series"

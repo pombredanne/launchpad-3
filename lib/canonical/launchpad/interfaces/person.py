@@ -82,6 +82,7 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -1979,12 +1980,10 @@ class NameAlreadyTaken(Exception):
     webservice_error(409)
 
 
-class NoSuchPerson(Exception):
+class NoSuchPerson(NameLookupFailed):
     """Raised when we try to look up an IPerson that doesn't exist."""
 
-    def __init__(self, name):
-        self.name = name
-        Exception.__init__(self, "No such person '%s'." % (name,))
+    _message_prefix = "No such person"
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
