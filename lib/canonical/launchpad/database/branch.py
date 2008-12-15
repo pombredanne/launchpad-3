@@ -1178,14 +1178,22 @@ class BranchSet:
             branch, series = klass._getDefaultProductBranch(*path_segments)
         else:
             series = None
-            owner, product, name = path_segments[:3]
-            if owner[0] != '~':
+            namespace_set = getUtility(IBranchNamespaceSet)
+            parsed = namespace_set.parseBranchPath(path)
+            try:
+                for parsed_path, branch, suffix in parsed:
+                    branch = klass._getByUniqueNameElements(
+                        parsed_path['person'], parsed_path['product'], branch)
+                    if branch is not None:
+                        if suffix == '':
+                            suffix = None
+                        break
+                else:
+                    klass._checkOwnerProduct(
+                        parsed_path['person'], parsed_path['product'])
+                    raise NoSuchBranch(path)
+            except InvalidNamespace:
                 raise faults.InvalidBranchIdentifier(path)
-            owner = owner[1:]
-            branch = klass._getByUniqueNameElements(owner, product, name)
-            if branch is None:
-                klass._checkOwnerProduct(owner, product)
-                raise NoSuchBranch(path)
         return branch, suffix, series
 
     @staticmethod
