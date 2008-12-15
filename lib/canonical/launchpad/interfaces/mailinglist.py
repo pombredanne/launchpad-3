@@ -597,6 +597,12 @@ class IMailingListAPIView(Interface):
         to the mailing list linked to the named team.
         """
 
+    def isTeamPublic(team_name):
+        """Is the team with the given name public?
+
+        :raises NoSuchPersonWithName: If there's no team with the given name.
+        """
+
     def isRegisteredInLaunchpad(address):
         """Whether the address is a Launchpad member.
 
