@@ -27,3 +27,25 @@ class IPackageCloner(Interface):
         @param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
         """
+
+    def mergeCopy(origin, destination):
+        """Copy packages that are obsolete or missing in target archive.
+
+        Copy source packages from a given source archive that are obsolete or
+        missing in the target archive.
+
+        @type origin: PackageLocation
+        @param origin: the location from which the data is to be copied.
+        @type destination: PackageLocation
+        @param destination: the location to which the data is to be copied.
+        """
+
+    def packageSetDiff(origin, destination):
+        """Find packages that are obsolete or missing in target archive.
+
+        @type origin: PackageLocation
+        @param origin: the location with potentially new or fresher packages.
+        @type destination: PackageLocation
+        @param destination: the target location.
+        """
+
