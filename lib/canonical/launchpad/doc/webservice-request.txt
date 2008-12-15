@@ -24,9 +24,9 @@ This works for HTTPS requests as well as HTTP requests:
     >>> request.getApplicationURL()
     'https://launchpad.dev/api/beta'
 
-Objects can be stored in the template cache so that their JSON
-representations can be included in the template. An object can be
-stored in the template cache's 'objects' dict or its 'links' dict.
+Objects can be stored in the cache so that their JSON representations
+can be included in a template. An object can be stored in the cache's
+'objects' dict or its 'links' dict.
 
     >>> from canonical.lazr.interfaces.rest import IJSONRequestCache
     >>> cache = IJSONRequestCache(website_request)
@@ -40,6 +40,16 @@ stored in the template cache's 'objects' dict or its 'links' dict.
 
     >>> cache.links['objectA'] = 'foo'
     >>> cache.links['objectB'] = 'bar'
+    >>> for key in cache.links:
+    ...     print "%s: %s" % (key, cache.links[key])
+    objectA: foo
+    objectB: bar
+
+The normal way to access a request's cache is through TALES.
+
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> cache = test_tales("request/webservicerequest:cache",
+    ...                    request=website_request)
     >>> for key in cache.links:
     ...     print "%s: %s" % (key, cache.links[key])
     objectA: foo
