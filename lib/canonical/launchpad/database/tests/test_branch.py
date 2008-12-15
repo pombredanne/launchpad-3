@@ -40,12 +40,13 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchPersonWithName, NoSuchSeries)
+    NoSuchSeries)
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
@@ -1172,7 +1173,7 @@ class TestGetByUrl(TestCaseWithFactory):
         """lp: URLs for the configured prefix are supported."""
         branch_set = getUtility(IBranchSet)
         url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
-        self.assertRaises(NoSuchPersonWithName, branch_set.getByUrl, url)
+        self.assertRaises(NoSuchPerson, branch_set.getByUrl, url)
         owner = self.factory.makePerson(name='aa')
         product = self.factory.makeProduct('b')
         branch2 = branch_set.getByUrl(url)
@@ -1210,7 +1211,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
         self.assertRaises(
-            NoSuchPersonWithName, branch_set.getByLPPath, '~aa/bb/c')
+            NoSuchPerson, branch_set.getByLPPath, '~aa/bb/c')
         owner = self.factory.makePerson(name='aa')
         self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
         product = self.factory.makeProduct('bb')

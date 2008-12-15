@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchcontainer import (
     PackageContainer, PersonContainer, ProductContainer)
+from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
@@ -1223,7 +1224,7 @@ class BranchSet:
         """
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
-            raise faults.NoSuchPersonWithName(owner_name)
+            raise NoSuchPerson(owner_name)
         if product_name != '+junk':
             project = getUtility(IProductSet).getByName(product_name)
             if project is None:

@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import (
     IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.project import IProject
@@ -241,6 +242,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                     product_name, pillar_type)
             else:
                 return faults.NoSuchProduct(product_name)
+        except NoSuchPerson, e:
+            return faults.NoSuchPersonWithName(e.name)
         except faults.LaunchpadFault, e:
             return e
         return self._getResultDict(branch, suffix)
