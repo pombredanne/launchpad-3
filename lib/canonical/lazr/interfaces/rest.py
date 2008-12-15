@@ -20,6 +20,7 @@ __all__ = [
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
+    'ITemplateCache',
     'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
     'LAZR_WEBSERVICE_NAME',
@@ -190,6 +191,9 @@ class ITopLevelEntryLink(Interface):
 class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
 
+
+class ITemplateCache(Interface):
+    """A cache of objects to be presented to a templating system."""
 
 class IByteStorage(Interface):
     """A sequence of bytes stored on the server.

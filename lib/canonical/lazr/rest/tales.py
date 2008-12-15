@@ -27,7 +27,8 @@ from canonical.lazr.rest import EntryResource, ResourceJSONEncoder
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
-    IResourcePOSTOperation, IScopedCollection, ITopLevelEntryLink)
+    IResourcePOSTOperation, IScopedCollection, ITemplateCache,
+    ITopLevelEntryLink)
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
@@ -81,6 +82,18 @@ def generate_wadl_doc(doc):
 
     return WADL_DOC_TEMPLATE % parsed.to_html(WadlDocstringLinker())
 
+class WebServiceRequestAPI:
+    """Namespace for web service functions related to a website request."""
+
+    def __init__(self, request):
+        """Initialize with respect to a request."""
+        self.request = request
+
+    def cache(self):
+        """Return the request's ITemplateCache."""
+        return ITemplateCache(self.request)
+
+
 class WebLayerAPI:
     """Namespace for web service functions used in the website.
 
@@ -97,13 +110,16 @@ class WebLayerAPI:
         return queryAdapter(self.context, IEntry) != None
 
     @property
-    def json_entry(self):
+    def json(self):
         """Return a JSON description of the object."""
         request = WebServiceLayer(get_current_browser_request())
         if queryAdapter(self.context, IEntry):
             resource = EntryResource(self.context, request)
+        elif queryAdapter(self.context, ICollection):
+            resource = CollectionResource(self.context, request)
         else:
-            return ""
+            # Just dump it as JSON.
+            resource = self.context
         return simplejson.dumps(resource, cls=ResourceJSONEncoder)
 
 
