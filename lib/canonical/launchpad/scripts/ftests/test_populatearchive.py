@@ -92,6 +92,7 @@ class TestPopulateArchiveScript(TestCase):
         # Command line arguments required for the invocation of the
         # 'populate-archive.py' script.
         extra_args = [
+            '-a', 'x86',
             '--from-distribution', distro_name, '--from-suite', 'hoary',
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', name, '--to-user', 'salgado', '--reason',
@@ -215,7 +216,9 @@ class TestPopulateArchiveScript(TestCase):
         # The colons in the name make it invalid.
         invalid_archive_name = "ra//%s" % now
 
+        extra_args = ['-a', 'x86']
         self.runScript(
+            extra_args=extra_args,
             archive_name=invalid_archive_name,
             exception_type=SoyuzScriptError,
             exception_text=(
@@ -231,7 +234,9 @@ class TestPopulateArchiveScript(TestCase):
         """
         now = int(time.time())
         invalid_suite = "suite/:/%s" % now
+        extra_args = ['-a', 'x86']
         self.runScript(
+            extra_args=extra_args,
             suite=invalid_suite,
             exception_type=PackageLocationError,
             exception_text="Could not find suite '%s'" % invalid_suite)
@@ -245,7 +250,9 @@ class TestPopulateArchiveScript(TestCase):
         """
         now = int(time.time())
         invalid_user = "user//%s" % now
+        extra_args = ['-a', 'x86']
         self.runScript(
+            extra_args=extra_args,
             user=invalid_user,
             exception_type=SoyuzScriptError,
             exception_text="Invalid user name: '%s'" % invalid_user)
@@ -283,6 +290,26 @@ class TestPopulateArchiveScript(TestCase):
 
         self.assertTrue(len(build_spns) == 0)
 
+    def testInvalidProcessorFamilyName(self):
+        """Try copy archive population with an invalid processor family name.
+
+        This test should provoke a `SoyuzScriptError` exception.
+        """
+        extra_args = ['-a', 'wintel']
+        copy_archive = self.runScript(
+            extra_args=extra_args,
+            exception_type=SoyuzScriptError,
+            exception_text="Invalid processor family: 'wintel'")
+
+    def testMissingProcessorFamily(self):
+        """Try copy archive population without a sngle processor family name.
+
+        This test should provoke a `SoyuzScriptError` exception.
+        """
+        copy_archive = self.runScript(
+            exception_type=SoyuzScriptError,
+            exception_text="error: processor families not specified.")
+
     def testMultipleDistroArchSeriesSpecified(self):
         """Try copy archive population with multiple architecture tags.
 
@@ -304,7 +331,7 @@ class TestPopulateArchiveScript(TestCase):
         #   * the '-a' command line parameter is cumulative in nature
         #     i.e. the 'hppa' architecture tag specified after the 'i386'
         #     tag does not overwrite the latter but is added to it.
-        extra_args = ['-a', 'i386', '-a', 'hppa']
+        extra_args = ['-a', 'x86', '-a', 'hppa']
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
 
