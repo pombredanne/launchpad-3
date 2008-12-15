@@ -99,6 +99,22 @@ To test this, first we need to wind forward the database policy's clock.
 
     >>> dbpolicy._now = _original_now # Reset the time machine.
 
+
+When lag gets too bad, we stop using slave databases. This stops
+replication oddities from becoming too bad, as well as lightening the load
+on the slaves allowing them to catch up.
+
+    >>> anon_browser.open('http://launchpad.dev/+whichdb')
+    >>> print whichdb(anon_browser)
+    SLAVE
+
+    >>> dbpolicy._test_lag = timedelta(minutes=10)
+    >>> anon_browser.open('http://launchpad.dev/+whichdb')
+    >>> print whichdb(anon_browser)
+    MASTER
+    >>> dbpolicy._test_lag = None
+    
+
 Reset our config to avoid affecting other tests.
 
     >>> ignored = config.pop('empty_slave')

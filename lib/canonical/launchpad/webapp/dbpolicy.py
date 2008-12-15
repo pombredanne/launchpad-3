@@ -33,6 +33,10 @@ def _now():
     return datetime.utcnow()
 
 
+# Can be tweaked by the test suite to simulate replication lag.
+_test_lag = None
+
+
 class BaseDatabasePolicy:
     """Base class for database policies."""
     implements(IDatabasePolicy)
@@ -140,6 +144,11 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         :returns: timedelta, or None if this isn't a replicated environment,
         """
+        # Support the test suite hook.
+        global _test_lag
+        if _test_lag is not None:
+            return _test_lag
+
         # sl_status only gives meaningful results on the origin node.
         store = da.StoreSelector.get(name, MASTER_FLAVOR)
         return store.execute("SELECT replication_lag()").get_one()[0]
