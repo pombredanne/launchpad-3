@@ -1,16 +1,17 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['emailcommands', 'get_error_message']
-
-import os.path
+__all__ = [
+    'EmailCommand',
+    'EmailCommandCollection',
+    'BugEmailCommands',
+    'get_error_message']
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.schema import ValidationError
 
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
@@ -25,23 +26,11 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.mail.helpers import (
+    get_error_message, get_person_or_team)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
-
-
-def get_error_message(filename, **interpolation_items):
-    """Returns the error message that's in the given filename.
-
-    If the error message requires some parameters, those are given in
-    interpolation_items.
-
-    The files are searched for in lib/canonical/launchpad/mail/errortemplates.
-    """
-    base = os.path.dirname(__file__)
-    fullpath = os.path.join(base, 'errortemplates', filename)
-    error_template = open(fullpath).read()
-    return error_template % interpolation_items
 
 
 def normalize_arguments(string_args):
@@ -317,17 +306,7 @@ class SubscribeEmailCommand(EmailCommand):
         user = getUtility(ILaunchBag).user
 
         if len(string_args) == 1:
-            person_name_or_email = string_args.pop()
-            valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-            try:
-                person_term = valid_person_vocabulary.getTermByToken(
-                    person_name_or_email)
-            except LookupError:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'no-such-person.txt',
-                        name_or_email=person_name_or_email))
-            person = person_term.value
+            person = get_person_or_team(string_args.pop())
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = user
@@ -357,17 +336,7 @@ class UnsubscribeEmailCommand(EmailCommand):
         """See IEmailCommand."""
         string_args = list(self.string_args)
         if len(string_args) == 1:
-            person_name_or_email = string_args.pop()
-            valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-            try:
-                person_term = valid_person_vocabulary.getTermByToken(
-                    person_name_or_email)
-            except LookupError:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'no-such-person.txt',
-                        name_or_email=person_name_or_email))
-            person = person_term.value
+            person = get_person_or_team(string_args.pop())
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
@@ -693,16 +662,7 @@ class AssigneeEmailCommand(EditEmailCommand):
         if person_name_or_email == "nobody":
             return {self.name: None}
 
-        valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-        try:
-            person_term = valid_person_vocabulary.getTermByToken(
-                person_name_or_email)
-        except LookupError:
-            raise EmailProcessingError(
-                get_error_message(
-                    'no-such-person.txt', name_or_email=person_name_or_email))
-
-        return {self.name: person_term.value}
+        return {self.name: get_person_or_team(person_name_or_email)}
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
@@ -884,7 +844,28 @@ class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
 
 
-class EmailCommands:
+class EmailCommandCollection:
+    """A collection of email commands."""
+
+    @classmethod
+    def names(klass):
+        """Returns all the command names."""
+        return klass._commands.keys()
+
+    @classmethod
+    def get(klass, name, string_args):
+        """Returns a command object with the given name and arguments.
+
+        If a command with the given name can't be found, a NoSuchCommand
+        error is raised.
+        """
+        command_class = klass._commands.get(name)
+        if command_class is None:
+            raise NoSuchCommand(name)
+        return command_class(name, string_args)
+
+
+class BugEmailCommands(EmailCommandCollection):
     """A collection of email commands."""
 
     _commands = {
@@ -905,20 +886,3 @@ class EmailCommands:
         'priority': ReplacedByImportanceCommand,
         'tag': TagEmailCommand,
     }
-
-    def names(self):
-        """Returns all the command names."""
-        return self._commands.keys()
-
-    def get(self, name, string_args):
-        """Returns a command object with the given name and arguments.
-
-        If a command with the given name can't be found, a NoSuchCommand
-        error is raised.
-        """
-        command_class = self._commands.get(name)
-        if command_class is None:
-            raise NoSuchCommand(name)
-        return command_class(name, string_args)
-
-emailcommands = EmailCommands()

@@ -15,13 +15,13 @@ from canonical.launchpad.webapp import canonical_url
 
 def send(comment, event):
     """Send a copy of the code review comments to branch subscribers."""
-    CodeReviewCommentMailer.forCreation(comment).sendAll()
+    CodeReviewCommentMailer.forCreation(comment, event.email).sendAll()
 
 
 class CodeReviewCommentMailer(BMPMailer):
     """Send email about creation of a CodeReviewComment."""
 
-    def __init__(self, code_review_comment, recipients):
+    def __init__(self, code_review_comment, recipients, original_email):
         """Constructor."""
         self.code_review_comment = code_review_comment
         self.message = code_review_comment.message
@@ -32,14 +32,33 @@ class CodeReviewCommentMailer(BMPMailer):
         BMPMailer.__init__(
             self, self.message.subject, None, recipients, merge_proposal,
             from_address)
+        self.attachments = []
+        if original_email is not None:
+            # The attachments for the code review comment are actually
+            # library file aliases.
+            display_aliases, other_aliases = (
+                self.code_review_comment.getAttachments())
+            include_attachments = set()
+            for alias in display_aliases:
+                include_attachments.add((alias.filename, alias.mimetype))
+            for part in original_email.walk():
+                if part.is_multipart():
+                    continue
+                filename = part.get_filename() or 'unnamed'
+                if part['content-type'] is None:
+                    content_type = 'application/octet-stream'
+                else:
+                    content_type = part['content-type']
+                if (filename, content_type) in include_attachments:
+                    self.attachments.append(part)
 
     @classmethod
-    def forCreation(klass, code_review_comment):
+    def forCreation(klass, code_review_comment, original_email=None):
         """Return a mailer for CodeReviewComment creation."""
         merge_proposal = code_review_comment.branch_merge_proposal
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        return klass(code_review_comment, recipients)
+        return klass(code_review_comment, recipients, original_email)
 
     def _getSubject(self, email):
         """Don't do any string template insertions on subjects."""
@@ -84,3 +103,10 @@ class CodeReviewCommentMailer(BMPMailer):
         if self.message.parent is not None:
             headers['In-Reply-To'] = self.message.parent.rfc822msgid
         return headers
+
+    def _addAttachments(self, ctrl):
+        """Add the attachments from the original message."""
+        # Only reattach the display_aliases.
+        for attachment in self.attachments:
+            # Append directly to the controller's list.
+            ctrl.attachments.append(attachment)

@@ -40,6 +40,20 @@ page.
     >>> commercial_browser.title
     'Review licenses of projects'
 
+The search parameters that filter on a boolean value can also
+be left unspecified to get results with either value.
+
+    >>> for name in ('active', 'license_reviewed', 'has_zero_licenses',
+    ...              'license_info_is_empty'):
+    ...     control = commercial_browser.getControl(name='field.%s' % name)
+    ...     for option in control.displayOptions:
+    ...         print option.decode('utf-8').encode('ascii', 'replace'),
+    ...     print
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?Empty ?Not Empty
+
 The default form values will search for active projects that have not
 been reviewed and that have an Other/Open-Source or Other/Proprietary
 license.

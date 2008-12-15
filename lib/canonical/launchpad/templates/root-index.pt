@@ -71,37 +71,37 @@
 
       <div class="three column middle">
         <h2>What&#8217;s new?</h2>
-        <ul>
+        <ul> 
 		<li class="news">
-            <a href="http://news.launchpad.net/?p=242">
-              <strong>OpenID with Launchpad</strong><br />          
-              Log into hundreds of other websites using your
-              Launchpad identity!
+            <a href="http://news.launchpad.net/cool-new-stuff/announcing-the-launchpad-plugin-api-spec">
+              <strong>New bug plugin API</strong><br />          
+              Create your own plugin for direct communication between Launchpad
+              and your favourite bug tracker.
             </a>
-         </li>
-         <li class="news">
-            <a href="http://news.launchpad.net/?p=214">
-              <strong>Contact any Launchpad user</strong><br />
-              Get in touch with other Launchpad users without knowing
-              their email address.
+         </li>  
+		<li class="news">
+            <a href="http://news.launchpad.net/cool-new-stuff/new-launchpad-plugins-for-drupal">
+              <strong>Drupal integration</strong><br />          
+              Authenticate visitors to your Drupal site using Launchpad
+              and assign roles based on their team memberships.
             </a>
-         </li>
+         </li>      
+		<li class="news">
+            <a href="http://news.launchpad.net/general/launchpad-now-on-twitter-and-identica">
+              <strong>We're on Twitter and identi.ca</strong><br />          
+              Follow Launchpad news and bug reports. Also, microblog your project using Launchpad feeds!
+            </a>
+         </li>                          
          <li class="news">
             <a href="http://news.launchpad.net/?p=106">
               <strong>Help test Launchpad's new API!</strong><br />
               Join the beta of our web services API and Python library.
             </a>
          </li>
-          <li class="news">
-            <a href="http://news.launchpad.net/?p=115">
-              <strong>Bugzilla and Trac plugins now in beta</strong><br />
-              Run Bugzilla or Trac? Help beta test our new
-              plugins to start sharing bug comments with Launchpad.
-            </a>
-         </li>
+
         </ul>
         <div class="discreet" style="text-align: right">
-          Updated 2008-11-19.
+          Updated 2008-12-17.
           <a href="http://news.launchpad.net">More...</a>
         </div>
       </div>
