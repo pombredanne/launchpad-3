@@ -20,9 +20,6 @@ from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
 class IBranchNamespace(Interface):
     """A namespace that a branch lives in."""
 
-    owner = Attribute(
-        "The `IPerson` who owns this namespace. Their name normally appears "
-        "in the namespace's name.")
     name = Attribute(
         "The name of the namespace. This is prepended to the branch name.")
 
