@@ -6,4 +6,4 @@
 from canonical.lazr.rest.bytestorage import *
 from canonical.lazr.rest.operation import *
 from canonical.lazr.rest.resource import *
-from canonical.lazr.rest.templatecache import *
+from canonical.lazr.rest.jsoncache import *

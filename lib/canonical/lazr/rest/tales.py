@@ -26,8 +26,8 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.rest import EntryResource, ResourceJSONEncoder
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
-    ICollection, IEntry, IResourceGETOperation, IResourceOperation,
-    IResourcePOSTOperation, IScopedCollection, ITemplateCache,
+    ICollection, IEntry, IJSONRequestCache, IResourceGETOperation,
+    IResourceOperation, IResourcePOSTOperation, IScopedCollection,
     ITopLevelEntryLink)
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
@@ -90,8 +90,8 @@ class WebServiceRequestAPI:
         self.request = request
 
     def cache(self):
-        """Return the request's ITemplateCache."""
-        return ITemplateCache(self.request)
+        """Return the request's IJSONRequestCache."""
+        return IJSONRequestCache(self.request)
 
 
 class WebLayerAPI:

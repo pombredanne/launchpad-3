@@ -15,12 +15,12 @@ __all__ = [
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
+    'IJSONRequestCache',
     'IResourceOperation',
     'IResourceGETOperation',
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
-    'ITemplateCache',
     'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
     'LAZR_WEBSERVICE_NAME',
@@ -192,8 +192,12 @@ class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
 
 
-class ITemplateCache(Interface):
-    """A cache of objects to be presented to a templating system."""
+class IJSONRequestCache(Interface):
+    """A cache of objects exposed as URLs or JSON representations."""
+
+    links = Attribute("Objects whose links need to be exposed.");
+    objects = Attribute("Objects whose JSON representations need "
+                        "to be exposed.");
 
 
 class IByteStorage(Interface):

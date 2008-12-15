@@ -28,8 +28,8 @@ Objects can be stored in the template cache so that their JSON
 representations can be included in the template. An object can be
 stored in the template cache's 'objects' dict or its 'links' dict.
 
-    >>> from canonical.lazr.interfaces.rest import ITemplateCache
-    >>> cache = ITemplateCache(website_request)
+    >>> from canonical.lazr.interfaces.rest import IJSONRequestCache
+    >>> cache = IJSONRequestCache(website_request)
 
     >>> cache.objects['object1'] = 'foo'
     >>> cache.objects['object2'] = 'bar'
