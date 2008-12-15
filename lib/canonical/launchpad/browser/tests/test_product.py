@@ -11,7 +11,6 @@ from mechanize import LinkNotFoundError
 import pytz
 
 from zope.component import getMultiAdapter
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.testing import time_counter, TestCaseWithFactory
