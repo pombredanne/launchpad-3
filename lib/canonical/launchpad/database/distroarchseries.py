@@ -37,6 +37,8 @@ from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, ICanPublishPackages)
@@ -148,7 +150,7 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
-        store = Store.of(self)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         origin = [
             BinaryPackageRelease,
             Join(

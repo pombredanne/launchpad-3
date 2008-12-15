@@ -1,6 +1,6 @@
 = Personal Package Archives Files =
 
-PPA files are proxied via +archive/+files or +builds/+files in a way
+PPA files are proxied via +ppa/<name>/+files or +builds/+files in a way
 we can decide between redirecting to the public librarian URL or
 stream the restricted content in inline.
 
@@ -152,7 +152,7 @@ Checking file links on PPA index page.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive")
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+ppa/default")
 
     >>> print no_priv_browser.title
     Private PPA for No Privileges Person
@@ -210,7 +210,7 @@ Retrieve file information for using the direct HTTP browsing API.
     >>> file_size = str(dsc_file.content.filesize)
     >>> file_mimetype = dsc_file.mimetype
     >>> file_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/+files/%s' %
+    ...     'http://launchpad.dev/~no-priv/+ppa/default/+files/%s' %
     ...     dsc_file.filename)
     >>> logout()
 
@@ -251,13 +251,13 @@ and 'content-type' to 'gzip' and 'text/plain', respectively.
     >>> buildlog_content = buildlog.read()
     >>> buildlog_size = str(buildlog.content.filesize)
     >>> buildlog_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/+build/%d/+files/%s' %
+    ...     'http://launchpad.dev/~no-priv/+ppa/default/+build/%d/+files/%s' %
     ...     (build.id, buildlog.filename))
 
     >>> diff_content = package_diff.diff_content.read()
     >>> diff_size = str(package_diff.diff_content.content.filesize)
     >>> diff_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/+files/%s' %
+    ...     'http://launchpad.dev/~no-priv/+ppa/default/+files/%s' %
     ...     package_diff.diff_content.filename)
 
     >>> logout()

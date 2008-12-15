@@ -70,6 +70,10 @@ class ExecOnlySession:
             return
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
+        if self._transport is not None:
+            log.err(
+                "ERROR: %r already running a command on transport %r"
+                % (self, self._transport))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 

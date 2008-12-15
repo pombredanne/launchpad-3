@@ -1058,6 +1058,8 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         rendered_items = []
         rendered_values = set()
         count = 0
+
+        # Render normal values.
         for term in self.vocabulary.searchForTerms(self.getSearchQuery()):
             selected = term.value in values
             rendered_items.append(self.renderTerm(count, term, selected))
@@ -1067,8 +1069,30 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         # Some selected values may not be included in the search results;
         # insert them at the beginning of the list.
         for missing in set(values).difference(rendered_values):
-            term = self.vocabulary.getTerm(missing)
-            rendered_items.insert(0, self.renderTerm(count, term, True))
+            if missing != self._missing:
+                term = self.vocabulary.getTerm(missing)
+                rendered_items.insert(0, self.renderTerm(count, term, True))
+                count += 1
+
+        # Display self._messageNoValue radio button since an existing
+        # FAQ may not be relevant. This logic is copied from
+        # zope/app/form/browser/itemswidgets.py except that we have
+        # to prepend the value at the end of this method to prevent
+        # the insert in the for-loop above from going to the top of the list.
+        missing = self._toFormValue(self.context.missing_value)
+
+        if self._displayItemForMissingValue and not self.context.required:
+            if missing in values:
+                render = self.renderSelectedItem
+            else:
+                render = self.renderItem
+
+            missing_item = render(count,
+                self.translate(self._messageNoValue),
+                missing,
+                self.name,
+                self.cssClass)
+            rendered_items.insert(0, missing_item)
             count += 1
 
         return rendered_items
