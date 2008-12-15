@@ -111,7 +111,7 @@ class IBranchNamespaceSet(Interface):
         :return: A dict with keys matching each component in 'namespace_name'.
         """
 
-    def parsePath(namespace_path):
+    def parseBranchPath(namespace_path):
         """Parse 'namespace_path' into a namespace dict and a trailing path.
         """
 

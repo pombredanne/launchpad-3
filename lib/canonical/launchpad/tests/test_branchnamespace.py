@@ -443,30 +443,30 @@ class TestNamespaceSet(TestCaseWithFactory):
                  distroseries='jaunty', sourcepackagename='foo'),
             self.namespace_set.parse('~foo/ubuntu/jaunty/foo'))
 
-    def test_parsePath_junk_path(self):
-        # parsePath takes a path within a branch and returns the dict of the
-        # namespace that it's in, as well as the part of the path that is
+    def test_parseBranchPath_junk_path(self):
+        # parseBranchPath takes a path within a branch and returns the dict of
+        # the namespace that it's in, as well as the part of the path that is
         # within the namespace.
         path = '~foo/+junk/bar/README'
-        parsed, trailing = self.namespace_set.parsePath(path)
+        parsed, trailing = self.namespace_set.parseBranchPath(path)
         self.assertEqual(
             dict(person='foo', product='+junk', distribution=None,
                  distroseries=None, sourcepackagename=None, branch='bar'),
             parsed)
         self.assertEqual('README', trailing)
 
-    def test_parsePath_product_path(self):
+    def test_parseBranchPath_product_path(self):
         path = '~foo/bar/baz/README'
-        parsed, trailing = self.namespace_set.parsePath(path)
+        parsed, trailing = self.namespace_set.parseBranchPath(path)
         self.assertEqual(
             dict(person='foo', product='bar', distribution=None,
                  distroseries=None, sourcepackagename=None, branch='baz'),
             parsed)
         self.assertEqual('README', trailing)
 
-    def test_parsePath_package_path(self):
+    def test_parseBranchPath_package_path(self):
         path = '~foo/bar/baz/qux/branch/README'
-        parsed, trailing = self.namespace_set.parsePath(path)
+        parsed, trailing = self.namespace_set.parseBranchPath(path)
         self.assertEqual(
             dict(person='foo', product=None, distribution='bar',
                  distroseries='baz', sourcepackagename='qux',
@@ -474,13 +474,14 @@ class TestNamespaceSet(TestCaseWithFactory):
             parsed)
         self.assertEqual('README', trailing)
 
-    def test_parsePath_invalid_path(self):
+    def test_parseBranchPath_invalid_path(self):
         path = 'foo/bar/baz/qux/branch/README'
         self.assertRaises(
-            InvalidNamespace, self.namespace_set.parsePath, path)
+            InvalidNamespace, self.namespace_set.parseBranchPath, path)
 
-    def test_parsePath_empty(self):
-        self.assertRaises(InvalidNamespace, self.namespace_set.parsePath, '')
+    def test_parseBranchPath_empty(self):
+        self.assertRaises(
+            InvalidNamespace, self.namespace_set.parseBranchPath, '')
 
 
 def test_suite():

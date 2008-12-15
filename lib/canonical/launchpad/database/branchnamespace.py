@@ -206,7 +206,7 @@ class BranchNamespaceSet:
         data['person'] = data['person'][1:]
         return data
 
-    def parsePath(self, namespace_path):
+    def parseBranchPath(self, namespace_path):
         for first, second in iter_split(namespace_path, '/'):
             try:
                 first, branch = first.rsplit('/', 1)
