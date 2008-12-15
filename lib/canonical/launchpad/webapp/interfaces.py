@@ -24,6 +24,18 @@ class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 
+class NameLookupFailed(NotFoundError):
+
+    _message_prefix = "Not found"
+
+    def __init__(self, name, message=None):
+        if message is None:
+            message = self._message_prefix
+        message = "%s: '%s'" % (message, name)
+        self.name = name
+        NotFoundError.__init__(self, message)
+
+
 class UnexpectedFormData(AssertionError):
     """Got form data that is not what is expected by a form handler."""
 

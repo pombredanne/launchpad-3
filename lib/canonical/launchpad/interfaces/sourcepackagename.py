@@ -15,7 +15,7 @@ from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -70,10 +70,7 @@ class ISourcePackageNameSet(Interface):
         """Get a source package name by name, creating it if necessary."""
 
 
-class NoSuchSourcePackageName(NotFoundError):
+class NoSuchSourcePackageName(NameLookupFailed):
     """Raised when we can't find a particular sourcepackagename."""
 
-    def __init__(self, name):
-        self.name = name
-        NotFoundError.__init__(
-            self, "No such source package name '%s'." % (name,))
+    _message_prefix = "No such source package name"

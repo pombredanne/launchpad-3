@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -499,12 +500,10 @@ class IDistributionSet(Interface):
         """Creaste a new distribution."""
 
 
-class NoSuchDistribution(Exception):
+class NoSuchDistribution(NameLookupFailed):
     """Raised when we try to find a distribution that doesn't exist."""
 
-    def __init__(self, name):
-        self.name = name
-        Exception.__init__(self, "No such distribution '%s'." % (name,))
+    _message_prefix = "No such distribution"
 
 
 # Monkey patching to fix circular imports.

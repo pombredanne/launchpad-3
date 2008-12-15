@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -51,8 +52,7 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -717,9 +717,7 @@ class IProductReviewSearch(Interface):
         title=_("and"), required=False)
 
 
-class NoSuchProduct(Exception):
+class NoSuchProduct(NameLookupFailed):
     """Raised when we try to find a product that doesn't exist."""
 
-    def __init__(self, name):
-        self.name = name
-        Exception.__init__(self, "No such product '%s'." % (name,))
+    _message_prefix = "No such product"
