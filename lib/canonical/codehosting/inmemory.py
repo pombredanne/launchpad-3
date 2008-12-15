@@ -454,20 +454,20 @@ class FakeBranchFilesystem:
             if distro is None:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "No such distribution '%s'." % (data['distribution'],))
+                    "No such distribution: '%s'." % (data['distribution'],))
             distroseries = self._distroseries_set.getByName(
                 data['distroseries'])
             if distroseries is None:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "No such distribution series '%s'."
+                    "No such distribution series: '%s'."
                     % (data['distroseries'],))
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
             if sourcepackagename is None:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "No such source package '%s'."
+                    "No such source package: '%s'."
                     % (data['sourcepackagename'],))
         else:
             return Fault(

@@ -38,9 +38,12 @@ class NameLookupFailed(NotFoundError):
     def __init__(self, name, message=None):
         if message is None:
             message = self._message_prefix
-        message = "%s: '%s'" % (message, name)
+        self.message = "%s: '%s'." % (message, name)
         self.name = name
-        NotFoundError.__init__(self, message)
+        NotFoundError.__init__(self, self.message)
+
+    def __str__(self):
+        return self.message
 
 
 class UnexpectedFormData(AssertionError):
