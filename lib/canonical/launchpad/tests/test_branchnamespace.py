@@ -448,30 +448,30 @@ class TestNamespaceSet(TestCaseWithFactory):
         # the namespace that it's in, as well as the part of the path that is
         # within the namespace.
         path = '~foo/+junk/bar/README'
-        parsed, trailing = self.namespace_set.parseBranchPath(path)
+        parsed, branch, trailing = self.namespace_set.parseBranchPath(path)
         self.assertEqual(
             dict(person='foo', product='+junk', distribution=None,
-                 distroseries=None, sourcepackagename=None, branch='bar'),
-            parsed)
+                 distroseries=None, sourcepackagename=None), parsed)
+        self.assertEqual('bar', branch)
         self.assertEqual('README', trailing)
 
     def test_parseBranchPath_product_path(self):
         path = '~foo/bar/baz/README'
-        parsed, trailing = self.namespace_set.parseBranchPath(path)
+        parsed, branch, trailing = self.namespace_set.parseBranchPath(path)
         self.assertEqual(
             dict(person='foo', product='bar', distribution=None,
-                 distroseries=None, sourcepackagename=None, branch='baz'),
-            parsed)
+                 distroseries=None, sourcepackagename=None), parsed)
+        self.assertEqual('baz', branch)
         self.assertEqual('README', trailing)
 
     def test_parseBranchPath_package_path(self):
         path = '~foo/bar/baz/qux/branch/README'
-        parsed, trailing = self.namespace_set.parseBranchPath(path)
+        parsed, branch, trailing = self.namespace_set.parseBranchPath(path)
         self.assertEqual(
             dict(person='foo', product=None, distribution='bar',
-                 distroseries='baz', sourcepackagename='qux',
-                 branch='branch'),
+                 distroseries='baz', sourcepackagename='qux'),
             parsed)
+        self.assertEqual('branch', branch)
         self.assertEqual('README', trailing)
 
     def test_parseBranchPath_invalid_path(self):

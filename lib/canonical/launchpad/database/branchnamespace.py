@@ -217,8 +217,7 @@ class BranchNamespaceSet:
             except InvalidNamespace:
                 continue
             else:
-                parsed['branch'] = branch
-                return parsed, second
+                return parsed, branch, second
         raise InvalidNamespace(namespace_path)
 
     def lookup(self, namespace_name):
