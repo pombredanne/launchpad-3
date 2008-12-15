@@ -2,7 +2,7 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, TextLine, Datetime, Field
+from zope.schema import Bool, Choice, Datetime, Field, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import TranslationFileFormat
@@ -161,6 +161,11 @@ class ITranslationImportQueueEntry(Interface):
         " notes a .pot file, it should be used as the place where this entry"
         " will be imported, if it's a .po file, it indicates the template"
         " associated with tha translation."),
+        required=False)
+
+    error_output = Text(
+        title=_("Error output"),
+        description=_("Output from most recent import attempt."),
         required=False)
 
     def getGuessedPOFile():

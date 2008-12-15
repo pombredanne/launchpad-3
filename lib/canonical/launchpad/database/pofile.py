@@ -95,8 +95,7 @@ def _check_translation_perms(permission, translators, person):
 
 
 def _person_has_not_licensed_translations(person):
-    """Whether a person has not agreed to BSD license for their translations.
-    """
+    """Whether a person has declined to BSD-license their translations."""
     if (person.translations_relicensing_agreement is not None and
         person.translations_relicensing_agreement is False):
         return True
@@ -839,6 +838,8 @@ class POFile(SQLBase, POFileMixIn):
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
             import_rejected = True
+            entry_to_import.error_output = (
+                "File was not exported from Launchpad.")
         except (TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError), exception:
             # The import failed with a format error. We log it and select the
@@ -849,6 +850,7 @@ class POFile(SQLBase, POFileMixIn):
             template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
             error_text = str(exception)
+            entry_to_import.error_output = error_text
         except OutdatedTranslationError:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
@@ -856,11 +858,17 @@ class POFile(SQLBase, POFileMixIn):
                 logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
+            entry_to_import.error_output = (
+                "Header's PO-Revision-Date is older than in last imported "
+                "version.")
         except TooManyPluralFormsError:
             if logger:
                 logger.warning("Too many plural forms.")
             template_mail = 'poimport-too-many-plural-forms.txt'
             import_rejected = True
+            entry_to_import.error_output = "Too many plural forms."
+        else:
+            entry_to_import.error_output = None
 
         # Prepare the mail notification.
         msgsets_imported = TranslationMessage.select(
@@ -889,7 +897,7 @@ class POFile(SQLBase, POFileMixIn):
             # need to notify the user.
             subject = 'Import problem - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
-        elif len(errors):
+        elif len(errors) > 0:
             # There were some errors with translations.
             errorsdetails = ''
             for error in errors:
@@ -903,10 +911,13 @@ class POFile(SQLBase, POFileMixIn):
                     error_message,
                     pomessage)
 
+            entry_to_import.error_output = (
+                "Imported, but with errors:\n" + errorsdetails)
+
             replacements['numberoferrors'] = len(errors)
             replacements['errorsdetails'] = errorsdetails
-            replacements['numberofcorrectmessages'] = (msgsets_imported -
-                len(errors))
+            replacements['numberofcorrectmessages'] = (
+                msgsets_imported - len(errors))
 
             template_mail = 'poimport-with-errors.txt'
             subject = 'Translation problems - %s - %s' % (
