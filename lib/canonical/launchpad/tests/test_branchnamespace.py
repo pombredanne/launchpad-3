@@ -474,6 +474,14 @@ class TestNamespaceSet(TestCaseWithFactory):
             parsed)
         self.assertEqual('README', trailing)
 
+    def test_parsePath_invalid_path(self):
+        path = 'foo/bar/baz/qux/branch/README'
+        self.assertRaises(
+            InvalidNamespace, self.namespace_set.parsePath, path)
+
+    def test_parsePath_empty(self):
+        self.assertRaises(InvalidNamespace, self.namespace_set.parsePath, '')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
