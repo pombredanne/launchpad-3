@@ -35,9 +35,6 @@ class IRevision(Interface):
     parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
     properties = Attribute("The `RevisionProperty`s for this revision.")
-    personID = Attribute("The primary key of the person, used for "
-                         "optimization purposes, and should not be used for "
-                         "anything else.")
 
     def getProperties():
         """Return the revision properties as a dict."""
@@ -71,6 +68,9 @@ class IRevisionAuthor(Interface):
     email = Attribute("The email address extracted from the author text.")
     person = PublicPersonChoice(title=_('Author'), required=False,
         readonly=False, vocabulary='ValidPersonOrTeam')
+    personID = Attribute("The primary key of the person, used for "
+                         "optimization purposes, and should not be used for "
+                         "anything else.")
 
     def linkToLaunchpadPerson():
         """Attempt to link the revision author to a Launchpad `Person`.
