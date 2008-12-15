@@ -824,3 +824,11 @@ newer +ppa URL with the default PPA name, "default".
     >>> admin_browser.url
     'http://launchpad.dev/~cprov/+ppa/default'
 
+Specifying an old-style +archive URL for a person who does not have a PPA
+should raise a 404:
+
+    >>> anon_browser.open("http://launchpad.dev/~name16/+archive")
+    Traceback (most recent call last):
+    ...
+    NotFound:...
+
