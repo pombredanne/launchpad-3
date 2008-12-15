@@ -436,6 +436,17 @@ class TestNamespaceSet(TestCaseWithFactory):
                  distroseries='jaunty', sourcepackagename='foo'),
             self.namespace_set.parse('~foo/ubuntu/jaunty/foo'))
 
+    def test_parsePath_junk_path(self):
+        # parsePath takes a path within a branch and returns the dict of the
+        # namespace that it's in, as well as the part of the path that is
+        # within the namespace.
+        path = '~foo/+junk/bar/README'
+        parsed, trailing = self.namespace_set.parsePath(path)
+        self.assertEqual(
+            dict(person='foo', product=None, distribution=None,
+                 distroseries=None, sourcepackagename=None, branch='bar'),
+            parsed)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -205,6 +205,9 @@ class BranchNamespaceSet:
         data['person'] = data['person'][1:]
         return data
 
+    def parsePath(self, namespace_path):
+        pass
+
     def lookup(self, namespace_name):
         """See `IBranchNamespaceSet`."""
         names = self.parse(namespace_name)

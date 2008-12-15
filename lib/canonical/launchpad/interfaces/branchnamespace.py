@@ -96,6 +96,10 @@ class IBranchNamespaceSet(Interface):
         :return: A dict with keys matching each component in 'namespace_name'.
         """
 
+    def parsePath(namespace_path):
+        """Parse 'namespace_path' into a namespace dict and a trailing path.
+        """
+
 
 class InvalidNamespace(Exception):
     """Raised when someone tries to lookup a namespace with a bad name.
