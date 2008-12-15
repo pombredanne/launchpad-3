@@ -248,6 +248,11 @@ class BranchNamespaceSet:
             getUtility(ISourcePackageNameSet).queryByName)
 
     def _realize(self, names):
+        """Turn a dict of object names into a dict of objects.
+
+        Takes the results of `IBranchNamespaceSet.parse` and turns them into a
+        dict where the values are Launchpad objects.
+        """
         data = {}
         data['person'] = self._findPerson(names['person'])
         data['product'] = self._findProduct(names['product'])
