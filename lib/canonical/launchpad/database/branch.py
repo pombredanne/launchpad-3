@@ -72,9 +72,7 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.xmlrpc.faults import (
-    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchPersonWithName, NoSuchSeries)
+from canonical.launchpad.xmlrpc import faults
 
 
 class Branch(SQLBase):
@@ -1181,7 +1179,7 @@ class BranchSet:
             series = None
             owner, product, name = path_segments[:3]
             if owner[0] != '~':
-                raise InvalidBranchIdentifier(path)
+                raise faults.InvalidBranchIdentifier(path)
             owner = owner[1:]
             branch = klass._getByUniqueNameElements(owner, product, name)
             if branch is None:
@@ -1200,7 +1198,7 @@ class BranchSet:
         :raise: A subclass of LaunchpadFault.
         """
         if not valid_name(product_name):
-            raise InvalidProductIdentifier(product_name)
+            raise faults.InvalidProductIdentifier(product_name)
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             raise NoSuchProduct(product_name)
@@ -1209,10 +1207,10 @@ class BranchSet:
         else:
             series = product.getSeries(series_name)
             if series is None:
-                raise NoSuchSeries(series_name, product)
+                raise faults.NoSuchSeries(series_name, product)
         branch = series.series_branch
         if branch is None:
-            raise NoBranchForSeries(series)
+            raise faults.NoBranchForSeries(series)
         return branch, series
 
     @classmethod
@@ -1225,7 +1223,7 @@ class BranchSet:
         """
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
-            raise NoSuchPersonWithName(owner_name)
+            raise faults.NoSuchPersonWithName(owner_name)
         if product_name != '+junk':
             project = getUtility(IProductSet).getByName(product_name)
             if project is None:
