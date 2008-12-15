@@ -333,8 +333,12 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             ppa_name = self.request.stepstogo.consume()
             return traverse_named_ppa(self.context.name, ppa_name)
 
+        default_archive = self.context.archive
+        if default_archive is None:
+            raise NotFoundError()
+
         # Otherwise get the default PPA and redirect to the new-style URL.
-        return self.redirectSubTree(canonical_url(self.context.archive))
+        return self.redirectSubTree(canonical_url(default_archive))
 
     @stepthrough('+email')
     def traverse_email(self, email):
