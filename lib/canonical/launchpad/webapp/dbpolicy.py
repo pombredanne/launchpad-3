@@ -17,6 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
+from canonical.config import config
 from canonical.launchpad.webapp import LaunchpadView
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
@@ -72,20 +73,28 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # on the master, despite the fact it might take a while for
         # those changes to propagate to the slave databases.
         if self.read_only:
-            session_data = ISession(self.request)['lp.dbpolicy']
-            last_write = session_data.get('last_write', None)
-            now = _now()
-            # 'recently' is  2 minutes plus the replication lag.
-            recently = timedelta(minutes=2)
             lag = self.getReplicationLag(MAIN_STORE)
-            if lag is None:
-                recently = timedelta(minutes=2)
-            else:
-                recently = timedelta(minutes=2) + lag
-            if last_write is None or last_write < now - recently:
-                da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
-            else:
+            if (lag is not None
+                and lag > timedelta(seconds=config.database.max_usable_lag)):
+                # Don't use the slave at all if lag is greater than the
+                # configured threshold. This reduces replication oddities
+                # noticed by users, as well as reducing load on the
+                # slave allowing it to catch up quicker. Bug #307407.
                 da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+            else:
+                session_data = ISession(self.request)['lp.dbpolicy']
+                last_write = session_data.get('last_write', None)
+                now = _now()
+                # 'recently' is  2 minutes plus the replication lag.
+                recently = timedelta(minutes=2)
+                if lag is None:
+                    recently = timedelta(minutes=2)
+                else:
+                    recently = timedelta(minutes=2) + lag
+                if last_write is None or last_write < now - recently:
+                    da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
+                else:
+                    da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
         else:
             da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
@@ -141,7 +150,6 @@ class SlaveDatabasePolicy(BaseDatabasePolicy):
 
     This policy is used for Feeds requests and other always-read only request.
     """
-
     def beforeTraversal(self):
         """See `IDatabasePolicy`."""
         da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
