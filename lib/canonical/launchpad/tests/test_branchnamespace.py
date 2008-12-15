@@ -448,7 +448,8 @@ class TestNamespaceSet(TestCaseWithFactory):
         # the namespace that it's in, as well as the part of the path that is
         # within the namespace.
         path = '~foo/+junk/bar/README'
-        parsed, branch, trailing = self.namespace_set.parseBranchPath(path)
+        [(parsed, branch, trailing)] = list(
+            self.namespace_set.parseBranchPath(path))
         self.assertEqual(
             dict(person='foo', product='+junk', distribution=None,
                  distroseries=None, sourcepackagename=None), parsed)
@@ -457,7 +458,8 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_parseBranchPath_product_path(self):
         path = '~foo/bar/baz/README'
-        parsed, branch, trailing = self.namespace_set.parseBranchPath(path)
+        [(parsed, branch, trailing)] = list(
+            self.namespace_set.parseBranchPath(path))
         self.assertEqual(
             dict(person='foo', product='bar', distribution=None,
                  distroseries=None, sourcepackagename=None), parsed)
@@ -466,22 +468,24 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_parseBranchPath_package_path(self):
         path = '~foo/bar/baz/qux/branch/README'
-        parsed, branch, trailing = self.namespace_set.parseBranchPath(path)
-        self.assertEqual(
-            dict(person='foo', product=None, distribution='bar',
-                 distroseries='baz', sourcepackagename='qux'),
-            parsed)
-        self.assertEqual('branch', branch)
-        self.assertEqual('README', trailing)
+        parse_results = list(self.namespace_set.parseBranchPath(path))
+        expected_results = [
+            (dict(person='foo', product=None, distribution='bar',
+                  distroseries='baz', sourcepackagename='qux'), 'branch',
+             'README'),
+            (dict(person='foo', product='bar', distribution=None,
+                  distroseries=None, sourcepackagename=None), 'baz',
+             'qux/branch/README')]
+        self.assertEqual(sorted(expected_results), sorted(parse_results))
 
     def test_parseBranchPath_invalid_path(self):
         path = 'foo/bar/baz/qux/branch/README'
         self.assertRaises(
-            InvalidNamespace, self.namespace_set.parseBranchPath, path)
+            InvalidNamespace, list, self.namespace_set.parseBranchPath(path))
 
     def test_parseBranchPath_empty(self):
         self.assertRaises(
-            InvalidNamespace, self.namespace_set.parseBranchPath, '')
+            InvalidNamespace, list, self.namespace_set.parseBranchPath(''))
 
 
 def test_suite():

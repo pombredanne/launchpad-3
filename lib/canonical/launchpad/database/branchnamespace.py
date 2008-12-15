@@ -207,6 +207,7 @@ class BranchNamespaceSet:
         return data
 
     def parseBranchPath(self, namespace_path):
+        found = False
         for first, second in iter_split(namespace_path, '/'):
             try:
                 first, branch = first.rsplit('/', 1)
@@ -217,8 +218,10 @@ class BranchNamespaceSet:
             except InvalidNamespace:
                 continue
             else:
-                return parsed, branch, second
-        raise InvalidNamespace(namespace_path)
+                found = True
+                yield parsed, branch, second
+        if not found:
+            raise InvalidNamespace(namespace_path)
 
     def lookup(self, namespace_name):
         """See `IBranchNamespaceSet`."""
