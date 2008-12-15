@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet, NoSuchSourcePackageName)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.xmlrpc.codehosting import iter_split
 
 
 class _BaseNamespace:
@@ -206,7 +207,19 @@ class BranchNamespaceSet:
         return data
 
     def parsePath(self, namespace_path):
-        return {}, None
+        for first, second in iter_split(namespace_path, '/'):
+            ## try:
+            first, branch = first.rsplit('/', 1)
+            ## except ValueError:
+            ##     continue
+            try:
+                parsed = self.parse(first)
+            except InvalidNamespace:
+                continue
+            else:
+                parsed['branch'] = branch
+                return parsed, second
+        ## raise InvalidNamespace(namespace_path)
 
     def lookup(self, namespace_name):
         """See `IBranchNamespaceSet`."""

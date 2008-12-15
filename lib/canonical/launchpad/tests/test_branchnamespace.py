@@ -450,8 +450,27 @@ class TestNamespaceSet(TestCaseWithFactory):
         path = '~foo/+junk/bar/README'
         parsed, trailing = self.namespace_set.parsePath(path)
         self.assertEqual(
-            dict(person='foo', product=None, distribution=None,
+            dict(person='foo', product='+junk', distribution=None,
                  distroseries=None, sourcepackagename=None, branch='bar'),
+            parsed)
+        self.assertEqual('README', trailing)
+
+    def test_parsePath_product_path(self):
+        path = '~foo/bar/baz/README'
+        parsed, trailing = self.namespace_set.parsePath(path)
+        self.assertEqual(
+            dict(person='foo', product='bar', distribution=None,
+                 distroseries=None, sourcepackagename=None, branch='baz'),
+            parsed)
+        self.assertEqual('README', trailing)
+
+    def test_parsePath_package_path(self):
+        path = '~foo/bar/baz/qux/branch/README'
+        parsed, trailing = self.namespace_set.parsePath(path)
+        self.assertEqual(
+            dict(person='foo', product=None, distribution='bar',
+                 distroseries='baz', sourcepackagename='qux',
+                 branch='branch'),
             parsed)
         self.assertEqual('README', trailing)
 
