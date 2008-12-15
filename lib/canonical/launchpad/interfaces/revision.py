@@ -35,6 +35,9 @@ class IRevision(Interface):
     parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
     properties = Attribute("The `RevisionProperty`s for this revision.")
+    personID = Attribute("The primary key of the person, used for "
+                         "optimization purposes, and should not be used for "
+                         "anything else.")
 
     def getProperties():
         """Return the revision properties as a dict."""
