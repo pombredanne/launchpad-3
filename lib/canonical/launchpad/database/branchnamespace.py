@@ -207,6 +207,7 @@ class BranchNamespaceSet:
         return data
 
     def parseBranchPath(self, namespace_path):
+        """See `IBranchNamespaceSet`."""
         found = False
         for first, second in iter_split(namespace_path, '/'):
             try:
