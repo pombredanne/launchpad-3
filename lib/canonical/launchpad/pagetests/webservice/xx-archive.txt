@@ -400,7 +400,7 @@ ubuntu primary archive.
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package2", version="1.0", archive=main_archive)
 
-A test publicatin in Celso's PPA.
+A test publication in Celso's PPA.
 
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -431,31 +431,16 @@ the Ubuntu main archive:
     HTTP/1.1 401 Unauthorized
     ...
 
-Access to synchronize packages to the ubuntu archive is still
-unauthorized for Colin if the OAuth key used is restricted to read
-access.
+When accessed via Colin's key that can perform writes, the API will
+respond positively.
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
 
-    >>> admin_read_only_webservice = webservice_for_person(
-    ...     cjwatson, permission=OAuthPermission.READ_PRIVATE)
-
-    >>> print admin_read_only_webservice.named_post(
-    ...     ubuntu['main_archive_link'], 'syncSource', {},
-    ...     source_name='package3', version='1.0',
-    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
-    ...     to_series="hoary")
-    HTTP/1.1 401 Unauthorized
-    ...
-
-Only when accessed via a key that can perform writes, The API will
-respond positively.
-
-    >>> admin_write_webservice = webservice_for_person(
+    >>> admin_webservice = webservice_for_person(
     ...     cjwatson, permission=OAuthPermission.WRITE_PUBLIC)
 
-    >>> print admin_write_webservice.named_post(
+    >>> print admin_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
     ...     source_name='package3', version='1.0',
     ...     from_archive=cprov_archive['self_link'], to_pocket='release',
@@ -467,7 +452,7 @@ Now copy "package1" version 1.0 from the main archive into cprov's
 PPA. The 'admin_write' key created for Colin isn't allowed to modify
 Celso's PPA.
 
-    >>> print admin_write_webservice.named_post(
+    >>> print admin_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSource', {},
     ...     source_name='package1', version='1.0',
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
@@ -528,7 +513,7 @@ allowed to call the method at all.
     HTTP/1.1 401 Unauthorized
     ...
 
-    >>> print admin_write_webservice.named_post(
+    >>> print admin_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
