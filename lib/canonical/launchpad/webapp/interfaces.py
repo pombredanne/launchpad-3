@@ -25,6 +25,13 @@ class NotFoundError(KeyError):
 
 
 class NameLookupFailed(NotFoundError):
+    """Raised when a lookup by name fails.
+
+    Subclasses should define the `_message_prefix` class variable, which will
+    be prefixed to the quoted name of the name that could not be found.
+
+    :ivar name: The name that could not be found.
+    """
 
     _message_prefix = "Not found"
 
