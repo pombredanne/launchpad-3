@@ -5,15 +5,31 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
-from pytz import UTC
-import transaction
 from unittest import TestCase, TestLoader
 
+from pytz import UTC
+
 from sqlobject import SQLObjectNotFound
+
+import transaction
+
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
+from canonical.launchpad.database.branch import (
+    BranchSet, BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
+    DeleteCodeImport, DeletionCallable, DeletionOperation)
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
+from canonical.launchpad.database.bugbranch import BugBranch
+from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
+from canonical.launchpad.database.product import ProductSet
+from canonical.launchpad.database.specificationbranch import (
+    SpecificationBranch)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
@@ -25,18 +41,6 @@ from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.product import NoSuchProduct
-from canonical.launchpad.database.branch import (
-    BranchSet, BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation)
-from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal)
-from canonical.launchpad.database.bugbranch import BugBranch
-from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
-from canonical.launchpad.database.codereviewcomment import CodeReviewComment
-from canonical.launchpad.database.product import ProductSet
-from canonical.launchpad.database.specificationbranch import (
-    SpecificationBranch,
-    )
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.xmlrpc.faults import (
@@ -44,9 +48,6 @@ from canonical.launchpad.xmlrpc.faults import (
     NoSuchPersonWithName, NoSuchSeries)
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 
 class TestCodeImport(TestCase):
