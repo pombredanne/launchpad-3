@@ -362,6 +362,33 @@ And we can see that it's gone:
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
 
+= Getting Build counts for an IArchive =
+
+IArchive exposes the getBuildCounters() method, enabling this data to be
+used and displayed via XHR.
+
+    >>> build_counters = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getBuildCounters').jsonBody()
+    >>> for key, val in build_counters.items():
+    ...     print "%s: %s" % (key, val)
+    failed: 5
+    superseded: 3
+    total: 18
+    pending: 2
+    succeeded: 8
+
+The optional param exclude_needsbuild is also provided:
+
+    >>> build_counters = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getBuildCounters',
+    ...     include_needsbuild=False).jsonBody()
+    >>> for key, val in build_counters.items():
+    ...     print "%s: %s" % (key, val)
+    failed: 5
+    superseded: 3
+    total: 17
+    pending: 1
+    succeeded: 8
 
 == Package copying/synchronisation ==
 

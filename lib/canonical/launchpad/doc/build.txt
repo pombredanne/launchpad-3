@@ -388,7 +388,7 @@ collection of builds.
 
 We can find builds given a source package release and architecture tag.
 
-    >>> i386_builds = bs.getBuildBySRAndArchtag(20,'i386')
+    >>> i386_builds = bs.getBuildBySRAndArchtag(20, 'i386')
     >>> i386_builds.count()
     4
 
@@ -452,12 +452,13 @@ primary archive.
 build status of a set of builds:
 
 First we'll define a helper to print the build summary:
+
     >>> def print_build_summary(summary):
     ...     print "%s\n%s\nRelevant builds:\n%s" % (
     ...         summary['status'],
     ...         summary['status_desc'],
     ...         "\n".join(
-    ...             [" - %s" % build.title for build in summary['builds']])
+    ...             " - %s" % build.title for build in summary['builds'])
     ...     )
 
     >>> build_summary = bs.getStatusSummaryForBuilds(i386_builds)
@@ -466,6 +467,7 @@ First we'll define a helper to print the build summary:
     There are some builds waiting to be built.
     Relevant builds:
      - i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
 

@@ -1137,20 +1137,17 @@ class PublishingSet:
 
     def getBuildStatusSummariesForSourceIds(self, source_ids):
         """See `IPublishingSet`."""
-        if source_ids is None or len(source_ids) == 0:
+        # source_ids can be None or an empty sequence.
+        if not source_ids:
             return {}
 
         # Get the builds for all the requested sources:
         result_set = self.getBuildsForSourceIds(source_ids)
 
-        # Initialize a dict to collect a list of builds for each source id:
+        # Populate the list of builds for each id in a dict:
         source_builds = {}
-        for source_id in source_ids:
-            source_builds[source_id] = []
-
-        # Populate the list of builds for each id in the dict:
-        for (src_pub, build, distroarchseries) in result_set:
-            source_builds[src_pub.id].append(build)
+        for src_pub, build, distroarchseries in result_set:
+            source_builds.setdefault(src_pub.id, []).append(build)
 
         # get the overall build status for each source's builds
         build_set = getUtility(IBuildSet)

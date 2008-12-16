@@ -389,19 +389,21 @@ class IBuildSet(Interface):
         that status and the builds related to the status.
 
         :param builds: A list of build records.
-
+        :type builds: ``list``
         :return: A dict consisting of the build status summary for the
             given builds. For example:
                 {
                     'status': 'succeeded',
                     'status_desc':'All builds succeeded.'
                     'builds': [build1, build2]
-                } or
+                }
+            or, an example where there are currently some builds building:
                 {
                     'status': 'building',
                     'status_desc': 'There are some builds currently building.'
                     'builds':[build3]
                 }
+        :rtype: ``dict``.
         """
 
 

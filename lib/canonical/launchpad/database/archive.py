@@ -13,7 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Join
+from storm.locals import Join, Count
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -28,6 +28,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
@@ -764,31 +765,36 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
 
-    def getBuildCounters(self, exclude_needsbuild=False):
+    def getBuildCounters(self, include_needsbuild=True):
         """See `IArchiveSet`."""
-        cur = cursor()
 
-        # Include or exclude NEEDSBUILD builds as appropriate
-        where_clause = "WHERE archive = %s" % sqlvalues(self)
-        if exclude_needsbuild:
-            where_clause += " AND buildstate <> %s" % sqlvalues(
-                BuildStatus.NEEDSBUILD)
+        # First grab a count of each build state for all the builds in
+        # this archive:
+        store = Store.of(self)
+        extra_exprs = []
+        if not include_needsbuild:
+            extra_exprs.append(Build.buildstate != BuildStatus.NEEDSBUILD)
 
-        query = """
-            SELECT buildstate, count(id) FROM Build
-            %s
-            GROUP BY buildstate ORDER BY buildstate;
-        """ % where_clause
-        cur.execute(query)
-        result = cur.fetchall()
+        find_spec = (
+            Build.buildstate,
+            Count(Build.id)
+        )
+        result = store.using(Build).find(
+            find_spec,
+            Build.archive == self,
+            *extra_exprs
+        ).group_by(Build.buildstate).order_by(Build.buildstate)
 
-        status_map = {
+        # Create a map for each count summary to a number of buildstates:
+        count_map = {
             'failed': (
                 BuildStatus.CHROOTWAIT,
                 BuildStatus.FAILEDTOBUILD,
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 ),
+             # The 'pending' count is a list because we may append to it
+             # later
             'pending': [
                 BuildStatus.BUILDING,
                 ],
@@ -798,28 +804,42 @@ class Archive(SQLBase):
             'superseded': (
                 BuildStatus.SUPERSEDED,
                 ),
+             # The 'total' count is a list because we may append to it
+             # later
+            'total': [
+                BuildStatus.CHROOTWAIT,
+                BuildStatus.FAILEDTOBUILD,
+                BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.MANUALDEPWAIT,
+                BuildStatus.BUILDING,
+                BuildStatus.FULLYBUILT,
+                BuildStatus.SUPERSEDED,
+                ]
             }
 
-        # If we weren't asked to exclude builds in the NEEDSBUILD status,
-        # then include them with the 'pending' builds
-        if not exclude_needsbuild:
-            status_map['pending'].append(BuildStatus.NEEDSBUILD)
+        # If we were asked to include builds with the state NEEDSBUILD,
+        # then include those builds in the 'pending' and total counts.
+        if include_needsbuild:
+            count_map['pending'].append(BuildStatus.NEEDSBUILD)
+            count_map['total'].append(BuildStatus.NEEDSBUILD)
 
-        status_and_counters = {}
+        # Initialize all the counts in the map to zero:
+        build_counts = dict(
+            (count_type, 0) for count_type in count_map.keys())
 
-        # Set 'total' counter
-        status_and_counters['total'] = sum(
-            [counter for status, counter in result])
+        # For each count type that we want to return ('failed', 'total'),
+        # there may be a number of corresponding buildstate counts.
+        # So for each buildstate count in the result set
+        for buildstate, count in result:
 
-        # Set each counter according 'status_map'
-        for key, status in status_map.iteritems():
-            status_and_counters[key] = 0
-            for status_value, status_counter in result:
-                status_values = [item.value for item in status]
-                if status_value in status_values:
-                    status_and_counters[key] += status_counter
+            # Go through the count map checking which counts this 
+            # buildstate belongs to and add it to the aggregated
+            # count:
+            for count_type, build_states in count_map.items():
+                if buildstate in build_states:
+                    build_counts[count_type] += count
 
-        return status_and_counters
+        return build_counts
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""

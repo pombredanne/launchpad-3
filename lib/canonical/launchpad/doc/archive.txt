@@ -516,11 +516,11 @@ and 'exact_match' flag:
 
 == getBuildCounters ==
 
-`IArchive`.getBuildCounters allows callsites to quickly present
-the number of builds in pre-defined status for a given `IArchive`.
+IArchive.getBuildCounters() allows callsites to quickly present
+the number of builds in a pre-defined status for a given IArchive.
 
     >>> def print_build_counters(build_counters):
-    ...     sorted_keys = sorted(build_counters.keys())
+    ...     sorted_keys = sorted(build_counters)
     ...     for key in sorted_keys:
     ...         print key, build_counters[key]
 
@@ -543,16 +543,16 @@ Build counters for ubuntu primary archive.
     total      18
 
 An option argument can be used to exclude any builds that have the status
-`NEEDSBUILD` (useful in some circumstances where a build that needs to be
-built isn't really considered to be a build):
+`NEEDSBUILD`:
 
     >>> print_build_counters(
-    ...     ubuntu.main_archive.getBuildCounters(exclude_needsbuild=True))
+    ...     ubuntu.main_archive.getBuildCounters(include_needsbuild=False))
     failed 5
     pending 1
     succeeded 8
     superseded 3
     total 17
+
 
 == Package Counters ==
 
