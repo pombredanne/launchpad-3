@@ -140,23 +140,24 @@ class TestFilesystem(TestCaseWithTransport):
     def test_get_stacking_policy(self):
         # A stacking policy control file is served underneath product
         # directories for products that have a default stacked-on branch.
-        branch = self.factory.makeBranch()
-        branch.product.development_focus.user_branch = branch
+        product = self.factory.makeProduct()
+        self.factory.enableDefaultStackingForProduct(product)
         transport = self.getTransport()
         control_file = transport.get_bytes(
             '~%s/%s/.bzr/control.conf'
-            % (self.requester.name, branch.product.name))
+            % (self.requester.name, product.name))
         self.assertEqual(
-            'default_stack_on = /%s' % branch.unique_name,
+            'default_stack_on = /%s'
+            % product.default_stacked_on_branch.unique_name,
             control_file.strip())
 
     def test_can_open_product_control_dir(self):
         # The stacking policy lives in a bzrdir in the product directory.
         # Bazaar needs to be able to open this bzrdir.
-        branch = self.factory.makeBranch()
-        branch.product.development_focus.user_branch = branch
+        product = self.factory.makeProduct()
+        self.factory.enableDefaultStackingForProduct(product)
         transport = self.getTransport().clone(
-            '~%s/%s' % (self.requester.name, branch.product.name))
+            '~%s/%s' % (self.requester.name, product.name))
         found_bzrdir = BzrDir.open_from_transport(transport)
         # We really just want to test that the above line doesn't raise an
         # exception. However, we'll also check that we get the bzrdir that we

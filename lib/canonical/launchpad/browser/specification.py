@@ -25,6 +25,7 @@ __all__ = [
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
+    'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -66,9 +67,9 @@ from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, GeneralFormView, LaunchpadView, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, action, canonical_url,
-    enabled_with_permission, safe_action, stepthrough, stepto, custom_widget)
+    ContextMenu, LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
+    Link, Navigation, action, canonical_url, enabled_with_permission,
+    safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
@@ -534,7 +535,11 @@ class SpecificationEditMilestoneView(SpecificationEditView):
                 % self.context.target.displayname)
 
 
-class SpecificationGoalProposeView(GeneralFormView):
+class SpecificationGoalProposeView(LaunchpadEditFormView):
+    schema = ISpecification
+    label = 'Target to a distribution series'
+    field_names = ['distroseries', 'whiteboard']
+    custom_widget('whiteboard', TextAreaWidget, height=5)
 
     @property
     def initial_values(self):
@@ -544,22 +549,24 @@ class SpecificationGoalProposeView(GeneralFormView):
             'whiteboard': self.context.whiteboard,
             }
 
-    def process(self, productseries=None, distroseries=None,
-        whiteboard=None):
-        # this can accept either distroseries or productseries but the menu
-        # system will only link to the relevant page for that type of spec
-        # target (distro or upstream)
-        if productseries and distroseries:
-            return 'Please choose a product OR distro series, not both.'
-        goal = None
-        if productseries is not None:
-            goal = productseries
-        if distroseries is not None:
-            goal = distroseries
-        self.context.whiteboard = whiteboard
-        propose_goal_with_automatic_approval(self.context, goal, self.user)
-        self._nextURL = canonical_url(self.context)
-        return 'Done.'
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        self.context.whiteboard = data['whiteboard']
+        propose_goal_with_automatic_approval(
+            self.context, data['distroseries'], self.user)
+        self.next_url = canonical_url(self.context)
+
+
+class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
+    label = 'Target to a product series'
+    field_names = ['productseries', 'whiteboard']
+
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        self.context.whiteboard = data['whiteboard']
+        propose_goal_with_automatic_approval(
+            self.context, data['productseries'], self.user)
+        self.next_url = canonical_url(self.context)
 
 
 def propose_goal_with_automatic_approval(specification, series, user):

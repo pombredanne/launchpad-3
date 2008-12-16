@@ -57,6 +57,7 @@ Project groups are available at their canonical URL on the API virtual host.
     active: True
     active_milestones_collection_link: u'http://.../mozilla/active_milestones'
     all_milestones_collection_link: u'http://.../mozilla/all_milestones'
+    bug_reporting_guidelines: None
     bug_tracker_link: None
     date_created: u'...'
     description: u'The Mozilla Project...'
@@ -105,6 +106,7 @@ Projects are available at their canonical URL on the API virtual host.
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     branches_collection_link: u'http://.../firefox/branches'
     brand_link: u'http://.../firefox/brand'
+    bug_reporting_guidelines: None
     bug_tracker_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
@@ -427,6 +429,7 @@ virtual host.
     >>> pprint_entry(firefox_1_0)
     active_milestones_collection_link: u'http://.../firefox/1.0/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/1.0/all_milestones'
+    bug_reporting_guidelines: None
     date_created: u'2005-06-06T08:59:51.898385+00:00'
     display_name: u'1.0'
     driver_link: None

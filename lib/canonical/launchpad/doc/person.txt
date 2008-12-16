@@ -951,6 +951,34 @@ Person.languages.
     en     English
     es     Spanish
 
+To add new languages we use Person.addLanguage().
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> languageset = getUtility(ILanguageSet)
+    >>> carlos.addLanguage(languageset['pt_BR'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'pt_BR', u'es']
+
+Adding a language which is already in the person's preferred ones will
+be a no-op.
+
+    >>> carlos.addLanguage(languageset['es'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'pt_BR', u'es']
+
+And to remove languages we use Person.removeLanguage().
+
+    >>> carlos.removeLanguage(languageset['pt_BR'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'es']
+
+Trying to remove a language which is not in the person's preferred ones
+will be a no-op.
+
+    >>> carlos.removeLanguage(languageset['pt_BR'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'es']
+
 The Person.languages list is ordered alphabetically by the languages'
 English names.
 
@@ -1027,8 +1055,6 @@ and ILanguage.
 We can get the list of translators that did some translation in
 Launchpad and expressed their interest for a concrete language.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-
     # Sample data is not complete for this test, so we need to note that
     # another Spanish translator expressed its interest on doing Spanish
     # translations.  That other person is Foo Bar (name16).
@@ -1038,7 +1064,6 @@ Launchpad and expressed their interest for a concrete language.
     >>> print foo_bar.displayname
     Foo Bar
 
-    >>> languageset = getUtility(ILanguageSet)
     >>> spanish = languageset.getLanguageByCode('es')
     >>> foo_bar.addLanguage(spanish)
     >>> translators = personset.getTranslatorsByLanguage(spanish)

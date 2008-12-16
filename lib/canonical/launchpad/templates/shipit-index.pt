@@ -64,10 +64,10 @@
       if you have a fast Internet connection.
     </p>
     <p tal:condition="view/flavour/enumvalue:KUBUNTU">
-      <tal:comment condition="nothing">
-        XXX: salgado, 2008-04-18: This is only needed while we're shipping
-        Hardy CDs.
-      </tal:comment>
+      <tal:XXX condition="nothing">
+        # XXX: salgado, 2008-04-18: This is only needed while we're shipping
+        # Hardy CDs.
+      </tal:XXX>
       The Kubuntu 8.04 CDs available here contain the commercially
       supported version, featuring the stable KDE 3.5.9 desktop.
     </p>

@@ -47,6 +47,22 @@ Verify if the object follows its interface contracts:
     >>> ISourcePackage.providedBy(spph.meta_sourcepackage)
     True
 
+ISourcePackagePublishingHistory has some handy shortcuts to get textual
+representations of the source package name, version, component and section.
+This is mostly as a convenience to API users.
+
+    >>> print spph.source_package_name
+    pmount
+
+    >>> print spph.source_package_version
+    0.1-1
+
+    >>> print spph.component_name
+    main
+
+    >>> print spph.section_name
+    base
+
 
 == Stanza generation ==
 

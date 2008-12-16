@@ -20,7 +20,8 @@ from canonical.launchpad.webapp import canonical_url
 
 def email_branch_modified_notifications(branch, to_addresses,
                                         from_address, contents,
-                                        recipients, subject=None):
+                                        recipients, subject=None,
+                                        headers=None):
     """Send notification emails using the branch email template.
 
     Emails are sent one at a time to the listed addresses.
@@ -30,7 +31,9 @@ def email_branch_modified_notifications(branch, to_addresses,
         branch_title = ''
     if subject is None:
         subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
-    headers = {'X-Launchpad-Branch': branch.unique_name}
+    if headers is None:
+        headers = {}
+    headers['X-Launchpad-Branch'] = branch.unique_name
     if branch.product is not None:
         headers['X-Launchpad-Project'] = branch.product.name
 
@@ -66,7 +69,7 @@ def email_branch_modified_notifications(branch, to_addresses,
 
 
 def send_branch_revision_notifications(branch, from_address, message, diff,
-                                       subject):
+                                       subject, revno):
     """Notify subscribers that a revision has been added (or removed)."""
     diff_size = diff.count('\n') + 1
 
@@ -81,6 +84,8 @@ def send_branch_revision_notifications(branch, from_address, message, diff,
         subscription, ignored = recipients.getReason(email_address)
         if subscription.notification_level in interested_levels:
             diff_size_to_email[subscription.max_diff_lines].add(email_address)
+
+    headers = {'X-Launchpad-Branch-Revision-Number': str(revno)}
 
     for max_diff in diff_size_to_email:
         addresses = diff_size_to_email[max_diff]
@@ -100,7 +105,8 @@ def send_branch_revision_notifications(branch, from_address, message, diff,
         else:
             contents = "%s\n%s" % (message, diff)
         email_branch_modified_notifications(
-            branch, addresses, from_address, contents, recipients, subject)
+            branch, addresses, from_address, contents, recipients, subject,
+            headers)
 
 
 def send_branch_modified_notifications(branch, event):

@@ -216,17 +216,26 @@ We need to create some sufficiently large diffs to compare against.
 Send the revision notifications.
 
     >>> send_branch_revision_notifications(
-    ...     branch, 'no-reply@canonical.com', message, diff, None)
+    ...     branch, 'no-reply@canonical.com', message, diff, None, revno=1234)
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
-    >>> print_to_and_body(notifications.pop(0))
+    >>> msg = notifications.pop(0)
+    >>> print_to_and_body(msg)
     To: carlos@canonical.com
     Test message.
     <BLANKLINE>
     <BLANKLINE>
     --...
 
+There are also some useful headers for filtering emails.
+
+    >>> print msg['X-Launchpad-Branch']
+    ~name12/firefox/main
+    >>> print msg['X-Launchpad-Branch-Revision-Number']
+    1234
+    >>> print msg['X-Launchpad-Project']
+    firefox
     >>> print_to_and_body(notifications.pop(0))
     To: celso.providelo@canonical.com
     Test message.
@@ -274,7 +283,7 @@ And just to be sure, lets create one with 800 lines.
 
     >>> diff = '\n'.join([str(value) for value in xrange(800)])
     >>> send_branch_revision_notifications(
-    ...     branch, 'no-reply@canonical.com', message, diff, None)
+    ...     branch, 'no-reply@canonical.com', message, diff, None, 1234)
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
