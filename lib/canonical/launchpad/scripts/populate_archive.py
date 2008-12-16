@@ -10,6 +10,7 @@ __all__ = [
 
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.components.packagelocation import (
     build_package_location)
@@ -48,7 +49,7 @@ class ArchivePopulator(SoyuzScript):
     def populateArchive(
         self, from_distribution, from_suite, from_component, to_distribution,
         to_suite, to_component, to_archive, to_user, reason, include_binaries,
-        proc_families):
+        proc_family_names):
         """Create archive, populate it with packages and builds.
 
         :param from_distribution: origin distribution.
@@ -64,13 +65,14 @@ class ArchivePopulator(SoyuzScript):
         :param reason: reason for the package copy operation.
 
         :param include_binaries: whether binaries should be copied as well.
-        :param proc_families: processor families for which to create builds.
+        :param proc_family_names: processor families for which to create
+            builds.
         """
-        def loadProcessorFamilies(proc_family_names):
+        def loadProcessorFamilies(family_names):
             """Load processor families for specified family names."""
             proc_family_set = getUtility(IProcessorFamilySet)
             proc_families = set()
-            for name in proc_family_names:
+            for name in family_names:
                 proc_family = proc_family_set.getByName(name)
                 if proc_family is None:
                     raise SoyuzScriptError(
@@ -117,24 +119,37 @@ class ArchivePopulator(SoyuzScript):
         copy_archive = getUtility(IArchiveSet).getByDistroAndName(
             the_destination.distribution, to_archive)
 
+        merge_copy = False
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
             # First load the processor families for the specified family names
             # from the database. This will fail if an invalid processor family
             # name was specified on the command line; that's why it should be
             # done before creating the copy archive.
-            proc_families = loadProcessorFamilies(self.options.proc_families)
+            if proc_family_names is None:
+                raise SoyuzScriptError(
+                    "error: processor families not specified.")
+
+            proc_families = loadProcessorFamilies(proc_family_names)
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, to_archive,
                 the_destination.distribution, reason)
-            the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.
             set_archive_architectures(copy_archive, proc_families)
         else:
-            raise SoyuzScriptError(
-                "A copy archive named '%s' exists already" % to_archive)
+            # The copy archive exists already, get the associated processor
+            # families.
+            def get_family(archivearch):
+                """Extract the processor family from an `IArchiveArch`."""
+                return removeSecurityProxy(archivearch).processorfamily
 
+            proc_families = [
+                get_family(archivearch) for archivearch
+                in getUtility(IArchiveArchSet).getByArchive(copy_archive)]
+            merge_copy = True
+
+        the_destination.archive = copy_archive
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
         getUtility(IPackageCopyRequestSet).new(
@@ -144,21 +159,19 @@ class ArchivePopulator(SoyuzScript):
         # Clone the source packages. We currently do not support the copying
         # of binary packages. It's a forthcoming feature.
         pkg_cloner = getUtility(IPackageCloner)
-        pkg_cloner.clonePackages(the_origin, the_destination)
-
-        # Create builds for the cloned packages.
-        self._createMissingBuilds(
-            the_destination.distroseries, the_destination.archive,
-            proc_families)
+        if merge_copy == True:
+            pkg_cloner.mergeCopy(the_origin, the_destination)
+        else:
+            pkg_cloner.clonePackages(the_origin, the_destination)
+            # Create builds for the cloned packages.
+            self._createMissingBuilds(
+                the_destination.distroseries, the_destination.archive,
+                proc_families)
 
     def mainTask(self):
         """Main function entry point."""
         def not_specified(option):
             return (option is None or option == '')
-
-        if not_specified(self.options.proc_families):
-            raise SoyuzScriptError(
-                "error: processor families not specified.")
 
         if not_specified(self.options.from_distribution):
             raise SoyuzScriptError(

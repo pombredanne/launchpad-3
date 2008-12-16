@@ -21,6 +21,7 @@ from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
 from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
@@ -128,6 +129,42 @@ class TestPopulateArchiveScript(TestCase):
             get_spn(removeSecurityProxy(build)).name for build in builds]
 
         self.assertEqual(build_spns, self.expected_build_spns)
+
+        # Finally, we will test a repeated population of the same copy archive
+        # and thus the merge copy mechanism.
+        self._prepareMergeCopy()
+        LaunchpadZopelessLayer.txn.commit()
+
+        # Populate same copy archive again.
+        (return_code, out, err) = self.runWrapperScript(extra_args)
+        print(">> 1:\n%s" % out)
+        print(">> 2:\n%s" % err)
+
+        # Check for zero exit code.
+        self.assertEqual(
+            return_code, 0, "=> %s\n=> %s\n=> %s\n" % (return_code, out, err))
+        # Make sure the right source packages were cloned.
+        self._verifyClonedSourcePackages(
+            copy_archive, hoary,
+            # The set of packages that were superseded in the target archive.
+            obsolete=set(['alsa-utils 1.0.9a-4ubuntu1 in hoary']),
+            # The set of packages that are new/fresher in the source archive.
+            new=set(['alsa-utils 2.0 in hoary',
+                     'new-in-second-round 1.0 in hoary'])
+            )
+
+    def _prepareMergeCopy(self):
+        test_publisher = SoyuzTestPublisher()
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
+        unused = test_publisher.setUpDefaultDistroSeries(hoary)
+        new_package = test_publisher.getPubSource(
+            sourcename="new-in-second-round", version="1.0",
+            distroseries=hoary, archive=ubuntu.main_archive)
+        fresher_package = test_publisher.getPubSource(
+            sourcename="alsa-utils", version="2.0", distroseries=hoary,
+            archive=ubuntu.main_archive)
 
     def runScript(
         self, archive_name=None, suite='hoary',
@@ -345,7 +382,8 @@ class TestPopulateArchiveScript(TestCase):
             get_spn(removeSecurityProxy(build)).name for build in builds]
         self.assertEqual(build_spns, self.expected_build_spns)
 
-    def _verifyClonedSourcePackages(self, copy_archive, series):
+    def _verifyClonedSourcePackages(
+        self, copy_archive, series, obsolete=None, new=None):
         """Verify that the expected source packages have been cloned.
 
         The destination copy archive should be populated with the expected
@@ -357,11 +395,16 @@ class TestPopulateArchiveScript(TestCase):
         :param series: the destination distro series.
         """
         # Make sure the source packages were cloned.
+        target_set = set(self.expected_src_names)
         copy_sources = copy_archive.getPublishedSources(
             distroseries=series, status=self.pending_statuses)
-        copy_src_names = sorted(
+        copy_src_names = set(
             source.displayname for source in copy_sources)
-        self.assertEqual(copy_src_names, self.expected_src_names)
+        if obsolete is not None:
+            target_set -= obsolete
+        if new is not None:
+            target_set = target_set.union(new)
+        self.assertEqual(copy_src_names, target_set)
 
     def _verifyPackagesInSampleData(self, series):
         """Verify that the expected source packages are in the sample data.
