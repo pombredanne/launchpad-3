@@ -66,26 +66,26 @@ class Job(SQLBase):
             raise InvalidTransition(self._status, status)
         self._status = status
 
-    status = property(lambda x: x._status, _set_status)
+    status = property(lambda x: x._status)
 
     def start(self):
         """Mark the job as started."""
-        self.status = JobStatus.RUNNING
+        self._set_status(JobStatus.RUNNING)
         self.date_started = datetime.datetime.now(UTC)
         self.date_finished = None
         self.attempt_count += 1
 
     def complete(self):
         """Mark the job as completed."""
-        self.status = JobStatus.COMPLETED
+        self._set_status(JobStatus.COMPLETED)
         self.date_finished = datetime.datetime.now(UTC)
 
     def fail(self):
         """Mark the job as failed."""
-        self.status = JobStatus.FAILED
+        self._set_status(JobStatus.FAILED)
         self.date_finished = datetime.datetime.now(UTC)
 
     def queue(self):
         """Mark the job as queued for processing."""
-        self.status = JobStatus.WAITING
+        self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
