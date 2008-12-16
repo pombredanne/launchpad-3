@@ -572,6 +572,8 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
             self.merge_proposal.queue_status)
         # The vote is also set if it wasn't before.
         self.assertEqual(CodeReviewVote.APPROVE, self.context.vote)
+        # Commit the transaction to check database permissions.
+        transaction.commit()
 
     def test_status_approved_doesnt_override_vote(self):
         # Test that approve sets the status of the merge proposal.
@@ -595,6 +597,8 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
             self.merge_proposal.queue_status)
         # The vote is also set if it wasn't before.
         self.assertEqual(CodeReviewVote.DISAPPROVE, self.context.vote)
+        # Commit the transaction to check database permissions.
+        transaction.commit()
 
     def test_status_rejected_doesnt_override_vote(self):
         # Test that approve sets the status of the merge proposal.
