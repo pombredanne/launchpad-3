@@ -1073,6 +1073,12 @@ class BranchSet:
                 namespace_name)
         except InvalidNamespace:
             return default
+        return self._getBranchInNamespace(
+            namespace_data, branch_name, default)
+
+    @classmethod
+    def _getBranchInNamespace(self, namespace_data, branch_name,
+                              default=None):
         if namespace_data['product'] == '+junk':
             return self._getPersonalBranch(
                 namespace_data['person'], branch_name, default)
@@ -1086,6 +1092,7 @@ class BranchSet:
                 namespace_data['person'], namespace_data['product'],
                 branch_name, default)
 
+    @classmethod
     def _getPersonalBranch(self, person, branch_name, default):
         query = ("Branch.owner = Person.id"
                  + " AND Branch.product IS NULL"
@@ -1097,6 +1104,7 @@ class BranchSet:
             return default
         return branch
 
+    @classmethod
     def _getProductBranch(self, person, product, branch_name, default):
         query = ("Branch.owner = Person.id"
                  + " AND Branch.product = Product.id"
@@ -1110,6 +1118,7 @@ class BranchSet:
         else:
             return branch
 
+    @classmethod
     def _getPackageBranch(self, owner, distribution, distroseries,
                           sourcepackagename, branch, default):
         """Find a source package branch given its path segments.
@@ -1181,9 +1190,9 @@ class BranchSet:
             namespace_set = getUtility(IBranchNamespaceSet)
             parsed = namespace_set.parseBranchPath(path)
             try:
-                for parsed_path, branch, suffix in parsed:
-                    branch = klass._getByUniqueNameElements(
-                        parsed_path['person'], parsed_path['product'], branch)
+                for parsed_path, branch_name, suffix in parsed:
+                    branch = klass._getBranchInNamespace(
+                        parsed_path, branch_name)
                     if branch is not None:
                         if suffix == '':
                             suffix = None
