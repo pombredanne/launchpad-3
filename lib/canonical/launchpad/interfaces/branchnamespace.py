@@ -47,7 +47,12 @@ class IBranchNamespace(Interface):
         """Return the branches in this namespace."""
 
     def getBranchName(name):
-        """Get the potential unique name for a branch called 'name'."""
+        """Get the potential unique name for a branch called 'name'.
+
+        Note that this name is not guaranteed to be unique. Rather, if there
+        *was* such a branch with that name, this would be the value of its
+        `IBranch.unique_name` property.
+        """
 
     def getByName(name, default=None):
         """Find the branch in this namespace called 'name'.
