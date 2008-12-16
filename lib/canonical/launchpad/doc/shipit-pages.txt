@@ -93,7 +93,7 @@ headers, or we'll start shipping wrong CDs to people. This order is specified
 by the ordered_flavours and ordered_architectures attributes of the view
 class.
 
-    >>> review_request_view = create_view(
+    >>> review_request_view = create_initialized_view(
     ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
     ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Ubuntu Server Edition']

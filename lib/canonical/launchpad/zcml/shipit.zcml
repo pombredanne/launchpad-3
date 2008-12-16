@@ -188,65 +188,13 @@
         template="../templates/shipit-survey.pt"
         />
 
-    <!-- XXX: Guilherme Salgado 2006-05-24:
-         This needs to be moved into a normal browser:page declaration,
-         like specialrequest/myrequest, to avoid having all these
-         definitions of the widgets' lengths.
-    -->
-    <browser:generalform
+    <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShippingRequestAdminView"
-        schema="canonical.launchpad.interfaces.IShippingRequestAdmin"
         facet="overview"
         permission="launchpad.Admin"
-        fields="recipientdisplayname addressline1 addressline2 city province
-                country postcode phone organization
-                ubuntu_quantityx86 ubuntu_quantityamd64
-                kubuntu_quantityx86 kubuntu_quantityamd64
-                edubuntu_quantityx86
-                server_quantityx86 server_quantityamd64
-                highpriority"
-        keyword_arguments="
-                recipientdisplayname addressline1 addressline2 city province
-                country postcode phone organization
-                ubuntu_quantityx86 ubuntu_quantityamd64
-                kubuntu_quantityx86 kubuntu_quantityamd64
-                edubuntu_quantityx86
-                server_quantityx86 server_quantityamd64
-                highpriority"
         template="../templates/shipit-adminrequest.pt"
-        name="adminrequest">
-        <browser:widget
-            field="recipientdisplayname"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="20"
-            displayMaxWidth="20" />
-        <browser:widget
-            field="organization"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="city"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="addressline1"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="addressline2"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="phone"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="16"
-            displayMaxWidth="16" />
-    </browser:generalform>
+        name="adminrequest" />
 
     <browser:page
         name="exports"
@@ -281,23 +229,10 @@
         for="canonical.launchpad.interfaces.IShippingRequest"
         name="+edit" />
 
-    <browser:generalform
+    <browser:page
         for="canonical.launchpad.interfaces.IShippingRequest"
         class="canonical.launchpad.browser.ShippingRequestApproveOrDenyView"
-        schema="canonical.launchpad.interfaces.IShippingRequestEdit"
         facet="overview"
-        label="Approve or deny ShipIt Request"
-	    fields="ubuntu_quantityx86approved ubuntu_quantityamd64approved
-		        kubuntu_quantityx86approved kubuntu_quantityamd64approved
-                edubuntu_quantityx86approved
-                server_quantityx86approved server_quantityamd64approved
-                highpriority"
-        keyword_arguments="
-            ubuntu_quantityx86approved ubuntu_quantityamd64approved
-            kubuntu_quantityx86approved kubuntu_quantityamd64approved
-            edubuntu_quantityx86approved
-            server_quantityx86approved server_quantityamd64approved
-            highpriority"
         permission="launchpad.Admin"
         name="+edit"
         template="../templates/shipitrequest-edit.pt"

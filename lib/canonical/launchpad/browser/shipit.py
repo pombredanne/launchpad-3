@@ -29,7 +29,6 @@ from operator import attrgetter
 from zope.event import notify
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError
 from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -44,7 +43,6 @@ from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
@@ -52,11 +50,11 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, IShipItApplication, IShipItReportSet,
-    IShipItSurveySet, IShippingRequestSet, IShippingRequestUser,
-    IShippingRunSet, IStandardShipItRequest, IStandardShipItRequestSet,
-    ShipItArchitecture, ShipItConstants, ShipItDistroSeries, ShipItFlavour,
-    ShipItSurveySchema, ShippingRequestStatus, UnexpectedFormData)
-from canonical.launchpad.validators import LaunchpadValidationError
+    IShipItSurveySet, IShippingRequestAdmin, IShippingRequestEdit,
+    IShippingRequestSet, IShippingRequestUser, IShippingRunSet,
+    IStandardShipItRequest, IStandardShipItRequestSet, ShipItArchitecture,
+    ShipItConstants, ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
+    ShippingRequestStatus, UnexpectedFormData)
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad import _
@@ -248,12 +246,6 @@ class ShipItRequestView(LaunchpadFormView):
     @property
     def _standard_fields(self):
         return list(set(self.field_names) - set(self._extra_fields))
-
-    @property
-    def quantity_widgets(self):
-        """Return a list with the quantity widgets that need to be shown."""
-        return [getattr(self, field_name + '_widget')
-                for field_name in self.quantity_fields_mapping.values()]
 
     def setUpWidgets(self, context=None):
         if context is None:
@@ -785,8 +777,8 @@ class ShippingRequestAdminMixinView:
     """Basic functionality for administering a ShippingRequest.
 
     Any class that inherits from this one should also inherit from
-    GeneralFormView, or another class that stores the widgets as instance
-    attributes, named like fieldname_widget.
+    LaunchpadFormView, or another class that stores the widgets in
+    self.widgets.
     """
 
     # This is the order in which we display the distribution flavours
@@ -813,10 +805,9 @@ class ShippingRequestAdminMixinView:
         for flavour in self.ordered_flavours:
             row = [flavour.title]
             for arch in self.ordered_architectures:
-                widget_name = self.quantity_fields_mapping[flavour][arch]
-                if widget_name is not None:
-                    widget_name += '_widget'
-                    row.append(getattr(self, widget_name))
+                field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is not None:
+                    row.append(self.widgets[field_name])
                 else:
                     row.append(None)
             matrix.append(row)
@@ -848,7 +839,7 @@ class ShippingRequestAdminMixinView:
 
 
 class ShippingRequestApproveOrDenyView(
-        GeneralFormView, ShippingRequestAdminMixinView):
+        LaunchpadFormView, ShippingRequestAdminMixinView):
     """The page where admins can Approve/Deny existing requests."""
 
     quantity_fields_mapping = {
@@ -866,68 +857,63 @@ class ShippingRequestApproveOrDenyView(
              ShipItArchitecture.AMD64: 'server_quantityamd64approved'}
         }
 
-    def process(self, *args, **kw):
-        """Process the submitted form.
+    schema = IShippingRequestEdit
+    label = 'Approve or deny this request'
+    field_names = [
+        "ubuntu_quantityx86approved", "ubuntu_quantityamd64approved",
+        "kubuntu_quantityx86approved", "kubuntu_quantityamd64approved",
+        "edubuntu_quantityx86approved",
+        "server_quantityx86approved", "server_quantityamd64approved",
+        "highpriority"]
 
-        Depending on the button used to submit the form, this method will
-        Approve, Deny or Change the approved quantities of this shipit request.
-        """
-        context = self.context
-        form = self.request.form
-
-        if context.isShipped():
+    def validate(self, data):
+        if self.context.isShipped():
             # This order was exported after the form was rendered; we can't
             # allow changing it, so we return to render the page again,
             # without the buttons that allow changing it.
-            # XXX: Guilherme Salgado 2006-07-27:
-            # It's probably a good idea to notify the user about what
-            # happened here.
+            self.addError("Could not change this request because it has been "
+                          "sent to the shipping company already.")
+
+    @action('Deny & Continue', name='deny')
+    def deny_action(self, action, data):
+        if not self.context.canBeDenied():
+            # This shipit request was changed behind our back; let's just
+            # refresh the page so the user can decide what to do with it.
             return
+        self.next_url = self._makeNextURL(previous_action='denied')
+        self.context.deny()
 
-        if 'DENY' not in form:
-            quantities = {}
-            for flavour in self.quantity_fields_mapping:
-                quantities[flavour] = {}
-                for arch in self.quantity_fields_mapping[flavour]:
-                    field_name = self.quantity_fields_mapping[flavour][arch]
-                    if field_name is None:
-                        # We don't ship this arch for this flavour
-                        continue
-                    quantities[flavour][arch] = kw[field_name]
+    def getQuantities(self, data):
+        quantities = {}
+        for flavour in self.quantity_fields_mapping:
+            quantities[flavour] = {}
+            for arch in self.quantity_fields_mapping[flavour]:
+                field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is None or field_name not in data:
+                    continue
+                quantities[flavour][arch] = data[field_name]
+        return quantities
 
-        if 'APPROVE' in form:
-            if not context.canBeApproved():
-                # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with it.
-                return
-            context.approve(whoapproved=getUtility(ILaunchBag).user)
-            context.highpriority = kw['highpriority']
-            context.setApprovedQuantities(quantities)
-            self._nextURL = self._makeNextURL(previous_action='approved')
-        elif 'CHANGE' in form:
-            if not context.isApproved():
-                # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with it.
-                return
-            self._nextURL = self._makeNextURL(previous_action='changed')
-            context.highpriority = kw['highpriority']
-            context.setApprovedQuantities(quantities)
-        elif 'DENY' in form:
-            if not context.canBeDenied():
-                # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with it.
-                return
-            self._nextURL = self._makeNextURL(previous_action='denied')
-            context.deny()
-        else:
-            # Nothing to do.
-            pass
+    @action('Approve & Continue', name='approve')
+    def approve_action(self, action, data):
+        if not self.context.canBeApproved():
+            # This shipit request was changed behind our back; let's just
+            # refresh the page so the user can decide what to do with it.
+            return
+        self.context.approve(whoapproved=self.user)
+        self.context.highpriority = data['highpriority']
+        self.context.setApprovedQuantities(self.getQuantities(data))
+        self.next_url = self._makeNextURL(previous_action='approved')
 
-    def submitted(self):
-        # Overwrite GeneralFormView.submitted() because we have several
-        # buttons on this page.
-        form = self.request.form
-        return 'APPROVE' in form or 'CHANGE' in form or 'DENY' in form
+    @action('Change Approved Totals', name='change')
+    def change_action(self, action, data):
+        if not self.context.isApproved():
+            # This shipit request was changed behind our back; let's just
+            # refresh the page so the user can decide what to do with it.
+            return
+        self.next_url = self._makeNextURL(previous_action='changed')
+        self.context.highpriority = data['highpriority']
+        self.context.setApprovedQuantities(self.getQuantities(data))
 
     def _makeNextURL(self, previous_action):
         # Need to flush all updates so that getOldestPending() can see the
@@ -997,7 +983,7 @@ class ShippingRequestApproveOrDenyView(
 
 
 class ShippingRequestAdminView(
-        GeneralFormView, ShippingRequestAdminMixinView):
+        LaunchpadFormView, ShippingRequestAdminMixinView):
     """Where admins can make new orders or change existing ones."""
 
     quantity_fields_mapping = {
@@ -1021,12 +1007,20 @@ class ShippingRequestAdminView(
         'recipientdisplayname', 'country', 'city', 'addressline1', 'phone',
         'addressline2', 'province', 'postcode', 'organization']
 
-    def __init__(self, context, request):
-        order_id = request.form.get('order')
+    schema = IShippingRequestAdmin
+    field_names = [
+        "recipientdisplayname", "addressline1", "addressline2", "city",
+        "province", "country", "postcode", "phone", "organization",
+        "ubuntu_quantityx86", "ubuntu_quantityamd64", "kubuntu_quantityx86",
+        "kubuntu_quantityamd64", "edubuntu_quantityx86", "server_quantityx86",
+        "server_quantityamd64", "highpriority"]
+
+    def initialize(self):
+        order_id = self.request.form.get('order')
         if order_id is not None and order_id.isdigit():
             self.current_order = getUtility(IShippingRequestSet).get(
                 int(order_id))
-        GeneralFormView.__init__(self, context, request)
+        super(ShippingRequestAdminView, self).initialize()
 
     @property
     def initial_values(self):
@@ -1047,17 +1041,25 @@ class ShippingRequestAdminView(
         # XXX: Guilherme Salgado 2006-04-21:
         # Even shipit admins shouldn't be allowed to make requests with 0
         # CDs. We need to check this here.
-        errors = []
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
-            errors.append(LaunchpadValidationError(_(
+            self.addError(_(
                 "Shipping to your country requires a postcode, but you "
-                "didn't provide one. Please enter one below.")))
+                "didn't provide one. Please enter one below."))
 
-        if errors:
-            raise WidgetsError(errors)
+    def render(self):
+        if self.current_order is not None:
+            actions = []
+            for action in self.actions:
+                # Only change the label of our 'request' action.
+                if action.__name__ == 'field.actions.request':
+                    action.label = 'Change Request'
+                actions.append(action)
+            self.actions = form.Actions(*actions)
+        return super(ShippingRequestAdminView, self).render()
 
-    def process(self, *args, **kw):
+    @action('Request', name='request')
+    def request_action(self, action, data):
         # All requests created through the admin UI have the shipit_admin
         # celeb as the recipient. This is so because shipit administrators
         # have to be able to create requests on behalf of people who don't
@@ -1073,15 +1075,15 @@ class ShippingRequestAdminView(
                 if field_name is None:
                     # We don't ship this arch for this flavour
                     continue
-                quantities[flavour][arch] = intOrZero(kw[field_name])
+                quantities[flavour][arch] = intOrZero(data[field_name])
 
         current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                shipit_admin, kw['recipientdisplayname'], kw['country'],
-                kw['city'], kw['addressline1'], kw['phone'],
-                kw['addressline2'], kw['province'], kw['postcode'],
-                kw['organization'])
+                shipit_admin, data['recipientdisplayname'], data['country'],
+                data['city'], data['addressline1'], data['phone'],
+                data['addressline2'], data['province'], data['postcode'],
+                data['organization'])
             msg = 'New request created successfully: %d' % current_order.id
 
             # This is a newly created request, and because it's created by a
@@ -1091,15 +1093,15 @@ class ShippingRequestAdminView(
             current_order.approve()
         else:
             for name in self.shipping_details_fields:
-                setattr(current_order, name, kw[name])
+                setattr(current_order, name, data[name])
             msg = 'Request %d changed' % current_order.id
 
             # This is a request being changed, so we just set the requested
             # quantities and don't approve it.
             current_order.setRequestedQuantities(quantities)
 
-        current_order.highpriority = kw['highpriority']
-        self._nextURL = canonical_url(current_order)
+        current_order.highpriority = data['highpriority']
+        self.next_url = canonical_url(current_order)
         self.request.response.addNotification(msg)
 
 
