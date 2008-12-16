@@ -40,8 +40,8 @@ also sends the email to the list of recipients.
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    >>> BranchMailer.forRevision(branch, 'foo@canonical.com', 'The contents.',
-    ...     None, None).sendAll()
+    >>> BranchMailer.forRevision(branch, 1, 'foo@canonical.com',
+    ...     'The contents.', None, None).sendAll()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -255,8 +255,10 @@ unsubscribe link.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    You are subscribed to branch lp://dev/~name12/firefox/main.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    Your team Launchpad Developers is subscribed to branch
+    lp://dev/~name12/firefox/main.
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
     <BLANKLINE>
 
 

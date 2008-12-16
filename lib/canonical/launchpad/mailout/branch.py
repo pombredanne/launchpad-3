@@ -205,7 +205,7 @@ class BranchMailer(BaseMailer):
         if reason.branch.product is not None:
             headers['X-Launchpad-Project'] = reason.branch.product.name
         if self.revno is not None:
-            headers = {'X-Launchpad-Branch-Revision-Number': str(revno)}
+            headers['X-Launchpad-Branch-Revision-Number'] = str(self.revno)
         return headers
 
     def _getTemplateParams(self, email):
