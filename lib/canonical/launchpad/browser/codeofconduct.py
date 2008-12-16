@@ -24,11 +24,11 @@ __all__ = [
 
 from zope.app.form.browser.add import AddView, EditView
 from zope.component import getUtility
-from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    GetitemNavigation, GeneralFormView)
+    GetitemNavigation)
+from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, ICodeOfConduct, ISignedCodeOfConduct,
     ISignedCodeOfConductSet, ICodeOfConductSet, ICodeOfConductConf)
@@ -59,7 +59,7 @@ class CodeOfConductContextMenu(ContextMenu):
 
     def download(self):
         text = 'Download this version'
-        is_current=self.context.current
+        is_current = self.context.current
         return Link('+download', text, enabled=is_current, icon='download')
 
 
@@ -135,8 +135,8 @@ class CodeOfConductDownloadView:
 
         self.request.response.setHeader('Content-Type', 'application/text')
         self.request.response.setHeader('Content-Length', len(content))
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename="%s"' % filename)
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename="%s"' % filename)
         return content
 
 
@@ -148,26 +148,26 @@ class CodeOfConductSetView:
         self.request = request
 
 
-class SignedCodeOfConductAddView(GeneralFormView):
+class SignedCodeOfConductAddView(LaunchpadFormView):
     """Add a new SignedCodeOfConduct Entry."""
+    schema = ISignedCodeOfConduct
+    field_names = ['signedcode']
 
-    def initialize(self):
-        self.top_of_page_errors = []
-
-    def validate(self, form_values):
-        """Verify and Add SignedCoC entry"""
-        signedcode = form_values["signedcode"]
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        signedcode = data["signedcode"]
         signedcocset = getUtility(ISignedCodeOfConductSet)
         error_message = signedcocset.verifyAndStore(self.user, signedcode)
+        # It'd be nice to do this validation before, but the method which does
+        # the validation is also the one that stores the signed CoC, so we
+        # need to do everything here.
         if error_message:
-            self.top_of_page_errors.append(error_message)
-            raise WidgetsError(self.top_of_page_errors)
-
-    def nextURL(self):
-        return canonical_url(self.user) + '/+codesofconduct'
+            self.addError(error_message)
+            return
+        self.next_url = canonical_url(self.user) + '/+codesofconduct'
 
     @property
-    def getCurrent(self):
+    def current(self):
         """Return the current release of the Code of Conduct."""
         coc_conf = getUtility(ICodeOfConductConf)
         coc_set = getUtility(ICodeOfConductSet)

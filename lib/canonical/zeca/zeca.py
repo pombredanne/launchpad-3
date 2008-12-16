@@ -1,4 +1,4 @@
-""" Copyright 2004 Canonical Ltd.  All rights reserved.
+"""Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 GPG Key Information Server Prototype.
 
@@ -27,16 +27,26 @@ $ gpg --export -a cprov > 0x681B6469.get
 
 __metaclass__ = type
 
-__all__ = ['Zeca', 'KeyServer', 'LookUp']
+__all__ = [
+    'KeyServer',
+    'LookUp',
+    'SubmitKey',
+    'Zeca',
+    ]
 
 import os
 import cgi
 
-from twisted.web import server
 from twisted.web.resource import Resource
-from twisted.internet import reactor
 
-GREETING = 'Copyright 2004-2005 Canonical Ltd.\n'
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, IGPGHandler, MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected)
+
+
+GREETING = 'Copyright 2004-2008 Canonical Ltd.\n'
 
 
 class Zeca(Resource):
@@ -64,8 +74,6 @@ class LookUp(Resource):
         self.root = root
 
     def render_GET(self, request):
-        # XXX cprov 2005-05-13:
-        # WTF is that way to recover the HTTP GET attributes
         try:
             action = request.args['op'][0]
             keyid = request.args['search'][0]
@@ -101,17 +109,53 @@ class LookUp(Resource):
         return page
 
 
-if __name__ == "__main__":
-    from canonical.config import config
+SUBMIT_KEY_PAGE = """
+<html>
+  <head>
+    <title>Submit a key</title>
+  </head>
+  <body>
+    <h1>Submit a key</h1>
+    <p>%(banner)s</p>
+    <form method="post">
+      <textarea name="keytext" rows="20" cols="66"></textarea> <br>
+      <input type="submit" value="Submit">
+    </form>
+  </body>
+</html>
+"""
 
-    root = config.zeca.root
 
-    zeca = Zeca()
-    keyserver = KeyServer()
-    keyserver.putChild('lookup', LookUp(root))
-    zeca.putChild('pks', keyserver)
+class SubmitKey(Resource):
+    isLeaf = True
 
-    site = server.Site(zeca)
-    reactor.listenTCP(11371, site)
-    reactor.run()
+    def __init__(self, root):
+        Resource.__init__(self)
+        self.root = root
 
+    def render_GET(self, request):
+        return SUBMIT_KEY_PAGE % {'banner': ''}
+
+    def render_POST(self, request):
+        try:
+            keytext = request.args['keytext'][0]
+        except KeyError:
+            return 'Invalid Arguments %s' % request.args
+        return self.storeKey(keytext)
+
+    def storeKey(self, keytext):
+        gpghandler = getUtility(IGPGHandler)
+        try:
+            key = gpghandler.importPublicKey(keytext)
+        except (GPGKeyNotFoundError, SecretGPGKeyImportDetected,
+                MoreThanOneGPGKeyFound), err:
+            return SUBMIT_KEY_PAGE % {'banner': str(err)}
+
+        filename = '0x%s.get' % key.fingerprint
+        path = os.path.join(self.root, filename)
+
+        fp = open(path, 'w')
+        fp.write(keytext)
+        fp.close()
+
+        return SUBMIT_KEY_PAGE % {'banner': 'Key added'}

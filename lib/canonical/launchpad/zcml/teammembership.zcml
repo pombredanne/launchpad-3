@@ -18,10 +18,10 @@
     <class class="canonical.launchpad.database.TeamMembership">
         <require
             permission="zope.Public"
-            attributes="team person status proposed_by acknowledged_by
+            attributes="id team person status proposed_by acknowledged_by
                         reviewed_by last_changed_by date_proposed
                         date_acknowledged date_reviewed datejoined dateexpires
-                        date_created proponent_comment
+                        date_created date_last_changed proponent_comment
                         acknowledger_comment reviewer_comment
                         last_change_comment isExpired
                         sendExpirationWarningEmail canBeRenewedByMember

@@ -247,6 +247,27 @@ changes whenever the entry changes.
   >>> etag = response._response.getHeader('ETag')
   >>> salgado = response.jsonBody()
 
+The ETag is present in the HTTP response headers when you GET an
+entry, but it's also present in the representation of the entry
+itself.
+
+  >>> salgado['http_etag'] == etag
+  True
+
+This is so you can get the ETags for all the entries in a collection
+at once, without making a separate HTTP request for each.
+
+  >>> people = webservice.get('/people').jsonBody()
+  >>> etags = [person['http_etag'] for person in people['entries']]
+
+The ETag provided with an entry of a collection is the same as the
+ETag you'd get if you got that entry individually.
+
+  >>> first_person = people['entries'][0]
+  >>> first_person_2 = webservice.get(first_person['self_link']).jsonBody()
+  >>> first_person['http_etag'] == first_person_2['http_etag']
+  True
+
 When you make a PUT or PATCH request, you can provide the ETag as the
 If-Match header. This lets you detect changes that other people made
 to the entry, so your changes don't overwrite theirs.
@@ -351,6 +372,14 @@ You can't directly change an entry's URL address.
   HTTP/1.1 400 Bad Request
   ...
   self_link: You tried to modify a read-only attribute.
+
+You can't directly change an entry's ETag.
+
+  >>> print modify_person('salgado',
+  ...                    {'http_etag' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  http_etag: You tried to modify a read-only attribute.
 
 You can't change an entry's resource type.
 

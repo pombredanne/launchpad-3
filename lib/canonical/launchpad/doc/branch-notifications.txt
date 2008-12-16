@@ -31,8 +31,7 @@ also sends the email to the list of recipients.
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     CodeReviewNotificationLevel, IBranchSet)
-    >>> from canonical.launchpad.mailout.branch import (
-    ...     email_branch_modified_notifications)
+    >>> from canonical.launchpad.mailout.branch import BranchMailer
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> branch = getUtility(IBranchSet).getByUniqueName(
     ...     '~name12/firefox/main')
@@ -41,16 +40,15 @@ also sends the email to the list of recipients.
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    >>> email_branch_modified_notifications(
-    ...     branch, ['test@canonical.com'], 'foo@canonical.com',
-    ...     'The contents.', branch.getNotificationRecipients())
+    >>> BranchMailer.forRevision(branch, 1, 'foo@canonical.com',
+    ...     'The contents.', None, None).sendAll()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
     >>> branch_notification = notifications[0]
     >>> print branch_notification['To']
-    test@canonical.com
+    Sample Person <test@canonical.com>
     >>> print branch_notification['From']
     foo@canonical.com
     >>> print branch_notification['Subject']
@@ -69,7 +67,7 @@ also sends the email to the list of recipients.
     Mozilla Firefox Mainline
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
-    You are receiving this branch notification because you are subscribed to it.
+    You are subscribed to branch lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
     <BLANKLINE>
     >>> branch.unsubscribe(branch.owner)
@@ -210,32 +208,39 @@ We need to create some sufficiently large diffs to compare against.
     >>> diff = '\n'.join([str(value) for value in xrange(6000)])
     >>> message = 'Test message.\n'
 
-    >>> from canonical.launchpad.mailout.branch import (
-    ...     send_branch_revision_notifications)
-
 Send the revision notifications.
 
-    >>> send_branch_revision_notifications(
-    ...     branch, 'no-reply@canonical.com', message, diff, None)
+    >>> BranchMailer.forRevision(
+    ...     branch, 1234, 'no-reply@canonical.com', message, diff,
+    ...     None).sendAll()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
-    >>> print_to_and_body(notifications.pop(0))
-    To: carlos@canonical.com
+    >>> msg = notifications.pop(0)
+    >>> print_to_and_body(msg)
+    To: =?utf-8?q?Carlos_Perell=C3=B3_Mar=C3=ADn?= <carlos@canonical.com>
     Test message.
     <BLANKLINE>
     <BLANKLINE>
     --...
 
+There are also some useful headers for filtering emails.
+
+    >>> print msg['X-Launchpad-Branch']
+    ~name12/firefox/main
+    >>> print msg['X-Launchpad-Branch-Revision-Number']
+    1234
+    >>> print msg['X-Launchpad-Project']
+    firefox
     >>> print_to_and_body(notifications.pop(0))
-    To: celso.providelo@canonical.com
+    To: Celso Providelo <celso.providelo@canonical.com>
     Test message.
     <BLANKLINE>
     The size of the diff (6000 lines) is larger than your specified limit of
     1000 lines...
 
     >>> print_to_and_body(notifications.pop(0))
-    To: daf@canonical.com
+    To: Dafydd Harries <daf@canonical.com>
     Test message.
     <BLANKLINE>
     The size of the diff (6000 lines) is larger than your specified limit of
@@ -246,15 +251,19 @@ developers team.  Since the email is due to a team, there is no
 unsubscribe link.
 
     >>> print_to_and_body(notifications.pop(0))
-    To: foo.bar@canonical.com
+    To: Foo Bar <foo.bar@canonical.com>
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    You are receiving this branch notification because you are subscribed to
-    it.
+    Your team Launchpad Developers is subscribed to branch
+    lp://dev/~name12/firefox/main.
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    <BLANKLINE>
+
 
     >>> print_to_and_body(notifications.pop(0))
-    To: jeff.waugh@ubuntulinux.com
+    To: Jeff Waugh <jeff.waugh@ubuntulinux.com>
     Test message.
     <BLANKLINE>
     The size of the diff (6000 lines) is larger than your specified limit of
@@ -263,7 +272,7 @@ unsubscribe link.
 Mark's unsubscription link is to his personal branch subscription.
 
     >>> print_to_and_body(notifications.pop(0))
-    To: mark@hbd.com
+    To: Mark Shuttleworth <mark@hbd.com>
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
@@ -273,8 +282,9 @@ Mark's unsubscription link is to his personal branch subscription.
 And just to be sure, lets create one with 800 lines.
 
     >>> diff = '\n'.join([str(value) for value in xrange(800)])
-    >>> send_branch_revision_notifications(
-    ...     branch, 'no-reply@canonical.com', message, diff, None)
+    >>> BranchMailer.forRevision(
+    ...     branch, 1234, 'no-reply@canonical.com', message, diff,
+    ...     None).sendAll()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
@@ -282,7 +292,7 @@ And just to be sure, lets create one with 800 lines.
 Still just the log message for carlos:
 
     >>> print_to_and_body(notifications.pop(0))
-    To: carlos@canonical.com
+    To: =?utf-8?q?Carlos_Perell=C3=B3_Mar=C3=ADn?= <carlos@canonical.com>
     Test message.
     <BLANKLINE>
     <BLANKLINE>
@@ -291,7 +301,7 @@ Still just the log message for carlos:
 Diff for celso:
 
     >>> print_to_and_body(notifications.pop(0))
-    To: celso.providelo@canonical.com
+    To: Celso Providelo <celso.providelo@canonical.com>
     Test message.
     <BLANKLINE>
     0 1 ... 799...
@@ -299,7 +309,7 @@ Diff for celso:
 Diff for daf:
 
     >>> print_to_and_body(notifications.pop(0))
-    To: daf@canonical.com
+    To: Dafydd Harries <daf@canonical.com>
     Test message.
     <BLANKLINE>
     0 1 ... 799...
@@ -307,7 +317,7 @@ Diff for daf:
 Everything for Foo Bar:
 
     >>> print_to_and_body(notifications.pop(0))
-    To: foo.bar@canonical.com
+    To: Foo Bar <foo.bar@canonical.com>
     Test message.
     <BLANKLINE>
     0 1 ... 799...
@@ -315,7 +325,7 @@ Everything for Foo Bar:
 Limit hit for jeff:
 
     >>> print_to_and_body(notifications.pop(0))
-    To: jeff.waugh@ubuntulinux.com
+    To: Jeff Waugh <jeff.waugh@ubuntulinux.com>
     Test message.
     <BLANKLINE>
     The size of the diff (800 lines) is larger than your specified limit of 500
@@ -324,7 +334,7 @@ Limit hit for jeff:
 And everything for mark:
 
     >>> print_to_and_body(notifications.pop(0))
-    To: mark@hbd.com
+    To: Mark Shuttleworth <mark@hbd.com>
     Test message.
     <BLANKLINE>
     0 1 ... 799...
@@ -439,7 +449,7 @@ names just now, we'll pass them through anyway
     Mozilla Firefox Mainline
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
-    You are subscribed to branch Mozilla Firefox Mainline.
+    You are subscribed to branch lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
 
@@ -500,7 +510,7 @@ something like this:
     New title
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are subscribed to branch New title.
+    You are subscribed to branch lp://dev/~name12/firefox/new-name.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
 
@@ -567,7 +577,7 @@ by pushing the branch to launchpad.
     <BLANKLINE>
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
-    You are subscribed to branch ~name12/firefox/foo.
+    You are subscribed to branch lp://dev/~name12/firefox/foo.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
 
@@ -597,7 +607,7 @@ We don't want to show None in the email, so we show (not set) instead.
     A new title
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
-    You are subscribed to branch A new title.
+    You are subscribed to branch lp://dev/~name12/firefox/foo.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
 

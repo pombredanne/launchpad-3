@@ -39,9 +39,7 @@
         </p>
 
         <p>
-          <!--XXX leonardr 2007-11-13 bug=162483. Need a link here to
-                  mailing list help.-->
-          &#187; <a href="http://help.launchpad.net/">Help for mailing lists</a>
+          &#187; <a href="http://help.launchpad.net/ListHelp">Help for mailing lists</a>
         </p>
         <input tal:replace="structure view/request_list_creation/render" />
       </div>

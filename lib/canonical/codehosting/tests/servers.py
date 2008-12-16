@@ -1,24 +1,22 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Servers used in codehosting tests."""
+"""Server used in codehosting acceptance tests."""
 
 __metaclass__ = type
 
 __all__ = [
     'CodeHostingTac',
     'SSHCodeHostingServer',
-    'make_launchpad_server',
     ]
 
 
-import gc
 import os
 import shutil
 import tempfile
 
 from zope.component import getUtility
 
-from bzrlib.transport import get_transport, ssh, Server
+from bzrlib.transport import get_transport, Server
 
 from twisted.python.util import sibpath
 
@@ -28,42 +26,6 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
-
-
-class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
-    """Wrapper for ParamikoVendor that tracks connections.
-
-    Used by the test suite to make sure that all connections are closed in a
-    timely fashion.
-    """
-
-    def __init__(self):
-        ssh.ParamikoVendor.__init__(self)
-        self._ssh_transports = []
-        self._ssh_channels = []
-        self._sftp_clients = []
-
-    def _connect(self, username, password, host, port):
-        transport = ssh.ParamikoVendor._connect(
-            self, username, password, host, port)
-        self._ssh_transports.append(transport)
-        return transport
-
-    def connect_sftp(self, username, password, host, port):
-        client = ssh.ParamikoVendor.connect_sftp(
-            self, username, password, host, port)
-        self._sftp_clients.append(client)
-        return client
-
-    def _closeAllTransports(self):
-        if self._sftp_clients:
-            while self._sftp_clients:
-                client = self._sftp_clients.pop()
-                client.close()
-            gc.collect()
-        while self._ssh_transports:
-            connection = self._ssh_transports.pop()
-            connection.close()
 
 
 def set_up_host_keys_for_testing():
@@ -171,30 +133,18 @@ class SSHCodeHostingServer(Server):
         real_home, os.environ['HOME'] = os.environ['HOME'], user_home
         return real_home, user_home
 
-    def forceParamiko(self):
-        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
-        vendor = ConnectionTrackingParamikoVendor()
-        ssh._ssh_vendor_manager._cached_ssh_vendor = vendor
-        return _old_vendor_manager
-
     def getTransport(self, path=None):
         if path is None:
             path = ''
         transport = get_transport(self.get_url()).clone(path)
         return transport
 
-    def closeAllConnections(self):
-        ssh._ssh_vendor_manager._cached_ssh_vendor._closeAllTransports()
-
     def setUp(self):
         self._real_home, self._fake_home = self.setUpFakeHome()
-        self._old_vendor_manager = self.forceParamiko()
 
     def tearDown(self):
-        self.closeAllConnections()
         os.environ['HOME'] = self._real_home
         shutil.rmtree(self._fake_home)
-        ssh._ssh_vendor_manager._cached_ssh_vendor = self._old_vendor_manager
 
     def get_url(self, user=None):
         if user is None:

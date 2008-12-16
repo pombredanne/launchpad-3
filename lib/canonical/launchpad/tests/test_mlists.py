@@ -6,19 +6,25 @@ __metaclass__ = type
 
 
 import os
+import sys
 import errno
 import tempfile
 import unittest
 
 # Don't use cStringIO in case Unicode leaks through.
 from StringIO import StringIO
+from subprocess import Popen, PIPE, STDOUT
+
+import transaction
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.mailman.testing.layers import AppServerLayer
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LayerProcessController)
 
 
 factory = LaunchpadObjectFactory()
@@ -33,10 +39,8 @@ class CapturingLogger(FakeLogger):
         print >> self.io, prefix, fmt % stuff[1:]
 
 
-class TestMailingListImports(unittest.TestCase):
-    """Test mailing list imports."""
-
-    layer = DatabaseFunctionalLayer
+class BaseMailingListImportTest(unittest.TestCase):
+    """Common base class for mailing list import tests."""
 
     def setUp(self):
         # Create a team and a mailing list for the team to test.
@@ -62,6 +66,15 @@ class TestMailingListImports(unittest.TestCase):
             if error.errno != errno.ENOENT:
                 raise
 
+    def writeFile(self, *addresses):
+        # Write the addresses to import to our open temporary file.
+        out_file = open(self.filename, 'w')
+        try:
+            for address in addresses:
+                print >> out_file, address
+        finally:
+            out_file.close()
+
     def assertPeople(self, *people):
         """Assert that `people` are members of the team."""
         members = set(person.name for person in self.team.allmembers)
@@ -73,9 +86,16 @@ class TestMailingListImports(unittest.TestCase):
     def assertAddresses(self, *addresses):
         """Assert that `addresses` are subscribed to the mailing list."""
         subscribers = set(
-            email.email for email in self.mailing_list.getSubscribedAddresses())
+            email.email
+            for email in self.mailing_list.getSubscribedAddresses())
         expected = set(addresses)
         self.assertEqual(subscribers, expected)
+
+
+class TestMailingListImports(BaseMailingListImportTest):
+    """Test mailing list imports."""
+
+    layer = DatabaseFunctionalLayer
 
     def test_simple_import_membership(self):
         # Test the import of a list/team membership, where all email
@@ -193,17 +213,13 @@ class TestMailingListImports(unittest.TestCase):
     def test_import_from_file(self):
         # Test importing addresses from a file.
         importer = Importer('aardvarks')
-        # Write the addresses to import to a file.  Use various
-        # combinations of formats supported by parseaddr().
-        out_file = open(self.filename, 'w')
-        try:
-            print >> out_file, 'Anne Person <anne.person@example.com>'
-            print >> out_file, 'bart.person@example.com (Bart Q. Person)'
-            print >> out_file, 'cperson@example.org'
-            print >> out_file, 'dperson@example.org (Dave Person)'
-            print >> out_file, 'Elly Q. Person <eperson@example.org'
-        finally:
-            out_file.close()
+        self.writeFile(
+            'Anne Person <anne.person@example.com>',
+            'bart.person@example.com (Bart Q. Person)',
+            'cperson@example.org',
+            'dperson@example.org (Dave Person)',
+            'Elly Q. Person <eperson@example.org',
+            )
         importer.importFromFile(self.filename)
         self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
         self.assertAddresses(
@@ -216,22 +232,18 @@ class TestMailingListImports(unittest.TestCase):
         # not all the email addresses are associated with registered
         # people.
         importer = Importer('aardvarks')
-        # Write the addresses to import to a file.  Use various
-        # combinations of formats supported by parseaddr().
-        out_file = open(self.filename, 'w')
-        try:
-            print >> out_file, 'Anne Person <anne.person@example.com>'
-            print >> out_file, 'bart.person@example.com (Bart Q. Person)'
-            print >> out_file, 'cperson@example.org'
-            print >> out_file, 'dperson@example.org (Dave Person)'
-            print >> out_file, 'Elly Q. Person <eperson@example.org'
+        self.writeFile(
+            'Anne Person <anne.person@example.com>',
+            'bart.person@example.com (Bart Q. Person)',
+            'cperson@example.org',
+            'dperson@example.org (Dave Person)',
+            'Elly Q. Person <eperson@example.org',
             # Non-persons.
-            print >> out_file, 'fperson@example.org (Fred Q. Person)'
-            print >> out_file, 'Gwen Person <gwen.person@example.com>'
-            print >> out_file, 'hperson@example.org'
-            print >> out_file, 'iris.person@example.com'
-        finally:
-            out_file.close()
+            'fperson@example.org (Fred Q. Person)',
+            'Gwen Person <gwen.person@example.com>',
+            'hperson@example.org',
+            'iris.person@example.com',
+            )
         importer.importFromFile(self.filename)
         self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
         self.assertAddresses(
@@ -245,17 +257,13 @@ class TestMailingListImports(unittest.TestCase):
         # Give Anne a new invalid email address.
         factory.makeEmail('anne.x.person@example.net', self.anne,
                           EmailAddressStatus.NEW)
-        # Write the addresses to import to a file.  Use various
-        # combinations of formats supported by parseaddr().
-        out_file = open(self.filename, 'w')
-        try:
-            print >> out_file, 'Anne Person <anne.x.person@example.net>'
-            print >> out_file, 'bart.person@example.com (Bart Q. Person)'
-            print >> out_file, 'cperson@example.org'
-            print >> out_file, 'dperson@example.org (Dave Person)'
-            print >> out_file, 'Elly Q. Person <eperson@example.org'
-        finally:
-            out_file.close()
+        self.writeFile(
+            'Anne Person <anne.x.person@example.net>',
+            'bart.person@example.com (Bart Q. Person)',
+            'cperson@example.org',
+            'dperson@example.org (Dave Person)',
+            'Elly Q. Person <eperson@example.org',
+            )
         importer.importFromFile(self.filename)
         self.assertPeople(u'bart', u'cris', u'dave', u'elly')
         self.assertAddresses(
@@ -284,7 +292,13 @@ class TestMailingListImports(unittest.TestCase):
             'dperson@example.org',
             'elly.person@example.com (Elly Q. Person)',
             ))
-        self.assertEqual(self.logger.io.getvalue(), '')
+        self.assertEqual(
+            self.logger.io.getvalue(),
+            'INFO anne.person@example.com (anne) joined and subscribed\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n'
+            'INFO cris.person@example.com (cris) joined and subscribed\n'
+            'INFO dperson@example.org (dave) joined and subscribed\n'
+            'INFO elly.person@example.com (elly) joined and subscribed\n')
 
     def test_logging_with_non_persons(self):
         # Test that non-persons that were not imported are logged.
@@ -302,9 +316,14 @@ class TestMailingListImports(unittest.TestCase):
             ))
         self.assertEqual(
             self.logger.io.getvalue(),
-            ('ERROR No person for address: fperson@example.org\n'
-             'ERROR No person for address: gwen.person@example.com\n'
-             'ERROR No person for address: hperson@example.org\n'))
+            'INFO anne.person@example.com (anne) joined and subscribed\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n'
+            'INFO cris.person@example.com (cris) joined and subscribed\n'
+            'INFO dperson@example.org (dave) joined and subscribed\n'
+            'INFO elly.person@example.com (elly) joined and subscribed\n'
+            'ERROR No person for address: fperson@example.org\n'
+            'ERROR No person for address: gwen.person@example.com\n'
+            'ERROR No person for address: hperson@example.org\n')
 
     def test_logging_with_invalid_emails(self):
         # Test that invalid emails that were not imported are logged.
@@ -322,7 +341,126 @@ class TestMailingListImports(unittest.TestCase):
             ))
         self.assertEqual(
             self.logger.io.getvalue(),
-            'ERROR No valid email for address: anne.x.person@example.net\n')
+            'ERROR No valid email for address: anne.x.person@example.net\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n'
+            'INFO cris.person@example.com (cris) joined and subscribed\n'
+            'INFO dperson@example.org (dave) joined and subscribed\n'
+            'INFO elly.person@example.com (elly) joined and subscribed\n')
+
+    def test_import_existing_with_nonascii_name(self):
+        # Make sure that a person with a non-ascii name, who's already a
+        # member of the list, gets a proper log message.
+        self.anne.displayname = u'\u1ea2nn\u1ebf P\u1ec5rs\u1ed1n'
+        importer = Importer('aardvarks', self.logger)
+        self.anne.join(self.team)
+        self.mailing_list.subscribe(self.anne)
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            ))
+        self.assertEqual(
+            self.logger.io.getvalue(),
+            'ERROR \xe1\xba\xa2nn\xe1\xba\xbf '
+            'P\xe1\xbb\x85rs\xe1\xbb\x91n is already subscribed '
+            'to list Aardvarks\n'
+            'INFO anne.person@example.com (anne) joined and subscribed\n'
+            'INFO bperson@example.org (bart) joined and subscribed\n')
+
+
+class TestMailingListImportScript(BaseMailingListImportTest):
+    """Test end-to-end `mlist-import.py` script."""
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestMailingListImportScript, self).setUp()
+        # Since these tests involve two processes, the setup transaction must
+        # be committed, otherwise the script won't see the changes.
+        transaction.commit()
+        # Make sure the mailbox is empty.
+        LayerProcessController.smtp_controller.reset()
+
+    def makeProcess(self, *extra_args):
+        args = ['scripts/mlist-import.py', '--filename', self.filename]
+        args.extend(extra_args)
+        args.append(self.team.name)
+        return Popen(args, stdout=PIPE, stderr=STDOUT,
+                     cwd=LayerProcessController.appserver_config.root,
+                     env=dict(LPCONFIG='testrunner-appserver',
+                              PYTHONPATH=os.pathsep.join(sys.path)))
+
+    def test_import(self):
+        # Test that a simple invocation of the script works.
+        # Use various combinations of formats supported by parseaddr().
+        self.writeFile(
+            'Anne Person <anne.person@example.com>',
+            'bart.person@example.com (Bart Q. Person)',
+            'cperson@example.org',
+            'dperson@example.org (Dave Person)',
+            'Elly Q. Person <eperson@example.org',
+            )
+        # Create the subprocess and invoke the script.
+        process = self.makeProcess()
+        stdout, stderr = process.communicate()
+        self.assertEqual(process.returncode, 0, stdout)
+        # Make sure we hit the database.
+        transaction.abort()
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bart.person@example.com',
+            u'cperson@example.org', u'dperson@example.org',
+            u'eperson@example.org')
+
+    def test_notification_suppression(self):
+        # Test that importing some addresses produces no notifications, which
+        # happens by default.
+        self.writeFile(
+            'Anne Person <anne.person@example.com>',
+            'bart.person@example.com (Bart Q. Person)',
+            'cperson@example.org',
+            'dperson@example.org (Dave Person)',
+            'Elly Q. Person <eperson@example.org',
+            )
+        process = self.makeProcess()
+        stdout, stderr = process.communicate()
+        self.assertEqual(process.returncode, 0, stdout)
+        # There should be no messages sitting in the smtp controller, because
+        # all notifications were suppressed.
+        messages = LayerProcessController.smtp_controller.getMessages()
+        self.assertEqual(len(messages), 0)
+
+    def test_notifications(self):
+        # Test that importing some addresses the expected notifications when
+        # the proper command line option is given.  Each new member and the
+        # team owners should get a notification for every join.
+        self.writeFile(
+            'Anne Person <anne.person@example.com>',
+            'bart.person@example.com (Bart Q. Person)',
+            'cperson@example.org',
+            'dperson@example.org (Dave Person)',
+            'Elly Q. Person <eperson@example.org',
+            )
+        process = self.makeProcess('--notifications')
+        stdout, stderr = process.communicate()
+        self.assertEqual(process.returncode, 0, stdout)
+        # There should be five messages sitting in the smtp controller, one
+        # for each added new member, all sent to the team owner.
+        messages = LayerProcessController.smtp_controller.getMessages()
+        self.assertEqual(len(messages), 5)
+        # The messages are all being sent to the team owner.
+        recipients = set(message['to'] for message in messages)
+        self.assertEqual(len(recipients), 1)
+        self.assertEqual(recipients.pop(), 'teamowner.person@example.com')
+        # The Subjects of all the messages indicate who was joined as a member
+        # of the team.
+        subjects = sorted(message['subject'] for message in messages)
+        self.assertEqual(subjects, [
+            'anne joined aardvarks',
+            'bart joined aardvarks',
+            'cris joined aardvarks',
+            'dave joined aardvarks',
+            'elly joined aardvarks',
+            ])
 
 
 def test_suite():
