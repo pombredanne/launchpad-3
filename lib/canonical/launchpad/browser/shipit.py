@@ -388,21 +388,18 @@ class ShipItRequestView(LaunchpadFormView):
         """Process the submitted form, either creating a new request, or
         changing an existing one.
         """
-        # XXX: Quick hack done when this view was converted from a
-        # GeneralFormView into a LaunchpadFormView. Will get rid of it after
-        # the change is reviewed.
-        kw = data
         form = self.request.form
         need_notification = False
-        reason = kw.get('reason')
+        reason = data.get('reason')
         requestset = getUtility(IShippingRequestSet)
         current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                self.user, kw.get('recipientdisplayname'), kw.get('country'),
-                kw.get('city'), kw.get('addressline1'), kw.get('phone'),
-                kw.get('addressline2'), kw.get('province'),
-                kw.get('postcode'), kw.get('organization'), reason)
+                self.user, data.get('recipientdisplayname'),
+                data.get('country'), data.get('city'),
+                data.get('addressline1'), data.get('phone'),
+                data.get('addressline2'), data.get('province'),
+                data.get('postcode'), data.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
                        'can take up to <strong>sixteen weeks<strong> to '
@@ -415,7 +412,7 @@ class ShipItRequestView(LaunchpadFormView):
                        'country of shipping.')
         else:
             for name in self._standard_fields:
-                setattr(current_order, name, kw.get(name))
+                setattr(current_order, name, data.get(name))
             # 'reason' is special cased because it's only displayed on the
             # custom request form, and so it's part of self._extra_fields and
             # not self._standard_fields. Also, we can't simply override
@@ -449,7 +446,7 @@ class ShipItRequestView(LaunchpadFormView):
             quantities = {}
             total_cds = 0
             for arch, field_name in self.quantity_fields_mapping.items():
-                quantities[arch] = intOrZero(kw.get(field_name))
+                quantities[arch] = intOrZero(data.get(field_name))
                 total_cds += quantities[arch]
 
         # Here we set both requested and approved quantities. This is not a
