@@ -148,7 +148,7 @@
         class="canonical.launchpad.browser.ShipItRequestView"
         layer="canonical.launchpad.layers.ShipItLayer"
         permission="launchpad.AnyPerson"
-        attribute="renderStandardrequestForm"
+        template="../templates/shipit-requestcds.pt"
         name="myrequest">
     </browser:page>
 
@@ -156,26 +156,26 @@
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestServerCDsView"
         permission="launchpad.AnyPerson"
-        attribute="renderStandardrequestForm"
         layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        template="../templates/shipit-requestcds.pt"
         name="myrequest-server">
     </browser:page>
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItRequestView"
+        class="canonical.launchpad.browser.ShipItCustomRequestView"
         layer="canonical.launchpad.layers.ShipItLayer"
         permission="launchpad.AnyPerson"
-        attribute="renderCustomrequestForm"
+        template="../templates/shipit-requestcds.pt"
         name="specialrequest">
     </browser:page>
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItRequestServerCDsView"
+        class="canonical.launchpad.browser.ShipItCustomRequestServerCDsView"
         permission="launchpad.AnyPerson"
-        attribute="renderCustomrequestForm"
         layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        template="../templates/shipit-requestcds.pt"
         name="specialrequest-server">
     </browser:page>
 

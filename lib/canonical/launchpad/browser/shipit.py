@@ -3,6 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'ShipItCustomRequestView',
+    'ShipItCustomRequestServerCDsView',
     'ShipItExportsView',
     'ShipitFrontPageView',
     'ShipItLoginView',
@@ -27,8 +29,8 @@ from operator import attrgetter
 from zope.event import notify
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError, IInputWidget
-from zope.app.form.utility import setUpWidgets
+from zope.app.form.interfaces import WidgetsError
+from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -40,6 +42,7 @@ from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -202,7 +205,7 @@ def _get_flavour_from_layer(request):
             'ShipItKUbuntuLayer or ShipItUbuntuLayer')
 
 
-class ShipItRequestView(GeneralFormView):
+class ShipItRequestView(LaunchpadFormView):
     """The view for people to create/edit ShipIt requests."""
 
     standard_order_page = '/myrequest'
@@ -214,42 +217,26 @@ class ShipItRequestView(GeneralFormView):
     _extra_fields = None
 
     schema = IShippingRequestUser
-    fieldNames = None
-    process_status = None
-    index = ViewPageTemplateFile('../templates/shipit-requestcds.pt')
+    field_names = None
 
-    # pylint: disable-msg=W0231
-    def __init__(self, context, request):
-        """Override GeneralFormView.__init__() not to set up widgets."""
-        self.context = context
-        self.request = request
-        self.flavour = _get_flavour_from_layer(request)
-        self.series = ShipItConstants.current_distroseries
-        self.fieldNames = [
+    def initialize(self, flavour=None, distroseries=None):
+        if flavour is None:
+            self.flavour = _get_flavour_from_layer(self.request)
+        else:
+            self.flavour = flavour
+        if distroseries is None:
+            self.series = ShipItConstants.current_distroseries
+        else:
+            self.series = distroseries
+        self.field_names = [
             'recipientdisplayname', 'addressline1', 'addressline2', 'city',
             'province', 'country', 'postcode', 'phone', 'organization']
-        self._extra_fields = []
-        self.quantity_fields_mapping = {}
+        self._setExtraFields()
+        super(ShipItRequestView, self).initialize()
 
     def _setExtraFields(self):
-        """Set self._extra_fields that are shown in the custom order form.
-
-        These fields include the 'reason' and quantity widgets for users to
-        make custom orders.
-        """
-        if self.flavour == ShipItFlavour.SERVER:
-            self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
-        elif self.flavour in ShipItFlavour.items:
-            self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86'}
-        else:
-            raise AssertionError('Unrecognized flavour: %s' % self.flavour)
-
-        self._extra_fields = self.quantity_fields_mapping.values()
-        self.fieldNames.append('reason')
-        self.fieldNames.extend(self._extra_fields)
+        self._extra_fields = []
+        self.quantity_fields_mapping = {}
 
     def is_open(self):
         return shipit_is_open(self.flavour)
@@ -259,13 +246,8 @@ class ShipItRequestView(GeneralFormView):
         return config.shipit.prerelease_mode
 
     @property
-    def _keyword_arguments(self):
-        """All fields should be given as keyword arguments."""
-        return self.fieldNames
-
-    @property
     def _standard_fields(self):
-        return list(set(self.fieldNames) - set(self._extra_fields))
+        return list(set(self.field_names) - set(self._extra_fields))
 
     @property
     def quantity_widgets(self):
@@ -273,32 +255,13 @@ class ShipItRequestView(GeneralFormView):
         return [getattr(self, field_name + '_widget')
                 for field_name in self.quantity_fields_mapping.values()]
 
-    def _setUpWidgets(self, context=None):
-        # First we set up the standard widgets
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=self._standard_fields,
-            initial=self.initial_values, context=context)
-        # And then we set up the extra widgets that depend on the layer we are
-        # and are not attributes of our context; that's why their initial
-        # values comes from a different property.
-        if self._extra_fields:
-            setUpWidgets(
-                self, self.schema, IInputWidget, names=self._extra_fields,
-                initial=self.extra_fields_initial_values, context=context)
-
-    def renderCustomrequestForm(self):
-        self._setExtraFields()
-        self.should_show_custom_request = True
-        return self._renderForm()
-
-    def renderStandardrequestForm(self):
-        self.should_show_custom_request = False
-        return self._renderForm()
-
-    def _renderForm(self):
-        self._setUpWidgets()
-        self.process_form()
-        return self.index()
+    def setUpWidgets(self, context=None):
+        if context is None:
+            context = self.context
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, context, self.request,
+            data=self.initial_values, adapters=self.adapters,
+            ignore_request=False)
 
     @property
     def download_url(self):
@@ -334,16 +297,6 @@ class ShipItRequestView(GeneralFormView):
                     continue
                 field_values[name] = getattr(existing_order, name)
 
-        return field_values
-
-    @property
-    def extra_fields_initial_values(self):
-        field_values = {}
-        if self.current_order is None:
-            return field_values
-        quantities = self._getCurrentOrderQuantitiesOfThisFlavour()
-        for arch, field_name in self.quantity_fields_mapping.items():
-            field_values[field_name] = quantities[arch]
         return field_values
 
     @cachedproperty
@@ -419,29 +372,24 @@ class ShipItRequestView(GeneralFormView):
             if standardrequest.isdefault:
                 return standardrequest.id
 
-    def process_form(self):
-        """Overwrite GeneralFormView's process_form() method because we want
-        to be able to have a 'Cancel' button in a different <form> element.
-        """
-        if 'cancel' in self.request.form:
-            if self.current_order is None:
-                # This is probably a user reloading the form he submitted
-                # cancelling his request, so we'll just refresh the page so he
-                # can see that he has no current request, actually.
-                return ''
-            self.current_order.cancel(self.user)
-            self.process_status = 'Request Cancelled'
-        else:
-            self.process_status = GeneralFormView.process_form(self)
+    @action('Cancel Request', name='cancel', validator='validate_cancel')
+    def cancel_request_action(self, action, data):
+        if self.current_order is None:
+            # This is probably a user reloading the form he submitted
+            # cancelling his request, so we'll just refresh the page so he
+            # can see that he has no current request, actually.
+            return
+        self.current_order.cancel(self.user)
+        self._current_order = None
+        self.request.response.addInfoNotification(_('Request Cancelled'))
 
-        flush_database_updates()
-        self._current_order = self.user.currentShipItRequest()
-        return self.process_status
-
-    def process(self, *args, **kw):
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
         """Process the submitted form, either creating a new request, or
         changing an existing one.
         """
+        # XXX: !
+        kw = data
         form = self.request.form
         need_notification = False
         reason = kw.get('reason')
@@ -488,9 +436,10 @@ class ShipItRequestView(GeneralFormView):
             if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
-                self._abortAndSetStatus()
-                return ("The option you chose was not found. Please select "
-                        "one from the list below.")
+                self._abort()
+                self.addError(_("The option you chose was not found. Please "
+                                "select one from the list below."))
+                return
             quantities = request_type.quantities
             total_cds = request_type.totalCDs
         else:
@@ -508,10 +457,6 @@ class ShipItRequestView(GeneralFormView):
         # shipped.
         current_order.setQuantities(
             {self.flavour: quantities}, distroseries=self.series)
-
-        # Make sure that subsequent queries will see the RequestedCDs objects
-        # created/updated when we set the order quantities above.
-        flush_database_updates()
 
         current_flavours = current_order.getContainedFlavours()
 
@@ -567,7 +512,8 @@ class ShipItRequestView(GeneralFormView):
             # request pending in the code above, we need to clear them out.
             current_order.clearApprovedQuantities()
 
-        return msg
+        self._current_order = self.user.currentShipItRequest()
+        self.request.response.addInfoNotification(structured(msg))
 
     def userAlreadyRequestedFlavours(self, flavours):
         """Return True if any of the given flavours is contained in any of
@@ -580,29 +526,79 @@ class ShipItRequestView(GeneralFormView):
         return False
 
     def validate(self, data):
-        errors = []
         # We use a custom template with some extra widgets, so we have to
-        # cheat here and access self.request.form
+        # cheat here and access self.request.form directly.
         if not self.request.form.get('ordertype') and not self._extra_fields:
-            errors.append(UnexpectedFormData(_(
-                'The number of requested CDs was not provided.')))
+            self.addError(_('The number of requested CDs was not provided.'))
 
-        country = data['country']
-        if shipit_postcode_required(country) and not data['postcode']:
-            errors.append(LaunchpadValidationError(_(
-                "Shipping to your country requires a postcode, but you "
-                "didn't provide one. Please enter one below.")))
+        country = data.get('country')
+        postcode = data.get('postcode')
+        if country is not None:
+            if shipit_postcode_required(country) and postcode is None:
+                self.addError(_(
+                    "Shipping to your country requires a postcode, but you "
+                    "didn't provide one. Please enter one below."))
 
         if self.quantity_fields_mapping:
             total_cds = 0
             for field_name in self.quantity_fields_mapping.values():
-                total_cds += intOrZero(data[field_name])
+                total_cds += intOrZero(data.get(field_name))
             if total_cds == 0:
-                errors.append(LaunchpadValidationError(_(
-                    "You can't make a request with 0 CDs")))
+                self.addError(_("You can't make a request with 0 CDs"))
 
-        if errors:
-            raise WidgetsError(errors)
+    def render(self):
+        if self.current_order is None:
+            main_action_label = 'Submit Request'
+        elif self.currentOrderContainsCDsOfThisFlavour():
+            main_action_label = 'Change Request'
+        else:
+            main_action_label = 'Request More CDs'
+        self.setMainActionLabel(main_action_label)
+        return super(ShipItRequestView, self).render()
+
+    def setMainActionLabel(self, label):
+        actions = []
+        for action in self.actions:
+            # Only change the label of our 'continue' action.
+            if action.__name__ == 'field.actions.continue':
+                action.label = label
+            actions.append(action)
+        self.actions = form.Actions(*actions)
+
+
+class ShipItCustomRequestView(ShipItRequestView):
+    """The view for people to create/edit ShipIt custom requests."""
+
+    should_show_custom_request = True
+
+    def _setExtraFields(self):
+        """Set self._extra_fields that are shown in the custom order form.
+
+        These fields include the 'reason' and quantity widgets for users to
+        make custom orders.
+        """
+        if self.flavour == ShipItFlavour.SERVER:
+            self.quantity_fields_mapping = {
+                ShipItArchitecture.X86: 'ubuntu_quantityx86',
+                ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
+        elif self.flavour in ShipItFlavour.items:
+            self.quantity_fields_mapping = {
+                ShipItArchitecture.X86: 'ubuntu_quantityx86'}
+        else:
+            raise AssertionError('Unrecognized flavour: %s' % self.flavour)
+
+        self._extra_fields = self.quantity_fields_mapping.values()
+        self.field_names.append('reason')
+        self.field_names.extend(self._extra_fields)
+
+    @property
+    def initial_values(self):
+        values = super(ShipItCustomRequestView, self).initial_values
+        if self.current_order is not None:
+            quantities = self._getCurrentOrderQuantitiesOfThisFlavour()
+            for arch, field_name in self.quantity_fields_mapping.items():
+                values[field_name] = quantities[arch]
+        return values
 
 
 class ShipItRequestServerCDsView(ShipItRequestView):
@@ -611,9 +607,19 @@ class ShipItRequestServerCDsView(ShipItRequestView):
     standard_order_page = '/myrequest-server'
     custom_order_page = '/specialrequest-server'
 
-    def __init__(self, context, request):
-        super(ShipItRequestServerCDsView, self).__init__(context, request)
-        self.flavour = ShipItFlavour.SERVER
+    def initialize(self, distroseries=None):
+        super(ShipItRequestServerCDsView, self).initialize(
+            flavour=ShipItFlavour.SERVER, distroseries=distroseries)
+
+
+class ShipItCustomRequestServerCDsView(ShipItCustomRequestView):
+
+    standard_order_page = '/myrequest-server'
+    custom_order_page = '/specialrequest-server'
+
+    def initialize(self, distroseries=None):
+        super(ShipItCustomRequestServerCDsView, self).initialize(
+            flavour=ShipItFlavour.SERVER, distroseries=distroseries)
 
 
 class _SelectMenuOption:
