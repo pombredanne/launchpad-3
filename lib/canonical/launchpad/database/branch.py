@@ -1196,17 +1196,12 @@ class BranchSet:
                 suffix = None
             return branch, suffix, None
 
-        path_segments = path.split('/', 3)
-        series_name = None
-        if len(path_segments) > 3:
-            suffix = path_segments[3]
-        else:
-            suffix = None
+        path_segments = path.split('/')
         if len(path_segments) < 3:
             branch, series = klass._getDefaultProductBranch(*path_segments)
         else:
             raise faults.InvalidBranchIdentifier(path)
-        return branch, suffix, series
+        return branch, None, series
 
     @staticmethod
     def _getDefaultProductBranch(product_name, series_name=None):
