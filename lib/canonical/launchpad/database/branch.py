@@ -1182,11 +1182,6 @@ class BranchSet:
     @classmethod
     def getByLPPath(klass, path):
         """See `IBranchSet`."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This
-        # implementation needs to be updated to handle five-part source
-        # package branches and three-part source package branches. Might also
-        # be a good idea to support the +dev alias (or whatever the spec
-        # suggests).
         try:
             branch, suffix = klass._getByPath(path)
         except InvalidNamespace:
