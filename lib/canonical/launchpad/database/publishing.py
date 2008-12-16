@@ -615,6 +615,26 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             )
 
     @property
+    def source_package_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.sourcepackagerelease.name
+
+    @property
+    def source_package_version(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.sourcepackagerelease.version
+
+    @property
+    def component_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.component.name
+
+    @property
+    def section_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.section.name
+
+    @property
     def displayname(self):
         """See `IPublishing`."""
         release = self.sourcepackagerelease
@@ -911,6 +931,13 @@ class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
     implements(IPublishingSet)
+
+    def getByIdAndArchive(self, id, archive):
+        """See `IPublishingSet`."""
+        return Store.of(archive).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id == id,
+            SourcePackagePublishingHistory.archive == archive.id)
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.

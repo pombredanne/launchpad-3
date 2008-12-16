@@ -1,13 +1,14 @@
 #!/bin/sh
 
-if [ "$1" != $(id -un) ]; then
-	echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
-	echo "If you really want that, run it with your username as"
-	echo "an argument"
-	exit 1
+if [ -n "$1" ]; then
+    USER=$1
+    echo "Creating Launchpad database for $USER"
+else
+    echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
+    echo "If you really want that, run it with a username as "
+    echo "an argument"
+    exit 1
 fi
-
-set -e
 
 # This attempts to automate instructions provided on
 # https://launchpad.canonical.com/DatabaseSetup which are intended for
@@ -77,6 +78,7 @@ add_missing_from=false
 log_statement='all'
 log_line_prefix='[%t] %q%u@%d '
 fsync = off
+max_fsm_relations=2000
 
 EOF
 
@@ -85,8 +87,8 @@ sudo /etc/init.d/postgresql-$pgversion start
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
 
-echo Creating postgresql user $(id -un)
-sudo -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $(id -un)
+echo Creating postgresql user $USER
+sudo -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $USER
 
 echo
 echo Looks like everything went ok.

@@ -291,6 +291,11 @@ class IDistributionPublic(
         order to create a mirror.
         """
 
+    @operation_parameters(
+        name=TextLine(title=_("Package name"), required=True))
+    # Really returns IDistributionSourcePackage, see below.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
     def getSourcePackage(name):
         """Return a DistributionSourcePackage with the given name for this
         distribution, or None.
@@ -503,3 +508,8 @@ IDistribution['getSeries'].queryTaggedValue(
 IDistribution['getDevelopmentSerieses'].queryTaggedValue(
     'lazr.webservice.exported')[
     'return_type'].value_type.schema = IDistroSeries
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+IDistribution['getSourcePackage'].queryTaggedValue(
+    'lazr.webservice.exported')[
+    'return_type'].schema = IDistributionSourcePackage

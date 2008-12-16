@@ -18,9 +18,11 @@ from zope.schema import Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.interface import copy_field
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-   export_as_webservice_entry, exported)
+   call_with, export_as_webservice_entry, export_write_operation, exported,
+   operation_parameters, REQUEST_USER)
 
 from canonical.launchpad import _
 
@@ -165,6 +167,9 @@ class ITeamMembership(Interface):
         own membership.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(date=copy_field(dateexpires))
+    @export_write_operation()
     def setExpirationDate(date, user):
         """Set this membership's expiration date.
 
@@ -202,10 +207,15 @@ class ITeamMembership(Interface):
         expire soon.
         """
 
-    def setStatus(status, reviewer, comment=None):
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        status=copy_field(status),
+        comment=copy_field(reviewer_comment))
+    @export_write_operation()
+    def setStatus(status, user, comment=None):
         """Set the status of this membership.
 
-        The reviewer and comment are stored in last_changed_by and
+        The user and comment are stored in last_changed_by and
         last_change_comment and may also be stored in proposed_by
         (and proponent_comment), reviewed_by (and reviewer_comment) or
         acknowledged_by (and acknowledger_comment), depending on the state

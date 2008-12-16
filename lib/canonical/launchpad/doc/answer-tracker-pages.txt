@@ -567,7 +567,7 @@ same logic is used to find the languages:
 
     >>> login('test@canonical.com')
     >>> user = getUtility(ILaunchBag).user
-    >>> user.languages.count()
+    >>> len(user.languages)
     0
 
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)

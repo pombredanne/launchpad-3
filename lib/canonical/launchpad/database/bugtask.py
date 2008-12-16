@@ -24,7 +24,8 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import Alias, AutoTables, Join, LeftJoin, SQL
+from storm.expr import And, Alias, AutoTables, Join, LeftJoin, SQL
+
 from storm.sqlobject import SQLObjectResultSet
 
 import pytz
@@ -1073,11 +1074,12 @@ def get_bug_privacy_filter(user):
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
     return """
-        (Bug.private = FALSE OR Bug.id in (
+        (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
              WHERE TeamParticipation.person = %(personid)s AND
-                   BugSubscription.person = TeamParticipation.team))
+                   BugSubscription.person = TeamParticipation.team AND
+                   BugSubscription.bug = Bug.id))
                      """ % sqlvalues(personid=user.id)
 
 
@@ -1129,6 +1131,20 @@ class BugTaskSet:
             raise NotFoundError("BugTask with ID %s does not exist." %
                                 str(task_id))
         return bugtask
+
+    def getBugTasks(self, bug_ids):
+        """See `IBugTaskSet`."""
+        from canonical.launchpad.database.bug import Bug
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
+        columns = (Bug, BugTask)
+        result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))
+        bugs_and_tasks = {}
+        for bug, task in result:
+            if bug not in bugs_and_tasks:
+                bugs_and_tasks[bug] = []
+            bugs_and_tasks[bug].append(task)
+        return bugs_and_tasks
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
@@ -1931,6 +1947,33 @@ class BugTaskSet:
 
         return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def getOpenBugTasksPerProduct(self, user, products):
+        """See `IBugTaskSet`."""
+        # Local import of Bug to avoid import loop.
+        from canonical.launchpad.database.bug import Bug
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [
+            Bug,
+            Join(BugTask, BugTask.bug == Bug.id),
+            ]
+
+        product_ids = [product.id for product in products]
+        conditions = And(BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+                         Bug.duplicateof == None,
+                         BugTask.productID.is_in(product_ids))
+
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter != '':
+            conditions = And(conditions, privacy_filter)
+        result = store.using(*origin).find(
+            (BugTask.productID, SQL('COUNT(*)')),
+            conditions)
+
+        result = result.group_by(BugTask.productID)
+        # The result will return a list of product ids and counts,
+        # which will be converted into key-value pairs in the dictionary.
+        return dict(result)
 
     def getOrderByColumnDBName(self, col_name):
         """See `IBugTaskSet`."""

@@ -84,11 +84,14 @@ class RecipientReason:
         """
         merge_proposal = vote_reference.branch_merge_proposal
         branch = merge_proposal.source_branch
+        if vote_reference.comment is None:
+            reason_template = (
+                '%(entity_is)s requested to review %(merge_proposal)s.')
+        else:
+            reason_template = (
+                '%(entity_is)s reviewing %(merge_proposal)s.')
         return klass(vote_reference.reviewer, recipient, branch,
-                     'reviewer',
-                     '%(entity_is)s requested to review %(merge_proposal)s.',
-                     merge_proposal)
-
+                     'Reviewer', reason_template, merge_proposal)
     @classmethod
     def forBranchOwner(klass, branch, recipient):
         """Construct RecipientReason for a branch owner.
@@ -120,7 +123,7 @@ class RecipientReason:
             target = self.merge_proposal.target_branch.bzr_identity
             template_values['merge_proposal'] = (
                 'the proposed merge of %s into %s' % (source, target))
-        if self.recipient != self.subscriber:
+        if self.recipient != self.subscriber or self.subscriber.is_team:
             assert self.recipient.hasParticipationEntryFor(self.subscriber), (
                 '%s does not participate in team %s.' %
                 (self.recipient.displayname, self.subscriber.displayname))
@@ -135,11 +138,13 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, contents=None, diff=None, message_id=None):
+                 delta=None, contents=None, diff=None, message_id=None,
+                 revno=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id)
         self.contents = contents
         self.diff = diff
+        self.revno=revno
 
     @classmethod
     def forBranchModified(klass, branch, recipients, from_address, delta):
@@ -148,7 +153,7 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, contents, diff,
+    def forRevision(klass, db_branch, revno, from_address, contents, diff,
                     subject):
         recipients = db_branch.getNotificationRecipients()
         interested_levels = (
@@ -163,7 +168,7 @@ class BranchMailer(BaseMailer):
                 recipient_dict[recipient] = subscriber_reason
         subject = klass._branchSubject(db_branch, subject)
         return klass(subject, 'branch-modified.txt', recipient_dict,
-            from_address, contents=contents, diff=diff)
+            from_address, contents=contents, diff=diff, revno=revno)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -192,6 +197,16 @@ class BranchMailer(BaseMailer):
         else:
             contents = '\n' + self.diff
         return contents
+
+    def _getHeaders(self, email):
+        headers = BaseMailer._getHeaders(self, email)
+        reason, rationale = self._recipients.getReason(email)
+        headers['X-Launchpad-Branch'] = reason.branch.unique_name
+        if reason.branch.product is not None:
+            headers['X-Launchpad-Project'] = reason.branch.product.name
+        if self.revno is not None:
+            headers['X-Launchpad-Branch-Revision-Number'] = str(self.revno)
+        return headers
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
