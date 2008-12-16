@@ -251,7 +251,7 @@ dependency. Each element has:
     sabdfl
 
     >>> print dependency.title
-    <a href="http://launchpad.dev/~sabdfl/+archive">PPA for Mark Shuttleworth</a>
+    <a href="http://launchpad.dev/~sabdfl/+ppa/default">PPA for Mark Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
 first listed dependency.
@@ -309,8 +309,8 @@ for UPDATES pocket (see archive-dependencies.txt for more information).
     Release
     Security
     Updates
-    Backports
     Proposed
+    Backports
 
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>

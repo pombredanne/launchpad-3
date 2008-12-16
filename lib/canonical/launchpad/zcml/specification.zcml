@@ -138,14 +138,10 @@
     template="../templates/specification-givefeedback.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
-    fields="person essential"
-    label="Subscribe someone else"
-    arguments="person essential"
     permission="launchpad.AnyPerson"
     template="../templates/specification-addsubscriber.pt"
     />
@@ -190,35 +186,21 @@
     template="../templates/specification-edit.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+setdistroseries"
-    schema="canonical.launchpad.interfaces.ISpecification"
+    for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationGoalProposeView"
-    label="Target to a distribution series"
-    fields="distroseries whiteboard"
-    keyword_arguments="distroseries whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distroseries.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:generalform>
+  </browser:page>
 
-  <browser:generalform
+  <browser:page
     name="+setproductseries"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationGoalProposeView"
-    label="Target to a product series"
-    fields="productseries whiteboard"
-    keyword_arguments="productseries whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationProductSeriesGoalProposeView"
     permission="launchpad.Edit"
     template="../templates/specification-productseries.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:generalform>
+  </browser:page>
 
   <browser:page
     name="+decide"
@@ -293,17 +275,13 @@
     template="../templates/specification-dependency.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+removedependency"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationDependencyRemoval"
     class="canonical.launchpad.browser.SpecificationDependencyRemoveView"
-    label="Remove a dependency"
-    fields="dependency"
-    keyword_arguments="dependency"
     permission="launchpad.Edit"
     template="../templates/specification-removedep.pt">
-  </browser:generalform>
+  </browser:page>
 
   <browser:page
     name="+linksprint"

@@ -7,8 +7,9 @@ Everything in here should be submitted upstream.
 
 __metaclass__ = type
 __all__ = [
-    'get_branch_stacked_on_url',
+    'DenyingServer',
     'ensure_base',
+    'get_branch_stacked_on_url',
     'HttpAsLocalTransport',
     ]
 
@@ -110,3 +111,35 @@ class HttpAsLocalTransport(LocalTransport):
     def unregister(cls):
         """Unregister this transport."""
         unregister_transport('http://', cls)
+
+
+class DenyingServer:
+    """Temporarily prevent creation of transports for certain URL schemes."""
+
+    _is_set_up = False
+
+    def __init__(self, schemes):
+        """Set up the instance.
+
+        :param schemes: The schemes to disallow creation of transports for.
+        """
+        self.schemes = schemes
+
+    def setUp(self):
+        """Prevent transports being created for specified schemes."""
+        for scheme in self.schemes:
+            register_transport(scheme, self._deny)
+        self._is_set_up = True
+
+    def tearDown(self):
+        """Re-enable creation of transports for specified schemes."""
+        if not self._is_set_up:
+            return
+        self._is_set_up = False
+        for scheme in self.schemes:
+            unregister_transport(scheme, self._deny)
+
+    def _deny(self, url):
+        """Prevent creation of transport for 'url'."""
+        raise AssertionError(
+            "Creation of transport for %r is currently forbidden" % url)
