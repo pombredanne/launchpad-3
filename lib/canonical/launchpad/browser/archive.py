@@ -16,8 +16,7 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
-    'traverse_distro_archive',
-    'traverse_named_ppa',
+    'traverse_archive',
     ]
 
 
@@ -135,7 +134,7 @@ class ArchiveBadges(HasBadgeBase):
         return "This archive is private."
 
 
-def traverse_distro_archive(distribution, name):
+def traverse_archive(distribution, name):
     """For distribution archives, traverse to the right place.
 
     This traversal only applies to distribution archives, not PPAs.
@@ -150,25 +149,7 @@ def traverse_distro_archive(distribution, name):
         return archive
 
 
-def traverse_named_ppa(person_name, ppa_name):
-    """For PPAs, traverse the the right place.
-
-    :param person_name: The person part of the URL
-    :param ppa_name: The PPA name part of the URL
-    """
-    # For now, all PPAs are assumed to be Ubuntu-related.  This will
-    # change when we start doing PPAs for other distros.
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    archive_set = getUtility(IArchiveSet)
-    archive = archive_set.getPPAByDistributionAndOwnerName(
-            ubuntu, person_name, ppa_name)
-    if archive is None:
-        raise NotFoundError("%s/%s", (person_name, ppa_name))
-
-    return archive
-
-
-class DistributionArchiveURL:
+class ArchiveURL:
     """Dynamic URL declaration for `IDistributionArchive`.
 
     When dealing with distribution archives we want to present them under
@@ -188,23 +169,6 @@ class DistributionArchiveURL:
     @property
     def path(self):
         return u"+archive/%s" % self.context.name.lower()
-
-
-class PPAURL:
-    """Dynamic URL declaration for named PPAs."""
-    implements(ICanonicalUrlData)
-    rootsite = None
-
-    def __init__(self, context):
-        self.context = context
-
-    @property
-    def inside(self):
-        return self.context.owner
-
-    @property
-    def path(self):
-        return u"+ppa/%s" % self.context.name
 
 
 class ArchiveNavigation(Navigation, FileNavigationMixin):
