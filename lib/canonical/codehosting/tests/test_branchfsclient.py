@@ -17,6 +17,18 @@ from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 
 
+class FakeTime:
+    """XXX"""
+    def __init__(self, start):
+        self._now = start
+
+    def advance(self, amount):
+        self._now += amount
+
+    def now(self):
+        return self._now
+
+
 class TestBranchFileSystemClient(TestCase):
     """Tests for `BranchFileSystemClient`."""
 
@@ -25,10 +37,15 @@ class TestBranchFileSystemClient(TestCase):
         self.factory = frontend.getLaunchpadObjectFactory()
         self.user = self.factory.makePerson()
         self._xmlrpc_client = XMLRPCWrapper(frontend.getFilesystemEndpoint())
+        self.fake_time = FakeTime(12345)
 
-    def makeClient(self):
+    def advanceTime(self, amount):
+        self.fake_time.advance(amount)
+
+    def makeClient(self, expiry_time=None):
         return BranchFileSystemClient(
-            self._xmlrpc_client, self.user.id)
+            self._xmlrpc_client, self.user.id, expiry_time=None,
+            _now=self.fake_time.now)
 
     def test_translatePath(self):
         branch = self.factory.makeBranch()
@@ -90,6 +107,31 @@ class TestBranchFileSystemClient(TestCase):
         result = client._getFromCache('/%s/foo/bar' % branch.unique_name)
         self.assertEqual(
             (BRANCH_TRANSPORT, fake_data, 'foo/bar'), result)
+
+    def test_path_translation_cache_within_expiry_time(self):
+        # XXX
+        branch = self.factory.makeBranch()
+        expiry_time = 2.0
+        client = self.makeClient(expiry_time=expiry_time)
+        fake_data = self.factory.getUniqueString()
+        client._addToCache(
+            (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
+        self.advanceTime(expiry_time/2)
+        result = client._getFromCache('/%s/foo/bar' % branch.unique_name)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, fake_data, 'foo/bar'), result)
+
+    def test_path_translation_cache_after_expiry_time(self):
+        # XXX
+        branch = self.factory.makeBranch()
+        expiry_time = 2.0
+        client = self.makeClient(expiry_time=expiry_time)
+        fake_data = self.factory.getUniqueString()
+        client._addToCache(
+            (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
+        self.advanceTime(expiry_time*2)
+        self.assertRaises(NotInCache, client._getFromCache,
+                          '/%s/foo/bar' % branch.unique_name)
 
     def test_path_translation_cache_respects_path_segments(self):
         # We only get a value from the cache if the cached path is a parent of
