@@ -337,13 +337,24 @@ class TestGetByPath(TestCaseWithFactory):
             sourcepackagename=sourcepackagename)
         suffix = self.makeSuffix(7)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        #self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+        #self.assertRaises(
+        #    NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
         self.assertRaises(
             NoSuchProduct, self.getByPath, branch_name + '/' + suffix)
 
     def test_no_preceding_tilde(self):
         self.assertRaises(
             InvalidNamespace, self.getByPath, self.makeSuffix(9))
+
+    def test_too_short(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            InvalidNamespace, self.getByPath, '~%s' % person.name)
+
+    def test_no_such_product(self):
+        person = self.factory.makePerson()
+        branch_name = '~%s/%s' % (person.name, self.makeSuffix(2))
+        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
 
 
 class TestBranchDeletion(TestCaseWithFactory):
