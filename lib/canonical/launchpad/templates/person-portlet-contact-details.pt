@@ -7,7 +7,7 @@
 <tal:contact metal:define-macro="contact">
   <tal:can-contact condition="view/can_contact">
     (<a href="+contactuser"
-       tal:attributes="title view/contactuser_link_title"
+       tal:attributes="title view/contact_link_title"
        tal:content="view/specific_contact_text">Contact this person</a>)
     <tal:no_preferredemail
       condition="view/email_address_visibility/are_none_available">

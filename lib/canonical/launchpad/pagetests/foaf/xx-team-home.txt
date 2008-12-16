@@ -113,7 +113,7 @@ No Privileges Person is not a member of the Ubuntu team.
     Your involvement
     You are not a member of this team.
 
-He can see the contact address, but there is not link to contact the team.
+He can see the contact address, but there is not a link to contact the team.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'contact-details'))

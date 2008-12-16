@@ -2502,13 +2502,17 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @property
     def can_contact(self):
-        """Can the user contact this person or team."""
+        """Can the user contact this context (this person or team)?
+
+        Users can contact other valid users, and team that they are
+        members of.
+        """
         return (
             self.context.is_valid_person or
             self.user is not None and self.user.inTeam(self.context))
 
     @property
-    def contactuser_link_title(self):
+    def contact_link_title(self):
         """Return the appropriate +contactuser link title for the tooltip."""
         if self.context.is_team:
             return 'Send an email to this team through Launchpad'
