@@ -68,6 +68,7 @@ class IRevisionAuthor(Interface):
     email = Attribute("The email address extracted from the author text.")
     person = PublicPersonChoice(title=_('Author'), required=False,
         readonly=False, vocabulary='ValidPersonOrTeam')
+    personID = Attribute("The primary key of the person")
 
     def linkToLaunchpadPerson():
         """Attempt to link the revision author to a Launchpad `Person`.

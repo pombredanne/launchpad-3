@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Tests for branchfsclient."""
 
@@ -83,6 +84,18 @@ class TestBranchFileSystemClient(TestCase):
         self.assertEqual(
             (BRANCH_TRANSPORT, fake_data, 'foo/bar'), result)
 
+    def test_path_translation_cache_respects_path_segments(self):
+        # We only get a value from the cache if the cached path is a parent of
+        # the requested path. Simple string prefixing is not enough. Added to
+        # trap bug 308077.
+        branch = self.factory.makeBranch()
+        fake_data = self.factory.getUniqueString()
+        self.client._addToCache(
+            (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
+        self.assertRaises(
+            NotInCache,
+            self.client._getFromCache, '/%s-suffix' % branch.unique_name)
+
     def test_not_in_cache(self):
         # _getFromCache raises an error when the given path isn't in the
         # cache.
@@ -120,8 +133,7 @@ class TestBranchFileSystemClient(TestCase):
         # We don't want the caching to make us mis-interpret paths in the
         # branch as paths into the control transport.
         branch = self.factory.makeBranch()
-        dev_focus = self.factory.makeBranch(product=branch.product)
-        branch.product.development_focus.user_branch = dev_focus
+        self.factory.enableDefaultStackingForProduct(branch.product)
         deferred = self.client.translatePath(
             '/~' + branch.owner.name + '/' + branch.product.name +
             '/.bzr/format')

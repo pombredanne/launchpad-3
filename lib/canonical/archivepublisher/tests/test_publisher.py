@@ -25,12 +25,14 @@ from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
+from canonical.zeca.ftests.harness import ZecaTestSetup
 
 
 class TestPublisherBase(TestNativePublishingBase):
@@ -368,7 +370,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             cprov.archive, archive_publisher.archive)
         self.assertEqual(
-            u'/var/tmp/ppa.test/cprov/ubuntutest/dists',
+            u'/var/tmp/ppa.test/cprov/default/ubuntutest/dists',
             archive_publisher._config.distsroot)
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
@@ -1003,6 +1005,10 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         self.assertTrue(cprov.archive.signing_key is None)
 
+        # Start the test keyserver, so the signing_key can be uploaded.
+        z = ZecaTestSetup()
+        z.setUp()
+
         # Set a signing key for Celso's PPA.
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
         IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
@@ -1016,12 +1022,14 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
         # Release file signature is correct and was done by Celso's PPA
         # signing_key.
-        from canonical.launchpad.interfaces.gpghandler import IGPGHandler
         signature = getUtility(IGPGHandler).getVerifiedSignature(
             open(self.release_file_path).read(),
             open(self.release_file_signature_path).read())
         self.assertEqual(
             signature.fingerprint, cprov.archive.signing_key.fingerprint)
+
+        # All done, turn test-keyserver off.
+        z.tearDown()
 
 
 def test_suite():

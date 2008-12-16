@@ -27,8 +27,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    AppServerLayer, DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    AppServerLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -283,6 +283,9 @@ def mailingListXMLRPCInternalSetUp(test):
         def isLaunchpadMember(self, address):
             return super(ImpedenceMatchingView, self).isLaunchpadMember(
                 address)
+        @mailinglists_helper.fault_catcher
+        def isTeamPublic(self, team_name):
+            return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
     # Expose in the doctest's globals, the view as the thing with the
     # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
@@ -864,10 +867,12 @@ special = {
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,
         ),
-    'google-service-stub.txt': LayeredDocFileSuite(
-            '../doc/google-service-stub.txt',
-            layer=GoogleServiceLayer,
-            ),
+    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
+    # multiple spurious problems with layer and test.
+    # 'google-service-stub.txt': LayeredDocFileSuite(
+    #         '../doc/google-service-stub.txt',
+    #         layer=GoogleServiceLayer,
+    #         ),
     'karmacache.txt': LayeredDocFileSuite(
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
@@ -897,7 +902,12 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests_without_logging = [
-        'answer-tracker-emailinterface.txt',
+        # XXX gary 2008-12-06 bug=305856: Spurious test failure discovered on
+        # buildbot, build 40.  Note that, to completely disable the test from
+        # running, the filename has been changed to
+        # answer-tracker-emailinterface.txt.disabled, so when this test is
+        # reinstated it will be need to be changed back.
+        # 'answer-tracker-emailinterface.txt',
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',

@@ -30,7 +30,7 @@ For starters, Carlos uploads a tarball with 100 files to the queue.
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag
     <div...Thank you for your upload. 100 files from the tarball will be
-    reviewed...
+    automatically reviewed...
 
 On the import queue page, Carlos sees widgets for filtering his view of
 the queue, as well as the entries he just imported and the two that were
@@ -265,8 +265,7 @@ Carlos uploads files for Evolution in Ubuntu Hoary.
     >>> admin_browser.getControl('Upload').click()
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print extract_text(tag.renderContents())
-    Thank you for your upload. The file content will be imported soon into
-    Launchpad. You can track its status from the Translation Import Queue
+    Thank you for your upload. It will be automatically reviewed...
 
     # Commit the transaction so librarian stores the uploaded file.
     >>> transaction.commit()

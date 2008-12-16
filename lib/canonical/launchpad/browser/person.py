@@ -123,6 +123,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
@@ -147,6 +148,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -322,7 +324,21 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
-        return self.context.archive
+        return self.traverse_ppa()
+
+    @stepto('+ppa')
+    def traverse_ppa(self):
+        if self.request.stepstogo:
+            # If the URL has a PPA name in it, use that.
+            ppa_name = self.request.stepstogo.consume()
+            return traverse_named_ppa(self.context.name, ppa_name)
+
+        default_archive = self.context.archive
+        if default_archive is None:
+            raise NotFoundError()
+
+        # Otherwise get the default PPA and redirect to the new-style URL.
+        return self.redirectSubTree(canonical_url(default_archive))
 
     @stepthrough('+email')
     def traverse_email(self, email):
@@ -937,6 +953,8 @@ class CommonMenuLinks:
         archive = self.context.archive
         enable_link = (archive is not None and
                        check_permission('launchpad.View', archive))
+        if enable_link:
+            target = canonical_url(self.context.archive)
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
@@ -1079,7 +1097,7 @@ class PersonPPANavigationMenuMixin:
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
         if has_archive:
-            target = '+archive'
+            target = canonical_url(archive)
             enable_link = check_permission('launchpad.View', archive)
         elif user_can_edit_archive:
             summary = 'Activate Personal Package Archive'
@@ -4576,15 +4594,26 @@ class PersonRelatedSoftwareView(LaunchpadView):
         spec_count, and question_count.
         """
         projects = []
+        user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
-        for pillarname in self._related_projects()[:max_projects]:
+        pillarnames = self._related_projects()[:max_projects]
+        products = [pillarname.pillar for pillarname in pillarnames
+                    if IProduct.providedBy(pillarname.pillar)]
+        bugtask_set = getUtility(IBugTaskSet)
+        product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
+            user, products)
+        for pillarname in pillarnames:
+            pillar = pillarname.pillar
             project = {}
-            project['title'] = pillarname.pillar.title
-            project['url'] = canonical_url(pillarname.pillar)
-            project['bug_count'] = pillarname.pillar.open_bugtasks.count()
-            project['spec_count'] = pillarname.pillar.specifications().count()
-            project['question_count'] = (
-                pillarname.pillar.searchQuestions().count())
+            project['title'] = pillar.title
+            project['url'] = canonical_url(pillar)
+            if IProduct.providedBy(pillar):
+                project['bug_count'] = product_bugtask_counts.get(pillar.id,
+                                                                  0)
+            else:
+                project['bug_count'] = pillar.open_bugtasks.count()
+            project['spec_count'] = pillar.specifications().count()
+            project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)
         return projects
 

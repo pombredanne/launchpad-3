@@ -152,6 +152,7 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 
@@ -169,6 +170,7 @@ class ViewPillar(AuthorizationBase):
         else:
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.launchpad_developers)
                     or user.inTeam(celebrities.admin))
 
 
@@ -1802,6 +1804,31 @@ class ViewArchive(AuthorizationBase):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
 
+class AppendArchive(ViewArchive):
+    """Restrict appending (upload and copy) operations on archives.
+
+    Restrict the group that can already view the PPAs to users with valid
+    membership on it.
+    """
+    permission = 'launchpad.Append'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can append (upload) the archive.
+
+        Anyone with valid membership in the public PPA (owner) can append.
+        Only team members can append to private PPAs.
+        """
+        can_view = ViewArchive.checkAuthenticated(self, user)
+        if can_view and user.inTeam(self.obj.owner):
+            return True
+
+        return False
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users cannot append PPAs."""
+        return False
+
 
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
@@ -1894,6 +1921,7 @@ class ViewEmailAddress(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 

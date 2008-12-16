@@ -1,41 +1,84 @@
-  Login with the newly created user, named 'foo'.
+= Log in =
+
+New user Foo chooses to log into Launchpad.
+
+    >>> browser = setupBrowser()
+    >>> browser.open('http://launchpad.dev/')
+    >>> browser.getLink('Log in / Register').click()
+    >>> browser.title
+    'Log in or register with Launchpad'
+
+If Foo inadvertently use a non-ascii character in his password, an error
+message is displayed.
+
+    >>> browser.getControl(
+    ...     'E-mail address:', index=0).value = 'foo@baz.com'
+    >>> browser.getControl('Password').value = 't\xC3\xA9st'
+    >>> browser.getControl('Log In').click()
+    >>> browser.title
+    'Log in or register with Launchpad'
+
+    >>> for tag in get_feedback_messages(browser.contents):
+    ...     print extract_text(tag)
+    The password provided contains non-ASCII characters.
+
+When the user logs in, his browser is redirected to the page he was on
+before the login page.
+
+    >>> browser.getControl(
+    ...     'E-mail address:', index=0).value = 'foo@baz.com'
+    >>> browser.getControl('Password').value = 'f'
+    >>> browser.getControl('Log In').click()
+    >>> browser.title
+    'Launchpad'
 
 
-  >>> print http(r"""
-  ... GET /+login HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...content="noindex"...
-  ...To log in...
-  ...
+== Users with suspended account cannot log in ==
 
-  If you try to login and inadvertently use a non-ascii character in your
-  password, you'll get a nice error message.
+Users with suspended accounts cannot log into Launchpad.
 
-  >>> print http(r"""
-  ... POST /+login HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Cookie: launchpad=eBes5vRt2aAQaTWWVKrSoTp3JS8WXuf1Xt8W7Xzt1MM3GPTSy7o1aA
-  ...
-  ... loginpage_email=foo%40baz.com&loginpage_password=t%C3%A9st&loginpage_submit_login=Log+In""")
-  HTTP/1.1 200 Ok
-  ...
-  ...The password provided contains non-ASCII characters...
-  ...
+    # Open up the black box and shine a light on the test's inner workings.
+    # Create a user with a SUSPENDED account.
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
 
+    # Only admins can suspend an account.
+    >>> login('foo.bar@canonical.com')
+    >>> bad_user = factory.makePerson(
+    ...     email='bad-user@canonical.com',
+    ...     name='bad-user',
+    ...     password='test')
+    >>> bad_user.account.status = AccountStatus.SUSPENDED
+    >>> logout()
 
-  >>> print http(r"""
-  ... POST /+login HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Cookie: launchpad=eBes5vRt2aAQaTWWVKrSoTp3JS8WXuf1Xt8W7Xzt1MM3GPTSy7o1aA
-  ...
-  ... loginpage_email=foo%40baz.com&loginpage_password=f&loginpage_submit_login=Log+In""")
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...foo...
-  ...
+Bad User has a suspended account. He discovers that his account is disabled
+when he visits his profile page.
+
+    >>> browser = setupBrowser()
+    >>> browser.open('http://launchpad.dev/~bad-user')
+    >>> browser.title
+    'Bad-user does not use Launchpad'
+
+He believes he can can still use his launchpad profile because he knows
+his password.
+
+    >>> browser.getLink('Log in / Register').click()
+    >>> browser.title
+    'Log in or register with Launchpad'
+
+    >>> browser.getControl(
+    ...     'E-mail address:', index=0).value = 'bad-user@canonical.com'
+    >>> browser.getControl('Password').value = 'test'
+    >>> browser.getControl('Log In').click()
+    >>> browser.title
+    'Log in or register with Launchpad'
+
+But he cannot log in. He sees a error message that states he needs to
+contact a Launchpad admin.
+
+    >>> for tag in find_tags_by_class(
+    ...     browser.contents, 'error'):
+    ...     print tag
+    <p ...>The email address belongs to a suspended account.
+    Contact a <a href="mailto:feedback@launchpad.net?subject=SU...">Launchpad
+    admin</a> about this issue.</p>
+
