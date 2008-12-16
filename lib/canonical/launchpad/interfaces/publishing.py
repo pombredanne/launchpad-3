@@ -739,11 +739,12 @@ class IPublishingSet(Interface):
          1. Ascending `SourcePackagePublishingHistory.id`,
          2. Ascending `DistroArchSeries.architecturetag`.
 
-        :param one_or_more_source_publication: list of or a single
+        :param source_ids: list of or a single
             `SourcePackagePublishingHistory` object.
-
+        :type source_ids: ``list`` or `SourcePackagePublishingHistory`
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+        :rtype: `storm.store.ResultSet`.
         """
 
     def getBuildsForSources(one_or_more_source_publications):
@@ -863,11 +864,11 @@ class IPublishingSet(Interface):
         publishing history ids, and returns the build status summary for
         the builds associated with each source package.
 
-        See the getStatusSummaryForBuilds method of `IBuildSet`.for details
-        of the summary.
+        See the `getStatusSummaryForBuilds()` method of `IBuildSet`.for
+        details of the summary.
 
         :param source_ids: A list of source publishing history record ids.
-
+        :type source_ids: ``list``
         :returns A dict consisting of the overall status summaries for the
             given ids. For example:
                 {
@@ -875,6 +876,7 @@ class IPublishingSet(Interface):
                     25: {'status': 'building', 'builds':[building_builds]},
                     35: {'status': 'failed', 'builds': [failed_builds]}
                 }
+        :rtype: ``dict``.
         """
 
 pocketsuffix = {

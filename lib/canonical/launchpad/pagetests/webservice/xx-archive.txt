@@ -364,7 +364,7 @@ And we can see that it's gone:
 
 = Getting Build counts for an IArchive =
 
-IArchive exposes the getBuildCounters method, enabling this data to be
+IArchive exposes the getBuildCounters() method, enabling this data to be
 used and displayed via XHR.
 
     >>> build_counters = webservice.named_get(
@@ -381,7 +381,7 @@ The optional param exclude_needsbuild is also provided:
 
     >>> build_counters = webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getBuildCounters',
-    ...     exclude_needsbuild=True).jsonBody()
+    ...     include_needsbuild=False).jsonBody()
     >>> for key, val in build_counters.items():
     ...     print "%s: %s" % (key, val)
     failed: 5
