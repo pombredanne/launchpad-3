@@ -392,20 +392,17 @@
       </iframe>
     </tal:datepicker>
 
-    <tal:cache define="cache request/webservicerequest:cache">
-       <tal:links define="links cache/links">
-         <script tal:repeat="key links"
-           tal:content="structure string:LP.client.links['${key}'] =
+    <tal:cache define="cache request/webservicerequest:cache
+                       links cache/links
+                       objects cache/objects">
+      <script tal:repeat="key links"
+        tal:content="structure string:LP.client.links['${key}'] =
                         '${links/?key/fmt:api_url}';">
-         </script>
-       </tal:links>
-
-      <tal:objects define="objects cache/objects">
-        <script tal:repeat="key objects"
-         tal:content="structure string:LP.client.cache['${key}'] =
-           ${objects/?key/webservice:json};">
-        </script>
-      </tal:objects>
+      </script>
+      <script tal:repeat="key objects"
+        tal:content="structure string:LP.client.cache['${key}'] =
+         ${objects/?key/webservice:json};">
+      </script>
     </tal:cache>
 
     <script tal:condition="context/webservice:is_entry"

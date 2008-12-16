@@ -444,6 +444,11 @@
         />
 
     <subscriber
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
+        handler="canonical.launchpad.rest.me.cache_me_link_when_principal_identified"
+        />
+
+    <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.launchbag.set_developer_in_launchbag_before_traversal"
         />

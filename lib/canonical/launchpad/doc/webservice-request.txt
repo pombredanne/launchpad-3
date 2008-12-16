@@ -24,12 +24,18 @@ This works for HTTPS requests as well as HTTP requests:
     >>> request.getApplicationURL()
     'https://launchpad.dev/api/beta'
 
-Objects can be stored in the cache so that their JSON representations
-can be included in a template. An object can be stored in the cache's
-'objects' dict or its 'links' dict.
+
+= The JSON Cache=
+
+Objects can be stored in a cache so that they can be included in
+Javascript code inside the template. An object can be stored in the
+cache's 'objects' dict or its 'links' dict.
 
     >>> from canonical.lazr.interfaces.rest import IJSONRequestCache
     >>> cache = IJSONRequestCache(website_request)
+
+The 'objects' dict is for objects that should have their full JSON
+representations put into the template.
 
     >>> cache.objects['object1'] = 'foo'
     >>> cache.objects['object2'] = 'bar'
@@ -37,6 +43,9 @@ can be included in a template. An object can be stored in the cache's
     ...     print "%s: %s" % (key, cache.objects[key])
     object1: foo
     object2: bar
+
+The 'links' dict is for objects that should have their self_links put
+into the template, not their whole representations.
 
     >>> cache.links['objectA'] = 'foo'
     >>> cache.links['objectB'] = 'bar'

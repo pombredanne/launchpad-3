@@ -20,7 +20,7 @@
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserRequest"
         provides="canonical.lazr.interfaces.rest.IJSONRequestCache"
-        factory="canonical.lazr.rest.JSONRequestCache"
+        factory="canonical.lazr.rest.jsoncache.JSONRequestCache"
         />
 
     <!-- TALES namespace for web service functions available through the

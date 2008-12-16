@@ -8,7 +8,6 @@ __all__ = [
     'JSONRequestCache'
     ]
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.interfaces.rest import (
     IJSONRequestCache, LAZR_WEBSERVICE_NS)
 
@@ -29,9 +28,5 @@ class JSONRequestCache:
         self.objects = request.annotations.setdefault(
             self.LAZR_OBJECT_JSON_CACHE, {})
 
-        default = {}
-        user = getUtility(ILaunchBag).user
-        if user is not None:
-            default['me'] = user
         self.links = request.annotations.setdefault(
-            self.LAZR_LINK_JSON_CACHE, default)
+            self.LAZR_LINK_JSON_CACHE, {})
