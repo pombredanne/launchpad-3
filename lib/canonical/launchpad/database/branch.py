@@ -1094,29 +1094,39 @@ class BranchSet:
 
     @classmethod
     def _getPersonalBranch(self, person, branch_name, default):
-        query = ("Branch.owner = Person.id"
-                 + " AND Branch.product IS NULL"
-                 + " AND Person.name = " + quote(person)
-                 + " AND Branch.name = " + quote(branch_name))
-        tables = ['Person']
-        branch = Branch.selectOne(query, clauseTables=tables)
+        """Find a personal branch given its path segments."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [Branch, Join(Person, Branch.owner == Person.id)]
+        result = store.using(*origin).find(
+            Branch, Person.name == person,
+            Branch.distroseries == None,
+            Branch.product == None,
+            Branch.sourcepackagename == None,
+            Branch.name == branch_name)
+        branch = result.one()
         if branch is None:
             return default
         return branch
 
     @classmethod
     def _getProductBranch(self, person, product, branch_name, default):
-        query = ("Branch.owner = Person.id"
-                 + " AND Branch.product = Product.id"
-                 + " AND Person.name = " + quote(person)
-                 + " AND Product.name = " + quote(product)
-                 + " AND Branch.name = " + quote(branch_name))
-        tables = ['Person', 'Product']
-        branch = Branch.selectOne(query, clauseTables=tables)
+        """Find a product branch given its path segments."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person, Product
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [
+            Branch,
+            Join(Person, Branch.owner == Person.id),
+            Join(Product, Branch.product == Product.id)]
+        result = store.using(*origin).find(
+            Branch, Person.name == person, Product.name == product,
+            Branch.name == branch_name)
+        branch = result.one()
         if branch is None:
             return default
-        else:
-            return branch
+        return branch
 
     @classmethod
     def _getPackageBranch(self, owner, distribution, distroseries,
