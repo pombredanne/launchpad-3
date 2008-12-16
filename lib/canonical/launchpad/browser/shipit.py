@@ -388,7 +388,9 @@ class ShipItRequestView(LaunchpadFormView):
         """Process the submitted form, either creating a new request, or
         changing an existing one.
         """
-        # XXX: !
+        # XXX: Quick hack done when this view was converted from a
+        # GeneralFormView into a LaunchpadFormView. Will get rid of it after
+        # the change is reviewed.
         kw = data
         form = self.request.form
         need_notification = False
