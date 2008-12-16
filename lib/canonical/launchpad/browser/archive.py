@@ -51,6 +51,8 @@ from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
@@ -272,12 +274,24 @@ class ArchiveContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         text = 'Delete packages'
-        return Link('+delete-packages', text, icon='edit')
+        link = Link('+delete-packages', text, icon='edit')
+
+        # This link should not be available for copy archives
+        # Is there a better way of doing this?
+        if self.context.is_copy:
+            link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.AnyPerson')
     def copy(self):
         text = 'Copy packages'
-        return Link('+copy-packages', text, icon='edit')
+        link = Link('+copy-packages', text, icon='edit')
+
+        # This link should not be available for copy archives
+        # Is there a better way of doing this?
+        if self.context.is_copy:
+            link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
@@ -288,7 +302,7 @@ class ArchiveContextMenu(ContextMenu):
 class ArchiveViewBase:
     """Common features for Archive view classes."""
 
-    @property
+    @cachedproperty
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
@@ -298,10 +312,12 @@ class ArchiveViewBase:
     @property
     def source_count_text(self):
         """Return the correct form of the source counter notice."""
-        if self.context.number_of_sources == 1:
-            return '%s source package' % self.context.number_of_sources
+        if self.context.number_of_sources_published == 1:
+            return '%s source package' % (
+                self.context.number_of_sources_published)
         else:
-            return '%s source packages' % self.context.number_of_sources
+            return '%s source packages' % (
+                self.context.number_of_sources_published)
 
     @property
     def binary_count_text(self):
@@ -337,6 +353,32 @@ class ArchiveViewBase:
             SimpleTerm(StatusCollection(), 'any', 'Any Status')
             ]
         return SimpleVocabulary(status_terms)
+
+    @property
+    def archive_url(self):
+        """Return an archive_url where available, or None."""
+        if self.is_active and not self.context.is_copy:
+            return self.context.archive_url
+        else:
+            return None
+
+    @property
+    def archive_label(self):
+        """Return either 'PPA' or 'Archive' as the label for archives.
+
+        It's desired to use the name 'PPA' for branding reasons where
+        appropriate, even though the template logic is the same (and hence
+        not worth splitting off into a macro.)
+        """
+        if self.context.is_ppa:
+            return 'PPA'
+        else:
+            return 'Archive'
+
+    @cachedproperty
+    def build_counters(self):
+        """Return a dict representation of the build counters."""
+        return self.context.getBuildCounters()
 
 
 class ArchiveView(ArchiveViewBase, LaunchpadView):
@@ -380,7 +422,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
     def setupSourcesListEntries(self):
         """Setup of the sources list entries widget."""
         entries = SourcesListEntries(
-            self.context.distribution, self.context.archive_url,
+            self.context.distribution, self.archive_url,
             self.context.series_with_sources)
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
@@ -407,6 +449,18 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         results = list(self.batchnav.currentBatch())
         self.search_results = ArchiveSourcePublications(results)
 
+    @property
+    def package_copy_requests(self):
+        """Return the package copy requests associated with this archive."""
+
+        # Currently this only makes sense for copy archives
+        if not self.context.is_copy:
+            return None
+
+        requests = list(getUtility(IPackageCopyRequestSet).getByTargetArchive(
+            self.context))
+
+        return requests
 
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     """Base class to implement a source selection widget for PPAs."""

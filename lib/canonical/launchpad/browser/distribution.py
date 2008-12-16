@@ -9,6 +9,7 @@ __all__ = [
     'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
+    'DistributionArchivesView',
     'DistributionBreadcrumbBuilder',
     'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
@@ -53,7 +54,8 @@ from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.interfaces.archive import IArchiveSet
+from canonical.launchpad.interfaces.archive import (
+    IArchiveSet, ArchivePurpose)
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
@@ -593,6 +595,23 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
 
         return english_list(linked_milestones)
 
+
+class DistributionArchivesView(LaunchpadView):
+
+    @property
+    def batchnav(self):
+        """Return the batch navigator for the archives."""
+        return BatchNavigator(self.archive_list, self.request)
+
+    @cachedproperty
+    def archive_list(self):
+        """Returns the list of archives for the given distribution.
+        
+        The context may be an IDistroSeries or a users archives.
+        """
+        results = getUtility(IArchiveSet).getArchivesForDistribution(
+            self.context, purposes=[ArchivePurpose.COPY])
+        return results.order_by('date_created DESC')
 
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""

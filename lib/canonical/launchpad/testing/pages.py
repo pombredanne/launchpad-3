@@ -596,7 +596,7 @@ def print_self_link_of_entries(json_body):
 
 
 def print_ppa_packages(contents):
-    packages = find_tags_by_class(contents, 'ppa_package_row')
+    packages = find_tags_by_class(contents, 'archive_package_row')
     for pkg in packages:
         print extract_text(pkg)
     empty_section = find_tag_by_id(contents, 'empty-result')

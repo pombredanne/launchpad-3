@@ -152,8 +152,9 @@ sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'ppa-dependencies'))
+    ...     find_tag_by_id(user_browser.contents, 'archive-dependencies'))
     PPA dependencies
+    When installing packages from this PPA ... in this context.
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
@@ -194,7 +195,7 @@ Once the dependencies are removed, the 'dependency-section' (including
 the warning message) are omitted from the PPA overview page
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
+    >>> print find_tag_by_id(user_browser.contents, 'archive-dependencies')
     None
 
 == Primary dependencies ==
@@ -388,8 +389,9 @@ index page (see `IArchivedependency.title`).
     PPA for Celso Providelo
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'ppa-dependencies'))
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
     PPA dependencies
+    When installing packages from this PPA ... in this context.
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
 
@@ -415,7 +417,8 @@ PPA context page and the action won't be executed.
 The dependencies were not modified.
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'ppa-dependencies'))
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
     PPA dependencies
+    When installing packages from this PPA ... in this context.
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
