@@ -46,6 +46,7 @@ class JobStatus(DBEnumeratedType):
 
 
 class IJob(Interface):
+    """Basic attributes of a job."""
 
     scheduled_start = Datetime(
         title=_('Time when the IJob was scheduled to start.'))
