@@ -39,7 +39,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.enum import EnumeratedType, Item
 from canonical.lazr.interface import copy_field, use_template
 
@@ -512,7 +512,7 @@ class BranchView(LaunchpadView, FeedsMixin):
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.
     """
-    decorates(IBranchMergeProposal)
+    delegates(IBranchMergeProposal)
 
     def __init__(self, context):
         self.context = context
@@ -1031,7 +1031,7 @@ class ProductBranchAddView(BranchAddView):
 
 class DecoratedSubscription:
     """Adds the editable attribute to a `BranchSubscription`."""
-    decorates(IBranchSubscription, 'subscription')
+    delegates(IBranchSubscription, 'subscription')
 
     def __init__(self, subscription, editable):
         self.subscription = subscription

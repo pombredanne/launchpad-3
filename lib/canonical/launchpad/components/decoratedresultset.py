@@ -9,14 +9,14 @@ __all__ = [
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
 
     Because `DistroSeriesBinaryPackage` doesn't actually exist in the
     database, the `DistroSeries`.searchPackages method uses the
-    `DistroSeriesPackageCache` object to search for packages within a 
+    `DistroSeriesPackageCache` object to search for packages within a
     `DistroSeries`.
 
     Nonetheless, the users of the searchPackages method (such as the
@@ -32,7 +32,7 @@ class DecoratedResultSet(object):
     This class also fixes a bug currently in Storm's ResultSet.count
     method (see below)
     """
-    decorates(IResultSet, context='result_set')
+    delegates(IResultSet, context='result_set')
 
     def __init__(self, result_set, result_decorator):
         """
