@@ -23,7 +23,7 @@ class TestSoyuzScript(unittest.TestCase):
 
     def getSoyuz(self, version=None, component=None, arch=None,
                  suite=None, distribution_name='ubuntu',
-                 ppa=None, partner=False, ppa_name='default'):
+                 ppa=None, partner=False):
         """Return a SoyuzScript instance.
 
         Allow tests to use a set of default options and pass an
@@ -45,7 +45,6 @@ class TestSoyuzScript(unittest.TestCase):
 
         if ppa is not None:
             test_args.extend(['-p', ppa])
-            test_args.extend(['--ppa-name', ppa_name])
 
         if partner:
             test_args.append('-j')

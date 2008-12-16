@@ -229,16 +229,14 @@ class Archive(SQLBase):
             else:
                 url = config.personalpackagearchive.base_url
             return urlappend(
-                url, "/".join(
-                    (self.owner.name, self.name, self.distribution.name)))
+                url, self.owner.name + '/' + self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
         except KeyError:
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
-        return urlappend(
-            config.archivepublisher.base_url,
+        return urlappend(config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
     def getPubConfig(self):
@@ -254,8 +252,7 @@ class Archive(SQLBase):
             else:
                 pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
-                pubconf.distroroot, self.owner.name, self.name,
-                self.distribution.name)
+                pubconf.distroroot, self.owner.name, self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
@@ -964,17 +961,14 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
 
-    def getPPAByDistributionAndOwnerName(self, distribution, person_name,
-                                         ppa_name):
+    def getPPAByDistributionAndOwnerName(self, distribution, name):
         """See `IArchiveSet`"""
         query = """
             Archive.purpose = %s AND
             Archive.distribution = %s AND
             Person.id = Archive.owner AND
-            Archive.name = %s AND
             Person.name = %s
-        """ % sqlvalues(
-                ArchivePurpose.PPA, distribution, ppa_name, person_name)
+        """ % sqlvalues(ArchivePurpose.PPA, distribution, name)
 
         return Archive.selectOne(query, clauseTables=['Person'])
 
