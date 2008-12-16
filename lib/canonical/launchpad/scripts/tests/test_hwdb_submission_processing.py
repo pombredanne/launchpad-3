@@ -880,8 +880,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser.buildDeviceList(parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
         self.failUnless(device.is_real_device,
-                        'Device with info.subsystem property not treated as a '
-                        'real device.')
+                        'Device with info.subsystem property not treated as '
+                        'a real device.')
 
     def testHALDeviceRealDeviceNoBus(self):
         """Test of HALDevice.is_real_device: No info.bus property."""
@@ -2312,17 +2312,19 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(self.parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.failIf(device.is_real_device,
-                    'Testing info.bus property: USB Device with '
-                    'vendor/product ID 0:0 property treated as a real device.')
+        self.failIf(
+            device.is_real_device,
+            'Testing info.bus property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
 
         self.renameInfoBusToInfoSubsystem()
         parser.buildDeviceList(self.parsed_data)
         parser.buildDeviceList(self.parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.failIf(device.is_real_device,
-                    'Testing info.bus property: USB Device with '
-                    'vendor/product ID 0:0 property treated as a real device.')
+        self.failIf(
+            device.is_real_device,
+            'Testing info.subsystem property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
 
     def testUSBHostControllerInvalidParentClass(self):
         """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
