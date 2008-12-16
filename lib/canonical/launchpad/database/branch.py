@@ -1187,6 +1187,15 @@ class BranchSet:
         # package branches and three-part source package branches. Might also
         # be a good idea to support the +dev alias (or whatever the spec
         # suggests).
+        try:
+            branch, suffix = klass._getByPath(path)
+        except InvalidNamespace:
+            pass
+        else:
+            if suffix == '':
+                suffix = None
+            return branch, suffix, None
+
         path_segments = path.split('/', 3)
         series_name = None
         if len(path_segments) > 3:
@@ -1196,13 +1205,7 @@ class BranchSet:
         if len(path_segments) < 3:
             branch, series = klass._getDefaultProductBranch(*path_segments)
         else:
-            series = None
-            try:
-                branch, suffix = klass._getByPath(path)
-            except InvalidNamespace:
-                raise faults.InvalidBranchIdentifier(path)
-            if suffix == '':
-                suffix = None
+            raise faults.InvalidBranchIdentifier(path)
         return branch, suffix, series
 
     @staticmethod
