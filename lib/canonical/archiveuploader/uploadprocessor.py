@@ -412,8 +412,9 @@ class UploadProcessor:
         The valid paths are:
         '' - default distro, ubuntu
         '<distroname>' - given distribution
-        '~<personname>/<distroname>/[distroseriesname]' - given ppa,
-          distribution and optionally a distroseries.
+        '~<personname>[/ppa_name]/<distroname>[/distroseriesname]' - given ppa,
+          distribution and optionally a distroseries.  If ppa_name is not
+          specified it will default to the one referenced by IPerson.archive.
 
         I raises UploadPathError if something was wrong when parsing it.
 
@@ -440,8 +441,8 @@ class UploadProcessor:
                     "Could not find distribution '%s'" % distribution_name)
             archive = distribution.main_archive
 
-        # PPA upload (~<person>/<distro>/[distroseries])
-        elif len(parts) <= 3:
+        # PPA upload (~<person>/<ppa_name>/<distro>[/distroseries])
+        elif len(parts) <= 4:
             if not first_path.startswith('~'):
                 raise PPAUploadPathError(
                     "PPA upload path must start with '~'.")
@@ -453,7 +454,31 @@ class UploadProcessor:
                 raise PPAUploadPathError(
                     "Could not find person '%s'" % person_name)
 
-            distribution_name = parts[1]
+            # For now, only a ppa_name of "default" is allowed.  If it's
+            # anything else we assume it's a distroseries name,
+            # unless there's >3 parts in which case the upload path
+            # is invalid.
+            #
+            # When we switch off the parallel run of old and new
+            # paths, this check can disappear and distroseries
+            # overrides will always appear in the 4th part.
+
+            if parts[1] == "default" and len(parts) >= 3:
+                # ppa_name and distro have been specified.
+                distribution_name = parts[2]
+
+            if parts[1] == "default" and len(parts) == 2:
+                # ppa_name but no distro supplied, bail out.
+                raise UploadPathError(
+                    "Path mismatch '%s'. "
+                    "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
+                    "[files] for PPAs and <distro>/[files] for normal "
+                    "uploads."
+                    % (relative_path))
+
+            if parts[1] != "default":
+                distribution_name = parts[1]
+
             distribution = getUtility(IDistributionSet).getByName(
                 distribution_name)
             if distribution is None:
@@ -475,7 +500,14 @@ class UploadProcessor:
                     % (archive.title, archive.distribution.name))
 
             if len(parts) > 2:
-                suite_name = parts[2]
+                if parts[1] != "default":
+                    suite_name = parts[2]
+                if parts[1] == "default" and len(parts) > 3:
+                    # parts[1] is the ppa name, so get the suite name
+                    # again from the last part of the path.
+                    suite_name = parts[3]
+
+            if suite_name is not None:
                 # Check if the given suite name is valid.
                 # We will return the suite_name string simply.
                 try:
@@ -485,7 +517,8 @@ class UploadProcessor:
                         "Could not find suite '%s'" % suite_name)
         else:
             raise UploadPathError(
-                "Path mismatch '%s'. Use ~<person>/<distro>/[distroseries]/"
+                "Path mismatch '%s'. "
+                "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
                 "[files] for PPAs and <distro>/[files] for normal uploads."
                 % (relative_path))
 

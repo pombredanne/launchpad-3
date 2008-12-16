@@ -51,6 +51,11 @@ class TestPerson(TestCaseWithFactory):
         self.assertEquals(
             foobar.getBranch('bazaar-ng', branch.name), branch)
 
+    def test_getBranch_returns_None_if_pillar_is_not_product(self):
+        foobar = self.person_set.getByName('name16')
+        self.failUnless(foobar.getBranch('ubuntu', 'some-branch') is None)
+        self.failUnless(foobar.getBranch('mozilla', 'some-branch') is None)
+
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
 

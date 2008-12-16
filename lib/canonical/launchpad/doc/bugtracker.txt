@@ -13,6 +13,15 @@ and an external bug, see bugwatch.txt.
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.timezone('UTC'))
 
+    >>> def print_watches(bugtracker):
+    ...     watches = sorted(
+    ...         bugtracker.getBugWatchesNeedingUpdate(23),
+    ...         key=lambda watch: (watch.remotebug, watch.bug.id))
+    ...
+    ...     for bug_watch in watches:
+    ...         print "Remote bug: %s LP bug: %s" % (
+    ...             bug_watch.remotebug, bug_watch.bug.id)
+
 We must be an admin to modify bug watches later on.
 
     >>> login('foo.bar@canonical.com')
@@ -47,11 +56,46 @@ remote bug.
 The watches needing updating should the ones with old statuses, 2000 and 42:
 
     >>> flush_database_updates()
-    >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate(23):
-    ...     print bug_watch.remotebug, bug_watch.bug.id
-    2000 1
-    42 2
-    42 1
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 2000 LP bug: 1
+    Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
+
+getBugWatchesNeedingUpdate() will also return bug watches that have
+un-pushed bug comments that need pushing to remote bug trackers,
+regardless of whether they have been checked recently or not. We'll add
+a comment to the bug watch against remote bug 123543 to demonstrate
+this.
+
+    >>> import transaction
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> message = factory.makeMessage(
+    ...     'Unpushed comment', '... is unpushed')
+
+    >>> print bug_watches[1].remotebug
+    123543
+
+    >>> bug_message = bug_watches[1].addComment(None, message)
+    >>> transaction.commit()
+
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 123543 LP bug: 1
+    Remote bug: 2000   LP bug: 1
+    Remote bug: 42     LP bug: 1
+    Remote bug: 42     LP bug: 2
+
+Once the comment has been pushed to the remote bug the bug watch will no
+longer appear in the set returned by getBugWatchesNeedingUpdate().
+
+    >>> bug_message.remote_comment_id = '1'
+    >>> transaction.commit()
+
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 2000 LP bug: 1
+    Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
 
 
 == Auto-creating bug trackers ==
@@ -266,9 +310,12 @@ bug messages which have been imported for a given bug tracker.
     ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
     ...         print '- message subject: %s' % bug_message.message.subject
 
-The Mozilla Bugzilla has no imported bug messages:
+The Mozilla Bugzilla has only one imported bug message.
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
 
 We will forge some BugMessage records before trying again:
 
@@ -283,6 +330,9 @@ We will forge some BugMessage records before trying again:
     >>> flush_database_updates()
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
     * bug: 1
     - remote bug: 2000
     - message subject: You are Number 1.
@@ -312,7 +362,7 @@ For the RT tracker we specify a Queue in which to file a ticket.
 
     >>> example_rt = factory.makeBugTracker(
     ...     'http://rt.example.com', BugTrackerType.RT)
-    >>> print example_rt.getBugFilingLink(42)
+    >>> print example_rt.getBugFilingLink('42')
     http://rt.example.com/Ticket/Create.html?Queue=42
 
 SourceForge and its kin use a Group ID and an ATID to specify which
@@ -320,14 +370,14 @@ product a bug should be filed against.
 
     >>> example_sourceforge = factory.makeBugTracker(
     ...     'http://forge.example.com', BugTrackerType.SOURCEFORGE)
-    >>> print example_sourceforge.getBugFilingLink((123, 456))
+    >>> print example_sourceforge.getBugFilingLink(('123', '456'))
     http://forge.example.com/tracker/?func=add&group_id=123&atid=456
 
 The URL returned by the SourceForge celebrity points to the new version
 of the SourceForge bug tracker.
 
     >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
-    >>> print sourceforge.getBugFilingLink((123, 456))
+    >>> print sourceforge.getBugFilingLink(('123', '456'))
     http://sourceforge.net/tracker2/?func=add&group_id=123&atid=456
 
 Savane uses a single group URL parameter to specify which product the
@@ -374,3 +424,8 @@ As does DebBugs, which is also an email-based bugtracker.
     >>> print debbugs.getBugFilingLink('testproduct')
     None
 
+The remote_product values passed to getBugFilingLink() are URL-encoded
+to ensure that the returned URL is valid.
+
+    >>> print mozilla_bugzilla.getBugFilingLink('@testproduct&')
+    https://bugzilla.mozilla.org/enter_bug.cgi?product=%40testproduct%26

@@ -548,15 +548,15 @@
               </td>
             </tr>
 	    <tr>
-              <tal:comment tal:replace="nothing">
-                <!-- XXX: Bjorn Tillenius 2006-10-02:
-                     The rendering of the widget is pretty much copied from
-                     the widget macro; the difference is that we want to
-                     render the widget in a table, and the label should
-                     be rendered on the same line as the widget. When
-                     FormLayout lands we should be able to use the
-                     standard macro instead. -->
-              </tal:comment>
+              <tal:XXX condition="nothing">
+                # XXX: Bjorn Tillenius 2006-10-02:
+                # The rendering of the widget is pretty much copied from
+                # the widget macro; the difference is that we want to
+                # render the widget in a table, and the label should
+                # be rendered on the same line as the widget. When
+                # FormLayout lands we should be able to use the
+                # standard macro instead.
+              </tal:XXX>
               <td tal:define="error view/widgets/tag/error">
                 <div tal:attributes="class python:error and 'error' or ''">
                   <label tal:attributes="for view/widgets/tag/name"

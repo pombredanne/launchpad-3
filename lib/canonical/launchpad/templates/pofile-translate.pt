@@ -80,10 +80,10 @@
           <p>
             <label>
               Translating
-              <tal:comment tal:replace="nothing">
-                XXX: JeroenVermeulen 2008-06-18 bug=240897: Try doing this the
-                Zope way, with an interface.
-              </tal:comment>
+              <tal:XXX tal:replace="nothing">
+                # XXX: JeroenVermeulen 2008-06-18 bug=240897: Try doing this
+                # the Zope way, with an interface.
+              </tal:XXX>
               <select id="show_selector" name="show"
                       title="Choose which items to show">
                 <option value="all"

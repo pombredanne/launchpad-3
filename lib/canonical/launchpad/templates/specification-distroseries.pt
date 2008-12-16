@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:tag condition="view/update"/>
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -23,7 +22,7 @@
 
       <div tal:content="structure context/fmt:link" />
 
-    <div metal:use-macro="context/@@launchpad_generalform/generalform">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
       Select the release of

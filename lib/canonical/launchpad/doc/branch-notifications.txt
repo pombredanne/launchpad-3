@@ -211,17 +211,27 @@ We need to create some sufficiently large diffs to compare against.
 Send the revision notifications.
 
     >>> BranchMailer.forRevision(
-    ...     branch, 'no-reply@canonical.com', message, diff, None).sendAll()
+    ...     branch, 1234, 'no-reply@canonical.com', message, diff,
+    ...     None).sendAll()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
-    >>> print_to_and_body(notifications.pop(0))
+    >>> msg = notifications.pop(0)
+    >>> print_to_and_body(msg)
     To: =?utf-8?q?Carlos_Perell=C3=B3_Mar=C3=ADn?= <carlos@canonical.com>
     Test message.
     <BLANKLINE>
     <BLANKLINE>
     --...
 
+There are also some useful headers for filtering emails.
+
+    >>> print msg['X-Launchpad-Branch']
+    ~name12/firefox/main
+    >>> print msg['X-Launchpad-Branch-Revision-Number']
+    1234
+    >>> print msg['X-Launchpad-Project']
+    firefox
     >>> print_to_and_body(notifications.pop(0))
     To: Celso Providelo <celso.providelo@canonical.com>
     Test message.
@@ -271,7 +281,8 @@ And just to be sure, lets create one with 800 lines.
 
     >>> diff = '\n'.join([str(value) for value in xrange(800)])
     >>> BranchMailer.forRevision(
-    ...     branch, 'no-reply@canonical.com', message, diff, None).sendAll()
+    ...     branch, 1234, 'no-reply@canonical.com', message, diff,
+    ...     None).sendAll()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6

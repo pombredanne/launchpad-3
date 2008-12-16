@@ -15,7 +15,7 @@ the bug to Launchpad.
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
     >>> anon_browser.getControl(name='field.blob').add_file(
     ...     extra_filebug_data, 'not/important', 'not.important')
-    >>> anon_browser.getControl(name='FORM_SUBMIT').click()
+    >>> anon_browser.getControl('Continue').click()
 
 After the file has been uploaded, the tool is given a token it can use
 to give the data to the +filebug page.
@@ -169,7 +169,7 @@ that will be used to automatically fill in a suggested title.
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
     >>> anon_browser.getControl(name='field.blob').add_file(
     ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
-    >>> anon_browser.getControl(name='FORM_SUBMIT').click()
+    >>> anon_browser.getControl('Continue').click()
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
 
     >>> user_browser.open(
@@ -196,7 +196,7 @@ initialized with that value.
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
     >>> anon_browser.getControl(name='field.blob').add_file(
     ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
-    >>> anon_browser.getControl(name='FORM_SUBMIT').click()
+    >>> anon_browser.getControl('Continue').click()
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
 
     >>> user_browser.open(

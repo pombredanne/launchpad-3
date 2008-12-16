@@ -272,7 +272,7 @@ class BranchMailer:
                 contents = ('%d revisions were removed from the branch.'
                             % number_removed)
             # No diff is associated with the removed email.
-            self.pending_emails.append((contents, '', None))
+            self.pending_emails.append((contents, '', None, 'removed'))
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
         """Generate an email for a revision for later sending.
@@ -307,7 +307,7 @@ class BranchMailer:
             subject = '[Branch %s] Rev %s: %s' % (
                 self.db_branch.unique_name, sequence, first_line)
             self.pending_emails.append(
-                (message, revision_diff, subject))
+                (message, revision_diff, subject, sequence))
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
@@ -341,12 +341,14 @@ class BranchMailer:
                        ' in the revision history of the branch.' %
                        revisions)
             mailer = MailoutMailer.forRevision(
-                self.db_branch, self.email_from, message, None, None)
+                self.db_branch, 'initial', self.email_from, message, None,
+                None)
             mailer.sendAll()
         else:
-            for message, diff, subject in self.pending_emails:
+            for message, diff, subject, revno in self.pending_emails:
                 mailer = MailoutMailer.forRevision(
-                    self.db_branch, self.email_from, message, diff, subject)
+                    self.db_branch, revno, self.email_from, message, diff,
+                    subject)
                 mailer.sendAll()
         self.trans_manager.commit()
 

@@ -70,7 +70,7 @@ An email notification is emitted when the merge proposal is created.
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
-    Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
+    [Merge] lp://dev/~name12/gnome-terminal/klingon into
       lp://dev/~name12/gnome-terminal/main
 
 == Landing Targets ==
@@ -366,7 +366,7 @@ and the reviewers.
     Sample Person <test@canonical.com>
     >>> notification = notifications[0]
     >>> print notification['Subject']
-    Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
+    [Merge] lp://dev/~name12/gnome-terminal/klingon into
       lp://dev/~name12/gnome-terminal/main updated
     >>> print notification.get_payload(decode=True)
     The proposal to merge lp://dev/~name12/gnome-terminal/klingon
@@ -468,10 +468,10 @@ new proposal has been created.
     >>> # The order of notifications appears to be non-deterministic
     >>> subjects.sort()
     >>> print subjects[0]
-    Proposed merge of lp://dev/~name12/gnome-terminal/scanned into
+    [Merge] lp://dev/~name12/gnome-terminal/scanned into
       lp://dev/~name12/gnome-terminal/main
     >>> print subjects[1]
-    Proposed merge of lp://dev/~name12/gnome-terminal/scanned into
+    [Merge] lp://dev/~name12/gnome-terminal/scanned into
       lp://dev/~name12/gnome-terminal/main updated
 
 The new merge proposal is created as needs review, and there is

@@ -227,12 +227,12 @@ class TestPublishDistro(TestNativePublishingBase):
 
         baz_path = os.path.join(
             config.personalpackagearchive.root, cprov.name,
-            'ubuntutest/pool/main/b/baz/baz_666.dsc')
+            cprov.archive.name, 'ubuntutest/pool/main/b/baz/baz_666.dsc')
         self.assertEqual('baz', open(baz_path).read().strip())
 
         bar_path = os.path.join(
             config.personalpackagearchive.root, name16.name,
-            'ubuntutest/pool/main/b/bar/bar_666.dsc')
+            name16.archive.name, 'ubuntutest/pool/main/b/bar/bar_666.dsc')
         self.assertEqual('bar', open(bar_path).read().strip())
 
     def testForPrivatePPA(self):
