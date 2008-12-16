@@ -213,12 +213,6 @@ class TestGetByUniqueName(TestCaseWithFactory):
         found = self.branch_set.getByUniqueName(unused_name)
         self.assertIs(None, found)
 
-    def test_not_found_returns_default(self):
-        unused_name = self.factory.getUniqueString()
-        default = object()
-        found = self.branch_set.getByUniqueName(unused_name, default)
-        self.assertIs(default, found)
-
     def test_junk(self):
         branch = self.factory.makeBranch(product=None)
         found_branch = self.branch_set.getByUniqueName(branch.unique_name)

@@ -1054,7 +1054,7 @@ class BranchSet:
         else:
             return branch
 
-    def getByUniqueName(self, unique_name, default=None):
+    def getByUniqueName(self, unique_name):
         """Find a branch by its unique name.
 
         For product branches, the unique name is ~user/product/branch; for
@@ -1067,33 +1067,31 @@ class BranchSet:
         try:
             namespace_name, branch_name = unique_name.rsplit('/', 1)
         except ValueError:
-            return default
+            return None
         try:
             namespace_data = getUtility(IBranchNamespaceSet).parse(
                 namespace_name)
         except InvalidNamespace:
-            return default
-        return self._getBranchInNamespace(
-            namespace_data, branch_name, default)
+            return None
+        return self._getBranchInNamespace(namespace_data, branch_name)
 
     @classmethod
-    def _getBranchInNamespace(self, namespace_data, branch_name,
-                              default=None):
+    def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':
             return self._getPersonalBranch(
-                namespace_data['person'], branch_name, default)
+                namespace_data['person'], branch_name)
         elif namespace_data['product'] is None:
             return self._getPackageBranch(
                 namespace_data['person'], namespace_data['distribution'],
                 namespace_data['distroseries'],
-                namespace_data['sourcepackagename'], branch_name, default)
+                namespace_data['sourcepackagename'], branch_name)
         else:
             return self._getProductBranch(
                 namespace_data['person'], namespace_data['product'],
-                branch_name, default)
+                branch_name)
 
     @classmethod
-    def _getPersonalBranch(self, person, branch_name, default):
+    def _getPersonalBranch(self, person, branch_name):
         """Find a personal branch given its path segments."""
         # Avoid circular imports.
         from canonical.launchpad.database import Person
@@ -1106,12 +1104,10 @@ class BranchSet:
             Branch.sourcepackagename == None,
             Branch.name == branch_name)
         branch = result.one()
-        if branch is None:
-            return default
         return branch
 
     @classmethod
-    def _getProductBranch(self, person, product, branch_name, default):
+    def _getProductBranch(self, person, product, branch_name):
         """Find a product branch given its path segments."""
         # Avoid circular imports.
         from canonical.launchpad.database import Person, Product
@@ -1124,13 +1120,11 @@ class BranchSet:
             Branch, Person.name == person, Product.name == product,
             Branch.name == branch_name)
         branch = result.one()
-        if branch is None:
-            return default
         return branch
 
     @classmethod
     def _getPackageBranch(self, owner, distribution, distroseries,
-                          sourcepackagename, branch, default):
+                          sourcepackagename, branch):
         """Find a source package branch given its path segments.
 
         Only gets unofficial source package branches, that is, branches with
@@ -1155,8 +1149,6 @@ class BranchSet:
             SourcePackageName.name == sourcepackagename,
             Branch.name == branch)
         branch = result.one()
-        if branch is None:
-            return default
         return branch
 
     @classmethod

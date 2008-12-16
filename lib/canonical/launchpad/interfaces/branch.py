@@ -1061,10 +1061,10 @@ class IBranchSet(Interface):
         special case of the ~vcs-imports celebrity.
         """
 
-    def getByUniqueName(unique_name, default=None):
+    def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
-        Return the default value if no match was found.
+        Return None if no match was found.
         """
 
     def getRewriteMap():
