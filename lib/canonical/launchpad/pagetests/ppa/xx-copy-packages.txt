@@ -28,14 +28,14 @@ information.
 Copying is only permitted for valid users, so Anonymous user can't
 access 'Copy package' page from any PPA.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+ppa/default')
     >>> anon_browser.getLink('Copy packages').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/+copy-packages')
+    ...     'http://launchpad.dev/~cprov/+ppa/default/+copy-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ... 'launchpad.AnyPerson')
@@ -48,7 +48,7 @@ PPA in order to be able to copy packages.
     >>> jblack_browser = setupBrowser(
     ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
@@ -76,7 +76,7 @@ provided link.
 Now, that James has his own PPA, he navigates back to Celso's PPA
 copy package interface can see packages to be copied.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -685,7 +685,7 @@ together.
 PPA created, now James want to populate it with the finest packages he
 have ever seen. He goes to Celso's PPA copy interface.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
 
 James would like to re-distribute Celso's 'pmount' and 'iceweasel'
@@ -829,7 +829,7 @@ James now goes to his PPA and copy all sources to his Sandbox PPA
 for a mass rebuild, including the deleted source. James is going
 insane because PPA-copy-ui is so cool.
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~jblack/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl("Update").click()
@@ -881,7 +881,7 @@ corresponding series and are scheduled for rebuild.
 Not yet happy, James goes back to his PPA to check if the copy-package
 interface can be used to resurrect deleted packages.
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~jblack/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl("Update").click()
@@ -980,7 +980,7 @@ in No Privileges' PPA.
 Good, now James goes straight to No Privileges' PPA and copies the
 foo_2.0 version to his PPA.
 
-    >>> jblack_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~no-priv/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -1008,7 +1008,7 @@ James tries to copy some of Celso's packages that are older than
 the ones in his own PPA. He is not allowed to copy these older
 packages since they would not be published in the destination anyway.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -1054,7 +1054,7 @@ do not enforce coherent version ordering across suites.
     foo-bin 1.1 in warty i386
     foo-bin 1.1 in warty hppa
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~jblack/+ppa/default')
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
@@ -1068,7 +1068,7 @@ James have heard that Mark's foo version is really rock'n roll and
 since he discovered that PPA allows copying old versions, he decides
 to copy the *same* version with different contents to grumpy in his PPA.
 
-    >>> jblack_browser.open('http://launchpad.dev/~sabdfl/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~sabdfl/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -1097,7 +1097,8 @@ to copy the *same* version with different contents to grumpy in his PPA.
 James thinks that his last chance will be copying the just-uploaded
 foo-9.9 source from 'James-Friend's PPA.
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack-friends/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~jblack-friends/+ppa/default')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> jblack_browser.getControl(name='field.name_filter').value = 'foo'

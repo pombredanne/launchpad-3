@@ -16,6 +16,7 @@ __all__ = [
 
 __metaclass__ = type
 
+import codecs
 import os
 
 from zope.component import getUtility
@@ -39,6 +40,7 @@ from canonical.launchpad.interfaces import (
     IWebServiceApplication)
 from canonical.launchpad.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
+from canonical.launchpad.interfaces.hwdb import IHWDeviceSet, IHWDriverSet
 from canonical.lazr.rest import ServiceRootResource
 
 
@@ -239,7 +241,19 @@ class RosettaApplication:
 
 
 class HWDBApplication:
+    """See `IHWDBApplication`."""
     implements(IHWDBApplication)
+
+    link_name = 'hwdb'
+    entry_type = IHWDBApplication
+
+    def devices(self, bus, vendor_id, product_id=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDeviceSet).search(bus, vendor_id, product_id)
+
+    def drivers(self, package_name=None, name=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDriverSet).search(package_name, name)
 
 
 class WebServiceApplication(ServiceRootResource):
@@ -261,10 +275,19 @@ class WebServiceApplication(ServiceRootResource):
         os.path.dirname(os.path.normpath(__file__)),
         'apidoc', 'wadl-%s.xml' % config.instance_name)
 
-    if os.path.exists(_wadl_filename):
-        cached_wadl = open(_wadl_filename).read()
-    else:
-        cached_wadl = None
+    cached_wadl = None
+
+    # Attempt to load the WADL.
+    _wadl_fd = None
+    try:
+        _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
+        try:
+            cached_wadl = _wadl_fd.read()
+        finally:
+            _wadl_fd.close()
+    except IOError:
+        pass
+    del _wadl_fd
 
     def toWADL(self):
         """See `IWebServiceApplication`."""

@@ -18,6 +18,12 @@ The signed repository will contained a detached signature of the
 top-level 'Release' file, named 'Release.gpg' and a ASCII-armoded
 export of the public GPG key (name 'key.gpg')
 
+We will setup and use the test-keyserver (zeca).
+
+    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+    >>> z = ZecaTestSetup()
+    >>> z.setUp()
+
 
 == Querying 'pending sigining key' PPAs ==
 
@@ -139,8 +145,8 @@ object.
     >>> print archive_signing_key.archive.title
     PPA for Celso Providelo
 
-It also implements `exportPublicKey` and `exportSecretKey` methods
-with receive a `PymeKey` and export it in the appropriate location.
+It also implements exportSecretKey() which receive a `PymeKey` and
+export it in the appropriate location.
 
 We will create MockKey objects implementing only the methods required
 to test the export funtions
@@ -152,21 +158,14 @@ to test the export funtions
     ...     def export(self):
     ...         return "Secret %s" % self.secret
 
-`exportPublicKey` raises an error if given a secret key.
-
-    >>> archive_signing_key.exportPublicKey(MockKey(True))
-    Traceback (most recent call last):
-    ...
-    AssertionError: Only public keys should be exported.
-
-Similarly, `exportSecretKey` raises an error if given a public key.
+exportSecretKey() raises an error if given a public key.
 
     >>> archive_signing_key.exportSecretKey(MockKey(False))
     Traceback (most recent call last):
     ...
     AssertionError: Only secret keys should be exported.
 
-Now, if given the right type of key, both will result in a exported key
+Now, if given the right type of key, it will result in a exported key
 in the expected path.
 
     >>> mock_key = MockKey(True)
@@ -174,10 +173,6 @@ in the expected path.
     >>> print open(
     ...     archive_signing_key.getPathForSecretKey(mock_key)).read()
     Secret True
-
-    >>> archive_signing_key.exportPublicKey(MockKey(False))
-    >>> print open(archive_signing_key.public_key_path).read()
-    Secret False
 
 At this point we can use the `IArchiveSigningKey` to generate and
 assign a real signing_key, although this procedure depends heavily on
@@ -219,18 +214,8 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
     >>> print signing_key.can_encrypt
     False
 
-The public key can be accessed publically via its export placed in the
-repository root as 'key.pub'.
-
-    >>> print open(archive_signing_key.public_key_path).read()
-    -----BEGIN PGP PUBLIC KEY BLOCK-----
-    ...
-    -----END PGP PUBLIC KEY BLOCK-----
-    <BLANKLINE>
-
-On the other hand, the secret key is securily stored in the
-designed configuration path. So only the IGPGHandler itself can access
-it.
+The secret key is securily stored in the designed configuration
+path. So only the IGPGHandler itself can access it.
 
     >>> print open(
     ...     archive_signing_key.getPathForSecretKey(signing_key)).read()
@@ -247,12 +232,17 @@ If called against a PPA which already has a 'signing_key'
     ...
     AssertionError: Cannot override signing_keys.
 
-Let's reset the gpg local key ring, so we can verify repository
-signature mechanisms without noise.
+Let's reset the gpg local key ring, so we can check that the public
+key is available in the keyserver.
 
     >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
     >>> gpghandler.resetLocalState()
+
+    >>> retrieved_key = gpghandler.retrieveKey(
+    ...    signing_key.fingerprint)
+    >>> retrieved_key.fingerprint == signing_key.fingerprint
+    True
 
 
 == Sigining PPA repository ==
@@ -268,16 +258,21 @@ the expected file.
     Traceback (most recent call last):
     ...
     AssertionError: Release file doesn't exist in the repository:
-    /var/tmp/ppa.test/cprov/ubuntutest/dists/hoary/Release
+    /var/tmp/ppa.test/cprov/default/ubuntutest/dists/hoary/Release
 
 It produces a detached signature for the repository Release current
 file contents.
 
-    >>> import os
+    XXX cprov 20081205: PublishingConfig doesn't implement any
+    interfaces, when it's returned from a content class no attributes
+    can be accessed.
 
-    >>> suite_path = os.path.join(
-    ...     os.path.dirname(archive_signing_key.public_key_path),
-    ...     'dists', test_suite)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> archive_root = removeSecurityProxy(
+    ...     cprov.archive.getPubConfig()).archiveroot
+
+    >>> import os
+    >>> suite_path = os.path.join(archive_root, 'dists', test_suite)
     >>> os.makedirs(suite_path)
     >>> release_path = os.path.join(suite_path, 'Release')
 
@@ -293,14 +288,13 @@ file contents.
     -----END PGP SIGNATURE-----
     <BLANKLINE>
 
-The signature can be verified by importing the public key available in
-the root of the repository.
+The signature can be verified by retrieving the public key from the
+keyserver.
 
     >>> gpghandler.resetLocalState()
 
-    >>> public_key_content = open(
-    ...     archive_signing_key.public_key_path).read()
-    >>> public_key = gpghandler.importPublicKey(public_key_content)
+    >>> retrieved_key = gpghandler.retrieveKey(
+    ...    signing_key.fingerprint)
 
     >>> signature = gpghandler.getVerifiedSignature(
     ...     content=open(release_path).read(),
@@ -328,3 +322,6 @@ other tests don't choke on it.
     >>> shutil.rmtree(config.personalpackagearchive.signing_keys_root)
     >>> shutil.rmtree(config.personalpackagearchive.root)
 
+Let's shut zeca down.
+
+    >>> z.tearDown()

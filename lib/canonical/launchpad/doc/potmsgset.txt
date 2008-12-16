@@ -994,3 +994,32 @@ If we change it back to zero, it's removed from the table:
     False
     >>> potmsgset.getSequence(potemplate)
     0
+
+
+== POTMsgSet.flags ==
+
+The gettext format can associate flags with a POTMsgSet, such as "this
+is a fuzzily matched message" or "this message follows C format-string
+rules."  These flags are set in a comment starting with a comma, and
+flags are separated by further commas.
+
+    >>> from canonical.launchpad.database.potmsgset import POTMsgSet
+    >>> flagged_potmsgset = POTMsgSet(flagscomment=", fuzzy, c-format")
+
+The flags property produces these as a neat list of flags.
+
+    >>> def print_flags(potmsgset):
+    ...     for flag in sorted(potmsgset.flags):
+    ...         print '"%s"' % flag
+    ...     print '.'
+
+    >>> print_flags(flagged_potmsgset)
+    "c-format"
+    "fuzzy"
+    .
+
+If the message has no flags, that list is empty.
+
+    >>> print_flags(POTMsgSet())
+    .
+

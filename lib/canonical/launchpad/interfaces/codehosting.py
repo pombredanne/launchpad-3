@@ -167,9 +167,8 @@ class IBranchFileSystem(Interface):
             they cannot. If the branch doesn't exist or is not visible to the
             person asking, return ('', '').
         """
-        # XXX: JonathanLange 2008-08-05 spec=package-branches: This
-        # method will need to change to support source package
-        # branches.
+        # XXX: JonathanLange 2008-08-05 spec=package-branches: Delete this
+        # method after the 2.1.12 rollout.
 
     def getDefaultStackedOnBranch(login_id, product_name):
         """Return the URL for the default stacked-on branch of a product.
@@ -180,9 +179,8 @@ class IBranchFileSystem(Interface):
         :return: An absolute path to a branch on Launchpad. If there is no
             default stacked-on branch configured, return the empty string.
         """
-        # XXX: JonathanLange 2008-08-05 spec=package-branches: This
-        # method will need to change to support source package
-        # branches.
+        # XXX: JonathanLange 2008-08-05 spec=package-branches: Delete this
+        # method after the 2.1.12 rollout.
 
     def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.
@@ -200,9 +198,6 @@ class IBranchFileSystem(Interface):
             suitable to display to the user. The Fault InvalidPath is returned
             if the caller tries to create a branch at a non-absolute path.
         """
-        # XXX: MichaelHudson 2008-08-05 spec=package-branches: This
-        # method will need to change to support source package
-        # branches.
 
     def requestMirror(loginID, branchID):
         """Mark a branch as needing to be mirrored.

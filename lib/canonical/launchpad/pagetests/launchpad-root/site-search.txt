@@ -241,6 +241,22 @@ search.
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
+== Searches when there is no page service ==
+
+Google may not be available when the search is performed. This is often
+caused by temporary connectivity problems. A message is displayed that
+explains that the search can be performed again to find matching pages.
+
+    >>> search_for('gnomebaker')
+    >>> print find_tag_by_id(anon_browser.contents, 'no-page-service')
+    <p id="no-page-service">
+    The page search service was not available when this search was
+    performed.
+    <a href="http://launchpad.dev/+search?field.text=gnomebaker">Search
+    again</a> to see the matching pages.
+    </p>
+
+
 == Searches for the empty string ==
 
 If the user submits the form without entering a term in the search

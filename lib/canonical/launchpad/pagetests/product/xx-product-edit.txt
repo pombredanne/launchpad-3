@@ -265,14 +265,23 @@ again have zero licenses.
     Other/Proprietary or Other/Open Source.
 
 
-== Commercial Admin can use the reviewer whiteboard on +review-license page ==
+== Launchpad developers can use the reviewer whiteboard ==
 
-A Commercial Admin can use the reviewer whiteboard on the +review-license page
-for storing random notes about a project. At first the whiteboard is
-empty, then we store some insightful notes in it.
+A member of the Launchpad Developers team can use the reviewer whiteboard on
+the +review-license page for storing random notes about a project. At first the
+whiteboard is empty, then we store some insightful notes in it.
 
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> celebs.launchpad_developers.addMember(nopriv, nopriv)
+    >>> logout()
     >>> commercial_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
+    ...     auth='Basic no-priv@canonical.com:test')
     >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
     >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
     ''
@@ -348,3 +357,9 @@ The product can then be reactivated.
     >>> contents = find_main_content(commercial_browser.contents)
     >>> print contents.find(id='project-inactive')
     None
+
+Revert name12's team membership.
+
+    >>> login('foo.bar@canonical.com')
+    >>> nopriv.leave(celebs.launchpad_developers)
+    >>> logout()
