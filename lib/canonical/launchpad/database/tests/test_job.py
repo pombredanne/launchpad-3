@@ -43,72 +43,72 @@ class TestJob(TestCase):
         self.assertEqual(2, job.attempt_count)
 
     def test_start_when_completed(self):
-        job = Job(status=JobStatus.COMPLETED)
+        job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.start)
 
     def test_start_when_failed(self):
-        job = Job(status=JobStatus.FAILED)
+        job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.start)
 
     def test_start_when_running(self):
-        job = Job(status=JobStatus.FAILED)
+        job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.start)
 
     def test_complete(self):
-        job = Job(status=JobStatus.RUNNING)
+        job = Job(_status=JobStatus.RUNNING)
         self.assertEqual(None, job.date_finished)
         job.complete()
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.COMPLETED)
 
     def test_complete_waiting(self):
-        job = Job(status=JobStatus.WAITING)
+        job = Job(_status=JobStatus.WAITING)
         self.assertRaises(InvalidTransition, job.complete)
 
     def test_complete_completed(self):
-        job = Job(status=JobStatus.COMPLETED)
+        job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.complete)
 
     def test_complete_failed(self):
-        job = Job(status=JobStatus.FAILED)
+        job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.complete)
 
     def test_fail(self):
-        job = Job(status=JobStatus.RUNNING)
+        job = Job(_status=JobStatus.RUNNING)
         self.assertEqual(None, job.date_finished)
         job.fail()
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.FAILED)
 
     def test_fail_waiting(self):
-        job = Job(status=JobStatus.WAITING)
+        job = Job(_status=JobStatus.WAITING)
         self.assertRaises(InvalidTransition, job.fail)
 
     def test_fail_completed(self):
-        job = Job(status=JobStatus.COMPLETED)
+        job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.fail)
 
     def test_fail_failed(self):
-        job = Job(status=JobStatus.FAILED)
+        job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.fail)
 
     def test_queue(self):
-        job = Job(status=JobStatus.RUNNING)
+        job = Job(_status=JobStatus.RUNNING)
         self.assertEqual(None, job.date_finished)
         job.queue()
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.WAITING)
 
     def test_queue_completed(self):
-        job = Job(status=JobStatus.COMPLETED)
+        job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.queue)
 
     def test_queue_waiting(self):
-        job = Job(status=JobStatus.WAITING)
+        job = Job(_status=JobStatus.WAITING)
         self.assertRaises(InvalidTransition, job.queue)
 
     def test_queue_failed(self):
-        job = Job(status=JobStatus.FAILED)
+        job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.queue)
 
 
