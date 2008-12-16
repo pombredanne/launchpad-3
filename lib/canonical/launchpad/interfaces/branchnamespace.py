@@ -90,6 +90,10 @@ class IBranchNamespaceSet(Interface):
         :return: An `IBranchNamespace`.
         """
 
+    def interpret(person, product, distribution, distroseries,
+                  sourcepackagename):
+        """Like `get`, but takes names of objects."""
+
     def parse(namespace_name):
         """Parse 'namespace_name' into its components.
 

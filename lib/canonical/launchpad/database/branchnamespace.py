@@ -227,6 +227,14 @@ class BranchNamespaceSet:
     def lookup(self, namespace_name):
         """See `IBranchNamespaceSet`."""
         names = self.parse(namespace_name)
+        return self.interpret(**names)
+
+    def interpret(self, person=None, product=None, distribution=None,
+                  distroseries=None, sourcepackagename=None):
+        """See `IBranchNamespaceSet`."""
+        names = dict(
+            person=person, product=product, distribution=distribution,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
         data = self._realize(names)
         return self.get(**data)
 
