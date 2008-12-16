@@ -1,5 +1,7 @@
 NameVirtualHost 127.0.0.88:80
 
+RewriteLock /var/tmp/rewrite-lock
+
 <VirtualHost 127.0.0.88:80>
   ServerName xmlrpc-private.launchpad.dev
   ServerName xmlrpc.launchpad.dev
@@ -38,25 +40,20 @@ NameVirtualHost 127.0.0.88:80
   # (6) Everything else is proxied to the local loggerhead instance.
 
   RewriteEngine On
-  RewriteMap branch-list txt:/var/tmp/bazaar.launchpad.dev/config/launchpad-lookup.txt
+  RewriteMap branch-list prg:/home/mwh/prog.py
 
   # (1) / -> Launchpad frontpage
   RewriteRule ^/$ http://launchpad.dev [L]
 
-  # (2) This turns things like ~mdz/branches/branchname/.bzr into the actual dir
-  RewriteRule ^/(~[^/]+/[^/]+/[^/]+)/.bzr(|/.*)$ /${branch-list:$1|notfound}/.bzr$2 [L,P]
-
-  # (3) This is for e.g. http://bazaar.launchpad.net/+branches/0000f22a from the branch scanner
-  RewriteRule ^/\+branches/([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})/(.*) /$1/$2/$3/$4/$5 [L,P]
-
-  # (4) Proxied access to the directory structure (4 levels of 2 digit hex directories)
+  # (3) Proxied access to the directory structure (4 levels of 2 digit hex directories)
   RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
 
-  # (5) The /robots.txt file is served normally.
+  # (3) The /robots.txt file is served normally.
   RewriteRule ^/robots.txt$ - [L]
 
-  # (6) Everything else is proxied to the local loggerhead instance.
-  RewriteRule ^/(.*)$ http://localhost:8080/$1 [L,P]
+  # (4) The branch name -> id based access is done in an external program (which also
+  # takes care of the redirects to loggerhead).
+  RewriteRule ^(/~.*)$ ${branch-list:$1} [L,P]
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
   <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
