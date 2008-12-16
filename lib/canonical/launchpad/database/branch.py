@@ -1188,8 +1188,14 @@ class BranchSet:
                             suffix = None
                         break
                 else:
-                    klass._checkOwnerProduct(
-                        parsed_path['person'], parsed_path['product'])
+                    # This will raise an interesting if any of the given
+                    # objects don't exist.
+                    namespace_set.interpret(
+                        person=parsed_path['person'],
+                        product=parsed_path['product'],
+                        distribution=parsed_path['distribution'],
+                        distroseries=parsed_path['distroseries'],
+                        sourcepackagename=parsed_path['sourcepackagename'])
                     raise NoSuchBranch(path)
             except InvalidNamespace:
                 raise faults.InvalidBranchIdentifier(path)
@@ -1220,22 +1226,6 @@ class BranchSet:
         if branch is None:
             raise faults.NoBranchForSeries(series)
         return branch, series
-
-    @classmethod
-    def _checkOwnerProduct(klass, owner_name, product_name):
-        """Return an appropriate response for a non-existent branch.
-
-        :param unique_name: A string of the form "~user/project/branch".
-        :raise: A _NonexistentBranch object or a Fault if the user or project
-            do not exist.
-        """
-        owner = getUtility(IPersonSet).getByName(owner_name)
-        if owner is None:
-            raise NoSuchPerson(owner_name)
-        if product_name != '+junk':
-            project = getUtility(IProductSet).getByName(product_name)
-            if project is None:
-                raise NoSuchProduct(product_name)
 
     def getRewriteMap(self):
         """See `IBranchSet`."""
