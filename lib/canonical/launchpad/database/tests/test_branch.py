@@ -39,6 +39,8 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
@@ -230,6 +232,118 @@ class TestGetByUniqueName(TestCaseWithFactory):
             distroseries=distroseries, sourcepackagename=sourcepackagename)
         found_branch = self.branch_set.getByUniqueName(branch.unique_name)
         self.assertEqual(branch, found_branch)
+
+
+class TestGetByPath(TestCaseWithFactory):
+    """Test `IBranchSet._getByPath`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self._unsafe_branch_set = removeSecurityProxy(getUtility(IBranchSet))
+
+    def getByPath(self, path):
+        return self._unsafe_branch_set._getByPath(path)
+
+    def makeSuffix(self, num_segments):
+        return '/'.join([
+            self.factory.getUniqueString() for i in range(num_segments)])
+
+    def test_finds_exact_personal_branch(self):
+        branch = self.factory.makeBranch(product=None)
+        found_branch, suffix = self.getByPath(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual('', suffix)
+
+    def test_finds_suffixed_personal_branch(self):
+        branch = self.factory.makeBranch(product=None)
+        suffix = self.makeSuffix(6)
+        found_branch, found_suffix = self.getByPath(
+            branch.unique_name + '/' + suffix)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual(suffix, found_suffix)
+
+    def test_missing_personal_branch(self):
+        owner = self.factory.makePerson()
+        namespace = get_branch_namespace(owner)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+
+    def test_missing_suffixed_personal_branch(self):
+        owner = self.factory.makePerson()
+        namespace = get_branch_namespace(owner)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        suffix = self.makeSuffix(6)
+        self.assertRaises(
+            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+
+    def test_finds_exact_product_branch(self):
+        branch = self.factory.makeBranch()
+        found_branch, suffix = self.getByPath(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual('', suffix)
+
+    def test_finds_suffixed_product_branch(self):
+        branch = self.factory.makeBranch()
+        suffix = self.makeSuffix(4)
+        found_branch, found_suffix = self.getByPath(
+            branch.unique_name + '/' + suffix)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual(suffix, found_suffix)
+
+    def test_missing_product_branch(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = get_branch_namespace(owner, product=product)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+
+    def test_missing_suffixed_product_branch(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = get_branch_namespace(owner, product=product)
+        suffix = self.makeSuffix(12)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        self.assertRaises(
+            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+
+    def test_finds_exact_package_branch(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        found_branch, suffix = self.getByPath(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual('', suffix)
+
+    def test_missing_package_branch(self):
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        namespace = get_branch_namespace(
+            owner, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        #self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
+
+    def test_missing_suffixed_package_branch(self):
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        namespace = get_branch_namespace(
+            owner, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        suffix = self.makeSuffix(7)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        #self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+        self.assertRaises(
+            NoSuchProduct, self.getByPath, branch_name + '/' + suffix)
+
+    def test_no_preceding_tilde(self):
+        self.assertRaises(
+            InvalidNamespace, self.getByPath, self.makeSuffix(9))
 
 
 class TestBranchDeletion(TestCaseWithFactory):
