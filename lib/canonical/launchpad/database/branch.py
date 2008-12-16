@@ -1162,26 +1162,22 @@ class BranchSet:
     @classmethod
     def _getByPath(klass, path):
         """Given a path within a branch, return the branch and the path."""
+        # XXX: direct unit tests please.
         namespace_set = getUtility(IBranchNamespaceSet)
         parsed = namespace_set.parseBranchPath(path)
-        try:
-            for parsed_path, branch_name, suffix in parsed:
-                branch = klass._getBranchInNamespace(
-                    parsed_path, branch_name)
-                if branch is not None:
-                    return branch, suffix
-            else:
-                # This will raise an interesting if any of the given
-                # objects don't exist.
-                namespace_set.interpret(
-                    person=parsed_path['person'],
-                    product=parsed_path['product'],
-                    distribution=parsed_path['distribution'],
-                    distroseries=parsed_path['distroseries'],
-                    sourcepackagename=parsed_path['sourcepackagename'])
-                raise NoSuchBranch(path)
-        except InvalidNamespace:
-            raise faults.InvalidBranchIdentifier(path)
+        for parsed_path, branch_name, suffix in parsed:
+            branch = klass._getBranchInNamespace(parsed_path, branch_name)
+            if branch is not None:
+                return branch, suffix
+        # This will raise an interesting if any of the given
+        # objects don't exist.
+        namespace_set.interpret(
+            person=parsed_path['person'],
+            product=parsed_path['product'],
+            distribution=parsed_path['distribution'],
+            distroseries=parsed_path['distroseries'],
+            sourcepackagename=parsed_path['sourcepackagename'])
+        raise NoSuchBranch(path)
 
     @classmethod
     def getByLPPath(klass, path):
@@ -1201,7 +1197,10 @@ class BranchSet:
             branch, series = klass._getDefaultProductBranch(*path_segments)
         else:
             series = None
-            branch, suffix = klass._getByPath(path)
+            try:
+                branch, suffix = klass._getByPath(path)
+            except InvalidNamespace:
+                raise faults.InvalidBranchIdentifier(path)
             if suffix == '':
                 suffix = None
         return branch, suffix, series
