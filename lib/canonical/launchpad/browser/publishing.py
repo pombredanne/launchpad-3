@@ -11,7 +11,6 @@ __all__ = [
     'SourcePublishingRecordView',
     ]
 
-
 from operator import attrgetter
 
 from zope.component import getUtility

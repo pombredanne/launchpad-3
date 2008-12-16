@@ -11,11 +11,6 @@
   >
 <body>
 
-    <metal:block fill-slot="head_epilogue">
-      <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
-      <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
-    </metal:block>
-
     <div metal:fill-slot="main"
          tal:define="archive_active view/is_active;archive_label view/archive_label">
 
@@ -57,14 +52,15 @@
          </div>
       </tal:whiteboard>
 
-      <div tal:define="archive context" style="clear:right;float:right"
-           tal:condition="view/is_active">
-        <h2 style="margin:0">
+      <div tal:define="archive context"
+           tal:condition="view/is_active"
+           id="build-status-summary">
+        <h2>
           <tal:archive_label replace="archive_label" /> build status
         </h2>
 
-        <metal:build-pie-chart
-            use-macro="archive/@@+macros/build-pie-chart" />
+        <metal:build-status-summary
+            use-macro="archive/@@+macros/build-status-summary" />
       </div>
 
       <div id="description">
@@ -137,7 +133,7 @@
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
-      <p id="package_counters" class="discreet" style="clear:left"><!--TODO: temporary fix for presentation!!! -->
+      <p id="package_counters" class="discreet">
         Package counters and estimated archive size temporarily unavailable.
       </p>
 

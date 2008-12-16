@@ -366,9 +366,9 @@ class ArchiveViewBase:
     def archive_label(self):
         """Return either 'PPA' or 'Archive' as the label for archives.
 
-        It's desired to use the name 'PPA' for branding reasons where
+        It is desired to use the name 'PPA' for branding reasons where
         appropriate, even though the template logic is the same (and hence
-        not worth splitting off into a macro.)
+        not worth splitting off into a separate template or macro)
         """
         if self.context.is_ppa:
             return 'PPA'

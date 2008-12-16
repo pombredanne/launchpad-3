@@ -152,3 +152,35 @@ exception to be thrown.
     ...
     KeyError: 'key_not_there'
 
+
+== SourcePublishingRecordView ==
+
+The SourcePublishingRecordView includes a build_status_summary property
+that returns a dict summary of the build status for the context record:
+
+    >>> src_pub_record_view = create_initialized_view(
+    ...     iceweasel_source_pub,
+    ...     name="+listing-compact")
+
+Create a small function for displaying the results:
+
+    >>> def print_build_summary(summary):
+    ...     print "%s\n%s\nRelevant builds:\n%s" % (
+    ...         summary['status'],
+    ...         summary['status_desc'],
+    ...         "\n".join(
+    ...             " - %s" % build.title for build in summary['builds'])
+    ...     )
+
+    >>> print_build_summary(src_pub_record_view.build_status_summary)
+    succeeded
+    All builds succeeded.
+    Relevant builds:
+     - i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+
+The view also helps templates to decide on the icon that should be used
+to summarize the current state of the context's associated builds:
+
+    >>> print src_pub_record_view.build_status_img_src
+    /@@/yes
+

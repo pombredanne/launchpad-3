@@ -183,54 +183,37 @@
 
 </metal:package_counters>
 
-<metal:build_pie_chart define-macro="build-pie-chart">
+<metal:build_status_summary define-macro="build-status-summary">
 
   <tal:comment replace="nothing">
     Present the build pie chart for the context IArchiveRebuild.
     :archive: targetted IArchive.
   </tal:comment>
 
-  <p style="margin:0">Total build count: 
-    <span id="total_build_count">
-       <tal:total_builds replace="view/build_counters/total">100
-       </tal:total_builds>
-    </span>
-  </p>
-
   <table id="build-count-table"
          summary="An overview of the build status for this archive."
          tal:define="build_counters view/build_counters">
     <tr>
+      <th>Total builds:</th>
+      <th tal:content="view/build_counters/total">100</th>
+    </tr>
+    <tr>
       <th>Failed</th>
-      <td id="failed_build_count">
-        <tal:failed_builds replace="build_counters/failed">100
-        </tal:failed_builds>
-      </td>
+      <td tal:content="build_counters/failed">100</td>
     </tr>
     <tr>
       <th>Pending</th>
-      <td id="pending_build_count">
-        <tal:pending_builds replace="build_counters/pending">600
-        </tal:pending_builds>
-      </td>
+      <td tal:content="build_counters/pending">100</td>
     </tr>
     <tr>
       <th>Superseded</th>
-      <td id="superseded_build_count">
-        <tal:superseded_builds replace="build_counters/superseded">10
-        </tal:superseded_builds>
-      </td>
+      <td tal:content="build_counters/superseded">100</td>
     </tr>
     <tr>
       <th>Succeeded</th>
-      <td id="succeeded_build_count">
-        <tal:succeeded_builds replace="build_counters/succeeded">1000
-        </tal:succeeded_builds>
-      </td>
+      <td tal:content="build_counters/succeeded">100</td>
     </tr>
   </table>
-  <div id="build-pie-chart"></div>
-
-</metal:build_pie_chart>
+</metal:build_status_summary>
 
 </tal:root>

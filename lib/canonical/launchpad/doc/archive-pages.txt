@@ -6,6 +6,64 @@ Let's use Celso's PPA for the tests.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
+== ArchiveView ==
+
+The ArchiveView includes a few helper methods that make it easier to
+display different types of archives (copy archives, ppas).
+
+First lets create a copy archive:
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> copy_location = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu,
+    ...     name="intrepid-security-rebuild")
+    >>> copy_archive = copy_location.archive
+
+And lets create two views to compare:
+
+    >>> ppa_archive_view = create_initialized_view(cprov.archive,
+    ...                                            name="+index")
+    >>> copy_archive_view = create_initialized_view(copy_archive,
+    ...                                             name="+index")
+
+The ArchiveView includes an archive_url property that will return the
+archive url if it is available (ie. an active archive that is not a copy)
+and None otherwise:
+
+    >>> print ppa_archive_view.archive_url
+    http://ppa.launchpad.dev/cprov/ubuntu
+    >>> print copy_archive_view.archive_url
+    None
+
+The ArchiveView includes an archive_label property that returns either
+the string 'PPA' or 'Archive' depending on whether the archive is a PPA
+(this is mainly for branding purposes):
+
+    >>> print ppa_archive_view.archive_label
+    PPA
+    >>> print copy_archive_view.archive_label
+    Archive
+
+For convenience the ArchiveView also includes a build_counters property
+that returns a dict of the build count summary for the archive:
+
+    >>> print ppa_archive_view.build_counters
+    {'failed': 1L, 'superseded': 0, 'total': 4L, ...
+
+An ArchiveView also includes an easy way to get any
+IPackageCopyRequest's associated with a copy archive (and returns None
+otherwise):
+
+    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
+    ...     copy_location, copy_archive.owner)
+    >>> len(copy_archive_view.package_copy_requests)
+    1
+    >>> print ppa_archive_view.package_copy_requests
+    None
+
+
 == ArchiveSourceSelectionFormView ==
 
 The ArchiveSourceSelectionFormView defines two members that subclasses
