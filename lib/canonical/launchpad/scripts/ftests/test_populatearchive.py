@@ -137,8 +137,6 @@ class TestPopulateArchiveScript(TestCase):
 
         # Populate same copy archive again.
         (return_code, out, err) = self.runWrapperScript(extra_args)
-        print(">> 1:\n%s" % out)
-        print(">> 2:\n%s" % err)
 
         # Check for zero exit code.
         self.assertEqual(
