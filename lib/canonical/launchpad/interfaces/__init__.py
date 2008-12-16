@@ -97,7 +97,6 @@ from canonical.launchpad.interfaces.hwdb import *
 from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
-from canonical.launchpad.interfaces.job import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.languagepack import *

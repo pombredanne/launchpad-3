@@ -16,7 +16,7 @@ from sqlobject import IntCol, StringCol
 from storm.references import ReferenceSet
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IJob, JobStatus
+from canonical.launchpad.interfaces.job import IJob, JobStatus
 
 
 UTC = pytz.timezone('UTC')
