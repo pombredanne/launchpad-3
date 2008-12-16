@@ -44,7 +44,7 @@ class TestBranchFileSystemClient(TestCase):
 
     def makeClient(self, expiry_time=None):
         return BranchFileSystemClient(
-            self._xmlrpc_client, self.user.id, expiry_time=None,
+            self._xmlrpc_client, self.user.id, expiry_time=expiry_time,
             _now=self.fake_time.now)
 
     def test_translatePath(self):
