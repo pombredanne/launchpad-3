@@ -480,3 +480,93 @@ Links between a bug and a submission must be unique.
     IntegrityError: ... violates unique constraint
     "hwsubmissionbug__submission__bug__key"
 
+
+== General Search Method ==
+
+IHWSubmissionSet.search() allows to look up submissions which contain
+a specfic device, a specific driver or which are made for a
+specific distribution or processor architecture.
+
+All parameters are optional; if none are given, all publicly visible
+submissions are returned.
+
+    >>> for submission in hw_submission_set.search():
+    ...     print submission.submission_key
+    test_submission_id_1
+    sample-submission
+    unique-id-1
+    unique-id-2
+    unique-id-4
+    unique-id-5
+
+If the parameter user is specified, private submissions from this user
+are returned too.
+
+    >>> for submission in hw_submission_set.search(user=sample_person):
+    ...     print submission.submission_key
+    test_submission_id_1
+    sample-submission
+    unique-id-1
+    unique-id-2
+    unique-id-3
+    unique-id-4
+    unique-id-5
+
+Admins have access to all submissions.
+
+    >>> for submission in hw_submission_set.search(user=foobar):
+    ...     print submission.submission_key
+    test_submission_id_1
+    sample-submission
+    unique-id-1
+    unique-id-2
+    unique-id-3
+    unique-id-4
+    unique-id-5
+
+If a distribution is specified, only those submissions are returned that
+were made or this distribution.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> distribution_set = getUtility(IDistributionSet)
+    >>> ubuntu = distribution_set.getByName('ubuntu')
+    >>> for submission in hw_submission_set.search(distribution=ubuntu):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> debian = distribution_set.getByName('debian')
+    >>> print hw_submission_set.search(distribution=debian).count()
+    0
+
+If an architecture is specified, only those submissions are returned that
+were made or this architecture.
+
+    >>> for submission in hw_submission_set.search(architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> print hw_submission_set.search(architecture='amd64').count()
+    0
+
+If a device is specified, only those submissions are returned where
+this device appears in.
+
+    >>> from canonical.launchpad.interfaces.hwdb import HWBus, IHWDeviceSet
+    >>> device_set = getUtility(IHWDeviceSet)
+    >>> msi_mainboard = device_set.getByDeviceID(
+    ...     HWBus.SYSTEM, 'MSI', 'MS-7369')
+    >>> for submission in hw_submission_set.search(device=msi_mainboard):
+    ...     print submission.submission_key
+    sample-submission
+
+If a driver is specified, only those submissions are returned where
+this driver appears in.
+
+    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
+    >>> driver_set = getUtility(IHWDriverSet)
+    >>> ehci_driver = driver_set.getByPackageAndName(
+    ...     'linux-image-2.6.24-19-generic', 'ehci_hcd')
+    >>> for submission in hw_submission_set.search(driver=ehci_driver):
+    ...     print submission.submission_key
+    sample-submission
