@@ -1149,26 +1149,6 @@ class BranchSet:
             return default
         return branch
 
-    @staticmethod
-    def _getByUniqueNameElements(owner_name, product_name, branch_name):
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: Not sure why
-        # this is using direct SQL instead of Storm. Also not sure whether
-        # this method makes sense in source package branch land.
-        if product_name == '+junk':
-            query = ("Branch.owner = Person.id"
-                     + " AND Branch.product IS NULL"
-                     + " AND Person.name = " + quote(owner_name)
-                     + " AND Branch.name = " + quote(branch_name))
-            tables = ['Person']
-        else:
-            query = ("Branch.owner = Person.id"
-                     + " AND Branch.product = Product.id"
-                     + " AND Person.name = " + quote(owner_name)
-                     + " AND Product.name = " + quote(product_name)
-                     + " AND Branch.name = " + quote(branch_name))
-            tables = ['Person', 'Product']
-        return Branch.selectOne(query, clauseTables=tables)
-
     @classmethod
     def getByLPPath(klass, path):
         """See `IBranchSet`."""
