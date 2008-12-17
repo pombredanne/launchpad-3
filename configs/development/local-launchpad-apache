@@ -32,22 +32,19 @@ RewriteLock /var/tmp/rewrite-lock
 
   # The ACLs here are... complex:
 
-  # XXX rewrite this
+  # XXX document this again
 
   RewriteEngine On
   RewriteMap branch-list prg:%BRANCH_REWRITE%
+  #RewriteLogLevel 9
+  #RewriteLog /tmp/rlog
 
-  # (1) / -> Launchpad frontpage
   RewriteRule ^/$ http://launchpad.dev [L]
 
-  # (3) Proxied access to the directory structure (4 levels of 2 digit hex directories)
   RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
 
-  # (3) The /robots.txt file is served normally.
   RewriteRule ^/robots.txt$ - [L]
 
-  # (4) The branch name -> id based access is done in an external program (which also
-  # takes care of the redirects to loggerhead).
   RewriteRule ^(/~.*)$ ${branch-list:$1} [L,P]
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
