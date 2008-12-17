@@ -166,20 +166,20 @@ owner of the submission...
     ...     format=HWSubmissionFormat.VERSION_1,
     ...     private=True,
     ...     contactable=False,
-    ...     submission_key=u'unique-id-3',
+    ...     submission_key=u'private-submission',
     ...     emailaddress=u'test@canonical.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
     ...     system_fingerprint=u'Dell Inspiron 1234')
-    >>> print hw_submission_set.getBySubmissionKey(u'unique-id-3')
+    >>> print hw_submission_set.getBySubmissionKey(u'private-submission')
     None
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> sample_person.displayname
     u'Sample Person'
     >>> submission = hw_submission_set.getBySubmissionKey(
-    ...     u'unique-id-3', sample_person)
+    ...     u'private-submission', sample_person)
     >>> submission
     <HWSubmission at ...>
 
@@ -187,7 +187,7 @@ owner of the submission...
 
     >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> submission = hw_submission_set.getBySubmissionKey(
-    ...     u'unique-id-3', foobar)
+    ...     u'private-submission', foobar)
     >>> submission
     <HWSubmission at ...>
 
@@ -200,11 +200,11 @@ Only the owner and admins can view the submission details.
 
     >>> login('test@canonical.com')
     >>> submission.submission_key, submission.system_fingerprint.fingerprint
-    (u'unique-id-3', u'Dell Inspiron 1234')
+    (u'private-submission', u'Dell Inspiron 1234')
 
     >>> login('foo.bar@canonical.com')
     >>> submission.submission_key, submission.system_fingerprint.fingerprint
-    (u'unique-id-3', u'Dell Inspiron 1234')
+    (u'private-submission', u'Dell Inspiron 1234')
 
 Passing another person than the owner or an admin as the parameter `user`
 does not return private submissions.
@@ -212,7 +212,8 @@ does not return private submissions.
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     >>> no_priv.displayname
     u'No Privileges Person'
-    >>> print hw_submission_set.getBySubmissionKey(u'unique-ID-3', no_priv)
+    >>> print hw_submission_set.getBySubmissionKey(u'private-submission',
+    ...     no_priv)
     None
 
     >>> login(ANONYMOUS)
@@ -241,14 +242,14 @@ given fingerprint name. Private submissions are excluded, if the parameter
     ...     u'Dell Inspiron 1234', sample_person)
     >>> [(s.submission_key, s.system_fingerprint.fingerprint, s.private)
     ...  for s in submissions]
-    [(u'unique-id-1', u'Dell Inspiron 1234', False),
-     (u'unique-id-3', u'Dell Inspiron 1234', True)]
+    [(u'private-submission', u'Dell Inspiron 1234', True),
+     (u'unique-id-1', u'Dell Inspiron 1234', False)]
     >>> submissions = hw_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234', foobar)
     >>> [(s.submission_key, s.system_fingerprint.fingerprint, s.private)
     ...  for s in submissions]
-    [(u'unique-id-1', u'Dell Inspiron 1234', False),
-     (u'unique-id-3', u'Dell Inspiron 1234', True)]
+    [(u'private-submission', u'Dell Inspiron 1234', True),
+     (u'unique-id-1', u'Dell Inspiron 1234', False)]
 
 If no submissions exist for the given system fingerprint, an empty result
 set is returned.
@@ -277,16 +278,16 @@ to the method, or if the passed parameter is neither the owner nor an admin.
     ...                                            user=sample_person)
     >>> [(s.submission_key, s.system_fingerprint.fingerprint)
     ...  for s in submissions]
-    [(u'unique-id-1', u'Dell Inspiron 1234'),
-     (u'unique-id-3', u'Dell Inspiron 1234'),
+    [(u'private-submission', u'Dell Inspiron 1234'),
+     (u'unique-id-1', u'Dell Inspiron 1234'),
      (u'sample-submission', u'MSI MS-7369'),
      (u'test_submission_id_1', u'TONKA TUFFBOOK2600')]
     >>> submissions = hw_submission_set.getByOwner(sample_person,
     ...                                            user=foobar)
     >>> [(s.submission_key, s.system_fingerprint.fingerprint)
     ...  for s in submissions]
-    [(u'unique-id-1', u'Dell Inspiron 1234'),
-     (u'unique-id-3', u'Dell Inspiron 1234'),
+    [(u'private-submission', u'Dell Inspiron 1234'),
+     (u'unique-id-1', u'Dell Inspiron 1234'),
      (u'sample-submission', u'MSI MS-7369'),
      (u'test_submission_id_1', u'TONKA TUFFBOOK2600')]
 
@@ -395,7 +396,7 @@ If a user is passed, private submissions of this user are returned too.
     test_submission_id_1 False Sample Person SUBMITTED
     unique-id-1 False Sample Person SUBMITTED
     unique-id-2 False Beeblebrox SUBMITTED
-    unique-id-3 True Sample Person SUBMITTED
+    private-submission True Sample Person SUBMITTED
     unique-id-4 False Beeblebrox SUBMITTED
     unique-id-5 False (no owner) SUBMITTED
 
@@ -425,7 +426,7 @@ submissions...
     test_submission_id_1 False Sample Person SUBMITTED
     unique-id-1 False Sample Person SUBMITTED
     unique-id-2 False Beeblebrox SUBMITTED
-    unique-id-3 True Sample Person SUBMITTED
+    private-submission True Sample Person SUBMITTED
     unique-id-4 False Beeblebrox SUBMITTED
     unique-id-5 False (no owner) SUBMITTED
 
@@ -440,7 +441,7 @@ submissions...
     test_submission_id_1 False Sample Person SUBMITTED
     unique-id-1 False Sample Person SUBMITTED
     unique-id-2 False Beeblebrox SUBMITTED
-    unique-id-3 True Sample Person SUBMITTED
+    private-submission True Sample Person SUBMITTED
     unique-id-4 False Beeblebrox SUBMITTED
     unique-id-5 False (no owner) SUBMITTED
 
@@ -483,8 +484,8 @@ Links between a bug and a submission must be unique.
 
 == General Search Method ==
 
-IHWSubmissionSet.search() allows to look up submissions which contain
-a specfic device, a specific driver or which are made for a
+IHWSubmissionSet.search() allows the look up of submissions which
+contain a specfic device, a specific driver or which are made for a
 specific distribution or processor architecture.
 
 All parameters are optional; if none are given, all publicly visible
@@ -499,7 +500,7 @@ submissions are returned.
     unique-id-4
     unique-id-5
 
-If the parameter user is specified, private submissions from this user
+If the parameter `user` is specified, private submissions from this user
 are returned too.
 
     >>> for submission in hw_submission_set.search(user=sample_person):
@@ -508,7 +509,7 @@ are returned too.
     sample-submission
     unique-id-1
     unique-id-2
-    unique-id-3
+    private-submission
     unique-id-4
     unique-id-5
 
@@ -520,12 +521,12 @@ Admins have access to all submissions.
     sample-submission
     unique-id-1
     unique-id-2
-    unique-id-3
+    private-submission
     unique-id-4
     unique-id-5
 
-If a distribution is specified, only those submissions are returned that
-were made or this distribution.
+If a distribution is specified, only those submissions that were made
+for that distribution are returned.
 
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
@@ -539,8 +540,8 @@ were made or this distribution.
     >>> print hw_submission_set.search(distribution=debian).count()
     0
 
-If an architecture is specified, only those submissions are returned that
-were made or this architecture.
+If an architecture is specified, only those submissions that were made
+for that architecture are returned.
 
     >>> for submission in hw_submission_set.search(architecture='i386'):
     ...     print submission.submission_key
@@ -549,8 +550,9 @@ were made or this architecture.
     >>> print hw_submission_set.search(architecture='amd64').count()
     0
 
-If a device is specified, only those submissions are returned where
-this device appears in.
+
+If a device is specified, only those submissions that include
+the device are returned.
 
     >>> from canonical.launchpad.interfaces.hwdb import HWBus, IHWDeviceSet
     >>> device_set = getUtility(IHWDeviceSet)
@@ -560,8 +562,8 @@ this device appears in.
     ...     print submission.submission_key
     sample-submission
 
-If a driver is specified, only those submissions are returned where
-this driver appears in.
+If a driver is specified, only those submissions for that driver
+are returned.
 
     >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
     >>> driver_set = getUtility(IHWDriverSet)
