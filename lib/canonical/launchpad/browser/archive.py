@@ -929,6 +929,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         terms = []
         for archive_dependency in self.context.dependencies:
             dependency = archive_dependency.dependency
+            if not dependency.is_ppa:
+                continue
             dependency_label = '<a href="%s">%s</a>' % (
                 canonical_url(dependency), archive_dependency.title)
             term = SimpleTerm(
@@ -1069,17 +1071,12 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         """Perform the removal of the selected dependencies."""
         selected_dependencies = data.get('selected_dependencies', [])
 
-        # Perform deletion of the source and its binaries.
-        for dependency in selected_dependencies:
-            # Check if the dependency wasn't already removed by
-            # _add_primary_dependencies.
-            if self.context.getArchiveDependency(dependency) is None:
-                selected_dependencies.remove(dependency)
-                continue
-            self.context.removeArchiveDependency(dependency)
-
         if len(selected_dependencies) == 0:
             return
+
+        # Perform deletion of the source and its binaries.
+        for dependency in selected_dependencies:
+            self.context.removeArchiveDependency(dependency)
 
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')

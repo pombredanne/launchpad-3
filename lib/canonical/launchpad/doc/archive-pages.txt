@@ -292,9 +292,6 @@ Now all the updated fields can be inspected.
     >>> view.has_dependencies
     False
 
-    >>> len(view.widgets.get('selected_dependencies').vocabulary)
-    0
-
     >>> print view.focusedElementScript()
     <!--
     setFocusByName('field.dependency_candidate');
@@ -350,9 +347,6 @@ there is no explicit primary dependency set.
     ...         'field.actions.save': 'Save',
     ...         })
 
-    >>> len(add_updates_view.widgets.get('selected_dependencies').vocabulary)
-    0
-
     >>> add_updates_view.widgets.get(
     ...     'primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
@@ -371,31 +365,27 @@ Any other pre-defined primary dependency can be selected.
 
     >>> transaction.commit()
 
-Once the page is reloaded, the selected primary dependency is
-presented in the 'selected_dependencies' widget and selected as a
+Once the page is reloaded, the selected primary dependency is the
 current value of 'primary_dependencies' widget.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
 
-    >>> selectable_dependencies = view.widgets.get(
-    ...     'selected_dependencies').vocabulary
-    >>> for dependency in selectable_dependencies:
-    ...     print dependency.title
-    <a href="http://launchpad.dev/ubuntu/+archive/primary">Primary Archive
-    for Ubuntu Linux - PROPOSED - multiverse</a>
-
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
+
+Primary dependencies are not listed in the 'selected_dependencies'
+widget. They can only be modified via the 'primary_dependencies'
+options.
+
+    >>> len(view.widgets.get('selected_dependencies').vocabulary)
+    0
 
 As mentioned, attempts to override primary dependencies to the same
 value are detected in the form validation and nothing is changed, even
 when there is an explicit override.
 
     >>> add_proposed_view.initialize()
-
-    >>> len(add_proposed_view.widgets.get('selected_dependencies').vocabulary)
-    1
 
     >>> add_proposed_view.widgets.get(
     ...     'primary_dependencies')._getCurrentValue()
@@ -419,13 +409,6 @@ and processed correctly.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
 
-    >>> selectable_dependencies = view.widgets.get(
-    ...     'selected_dependencies').vocabulary
-    >>> for dependency in selectable_dependencies:
-    ...     print dependency.title
-    <a href="http://launchpad.dev/ubuntu/+archive/primary">Primary Archive
-    for Ubuntu Linux - PROPOSED</a>
-
     >>> print view.widgets.get(
     ...     'primary_dependencies')._getCurrentValue().title
     Proposed
@@ -442,9 +425,6 @@ option to be selected.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
-
-    >>> len(view.widgets.get('selected_dependencies').vocabulary)
-    0
 
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
