@@ -83,7 +83,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 # Don't use the slave at all if lag is greater than the
                 # configured threshold. This reduces replication oddities
                 # noticed by users, as well as reducing load on the
-                # slave allowing it to catch up quicker. Bug #307407.
+                # slave allowing it to catch up quicker.
                 da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
             else:
                 session_data = ISession(self.request)['lp.dbpolicy']
