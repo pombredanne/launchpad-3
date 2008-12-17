@@ -11,7 +11,7 @@ Let's use Celso's PPA for the tests.
 The ArchiveView includes a few helper methods that make it easier to
 display different types of archives (copy archives, ppas).
 
-First lets create a copy archive:
+First let's create a copy archive:
 
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
@@ -21,7 +21,7 @@ First lets create a copy archive:
     ...     name="intrepid-security-rebuild")
     >>> copy_archive = copy_location.archive
 
-And lets create two views to compare:
+And let's create two views to compare:
 
     >>> ppa_archive_view = create_initialized_view(cprov.archive,
     ...                                            name="+index")

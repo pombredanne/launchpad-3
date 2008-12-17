@@ -949,27 +949,29 @@ class BuildSet:
         needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
         building = collect_builds(BuildStatus.BUILDING)
 
+        # Note: the BuildStatus DBItems are used here to summarize the
+        # status of a set of builds:s
         if len(building) != 0:
             return {
-                'status': 'building',
+                'status': str(BuildStatus.BUILDING),
                 'status_desc': 'There are some builds currently building.',
                 'builds': building,
                 }
         elif len(needsbuild) != 0:
             return {
-                'status': 'needsbuild',
+                'status': str(BuildStatus.NEEDSBUILD),
                 'status_desc': 'There are some builds waiting to be built.',
                 'builds': needsbuild,
                 }
         elif len(failed) != 0:
             return {
-                'status': 'failed',
+                'status': str(BuildStatus.FAILEDTOBUILD),
                 'status_desc': 'There were build failures.',
                 'builds': failed,
                 }
         else:
             return {
-                'status': 'succeeded',
+                'status': str(BuildStatus.FULLYBUILT),
                 'status_desc': 'All builds succeeded.',
                 'builds': builds,
                 }

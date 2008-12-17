@@ -98,17 +98,6 @@
 
         <h3><tal:archive_label replace="archive_label" /> dependencies</h3>
 
-        <p class="warning message" tal:condition="context/is_ppa">
-          When installing packages from
-          this PPA you may need to enable one or more of the following
-          PPAs, which have been considered for building packages in
-          this context.
-        </p>
-        <p class="warning message" tal:condition="not: context/is_ppa">
-          The following archives have been considered for building packages in
-          this context.
-        </p>
-
         <ul>
            <li tal:repeat="dependency context/dependencies">
              <a tal:attributes="href dependency/dependency/fmt:url"

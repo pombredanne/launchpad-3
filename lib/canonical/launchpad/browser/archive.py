@@ -277,7 +277,6 @@ class ArchiveContextMenu(ContextMenu):
         link = Link('+delete-packages', text, icon='edit')
 
         # This link should not be available for copy archives
-        # Is there a better way of doing this?
         if self.context.is_copy:
             link.enabled = False
         return link
@@ -288,7 +287,6 @@ class ArchiveContextMenu(ContextMenu):
         link = Link('+copy-packages', text, icon='edit')
 
         # This link should not be available for copy archives
-        # Is there a better way of doing this?
         if self.context.is_copy:
             link.enabled = False
         return link
