@@ -75,10 +75,14 @@
       </style>
     </noscript>
 
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
+    <script type="text/javascript" 
+            tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+    <script type="text/javascript" 
+            tal:attributes="src string:${icingroot}/build/lp/lp.js"></script>
+    <script type="text/javascript" 
+            tal:attributes="src string:${icingroot}/build/sorttable/sorttable.js"></script>
+    <script type="text/javascript" 
+            tal:attributes="src string:${icingroot}/build/inlinehelp/inlinehelp.js"></script>
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
@@ -107,7 +111,8 @@
       </tal:production>
     </tal:yui>
 
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
+    <script type="text/javascript" tal:attributes="src
+      string:${icingroot}/build/client/client.js"></script>
 
     <script tal:condition="view/user|nothing"
      tal:content="structure string:LP.client.links.me =
