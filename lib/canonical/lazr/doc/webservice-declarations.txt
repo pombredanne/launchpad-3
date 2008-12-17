@@ -1119,7 +1119,7 @@ set_text() method is designated as the mutator for the 'text' field.
     >>> from canonical.lazr.rest.declarations import mutator_for
     >>> class IHasText(Interface):
     ...     export_as_webservice_entry()
-    ...     text = exported(TextLine())
+    ...     text = exported(TextLine(readonly=True))
     ...
     ...     @mutator_for(text)
     ...     @operation_parameters(text=TextLine())
@@ -1162,35 +1162,84 @@ field. Taking no arguments is obviously an error.
 
     >>> class ZeroArgumentMutator(Interface):
     ...     export_as_webservice_entry()
-    ...     value = exported(TextLine())
+    ...     value = exported(TextLine(readonly=True))
     ...
     ...     @mutator_for(value)
     ...     @export_write_operation()
-    ...     def set_text():
+    ...     def set_value():
     ...         pass
     Traceback (most recent call last):
     ...
     TypeError: A mutator method must take one and only one non-fixed
-    argument. set_text takes 0.
+    argument. set_value takes 0.
 
 Taking more than one argument is also an error...
 
     >>> class TwoArgumentMutator(Interface):
     ...     export_as_webservice_entry()
-    ...     value = exported(TextLine())
+    ...     value = exported(TextLine(readonly=True))
     ...
     ...     @mutator_for(value)
     ...     @operation_parameters(arg1=TextLine(), arg2=TextLine())
     ...     @export_write_operation()
-    ...     def set_text(arg1, arg2):
+    ...     def set_value(arg1, arg2):
     ...         pass
     Traceback (most recent call last):
     ...
     TypeError: A mutator method must take one and only one non-fixed
-    argument. set_text takes 2.
+    argument. set_value takes 2.
 
 ...unless all but one of the arguments are spoken for by a call_with()
-annotation.
+annotation. This definition does not result in a TypeError.
+
+    >>> class OneFixedArgumentMutator(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(value)
+    ...     @call_with(arg1=REQUEST_USER, arg3='fixed')
+    ...     @operation_parameters(arg1=TextLine(), arg2=TextLine(),
+    ...                           arg3=TextLine())
+    ...     @export_write_operation()
+    ...     def set_value(arg1, arg2, arg3):
+    ...         pass
+
+A field can only have a mutator if it's read-only (not settable
+directly).
+
+    >>> class WritableMutator(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=False))
+    ...
+    ...     @mutator_for(value)
+    ...     @export_write_operation()
+    ...     def set_value(new_value):
+    ...         pass
+    Traceback (most recent call last):
+    ...
+    TypeError: Only a read-only field can have a mutator method.
+
+A field can only have one mutator.
+
+    >>> class FieldWithTwoMutators(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(value)
+    ...     @export_write_operation()
+    ...     @operation_parameters(new_value=TextLine())
+    ...     def set_value(new_value):
+    ...         pass
+    ...
+    ...     @mutator_for(value)
+    ...     @export_write_operation()
+    ...     @operation_parameters(new_value=TextLine())
+    ...     def set_value_2(new_value):
+    ...         pass
+    Traceback (most recent call last):
+    ...
+    TypeError: A field can only have one mutator method; set_value_2
+    makes two.
 
 
 === Security ===

@@ -380,21 +380,24 @@ class mutator_for(_method_annotator):
         Store information about the mutator method with the field.
         """
 
-        # The mutator method must take only one argument, not counting
-        # arguments with values fixed by call_with(). So get the
-        # parameter dict...
-        free_params = dict(annotations.get('params', {}))
+        if not self.field.readonly:
+            raise TypeError("Only a read-only field can have a mutator "
+                            "method.")
 
-        # ...and see how many method remain once we strip out the
-        # fixed-value ones.
-        num_free_params = len(free_params.keys())
-        if num_free_params != 1:
+        # The mutator method must take only one argument, not counting
+        # arguments with values fixed by call_with().
+        free_params = (set(annotations.get('params', {}).keys()) -
+                       set(annotations.get('call_with', {}).keys()))
+        if len(free_params) != 1:
             raise TypeError("A mutator method must take one and only one "
                             "non-fixed argument. %s takes %d." %
-                            (method.__name__, num_free_params))
+                            (method.__name__, len(free_params)))
 
         field_annotations = self.field.queryTaggedValue(
             LAZR_WEBSERVICE_EXPORTED)
+        if 'mutated_by' in field_annotations:
+            raise TypeError("A field can only have one mutator method; "
+                            "%s makes two." % method.__name__ )
         field_annotations['mutated_by'] = method
         field_annotations['mutated_by_annotations'] = annotations
 
