@@ -234,6 +234,19 @@ if [ ! -z "$doctestfiles" ]; then
 fi
 
 
+jsfiles=`echo "$files" | grep -E 'js$'`
+if [ ! -z "$jsfiles" ]; then
+    js_notices=`$utilitiesdir/jslint.py $jsfiles 2>&1`
+fi
+if [ ! -z "$js_notices" -a "$js_notices" != "No lint in launchpad.js" ]; then
+    echo ""
+    echo ""
+    echo "== Javascript notices =="
+    echo ""
+    echo "$js_notices"
+fi
+
+
 pyfiles=`echo "$files" | grep '.py$'`
 if [ -z "$pyfiles" ]; then
     exit 0
