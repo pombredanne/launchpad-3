@@ -8,6 +8,9 @@ import time
 import xmlrpclib
 
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfsclient import (
+    BlockingProxy, BranchFileSystemClient)
+from canonical.codehosting.transport import _extractResult
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, LAUNCHPAD_SERVICES)
@@ -19,7 +22,11 @@ logging.basicConfig(level=logging.DEBUG,
 
 log = logging.getLogger('BranchRewrite')
 
-s = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+s = BlockingProxy(xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint))
+c = BranchFileSystemClient(s, LAUNCHPAD_SERVICES, 1.0)
+
+def t(path):
+    return _extractResult(c.translatePath(path))
 
 class BranchRewriter(LaunchpadScript):
 
@@ -39,8 +46,7 @@ class BranchRewriter(LaunchpadScript):
                 line = sys.stdin.readline().strip()
                 T = time.time()
                 trailingSlash = line.endswith('/')
-                transport_type, info, trailing = s.translatePath(
-                    LAUNCHPAD_SERVICES, line)
+                transport_type, info, trailing = t(line)
                 if transport_type == BRANCH_TRANSPORT:
                     if trailing.startswith('.bzr'):
                         r = '/' + branch_id_to_path(info['id']) + '/' + trailing
