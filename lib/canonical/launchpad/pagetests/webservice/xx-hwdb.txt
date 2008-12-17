@@ -16,7 +16,7 @@ tables.
 === Device Queries and Devices ===
 
 The method HWDBApplication.devices returns known devices matching
-the given parameters bus an vendor ID. (See
+the given parameters bus and vendor ID. (See
 doc/hwdb-device-tables.txt for details about the underlying table
 HWDevice.)
 
@@ -112,3 +112,193 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
+=== Drivers and Driver Queries ===
+
+The method HWDBApplication.drivers() returns known drivers matching
+the given optional parameters package_name and name. (See
+doc/hwdb-device-tables.txt for details about the underlying table
+HWDriver.)
+
+All driver records from the sample data have package_name ==
+'linux-image-2.6.24-19-generic'; let's add some driver records
+with different package names, so that we can see how filtering
+by name works.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
+    >>> login(ANONYMOUS)
+    >>> driver_set = getUtility(IHWDriverSet)
+    >>> # A typical graphics card driver
+    >>> driver_set.create('xorg', 'nv', None)
+    <HWDriver at ...>
+    >>> # A driver without an associated package.
+    >>> driver_set.create(None, 'usb', None)
+    <HWDriver at ...>
+    >>> # And another driver without an associated package.
+    >>> driver_set.create('', 'foo', None)
+    <HWDriver at ...>
+    >>> logout()
+
+If no parameters are specified, HWDBApplication.drivers() returns all
+known drivers. A device entry provides the attributes bus_product_id,
+name, package_name, variant and license.
+
+    >>> drivers = webservice.get('/+hwdb?ws.op=drivers&ws.size=15').jsonBody()
+    >>> for entry in drivers['entries']:
+    ...     pprint_entry(entry)
+    id: 1
+    license: None
+    name: u'ehci_hcd'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
+    id: 2
+    license: None
+    name: u'usb'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
+    id: 3
+    license: None
+    name: u'usb-storage'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/3'
+    id: 4
+    license: None
+    name: u'sd'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/4'
+    id: 5
+    license: None
+    name: u'hub'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/5'
+    id: 6
+    license: None
+    name: u'ahci'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/6'
+    id: 7
+    license: None
+    name: u'sr'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/7'
+    id: 8
+    license: None
+    name: u'nv'
+    package_name: u'xorg'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/8'
+    id: 9
+    license: None
+    name: u'usb'
+    package_name: None
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
+    id: 10
+    license: None
+    name: u'foo'
+    package_name: u''
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/10'
+
+If we specify a package name, only drivers from this package are
+returned.
+
+    >>> drivers = webservice.get(
+    ...     '/+hwdb?ws.op=drivers&package_name=xorg').jsonBody()
+    >>> for entry in drivers['entries']:
+    ...     pprint_entry(entry)
+    id: 8
+    license: None
+    name: u'nv'
+    package_name: u'xorg'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/8'
+
+If we specify an empty package name, those drivers are returned where
+a package_name is not recorded.
+
+    >>> drivers = webservice.get(
+    ...     '/+hwdb?ws.op=drivers&package_name=').jsonBody()
+    >>> for entry in drivers['entries']:
+    ...     pprint_entry(entry)
+    id: 9
+    license: None
+    name: u'usb'
+    package_name: None
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
+    id: 10
+    license: None
+    name: u'foo'
+    package_name: u''
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/10'
+
+If the parameter name is specified but no package_name, all drivers with
+the given name are returned.
+
+    >>> drivers = webservice.get(
+    ...     '/+hwdb?ws.op=drivers&name=usb').jsonBody()
+    >>> for entry in drivers['entries']:
+    ...     pprint_entry(entry)
+    id: 2
+    license: None
+    name: u'usb'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
+    id: 9
+    license: None
+    name: u'usb'
+    package_name: None
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
+
+If package_name and name are specified, those records are returned that
+match both values.
+
+    >>> drivers = webservice.get(
+    ...     '/+hwdb?ws.op=drivers&name=usb'
+    ...     '&package_name=linux-image-2.6.24-19-generic').jsonBody()
+    >>> for entry in drivers['entries']:
+    ...     pprint_entry(entry)
+    id: 2
+    license: None
+    name: u'usb'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
+
+Single drivers can be retrieved too.
+
+    >>> pprint_entry(webservice.get('/+hwdb/+driver/1').jsonBody())
+    id: 1
+    license: None
+    name: u'ehci_hcd'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
+
+A 404 error is returned, when a non-existent ID is passed in the URL...
+
+    >>> print webservice.get('/+hwdb/+driver/1000000')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'1000000'
+
+...and when an otherwise invalid ID is passed.
+
+    >>> print webservice.get('/+hwdb/+driver/nonsense')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'nonsense'

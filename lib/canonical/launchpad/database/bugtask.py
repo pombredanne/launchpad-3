@@ -1132,6 +1132,20 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
+    def getBugTasks(self, bug_ids):
+        """See `IBugTaskSet`."""
+        from canonical.launchpad.database.bug import Bug
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
+        columns = (Bug, BugTask)
+        result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))
+        bugs_and_tasks = {}
+        for bug, task in result:
+            if bug not in bugs_and_tasks:
+                bugs_and_tasks[bug] = []
+            bugs_and_tasks[bug].append(task)
+        return bugs_and_tasks
+
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
         # Need to import Bug locally, to avoid circular imports.

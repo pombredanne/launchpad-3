@@ -224,7 +224,6 @@ table.listing div.actions {
 /* Text fields occupy as much of the page width as possible, minus a safety
 margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
-.codereviewcomment {font: 120% monospace;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
@@ -1341,7 +1340,10 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .commentVote {
   float: right;
 }
-
+.codereviewcomment {font: 120% monospace;}
+.codereviewcomment .attachment {
+  background-color: #f6f6f6;
+}
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */

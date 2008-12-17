@@ -76,9 +76,11 @@ class BranchFileSystemClient:
 
     def _getFromCache(self, path):
         """Get the cached 'transport_tuple' for 'path'."""
+        split_path = path.strip('/').split('/')
         for object_path, (transport_type, data) in self._cache.iteritems():
-            if path.startswith(object_path):
-                trailing_path = path[len(object_path):].lstrip('/')
+            split_object_path = object_path.strip('/').split('/')
+            if split_path[:len(split_object_path)] == split_object_path:
+                trailing_path = '/'.join(split_path[len(split_object_path):])
                 return (transport_type, data, trailing_path)
         raise NotInCache(path)
 

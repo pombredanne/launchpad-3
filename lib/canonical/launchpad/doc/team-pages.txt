@@ -129,7 +129,7 @@ user.
     >>> login_person(bart)
 
     >>> view = create_initialized_view(guadamen, '+index')
-    >>> print view.contactuser_link_title
+    >>> print view.contact_link_title
     Send an email to this team through Launchpad
     >>> print view.specific_contact_text
     Contact this team
