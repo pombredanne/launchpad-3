@@ -213,6 +213,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': 'sabdfl',
     ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
 
@@ -270,6 +271,7 @@ initial/empty state.
     ...         'field.selected_dependencies': ['sabdfl'],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
 
@@ -315,6 +317,25 @@ for UPDATES pocket (see archive-dependencies.txt for more information).
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
 
+The happened for the primary components widget, which contains two
+pre-defined options. By default all PPAs use all ubuntu components
+available to satify build dependencies, i.e. the 'multiverse'
+component
+
+    >>> primary_components = view.widgets.get(
+    ...     'primary_components').vocabulary
+    >>> for term in primary_components:
+    ...     if term.value is not None:
+    ...         print term.value.name
+    ...     else:
+    ...         print term.value
+    multiverse
+    None
+
+    >>> print view.widgets.get(
+    ...     'primary_components')._getCurrentValue().name
+    multiverse
+
 The form validation code identifies attempts to change the primary
 dependency to the same value and doesn't change anything. Even when
 there is no explicit primary dependency set.
@@ -325,6 +346,7 @@ there is no explicit primary dependency set.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
 
@@ -343,6 +365,7 @@ Any other pre-defined primary dependency can be selected.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'PROPOSED',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
 
@@ -360,7 +383,7 @@ current value of 'primary_dependencies' widget.
     >>> for dependency in selectable_dependencies:
     ...     print dependency.title
     <a href="http://launchpad.dev/ubuntu/+archive/primary">Primary Archive
-    for Ubuntu Linux - PROPOSED</a>
+    for Ubuntu Linux - PROPOSED - multiverse</a>
 
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
@@ -377,6 +400,38 @@ when there is an explicit override.
     >>> add_proposed_view.widgets.get(
     ...     'primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
+
+Attempts to override only the component dependencies are also dected
+and processed correctly.
+
+    >>> add_proposed_primary_view = create_initialized_view(
+    ...     cprov.archive, name="+edit-dependencies",
+    ...     form={
+    ...         'field.selected_dependencies': [],
+    ...         'field.dependency_candidate': '',
+    ...         'field.primary_dependencies': 'PROPOSED',
+    ...         'field.primary_components': 'FOLLOW_PRIMARY',
+    ...         'field.actions.save': 'Save',
+    ...         })
+
+    >>> transaction.commit()
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+edit-dependencies")
+
+    >>> selectable_dependencies = view.widgets.get(
+    ...     'selected_dependencies').vocabulary
+    >>> for dependency in selectable_dependencies:
+    ...     print dependency.title
+    <a href="http://launchpad.dev/ubuntu/+archive/primary">Primary Archive
+    for Ubuntu Linux - PROPOSED</a>
+
+    >>> print view.widgets.get(
+    ...     'primary_dependencies')._getCurrentValue().title
+    Proposed
+
+    >>> print view.widgets.get('primary_components')._getCurrentValue()
+    None
 
 Overriding the primary dependencies back to the 'default' value
 (UPDATES pocket) will result in the override removal and the 'default'

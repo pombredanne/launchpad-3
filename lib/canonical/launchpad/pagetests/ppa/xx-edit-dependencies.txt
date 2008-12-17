@@ -228,7 +228,8 @@ He will see a notification containing a summary of what was changed.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Primary dependency added: Primary Archive for Ubuntu Linux - PROPOSED
+    Primary dependency added: Primary Archive for Ubuntu Linux
+    - PROPOSED - multiverse
 
 The option submitted by the user is now selected when the page loads.
 
@@ -244,7 +245,7 @@ The user can also see a corresponding entry in 'Current dependencies'
 section.
 
     >>> print_ppa_dependencies(admin_browser.contents)
-    Primary Archive for Ubuntu Linux - PROPOSED
+    Primary Archive for Ubuntu Linux - PROPOSED - multiverse
 
 The user can remove a primary dependency by selecting it and clicking
 'Save' as it's done for PPA dependencies.
@@ -270,7 +271,8 @@ pocket in order to illustrate another way the user can modify it.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Primary dependency added: Primary Archive for Ubuntu Linux - RELEASE
+    Primary dependency added: Primary Archive for Ubuntu Linux
+    - RELEASE - multiverse
 
 Now we see a PPA configured to depend only on RELEASE pocket.
 
@@ -283,7 +285,7 @@ Now we see a PPA configured to depend only on RELEASE pocket.
     ( ) Backports (default dependencies and unsupported updates).
 
     >>> print_ppa_dependencies(admin_browser.contents)
-    Primary Archive for Ubuntu Linux - RELEASE
+    Primary Archive for Ubuntu Linux - RELEASE - multiverse
 
 Instead of deleting the primary dependency override to make the PPA
 use the default dependencies again the user can simply select this
@@ -358,9 +360,12 @@ RELEASE.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Primary dependency added: Primary Archive for Ubuntu Linux - RELEASE
-    Dependency added: PPA for Mark Shuttleworth
-    Dependencies removed: PPA for No Privileges Person
+    Primary dependency added:
+       Primary Archive for Ubuntu Linux - RELEASE - multiverse
+    Dependency added:
+       PPA for Mark Shuttleworth
+    Dependencies removed:
+       PPA for No Privileges Person
 
 All the modifications are immediately visible once the form is
 processed.
@@ -375,7 +380,7 @@ processed.
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
-    Primary Archive for Ubuntu Linux - RELEASE
+    Primary Archive for Ubuntu Linux - RELEASE - multiverse
 
 
 == Primary dependencies in the PPA index page ==
@@ -391,7 +396,7 @@ index page (see `IArchivedependency.title`).
     ...     find_tag_by_id(admin_browser.contents, 'ppa-dependencies'))
     PPA dependencies
     PPA for Mark Shuttleworth (included ... ago)
-    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE - multiverse (included ... ago)
 
 
 == Cancelling a form request ==
@@ -418,4 +423,4 @@ The dependencies were not modified.
     ...     find_tag_by_id(admin_browser.contents, 'ppa-dependencies'))
     PPA dependencies
     PPA for Mark Shuttleworth (included ... ago)
-    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE - multiverse (included ... ago)

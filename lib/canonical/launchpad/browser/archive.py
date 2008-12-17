@@ -884,6 +884,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                   cssClass='line-through-when-checked ppa-dependencies')
     custom_widget('primary_dependencies', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
+    custom_widget('primary_components', LaunchpadRadioWidget,
+                  cssClass='highlight-selected')
 
     def initialize(self):
         self.cancel_url = canonical_url(self.context)
@@ -903,6 +905,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.form_fields = (
             self.createSelectedDependenciesField() +
             self.createPrimaryDependenciesField() +
+            self.createPrimaryComponentsField() +
             self.form_fields)
 
     def focusedElementScript(self):
@@ -1001,6 +1004,56 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                    default=default_value,
                    required=True))
 
+    def createPrimaryComponentsField(self):
+        """Create the 'primary_components' field.
+
+        'primary_components' widget is a choice, rendered as radio-buttons,
+        with two options that provides a IComponent as its value:
+
+         ||      Option    ||   Value    ||
+         || ALL_COMPONENTS || multiverse ||
+         || FOLLOW_PRIMARY ||    None    ||
+
+        When omitted in the form, this widget defaults to 'All ubuntu
+        components' option when rendered.
+        """
+        multiverse = getUtility(IComponentSet)['multiverse']
+
+        all_components = SimpleTerm(
+            multiverse, 'ALL_COMPONENTS',
+            _('Use all %s components available' %
+              self.context.distribution.displayname))
+        follow_primary = SimpleTerm(
+            None, 'FOLLOW_PRIMARY',
+            _('Use the same components used in %s primary archive.' %
+              self.context.distribution.displayname))
+
+        primary_dependency = self.context.getArchiveDependency(
+            self.context.distribution.main_archive)
+        if primary_dependency is not None:
+            if primary_dependency.component == multiverse:
+                default_value = multiverse
+            else:
+                default_value = None
+        else:
+            default_value = multiverse
+
+        terms = [all_components, follow_primary]
+        primary_components_vocabulary = SimpleVocabulary(terms)
+        current_term = primary_components_vocabulary.getTerm(default_value)
+
+        return form.Fields(
+            Choice(__name__='primary_components',
+                   title=_('%s components' %
+                           self.context.distribution.displayname),
+                   vocabulary=primary_components_vocabulary,
+                   description=_("Which %s components should be used when "
+                                 "fetching build dependencies." %
+                                 self.context.distribution.displayname),
+                   missing_value=current_term,
+                   default=default_value,
+                   required=True))
+
     @cachedproperty
     def has_dependencies(self):
         """Whether or not the PPA has recorded dependencies."""
@@ -1050,14 +1103,19 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
         dependency_pocket = data.get('primary_dependencies')
+        dependency_component = data.get('primary_components')
+
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
+        multiverse = getUtility(IComponentSet)['multiverse']
 
         if (primary_dependency is None and
-            dependency_pocket == PackagePublishingPocket.UPDATES):
+            dependency_pocket == PackagePublishingPocket.UPDATES and
+            dependency_component == multiverse):
             return
         if (primary_dependency is not None and
-            primary_dependency.pocket == dependency_pocket):
+            primary_dependency.pocket == dependency_pocket and
+            primary_dependency.component == dependency_component):
             return
 
         # Remove any primary dependencies overrides.
@@ -1072,7 +1130,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Install the required primary archive dependency override.
         primary_dependency = self.context.addArchiveDependency(
-            self.context.distribution.main_archive, dependency_pocket)
+            self.context.distribution.main_archive, dependency_pocket,
+            dependency_component)
         self._messages.append(
             '<p>Primary dependency added: %s</p>' % primary_dependency.title)
 
