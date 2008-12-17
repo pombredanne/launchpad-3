@@ -800,9 +800,8 @@ Its docstring is also copied over from the original interface:
 The resulting adapter has its schema attribute set to the exported
 interface, and proxies all attributes to the underlying object.
 
-    >>> from zope.interface import implements
     >>> from zope.interface.verify import verifyObject
-
+    >>> from zope.interface import implements
     >>> class Book(object):
     ...     """Simple IBook implementation."""
     ...     implements(IBook)
@@ -1110,6 +1109,53 @@ IMethod marked for export:
     Traceback (most recent call last):
       ...
     TypeError: 'getAllBooks' isn't tagged for webservice export.
+
+
+=== Mutators ===
+
+A method can be designated as a mutator for some field. Here, the
+set_text() method is designated as the mutator for the 'text' field.
+
+    >>> from canonical.lazr.rest.declarations import mutator_for
+    >>> class IHasText(Interface):
+    ...     export_as_webservice_entry()
+    ...     text = exported(TextLine())
+    ...
+    ...     @mutator_for(text)
+    ...     @operation_parameters(text=TextLine())
+    ...     @export_write_operation()
+    ...     def set_text(text):
+    ...         pass
+
+The implementation of set_text() applies a standardized transform to the
+incoming text.
+
+    >>> from zope.interface import implements
+    >>> class HasText(object):
+    ...     implements(IHasText);
+    ...
+    ...     def __init__(self):
+    ...         self.text = ''
+    ...
+    ...     def set_text(self, text):
+    ...         self.text = "!" + text + "!"
+
+Generate the entry interface and adapter...
+
+    >>> hastext_entry_interface = generate_entry_interface(IHasText)
+    >>> hastext_entry_adapter_factory = generate_entry_adapter(
+    ...     IHasText, hastext_entry_interface)
+    >>> obj = HasText()
+    >>> hastext_entry_adapter = hastext_entry_adapter_factory(obj)
+
+...and you'll have an object that invokes set_text() when you set the
+'text' attribute.
+
+    >>> hastext_entry_adapter.text
+    ''
+    >>> hastext_entry_adapter.text = 'foo'
+    >>> hastext_entry_adapter.text
+    '!foo!'
 
 
 === Security ===

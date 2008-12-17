@@ -23,6 +23,7 @@ __all__ = [
     'generate_entry_adapter',
     'generate_entry_interface',
     'generate_operation_adapter',
+    'mutator_for',
     'operation_parameters',
     'operation_returns_entry',
     'operation_returns_collection_of',
@@ -363,6 +364,27 @@ class call_with(_method_annotator):
         annotations['call_with'] = self.params
 
 
+class mutator_for(_method_annotator):
+    """Decorator indicating that an exported method mutates a field.
+
+    The method can be invoked through POST, or by setting a value for
+    the given field as part of a PUT or PATCH request.
+    """
+    def __init__(self, field):
+        """Specify the field for which this method is a mutator."""
+        self.field = field
+
+    def annotate_method(self, method, annotations):
+        """See `_method_annotator`.
+
+        Store information about the mutator method with the field.
+        """
+        field_annotations = self.field.queryTaggedValue(
+            LAZR_WEBSERVICE_EXPORTED)
+        field_annotations['mutated_by'] = method
+        field_annotations['mutated_by_annotations'] = annotations
+
+
 class export_operation_as(_method_annotator):
     """Decorator specifying the name to export the method as."""
 
@@ -577,7 +599,14 @@ def generate_entry_adapter(content_interface, webservice_interface):
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        class_dict[tag['as']] = Passthrough(name, 'context')
+        mutator = tag.get('mutated_by', None)
+        if mutator is None:
+            property = Passthrough(name, 'context')
+        else:
+            annotations = tag['mutated_by_annotations']
+            property = PropertyWithMutator(
+                name, 'context', mutator, annotations)
+        class_dict[tag['as']] = property
 
     classname = "%sAdapter" % webservice_interface.__name__[1:]
     factory = type(classname, bases=(Entry,), dict=class_dict)
@@ -587,6 +616,19 @@ def generate_entry_adapter(content_interface, webservice_interface):
     protect_schema(
         factory, webservice_interface, write_permission=CheckerPublic)
     return factory
+
+
+class PropertyWithMutator(Passthrough):
+    """A property with a mutator method."""
+
+    def __init__(self, name, context, mutator, annotations):
+        super(PropertyWithMutator, self).__init__(name, context)
+        self.mutator = mutator.__name__
+        self.annotations = annotations
+
+    def __set__(self, obj, value):
+        """Call the mutator method to set the value."""
+        getattr(obj.context, self.mutator)(value)
 
 
 class CollectionEntrySchema:
