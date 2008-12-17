@@ -1023,7 +1023,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         all_components = SimpleTerm(
             multiverse, 'ALL_COMPONENTS',
-            _('Use all %s components available' %
+            _('Use all %s components available.' %
               self.context.distribution.displayname))
         follow_primary = SimpleTerm(
             None, 'FOLLOW_PRIMARY',
@@ -1120,7 +1120,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             self.context.removeArchiveDependency(
                 self.context.distribution.main_archive)
 
-        if dependency_pocket == PackagePublishingPocket.UPDATES:
+        if (dependency_pocket == PackagePublishingPocket.UPDATES and
+            dependency_component == multiverse):
             self._messages.append(
                 '<p>Default primary dependencies restored.</p>')
             return

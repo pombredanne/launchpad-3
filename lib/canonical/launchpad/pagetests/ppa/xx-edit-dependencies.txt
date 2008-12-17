@@ -205,8 +205,8 @@ primary archive.
 A set of predefined options is presented as a radio button
 selection.
 
-When the page is loaded the selected option for 'Dependency
-configuration' field represents the current state of the PPA.
+When the page is loaded the selected option for 'Ubuntu dependencies'
+field represents the current state of the PPA.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
@@ -215,6 +215,13 @@ configuration' field represents the current state of the PPA.
     (*) Default (security dependencies and recommended updates).
     ( ) Proposed (default dependencies and proposed updates).
     ( ) Backports (default dependencies and unsupported updates).
+
+Same for the 'Ubuntu components' field:
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    (*) Use all Ubuntu components available.
+    ( ) Use the same components used in Ubuntu primary archive.
 
 The user can modify this aspect by selecting a different option and
 clicking on 'Save'.
@@ -242,7 +249,7 @@ The option submitted by the user is now selected when the page loads.
     ( ) Backports (default dependencies and unsupported updates).
 
 We will override the primary dependency configuration to only RELEASE
-pocket in order to illustrate another way the user can modify it.
+pocket.
 
     >>> admin_browser.getControl(
     ...     "Basic (only released packages).").selected = True
@@ -262,6 +269,11 @@ Now we see a PPA configured to depend only on RELEASE pocket.
     ( ) Default (security dependencies and recommended updates).
     ( ) Proposed (default dependencies and proposed updates).
     ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    (*) Use all Ubuntu components available.
+    ( ) Use the same components used in Ubuntu primary archive.
 
 In order to make the PPA use the default dependencies again the user
 can simply select this pre-defined option and the form will restore
@@ -285,6 +297,35 @@ The default option is now selected.
     (*) Default (security dependencies and recommended updates).
     ( ) Proposed (default dependencies and proposed updates).
     ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    (*) Use all Ubuntu components available.
+    ( ) Use the same components used in Ubuntu primary archive.
+
+Now we can simply change the primary archive components field.
+
+    >>> admin_browser.getControl(
+    ...     "Use the same components used in Ubuntu primary archive."
+    ...     ).selected = True
+    >>> admin_browser.getControl("Save").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Primary dependency added: Primary Archive for Ubuntu Linux - UPDATES
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_dependencies')
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and important security updates).
+    (*) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    ( ) Use all Ubuntu components available.
+    (*) Use the same components used in Ubuntu primary archive.
 
 
 == Everything in one click ==
@@ -320,6 +361,9 @@ RELEASE.
 
     >>> admin_browser.getControl(
     ...     name="field.selected_dependencies").value = ['no-priv']
+
+    >>> admin_browser.getControl(
+    ...     "Use all Ubuntu components available.").selected = True
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
 
