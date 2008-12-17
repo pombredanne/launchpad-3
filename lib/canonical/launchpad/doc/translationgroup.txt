@@ -71,7 +71,8 @@ Let's add him to the group.
     >>> no_priv_translator = translator_set.new(
     ...     translationgroup=group,
     ...     language=welsh,
-    ...     translator=no_priv)
+    ...     translator=no_priv,
+    ...     documentation_url=None)
 
 No Privileges Person *is* allowed to translate into Welsh.
 
