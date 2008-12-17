@@ -27,7 +27,8 @@
   <p>Active, pending and former members of this team.</p>
 
   <ul>
-    <li tal:condition="active_member_count">
+    <li tal:condition="active_member_count"
+        tal:define="membership_batch nocall:view/member_memberships/currentBatch">
       <h2>Active members</h2>
 
       <p>
@@ -39,68 +40,64 @@
         memberships.
       </p>
 
-      <tal:activemembers
-        define="membership_batch nocall:view/member_memberships/currentBatch">
-        <div class="lesser" id="top-navigation">
-          <tal:navigation
-            content="structure view/member_memberships/@@+navigation-links-upper" />
-        </div>
-        <table class="listing sortable" id="activemembers">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Member since</th>
-              <th>Expires</th>
-              <th>Status</th>
-              <th tal:condition="user_can_edit_memberships">&nbsp;</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tal:participants repeat="membership membership_batch">
-              <tr>
-                <tal:block define="member membership/person">
-                  <td>
-                    <a tal:attributes="href member/fmt:url"
-                        tal:content="member/browsername" />
-                  </td>
-                  <td>
-                    <span class="sortkey"
-                      tal:content="membership/datejoined/fmt:datetime" />
-                    <span
-                      tal:attributes="title membership/datejoined/fmt:datetime"
-                      tal:content="membership/datejoined/fmt:approximatedate">
-                      2005-06-14
-                    </span>
-                  </td>
-                  <td>
-                    <tal:block condition="not: membership/dateexpires">
-                      &ndash;
-                    </tal:block>
-                    <span class="sortkey"
-                      tal:content="membership/dateexpires/fmt:datetime" />
-                    <span
-                      tal:attributes="title membership/dateexpires/fmt:datetime"
-                      tal:content="membership/dateexpires/fmt:approximatedate">
-                      2005-06-14
-                    </span>
-                  </td>
-                  <td tal:content="membership/status/title"></td>
-                  <td tal:condition="user_can_edit_memberships">
-                    <a tal:attributes="href membership/fmt:url"
-                      ><img src="/@@/edit"
-                            title="Change membership duration or status" /></a>
-                  </td>
-                </tal:block>
-              </tr>
-            </tal:participants>
-          </tbody>
-        </table>
+      <div class="lesser" id="top-navigation">
+        <tal:navigation
+          content="structure view/member_memberships/@@+navigation-links-upper" />
+      </div>
 
-        <div class="lesser">
-          <tal:navigation
-            content="structure view/member_memberships/@@+navigation-links-lower" />
-        </div>
-      </tal:activemembers>
+      <table class="listing sortable" id="activemembers">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Member since</th>
+            <th>Expires</th>
+            <th>Status</th>
+            <th tal:condition="user_can_edit_memberships">&nbsp;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="membership membership_batch">
+            <tal:block define="member membership/person">
+              <td>
+                <a tal:attributes="href member/fmt:url"
+                    tal:content="member/browsername" />
+              </td>
+              <td>
+                <span class="sortkey"
+                  tal:content="membership/datejoined/fmt:datetime" />
+                <span
+                  tal:attributes="title membership/datejoined/fmt:datetime"
+                  tal:content="membership/datejoined/fmt:approximatedate">
+                  2005-06-14
+                </span>
+              </td>
+              <td>
+                <tal:block condition="not: membership/dateexpires">
+                  &ndash;
+                </tal:block>
+                <span class="sortkey"
+                  tal:content="membership/dateexpires/fmt:datetime" />
+                <span
+                  tal:attributes="title membership/dateexpires/fmt:datetime"
+                  tal:content="membership/dateexpires/fmt:approximatedate">
+                  2005-06-14
+                </span>
+              </td>
+              <td tal:content="membership/status/title"></td>
+              <td tal:condition="user_can_edit_memberships">
+                <a tal:attributes="href membership/fmt:url"
+                  ><img src="/@@/edit"
+                        title="Change membership duration or status" /></a>
+              </td>
+            </tal:block>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="lesser">
+        <tal:navigation
+          content="structure view/member_memberships/@@+navigation-links-lower" />
+      </div>
       <br />
     </li>
 
@@ -212,13 +209,19 @@
     </li>
     <br />
 
-    <li tal:condition="view/inactive_memberships">
+    <li tal:condition="view/inactive_memberships"
+        tal:define="inactive_batch nocall:view/inactive_memberships/currentBatch">
       <h2>Former members</h2>
 
       <p>
         These are the members whose subscriptions have expired, or were
         deactivated by themselves or by a team administrator.
       </p>
+
+      <div class="lesser" id="top-navigation">
+        <tal:navigation
+          content="structure view/inactive_memberships/@@+navigation-links-upper" />
+      </div>
       <table class="listing sortable" id="inactivemembers">
         <thead>
           <tr>
@@ -229,7 +232,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="membership view/inactive_memberships">
+          <tr tal:repeat="membership inactive_batch">
             <tal:block define="member membership/person">
             <td>
               <a tal:attributes="href member/fmt:url"
@@ -256,6 +259,10 @@
           </tr>
         </tbody>
       </table>
+      <div class="lesser">
+        <tal:navigation
+          content="structure view/inactive_memberships/@@+navigation-links-lower" />
+      </div>
     </li>
   </ul>
 

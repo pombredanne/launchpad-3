@@ -1374,12 +1374,27 @@ class TeamMembershipView(LaunchpadView):
 
     @cachedproperty
     def member_memberships(self):
-        return BatchNavigator(
+        # There are two batched lists on the same page, so the
+        # form variables need to be changed so they don't conflict.
+        # Overriding the form variables after instantiating the object
+        # doesn't work right, so a subclass is needed.
+        class ActiveBatchNavigator(BatchNavigator):
+            start_variable_name = 'active_start'
+            batch_variable_name = 'active_batch'
+        return ActiveBatchNavigator(
             self.context.member_memberships, self.request)
 
     @cachedproperty
     def inactive_memberships(self):
-        return list(self.context.getInactiveMemberships())
+        # There are two batched lists on the same page, so the
+        # form variables need to be changed so they don't conflict.
+        # Overriding the form variables after instantiating the object
+        # doesn't work right, so a subclass is needed.
+        class InactiveBatchNavigator(BatchNavigator):
+            start_variable_name = 'inactive_start'
+            batch_variable_name = 'inactive_batch'
+        return InactiveBatchNavigator(
+            self.context.getInactiveMemberships(), self.request)
 
     @cachedproperty
     def invited_memberships(self):
