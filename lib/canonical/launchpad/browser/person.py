@@ -1371,6 +1371,12 @@ class TeamOverviewNavigationMenu(
 
 class TeamMembershipView(LaunchpadView):
     """The view behins ITeam/+members."""
+
+    @cachedproperty
+    def member_memberships(self):
+        return BatchNavigator(
+            self.context.member_memberships, self.request)
+
     @cachedproperty
     def inactive_memberships(self):
         return list(self.context.getInactiveMemberships())
