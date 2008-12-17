@@ -157,12 +157,6 @@ class TestPopulateArchiveScript(TestCase):
         :param extra_args: additional arguments to be passed to the
             script (if any).
         """
-        class FakeZopeTransactionManager:
-            def commit(self):
-                print "commit"
-            def begin(self):
-                print "begin"
-
         now = int(time.time())
         if archive_name is None:
             archive_name = "ra%s" % now
@@ -195,8 +189,6 @@ class TestPopulateArchiveScript(TestCase):
             test_args=script_args)
 
         script.logger = FakeLogger()
-        script.txn = FakeZopeTransactionManager()
-        script.builds_per_transaction = 5
 
         stdout = sys.stdout
         sys.stdout = file = StringIO.StringIO()

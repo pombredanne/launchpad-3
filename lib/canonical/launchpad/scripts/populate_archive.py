@@ -44,10 +44,6 @@ class ArchivePopulator(SoyuzScript):
         'Create a copy archive and populate it with packages and build '
         'records.')
 
-    # In order to keep the RAM consumption at bay we want to commit after
-    # each 1000 build records inserted.
-    builds_per_transaction = 1000
-
     def __init__(self, *args, **kwds):
         super(ArchivePopulator, self).__init__(*args, **kwds)
         self.build_counter = 0
@@ -124,9 +120,6 @@ class ArchivePopulator(SoyuzScript):
         # of binary packages. It's a forthcoming feature.
         pkg_cloner = getUtility(IPackageCloner)
         pkg_cloner.clonePackages(the_origin, the_destination)
-        # The source packages have been copied, commit before continuing with
-        # the build records.
-        self.txn.commit()
 
         # Create builds for the cloned packages.
         self._createMissingBuilds(
@@ -275,11 +268,7 @@ class ArchivePopulator(SoyuzScript):
             else:
                 self.logger.info(
                     "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
-            # Commit if the maximum number of buid records per transaction has
-            # been reached.
-            if self.build_counter % self.builds_per_transaction == 0:
-                self.txn.commit()
 
         process_in_batches(
             sources_published, create_build, self.logger,
-            minimum_chunk_size=500, maximum_chunk_size=2000)
+            minimum_chunk_size=500, maximum_chunk_size=1000)
