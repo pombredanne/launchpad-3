@@ -30,6 +30,7 @@ APPSERVER_ENV = \
   STORM_CEXTENSIONS=1
 
 EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
+				$(shell $(HERE)/utilities/yui-deps.py) \
 				lib/canonical/launchpad/icing/lazr/build/lazr.js
 
 # DO NOT ALTER : this should just build by default
