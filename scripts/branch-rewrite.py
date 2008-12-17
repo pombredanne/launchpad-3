@@ -9,6 +9,8 @@ import xmlrpclib
 
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
+from canonical.launchpad.interfaces.codehosting import (
+    BRANCH_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.scripts.base import LaunchpadScript
 
 logging.basicConfig(level=logging.DEBUG,
@@ -37,21 +39,22 @@ class BranchRewriter(LaunchpadScript):
                 line = sys.stdin.readline().strip()
                 T = time.time()
                 trailingSlash = line.endswith('/')
-                log.info(repr(line))
                 transport_type, info, trailing = s.translatePath(
-                    "+launchpad-services", line)
-                if transport_type == 'BRANCH_TRANSPORT':
+                    LAUNCHPAD_SERVICES, line)
+                if transport_type == BRANCH_TRANSPORT:
                     if trailing.startswith('.bzr'):
                         r = '/' + branch_id_to_path(info['id']) + '/' + trailing
                         if trailingSlash:
                             r += '/'
                     else:
                         r = 'http://localhost:8080' + line
-                log.debug("%r -> %r (%fs)", line, r, time.time() - T)
-                print r
+                    log.debug("%r -> %r (%fs)", line, r, time.time() - T)
+                    print r
+                else:
+                    print "NULL"
             except:
                 log.exception('oops')
-                print 'notfound'
+                print "NULL"
 
 
 if __name__ == '__main__':
