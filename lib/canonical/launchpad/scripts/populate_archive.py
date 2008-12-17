@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from canonical.archivepublisher.utils import process_in_batches
 from canonical.launchpad.components.packagelocation import (
     build_package_location)
 from canonical.launchpad.interfaces import PackagePublishingStatus
@@ -251,14 +252,19 @@ class ArchivePopulator(SoyuzScript):
             "Found %d source(s) published." % sources_published.count())
 
         def get_spn(pub):
+            """Return the source package name for a publishing record."""
             return pub.sourcepackagerelease.sourcepackagename.name
 
-        for pubrec in sources_published:
+        def create_build(pubrec):
+            """Create build record(s) for a single published source."""
             builds = pubrec.createMissingBuilds(
-                architectures_available=architectures,
-                logger=self.logger)
+                architectures_available=architectures, logger=self.logger)
             if len(builds) == 0:
                 self.logger.info("%s has no builds." % get_spn(pubrec))
-                continue
-            self.logger.info("%s has %s build(s)." %
-                             (get_spn(pubrec), len(builds)))
+            else:
+                self.logger.info(
+                    "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
+
+        process_in_batches(
+            sources_published, create_build, self.logger,
+            minimum_chunk_size=500)
