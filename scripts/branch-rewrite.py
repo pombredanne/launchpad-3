@@ -2,7 +2,6 @@
 
 import _pythonpath
 
-import logging
 import sys
 import time
 import xmlrpclib
@@ -12,23 +11,19 @@ from canonical.codehosting.branchfsclient import (
     BlockingProxy, BranchFileSystemClient)
 from canonical.codehosting.transport import _extractResult
 from canonical.config import config
+from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, LAUNCHPAD_SERVICES)
+    BRANCH_TRANSPORT)
 from canonical.launchpad.scripts.base import LaunchpadScript
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s %(message)s',
-                    filename='/tmp/gooble')
-
-log = logging.getLogger('BranchRewrite')
-
-s = BlockingProxy(xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint))
-c = BranchFileSystemClient(s, LAUNCHPAD_SERVICES, 1.0)
-
-def t(path):
-    return _extractResult(c.translatePath(path))
 
 class BranchRewriter(LaunchpadScript):
+
+    def __init__(self, name):
+        LaunchpadScript.__init__(self, name)
+        proxy = BlockingProxy(
+            xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint))
+        self.client = BranchFileSystemClient(proxy, ANONYMOUS, 1.0)
 
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=None):
@@ -39,27 +34,31 @@ class BranchRewriter(LaunchpadScript):
         """
         self.main()
 
+    def translateLine(self, line):
+        T = time.time()
+        trailingSlash = line.endswith('/')
+        deferred = self.client.translatePath(line)
+        transport_type, info, trailing = _extractResult(deferred)
+        if transport_type == BRANCH_TRANSPORT:
+            if trailing.startswith('.bzr'):
+                r = '/' + branch_id_to_path(info['id']) + '/' + trailing
+                if trailingSlash:
+                    r += '/'
+            else:
+                r = config.codehosting.internal_codebrowse_root + line
+            self.logger.info("%r -> %r (%fs)", line, r, time.time() - T)
+            return r
+        else:
+            return "NULL"
+
     def main(self):
-        log.debug("Starting up...")
+        self.logger.debug("Starting up...")
         while True:
             try:
                 line = sys.stdin.readline().strip()
-                T = time.time()
-                trailingSlash = line.endswith('/')
-                transport_type, info, trailing = t(line)
-                if transport_type == BRANCH_TRANSPORT:
-                    if trailing.startswith('.bzr'):
-                        r = '/' + branch_id_to_path(info['id']) + '/' + trailing
-                        if trailingSlash:
-                            r += '/'
-                    else:
-                        r = 'http://localhost:8080' + line
-                    log.debug("%r -> %r (%fs)", line, r, time.time() - T)
-                    print r
-                else:
-                    print "NULL"
+                print self.translateLine(line)
             except:
-                log.exception('oops')
+                self.logger.exception('oops')
                 print "NULL"
 
 

@@ -24,7 +24,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person, logout
+from canonical.launchpad.ftests import ANONYMOUS, login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
@@ -180,7 +180,7 @@ def run_with_login(login_id, function, *args, **kwargs):
     method will do whatever security proxy hackery is required to provide read
     privileges to the Launchpad services.
     """
-    if login_id == LAUNCHPAD_SERVICES:
+    if login_id == LAUNCHPAD_SERVICES or login_id == ANONYMOUS:
         # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
         # and expect `function` to use `removeSecurityProxy` or similar.
         return function(LAUNCHPAD_SERVICES, *args, **kwargs)
