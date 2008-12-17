@@ -76,9 +76,14 @@ class RecipientReason:
         """
         merge_proposal = vote_reference.branch_merge_proposal
         branch = merge_proposal.source_branch
+        if vote_reference.comment is None:
+            reason_template = (
+                '%(entity_is)s requested to review %(merge_proposal)s.')
+        else:
+            reason_template = (
+                '%(entity_is)s reviewing %(merge_proposal)s.')
         return klass(vote_reference.reviewer, recipient, branch,
-                     merge_proposal, 'Reviewer',
-                     '%(entity_is)s requested to review %(merge_proposal)s.')
+                     merge_proposal, 'Reviewer', reason_template)
 
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
@@ -94,6 +99,9 @@ class RecipientReason:
             assert self.recipient.hasParticipationEntryFor(self.subscriber), (
                 '%s does not participate in team %s.' %
                 (self.recipient.displayname, self.subscriber.displayname))
+            template_values['entity_is'] = (
+                'Your team %s is' % self.subscriber.displayname)
+        elif self.subscriber.is_team:
             template_values['entity_is'] = (
                 'Your team %s is' % self.subscriber.displayname)
         return (self.reason_template % template_values)

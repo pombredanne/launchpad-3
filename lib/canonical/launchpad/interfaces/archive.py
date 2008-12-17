@@ -12,9 +12,12 @@ __all__ = [
     'ComponentNotFound',
     'DistroSeriesNotFound',
     'IArchive',
+    'IArchiveAppend',
+    'IArchiveView',
     'IArchiveEditDependenciesForm',
     'IArchivePackageCopyingForm',
     'IArchivePackageDeletionForm',
+    'IArchivePublic',
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
     'IDistributionArchive',
@@ -84,10 +87,8 @@ class ComponentNotFound(Exception):
     webservice_error(400) #Bad request.
 
 
-class IArchive(IHasOwner):
-    """An Archive interface"""
-    export_as_webservice_entry()
-
+class IArchivePublic(IHasOwner):
+    """An Archive interface for publicly available operations."""
     id = Attribute("The archive ID.")
 
     owner = exported(
@@ -231,52 +232,6 @@ class IArchive(IHasOwner):
         The original publisher configuration based on the distribution is
         modified according local context, it basically fixes the archive
         paths to cope with non-primary and PPA archives publication workflow.
-        """
-
-    @rename_parameters_as(name="source_name", distroseries="distro_series")
-    @operation_parameters(
-        name=TextLine(title=_("Source package name"), required=False),
-        version=TextLine(title=_("Version"), required=False),
-        status=Choice(
-            title=_('Package Publishing Status'),
-            description=_('The status of this publishing record'),
-            # Really PackagePublishingStatus, circular import fixed below.
-            vocabulary=DBEnumeratedType, 
-            required=False),
-        distroseries=Reference(
-            # Really IDistroSeries, fixed below to avoid circular import.
-            Interface,
-            title=_("Distroseries name"), required=False),
-        pocket=Choice(
-            title=_("Pocket"),
-            description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
-            required=False, readonly=True),
-        exact_match=Bool(
-            title=_("Exact Match"),
-            description=_("Whether or not to filter source names by exact"
-                          " matching."),
-            required=False))
-    # Really returns ISourcePackagePublishingHistory, see below for
-    # patch to avoid circular import.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getPublishedSources(name=None, version=None, status=None,
-                            distroseries=None, pocket=None,
-                            exact_match=False):
-        """All `ISourcePackagePublishingHistory` target to this archive.
-
-        :param: name: source name filter (exact match or SQL LIKE controlled
-                      by 'exact_match' argument).
-        :param: version: source version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a sequence.
-        :param: distroseries: `IDistroSeries` filter.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
-                             matching.
-
-        :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
     def getSourcesForDeletion(name=None, status=None):
@@ -511,6 +466,12 @@ class IArchive(IHasOwner):
         queue for items with 'component'.
         """
 
+    # The following three factory methods are not in the
+    # IArchiveEditRestricted interface because the rights to use them
+    # does not depend on edit permissions to the archive.  The code they
+    # contain does all the necessary security checking and is well
+    # tested in xx-archive.txt and archivepermissions.txt.
+
     @operation_parameters(
         person=Reference(schema=IPerson),
         source_package_name=TextLine(
@@ -641,6 +602,60 @@ class IArchive(IHasOwner):
         :return The new `IPackageCopyRequest`
         """
 
+
+class IArchiveView(Interface):
+    """Archive interface for operations restricted by view privilege."""
+
+    @rename_parameters_as(name="source_name", distroseries="distro_series")
+    @operation_parameters(
+        name=TextLine(title=_("Source package name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Choice(
+            title=_('Package Publishing Status'),
+            description=_('The status of this publishing record'),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False),
+        distroseries=Reference(
+            # Really IDistroSeries, fixed below to avoid circular import.
+            Interface,
+            title=_("Distroseries name"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        exact_match=Bool(
+            title=_("Exact Match"),
+            description=_("Whether or not to filter source names by exact"
+                          " matching."),
+            required=False))
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPublishedSources(name=None, version=None, status=None,
+                            distroseries=None, pocket=None,
+                            exact_match=False):
+        """All `ISourcePackagePublishingHistory` target to this archive.
+
+        :param: name: source name filter (exact match or SQL LIKE controlled
+                      by 'exact_match' argument).
+        :param: version: source version filter (always exact match).
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
+        :param: distroseries: `IDistroSeries` filter.
+        :param: pocket: `PackagePublishingPocket` filter.
+        :param: exact_match: either or not filter source names by exact
+                             matching.
+
+        :return: SelectResults containing `ISourcePackagePublishingHistory`.
+        """
+
+
+class IArchiveAppend(Interface):
+    """Archive interface for operations restricted by append privilege."""
+
     @operation_parameters(
         source_names=List(
             title=_("Source package names"),
@@ -718,6 +733,10 @@ class IArchive(IHasOwner):
         :raises CannotCopy: if there is a problem copying.
         """
 
+
+class IArchive(IArchivePublic, IArchiveAppend, IArchiveView):
+    """Main Archive interface."""
+    export_as_webservice_entry()
 
 
 class IPPA(IArchive):
@@ -807,7 +826,7 @@ class IArchiveSet(Interface):
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
-    def getPPAByDistributionAndOwnerName(distribution, name):
+    def getPPAByDistributionAndOwnerName(distribution, person_name):
         """Return a single PPA the given (distribution, name) pair."""
 
     def getByDistroPurpose(distribution, purpose, name=None):
