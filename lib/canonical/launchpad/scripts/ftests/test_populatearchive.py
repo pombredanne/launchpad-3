@@ -4,6 +4,7 @@ __metaclass__ = type
 
 import os
 import subprocess
+import StringIO
 import sys
 import time
 import unittest
@@ -20,7 +21,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
-from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
@@ -156,11 +157,11 @@ class TestPopulateArchiveScript(TestCase):
         :param extra_args: additional arguments to be passed to the
             script (if any).
         """
-        class FakeZTM:
+        class FakeZopeTransactionManager:
             def commit(self):
-                pass
+                print "commit"
             def begin(self):
-                pass
+                print "begin"
 
         now = int(time.time())
         if archive_name is None:
@@ -193,14 +194,21 @@ class TestPopulateArchiveScript(TestCase):
             'populate-archive', dbuser=config.uploader.dbuser,
             test_args=script_args)
 
-        script.logger = QuietFakeLogger()
-        script.txn = FakeZTM()
+        script.logger = FakeLogger()
+        script.txn = FakeZopeTransactionManager()
+        script.builds_per_transaction = 5
+
+        stdout = sys.stdout
+        sys.stdout = file = StringIO.StringIO()
 
         if exception_type is not None:
             self.assertRaisesWithContent(
                 exception_type, exception_text, script.mainTask)
         else:
             script.mainTask()
+
+        sys.stdout = stdout
+        output = file.getvalue()
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, archive_name)
@@ -210,7 +218,7 @@ class TestPopulateArchiveScript(TestCase):
         else:
             self.assertTrue(copy_archive is None)
 
-        return copy_archive
+        return (output, copy_archive)
 
     def testInvalidCopyArchiveName(self):
         """Try copy archive creation/population with an invalid archive name.
@@ -276,9 +284,10 @@ class TestPopulateArchiveScript(TestCase):
         # Restrict the builds to be created to the 'hppa' architecture
         # only. This should result in zero builds.
         extra_args = ['-a', 'hppa']
-        copy_archive = self.runScript(
+        (output, copy_archive) = self.runScript(
             extra_args=extra_args, exists_after=True)
 
+        print output
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
@@ -312,9 +321,10 @@ class TestPopulateArchiveScript(TestCase):
         #     i.e. the 'hppa' architecture tag specified after the 'i386'
         #     tag does not overwrite the latter but is added to it.
         extra_args = ['-a', 'i386', '-a', 'hppa']
-        copy_archive = self.runScript(
+        (output, copy_archive) = self.runScript(
             extra_args=extra_args, exists_after=True)
 
+        print output
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 

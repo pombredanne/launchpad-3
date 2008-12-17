@@ -277,11 +277,8 @@ class ArchivePopulator(SoyuzScript):
                     "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
             # Commit if the maximum number of buid records per transaction has
             # been reached.
-            if self.build_counter > self.builds_per_transaction:
+            if self.build_counter % self.builds_per_transaction == 0:
                 self.txn.commit()
-                self.build_counter = 0
-            else:
-                self.build_counter += 1
 
         process_in_batches(
             sources_published, create_build, self.logger,
