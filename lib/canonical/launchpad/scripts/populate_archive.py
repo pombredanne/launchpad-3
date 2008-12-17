@@ -285,4 +285,4 @@ class ArchivePopulator(SoyuzScript):
 
         process_in_batches(
             sources_published, create_build, self.logger,
-            minimum_chunk_size=500)
+            minimum_chunk_size=500, maximum_chunk_size=2000)
