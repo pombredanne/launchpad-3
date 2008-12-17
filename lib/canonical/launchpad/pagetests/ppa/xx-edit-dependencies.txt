@@ -228,8 +228,8 @@ He will see a notification containing a summary of what was changed.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Primary dependency added: Primary Archive for Ubuntu Linux
-    - PROPOSED - multiverse
+    Primary dependency added: Primary Archive for Ubuntu Linux -
+    PROPOSED (main, restricted, universe, multiverse)
 
 The option submitted by the user is now selected when the page loads.
 
@@ -250,8 +250,8 @@ pocket in order to illustrate another way the user can modify it.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Primary dependency added: Primary Archive for Ubuntu Linux
-    - RELEASE - multiverse
+    Primary dependency added: Primary Archive for Ubuntu Linux -
+    RELEASE (main, restricted, universe, multiverse)
 
 Now we see a PPA configured to depend only on RELEASE pocket.
 
@@ -312,7 +312,7 @@ contains a extra dependency.
     ( ) Backports (default dependencies and unsupported updates).
 
     >>> print_ppa_dependencies(admin_browser.contents)
-     PPA for No Privileges Person
+    PPA for No Privileges Person
 
 In a single submit we will remove the PPA dependency, add another one
 from 'Mark Shuttleworth' PPA and modify the primary dependency to
@@ -331,7 +331,8 @@ RELEASE.
     >>> for msg in messages:
     ...     print msg
     Primary dependency added:
-       Primary Archive for Ubuntu Linux - RELEASE - multiverse
+       Primary Archive for Ubuntu Linux - RELEASE
+       (main, restricted, universe, multiverse)
     Dependency added:
        PPA for Mark Shuttleworth
     Dependencies removed:
@@ -365,7 +366,8 @@ index page (see `IArchivedependency.title`).
     ...     find_tag_by_id(admin_browser.contents, 'ppa-dependencies'))
     PPA dependencies
     PPA for Mark Shuttleworth (included ... ago)
-    Primary Archive for Ubuntu Linux - RELEASE - multiverse (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE
+    (main, restricted, universe, multiverse) (included ... ago)
 
 
 == Cancelling a form request ==
@@ -392,4 +394,5 @@ The dependencies were not modified.
     ...     find_tag_by_id(admin_browser.contents, 'ppa-dependencies'))
     PPA dependencies
     PPA for Mark Shuttleworth (included ... ago)
-    Primary Archive for Ubuntu Linux - RELEASE - multiverse (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE
+    (main, restricted, universe, multiverse) (included ... ago)
