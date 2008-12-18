@@ -246,8 +246,7 @@ class ArchivePopulator(SoyuzScript):
             """Return the source package name for a publishing record."""
             return pub.sourcepackagerelease.sourcepackagename.name
 
-        def create_build(pubrec):
-            """Create build record(s) for a single published source."""
+        for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures, logger=self.logger)
             if len(builds) == 0:
@@ -256,6 +255,3 @@ class ArchivePopulator(SoyuzScript):
                 self.logger.info(
                     "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
             self.txn.commit()
-
-        for pubrec in sources_published:
-            create_build(pubrec)
