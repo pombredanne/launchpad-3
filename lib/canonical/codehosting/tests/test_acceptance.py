@@ -289,7 +289,7 @@ class AcceptanceTests(SSHTestCase):
             ['cat-revision', '-r', 'branch:' + url], retcode=3)
         last_line = error.splitlines()[-1]
         self.assertTrue(
-            last_line.startswith('bzr: ERROR: Not a branch:' in last_line),
+            last_line.startswith('bzr: ERROR: Not a branch:'),
             'Expected "Not a branch", found %r' % last_line)
 
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
