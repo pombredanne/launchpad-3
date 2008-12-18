@@ -108,9 +108,8 @@ class PublishingTunableLoop(object):
         # count_alive(getUtility(IZStorm).get('main'), self.logger)
 
 
-def process_in_batches(
-    input, task, logger, goal_seconds=60, minimum_chunk_size=10000,
-    maximum_chunk_size=1000000000):
+def process_in_batches(input, task, logger, goal_seconds=60,
+                       minimum_chunk_size=10000):
     """Use `LoopTuner` to run the given task in smaller batches.
 
     Run callable 'task' for item of 'input', but do it in small batches
@@ -129,6 +128,5 @@ def process_in_batches(
     """
     loop = PublishingTunableLoop(input, task, logger)
     loop_tuner = LoopTuner(loop, goal_seconds=goal_seconds,
-                           minimum_chunk_size=minimum_chunk_size,
-                           maximum_chunk_size=maximum_chunk_size)
+                           minimum_chunk_size=minimum_chunk_size)
     loop_tuner.run()

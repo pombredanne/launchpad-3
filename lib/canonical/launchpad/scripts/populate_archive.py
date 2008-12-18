@@ -11,7 +11,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.utils import process_in_batches
 from canonical.launchpad.components.packagelocation import (
     build_package_location)
 from canonical.launchpad.interfaces import PackagePublishingStatus
@@ -258,6 +257,5 @@ class ArchivePopulator(SoyuzScript):
                     "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
             self.txn.commit()
 
-        process_in_batches(
-            sources_published, create_build, self.logger,
-            minimum_chunk_size=500, maximum_chunk_size=1000)
+        for pubrec in sources_published:
+            create_build(pubrec)
