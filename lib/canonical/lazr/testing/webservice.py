@@ -12,6 +12,7 @@ __all__ = [
 from zope.interface import implements
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 
+# XXX: JonathanLange 2008-12-18: Are we allowed to import launchpad into lazr?
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.lazr.interfaces.rest import WebServiceLayer
 
