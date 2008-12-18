@@ -759,16 +759,6 @@ class IcingFolder(ExportedFolder):
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
 
-    def publishTraverse(self, request, name):
-        """Hide the source directory.
-
-        The source directory contains source material that we don't want
-        published over the web.
-        """
-        if name == 'src':
-            raise NotFound(request, name)
-        return super(IcingFolder, self).publishTraverse(request, name)
-
 
 class LaunchpadImageFolder(ExportedImageFolder):
     """Export the Launchpad images - supporting retrieval without extension.
