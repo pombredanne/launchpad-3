@@ -167,7 +167,7 @@ class OpenIDRPConfigSet:
 
     def getAll(self):
         """See `IOpenIDRPConfigSet`"""
-        return OpenIDRPConfig.select(orderBy=['displayname','trust_root'])
+        return OpenIDRPConfig.select(orderBy=['displayname', 'trust_root'])
 
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""
