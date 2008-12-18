@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for the dynamic RewriteMap used to serve branches over HTTP."""
 
 __metaclass__ = type
 
@@ -17,6 +17,7 @@ from canonical.config import config
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import ZopelessAppServerLayer
+
 
 class TestBranchRewriter(TestCase):
 
@@ -46,8 +47,8 @@ class TestBranchRewriter(TestCase):
     def test_translateLine_not_found(self):
         rewriter = self.makeRewriter()
         input = "/~no-user/no-product/no-branch/changes"
-        self.assertRaises(xmlrpclib.Fault, rewriter.rewriteLine, input)
-
+        output = rewriter.rewriteLine(input)
+        self.assertEqual("NULL", output)
 
 
 class TestBranchRewriterScript(TestCaseWithFactory):

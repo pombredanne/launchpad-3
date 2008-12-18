@@ -18,14 +18,21 @@ from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 
 
 class FakeTime:
-    """XXX"""
+    """Provides a controllable implementation of time.time()."""
+
     def __init__(self, start):
+        """Set up the instance.
+
+        :param start: The value that will initially be returned by `now()`.
+        """
         self._now = start
 
     def advance(self, amount):
+        """Advance the value that will be returned by `now()` by 'amount'."""
         self._now += amount
 
     def now(self):
+        """Use this bound method instead of time.time in tests."""
         return self._now
 
 
@@ -40,9 +47,15 @@ class TestBranchFileSystemClient(TestCase):
         self.fake_time = FakeTime(12345)
 
     def advanceTime(self, amount):
+        """Advance the time seen by clients made by `makeClient` by 'amount'.
+        """
         self.fake_time.advance(amount)
 
     def makeClient(self, expiry_time=None):
+        """Make a `BranchFileSystemClient`.
+
+        The created client interacts with the InMemoryFrontend.
+        """
         return BranchFileSystemClient(
             self._xmlrpc_client, self.user.id, expiry_time=expiry_time,
             _now=self.fake_time.now)
@@ -109,7 +122,8 @@ class TestBranchFileSystemClient(TestCase):
             (BRANCH_TRANSPORT, fake_data, 'foo/bar'), result)
 
     def test_path_translation_cache_within_expiry_time(self):
-        # XXX
+        # If the client treats cached values as having a limited lifetime,
+        # repeated requests within that lifetime are served from the cache.
         branch = self.factory.makeBranch()
         expiry_time = 2.0
         client = self.makeClient(expiry_time=expiry_time)
@@ -122,7 +136,9 @@ class TestBranchFileSystemClient(TestCase):
             (BRANCH_TRANSPORT, fake_data, 'foo/bar'), result)
 
     def test_path_translation_cache_after_expiry_time(self):
-        # XXX
+        # If the client treats cached values as having a limited lifetime, a
+        # request longer than that lifetime after the first is not served from
+        # the cache.
         branch = self.factory.makeBranch()
         expiry_time = 2.0
         client = self.makeClient(expiry_time=expiry_time)
