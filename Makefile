@@ -29,6 +29,10 @@ APPSERVER_ENV = \
   PYTHONPATH=$(PYTHONPATH) \
   STORM_CEXTENSIONS=1
 
+EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
+				$(shell $(HERE)/utilities/yui-deps.py) \
+				lib/canonical/launchpad/icing/lazr/build/lazr.js
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
@@ -122,6 +126,9 @@ compile:
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
 		 $(PYTHON) -t buildmailman.py
+	${SHHH} sourcecode/lazr-js/tools/build.py \
+		-n launchpad -s lib/canonical/launchpad/javascript \
+		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -243,6 +250,7 @@ clean:
 	rm -f thread*.request
 	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
+	rm -rf lib/canonical/launchpad/icing/build/*
 	-rm $(WADL_FILE)
 	-rm bzr-version-info.py
 
