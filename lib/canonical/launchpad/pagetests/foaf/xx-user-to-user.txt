@@ -186,19 +186,18 @@ This holds true even for Sample Person, who is hiding her email addresses.
 
 == Teams ==
 
-Teams can also be contacted directly, regardless of whether they have no
-official contact address, use a Launchpad mailing list, or have the contact
-address set to an explicit address.
+Teams can also be contacted directly by team members, regardless of whether
+the team has set a contact address or uses a Launchpad mailing list.
 
 Guadamen have no contact address, so contacting them contacts all users
 directly.
 
-    >>> user_browser.open('http://launchpad.dev/~guadamen')
-    >>> user_browser.getLink('Contact this team').click()
-    >>> print user_browser.title
+    >>> admin_browser.open('http://launchpad.dev/~guadamen')
+    >>> admin_browser.getLink('Contact this team').click()
+    >>> print admin_browser.title
     Contact this team
 
-Guadamen register an explicit contact address...
+Foo Bar registers an explicit contact address for Guadamen...
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen/+contactaddress')
     >>> admin_browser.getControl('Another e-mail address').selected = True
@@ -219,12 +218,12 @@ Guadamen register an explicit contact address...
 
 ...which can also be contacted directly.
 
-    >>> user_browser.open('http://launchpad.dev/~guadamen')
-    >>> user_browser.getLink('Contact this team').click()
-    >>> print user_browser.title
+    >>> admin_browser.open('http://launchpad.dev/~guadamen')
+    >>> admin_browser.getLink('Contact this team').click()
+    >>> print admin_browser.title
     Contact this team
 
-Guadamen later register a Launchpad mailing list...
+Foo Bar later registers a Launchpad mailing list for Guadamen...
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen/+mailinglist')
     >>> admin_browser.getControl('Apply for Mailing List').click()
@@ -234,7 +233,7 @@ Guadamen later register a Launchpad mailing list...
 
 ...which too can be contacted directly.
 
-    >>> user_browser.open('http://launchpad.dev/~guadamen')
-    >>> user_browser.getLink('Contact this team').click()
-    >>> print user_browser.title
+    >>> admin_browser.open('http://launchpad.dev/~guadamen')
+    >>> admin_browser.getLink('Contact this team').click()
+    >>> print admin_browser.title
     Contact this team

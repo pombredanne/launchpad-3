@@ -370,7 +370,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             cprov.archive, archive_publisher.archive)
         self.assertEqual(
-            u'/var/tmp/ppa.test/cprov/default/ubuntutest/dists',
+            u'/var/tmp/ppa.test/cprov/ubuntutest/dists',
             archive_publisher._config.distsroot)
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
