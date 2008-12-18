@@ -279,7 +279,6 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
 
-        # print output
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
@@ -316,7 +315,6 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
 
-        # print output
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
