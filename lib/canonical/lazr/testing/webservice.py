@@ -15,7 +15,7 @@ from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from canonical.lazr.interfaces.rest import WebServiceLayer
 
 
-class FakeResponse(object):
+class FakeResponse:
     """Simple response wrapper object."""
     def __init__(self):
         self.status = 599
@@ -35,7 +35,7 @@ class FakeResponse(object):
         """Return the response status code."""
         return self.status
 
-class FakeRequest(object):
+class FakeRequest:
     """Simple request object for testing purpose."""
     # IHTTPApplicationRequest makes us eligible for
     # get_current_browser_request()
