@@ -656,8 +656,9 @@ class PropertyWithMutator(Passthrough):
         """Call the mutator method to set the value."""
         params = params_with_dereferenced_user(
             self.annotations.get('call_with', {}))
-        # XXX why is there only one param here? Have the fixed-value
-        # params been eliminated? This calls for investigation.
+        # Error checking code in mutator_for() guarantees that there
+        # is one and only one non-fixed parameter for the mutator
+        # method.
         new_param_name = self.annotations['params'].keys()[0]
         params[new_param_name] = new_value
         getattr(obj.context, self.mutator)(**params)
