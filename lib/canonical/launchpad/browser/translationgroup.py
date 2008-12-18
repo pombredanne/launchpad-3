@@ -79,23 +79,15 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         language = data.get('language')
         translator = data.get('translator')
         documentation_url = data.get('documentation_url')
-        if documentation_url is not None:
-            documentation_url = documentation_url.strip()
         getUtility(ITranslatorSet).new(
             self.context, language, translator, documentation_url)
 
     def validate(self, data):
-        """Do not allow new translators for already existing languages.
-        Enforce valid URLs."""
+        """Do not allow new translators for already existing languages."""
         language = data.get('language')
         if self.context.query_translator(language):
             self.setFieldError('language',
                 "There is already a translator for this language")
-        documentation_url = data.get('documentation_url')
-        if (documentation_url is not None and documentation_url != "" and
-            not validate_url(documentation_url.strip(), ['http', 'https'])):
-            self.setFieldError('documentation_url',
-                'This is not a valid documentation URL.')
 
     @property
     def next_url(self):
