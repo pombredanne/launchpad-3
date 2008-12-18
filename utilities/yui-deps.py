@@ -1,7 +1,14 @@
 #!/usr/bin/python
 
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-"""Print the YUI modules we are using."""
+"""Print the YUI modules we are using.
+
+It looks into the main-template.pt file for the yui modules included. It
+prints the path to the minified version of these modules.
+
+The output of this script is meant to be given to the lazr-js build.py script
+so that they are included in the launchpad.js file.
+"""
 
 
 __metaclass__ = type
