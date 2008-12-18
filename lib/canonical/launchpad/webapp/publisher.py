@@ -80,11 +80,28 @@ class DecoratorAdvisor:
 
 
 class stepthrough(DecoratorAdvisor):
+    """Add the decorated method to stepthrough traversals for a class.
+
+    This uses Zope`s class advisor stuff to make sure that the path segment
+    passed to `stepthrough` is handled by the decorated method.
+
+    That is::
+      cls.__stepthrough_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepthrough_traversals__'
 
 
 class stepto(DecoratorAdvisor):
+    """Add the decorated method to stepto traversals for a class.
+
+    This uses Zope`s class advisor stuff to make sure that the path segment
+    passed to `stepthrough` is handled by the decorated method.
+
+
+    That is::
+      cls.__stepto_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepto_traversals__'
 
