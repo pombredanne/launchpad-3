@@ -12,6 +12,7 @@ __all__ = [
 from zope.interface import implements
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 
+from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.lazr.interfaces.rest import WebServiceLayer
 
 
@@ -35,16 +36,29 @@ class FakeResponse:
         """Return the response status code."""
         return self.status
 
+
 class FakeRequest:
     """Simple request object for testing purpose."""
     # IHTTPApplicationRequest makes us eligible for
     # get_current_browser_request()
     implements(IHTTPApplicationRequest, WebServiceLayer)
 
-    def __init__(self):
+    def __init__(self, traversed=None, stack=None):
+        self._traversed_names = traversed
+        self._stack = stack
         self.response = FakeResponse()
         self.principal = None
         self.interaction = None
+
+    def getTraversalStack(self):
+        return self._stack
+
+    def setTraversalStack(self, stack):
+        self._stack = stack
+
+    @property
+    def stepstogo(self):
+        return StepsToGo(self.getTraversalStack())
 
     def getApplicationURL(self):
         return "http://api.example.org"
