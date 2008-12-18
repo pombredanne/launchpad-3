@@ -40,7 +40,7 @@
         memberships.
       </p>
 
-      <div class="lesser" id="top-navigation">
+      <div class="lesser" id="active-top-navigation">
         <tal:navigation
           content="structure view/member_memberships/@@+navigation-links-upper" />
       </div>
@@ -209,7 +209,7 @@
     </li>
     <br />
 
-    <li tal:condition="view/inactive_memberships"
+    <li tal:condition="view/inactive_memberships/batch/total"
         tal:define="inactive_batch nocall:view/inactive_memberships/currentBatch">
       <h2>Former members</h2>
 
@@ -218,7 +218,7 @@
         deactivated by themselves or by a team administrator.
       </p>
 
-      <div class="lesser" id="top-navigation">
+      <div class="lesser" id="inactive-top-navigation">
         <tal:navigation
           content="structure view/inactive_memberships/@@+navigation-links-upper" />
       </div>

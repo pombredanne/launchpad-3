@@ -29,8 +29,37 @@ have been invited.
     Karl Tilbury
     No Privileges Person
 
+The list of active members and former (inactive) members can grow
+without bounds, so they are paginated. The ~admins team doesn't have
+enough inactive members to overflow the default batch size of 5, so
+we we'll pass in inactive_batch=2 in the url to force it to paginate.
 
-Now we'll change some of the memberships of our newly created team (myemail).
+    >>> import re
+    >>> browser.open('http://launchpad.dev/~admins/+members')
+    >>> print_members(browser.contents, 'activemembers')
+    Andrew Bennetts
+    Carlos Perelló Marín
+    Dafydd Harries
+    Daniel Henrique Debonzi
+    Daniel Silverstone
+    >>> browser.getLink(
+    ...     url=re.compile(r'.*/\+members.*[&?]active_start=5.*')).click()
+    >>> print_members(browser.contents, 'activemembers')
+    Foo Bar
+    Guilherme Salgado
+    Mark Shuttleworth
+    Robert Collins
+    Steve Alexander
+
+    >>> browser.open('http://launchpad.dev/~admins/+members?inactive_batch=2')
+    >>> print_members(browser.contents, 'inactivemembers')
+    Celso Providelo
+    David Allouche
+    >>> browser.getLink(
+    ...     url=re.compile(r"/\+members?.*inactive_start=2")).click()
+    >>> print_members(browser.contents, 'inactivemembers')
+    James Blackwell
+
 
 == Approving a proposed member ==
 

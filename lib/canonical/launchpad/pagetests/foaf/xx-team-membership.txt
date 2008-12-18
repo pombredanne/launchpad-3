@@ -105,8 +105,9 @@ Now check Jeff's subscription. Jeff's also an administrator and his
 subscription never expires, but he can demote himself.
 
   >>> jdub_browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
-  >>> jdub_browser.open('http://launchpad.dev/~ubuntu-team/+members')
-  >>> url = '/~ubuntu-team/+member/jdub' 
+  >>> jdub_browser.open(
+  ...     'http://launchpad.dev/~ubuntu-team/+members?active_batch=20')
+  >>> url = '/~ubuntu-team/+member/jdub'
   >>> jdub_browser.getLink(url=url).click()
 
   >>> "Jeff Waugh's membership status in Ubuntu Team" in jdub_browser.contents
