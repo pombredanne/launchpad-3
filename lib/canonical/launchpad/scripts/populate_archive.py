@@ -264,6 +264,7 @@ class ArchivePopulator(SoyuzScript):
             else:
                 self.logger.info(
                     "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
+            self.txn.commit()
 
         process_in_batches(
             sources_published, create_build, self.logger, goal_seconds=30,
