@@ -415,8 +415,8 @@
       </iframe>
     </tal:datepicker>
 
-    <tal:cache define="cache request/webservicerequest:cache
-                       links cache/links
+    <tal:cache define="cache request/webservicerequest:cache;
+                       links cache/links;
                        objects cache/objects">
       <script tal:repeat="key links"
         tal:content="structure string:LP.client.links['${key}'] =
