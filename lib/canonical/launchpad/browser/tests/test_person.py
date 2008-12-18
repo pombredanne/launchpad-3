@@ -11,31 +11,28 @@ import unittest
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.browser.person import PersonView
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.ftests import login_person
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
-class PersonView_openid_identity_url_TestCase(unittest.TestCase):
+class PersonView_openid_identity_url_TestCase(TestCaseWithFactory):
     """Tests for the public OpenID identifier shown on the profile page."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        login(ANONYMOUS)
-        self.user = LaunchpadObjectFactory().makePerson(name='eris')
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson(name='eris')
         self.request = LaunchpadTestRequest(
             SERVER_URL="http://launchpad.dev/")
         login_person(self.user, self.request)
         self.view = PersonView(self.user, self.request)
         # Marker allowing us to reset the config.
         config.push(self.id(), '')
-
-    def tearDown(self):
-        logout()
-        config.pop(self.id())
+        self.addCleanup(config.pop, self.id())
 
     def test_should_be_profile_page_when_delegating(self):
         """The profile page is the OpenID identifier in normal situation."""
