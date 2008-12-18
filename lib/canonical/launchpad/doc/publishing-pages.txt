@@ -166,15 +166,15 @@ Create a small function for displaying the results:
 
     >>> def print_build_summary(summary):
     ...     print "%s\n%s\nRelevant builds:\n%s" % (
-    ...         summary['status'],
-    ...         summary['status_desc'],
+    ...         summary['status'].title,
+    ...         summary['status'].description,
     ...         "\n".join(
     ...             " - %s" % build.title for build in summary['builds'])
     ...     )
 
     >>> print_build_summary(src_pub_record_view.build_status_summary)
     Successfully built
-    All builds succeeded.
+    All builds were built successfully.
     Relevant builds:
      - i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 

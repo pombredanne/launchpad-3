@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces.build import IBuildSet, BuildStatus
+from canonical.launchpad.interfaces.build import IBuildSet, BuildSetStatus
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory)
@@ -168,16 +168,16 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     @property
     def builds_successful(self):
         """Return whether all builds were successful."""
-        success = str(BuildStatus.FULLYBUILT)
+        success = BuildSetStatus.FULLYBUILT
         return self.build_status_summary['status'] == success
 
     @property
     def build_status_img_src(self):
         """Return the image path for the current build status summary."""
         image_map = {
-            'building': '/@@/build-building',
-            'needsbuild': '/@@/build-needed',
-            'failed': '/@@/no',
+            BuildSetStatus.BUILDING: '/@@/build-building',
+            BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
+            BuildSetStatus.FAILEDTOBUILD: '/@@/no',
             }
 
         return image_map.get(self.build_status_summary['status'], '/@@/yes')
