@@ -53,15 +53,14 @@ that returns a dict of the build count summary for the archive:
     {'failed': 1L, 'superseded': 0, 'total': 4L, ...
 
 An ArchiveView also includes an easy way to get any
-IPackageCopyRequest's associated with a copy archive (and returns None
-otherwise):
+IPackageCopyRequest's associated with an archive:
 
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
-    >>> len(copy_archive_view.package_copy_requests)
+    >>> copy_archive_view.package_copy_requests.count()
     1
-    >>> print ppa_archive_view.package_copy_requests
-    None
+    >>> ppa_archive_view.package_copy_requests.count()
+    0
 
 
 == ArchiveSourceSelectionFormView ==
