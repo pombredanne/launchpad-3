@@ -9,7 +9,7 @@ import xmlrpclib
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
     BlockingProxy, BranchFileSystemClient)
-from canonical.codehosting.transport import _extractResult
+from canonical.codehosting.transport import extract_result
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.codehosting import (
@@ -38,7 +38,7 @@ class BranchRewriter(LaunchpadScript):
         T = time.time()
         trailingSlash = line.endswith('/')
         deferred = self.client.translatePath(line)
-        transport_type, info, trailing = _extractResult(deferred)
+        transport_type, info, trailing = extract_result(deferred)
         if transport_type == BRANCH_TRANSPORT:
             if trailing.startswith('.bzr'):
                 r = '/' + branch_id_to_path(info['id']) + '/' + trailing

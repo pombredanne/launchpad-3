@@ -3,7 +3,12 @@
 """Useful tools for interacting with Twisted."""
 
 __metaclass__ = type
-__all__ = ['defer_to_thread', 'gatherResults', 'suppress_stderr']
+__all__ = [
+    'defer_to_thread',
+    'extract_result',
+    'gatherResults',
+    'suppress_stderr'
+    ]
 
 
 import StringIO
@@ -60,3 +65,16 @@ def suppress_stderr(function):
         return d.addBoth(set_stderr, saved_stderr)
 
     return mergeFunctionMetadata(function, wrapper)
+
+
+def extract_result(deferred):
+    """XXX"""
+    failures = []
+    successes = []
+    deferred.addCallbacks(successes.append, failures.append)
+    if len(failures) == 1:
+        failures[0].raiseException()
+    elif len(successes) == 1:
+        return successes[0]
+    else:
+        raise AssertionError("%r has not fired yet." % (deferred,))
