@@ -1198,8 +1198,7 @@ annotation. This definition does not result in a TypeError.
     ...
     ...     @mutator_for(value)
     ...     @call_with(arg1=REQUEST_USER, arg3='fixed')
-    ...     @operation_parameters(arg1=TextLine(), arg2=TextLine(),
-    ...                           arg3=TextLine())
+    ...     @operation_parameters(arg2=TextLine())
     ...     @export_write_operation()
     ...     def set_value(arg1, arg2, arg3):
     ...         pass

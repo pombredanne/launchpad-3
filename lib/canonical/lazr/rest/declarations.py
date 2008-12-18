@@ -635,6 +635,15 @@ def generate_entry_adapter(content_interface, webservice_interface):
     return factory
 
 
+def params_with_dereferenced_user(params):
+    """Make a copy of the given parameters with REQUEST_USER dereferenced."""
+    params = params.copy()
+    for name, value in params.items():
+        if value is REQUEST_USER:
+            params[name] = getUtility(ILaunchBag).user
+    return params
+
+
 class PropertyWithMutator(Passthrough):
     """A property with a mutator method."""
 
@@ -643,9 +652,15 @@ class PropertyWithMutator(Passthrough):
         self.mutator = mutator.__name__
         self.annotations = annotations
 
-    def __set__(self, obj, value):
+    def __set__(self, obj, new_value):
         """Call the mutator method to set the value."""
-        getattr(obj.context, self.mutator)(value)
+        params = params_with_dereferenced_user(
+            self.annotations.get('call_with', {}))
+        # XXX why is there only one param here? Have the fixed-value
+        # params been eliminated? This calls for investigation.
+        new_param_name = self.annotations['params'].keys()[0]
+        params[new_param_name] = new_value
+        getattr(obj.context, self.mutator)(**params)
 
 
 class CollectionEntrySchema:
@@ -680,11 +695,7 @@ class BaseCollectionAdapter(Collection):
     def find(self):
         """See `ICollection`."""
         method = getattr(self.context, self.method_name)
-        params = self.params.copy()
-        # Handle the REQUEST_USER marker.
-        for name, value in self.params.items():
-            if value is REQUEST_USER:
-                params[name] = getUtility(ILaunchBag).user
+        params = params_with_dereferenced_user(self.params)
         return method(**params)
 
 
@@ -730,10 +741,8 @@ class BaseResourceOperationAdapter(ResourceOperation):
             params[name] = value
 
         # Handle fixed parameters.
-        for name, value in self._export_info['call_with'].items():
-            if value is REQUEST_USER:
-                value = getUtility(ILaunchBag).user
-            params[name] = value
+        params.update(params_with_dereferenced_user(
+                self._export_info['call_with']))
         return params
 
     def call(self, **kwargs):

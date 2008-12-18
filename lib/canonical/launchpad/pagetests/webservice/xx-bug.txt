@@ -234,6 +234,13 @@ It's possible to change the task's assignee.
   >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
   http://.../~cprov
 
+The task's status can be modified directly...
+
+  >>> from simplejson import dumps
+  >>> patch = {u'status': u'Triaged'}
+  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+  ''
+
 Let's try modifying the importance of a task.
 
   >>> body = webservice.get(bugtask_path).jsonBody()
@@ -360,7 +367,6 @@ We can modify the remote bug.
   >>> bug_watch['remote_bug']
   u'2000'
 
-  >>> from simplejson import dumps
   >>> patch = {u'remote_bug': u'1234'}
   >>> response = webservice.patch(
   ...     bug_watch_2000['self_link'], 'application/json', dumps(patch))
