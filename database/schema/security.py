@@ -3,16 +3,18 @@
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
-import sys, os, sets
+import os
+import sets
+
 from ConfigParser import SafeConfigParser
 from optparse import OptionParser
 from fti import quote_identifier
-from canonical import lp
 from canonical.database.sqlbase import connect
-from canonical.config import config
 from canonical.launchpad.scripts import logger_options, logger, db_options
+
 
 class DbObject(object):
     def __init__(
@@ -48,9 +50,10 @@ class DbSchema(dict):
     groups = None # List of groups defined in the db
     users = None # List of users defined in the db
     def __init__(self, con):
+        super(DbSchema, self).__init__()
         cur = con.cursor()
         cur.execute('''
-            SELECT 
+            SELECT
                 n.nspname as "Schema",
                 c.relname as "Name",
                 CASE c.relkind
@@ -70,7 +73,8 @@ class DbSchema(dict):
             ORDER BY 1,2
             ''')
         for schema, name, type_, owner in cur.fetchall():
-            self['%s.%s' % (schema,name)] = DbObject(schema, name, type_, owner)
+            key = '%s.%s' % (schema, name)
+            self[key] = DbObject(schema, name, type_, owner)
 
         cur.execute(r"""
             SELECT
@@ -164,7 +168,8 @@ def main(options):
                         quote_identifier(section_name), quote_identifier(user)
                         ))
             else:
-                cur.execute("CREATE GROUP %s" % quote_identifier(section_name))
+                cur.execute("CREATE GROUP %s" %
+                            quote_identifier(section_name))
                 schema.groups.append(section_name)
                 schema.principals.append(section_name)
         elif type_ == 'user':
@@ -194,7 +199,7 @@ def main(options):
             cur.execute(r"""ALTER GROUP %s ADD USER %s""" % (
                 quote_identifier(group), quote_identifier(user)
                 ))
-            
+
     # Change ownership of all objects to OWNER
     for obj in schema.values():
         if obj.type in ("function", "sequence"):
@@ -301,7 +306,8 @@ def main(options):
             continue
         found.add(obj)
         if obj.type == 'function':
-            cur.execute('GRANT EXECUTE ON FUNCTION %s TO PUBLIC' % obj.fullname)
+            cur.execute('GRANT EXECUTE ON FUNCTION %s TO PUBLIC' %
+                        obj.fullname)
         else:
             cur.execute('GRANT SELECT ON TABLE %s TO PUBLIC' % obj.fullname)
 
@@ -332,4 +338,3 @@ if __name__ == '__main__':
     log = logger(options)
 
     main(options)
-
