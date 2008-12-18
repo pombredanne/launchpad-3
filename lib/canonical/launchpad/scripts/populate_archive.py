@@ -267,5 +267,5 @@ class ArchivePopulator(SoyuzScript):
             self.txn.commit()
 
         process_in_batches(
-            sources_published, create_build, self.logger, goal_seconds=30,
-            minimum_chunk_size=200, maximum_chunk_size=500)
+            sources_published, create_build, self.logger,
+            minimum_chunk_size=500, maximum_chunk_size=1000)
