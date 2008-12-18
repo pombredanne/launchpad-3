@@ -455,15 +455,15 @@ First we'll define a helper to print the build summary:
 
     >>> def print_build_summary(summary):
     ...     print "%s\n%s\nRelevant builds:\n%s" % (
-    ...         summary['status'],
-    ...         summary['status_desc'],
+    ...         summary['status'].title,
+    ...         summary['status'].description,
     ...         "\n".join(
     ...             " - %s" % build.title for build in summary['builds'])
     ...     )
 
     >>> build_summary = bs.getStatusSummaryForBuilds(i386_builds)
     >>> print_build_summary(build_summary)
-    needsbuild
+    Need building
     There are some builds waiting to be built.
     Relevant builds:
      - i386 build of pmount 0.1-1 in ubuntu warty RELEASE

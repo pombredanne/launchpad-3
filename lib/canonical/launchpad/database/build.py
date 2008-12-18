@@ -37,7 +37,7 @@ from canonical.launchpad.helpers import (
      contactEmailAddresses, filenameToContentType, get_email_template)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
@@ -949,27 +949,25 @@ class BuildSet:
         needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
         building = collect_builds(BuildStatus.BUILDING)
 
+        # Note: the BuildStatus DBItems are used here to summarize the
+        # status of a set of builds:s
         if len(building) != 0:
             return {
-                'status': 'building',
-                'status_desc': 'There are some builds currently building.',
+                'status': BuildSetStatus.BUILDING,
                 'builds': building,
                 }
         elif len(needsbuild) != 0:
             return {
-                'status': 'needsbuild',
-                'status_desc': 'There are some builds waiting to be built.',
+                'status': BuildSetStatus.NEEDSBUILD,
                 'builds': needsbuild,
                 }
         elif len(failed) != 0:
             return {
-                'status': 'failed',
-                'status_desc': 'There were build failures.',
+                'status': BuildSetStatus.FAILEDTOBUILD,
                 'builds': failed,
                 }
         else:
             return {
-                'status': 'succeeded',
-                'status_desc': 'All builds succeeded.',
+                'status': BuildSetStatus.FULLYBUILT,
                 'builds': builds,
                 }
