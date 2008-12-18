@@ -82,6 +82,15 @@ class DecoratorAdvisor:
 class stepthrough(DecoratorAdvisor):
     """Add the decorated method to stepthrough traversals for a class.
 
+    A stepthrough method must take single argument that's the path segment for
+    the object that it's returning. A common pattern is something like:
+
+      @stepthrough('+foo')
+      def traverse_foo(self, name):
+          return getUtility(IFooSet).getByName(name)
+
+    See also doc/navigation.txt.
+
     This uses Zope`s class advisor stuff to make sure that the path segment
     passed to `stepthrough` is handled by the decorated method.
 
@@ -95,9 +104,13 @@ class stepthrough(DecoratorAdvisor):
 class stepto(DecoratorAdvisor):
     """Add the decorated method to stepto traversals for a class.
 
+    A stepto method must take no arguments and return an object for the URL at
+    that point.
+
+    See also doc/navigation.txt.
+
     This uses Zope`s class advisor stuff to make sure that the path segment
     passed to `stepthrough` is handled by the decorated method.
-
 
     That is::
       cls.__stepto_traversals__[argument] = decorated
