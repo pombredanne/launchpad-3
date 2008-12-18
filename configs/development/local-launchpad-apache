@@ -30,22 +30,23 @@ RewriteLock /var/tmp/rewrite-lock
   </Proxy>
   ProxyTimeout 20
 
-  # The ACLs here are... complex:
-
-  # XXX document this again
-
   RewriteEngine On
-  RewriteMap branch-list prg:%BRANCH_REWRITE%
-  #RewriteLogLevel 9
-  #RewriteLog /tmp/rlog
+  RewriteMap branch-rewrite prg:%BRANCH_REWRITE%
 
+  # Requests to the root are redirected to the Launchpad homepage.
   RewriteRule ^/$ http://launchpad.dev [L]
 
+  # Requests by branch id are served from the file system (in
+  # production, this rule is protected by a RewriteCond that only
+  # allows requests from localhost and a few other hosts that need to
+  # be able to access all branches).
   RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
 
+  # Serve the robots.txt file normally.
   RewriteRule ^/robots.txt$ - [L]
 
-  RewriteRule ^(/~.*)$ ${branch-list:$1} [L,P]
+  # Everything else is translated by the branch-rewrite.py script.
+  RewriteRule ^(/~.*)$ ${branch-rewrite:$1} [L,P]
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
   <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
