@@ -11,7 +11,9 @@ from canonical.codehosting.rewrite import BranchRewriter
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
 
-# XXX MichaelHudson, bug=???: Logging!
+# XXX MichaelHudson, bug=309240: This script currently logs to stderr, which
+# will end up in Apache's error.log.  It should instead log to a file
+# specified in the config, and unhandled exceptions should log an oops.
 
 class BranchRewriteScript(LaunchpadScript):
 
@@ -38,7 +40,7 @@ class BranchRewriteScript(LaunchpadScript):
             except KeyboardInterrupt:
                 sys.exit()
             except:
-                self.logger.exception('oops')
+                self.logger.exception('Oops.')
                 print "NULL"
 
 

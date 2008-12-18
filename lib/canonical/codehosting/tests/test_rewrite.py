@@ -8,7 +8,6 @@ import os
 import signal
 import subprocess
 import unittest
-import xmlrpclib
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
@@ -70,7 +69,8 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
         self.assertEqual(expected, output)
-        # XXX MichaelHudson, bug=???: Logging!
+        # XXX MichaelHudson, bug=309240: The script currently logs to stderr,
+        # which it shouldn't do.
         #self.assertEqual('', err)
 
 
