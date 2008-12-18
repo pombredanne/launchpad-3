@@ -11,7 +11,7 @@ from canonical.codehosting.rewrite import BranchRewriter
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
 
-# XXX logging!
+# XXX MichaelHudson, bug=???: Logging!
 
 class BranchRewriteScript(LaunchpadScript):
 
