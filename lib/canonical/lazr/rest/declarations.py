@@ -589,7 +589,9 @@ def generate_entry_interface(interface):
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        attrs[tag['as']] = copy_field(field, __name__=tag['as'])
+        readonly = field.readonly and tag.get('mutated_by', None) is None
+        attrs[tag['as']] = copy_field(field, __name__=tag['as'],
+                                      readonly=readonly)
 
     entry_interface = InterfaceClass(
         "%sEntry" % interface.__name__, bases=(IEntry, ), attrs=attrs,

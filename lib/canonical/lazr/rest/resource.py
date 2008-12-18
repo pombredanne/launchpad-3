@@ -65,8 +65,7 @@ from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
-    LAZR_WEBSERVICE_NS)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
@@ -962,13 +961,11 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # must be the same as the current value.  This makes it possible
             # to GET a document, modify one field, and send it back.
             if field.readonly:
-                annotations = field.queryTaggedValue("%s.exported" % LAZR_WEBSERVICE_NS)
-                if not 'mutated_by' in annotations:
-                    change_this_field = False
-                    if value != current_value:
-                        errors.append(modified_read_only_attribute
-                                      % repr_name)
-                        continue
+                change_this_field = False
+                if value != current_value:
+                    errors.append(modified_read_only_attribute
+                                  % repr_name)
+                    continue
 
             if change_this_field is True and value != current_value:
                 if not IObject.providedBy(field):
