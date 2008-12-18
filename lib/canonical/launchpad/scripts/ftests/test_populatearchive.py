@@ -190,6 +190,7 @@ class TestPopulateArchiveScript(TestCase):
 
         script.logger = FakeLogger()
 
+        # Capture the script's stdout.
         stdout = sys.stdout
         sys.stdout = file = StringIO.StringIO()
 
@@ -199,7 +200,9 @@ class TestPopulateArchiveScript(TestCase):
         else:
             script.mainTask()
 
+        # Restore stdout to previous value.
         sys.stdout = stdout
+        # Extract the script's stdout.
         output = file.getvalue()
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
@@ -279,7 +282,7 @@ class TestPopulateArchiveScript(TestCase):
         (output, copy_archive) = self.runScript(
             extra_args=extra_args, exists_after=True)
 
-        print output
+        # print output
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
@@ -316,7 +319,7 @@ class TestPopulateArchiveScript(TestCase):
         (output, copy_archive) = self.runScript(
             extra_args=extra_args, exists_after=True)
 
-        print output
+        # print output
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
