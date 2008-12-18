@@ -96,7 +96,7 @@ class TestPopulateArchiveScript(TestCase):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--from-component', 'main', '--to-component', 'main'
+            '--component', 'main'
             ]
 
         # Start archive population now!
