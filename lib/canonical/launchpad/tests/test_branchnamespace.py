@@ -448,23 +448,21 @@ class TestNamespaceSet(TestCaseWithFactory):
         # the namespace that it's in, as well as the part of the path that is
         # within the namespace.
         path = '~foo/+junk/bar/README'
-        [(parsed, branch, trailing)] = list(
-            self.namespace_set.parseBranchPath(path))
-        self.assertEqual(
-            dict(person='foo', product='+junk', distribution=None,
-                 distroseries=None, sourcepackagename=None), parsed)
-        self.assertEqual('bar', branch)
-        self.assertEqual('README', trailing)
+        parse_results = list(self.namespace_set.parseBranchPath(path))
+        expected_results = [
+            (dict(person='foo', product='+junk', distribution=None,
+                  distroseries=None, sourcepackagename=None),
+             'bar', 'README')]
+        self.assertEqual(expected_results, parse_results)
 
     def test_parseBranchPath_product_path(self):
         path = '~foo/bar/baz/README'
-        [(parsed, branch, trailing)] = list(
-            self.namespace_set.parseBranchPath(path))
-        self.assertEqual(
-            dict(person='foo', product='bar', distribution=None,
-                 distroseries=None, sourcepackagename=None), parsed)
-        self.assertEqual('baz', branch)
-        self.assertEqual('README', trailing)
+        parse_results = list(self.namespace_set.parseBranchPath(path))
+        expected_results = [
+            (dict(person='foo', product='bar', distribution=None,
+                  distroseries=None, sourcepackagename=None),
+             'baz', 'README')]
+        self.assertEqual(expected_results, parse_results)
 
     def test_parseBranchPath_package_path(self):
         path = '~foo/bar/baz/qux/branch/README'

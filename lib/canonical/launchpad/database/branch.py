@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IPersonSet, IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
+    IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
@@ -57,7 +57,6 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchcontainer import (
     PackageContainer, PersonContainer, ProductContainer)
-from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
@@ -1075,7 +1074,6 @@ class BranchSet:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
 
-    @classmethod
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':
             return self._getPersonalBranch(
@@ -1090,7 +1088,6 @@ class BranchSet:
                 namespace_data['person'], namespace_data['product'],
                 branch_name)
 
-    @classmethod
     def _getPersonalBranch(self, person, branch_name):
         """Find a personal branch given its path segments."""
         # Avoid circular imports.
@@ -1106,7 +1103,6 @@ class BranchSet:
         branch = result.one()
         return branch
 
-    @classmethod
     def _getProductBranch(self, person, product, branch_name):
         """Find a product branch given its path segments."""
         # Avoid circular imports.
@@ -1122,7 +1118,6 @@ class BranchSet:
         branch = result.one()
         return branch
 
-    @classmethod
     def _getPackageBranch(self, owner, distribution, distroseries,
                           sourcepackagename, branch):
         """Find a source package branch given its path segments.
@@ -1151,18 +1146,16 @@ class BranchSet:
         branch = result.one()
         return branch
 
-    @classmethod
-    def _getByPath(klass, path):
+    def _getByPath(self, path):
         """Given a path within a branch, return the branch and the path."""
-        # XXX: direct unit tests please.
         namespace_set = getUtility(IBranchNamespaceSet)
         parsed = namespace_set.parseBranchPath(path)
         for parsed_path, branch_name, suffix in parsed:
-            branch = klass._getBranchInNamespace(parsed_path, branch_name)
+            branch = self._getBranchInNamespace(parsed_path, branch_name)
             if branch is not None:
                 return branch, suffix
-        # This will raise an interesting if any of the given
-        # objects don't exist.
+        # This will raise an interesting error if any of the given objects
+        # don't exist.
         namespace_set.interpret(
             person=parsed_path['person'],
             product=parsed_path['product'],
@@ -1171,11 +1164,10 @@ class BranchSet:
             sourcepackagename=parsed_path['sourcepackagename'])
         raise NoSuchBranch(path)
 
-    @classmethod
-    def getByLPPath(klass, path):
+    def getByLPPath(self, path):
         """See `IBranchSet`."""
         try:
-            branch, suffix = klass._getByPath(path)
+            branch, suffix = self._getByPath(path)
         except InvalidNamespace:
             pass
         else:
@@ -1185,13 +1177,12 @@ class BranchSet:
 
         path_segments = path.split('/')
         if len(path_segments) < 3:
-            branch, series = klass._getDefaultProductBranch(*path_segments)
+            branch, series = self._getDefaultProductBranch(*path_segments)
         else:
             raise faults.InvalidBranchIdentifier(path)
         return branch, None, series
 
-    @staticmethod
-    def _getDefaultProductBranch(product_name, series_name=None):
+    def _getDefaultProductBranch(self, product_name, series_name=None):
         """Return the branch for a product.
 
         :param product_name: The name of the branch's product.

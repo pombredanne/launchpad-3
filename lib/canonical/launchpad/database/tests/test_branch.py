@@ -246,9 +246,11 @@ class TestGetByPath(TestCaseWithFactory):
     def getByPath(self, path):
         return self._unsafe_branch_set._getByPath(path)
 
-    def makeSuffix(self, num_segments):
+    def makeRelativePath(self):
+        arbitrary_num_segments = 7
         return '/'.join([
-            self.factory.getUniqueString() for i in range(num_segments)])
+            self.factory.getUniqueString()
+            for i in range(arbitrary_num_segments)])
 
     def test_finds_exact_personal_branch(self):
         branch = self.factory.makeBranch(product=None)
@@ -258,7 +260,7 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_finds_suffixed_personal_branch(self):
         branch = self.factory.makeBranch(product=None)
-        suffix = self.makeSuffix(6)
+        suffix = self.makeRelativePath()
         found_branch, found_suffix = self.getByPath(
             branch.unique_name + '/' + suffix)
         self.assertEqual(branch, found_branch)
@@ -274,7 +276,7 @@ class TestGetByPath(TestCaseWithFactory):
         owner = self.factory.makePerson()
         namespace = get_branch_namespace(owner)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        suffix = self.makeSuffix(6)
+        suffix = self.makeRelativePath()
         self.assertRaises(
             NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
 
@@ -286,7 +288,7 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_finds_suffixed_product_branch(self):
         branch = self.factory.makeBranch()
-        suffix = self.makeSuffix(4)
+        suffix = self.makeRelativePath()
         found_branch, found_suffix = self.getByPath(
             branch.unique_name + '/' + suffix)
         self.assertEqual(branch, found_branch)
@@ -303,7 +305,7 @@ class TestGetByPath(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         namespace = get_branch_namespace(owner, product=product)
-        suffix = self.makeSuffix(12)
+        suffix = self.makeRelativePath()
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
         self.assertRaises(
             NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
@@ -335,7 +337,7 @@ class TestGetByPath(TestCaseWithFactory):
         namespace = get_branch_namespace(
             owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
-        suffix = self.makeSuffix(7)
+        suffix = self.makeRelativePath()
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
         #self.assertRaises(
         #    NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
@@ -344,7 +346,7 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_no_preceding_tilde(self):
         self.assertRaises(
-            InvalidNamespace, self.getByPath, self.makeSuffix(9))
+            InvalidNamespace, self.getByPath, self.makeRelativePath())
 
     def test_too_short(self):
         person = self.factory.makePerson()
@@ -353,7 +355,8 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_no_such_product(self):
         person = self.factory.makePerson()
-        branch_name = '~%s/%s' % (person.name, self.makeSuffix(2))
+        branch_name = '~%s/%s/%s' % (
+            person.name, self.factory.getUniqueString(), 'branch-name')
         self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
 
 

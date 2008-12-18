@@ -92,7 +92,18 @@ class IBranchNamespaceSet(Interface):
 
     def interpret(person, product, distribution, distroseries,
                   sourcepackagename):
-        """Like `get`, but takes names of objects."""
+        """Like `get`, but takes names of objects.
+
+        :raise NoSuchPerson: if the person referred to cannot be found.
+        :raise NoSuchProduct: if the product referred to cannot be found.
+        :raise NoSuchDistribution: if the distribution referred to cannot be
+            found.
+        :raise NoSuchDistroSeries: if the distroseries referred to cannot be-
+            found.
+        :raise NoSuchSourcePackageName: if the sourcepackagename referred to
+            cannot be found.
+        :return: An `IBranchNamespace`.
+        """
 
     def parse(namespace_name):
         """Parse 'namespace_name' into its components.
@@ -127,7 +138,12 @@ class IBranchNamespaceSet(Interface):
 
         Since some paths can be parsed as either package branch paths or
         product branch paths, this method yields possible parses of the given
-        path.
+        path. The order of the yielded parses is undefined and shouldn't be
+        relied on.
+
+        Note that at most one of the parses will actually be valid. This can
+        be determined by looking the objects up in the database, or by using
+        `IBranchNamespaceSet.interpret`.
 
         :param branch_path: A path to or within a branch. This will often, but
             not always, include a '.bzr' segment.
