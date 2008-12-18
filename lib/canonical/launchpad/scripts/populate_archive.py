@@ -44,10 +44,6 @@ class ArchivePopulator(SoyuzScript):
         'Create a copy archive and populate it with packages and build '
         'records.')
 
-    def __init__(self, *args, **kwds):
-        super(ArchivePopulator, self).__init__(*args, **kwds)
-        self.build_counter = 0
-
     def populateArchive(
         self, from_distribution, from_suite, from_component, to_distribution,
         to_suite, to_component, to_archive, to_user, reason, include_binaries,
