@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -51,11 +51,10 @@ class OpenIDAuthorization(SQLBase):
     def _get_store():
         """See `SQLBase`.
 
-        OpenIDAuthorization are part of the AUTH store.
         The authorization check should always use the master flavor,
         principally because +rp-preauthorize will create them on GET requests.
         """
-        return getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     client_id = StringCol()

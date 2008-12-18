@@ -15,7 +15,7 @@ from canonical.launchpad.database.openidserver import OpenIDAuthorization
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.adapter import StoreSelector
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 
 class OpenIDAuthorizationTestCase(unittest.TestCase):
@@ -33,7 +33,7 @@ class OpenIDAuthorizationTestCase(unittest.TestCase):
         StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
         zstorm = getUtility(IZStorm)
         self.assertEquals(
-            '%s-%s' % (AUTH_STORE, MASTER_FLAVOR),
+            '%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
             zstorm.get_name(OpenIDAuthorization._get_store()))
 
 
