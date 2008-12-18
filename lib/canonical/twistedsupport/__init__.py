@@ -68,7 +68,17 @@ def suppress_stderr(function):
 
 
 def extract_result(deferred):
-    """XXX"""
+    """Extract the result from a fired deferred.
+
+    It can happen that you have an API that returns Deferreds for
+    compatibility with Twisted code, but is in fact synchronous, i.e. the
+    Deferreds it returns have always fired by the time it returns.  In this
+    case, you can use this function to convert the result back into the usual
+    form for a synchronous API, i.e. the result itself or a raised exception.
+
+    It would be very bad form to use this as some way of checking if a
+    Deferred has fired.
+    """
     failures = []
     successes = []
     deferred.addCallbacks(successes.append, failures.append)
