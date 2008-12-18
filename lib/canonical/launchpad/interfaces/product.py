@@ -212,6 +212,7 @@ class IProductPublic(
     datecreated = exported(
         Datetime(
             title=_('Date Created'),
+            required=True, readonly=True,
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
 
