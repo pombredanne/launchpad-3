@@ -301,10 +301,12 @@ static:
 	$(PYTHON) scripts/make-static.py
 
 TAGS:
-	ctags -e -R lib/canonical && ctags --exclude=lib/canonical -a -e -R lib/
+	ctags -e -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
+		ctags -e --exclude=lib/canonical -a -R lib/
 
 tags:
-	ctags -R lib
+	ctags -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
+		ctags --exclude=lib/canonical -a -R lib/
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
