@@ -21,8 +21,12 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+BZR_VERSION_INFO = bzr-version-info.py
+
 XSLTPROC=xsltproc
-WADL_FILE = ./lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
+WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
+WADL_XSL = lib/launchpadlib/wadl-to-refhtml.xsl
+API_INDEX = lib/canonical/launchpad/apidoc/index.html
 
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
@@ -35,16 +39,18 @@ default: inplace
 schema: build clean_codehosting
 	$(MAKE) -C database/schema
 	$(PYTHON) ./utilities/make-dummy-hosted-branches
-	rm -rf /var/tmp/fatsam
+	$(RM) -r /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-$(WADL_FILE): bzr-version-info.py
-	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
-		tee $(WADL_FILE) | \
-		$(XSLTPROC) ./lib/launchpadlib/wadl-to-refhtml.xsl - \
-		> ./lib/canonical/launchpad/apidoc/index.html
+$(WADL_FILE): $(BZR_VERSION_INFO)
+	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py > $@
+
+$(API_INDEX): $(WADL_FILE) $(WADL_XSL)
+	$(XSLTPROC) $(WADL_XSL) $(WADL_FILE) > $@
+
+apidoc: compile $(API_INDEX)
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 
@@ -115,13 +121,13 @@ pagetests: build
 
 inplace: build
 
-build: bzr-version-info.py compile $(WADL_FILE)
+build: $(BZR_VERSION_INFO) compile apidoc
 
 compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
-		 $(PYTHON) -t buildmailman.py
+	    $(PYTHON) -t buildmailman.py
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -148,18 +154,18 @@ ftest_inplace: inplace
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
 run: inplace stop
-	rm -f thread*.request
+	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,google-webservice -C $(CONFFILE)
 
 start-gdb: inplace stop support_files
-	rm -f thread*.request
+	$(RM) thread*.request
 	$(APPSERVER_ENV) nohup gdb -x run.gdb --args $(PYTHON) -t $(STARTSCRIPT) \
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
-	rm -f thread*.request
+	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
@@ -173,7 +179,8 @@ rewritemap:
 	# Build rewrite map that maps friendly branch names to IDs. Necessary
 	# for http access to branches and for the branch scanner.
 	mkdir -p $(CODEHOSTING_ROOT)/config
-	$(PYTHON) cronscripts/supermirror_rewritemap.py $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+	$(PYTHON) cronscripts/supermirror_rewritemap.py \
+		$(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 scan_branches: rewritemap
 	# Scan branches from the filesystem into the database.
@@ -181,10 +188,10 @@ scan_branches: rewritemap
 
 sync_branches: pull_branches scan_branches
 
-bzr-version-info.py:
+$(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
-support_files: $(WADL_FILE) bzr-version-info.py
+support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before
@@ -211,7 +218,7 @@ stop: build
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 shutdown: scheduleoutage stop
-	rm -f +maintenancetime.txt
+	$(RM) +maintenancetime.txt
 
 scheduleoutage:
 	echo Scheduling outage in ${MINS_TO_SHUTDOWN} mins
@@ -235,32 +242,34 @@ debug:
 		    app = Application('Data.fs', 'site.zcml')()"
 
 clean:
-	(cd sourcecode/pygettextpo; make clean)
-	find . -type f \( -name '*.o' -o -name '*.so' \
-	    -o -name '*.la' -o -name '*.lo' \
-	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
-	rm -rf build
-	rm -f thread*.request
-	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
-	rm -rf $(CODEHOSTING_ROOT)
-	-rm $(WADL_FILE)
-	-rm bzr-version-info.py
+	$(MAKE) -C sourcecode/pygettextpo clean
+	find . -type f \( \
+	    -name '*.o' -o -name '*.so' -o -name '*.la' -o \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
+	    -print0 | xargs -r0 $(RM)
+	$(RM) -r build
+	$(RM) thread*.request
+	$(RM) -r lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
+	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) $(WADL_FILE) $(API_INDEX)
+	$(RM) $(BZR_VERSION_INFO)
 
 realclean: clean
-	rm -f TAGS tags
-	$(PYTHON) setup.py clean -a
+	$(RM) TAGS tags
 
 clean_codehosting:
-	rm -rf $(CODEHOSTING_ROOT)
+	$(RM) -r $(CODEHOSTING_ROOT)
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/push-branches
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:
-	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \
-	    ./sourcecode/zope/configuration/stxdocs.py \
-	    -f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
+	mkdir -p doc/zcml/namespaces.zope.org
+	PYTHONPATH=$(shell pwd)/src:$(PYTHONPATH) $(PYTHON) \
+	    ./sourcecode/zope/src/zope/configuration/stxdocs.py \
+	    -f sourcecode/zope/src/zope/app/zcmlfiles/meta.zcml \
+	    -o doc/zcml/namespaces.zope.org
 
 potemplates: launchpad.pot
 
@@ -281,7 +290,8 @@ copy-certificates:
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
 copy-apache-config:
-	cp configs/development/local-launchpad-apache /etc/apache2/sites-available/local-launchpad
+	cp configs/development/local-launchpad-apache \
+	    /etc/apache2/sites-available/local-launchpad
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
@@ -298,9 +308,9 @@ TAGS:
 tags:
 	ctags -R lib
 
-.PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
-		ftest_build ftest_inplace test_build test_inplace pagetests \
-		check check_merge schema default launchpad.pot \
-		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches check_loggerhead_on_merge reload-apache \
-		check_launchpad_storm_on_merge
+.PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop	\
+	start run ftest_build ftest_inplace test_build test_inplace	\
+	pagetests check check_merge schema default launchpad.pot	\
+	check_launchpad_on_merge check_merge_ui pull rewritemap scan	\
+	sync_branches check_loggerhead_on_merge reload-apache		\
+	check_launchpad_storm_on_merge
