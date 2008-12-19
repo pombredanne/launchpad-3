@@ -174,7 +174,8 @@ navigation.
     >>> translator_set = getUtility(ITranslatorSet)
     >>> foo_bar_translator = translator_set.new(
     ...     translationgroup=evolution_translation_group,
-    ...     language=ozzie_english, translator=foobar)
+    ...     language=ozzie_english, translator=foobar,
+    ...     documentation_url=None)
     >>> logout()
 
     >>> user_browser.open(

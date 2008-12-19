@@ -113,7 +113,7 @@ The only Serbian reviewer in this translation group is 'name16' user.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> sr_translation_reviewer = getUtility(ITranslatorSet).new(
-    ...     product.translationgroup, serbian, foobar)
+    ...     product.translationgroup, serbian, foobar, None)
 
 No Privileges Person is going to work on Serbian (sr) translation, with
 the new PO file.
