@@ -41,7 +41,7 @@ from canonical.database.constants import UTC_NOW
 
 from lazr.delegates import delegates
 from canonical.lazr.enum import EnumeratedType, Item
-from canonical.lazr.interface import copy_field, use_template
+from canonical.lazr.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
