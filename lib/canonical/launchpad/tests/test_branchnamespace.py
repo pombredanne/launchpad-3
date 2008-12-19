@@ -485,6 +485,17 @@ class TestNamespaceSet(TestCaseWithFactory):
         self.assertRaises(
             InvalidNamespace, list, self.namespace_set.parseBranchPath(''))
 
+    def test_interpret_product_aliases(self):
+        # Products can have aliases. IBranchNamespaceSet.interpret will find a
+        # product given its alias.
+        branch = self.factory.makeBranch()
+        product_alias = self.factory.getUniqueString()
+        removeSecurityProxy(branch.product).setAliases([product_alias])
+        namespace = self.namespace_set.interpret(
+            branch.owner.name, product=product_alias)
+        self.assertEqual(
+            branch.product, removeSecurityProxy(namespace).product)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
