@@ -294,7 +294,7 @@ Everyone does get a unique copy of the message though.
     Subjects: set(['Hello Guadamen'])
     Bodies:
     Can one of you help me?
-    --
+    -- 
     This message was sent by Launchpad via the Contact user/team
     link on your profile page.  For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
@@ -349,7 +349,7 @@ the new contact address.
     ...
     <BLANKLINE>
     Can one of you help me?
-    --
+    -- 
     This message was sent by Launchpad via the Contact user/team
     link on your profile page.  For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
@@ -387,7 +387,7 @@ Bart's message gets sent to the mailing list.
     Subjects: set(['My last question for Guadamen'])
     Bodies:
     Really, can one of you help me!
-    --
+    -- 
     This message was sent by Launchpad via the Contact user/team
     link on your profile page.  For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
@@ -440,7 +440,7 @@ contains an explanation as well.
     <BLANKLINE>
     Can you help me?
     <BLANKLINE>
-    --
+    -- 
     This message was sent by Launchpad via the Contact user/team
     link on your profile page.  For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
