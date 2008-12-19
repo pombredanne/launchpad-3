@@ -10,8 +10,7 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.browser.person import (
-    BranchTraversalMixin, PersonView)
+from canonical.launchpad.browser.person import PersonNavigation, PersonView
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.testing import TestCaseWithFactory
@@ -70,11 +69,9 @@ class TestBranchTraversal(TestCaseWithFactory):
         function(*args, **kwargs)
         self.assertEqual([to_url], self._redirects)
 
-    def makeTraverser(self, person, traversed=None, stack=None):
-        request = FakeRequest(traversed, stack)
-        traverser = BranchTraversalMixin()
-        traverser.context = person
-        traverser.request = request
+    def makeTraverser(self, person, stack=None):
+        request = FakeRequest(['~' + person.name], stack)
+        traverser = PersonNavigation(person, request)
         traverser.redirectSubTree = self._redirects.append
         return traverser
 
@@ -82,13 +79,13 @@ class TestBranchTraversal(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         segments = branch.unique_name.split('/')[1:]
         segments.reverse()
-        traverser = self.makeTraverser(branch.owner, [], segments)
+        traverser = self.makeTraverser(branch.owner, segments)
         self.assertRedirects(canonical_url(branch), traverser.redirect_branch)
 
     def test_redirect_branch_not_found(self):
         person = self.factory.makePerson()
         segments = ['no-branch', 'no-product']
-        traverser = self.makeTraverser(person, [], segments)
+        traverser = self.makeTraverser(person, segments)
         self.assertRaises(NotFoundError, traverser.redirect_branch)
 
 
