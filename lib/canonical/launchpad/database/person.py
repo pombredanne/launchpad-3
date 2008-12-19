@@ -919,20 +919,6 @@ class Person(
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBranch(self, product_name, branch_name):
-        """See `IPerson`."""
-        if product_name is None or product_name == '+junk':
-            return Branch.selectOne(
-                'owner=%d AND product is NULL AND name=%s'
-                % (self.id, quote(branch_name)))
-        else:
-            pillar = getUtility(IPillarNameSet).getByName(product_name)
-            if not IProduct.providedBy(pillar):
-                # pillar is either None or not a Product.
-                return None
-            return Branch.selectOneBy(
-                owner=self, product=pillar, name=branch_name)
-
     def findPathToTeam(self, team):
         """See `IPerson`."""
         # This is our guarantee that _getDirectMemberIParticipateIn() will
