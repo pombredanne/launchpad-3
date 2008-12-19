@@ -578,6 +578,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @mutator_for(assignee)
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()

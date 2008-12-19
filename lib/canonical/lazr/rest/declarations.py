@@ -37,7 +37,7 @@ from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
-from zope.interface.interface import TAGGED_DATA, InterfaceClass
+from zope.interface.interface import fromFunction, InterfaceClass, TAGGED_DATA
 from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
 from zope.schema.interfaces import IField, IText
@@ -291,7 +291,8 @@ def annotate_exported_methods(interface):
         annotations = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if annotations is None:
             continue
-
+        if annotations.get('type') is None:
+            continue
         # Method is exported under its own name by default.
         if 'as' not in annotations:
             annotations['as'] = method.__name__
@@ -386,7 +387,8 @@ class mutator_for(_method_annotator):
 
         # The mutator method must take only one argument, not counting
         # arguments with values fixed by call_with().
-        free_params = (set(annotations.get('params', {}).keys()) -
+        signature = fromFunction(method).getSignatureInfo()
+        free_params = (set(signature['required']) -
                        set(annotations.get('call_with', {}).keys()))
         if len(free_params) != 1:
             raise TypeError("A mutator method must take one and only one "
@@ -661,9 +663,7 @@ class PropertyWithMutator(Passthrough):
         # Error checking code in mutator_for() guarantees that there
         # is one and only one non-fixed parameter for the mutator
         # method.
-        new_param_name = self.annotations['params'].keys()[0]
-        params[new_param_name] = new_value
-        getattr(obj.context, self.mutator)(**params)
+        getattr(obj.context, self.mutator)(new_value, **params)
 
 
 class CollectionEntrySchema:
