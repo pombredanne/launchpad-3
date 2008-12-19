@@ -13,6 +13,7 @@ from xmlrpclib import Fault
 from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
@@ -409,6 +410,8 @@ class FakeBranchFilesystem:
         # behaviour should generate explicit errors.)
         if person_id == LAUNCHPAD_SERVICES:
             return True
+        if person_id == ANONYMOUS:
+            return not branch.private
         if not branch.private:
             return True
         person = self._person_set.get(person_id)
@@ -416,7 +419,7 @@ class FakeBranchFilesystem:
 
     def _canWrite(self, person_id, branch):
         """Can the person 'person_id' write to 'branch'?"""
-        if person_id == LAUNCHPAD_SERVICES:
+        if person_id in [ANONYMOUS, LAUNCHPAD_SERVICES]:
             return False
         if branch.branch_type != BranchType.HOSTED:
             return False

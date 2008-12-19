@@ -183,7 +183,7 @@ def run_with_login(login_id, function, *args, **kwargs):
     if login_id == LAUNCHPAD_SERVICES or login_id == ANONYMOUS:
         # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
         # and expect `function` to use `removeSecurityProxy` or similar.
-        return function(LAUNCHPAD_SERVICES, *args, **kwargs)
+        return function(login_id, *args, **kwargs)
     requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
         raise NotFoundError("No person with id %s." % login_id)
