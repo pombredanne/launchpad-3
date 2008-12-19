@@ -24,8 +24,6 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
