@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.interfaces.translator import (
     ITranslator, ITranslatorSet)
-from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.webapp.interfaces import NotFoundError

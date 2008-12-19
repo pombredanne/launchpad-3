@@ -5,7 +5,6 @@ __metaclass__ = type
 import cgi
 
 from canonical.launchpad.interfaces.translator import ITranslator
-from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
