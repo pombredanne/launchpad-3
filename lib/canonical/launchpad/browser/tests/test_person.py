@@ -76,9 +76,14 @@ class TestBranchTraversal(TestCaseWithFactory):
         traverser = PersonNavigation(self.person, request)
         return traverser.publishTraverse(request, name)
 
-    def test_redirect_branch(self):
+    def test_redirect_product_branch(self):
         branch = self.factory.makeBranch(owner=self.person)
         segments = ['+branch', branch.product.name, branch.name]
+        self.assertRedirects(segments, canonical_url(branch))
+
+    def test_redirect_junk_branch(self):
+        branch = self.factory.makeBranch(owner=self.person, product=None)
+        segments = ['+branch', '+junk', branch.name]
         self.assertRedirects(segments, canonical_url(branch))
 
     def test_redirect_branch_not_found(self):
