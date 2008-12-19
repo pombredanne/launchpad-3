@@ -12,7 +12,7 @@ InlineTextLineEditorWidget.
 
     >>> from canonical.launchpad.webapp.publisher import canonical_url
     >>> from canonical.widgets.lazrjswidgets import InlineTextLineEditorWidget
-    >>> bug = factory.makeBug(title='My bug is very important')
+    >>> bug = factory.makeBug(title='My bug is > important')
 
 The wrapper takes as argument the current value of the field under editing,
 and the URL to edit the value.
@@ -24,7 +24,7 @@ The widget is rendered by executing it, it prints out the element with an edit
 button to edit the link, along the javascript to hook the widget on this HTML.
 
     >>> print widget()
-    <h1 id="..."><span class="editable-text">My bug is very important</span>
+    <h1 id="..."><span class="editable-text">My bug is &gt; important</span>
         <a href="http://bugs.launchpad.dev/.../+edit" class="edit-button"
         ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
     </h1>
@@ -34,7 +34,7 @@ controls like this are only available to logged in user.
 
     >>> login('no-priv@canonical.com')
     >>> print widget()
-    <h1 id="..."><span class="editable-text">My bug is very important</span>
+    <h1 id="..."><span class="editable-text">My bug is &gt; important</span>
         <a href="http://bugs.launchpad.dev/.../+edit" class="edit-button"
         ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
     </h1>

@@ -7,6 +7,7 @@ __all__ = [
     'InlineTextLineEditorWidget',
     ]
 
+import cgi
 from textwrap import dedent
 
 from zope.component import getUtility
@@ -46,7 +47,7 @@ class InlineTextLineEditorWidget:
             'edit_url': self.edit_url,
             'id': self.id,
             'title': self.title,
-            'value': self.value,
+            'value': cgi.escape(self.value),
             }
         if getUtility(ILaunchBag).user:
             params['activation_script'] = dedent(u"""\
