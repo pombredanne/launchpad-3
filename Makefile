@@ -29,6 +29,10 @@ APPSERVER_ENV = \
   PYTHONPATH=$(PYTHONPATH) \
   STORM_CEXTENSIONS=1
 
+EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
+				$(shell $(HERE)/utilities/yui-deps.py) \
+				lib/canonical/launchpad/icing/lazr/build/lazr.js
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
@@ -122,6 +126,9 @@ compile:
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
 		 $(PYTHON) -t buildmailman.py
+	${SHHH} sourcecode/lazr-js/tools/build.py \
+		-n launchpad -s lib/canonical/launchpad/javascript \
+		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -243,6 +250,7 @@ clean:
 	rm -f thread*.request
 	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
+	rm -rf lib/canonical/launchpad/icing/build/*
 	-rm $(WADL_FILE)
 	-rm bzr-version-info.py
 
@@ -293,10 +301,12 @@ static:
 	$(PYTHON) scripts/make-static.py
 
 TAGS:
-	ctags -e -R lib/canonical && ctags --exclude=lib/canonical -a -e -R lib/
+	ctags -e -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
+		ctags -e --exclude=lib/canonical -a -R lib/
 
 tags:
-	ctags -R lib
+	ctags -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
+		ctags --exclude=lib/canonical -a -R lib/
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
