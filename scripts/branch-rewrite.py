@@ -26,8 +26,9 @@ class BranchRewriteScript(LaunchpadScript):
             isolation=None):
         """See `LaunchpadScript.run`.
 
-        We override to avoid all of the setting up all of the component
-        architecture and connecting to the database.
+        As this script does not need the component architecture or a
+        connection to the database, we override this method to avoid setting
+        them up.
         """
         self.main()
 

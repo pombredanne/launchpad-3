@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for things found directly in `canonical.twistedsupport`."""
 
 __metaclass__ = type
 

@@ -30,23 +30,32 @@ class TestBranchRewriter(TestCase):
             QuietFakeLogger(), XMLRPCWrapper(self._branchfs))
 
     def test_translateLine_found_dot_bzr(self):
+        # Requests for /$branch_name/.bzr/... are redirected to where the
+        # branches are served from by ID.
         rewriter = self.makeRewriter()
         branch = self.factory.makeBranch()
         line = rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
-        self.assertEqual("/%s/.bzr/README" % branch_id_to_path(branch.id), line)
+        self.assertEqual(
+            'http://bazaar-internal.launchpad.dev/%s/.bzr/README'
+            % branch_id_to_path(branch.id),
+            line)
 
     def test_translateLine_found_not_dot_bzr(self):
+        # Requests for /$branch_name/... that are not to .bzr directories are
+        # redirected to codebrowse.
         rewriter = self.makeRewriter()
         branch = self.factory.makeBranch()
-        input = "/%s/changes" % branch.unique_name
-        output = rewriter.rewriteLine(input)
+        output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
         self.assertEqual(
-            config.codehosting.internal_codebrowse_root + input, output)
+            'http://localhost:8080/%s/changes' % branch.unique_name,
+            output)
 
     def test_translateLine_not_found(self):
+        # If the branch behind a request is not foudn, rewriteLine returns
+        # "NULL", the way of saying "I don't know how to rewrite this" to
+        # Apache.
         rewriter = self.makeRewriter()
-        input = "/~no-user/no-product/no-branch/changes"
-        output = rewriter.rewriteLine(input)
+        output = rewriter.rewriteLine("/~nouser/noproduct/nobranch/changes")
         self.assertEqual("NULL", output)
 
 
@@ -57,7 +66,9 @@ class TestBranchRewriterScript(TestCaseWithFactory):
     def test_script(self):
         branch = self.factory.makeBranch()
         input = "/%s/.bzr/README\n" % branch.unique_name
-        expected = "/%s/.bzr/README\n" % branch_id_to_path(branch.id)
+        expected = (
+            "http://bazaar-internal.launchpad.dev/%s/.bzr/README\n"
+            % branch_id_to_path(branch.id))
         self.layer.txn.commit()
         script_file = os.path.join(
             config.root, 'scripts', 'branch-rewrite.py')

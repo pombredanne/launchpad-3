@@ -4,6 +4,8 @@
 import time
 import xmlrpclib
 
+from bzrlib import urlutils
+
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import BranchFileSystemClient
 from canonical.config import config
@@ -17,6 +19,12 @@ __all__ = ['BranchRewriter']
 class BranchRewriter:
 
     def __init__(self, logger, proxy):
+        """
+
+        :param logger: Logger than messages about what the rewriter is doing
+            will be sent to.
+        :param proxy: A blocking proxy for a branchfilesystem endpoint.
+        """
         self.logger = logger
         self.client = BranchFileSystemClient(proxy, ANONYMOUS, 1.0)
 
@@ -60,14 +68,17 @@ class BranchRewriter:
                 raise
         if transport_type == BRANCH_TRANSPORT:
             if trailing.startswith('.bzr'):
-                r = ('http://bazaar-internal.launchpad.dev/' +
-                     branch_id_to_path(info['id']) + '/' + trailing)
+                r = urlutils.join(
+                    config.codehosting.internal_branch_by_id_root,
+                    branch_id_to_path(info['id']), trailing)
                 if trailingSlash:
                     r += '/'
             else:
-                r = (config.codehosting.internal_codebrowse_root +
-                     resource_location)
-            self.logger.info("%r -> %r (%fs)", resource_location, r, time.time() - T)
+                r = urlutils.join(
+                    config.codehosting.internal_codebrowse_root,
+                    resource_location)
+            self.logger.info(
+                "%r -> %r (%fs)", resource_location, r, time.time() - T)
             return r
         else:
             return "NULL"

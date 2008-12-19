@@ -15,25 +15,7 @@ from canonical.codehosting.branchfsclient import (
     BranchFileSystemClient, NotInCache, trap_fault)
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
-
-
-class FakeTime:
-    """Provides a controllable implementation of time.time()."""
-
-    def __init__(self, start):
-        """Set up the instance.
-
-        :param start: The value that will initially be returned by `now()`.
-        """
-        self._now = start
-
-    def advance(self, amount):
-        """Advance the value that will be returned by `now()` by 'amount'."""
-        self._now += amount
-
-    def now(self):
-        """Use this bound method instead of time.time in tests."""
-        return self._now
+from canonical.launchpad.testing import FakeTime
 
 
 class TestBranchFileSystemClient(TestCase):
