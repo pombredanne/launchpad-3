@@ -105,9 +105,9 @@
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
       <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/build/anim/anim.js"></script>
+              tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
       <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/build/inlineedit/editor.js"></script>
+              tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
       <script type="text/javascript"
