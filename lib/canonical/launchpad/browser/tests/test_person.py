@@ -93,6 +93,16 @@ class TestBranchTraversal(TestCaseWithFactory):
     # XXX: JonathanLange 2008-12-19: Do we need to test traversed objects or
     # consumed path elements?
 
+    def test_junk_branch(self):
+        branch = self.factory.makeBranch(owner=self.person, product=None)
+        segments = ['+junk', branch.name]
+        self.assertEqual(branch, self.traverse(segments))
+
+    def test_product_branch(self):
+        branch = self.factory.makeBranch(owner=self.person)
+        segments = [branch.product.name, branch.name]
+        self.assertEqual(branch, self.traverse(segments))
+
 
 def test_suite():
     suite = unittest.TestSuite()
