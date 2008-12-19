@@ -34,9 +34,22 @@
 
       </div>
       <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
+      <div id="contentBox">
       <h1 tal:replace="structure view/bug_title_edit_widget">
         Bug title
       </h1>
+      </div>
+      <script>
+        YUI().use('lazr.editor', function (Y) {
+            var widget = new Y.EditableText({
+                text: '#bug-title .editable-text',
+                trigger: '#bug-title .edit-button',
+                content_area: '#bug-title',
+                contentBox: '#contentBox',
+            });
+            widget.render();
+        });
+      </script>
 
       <tal:block condition="view/reportBugInContext" />
 
