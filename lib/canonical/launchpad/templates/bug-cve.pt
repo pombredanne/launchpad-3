@@ -30,7 +30,7 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
        Launchpad will poll the

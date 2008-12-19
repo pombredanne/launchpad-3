@@ -79,6 +79,6 @@ contact a Launchpad admin.
     ...     browser.contents, 'error'):
     ...     print tag
     <p ...>The email address belongs to a suspended account.
-    Contact a <a href="http://answers.../launchpad/+addquestion">Launchpad
+    Contact a <a href="mailto:feedback@launchpad.net?subject=SU...">Launchpad
     admin</a> about this issue.</p>
 

@@ -10,11 +10,9 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Search results</h1>
-    </metal:heading>
 
 <div metal:fill-slot="main">
+  <h1>Search results</h1>
 
   <form name="search" method="GET">
     <div>
@@ -37,9 +35,9 @@
 
   <tal:search_requested condition="view/search_requested">
 
-    <tal:batch define="batch view/batchnav/currentBatch">
+    <tal:batch define="batchnav view/batchnav;batch batchnav/currentBatch">
 
-      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
+      <tal:navigation replace="structure batchnav/@@+navigation-links-upper" />
 
       <ul class="sources" tal:condition="batch">
         <li tal:repeat="dsp batch">
@@ -81,7 +79,7 @@
         </li>
       </ul>
 
-      <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
+      <tal:navigation replace="structure batchnav/@@+navigation-links-lower" />
 
       <tal:no_matches condition="not: view/matches">
 
