@@ -24,7 +24,7 @@ The widget is rendered by executing it, it prints out the element with an edit
 button to edit the link, along the javascript to hook the widget on this HTML.
 
     >>> print widget()
-    <h1><span class="editable-text">My bug is very important</span>
+    <h1 id="..."><span class="editable-text">My bug is very important</span>
         <a href="http://bugs.launchpad.dev/.../+edit" class="edit-button"
         ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
     </h1>
@@ -34,11 +34,21 @@ controls like this are only available to logged in user.
 
     >>> login('no-priv@canonical.com')
     >>> print widget()
-    <h1><span class="editable-text">My bug is very important</span>
+    <h1 id="..."><span class="editable-text">My bug is very important</span>
         <a href="http://bugs.launchpad.dev/.../+edit" class="edit-button"
         ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
     </h1>
     <script>
     ...
     </script>
+
+The id and title attribute to use can be passed via parameters to the
+constructor:
+
+    >>> widget = InlineTextLineEditorWidget(
+    ...     bug.title, canonical_url(bug.bugtasks[0], view_name='+edit'),
+    ...     id="bug-title", title="Edit this summary")
+    >>> print widget()
+    <h1 id="bug-title">...
+    ...<img src="/@@/edit" alt="[edit]" title="Edit this summary" />...
 
