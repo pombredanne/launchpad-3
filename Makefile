@@ -4,7 +4,7 @@
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
-PYTHONPATH:=$(PWD)/lib:$(PWD)/lib/mailman:${PYTHONPATH}
+PYTHONPATH:=$(shell pwd)/lib:$(shell pwd)/lib/mailman:${PYTHONPATH}
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
@@ -266,7 +266,7 @@ clean_codehosting:
 
 zcmldocs:
 	mkdir -p doc/zcml/namespaces.zope.org
-	PYTHONPATH=$(PWD)/src:$(PYTHONPATH) $(PYTHON) \
+	PYTHONPATH=$(shell pwd)/src:$(PYTHONPATH) $(PYTHON) \
 	    ./sourcecode/zope/src/zope/configuration/stxdocs.py \
 	    -f sourcecode/zope/src/zope/app/zcmlfiles/meta.zcml \
 	    -o doc/zcml/namespaces.zope.org
