@@ -1,0 +1,44 @@
+LAZR JS Wrappers
+================
+
+The canonical.widgets.lazrjswidgets module contains a bunch of wrapper
+for widgets defined in Lazr-JS.
+
+InlineTextLineEditorWidget
+--------------------------
+
+We have a convenient wrapper for the inlineedit/editor JS widget in
+InlineTextLineEditorWidget.
+
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
+    >>> from canonical.widgets.lazrjswidgets import InlineTextLineEditorWidget
+    >>> bug = factory.makeBug(title='My bug is very important')
+
+The wrapper takes as argument the current value of the field under editing,
+and the URL to edit the value.
+
+    >>> widget = InlineTextLineEditorWidget(
+    ...     bug.title, canonical_url(bug.bugtasks[0], view_name='+edit'))
+
+The widget is rendered by executing it, it prints out the element with an edit
+button to edit the link, along the javascript to hook the widget on this HTML.
+
+    >>> print widget()
+    <h1><span class="editable-text">My bug is very important</span>
+        <a href="http://bugs.launchpad.dev/.../+edit" class="edit-button"
+        ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
+    </h1>
+
+Note that there is no <script> tag to hook on the inline editor because AJAX
+controls like this are only available to logged in user.
+
+    >>> login('no-priv@canonical.com')
+    >>> print widget()
+    <h1><span class="editable-text">My bug is very important</span>
+        <a href="http://bugs.launchpad.dev/.../+edit" class="edit-button"
+        ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
+    </h1>
+    <script>
+    ...
+    </script>
+
