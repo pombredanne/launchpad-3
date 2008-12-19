@@ -8,6 +8,7 @@ __all__ = [
     'MeLink',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
