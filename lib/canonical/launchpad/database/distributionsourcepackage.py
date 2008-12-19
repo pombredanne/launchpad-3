@@ -203,17 +203,6 @@ class DistributionSourcePackage(BugTargetBase,
             orderBy='-datecreated',
             limit=quantity)
 
-    @property
-    def binary_package_names(self):
-        """See `IDistributionSourcePackage`."""
-        cache = DistributionSourcePackageCache.selectOne("""
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id))
-        if cache is None:
-            return None
-        return cache.binpkgnames
-
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""
         result = []

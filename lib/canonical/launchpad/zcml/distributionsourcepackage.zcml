@@ -9,7 +9,7 @@
     <allow
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease
-                  releases publishing_history binary_package_names
+                  releases publishing_history
                   current_publishing_records bug_reporting_guidelines
                   latest_overall_publication __getitem__ getVersion
                   __eq__ __ne__ bugtasks searchTasks
