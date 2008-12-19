@@ -1714,7 +1714,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # text.  Only one part of the tuple will be set.
         committers = set()
         for (revision, author) in self._recent_revisions:
-            if author.person is None:
+            if author.personID is None:
                 committers.add((None, author.name))
             else:
                 committers.add((author.personID, None))
