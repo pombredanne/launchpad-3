@@ -103,6 +103,20 @@ class TestBranchTraversal(TestCaseWithFactory):
         segments = [branch.product.name, branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
+    def test_package_branch(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        segments = [
+            branch.distroseries.distribution.name,
+            branch.distroseries.name,
+            branch.sourcepackagename.name,
+            branch.name]
+        # XXX: JonathanLange 2008-12-19: What we want...
+        #self.assertEqual(branch, self.traverse(segments))
+        self.assertRaises(NotFound, self.traverse, segments)
+
 
 def test_suite():
     suite = unittest.TestSuite()
