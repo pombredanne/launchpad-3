@@ -140,6 +140,8 @@ from canonical.launchpad.interfaces import (
     PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespaceSet)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
@@ -271,24 +273,31 @@ class BranchTraversalMixin:
 
     """
 
+    def _getBranch(self, product_name, branch_name):
+        return getUtility(IBranchNamespaceSet).interpret(
+            self.context.name, product_name).getByName(branch_name)
+
     @stepto('+branch')
     def redirect_branch(self):
         """Redirect to canonical_url, which is ~user/product/name."""
         stepstogo = self.request.stepstogo
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
-        if product_name is not None and branch_name is not None:
-            branch = self.context.getBranch(product_name, branch_name)
-            if branch:
-                return self.redirectSubTree(canonical_url(branch))
+        branch = self._getBranch(product_name, branch_name)
+        if branch:
+            return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
+
+    @stepthrough('+junk')
+    def traverse_junk(self, name):
+        return get_branch_namespace(self.context).getByName(name)
 
     def traverse(self, product_name):
         # XXX: JonathanLange 2008-12-10 spec=package-branches: This is a big
         # thing that needs to be changed for package branches.
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
-            branch = self.context.getBranch(product_name, branch_name)
+            branch = self._getBranch(product_name, branch_name)
             if branch is not None and branch.product is not None:
                 # The launch bag contains "stuff of interest" related to where
                 # the user is traversing to.  When a user traverses over a
