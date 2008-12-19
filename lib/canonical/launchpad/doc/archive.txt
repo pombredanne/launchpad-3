@@ -63,7 +63,7 @@ Useful properties:
     u'PPA for Celso Providelo'
 
     >>> cprov_archive.archive_url
-    u'http://ppa.launchpad.dev/cprov/default/ubuntu'
+    u'http://ppa.launchpad.dev/cprov/ubuntu'
 
 Inquire what Distribution Series this archive has published sources to:
 
@@ -799,13 +799,13 @@ Then, the archive topology will follow:
 <PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
 
     >>> pubconfig.archiveroot
-    u'/var/tmp/ppa.test/cprov/default/ubuntutest'
+    u'/var/tmp/ppa.test/cprov/ubuntutest'
 
     >>> pubconfig.poolroot
-    u'/var/tmp/ppa.test/cprov/default/ubuntutest/pool'
+    u'/var/tmp/ppa.test/cprov/ubuntutest/pool'
 
     >>> pubconfig.distsroot
-    u'/var/tmp/ppa.test/cprov/default/ubuntutest/dists'
+    u'/var/tmp/ppa.test/cprov/ubuntutest/dists'
 
 Path not used in *personal* archives publication workflow are set to
 None, so they won't get created:
@@ -1110,7 +1110,7 @@ A new Archive can be created by passing a name and an owner
     >>> sandbox_archive.owner == name16
     True
 
-PPAs are created with the name attribute set to 'default' by default.
+PPAs are created with the name attribute set to 'default'.
 
     >>> print sandbox_archive.name
     default
@@ -1179,7 +1179,7 @@ use to retrieve files from it.
     http://ftpmaster.internal/ubuntutest-partner
 
     >>> print sandbox_archive.archive_url
-    http://ppa.launchpad.dev/name16/default/ubuntu
+    http://ppa.launchpad.dev/name16/ubuntu
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
@@ -1189,13 +1189,13 @@ If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
     >>> print naked_cprov_archive.archive_url
-    http://ppa.launchpad.dev/cprov/default/ubuntu
+    http://ppa.launchpad.dev/cprov/ubuntu
 
     >>> naked_cprov_archive.private = True
     >>> naked_cprov_archive.syncUpdate()
 
     >>> print naked_cprov_archive.archive_url
-    http://private-ppa.launchpad.dev/cprov/default/ubuntu
+    http://private-ppa.launchpad.dev/cprov/ubuntu
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
@@ -1223,17 +1223,17 @@ to publish to the RELEASE pocket no matter what state the distroseries is in.
     False
 
 getPPAByDistributionAndOwnerName method allow PPA lookups based on a
-distribution, person name and the PPA name. This method is used in
+distribution and a person name. This method is used in
 `PackageLocation` to provide a homogeneous way to refer to a Location
 (archive, distribution, distroseries, pocket).
 
     >>> cprov_archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'cprov', 'default')
+    ...     ubuntu, 'cprov')
     True
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'sabdfl', 'default')
+    ...     ubuntu, 'sabdfl')
     True
 
 Iteration over the own utility is performed against all archives,
