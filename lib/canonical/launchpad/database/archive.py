@@ -13,7 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Join, Count
+from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -778,12 +778,12 @@ class Archive(SQLBase):
         find_spec = (
             Build.buildstate,
             Count(Build.id)
-        )
+            )
         result = store.using(Build).find(
             find_spec,
             Build.archive == self,
             *extra_exprs
-        ).group_by(Build.buildstate).order_by(Build.buildstate)
+            ).group_by(Build.buildstate).order_by(Build.buildstate)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -794,7 +794,7 @@ class Archive(SQLBase):
                 BuildStatus.MANUALDEPWAIT,
                 ),
              # The 'pending' count is a list because we may append to it
-             # later
+             # later.
             'pending': [
                 BuildStatus.BUILDING,
                 ],
@@ -805,7 +805,7 @@ class Archive(SQLBase):
                 BuildStatus.SUPERSEDED,
                 ),
              # The 'total' count is a list because we may append to it
-             # later
+             # later.
             'total': [
                 BuildStatus.CHROOTWAIT,
                 BuildStatus.FAILEDTOBUILD,
@@ -824,17 +824,15 @@ class Archive(SQLBase):
             count_map['total'].append(BuildStatus.NEEDSBUILD)
 
         # Initialize all the counts in the map to zero:
-        build_counts = dict(
-            (count_type, 0) for count_type in count_map.keys())
+        build_counts = dict((count_type, 0) for count_type in count_map)
 
         # For each count type that we want to return ('failed', 'total'),
         # there may be a number of corresponding buildstate counts.
-        # So for each buildstate count in the result set
+        # So for each buildstate count in the result set...
         for buildstate, count in result:
-
-            # Go through the count map checking which counts this 
+            # ...go through the count map checking which counts this 
             # buildstate belongs to and add it to the aggregated
-            # count:
+            # count.
             for count_type, build_states in count_map.items():
                 if buildstate in build_states:
                     build_counts[count_type] += count
