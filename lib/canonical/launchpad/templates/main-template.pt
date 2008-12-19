@@ -75,6 +75,11 @@
       </style>
     </noscript>
 
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
+        />
+
     <tal:devmode define="yui string:${icingroot}/yui/3.0.0pr2/build;
                          lazr_js string:${icingroot}/lazr/build;
                          lp_js string:${icingroot}/build"
@@ -101,6 +106,10 @@
               tal:attributes="src string:${yui}/base/base.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/anim/anim.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
