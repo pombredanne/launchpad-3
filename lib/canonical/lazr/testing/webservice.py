@@ -59,7 +59,7 @@ class FakeRequest:
 
     @property
     def stepstogo(self):
-        return StepsToGo(self.getTraversalStack())
+        return StepsToGo(self)
 
     def getApplicationURL(self):
         return "http://api.example.org"
