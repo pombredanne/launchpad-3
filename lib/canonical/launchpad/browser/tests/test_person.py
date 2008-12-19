@@ -90,6 +90,9 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertRaises(
             NotFound, self.traverse, ['+branch', 'no-product', 'no-branch'])
 
+    # XXX: JonathanLange 2008-12-19: Do we need to test traversed objects or
+    # consumed path elements?
+
 
 def test_suite():
     suite = unittest.TestSuite()
