@@ -28,7 +28,7 @@
 
   <ul>
     <li tal:condition="active_member_count"
-        tal:define="membership_batch nocall:view/member_memberships/currentBatch">
+        tal:define="membership_batch nocall:view/active_memberships/currentBatch">
       <h2>Active members</h2>
 
       <p>
@@ -42,7 +42,7 @@
 
       <div class="lesser" id="active-top-navigation">
         <tal:navigation
-          content="structure view/member_memberships/@@+navigation-links-upper" />
+          content="structure view/active_memberships/@@+navigation-links-upper" />
       </div>
 
       <table class="listing sortable" id="activemembers">
@@ -60,7 +60,7 @@
             <tal:block define="member membership/person">
               <td>
                 <a tal:attributes="href member/fmt:url"
-                    tal:content="member/browsername" />
+                   tal:content="member/browsername" />
               </td>
               <td>
                 <span class="sortkey"
@@ -96,7 +96,7 @@
 
       <div class="lesser">
         <tal:navigation
-          content="structure view/member_memberships/@@+navigation-links-lower" />
+          content="structure view/active_memberships/@@+navigation-links-lower" />
       </div>
       <br />
     </li>
