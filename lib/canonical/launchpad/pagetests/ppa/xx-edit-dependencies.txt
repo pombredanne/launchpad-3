@@ -154,7 +154,6 @@ sources.list widget).
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'archive-dependencies'))
     PPA dependencies
-    When installing packages from this PPA ... in this context.
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
@@ -391,7 +390,6 @@ index page (see `IArchivedependency.title`).
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
     PPA dependencies
-    When installing packages from this PPA ... in this context.
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
 
@@ -419,6 +417,5 @@ The dependencies were not modified.
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
     PPA dependencies
-    When installing packages from this PPA ... in this context.
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
