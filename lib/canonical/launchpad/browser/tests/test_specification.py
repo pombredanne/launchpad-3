@@ -48,12 +48,45 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertEqual(
             self.specification.getBranchLink(branch), self.traverse(segments))
 
+    def test_junk_branch_no_such_person(self):
+        person_name = self.factory.getUniqueString()
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(
+            NotFound, self.traverse, [person_name, '+junk', branch_name])
+
+    def test_junk_branch_no_such_branch(self):
+        person = self.factory.makePerson()
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(
+            NotFound, self.traverse, [person.name, '+junk', branch_name])
+
     def test_product_branch(self):
         branch = self.factory.makeBranch()
         self.linkBranch(branch)
         segments = [branch.owner.name, branch.product.name, branch.name]
         self.assertEqual(
             self.specification.getBranchLink(branch), self.traverse(segments))
+
+    def test_product_branch_no_such_person(self):
+        person_name = self.factory.getUniqueString()
+        product_name = self.factory.getUniqueString()
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(
+            NotFound, self.traverse, [person_name, product_name, branch_name])
+
+    def test_product_branch_no_such_product(self):
+        person = self.factory.makePerson()
+        product_name = self.factory.getUniqueString()
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(
+            NotFound, self.traverse, [person.name, product_name, branch_name])
+
+    def test_product_branch_no_such_branch(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(
+            NotFound, self.traverse, [person.name, product.name, branch_name])
 
     def test_package_branch(self):
         distroseries = self.factory.makeDistroRelease()
