@@ -748,20 +748,18 @@ class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
         self.next_url = canonical_url(team)
 
 
-class ProposedTeamMembersEditView:
+class ProposedTeamMembersEditView(LaunchpadFormView):
+    schema = Interface
+    label = 'Proposed team members'
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-
-    def processProposed(self):
+    def validate(self, form):
         if self.request.method != "POST":
-            return
+            self.addError('The form must be submitted as a POST.')
 
-        team = self.context
-        expires = team.defaultexpirationdate
-        for person in team.proposedmembers:
+    @action('Save changes', name='save')
+    def action_save(self, action, data):
+        expires = self.context.defaultexpirationdate
+        for person in self.context.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
             if action == "approve":
                 status = TeamMembershipStatus.APPROVED
@@ -770,14 +768,13 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipData(
-                person, status, reviewer=self.user, expires=expires)
+            self.context.setMembershipData(
+                person, status, reviewer=self.user, expires=expires,
+                comment=self.request.form.get('comment'))
 
-        # Need to flush all changes we made, so subsequent queries we make
-        # with this transaction will see this changes and thus they'll be
-        # displayed on the page that calls this method.
-        flush_database_updates()
-        self.request.response.redirect('%s/+members' % canonical_url(team))
+    @property
+    def next_url(self):
+        return '%s/+members' % canonical_url(self.context)
 
 
 class TeamBrandingView(BrandingChangeView):
