@@ -36,28 +36,33 @@ RewriteLock /var/tmp/rewrite-lock
   # Requests to the root are redirected to the Launchpad homepage.
   RewriteRule ^/$ http://launchpad.dev [L]
 
-  # Requests by branch id are served from the file system (in
-  # production, this rule is protected by a RewriteCond that only
-  # allows requests from localhost and a few other hosts that need to
-  # be able to access all branches).
-  RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
-
-  # Serve the robots.txt file normally.
-  RewriteRule ^/robots.txt$ - [L]
-
-  # Everything else is translated by the branch-rewrite.py script.
   RewriteRule ^(/~.*)$ ${branch-rewrite:$1} [L,P]
 
-  DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
-  <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
+  DocumentRoot /var/tmp/bazaar.launchpad.dev/static/
+  <Directory /var/tmp/bazaar.launchpad.dev/static/>
     Options SymLinksIfOwnerMatch
     AllowOverride None
     Options Indexes
   </Directory>
 
   <Location />
-	  ProxyPassReverse http://localhost:8080/
+    ProxyPassReverse http://localhost:8080/
   </Location>
+</VirtualHost>
+
+<VirtualHost 127.0.0.88:80>
+  ServerName bazaar-internal.launchpad.dev
+  LogLevel debug
+
+  DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
+  <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
+    Order Deny,Allow
+    Deny from all
+    Allow from 127.0.0.0/255.0.0.0
+    Options SymLinksIfOwnerMatch
+    AllowOverride None
+    Options Indexes
+  </Directory>
 </VirtualHost>
 
 <VirtualHost 127.0.0.88:443>

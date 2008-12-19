@@ -60,7 +60,8 @@ class BranchRewriter:
                 raise
         if transport_type == BRANCH_TRANSPORT:
             if trailing.startswith('.bzr'):
-                r = '/' + branch_id_to_path(info['id']) + '/' + trailing
+                r = ('http://bazaar-internal.launchpad.dev/' +
+                     branch_id_to_path(info['id']) + '/' + trailing)
                 if trailingSlash:
                     r += '/'
             else:
