@@ -10,7 +10,6 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BranchType, CreateBugParams, EmailAddressAlreadyTaken,
     IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, IProductSet,
@@ -24,10 +23,13 @@ from canonical.launchpad.database import (
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
 from canonical.launchpad.validators.person import PrivatePersonLinkageError
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestPerson(TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
