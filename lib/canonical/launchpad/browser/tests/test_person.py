@@ -98,10 +98,26 @@ class TestBranchTraversal(TestCaseWithFactory):
         segments = ['+junk', branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
+    def test_junk_branch_no_such_branch(self):
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(NotFound, self.traverse, ['+junk', branch_name])
+
     def test_product_branch(self):
         branch = self.factory.makeBranch(owner=self.person)
         segments = [branch.product.name, branch.name]
         self.assertEqual(branch, self.traverse(segments))
+
+    def test_product_branch_no_such_product(self):
+        product_name = self.factory.getUniqueString()
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(
+            NotFound, self.traverse, [product_name, branch_name])
+
+    def test_product_branch_no_such_branch(self):
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString()
+        self.assertRaises(
+            NotFound, self.traverse, [product.name, branch_name])
 
     def test_package_branch(self):
         distroseries = self.factory.makeDistroRelease()
