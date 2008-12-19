@@ -42,5 +42,11 @@ def cache_me_link_when_principal_identified(event):
     This ensures that the Javascript variable LP.client.links['me']
     will be set.
     """
-    cache = IJSONRequestCache(event.request)
-    cache.links['me'] = IPerson(event.principal)
+    # XML-RPC requests and other non-browser requests don't have a
+    # IJSONRequestCache, and this code shouldn't run from them.
+    try:
+        cache = IJSONRequestCache(event.request)
+    except TypeError:
+        cache = None
+    if cache is not None:
+        cache.links['me'] = IPerson(event.principal)
