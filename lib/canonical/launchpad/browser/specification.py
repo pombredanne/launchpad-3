@@ -51,6 +51,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
+from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProduct
@@ -259,11 +260,9 @@ class SpecificationNavigation(Navigation):
         if person_name is None or product_name is None or branch_name is None:
             raise NotFoundError
 
-        person = getUtility(IPersonSet).getByName(person_name)
-        if person is None:
-            raise NotFoundError
-
-        branch = person.getBranch(product_name, branch_name)
+        namespace = getUtility(IBranchNamespaceSet).interpret(
+            person=person_name, product=product_name)
+        branch = namespace.getByName(branch_name)
 
         if not branch:
             raise NotFoundError
