@@ -107,7 +107,8 @@ class TestBranchTraversal(TestCaseWithFactory):
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         branch = self.factory.makeBranch(
-            distroseries=distroseries, sourcepackagename=sourcepackagename)
+            owner=self.person, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
         segments = [
             branch.distroseries.distribution.name,
             branch.distroseries.name,
