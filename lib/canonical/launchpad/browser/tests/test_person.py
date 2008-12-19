@@ -8,15 +8,16 @@ __metaclass__ = type
 from textwrap import dedent
 import unittest
 
+from zope.publisher.interfaces import NotFound
+
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.browser.person import PersonNavigation, PersonView
 from canonical.launchpad.ftests import login_person
-from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lazr.testing.webservice import FakeRequest
 
@@ -62,31 +63,27 @@ class TestBranchTraversal(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self._redirects = []
+        self.person = self.factory.makePerson()
 
-    def assertRedirects(self, to_url, function, *args, **kwargs):
-        del self._redirects[:]
-        function(*args, **kwargs)
-        self.assertEqual([to_url], self._redirects)
+    def assertRedirects(self, segments, url):
+        redirection = self.traverse(segments)
+        self.assertEqual(url, redirection.target)
 
-    def makeTraverser(self, person, stack=None):
-        request = FakeRequest(['~' + person.name], stack)
-        traverser = PersonNavigation(person, request)
-        traverser.redirectSubTree = self._redirects.append
-        return traverser
+    def traverse(self, segments):
+        stack = list(reversed(segments))
+        name = stack.pop()
+        request = FakeRequest(['~' + self.person.name], stack)
+        traverser = PersonNavigation(self.person, request)
+        return traverser.publishTraverse(request, name)
 
     def test_redirect_branch(self):
-        branch = self.factory.makeBranch()
-        segments = branch.unique_name.split('/')[1:]
-        segments.reverse()
-        traverser = self.makeTraverser(branch.owner, segments)
-        self.assertRedirects(canonical_url(branch), traverser.redirect_branch)
+        branch = self.factory.makeBranch(owner=self.person)
+        segments = ['+branch', branch.product.name, branch.name]
+        self.assertRedirects(segments, canonical_url(branch))
 
     def test_redirect_branch_not_found(self):
-        person = self.factory.makePerson()
-        segments = ['no-branch', 'no-product']
-        traverser = self.makeTraverser(person, segments)
-        self.assertRaises(NotFoundError, traverser.redirect_branch)
+        self.assertRaises(
+            NotFound, self.traverse, ['+branch', 'no-product', 'no-branch'])
 
 
 def test_suite():

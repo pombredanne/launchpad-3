@@ -50,6 +50,7 @@ class FakeRequest:
         self.response = FakeResponse()
         self.principal = None
         self.interaction = None
+        self.traversed_objects = []
 
     def getTraversalStack(self):
         return self._stack
