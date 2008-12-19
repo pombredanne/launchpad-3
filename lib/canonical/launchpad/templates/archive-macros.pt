@@ -193,26 +193,30 @@
   <table id="build-count-table"
          summary="An overview of the build status for this archive."
          tal:define="build_counters view/build_counters">
-    <tr>
-      <th>Total builds:</th>
-      <th tal:content="view/build_counters/total">100</th>
-    </tr>
-    <tr>
-      <th>Failed</th>
-      <td tal:content="build_counters/failed">100</td>
-    </tr>
-    <tr>
-      <th>Pending</th>
-      <td tal:content="build_counters/pending">100</td>
-    </tr>
-    <tr>
-      <th>Superseded</th>
-      <td tal:content="build_counters/superseded">100</td>
-    </tr>
-    <tr>
-      <th>Succeeded</th>
-      <td tal:content="build_counters/succeeded">100</td>
-    </tr>
+    <thead>
+      <tr>
+        <th>Total builds:</th>
+        <td class="total" tal:content="view/build_counters/total">100</td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>Failed</th>
+        <td class="failed" tal:content="build_counters/failed">100</td>
+      </tr>
+      <tr>
+        <th>Pending</th>
+        <td class="pending" tal:content="build_counters/pending">100</td>
+      </tr>
+      <tr>
+        <th>Superseded</th>
+        <td class="superseded" tal:content="build_counters/superseded">100</td>
+      </tr>
+      <tr>
+        <th>Succeeded</th>
+        <td class="succeeded" tal:content="build_counters/succeeded">100</td>
+      </tr>
+    </tbody>
   </table>
 </metal:build_status_summary>
 
