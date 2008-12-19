@@ -41,16 +41,16 @@
     <td tal:content="context/status/title">PUBLISHED</td>
     <td tal:content="context/distroseries/name/capitalize">Dapper</td>
     <td tal:content="context/section/name/capitalize">Web</td>
-    <td tal:define="build_status_summary view/build_status_summary"
-        tal:attributes="class string:build_status ${build_status_summary/status};
+    <td tal:define="build_status_summary view/build_status_summary/status"
+        tal:attributes="class string:build_status ${build_status_summary/name};
                         id string:pubstatus${context/id}">
-      <img tal:attributes="title build_status_summary/status_desc;
-                           alt build_status_summary/status_desc;
+      <img tal:attributes="title build_status_summary/description;
+                           alt build_status_summary/description;
                            src view/build_status_img_src" />
-      <tal:related_builds repeat="build build_status_summary/builds"
+      <tal:related_builds repeat="build view/build_status_summary/builds"
                           condition="not:view/builds_successful">
         <a tal:attributes="href build/fmt:url;
-                           title build_status_summary/status_desc">
+                           title build_status_summary/description">
           <tal:arch content="build/distroarchseries/architecturetag" />
         </a>
       </tal:related_builds>

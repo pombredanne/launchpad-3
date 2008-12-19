@@ -273,22 +273,22 @@ class ArchiveContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
+        """Display a delete menu option for non-copy archives."""
         text = 'Delete packages'
         link = Link('+delete-packages', text, icon='edit')
 
-        # This link should not be available for copy archives
-        # Is there a better way of doing this?
+        # This link should not be available for copy archives.
         if self.context.is_copy:
             link.enabled = False
         return link
 
     @enabled_with_permission('launchpad.AnyPerson')
     def copy(self):
+        """Display a copy menu option for non-copy archives."""
         text = 'Copy packages'
         link = Link('+copy-packages', text, icon='edit')
 
-        # This link should not be available for copy archives
-        # Is there a better way of doing this?
+        # This link should not be available for copy archives.
         if self.context.is_copy:
             link.enabled = False
         return link
@@ -312,12 +312,11 @@ class ArchiveViewBase:
     @property
     def source_count_text(self):
         """Return the correct form of the source counter notice."""
-        if self.context.number_of_sources_published == 1:
-            return '%s source package' % (
-                self.context.number_of_sources_published)
+        num_sources_published = self.context.number_of_sources_published
+        if num_sources_published == 1:
+            return '%s source package' % num_sources_published
         else:
-            return '%s source packages' % (
-                self.context.number_of_sources_published)
+            return '%s source packages' % num_sources_published
 
     @property
     def binary_count_text(self):
@@ -451,16 +450,9 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
 
     @property
     def package_copy_requests(self):
-        """Return the package copy requests associated with this archive."""
-
-        # Currently this only makes sense for copy archives
-        if not self.context.is_copy:
-            return None
-
-        requests = list(getUtility(IPackageCopyRequestSet).getByTargetArchive(
-            self.context))
-
-        return requests
+        """Return any package copy requests associated with this archive."""
+        return(getUtility(
+                IPackageCopyRequestSet).getByTargetArchive(self.context))
 
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     """Base class to implement a source selection widget for PPAs."""

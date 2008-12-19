@@ -1141,15 +1141,15 @@ class PublishingSet:
         if not source_ids:
             return {}
 
-        # Get the builds for all the requested sources:
+        # Get the builds for all the requested sources.
         result_set = self.getBuildsForSourceIds(source_ids)
 
-        # Populate the list of builds for each id in a dict:
+        # Populate the list of builds for each id in a dict.
         source_builds = {}
         for src_pub, build, distroarchseries in result_set:
             source_builds.setdefault(src_pub.id, []).append(build)
 
-        # get the overall build status for each source's builds
+        # Gset the overall build status for each source's builds.
         build_set = getUtility(IBuildSet)
         source_build_statuses = {}
         for source_id, builds in source_builds.items():

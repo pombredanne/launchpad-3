@@ -166,15 +166,15 @@ Create a small function for displaying the results:
 
     >>> def print_build_summary(summary):
     ...     print "%s\n%s\nRelevant builds:\n%s" % (
-    ...         summary['status'],
-    ...         summary['status_desc'],
+    ...         summary['status'].title,
+    ...         summary['status'].description,
     ...         "\n".join(
     ...             " - %s" % build.title for build in summary['builds'])
     ...     )
 
     >>> print_build_summary(src_pub_record_view.build_status_summary)
-    succeeded
-    All builds succeeded.
+    Successfully built
+    All builds were built successfully.
     Relevant builds:
      - i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
@@ -184,3 +184,8 @@ to summarize the current state of the context's associated builds:
     >>> print src_pub_record_view.build_status_img_src
     /@@/yes
 
+As well as a helper to determine if the build status summary is
+successful:
+
+    >>> src_pub_record_view.builds_successful
+    True

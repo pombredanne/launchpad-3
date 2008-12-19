@@ -17,13 +17,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
-from canonical.launchpad.webapp import (LaunchpadView)
-from canonical.launchpad.interfaces import PackagePublishingStatus
-from canonical.launchpad.interfaces.build import IBuildSet
+from canonical.launchpad.interfaces.build import IBuildSet, BuildSetStatus
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus, IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 class SourcePublicationURL:
@@ -167,20 +167,17 @@ class SourcePublishingRecordView(BasePublishingRecordView):
 
     @property
     def builds_successful(self):
-        """Return whether all builds were successful.
-
-        Note to reviewer: perhaps there's a way to do this with a
-        TAL condition expression? I couldn't find a readable way...
-        """
-        return self.build_status_summary['status'] == "succeeded"
+        """Return whether all builds were successful."""
+        success = BuildSetStatus.FULLYBUILT
+        return self.build_status_summary['status'] == success
 
     @property
     def build_status_img_src(self):
         """Return the image path for the current build status summary."""
         image_map = {
-            'building': '/@@/build-building',
-            'needsbuild': '/@@/build-needed',
-            'failed': '/@@/no',
+            BuildSetStatus.BUILDING: '/@@/build-building',
+            BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
+            BuildSetStatus.FAILEDTOBUILD: '/@@/no',
             }
 
         return image_map.get(self.build_status_summary['status'], '/@@/yes')
