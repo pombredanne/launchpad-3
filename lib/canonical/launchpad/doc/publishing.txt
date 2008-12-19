@@ -1267,8 +1267,8 @@ Create a small function for displaying the results:
 
     >>> def print_build_summary(summary):
     ...     print "%s\n%s\nRelevant builds:\n%s" % (
-    ...         summary['status'],
-    ...         summary['status_desc'],
+    ...         summary['status'].title,
+    ...         summary['status'].description,
     ...         "\n".join(
     ...             " - %s" % build.title for build in summary['builds'])
     ...     )
@@ -1282,13 +1282,13 @@ Create a small function for displaying the results:
     ...     [firefox_source_pub.id, foo_pub.id])
     >>> print_build_summaries(build_summaries)
     Source ID: 18
-    succeeded
-    All builds succeeded.
+    Successfully built
+    All builds were built successfully.
     Relevant builds:
      - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
      - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Source ID: 22
-    failed
+    Failed to build
     There were build failures.
     Relevant builds:
      - i386 build of foobar 1.0 in ubuntu warty RELEASE
