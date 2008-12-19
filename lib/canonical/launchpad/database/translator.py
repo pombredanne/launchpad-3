@@ -8,8 +8,8 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from canonical.launchpad.interfaces import \
-    ITranslator, ITranslatorSet
+from canonical.launchpad.interfaces.translator import (
+    ITranslator, ITranslatorSet)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -39,7 +39,8 @@ class Translator(SQLBase):
 class TranslatorSet:
     implements(ITranslatorSet)
 
-    def new(self, translationgroup, language, translator, documentation_url):
+    def new(self, translationgroup, language,
+            translator, documentation_url=None):
         return Translator(
             translationgroup=translationgroup,
             language=language,

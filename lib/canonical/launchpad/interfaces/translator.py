@@ -46,7 +46,7 @@ class ITranslator(Interface):
         title=_('Documentation URL'), required=False,
         allowed_schemes=['http', 'https', 'ftp'],
         allow_userinfo=False,
-        description=_("URL with documentation for translation work done "
+        description=_("URL to the documentation for translation work done "
                       "here: process, vocabulary standards, caveats. "
                       "Please include the http://."))
 

@@ -22,7 +22,7 @@ suggestions in Spanish.
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> ubuntu_spanish_reviewer = getUtility(ITranslatorSet).new(
     ...     translationgroup=ubuntu.translationgroup, language=spanish,
-    ...     translator=carlos, documentation_url=None)
+    ...     translator=carlos)
     >>> logout()
 
 Let's add a new suggestion as a person without privileges.

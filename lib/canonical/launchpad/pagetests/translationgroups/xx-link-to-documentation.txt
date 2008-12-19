@@ -42,8 +42,8 @@ Back on the translations page, the link is now present, too.
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/'
     ...     '+pots/evolution-2.2/es/+translate')
-    >>> documentation_url = first_tag_by_class(anon_browser.contents,
-    ...             'documentation_url')
+    >>> documentation_url = first_tag_by_class(
+    ...     anon_browser.contents, 'documentation_url')
     >>> print extract_text(documentation_url)
     Documentation
     >>> print documentation_url['href']

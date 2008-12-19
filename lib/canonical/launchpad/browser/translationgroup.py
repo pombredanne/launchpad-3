@@ -55,7 +55,8 @@ class TranslationGroupView:
                            'person': item.translator,
                            'code': item.language.code,
                            'datecreated': item.datecreated,
-                           'documentation_url': item.documentation_url})
+                           'documentation_url': item.documentation_url,
+                           })
         result.sort(key=operator.itemgetter('lang'))
         return result
 

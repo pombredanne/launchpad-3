@@ -187,8 +187,8 @@ class POFileView(LaunchpadView):
                 managers.append({
                     'group': group,
                     'team': team,
-                    'documentation_url': documentation_url
-                })
+                    'documentation_url': documentation_url,
+                    })
             groups.add(group)
         return managers
 
