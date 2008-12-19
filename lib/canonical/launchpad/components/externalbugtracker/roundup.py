@@ -7,6 +7,8 @@ __all__ = ['Roundup']
 
 import csv
 
+from urllib import quote_plus
+
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData)
@@ -17,6 +19,18 @@ from canonical.launchpad.webapp.uri import URI
 
 PYTHON_BUGS_HOSTNAME = 'bugs.python.org'
 MPLAYERHQ_BUGS_HOSTNAME = 'roundup.mplayerhq.hu'
+
+
+def query_encode(items):
+    """Join the items to form a valid URL query string.
+
+    There is urllib.urlencode that does a similar job, but you can't
+    specify the safe characters. Roundup likes URLs with @s in them,
+    and they work just fine unquoted.
+    """
+    return '&'.join(
+        '%s=%s' % (quote_plus(key, '@'), quote_plus(value))
+        for (key, value) in items)
 
 
 def parse_python_status(remote_status):
@@ -53,48 +67,52 @@ def parse_python_status(remote_status):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
+    _fields_map = {
+        PYTHON_BUGS_HOSTNAME: ('status', 'resolution'),
+        MPLAYERHQ_BUGS_HOSTNAME: ('status', 'substatus'),
+        }
+
     def __init__(self, baseurl):
         """Create a new Roundup instance.
 
-        :bugtracker: The Roundup bugtracker.
+        :baseurl: The starting URL for accessing the remote Roundup
+            bug tracker.
 
-        If the bug tracker's baseurl is one which points to
-        bugs.python.org, the behaviour of the Roundup bugtracker will be
-        different from that which it exhibits to every other Roundup bug
-        tracker, since the Python Roundup instance is very specific to
-        Python and in fact behaves rather more like SourceForge than
-        Roundup.
+        The fields/columns to fetch from the remote bug tracker are
+        derived based on the host part of the baseurl.
         """
         super(Roundup, self).__init__(baseurl)
+        self.host = URI(self.baseurl).host
 
-        if self.isPython():
-            # The bug export URLs differ only from the base Roundup ones
-            # insofar as they need to include the resolution column in
-            # order for us to be able to successfully export it.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=activity&@group=priority"
-                "&@pagesize=50&@startwith=0")
+        if self.host in self._fields_map:
+            fields = ('title', 'id', 'activity') + self._fields_map[self.host]
         else:
-            # XXX: 2007-08-29 Graham Binns
-            #      I really don't like these URLs but Roundup seems to
-            #      be very sensitive to changing them. These are the
-            #      only ones that I can find that work consistently on
-            #      all the roundup instances I can find to test them
-            #      against, but I think that refining these should be
-            #      looked into at some point.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=activity&@group=priority&@pagesize=50"
-                "&@startwith=0")
+            fields = ('title', 'id', 'activity', 'status')
+
+        # Roundup is quite particular about URLs, so although several
+        # of the parameters below seem redundant or irrelevant, they
+        # are needed for compatibility with the broadest range of
+        # Roundup instances in the wild. Test before changing them!
+        self.query_base = [
+            ("@action", "export_csv"),
+            ("@columns", ",".join(fields)),
+            ("@sort", "id"),
+            ("@group", "priority"),
+            ("@filter", "id"),
+            ("@pagesize", "50"),
+            ("@startwith", "0"),
+            ]
+
+    def getSingleBugExportURL(self, bug_id):
+        """Return the URL for single bug CSV export."""
+        query = list(self.query_base)
+        query.append(('id', str(bug_id)))
+        return "%s/issue?%s" % (self.baseurl, query_encode(query))
+
+    def getBatchBugExportURL(self):
+        """Return the URL for batch (all bugs) CSV export."""
+        query = self.query_base
+        return "%s/issue?%s" % (self.baseurl, query_encode(query))
 
     def isPython(self):
         """Return True if the remote bug tracker is at bugs.python.org.
@@ -126,20 +144,19 @@ class Roundup(ExternalBugTracker):
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
         bug_id = int(bug_id)
-        query_url = '%s/%s' % (
-            self.baseurl, self.single_bug_export_url % bug_id)
+        query_url = self.getSingleBugExportURL(bug_id)
         reader = csv.DictReader(self._fetchPage(query_url))
         return (bug_id, reader.next())
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`"""
-        # XXX: 2007-08-28 Graham Binns
+        # XXX: 2007-08-28 Graham Binns bug=135317
         #      At present, Roundup does not support exporting only a
         #      subset of bug ids as a batch (launchpad bug 135317). When
         #      this bug is fixed we need to change this method to only
         #      export the bug ids needed rather than hitting the remote
         #      tracker for a potentially massive number of bugs.
-        query_url = '%s/%s' % (self.baseurl, self.batch_bug_export_url)
+        query_url = self.getBatchBugExportURL()
         remote_bugs = csv.DictReader(self._fetchPage(query_url))
         bugs = {}
         for remote_bug in remote_bugs:
@@ -298,8 +315,7 @@ class Roundup(ExternalBugTracker):
         else:
             raise UnknownRemoteStatusError(remote_status)
 
-        host = URI(self.baseurl).host
         try:
-            return self._status_lookup.find(host, *remote_status_key)
+            return self._status_lookup.find(self.host, *remote_status_key)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
