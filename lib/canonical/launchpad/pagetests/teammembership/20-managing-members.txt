@@ -8,7 +8,10 @@ have been invited.
     ...     table = find_tag_by_id(contents, type)
     ...     for link in table.findAll('a'):
     ...         if link.renderContents() != 'Edit' and not link.find('img'):
-    ...             print link.renderContents()#.encode('ascii', 'ignore')
+    ...             contents = link.renderContents()
+    ...             if isinstance(contents, str):
+    ...                 contents = contents.decode('utf-8')
+    ...             print contents.encode('ascii', 'replace')
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Show all members').click()
@@ -36,7 +39,7 @@ without bounds, so they are paginated.
     >>> browser.open('http://launchpad.dev/~admins/+members')
     >>> print_members(browser.contents, 'activemembers')
     Andrew Bennetts
-    Carlos Perelló Marín
+    Carlos Perell? Mar?n
     Dafydd Harries
     Daniel Henrique Debonzi
     Daniel Silverstone
