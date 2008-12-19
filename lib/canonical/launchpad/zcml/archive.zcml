@@ -9,9 +9,16 @@
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.archive.IArchivePublic"/>
     <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.archive.IArchiveView"
+      />
+    <require
+      permission="launchpad.Append"
+      interface="canonical.launchpad.interfaces.archive.IArchiveAppend"
+      />
+    <require
       permission="launchpad.Edit"
       set_attributes="description whiteboard"
-      interface="canonical.launchpad.interfaces.archive.IArchiveEditRestricted"
       />
     <require
       permission="launchpad.Admin"
@@ -58,14 +65,13 @@
     for="canonical.launchpad.interfaces.archive.IPPA"
     path_expression="string:+archive"
     attribute_to_parent="owner"
-    urldata="canonical.launchpad.browser.archive.PPAURL"
     />
 
   <browser:url
     for="canonical.launchpad.interfaces.archive.IDistributionArchive"
     path_expression="string:+archive"
     attribute_to_parent="distribution"
-    urldata="canonical.launchpad.browser.archive.DistributionArchiveURL"
+    urldata="canonical.launchpad.browser.archive.ArchiveURL"
     />
 
   <browser:page

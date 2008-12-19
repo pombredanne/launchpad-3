@@ -54,16 +54,6 @@ But Foo Bar can:
            testing@canonical.com
     ...
 
-Teams are similar, unless the team doesn't have an email address:
-
-    >>> user_browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'contact-details'))
-    Contact details
-    Email: No contact address
-      (Contact this team)
-      (Launchpad notifications are sent to all team members)
-
 
 == Summary Pagelets ==
 
