@@ -12,8 +12,8 @@ import os
 import unittest
 
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
-from canonical.lazr.config import ConfigSchema
-from canonical.lazr.interfaces.config import ConfigErrors
+from lazr.config import ConfigSchema
+from lazr.config.interfaces import ConfigErrors
 
 
 # Calculate some landmark paths.
@@ -91,5 +91,3 @@ def test_suite():
                 # This file is not a config that can be validated.
                 pass
     return suite
-
-

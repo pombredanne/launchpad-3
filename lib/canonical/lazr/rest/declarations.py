@@ -49,7 +49,7 @@ from zope.security.checker import CheckerPublic
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
-from canonical.lazr.decorates import Passthrough
+from lazr.delegates import Passthrough
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
@@ -812,4 +812,3 @@ def generate_operation_adapter(method):
     protect_schema(factory, provides)
 
     return factory
-
