@@ -13,17 +13,17 @@ __all__ = [
 
 from operator import attrgetter
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
-from canonical.launchpad.webapp import (
-    LaunchpadView, canonical_url)
-from canonical.launchpad.interfaces import (
-    BuildStatus, PackagePublishingStatus)
+from canonical.launchpad.interfaces.build import IBuildSet, BuildSetStatus
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus, IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 class SourcePublicationURL:
@@ -154,9 +154,33 @@ class BasePublishingRecordView(LaunchpadView):
 
         return removal_comment
 
+
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
     __used_for__ = ISourcePackagePublishingHistory
+
+    @cachedproperty
+    def build_status_summary(self):
+        """Returns a dict with a summary of the build status."""
+        build_set = getUtility(IBuildSet)
+        return build_set.getStatusSummaryForBuilds(self.builds)
+
+    @property
+    def builds_successful(self):
+        """Return whether all builds were successful."""
+        success = BuildSetStatus.FULLYBUILT
+        return self.build_status_summary['status'] == success
+
+    @property
+    def build_status_img_src(self):
+        """Return the image path for the current build status summary."""
+        image_map = {
+            BuildSetStatus.BUILDING: '/@@/build-building',
+            BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
+            BuildSetStatus.FAILEDTOBUILD: '/@@/no',
+            }
+
+        return image_map.get(self.build_status_summary['status'], '/@@/yes')
 
     def wasCopied(self):
         """Whether or not a source is published in its original location.
@@ -236,65 +260,6 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     def builds(self):
         """Return a list of Builds for the context published source."""
         return list(self.context.getBuilds())
-
-    @property
-    def build_status(self):
-        """Return the contents of the 'Built' column.
-
-        If any build for this source is still PENDING or BUILDING, return the
-        'build-building' icon, followed by the architectures building linking
-        to their corresponding build pages.
-
-        If all builds have quiesced and any of them has failed (
-        FAILEDTOBUILD, MANUALDEPWAIT, CHROOTWAIT or FAILEDTOUPLOAD) return
-        the 'no' icon, followed by the architectures where the source failed,
-        also linking to their corresponding build page.
-
-        Finally, if all builds have quiesced and none of them failed, return
-        the 'yes' icon.
-        """
-        def content_template(desc, image, builds=None):
-            icon = ('<img alt="%(desc)s" title="%(desc)s" '
-                    'src="%(image)s" /> ') % {
-                'desc': desc, 'image': image}
-            if builds is None:
-                return icon
-            arch_links = []
-            for build in builds:
-                arch_tag = build.distroarchseries.architecturetag
-                arch_links.append(
-                    '<a href="%(url)s" title="%(title)s">%(arch_tag)s</a>' % {
-                        'url': canonical_url(build),
-                        'arch_tag': arch_tag,
-                        'title': desc})
-            return icon + " ".join(arch_links)
-
-        def collect_builds(states):
-            wanted = []
-            for state in states:
-                candidates = [build for build in self.builds
-                              if build.buildstate == state]
-                wanted.extend(candidates)
-            return wanted
-
-        failed_states = (
-            BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
-            BuildStatus.CHROOTWAIT, BuildStatus.FAILEDTOUPLOAD)
-
-        pending_states = (
-            BuildStatus.NEEDSBUILD, BuildStatus.BUILDING)
-
-        failures = collect_builds(failed_states)
-        pending = collect_builds(pending_states)
-
-        if len(pending) != 0:
-            return content_template(
-                'Still building', '/@@/build-building', builds=pending)
-        elif len(failures) != 0:
-            return content_template(
-                'Build failures', '/@@/no', builds=failures)
-        else:
-            return content_template('Built successfully', '/@@/yes')
 
     @property
     def linkify_source_archive(self):
