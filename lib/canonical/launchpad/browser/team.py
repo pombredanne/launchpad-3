@@ -28,7 +28,6 @@ from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
