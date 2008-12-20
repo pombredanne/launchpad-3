@@ -17,11 +17,36 @@ Let's have a look at the proposed members that we have.
     Andrew Bennetts
     Sample Person
 
-Now we'll approve Andrew Bennetts' membership and decline Sample Person's.
+Now we'll approve Andrew Bennetts' membership and decline Sample Person's,
+and we'll send the applying users and the team admins a generic comment.
 
+    >>> from canonical.launchpad.mail import stub
+    >>> del stub.test_emails[:]
     >>> browser.getControl(name='action_12').value = ['decline']
     >>> browser.getControl(name='action_7').value = ['approve']
-    >>> browser.getControl('Submit').click()
+    >>> browser.getControl(name='comment').value = 'Thanks for your interest'
+    >>> browser.getControl('Save changes').click()
+    >>> len(stub.test_emails)
+    12
+    >>> for from_addr, to_addrs, raw_msg in sorted(stub.test_emails):
+    ...     print to_addrs
+    ['andrew.bennetts@ubuntulinux.com']
+    ['colin.watson@ubuntulinux.com']
+    ['colin.watson@ubuntulinux.com']
+    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com']
+    ['jeff.waugh@ubuntulinux.com']
+    ['jeff.waugh@ubuntulinux.com']
+    ['limi@plone.org']
+    ['limi@plone.org']
+    ['mark@hbd.com']
+    ['mark@hbd.com']
+    ['test@canonical.com']
+    >>> print raw_msg
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    Mark Shuttleworth said:
+     Thanks for your interest
 
 As we can see, Andrew is now listed among the active members and Sample Person
 as an inactive one.
