@@ -137,6 +137,13 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
                                'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
             allow_plugins=True, retcode=retcode)
 
+    def _run_bzr_error(self, args):
+        """XXX
+        """
+        output, error = self._run_bzr(args, retcode=3)
+        last_error_line = error.splitlines()[-1]
+        return last_error_line
+
     def branch(self, remote_url, local_directory):
         """Branch from the given URL to a local directory."""
         self._run_bzr(['branch', remote_url, local_directory])
@@ -165,18 +172,17 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         :return: The last line of the stderr from the subprocess, which will
             be the 'bzr: ERROR: <repr of Exception>' line.
         """
-        output, error = self._run_bzr(
-            ['push', '-d', local_directory, remote_url], retcode=3)
+        error_line = self._run_bzr_error(
+            ['push', '-d', local_directory, remote_url])
         # This will be the will be the 'bzr: ERROR: <repr of Exception>' line.
-        last_error_line = error.splitlines()[-1]
         if not error_messages:
-            return last_error_line
+            return error_line
         for msg in error_messages:
-            if last_error_line.startswith('bzr: ERROR: ' + msg):
-                return last_error_line
+            if error_line.startswith('bzr: ERROR: ' + msg):
+                return error_line
         self.fail(
             "Error message %r didn't match any of those supplied."
-            % last_error_line)
+            % error_line)
 
     def getLastRevision(self, remote_url):
         """Get the last revision ID at the given URL."""
@@ -285,12 +291,11 @@ class AcceptanceTests(SSHTestCase):
 
     def assertNotBranch(self, url):
         """Assert that there's no branch at 'url'."""
-        output, error = self._run_bzr(
-            ['cat-revision', '-r', 'branch:' + url], retcode=3)
-        last_line = error.splitlines()[-1]
+        error_line = self._run_bzr_error(
+            ['cat-revision', '-r', 'branch:' + url])
         self.assertTrue(
-            last_line.startswith('bzr: ERROR: Not a branch:'),
-            'Expected "Not a branch", found %r' % last_line)
+            error_line.startswith('bzr: ERROR: Not a branch:'),
+            'Expected "Not a branch", found %r' % error_line)
 
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
                            branch_type=BranchType.HOSTED, private=False):
