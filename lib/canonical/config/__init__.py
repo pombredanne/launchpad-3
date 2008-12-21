@@ -16,8 +16,8 @@ from urlparse import urlparse, urlunparse
 
 import ZConfig
 
-from canonical.lazr.config import ImplicitTypeSchema
-from canonical.lazr.interfaces.config import ConfigErrors
+from lazr.config import ImplicitTypeSchema
+from lazr.config.interfaces import ConfigErrors
 
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
