@@ -25,7 +25,7 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import \
     SourcePackagePublishingHistory
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class DistributionSourcePackageRelease:
@@ -36,7 +36,7 @@ class DistributionSourcePackageRelease:
     """
 
     implements(IDistributionSourcePackageRelease)
-    decorates(ISourcePackageRelease, context='sourcepackagerelease')
+    delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distribution, sourcepackagerelease):
         self.distribution = distribution
@@ -133,4 +133,3 @@ class DistributionSourcePackageRelease:
                         publishing.distroarchseries.distroseries,
                         publishing.binarypackagerelease.binarypackagename))
         return samples
-

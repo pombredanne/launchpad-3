@@ -65,7 +65,7 @@ from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
-    rename_parameters_as, webservice_error)
+    mutator_for, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -527,6 +527,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @mutator_for(importance)
     @rename_parameters_as(new_importance='importance')
     @operation_parameters(new_importance=copy_field(importance))
     @call_with(user=REQUEST_USER)
@@ -557,6 +558,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         be a bug supervisor or the owner of the project.
         """
 
+    @mutator_for(status)
     @rename_parameters_as(new_status='status')
     @operation_parameters(
         new_status=copy_field(status))
@@ -576,6 +578,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @mutator_for(assignee)
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()
