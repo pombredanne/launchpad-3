@@ -23,6 +23,7 @@ import psycopg2
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
 from storm.expr import Or
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements, classProvides
 
@@ -91,8 +92,11 @@ class OpenIDAuthorizationSet:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
+            # Even though OpenIDAuthorizationSet always use the master
+            # store, it's likely that the person can come from the slave.
+            # That's why we are using the ID to create the reference.
             OpenIDAuthorization(
-                    person=person, trust_root=trust_root,
+                    personID=person.id, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
 
