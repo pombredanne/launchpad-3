@@ -33,6 +33,10 @@ APPSERVER_ENV = \
   PYTHONPATH=$(PYTHONPATH) \
   STORM_CEXTENSIONS=1
 
+EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
+				$(shell $(HERE)/utilities/yui-deps.py) \
+				lib/canonical/launchpad/icing/lazr/build/lazr.js
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
@@ -127,7 +131,10 @@ compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
-	    $(PYTHON) -t buildmailman.py
+		 $(PYTHON) -t buildmailman.py
+	${SHHH} sourcecode/lazr-js/tools/build.py \
+		-n launchpad -s lib/canonical/launchpad/javascript \
+		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -250,6 +257,7 @@ clean:
 	$(RM) -r build
 	$(RM) thread*.request
 	$(RM) -r lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
+	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) $(WADL_FILE) $(API_INDEX)
 	$(RM) $(BZR_VERSION_INFO)
@@ -303,10 +311,12 @@ static:
 	$(PYTHON) scripts/make-static.py
 
 TAGS:
-	ctags -e -R lib/canonical && ctags --exclude=lib/canonical -a -e -R lib/
+	ctags -e -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
+		ctags -e --exclude=lib/canonical -a -R lib/
 
 tags:
-	ctags -R lib
+	ctags -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
+		ctags --exclude=lib/canonical -a -R lib/
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop	\
 	start run ftest_build ftest_inplace test_build test_inplace	\
