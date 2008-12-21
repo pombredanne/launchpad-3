@@ -4,6 +4,13 @@ In order to produce better bug reports, a bug reporting tool on the
 user's computer can upload a message containing extra information about
 the bug to Launchpad.
 
+There is no API for uploading blobs, thus they need to do a HTTP POST to
+a web form to upload debug data. There are several verions of Apport out
+there depending on the field names on +storeblob, so it's important that
+those names (including the name of the button) doesn't change. The lines
+that are important not to change are marked with a "Don't change!"
+comment.
+
     >>> import os.path
     >>> from canonical.launchpad import ftests
     >>> testfiles = os.path.join(os.path.dirname(ftests.__file__), 'testfiles')
@@ -13,9 +20,9 @@ the bug to Launchpad.
     NOTE: The form names are used instead of their labels here, because
           external tools depend on them.
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
-    >>> anon_browser.getControl(name='field.blob').add_file(
+    >>> anon_browser.getControl(name='field.blob').add_file( # Don't change!
     ...     extra_filebug_data, 'not/important', 'not.important')
-    >>> anon_browser.getControl('Continue').click()
+    >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
 
 After the file has been uploaded, the tool is given a token it can use
 to give the data to the +filebug page.
@@ -167,9 +174,9 @@ that will be used to automatically fill in a suggested title.
     >>> extra_filebug_data_with_subject = open(
     ...     os.path.join(testfiles, 'extra_filebug_data_subject.msg'))
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
-    >>> anon_browser.getControl(name='field.blob').add_file(
+    >>> anon_browser.getControl(name='field.blob').add_file( # Don't change!
     ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
-    >>> anon_browser.getControl('Continue').click()
+    >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
 
     >>> user_browser.open(
@@ -194,9 +201,9 @@ initialized with that value.
     >>> extra_filebug_data_with_subject = open(
     ...     os.path.join(testfiles, 'extra_filebug_data_tags.msg'))
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
-    >>> anon_browser.getControl(name='field.blob').add_file(
+    >>> anon_browser.getControl(name='field.blob').add_file( # Don't change!
     ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
-    >>> anon_browser.getControl('Continue').click()
+    >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
 
     >>> user_browser.open(
