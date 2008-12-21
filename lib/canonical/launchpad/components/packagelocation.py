@@ -73,7 +73,7 @@ class PackageLocationError(Exception):
 
 
 def build_package_location(distribution_name, suite=None, purpose=None,
-                           person_name=None):
+                           person_name=None, archive_name=None):
     """Convenience function to build PackageLocation objects."""
 
     # XXX kiko 2007-10-24:
