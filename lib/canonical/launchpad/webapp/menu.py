@@ -28,7 +28,7 @@ from zope.component import getMultiAdapter
 from zope.security.proxy import (
     isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
@@ -137,7 +137,7 @@ Link = LinkData
 class MenuLink:
     """Adapter from ILinkData to ILink."""
     implements(ILink)
-    decorates(ILinkData, context='_linkdata')
+    delegates(ILinkData, context='_linkdata')
 
     # These attributes are set by the menus infrastructure.
     name = None
