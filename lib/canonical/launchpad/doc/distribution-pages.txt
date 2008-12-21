@@ -29,3 +29,26 @@ country.
     Germany: 1 mirror(s)
     United Kingdom: 1 mirror(s)
 
+
+== DistributionArchivesView ==
+
+The DistributionArchivesView includes an archive_list property that
+returns a list of copy archives only for the given distribution (because
+only copy archives are exposed through the distribution/+archives UI):
+
+    >>> distro_archives_view = create_initialized_view(ubuntu,
+    ...                                                name="+archives")
+    >>> archives = distro_archives_view.archive_list
+    >>> archives.count()
+    0
+
+And then after creating a copy archive for Ubuntu:
+
+    >>> copy_location = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu,
+    ...     name="intrepid-security-rebuild")
+    >>> archives = distro_archives_view.archive_list
+    >>> archives.count()
+    1
+
+
