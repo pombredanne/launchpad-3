@@ -109,8 +109,8 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.lazr import decorates
-from canonical.lazr.config import as_timedelta
+from lazr.delegates import delegates
+from lazr.config import as_timedelta
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -1588,13 +1588,13 @@ class RedirectToEditLanguagesView(LaunchpadView):
 class PersonWithKeysAndPreferredEmail:
     """A decorated person that includes GPG keys and preferred emails."""
 
-    # These need to be predeclared to avoid decorates taking them over.
+    # These need to be predeclared to avoid delegates taking them over.
     # Would be nice if there was a way of allowing writes to just work
     # (i.e. no proxying of __set__).
     gpgkeys = None
     sshkeys = None
     preferredemail = None
-    decorates(IPerson, 'person')
+    delegates(IPerson, 'person')
 
     def __init__(self, person):
         self.person = person
@@ -4559,7 +4559,7 @@ class SourcePackageReleaseWithStats:
     """An ISourcePackageRelease, with extra stats added."""
 
     implements(ISourcePackageRelease)
-    decorates(ISourcePackageRelease)
+    delegates(ISourcePackageRelease)
     failed_builds = None
     needs_building = None
 
