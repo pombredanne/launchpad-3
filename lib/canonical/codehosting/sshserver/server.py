@@ -263,17 +263,6 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             "user %s" % credentials.username)
 
 
-class _NotFilter(logging.Filter):
-    """A Filter that only allows records that do *not* match.
-
-    A _NotFilter initialized with "A.B" will allow "C", "A.BB" but not allow
-    "A.B", "A.B.C" etc.
-    """
-
-    def filter(self, record):
-        return not logging.Filter.filter(self, record)
-
-
 def set_up_logging(configure_oops_reporting=False):
     """Set up logging for the smart server.
 
