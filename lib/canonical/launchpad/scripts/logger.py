@@ -214,7 +214,7 @@ def logger(options=None, name=None):
     >>> logger_options(parser)
     >>> options, args = parser.parse_args(['-v', '-v', '-q', '-q', '-q'])
     >>> log = logger(options)
-    >>> log.debug("Not shown - I'm too quiet")
+    >>> log.debug('Not shown - I\'m too quiet')
 
     Cleanup:
 
