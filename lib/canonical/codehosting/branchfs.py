@@ -46,6 +46,7 @@ __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
     'branch_id_to_path',
+    'get_lp_server',
     'get_puller_server',
     'get_scanner_server',
     'LaunchpadInternalServer',
