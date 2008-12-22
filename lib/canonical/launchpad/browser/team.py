@@ -751,10 +751,6 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
     schema = Interface
     label = 'Proposed team members'
 
-    def validate(self, form):
-        if self.request.method != "POST":
-            self.addError('The form must be submitted as a POST.')
-
     @action('Save changes', name='save')
     def action_save(self, action, data):
         expires = self.context.defaultexpirationdate

@@ -17,11 +17,10 @@ Let's have a look at the proposed members that we have.
     Andrew Bennetts
     Sample Person
 
-Now we'll approve Andrew Bennetts' membership and decline Sample Person's,
-and we'll send the applying users and the team admins a generic comment.
+The team admin approves Andrew Bennetts' membership and declines Sample
+Person's. A comment is also sent to the applying users and the team admins.
 
     >>> from canonical.launchpad.mail import stub
-    >>> del stub.test_emails[:]
     >>> browser.getControl(name='action_12').value = ['decline']
     >>> browser.getControl(name='action_7').value = ['approve']
     >>> browser.getControl(name='comment').value = 'Thanks for your interest'
