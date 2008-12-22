@@ -37,8 +37,8 @@ def set_up_host_keys_for_testing():
     parent = os.path.dirname(key_pair_path)
     if not os.path.isdir(parent):
         os.makedirs(parent)
-    path = FilePath(__file__)
-    path = path.parent().parent().child('sshserver').child('tests').child('keys')
+    codehosting_path = FilePath(__file__).parent().parent()
+    path = codehosting_path.child('sshserver').child('tests').child('keys')
     shutil.copytree(path.path, os.path.join(key_pair_path))
 
 
