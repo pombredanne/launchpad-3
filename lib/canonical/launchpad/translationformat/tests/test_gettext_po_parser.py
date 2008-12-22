@@ -23,16 +23,14 @@ class POBasicTestCase(unittest.TestCase):
         self.parser = POParser()
 
     def testEmptyFile(self):
-        # The parser can cope with an empty file.
-        translation_file = self.parser.parse('')
-        self.assertEqual(translation_file.messages, [])
-        self.assertEqual(translation_file.header, None)
+        # The parser reports an empty file as an error.
+        self.assertRaises(TranslationFormatSyntaxError, self.parser.parse, '')
 
     def testContentlessFile(self):
-        # The parser can cope with a non-empty file holding no messages.
-        translation_file = self.parser.parse('''# Only a comment here.''')
-        self.assertEqual(translation_file.messages, [])
-        self.assertEqual(translation_file.header, None)
+        # The parser reports a non-empty file holding no messages as an
+        # error.
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse, '# Comment')
 
     def testSingular(self):
         translation_file = self.parser.parse(

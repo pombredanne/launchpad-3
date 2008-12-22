@@ -577,9 +577,12 @@ class POParser(object):
                 not self._message.msgid_singular):
                 # This file contains no actual messages.
                 self._dumpCurrentSection()
+
                 # It may contain a header though.
-                if self._message.translations:
-                    self._parseHeader()
+                if not self._message.translations:
+                    raise TranslationFormatSyntaxError(
+                        "File contains no messages.")
+                self._parseHeader()
 
             # There is nothing left to parse.
             return self._translation_file
