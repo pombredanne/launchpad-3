@@ -35,5 +35,6 @@ lib/canonical/launchpad/apidoc/index.html
 xxx-report.*
 lib/canonical/launchpad/apidoc/wadl-development.xml
 lib/canonical/launchpad/apidoc/wadl-test-playground.xml
+lib/canonical/launchpad/icing/build/*
 trace.log
 test-appserver-layer-trace.log
