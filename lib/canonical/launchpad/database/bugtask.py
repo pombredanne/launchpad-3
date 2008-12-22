@@ -1139,12 +1139,12 @@ class BugTaskSet:
         origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
         columns = (Bug, BugTask)
         result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))
-        bug_and_tasks = {}
+        bugs_and_tasks = {}
         for bug, task in result:
-            if bug not in bug_and_tasks:
-                bug_and_tasks[bug] = []
-            bug_and_tasks[bug].append(task)
-        return bug_and_tasks
+            if bug not in bugs_and_tasks:
+                bugs_and_tasks[bug] = []
+            bugs_and_tasks[bug].append(task)
+        return bugs_and_tasks
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""

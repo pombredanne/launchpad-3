@@ -1,10 +1,11 @@
 = Archives =
 
 For archives we publish a subset of their attributes.
+This works for PPAs:
 
-    >>> cprov_archive = webservice.get("/~cprov/+ppa/default").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+archive").jsonBody()
     >>> print cprov_archive['self_link']
-    http://.../~cprov/+ppa/default
+    http://.../~cprov/+archive
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
@@ -13,7 +14,7 @@ For archives we publish a subset of their attributes.
     name: u'default'
     owner_link: u'http://.../~cprov'
     resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+ppa/default'
+    self_link: u'http://.../~cprov/+archive'
     title: u'PPA for Celso Providelo'
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
@@ -365,54 +366,114 @@ And we can see that it's gone:
 == Package copying/synchronisation ==
 
 IArchive contains 2 custom operations to copy packages from another archive.
-These are syncSource() and syncSources().
+These are syncSource() and syncSources(). Both are wrappers of the
+`PackageCopier` infrastructure, see more information in
+scripts/packagecopier.py.
 
-syncSource() copies a single package with a specific version from another
-archive.
+For testing purpose we will create some publications.
 
-    >>> print webservice.named_post(
-    ...     ubuntu['main_archive_link'], 'syncSource', {},
-    ...     source_name='cdrkit', version='1.0',
-    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
-    HTTP/1.1 400 Bad Request
-    ...
-    No such operation: syncSource
+    >>> login('foo.bar@canonical.com')
 
-That one failed because cdrkit is already published in the same context in
-the main archive.  Let's add some more test publications that we can copy
-around:
-
-    >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
+
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+
     >>> main_archive = ubuntu_distro.main_archive
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
     >>> hoary = ubuntu_distro.getSeries('hoary')
     >>> test_publisher.addFakeChroots(hoary)
     >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
+
+'package1' (with two versions) and 'package2' publications in the
+ubuntu primary archive.
+
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.0", archive=main_archive)
+
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.1", archive=main_archive)
+
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package2", version="1.0", archive=main_archive)
+
+A test publication in Celso's PPA.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.0", archive=cprov.archive)
+
+Colin is a valid member of the team who owns the ubuntu primary archive.
+
+    >>> cjwatson = getUtility(IPersonSet).getByName('kamion')
+    >>> cjwatson.inTeam(main_archive.owner)
+    True
+
+Setup done, let's log out and continue with the tests.
+
     >>> logout()
 
-Now copy "package1" version 1.0 from the main archive into cprov's PPA:
+syncSource() copies a single package with a specific version from another
+archive.  It will prevent unauthorised changes to an archive.  Here we are
+using user_webservice, which has no privileges, and trying to copy to
+the Ubuntu main archive:
 
-    >>> print webservice.named_post(
+    >>> print user_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='package3', version='1.0',
+    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
+    ...     to_series="hoary")
+    HTTP/1.1 401 Unauthorized
+    ...
+
+When accessed via Colin's key that can perform writes, the API will
+respond positively.
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+
+    >>> admin_webservice = webservice_for_person(
+    ...     cjwatson, permission=OAuthPermission.WRITE_PUBLIC)
+
+    >>> print admin_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='package3', version='1.0',
+    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
+    ...     to_series="hoary")
+    HTTP/1.1 200 Ok
+    ...
+
+Now copy "package1" version 1.0 from the main archive into cprov's
+PPA. The 'admin_write' key created for Colin isn't allowed to modify
+Celso's PPA.
+
+    >>> print admin_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSource', {},
     ...     source_name='package1', version='1.0',
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
-    HTTP/1.1 400 Bad Request
+    ...     to_series="hoary")
+    HTTP/1.1 401 Unauthorized
     ...
-    No such operation: syncSource
+
+Only a key created by Celso with write permissions will allow this
+operation.
+
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov, permission=OAuthPermission.WRITE_PUBLIC)
+
+    >>> print cprov_webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSource', {},
+    ...     source_name='package1', version='1.0',
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="hoary")
+    HTTP/1.1 200 Ok
+    ...
 
 syncSources() allows the caller to specify a list of sources to copy all at
 once.  The latest versions that are found in the from_archive are
@@ -420,23 +481,45 @@ once.  The latest versions that are found in the from_archive are
 exists then nothing is copied.  The list of packages that were copied is
 returned from the function call.
 
-    >>> print webservice.named_post(
+    >>> print cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
-    HTTP/1.1 400 Bad Request
+    ...     to_series="warty")
+    HTTP/1.1 200 Ok
     ...
-    No such operation: syncSources
+    ["package1", "package2"]
 
 If there's nothing to copy at all, an error is returned.  Repeating the copy
 above will give this effect.
 
-    >>> print webservice.named_post(
+    >>> print cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
+    ...     to_series="warty")
     HTTP/1.1 400 Bad Request
     ...
-    No such operation: syncSources
+    CannotCopy: Packages already copied.
+    <BLANKLINE>
+
+Keys with not enough permissions in Celso's PPA context are not
+allowed to call the method at all.
+
+    >>> print user_webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="warty")
+    HTTP/1.1 401 Unauthorized
+    ...
+
+    >>> print admin_webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="warty")
+    HTTP/1.1 401 Unauthorized
+    ...
+
+

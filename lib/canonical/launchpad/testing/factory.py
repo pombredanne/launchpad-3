@@ -266,7 +266,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             address, person, email_status, person.account)
 
     def makeTeam(self, owner, displayname=None, email=None, name=None,
-                 subscription_policy=TeamSubscriptionPolicy.OPEN):
+                 subscription_policy=TeamSubscriptionPolicy.OPEN,
+                 visibility=None):
         """Create and return a new, arbitrary Team.
 
         :param owner: The IPerson to use as the team's owner.
@@ -274,13 +275,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
         :param subscription_policy: The subscription policy of the team.
+        :param visibility: The team's visibility. If it's None, the default
+            (public) will be used.
         """
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
-            displayname = name
+            displayname = SPACE.join(
+                word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, subscriptionpolicy=subscription_policy)
+        if visibility is not None:
+            team.visibility = visibility
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
