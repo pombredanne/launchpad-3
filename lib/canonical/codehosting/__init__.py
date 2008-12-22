@@ -12,34 +12,11 @@ __all__ = [
     'get_bzr_path',
     'get_bzr_plugins_path',
     'get_rocketfuel_root',
-    'ProgressUIFactory',
     ]
 
 
 import os.path
 from bzrlib.plugin import load_plugins
-from bzrlib.progress import ProgressBarStack
-from bzrlib.ui import SilentUIFactory
-
-
-class ProgressUIFactory(SilentUIFactory):
-    """A UI Factory that installs a progress bar of your choice."""
-
-    def __init__(self, progress_bar_factory):
-        """Construct a ProgressUIFactory.
-
-        :param progress_bar_factory: A callable that returns a
-            ProgressBar.  It must take up to 8 arguments.
-        """
-        super(ProgressUIFactory, self).__init__()
-        self._progress_bar_factory = progress_bar_factory
-
-    def nested_progress_bar(self):
-        """See `bzrlib.ui.UIFactory.nested_progress_bar`."""
-        if self._progress_bar_stack is None:
-            self._progress_bar_stack = ProgressBarStack(
-                klass=self._progress_bar_factory)
-        return self._progress_bar_stack.get_nested()
 
 
 def branch_id_to_path(branch_id):
