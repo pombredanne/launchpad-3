@@ -18,6 +18,7 @@ from zope.component import getUtility
 
 from bzrlib.transport import get_transport, Server
 
+from twisted.python.filepath import FilePath
 from twisted.python.util import sibpath
 
 from canonical.codehosting import get_rocketfuel_root
@@ -36,8 +37,9 @@ def set_up_host_keys_for_testing():
     parent = os.path.dirname(key_pair_path)
     if not os.path.isdir(parent):
         os.makedirs(parent)
-    shutil.copytree(
-        sibpath(__file__, 'keys'), os.path.join(key_pair_path))
+    path = FilePath(__file__)
+    path = path.parent().parent().child('sshserver').child('tests').child('keys')
+    shutil.copytree(path.path, os.path.join(key_pair_path))
 
 
 def set_up_test_user(test_user, test_team):
