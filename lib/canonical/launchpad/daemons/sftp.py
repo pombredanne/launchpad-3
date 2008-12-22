@@ -17,7 +17,7 @@ from twisted.web.xmlrpc import Proxy
 
 from canonical.config import config
 
-from canonical.codehosting import sshserver
+from canonical.codehosting.sshserver import server as sshserver
 
 
 def getPublicKeyString(data):

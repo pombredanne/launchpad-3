@@ -12,7 +12,7 @@ import sys
 
 from bzrlib.tests import TestCase as BzrTestCase
 
-from canonical.codehosting.sshserver import set_up_logging
+from canonical.codehosting.sshserver.server import set_up_logging
 from canonical.testing import reset_logging
 
 

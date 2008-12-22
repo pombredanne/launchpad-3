@@ -21,7 +21,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import (
     FatLocalTransport, TransportSFTPServer, FileIsADirectory)
-from canonical.codehosting.sshserver import LaunchpadAvatar
+from canonical.codehosting.sshserver.server import LaunchpadAvatar
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLayer
 

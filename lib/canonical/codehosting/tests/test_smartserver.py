@@ -12,7 +12,7 @@ from twisted.conch.interfaces import ISession
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from canonical.codehosting.sshserver import LaunchpadAvatar
+from canonical.codehosting.sshserver.server import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
 from canonical.codehosting import get_bzr_plugins_path, smartserver
