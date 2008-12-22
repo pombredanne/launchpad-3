@@ -1628,6 +1628,7 @@ COMMENT ON TABLE Translator IS 'A translator is a person in a TranslationGroup w
 COMMENT ON COLUMN Translator.translationgroup IS 'The TranslationGroup for which this Translator is working.';
 COMMENT ON COLUMN Translator.language IS 'The language for which this Translator is responsible in this TranslationGroup. Note that the same person may be responsible for multiple languages, but any given language can only have one Translator within the TranslationGroup.';
 COMMENT ON COLUMN Translator.translator IS 'The Person who is responsible for this language in this translation group.';
+COMMENT ON COLUMN Translator.documentation_url IS 'URL with documentation for translation work done here: process, vocabulary standards, caveats.';
 
 -- PocketChroot
 COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which pocket of which distroarchseries. Any given pocket of any given distroarchseries needs a specific chroot in order to be built. This table links it all together.';
