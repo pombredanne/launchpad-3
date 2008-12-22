@@ -23,6 +23,7 @@ from twisted.web.xmlrpc import Proxy
 from canonical.codehosting.sshserver.auth import (
     PublicKeyFromLaunchpadChecker, Realm, SSHUserAuthServer)
 from canonical.config import config
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class Factory(SSHFactory):
@@ -103,7 +104,11 @@ def set_up_logging():
     This sets up a debugging handler on the 'codehosting' logger, makes sure
     that things logged there won't go to stderr (necessary because of
     bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
+
+    In addition, install a Twisted log observer that ensures unhandled
+    exceptions get reported as OOPSes.
     """
     log = logging.getLogger('codehosting')
     log.setLevel(logging.CRITICAL)
+    set_up_oops_reporting('codehosting')
     return log
