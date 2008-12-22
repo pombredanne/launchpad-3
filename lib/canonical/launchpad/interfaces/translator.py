@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = ['ITranslator', 'ITranslatorSet']
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import PublicPersonChoice, URIField
 
 from zope.interface import Interface, Attribute
 
@@ -42,6 +42,13 @@ class ITranslator(Interface):
         vocabulary='ValidPersonOrTeam',
         description=_("The translation team (or individual supervisor) to "
             "be responsible for the language in this group."))
+    documentation_url = URIField(
+        title=_('Documentation URL'), required=False,
+        allowed_schemes=['http', 'https', 'ftp'],
+        allow_userinfo=False,
+        description=_("URL to the documentation for translation work done "
+                      "here: process, vocabulary standards, caveats. "
+                      "Please include the http://."))
 
 
 class ITranslatorSet(IAddFormCustomization):
@@ -49,6 +56,6 @@ class ITranslatorSet(IAddFormCustomization):
 
     title = Attribute('Title')
 
-    def new(translationgroup, language, translator):
+    def new(translationgroup, language, translator, documentation_url):
         """Create a new `ITranslator` for a `TranslationGroup`."""
 
