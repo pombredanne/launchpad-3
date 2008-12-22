@@ -113,13 +113,6 @@ class Roundup(ExternalBugTracker):
         query = self.query_base
         return "%s/issue?%s" % (self.baseurl, query_encode(query))
 
-    def isPython(self):
-        """Return True if the remote bug tracker is at bugs.python.org.
-
-        Return False otherwise.
-        """
-        return PYTHON_BUGS_HOSTNAME in self.baseurl
-
     def _getBug(self, bug_id):
         """Return the bug with the ID bug_id from the internal bug list.
 
@@ -133,7 +126,7 @@ class Roundup(ExternalBugTracker):
             bug_id = int(bug_id)
         except ValueError:
             raise InvalidBugId(
-                "bug_id must be convertible an integer: %s." % str(bug_id))
+                "bug_id must be an integer: %s." % str(bug_id))
 
         try:
             return self.bugs[bug_id]
