@@ -299,14 +299,25 @@ class Roundup(ExternalBugTracker):
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
-        if self.isPython():
-            remote_status_key = parse_python_status(remote_status)
-        elif remote_status.isdigit():
-            remote_status_key = (int(remote_status),)
-        else:
-            raise UnknownRemoteStatusError(remote_status)
+        fields = self._status_fields
+        field_values = remote_status.split(':')
+
+        if len(field_values) != len(fields):
+            raise UnknownRemoteStatusError(
+                "%d field(s) expected, got %d: %s" % (
+                    len(fields), len(field_values), remote_status))
+
+        for index, field_value in enumerate(field_values):
+            if field_value == "None":
+                field_values[index] = None
+            elif field_value.isdigit():
+                field_values[index] = int(field_value)
+            else:
+                raise UnknownRemoteStatusError(
+                    "Unrecognized value for field %d (%s): %s" % (
+                        (index + 1), fields[index], field_value))
 
         try:
-            return self._status_lookup.find(self.host, *remote_status_key)
+            return self._status_lookup.find(self.host, *field_values)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
