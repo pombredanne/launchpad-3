@@ -96,7 +96,7 @@ class TestPopulateArchiveScript(TestCase):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--from-component', 'main', '--to-component', 'main'
+            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -156,6 +156,12 @@ class TestPopulateArchiveScript(TestCase):
         :param extra_args: additional arguments to be passed to the
             script (if any).
         """
+        class FakeZopeTransactionManager:
+            def commit(self):
+                pass
+            def begin(self):
+                pass
+
         now = int(time.time())
         if archive_name is None:
             archive_name = "ra%s" % now
@@ -188,6 +194,7 @@ class TestPopulateArchiveScript(TestCase):
             test_args=script_args)
 
         script.logger = QuietFakeLogger()
+        script.txn = FakeZopeTransactionManager()
 
         if exception_type is not None:
             self.assertRaisesWithContent(
