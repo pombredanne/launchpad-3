@@ -141,8 +141,11 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         """XXX
         """
         output, error = self._run_bzr(args, retcode=3)
-        last_error_line = error.splitlines()[-1]
-        return last_error_line
+        for line in error.splitlines():
+            if line.startswith("bzr: ERROR"):
+                return line
+        raise AssertionError(
+            "Didn't find error line in output:\n\n%s\n" % error)
 
     def branch(self, remote_url, local_directory):
         """Branch from the given URL to a local directory."""
