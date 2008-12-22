@@ -2,3 +2,16 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+* Use rotating log handler
+* Test with a very Pythonic handler that appends to a list or something
+* Bind SIGHUP to rotate logs
+* Test each event
+  * Log user connect
+  * Log user auth success
+  * Log sftp session started
+  * Log sftp session finished
+  * Log bzr+ssh session started
+  * Log bzr+ssh finished
+  * Log user disconnect
+  * Log user auth fail
