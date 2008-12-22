@@ -12,20 +12,22 @@ import logging
 import os
 
 from twisted.application import service, strports
-from twisted.conch.ssh import connection, factory
+from twisted.conch.ssh.connection import SSHConnection
+from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.cred.portal import Portal
 from twisted.web.xmlrpc import Proxy
 
 from canonical.config import config
 
-from canonical.codehosting.sshserver import server as sshserver
+from canonical.codehosting.sshserver.server import (
+    PublicKeyFromLaunchpadChecker, Realm, SSHUserAuthServer)
 
 
-class Factory(factory.SSHFactory):
+class Factory(SSHFactory):
     services = {
-        'ssh-userauth': sshserver.SSHUserAuthServer,
-        'ssh-connection': connection.SSHConnection
+        'ssh-userauth': SSHUserAuthServer,
+        'ssh-connection': SSHConnection
     }
 
     def __init__(self, hostPublicKey, hostPrivateKey):
@@ -37,7 +39,7 @@ class Factory(factory.SSHFactory):
         }
 
     def startFactory(self):
-        factory.SSHFactory.startFactory(self)
+        SSHFactory.startFactory(self)
         os.umask(0022)
 
 
@@ -54,10 +56,9 @@ class SSHService(service.Service):
         authentication_proxy = Proxy(
             config.codehosting.authentication_endpoint)
         branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-        portal = Portal(
-            sshserver.Realm(authentication_proxy, branchfs_proxy))
+        portal = Portal(Realm(authentication_proxy, branchfs_proxy))
         portal.registerChecker(
-            sshserver.PublicKeyFromLaunchpadChecker(authentication_proxy))
+            PublicKeyFromLaunchpadChecker(authentication_proxy))
         sftpfactory = Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory
