@@ -575,10 +575,11 @@ class POParser(object):
         if line is None:
             if (self._translation_file.header is None and
                 not self._message.msgid_singular):
-                # Seems like the file has only the header without any message,
-                # we parse it.
+                # This file contains no actual messages.
                 self._dumpCurrentSection()
-                self._parseHeader()
+                # It may contain a header though.
+                if self._message.translations:
+                    self._parseHeader()
 
             # There is nothing left to parse.
             return self._translation_file
