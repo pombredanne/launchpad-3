@@ -67,7 +67,7 @@ def parse_python_status(remote_status):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
-    _fields_map = {
+    _status_fields_map = {
         PYTHON_BUGS_HOSTNAME: ('status', 'resolution'),
         MPLAYERHQ_BUGS_HOSTNAME: ('status', 'substatus'),
         }
@@ -84,10 +84,9 @@ class Roundup(ExternalBugTracker):
         super(Roundup, self).__init__(baseurl)
         self.host = URI(self.baseurl).host
 
-        if self.host in self._fields_map:
-            fields = ('title', 'id', 'activity') + self._fields_map[self.host]
-        else:
-            fields = ('title', 'id', 'activity', 'status')
+        self._status_fields = (
+            self._status_fields_map.get(self.host, ('status',)))
+        fields = ('title', 'id', 'activity') + self._status_fields
 
         # Roundup is quite particular about URLs, so although several
         # of the parameters below seem redundant or irrelevant, they
@@ -181,28 +180,20 @@ class Roundup(ExternalBugTracker):
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`."""
         remote_bug = self._getBug(bug_id)
-        if self.isPython():
-            # A remote bug must define a status and a resolution, even
-            # if that resolution is 'None', otherwise we can't
-            # accurately assign a BugTaskStatus to it.
-            try:
-                status = remote_bug['status']
-                resolution = remote_bug['resolution']
-            except KeyError:
-                raise UnparseableBugData(
-                    "Remote bug %s does not define both a status and a "
-                    "resolution." % bug_id)
 
-            # Remote status is stored as a string, so for sanity's sake
-            # we return an easily-parseable string.
-            return '%s:%s' % (status, resolution)
-
-        else:
-            try:
-                return remote_bug['status']
-            except KeyError:
+        # This could be done in a single list comprehension, but it's
+        # done the long way so that we can raise a more useful error
+        # if a field value is missing.
+        field_values = []
+        for field in self._status_fields:
+            if field in remote_bug:
+                field_values.append(remote_bug[field])
+            else:
                 raise UnparseableBugData(
-                    "Remote bug %s does not define a status.")
+                    "Remote bug %s does not define a value for %s." % (
+                        bug_id, field))
+
+        return ':'.join(field_values)
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`.
