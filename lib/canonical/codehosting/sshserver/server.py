@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'LaunchpadAvatar',
-    'Factory',
     'PublicKeyFromLaunchpadChecker',
     'Realm',
     'SSHUserAuthServer',

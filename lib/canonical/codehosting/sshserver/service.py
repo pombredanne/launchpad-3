@@ -5,7 +5,9 @@ branches. For more information, see lib/canonical/codehosting/README.
 """
 
 __metaclass__ = type
-__all__ = ['SSHService']
+__all__ = [
+    'SSHService',
+    ]
 
 
 import logging
