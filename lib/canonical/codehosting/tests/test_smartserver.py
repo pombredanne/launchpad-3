@@ -15,7 +15,8 @@ from twisted.internet.protocol import ProcessProtocol
 from canonical.codehosting.sshserver.server import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
-from canonical.codehosting import get_bzr_plugins_path, smartserver
+from canonical.codehosting import get_bzr_plugins_path
+from canonical.codehosting.sshserver import smartserver
 
 
 class MockReactor:

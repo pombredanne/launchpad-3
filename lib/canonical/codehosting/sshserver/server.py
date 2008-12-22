@@ -32,7 +32,7 @@ from twisted.cred.portal import IRealm
 from twisted.python import components, failure
 
 from canonical.codehosting import sftp
-from canonical.codehosting.smartserver import launch_smart_server
+from canonical.codehosting.sshserver.smartserver import launch_smart_server
 from canonical.config import config
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
