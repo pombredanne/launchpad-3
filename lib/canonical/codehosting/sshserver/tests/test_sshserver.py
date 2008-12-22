@@ -20,8 +20,8 @@ from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.sshserver import server as sshserver
+from canonical.codehosting.sshserver.service import getPublicKeyString
 from canonical.config import config
-from canonical.launchpad.daemons.sftp import getPublicKeyString
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
 
