@@ -33,37 +33,6 @@ def query_encode(items):
         for (key, value) in items)
 
 
-def parse_python_status(remote_status):
-    """Convert a Python bug status into a (status, resolution) tuple.
-
-    :param remote_status: A bugs.python.org status string in the form
-        '<status>:<resolution>', where status is an integer and
-        resolution is an integer or None. An AssertionError will be
-        raised if these conditions are not met.
-    """
-    try:
-        status, resolution = remote_status.split(':')
-    except ValueError:
-        raise AssertionError(
-            "The remote status must be a string of the form "
-            "<status>:<resolution>.")
-
-    if status.isdigit():
-        status = int(status)
-    else:
-        raise AssertionError("The remote status must be an integer.")
-
-    if resolution.isdigit():
-        resolution = int(resolution)
-    elif resolution == 'None':
-        resolution = None
-    else:
-        raise AssertionError(
-            "The resolution must be an integer or 'None'.")
-
-    return (status, resolution)
-
-
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
