@@ -178,6 +178,64 @@ class TestBranch(TestCaseWithFactory):
                 distroseries.name, sourcepackagename.name, branch.name),
             branch.unique_name)
 
+    def test_container_name_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        self.assertEqual('+junk', branch.container.name)
+
+    def test_container_name_product(self):
+        branch = self.factory.makeBranch()
+        self.assertEqual(branch.product.name, branch.container.name)
+
+    def test_container_name_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(
+            '%s/%s/%s' % (
+                distroseries.distribution.name, distroseries.name,
+                sourcepackagename.name),
+            branch.container.name)
+
+
+class TestGetByUniqueName(TestCaseWithFactory):
+    """Tests for `IBranchSet.getByUniqueName`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch_set = getUtility(IBranchSet)
+
+    def test_not_found(self):
+        unused_name = self.factory.getUniqueString()
+        found = self.branch_set.getByUniqueName(unused_name)
+        self.assertIs(None, found)
+
+    def test_not_found_returns_default(self):
+        unused_name = self.factory.getUniqueString()
+        default = object()
+        found = self.branch_set.getByUniqueName(unused_name, default)
+        self.assertIs(default, found)
+
+    def test_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+
+    def test_product(self):
+        branch = self.factory.makeBranch()
+        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+
+    def test_source_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+
 
 class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""

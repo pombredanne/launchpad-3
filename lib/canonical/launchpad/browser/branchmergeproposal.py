@@ -63,7 +63,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.interface import copy_field
 
 
@@ -348,7 +348,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
 class DecoratedCodeReviewVoteReference:
     """Provide a code review vote that knows if it is important or not."""
 
-    decorates(ICodeReviewVoteReference)
+    delegates(ICodeReviewVoteReference)
 
     status_text_map = {
         CodeReviewVote.DISAPPROVE: CodeReviewVote.DISAPPROVE.title,
