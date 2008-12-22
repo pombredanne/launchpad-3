@@ -48,7 +48,7 @@ class OpenIDAuthorizationSet__with_SlaveStore_TestCase(unittest.TestCase):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        """Mimick the setup when the default store is the SLAVE_FLAVOR."""
+        """Mimic the setup when the default store is the SLAVE_FLAVOR."""
         login('no-priv@canonical.com')
         factory = LaunchpadObjectFactory()
         person = factory.makePerson()
@@ -58,7 +58,7 @@ class OpenIDAuthorizationSet__with_SlaveStore_TestCase(unittest.TestCase):
         slave_store = StoreSelector.get(MAIN_STORE, SLAVE_FLAVOR)
         self.person = slave_store.get(Person, person.id)
 
-    def test_authorize_should_with_person_loaded_from_the_slave_store(self):
+    def test_authorize_works_with_person_loaded_from_the_slave_store(self):
         """OpenIDAuthorization always use the master store.
 
         But bug #310096 exposed that authorize() failed if the person was

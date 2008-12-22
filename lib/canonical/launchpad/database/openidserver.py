@@ -91,7 +91,7 @@ class OpenIDAuthorizationSet:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
-            # Even though OpenIDAuthorizationSet always use the master
+            # Even though OpenIDAuthorizationSet always uses the master
             # store, it's likely that the person can come from the slave.
             # That's why we are using the ID to create the reference.
             OpenIDAuthorization(

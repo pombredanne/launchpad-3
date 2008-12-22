@@ -101,7 +101,7 @@ class PreAuthorizeRPViewTestCase(unittest.TestCase):
     """Test for the PreAuthorizeRPView."""
     layer = DatabaseFunctionalLayer
 
-    def test_pre_authorize_should_work_with_slave_store(self):
+    def test_pre_authorize_works_with_slave_store(self):
         """
         By using a browser using basic authorization, we make sure
         that the slave will be used. The pre-authorization acceptance test
@@ -224,4 +224,3 @@ def test_suite():
 
 if __name__ == '__main__':
     unittest.main()
-
