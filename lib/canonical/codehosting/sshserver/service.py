@@ -12,6 +12,7 @@ import logging
 import os
 
 from twisted.application import service, strports
+from twisted.conch.ssh import connection, factory
 from twisted.conch.ssh.keys import Key
 from twisted.cred.portal import Portal
 from twisted.web.xmlrpc import Proxy
@@ -19,6 +20,25 @@ from twisted.web.xmlrpc import Proxy
 from canonical.config import config
 
 from canonical.codehosting.sshserver import server as sshserver
+
+
+class Factory(factory.SSHFactory):
+    services = {
+        'ssh-userauth': sshserver.SSHUserAuthServer,
+        'ssh-connection': connection.SSHConnection
+    }
+
+    def __init__(self, hostPublicKey, hostPrivateKey):
+        self.publicKeys = {
+            'ssh-rsa': hostPublicKey
+        }
+        self.privateKeys = {
+            'ssh-rsa': hostPrivateKey
+        }
+
+    def startFactory(self):
+        factory.SSHFactory.startFactory(self)
+        os.umask(0022)
 
 
 class SSHService(service.Service):
@@ -38,7 +58,7 @@ class SSHService(service.Service):
             sshserver.Realm(authentication_proxy, branchfs_proxy))
         portal.registerChecker(
             sshserver.PublicKeyFromLaunchpadChecker(authentication_proxy))
-        sftpfactory = sshserver.Factory(hostPublicKey, hostPrivateKey)
+        sftpfactory = Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory
 

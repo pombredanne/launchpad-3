@@ -13,14 +13,12 @@ __all__ = [
     ]
 
 import binascii
-import os
 import logging
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import (
-    channel, connection, factory, filetransfer, session, userauth)
+from twisted.conch.ssh import channel, filetransfer, session, userauth
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
@@ -186,25 +184,6 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         reason.trap(UserDisplayedUnauthorizedLogin)
         self.sendBanner(reason.getErrorMessage())
         return reason
-
-
-class Factory(factory.SSHFactory):
-    services = {
-        'ssh-userauth': SSHUserAuthServer,
-        'ssh-connection': connection.SSHConnection
-    }
-
-    def __init__(self, hostPublicKey, hostPrivateKey):
-        self.publicKeys = {
-            'ssh-rsa': hostPublicKey
-        }
-        self.privateKeys = {
-            'ssh-rsa': hostPrivateKey
-        }
-
-    def startFactory(self):
-        factory.SSHFactory.startFactory(self)
-        os.umask(0022)
 
 
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
