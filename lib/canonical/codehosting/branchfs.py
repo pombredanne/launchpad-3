@@ -45,6 +45,7 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
+    'branch_id_to_path',
     'get_puller_server',
     'get_scanner_server',
     'LaunchpadInternalServer',
@@ -65,7 +66,6 @@ from twisted.python import failure
 
 from zope.interface import implements, Interface
 
-from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
@@ -99,6 +99,19 @@ class NotABranchPath(TranslationError):
 
 class UnknownTransportType(Exception):
     """Raised when we don't know the transport type."""
+
+
+def branch_id_to_path(branch_id):
+    """Convert the given branch ID into NN/NN/NN/NN form, where NN is a two
+    digit hexadecimal number.
+
+    Some filesystems are not capable of dealing with large numbers of inodes.
+    The supermirror, which can potentially have tens of thousands of branches,
+    needs the branches split into several directories. The launchpad id is
+    used in order to determine the splitting.
+    """
+    h = "%08x" % int(branch_id)
+    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
 
 def get_path_segments(path, maximum_segments=-1):
