@@ -4,7 +4,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'ExecOnlySession', 'RestrictedExecOnlySession', 'launch_smart_server']
+    'ExecOnlySession',
+    'launch_smart_server',
+    'RestrictedExecOnlySession',
+    'SubsystemOnlySession',
+    ]
 
 import os
 import urlparse
@@ -12,11 +16,61 @@ import urlparse
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
+from twisted.conch.ssh import channel, session
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
 from canonical.config import config
 from canonical.codehosting import get_bzr_path
+
+
+class SubsystemOnlySession(session.SSHSession, object):
+    """Session adapter that corrects a bug in Conch."""
+
+    def closeReceived(self):
+        # Without this, the client hangs when its finished transferring.
+        self.loseConnection()
+
+    def loseConnection(self):
+        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
+        # implementation of session.SSHSession.loseConnection. The default
+        # implementation will try to call loseConnection on the client
+        # transport even if it's None. I don't know *why* it is None, so this
+        # doesn't necessarily address the root cause.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.loseConnection()
+        # This is called by session.SSHSession.loseConnection. SSHChannel is
+        # the base class of SSHSession.
+        channel.SSHChannel.loseConnection(self)
+
+    def stopWriting(self):
+        """See `session.SSHSession.stopWriting`.
+
+        When the client can't keep up with us, we ask the child process to
+        stop giving us data.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above.  It would be good to know if and why it
+        # is necessary.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.pauseProducing()
+
+    def startWriting(self):
+        """See `session.SSHSession.startWriting`.
+
+        The client is ready for data again, so ask the child to start
+        producing data again.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above.  It would be good to know if and why it
+        # is necessary.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.resumeProducing()
 
 
 class ForbiddenCommand(Exception):

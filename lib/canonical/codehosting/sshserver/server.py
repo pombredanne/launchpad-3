@@ -7,7 +7,6 @@ __all__ = [
     'PublicKeyFromLaunchpadChecker',
     'Realm',
     'SSHUserAuthServer',
-    'SubsystemOnlySession',
     'UserDisplayedUnauthorizedLogin',
     ]
 
@@ -17,7 +16,7 @@ import logging
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import channel, filetransfer, session, userauth
+from twisted.conch.ssh import filetransfer, userauth
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
@@ -28,59 +27,11 @@ from twisted.cred.portal import IRealm
 from twisted.python import components, failure
 
 from canonical.codehosting import sftp
-from canonical.codehosting.sshserver.smartserver import launch_smart_server
+from canonical.codehosting.sshserver.smartserver import (
+    launch_smart_server, SubsystemOnlySession)
 from canonical.config import config
 
 from zope.interface import implements
-
-
-class SubsystemOnlySession(session.SSHSession, object):
-    """Session adapter that corrects a bug in Conch."""
-
-    def closeReceived(self):
-        # Without this, the client hangs when its finished transferring.
-        self.loseConnection()
-
-    def loseConnection(self):
-        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
-        # implementation of session.SSHSession.loseConnection. The default
-        # implementation will try to call loseConnection on the client
-        # transport even if it's None. I don't know *why* it is None, so this
-        # doesn't necessarily address the root cause.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            transport.loseConnection()
-        # This is called by session.SSHSession.loseConnection. SSHChannel is
-        # the base class of SSHSession.
-        channel.SSHChannel.loseConnection(self)
-
-    def stopWriting(self):
-        """See `session.SSHSession.stopWriting`.
-
-        When the client can't keep up with us, we ask the child process to
-        stop giving us data.
-        """
-        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
-        # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above.  It would be good to know if and why it
-        # is necessary.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            transport.pauseProducing()
-
-    def startWriting(self):
-        """See `session.SSHSession.startWriting`.
-
-        The client is ready for data again, so ask the child to start
-        producing data again.
-        """
-        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
-        # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above.  It would be good to know if and why it
-        # is necessary.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            transport.resumeProducing()
 
 
 class LaunchpadAvatar(avatar.ConchUser):
