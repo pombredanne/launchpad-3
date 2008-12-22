@@ -1,10 +1,11 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-"""Smart server support for the supermirror."""
+"""SSH session implementations for the codehosting SSH server."""
 
 __metaclass__ = type
 __all__ = [
     'ExecOnlySession',
+    'ForbiddenCommand',
     'launch_smart_server',
     'RestrictedExecOnlySession',
     'SubsystemOnlySession',

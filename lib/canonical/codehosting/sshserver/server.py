@@ -27,7 +27,7 @@ from twisted.cred.portal import IRealm
 from twisted.python import components, failure
 
 from canonical.codehosting import sftp
-from canonical.codehosting.sshserver.smartserver import (
+from canonical.codehosting.sshserver.session import (
     launch_smart_server, SubsystemOnlySession)
 from canonical.config import config
 
