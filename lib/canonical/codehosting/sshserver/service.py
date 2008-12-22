@@ -19,7 +19,6 @@ from twisted.web.xmlrpc import Proxy
 from canonical.config import config
 
 from canonical.codehosting.sshserver import server as sshserver
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class SSHService(service.Service):
@@ -76,7 +75,7 @@ class SSHService(service.Service):
         return self.service.stopService()
 
 
-def set_up_logging(configure_oops_reporting=False):
+def set_up_logging():
     """Set up logging for the smart server.
 
     This sets up a debugging handler on the 'codehosting' logger, makes sure
@@ -89,6 +88,4 @@ def set_up_logging(configure_oops_reporting=False):
     """
     log = logging.getLogger('codehosting')
     log.setLevel(logging.CRITICAL)
-    if configure_oops_reporting:
-        set_up_oops_reporting('codehosting')
     return log
