@@ -257,8 +257,8 @@ Let's see his sources.list entries:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/cprov/default/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
 
 and the select control that lets you update them:
 
@@ -294,7 +294,7 @@ The headings:
     >>> print find_tag_by_id(anon_browser.contents, 'packages_list')
     <table class="listing" id="packages_list">
     <thead>
-    <tr class="ppa_package_row">
+    <tr class="archive_package_row">
     <th colspan="2">Source</th>
     <th>Published</th>
     <th>Status</th>
@@ -308,11 +308,11 @@ The headings:
 The source packages list is presented publicly, including the
 available changesfile.
 
-    >>> def print_ppa_package_rows(contents):
-    ...     for ppa_row in find_tags_by_class(contents, 'ppa_package_row'):
+    >>> def print_archive_package_rows(contents):
+    ...     for ppa_row in find_tags_by_class(contents, 'archive_package_row'):
     ...         print extract_text(ppa_row)
 
-    >>> print_ppa_package_rows(anon_browser.contents)
+    >>> print_archive_package_rows(anon_browser.contents)
     Source              Published   Status     Series      Section  Build
         Status
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
@@ -345,20 +345,20 @@ Each data row is expandable to contain some sections containing:
 The package was copied from a PPA. The archive title will hence link
 back to the source PPA.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+ppa/default")
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> admin_browser.getLink("PPA for Mark Shuttleworth").url
-    'http://launchpad.dev/~sabdfl/+ppa/default'
+    'http://launchpad.dev/~sabdfl/+archive'
 
 This link is not present if the user does not have permission to view
 the PPA.  If we make sabdfl's PPA private and then browse back as
 an anonymous user, the link will be gone.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+ppa/default/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+admin")
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+ppa/default")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> anon_browser.getLink("PPA for Mark Shuttleworth")
     Traceback (most recent call last):
     ...
@@ -366,7 +366,7 @@ an anonymous user, the link will be gone.
 
 Set sabdfl's archive back to public before continuing.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+ppa/default/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+admin")
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
@@ -379,7 +379,7 @@ no results.
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'nonexistentpackage'
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> len(find_tags_by_class(anon_browser.contents, 'ppa_package_row'))
+    >>> len(find_tags_by_class(anon_browser.contents, 'archive_package_row'))
     0
 
 Searching for the package iceweasel shows that Celso is providing this.
@@ -387,7 +387,7 @@ Searching for the package iceweasel shows that Celso is providing this.
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'iceweasel'
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> len(find_tags_by_class(anon_browser.contents, 'ppa_package_row'))
+    >>> len(find_tags_by_class(anon_browser.contents, 'archive_package_row'))
     2
 
 In order to have a wider coverage in search status filter we will
@@ -415,7 +415,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = ''
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Build
         Status
@@ -426,7 +426,7 @@ Use can explicitly select 'published' filter and will get the same result.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['published']
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Build
         Status
@@ -438,7 +438,7 @@ result will only contain packages SUPERSEDED or DELETED.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source            Published    Status        Series   Section  Build
         Status
@@ -450,7 +450,7 @@ any package ever published in the context PPA.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['any']
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source             Published    Status     Series      Section  Build
         Status
@@ -466,23 +466,21 @@ An empty PPA doesn't list any packages and it also doesn't present the
 'apt sources lines ' widget and the repository 'URL' since they would
 link to a repository that doesn't exist yet.
 
-    >>> anon_browser.open("http://launchpad.dev/~no-priv/+ppa/default")
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
     >>> print extract_text(anon_browser.contents)
     PPA for No Privileges Person
     ...
     This archive is public
     PPA for No Privileges Person
-    URL: http://ppa.launchpad.dev/no-priv/default/ubuntu
+    URL: http://ppa.launchpad.dev/no-priv/ubuntu
     I am not allowed to say, I have no privs.
-    Packages
     This PPA does not contain any packages yet.
     ...
 
 Note that the 'URL' page section contains the URL to the repository
 but it's not linkified.
 
-    >>> anon_browser.getLink(
-    ...     "http://ppa.launchpad.dev/no-priv/default/ubuntu")
+    >>> anon_browser.getLink("http://ppa.launchpad.dev/no-priv/ubuntu")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -506,14 +504,14 @@ published source.
     >>> sources_list = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
     >>> print extract_text(sources_list)
-    deb http://ppa.launchpad.dev/no-priv/default/ubuntu warty main
-    deb-src http://ppa.launchpad.dev/no-priv/default/ubuntu warty main
+    deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
+    deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
 
 Also the repository URL is an actual link.
 
     >>> print anon_browser.getLink(
-    ...     "http://ppa.launchpad.dev/no-priv/default/ubuntu").url
-    http://ppa.launchpad.dev/no-priv/default/ubuntu
+    ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
+    http://ppa.launchpad.dev/no-priv/ubuntu
 
 
 == PPA signing key ==
@@ -573,7 +571,7 @@ Each PPA provides a public page where the users can browse build
 records by name and/or state. See pagetests/soyuz/23-builds-pages.txt
 for more information.
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+ppa/default")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> anon_browser.getLink("View build records").click()
 
 The only difference introduced in the PPA builds page is the fact that
@@ -593,7 +591,7 @@ status in the PPA workflow.
 Just quickly check if the singular form of this section is handled
 properly.
 
-    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+ppa/default")
+    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
@@ -615,8 +613,8 @@ And the sources.list entries point to the right distribution release:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/sabdfl/default/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/sabdfl/default/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
 
 
 == Other Distribution PPAs ==
@@ -664,7 +662,7 @@ The package row headings show an Uploader column:
     >>> print find_tag_by_id(foo_browser.contents, 'packages_list')
     <table class="listing" id="packages_list">
     <thead>
-    <tr class="ppa_package_row">
+    <tr class="archive_package_row">
     <th colspan="2">Source</th>
     <th>Uploader</th>
     <th>Published</th>
@@ -678,7 +676,7 @@ The package row headings show an Uploader column:
 
 The package row data shows the uploader:
 
-    >>> print_ppa_package_rows(foo_browser.contents)
+    >>> print_archive_package_rows(foo_browser.contents)
     Source                 Uploader Published Status   Series  Section  Build
         Status
     mozilla-firefox - 0.9  name16             Pending  Hoary   Base
@@ -712,10 +710,10 @@ for each published source:
 
 Anyone can see the build status for package in Celso's PPA.
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+ppa/default")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
 
     >>> def print_build_status(contents):
-    ...     rows = find_tags_by_class(contents, 'ppa_package_row')
+    ...     rows = find_tags_by_class(contents, 'archive_package_row')
     ...     headers = rows[0].findAll('th')
     ...     print extract_text(headers[0]), extract_text(headers[-1])
     ...     for row in rows[1:]:
@@ -749,7 +747,7 @@ quickly 'retry' the failure.
 
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+ppa/default")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
 
     >>> cprov_browser.getLink('i386').click()
     >>> cprov_browser.getLink("Retry build").click()
@@ -761,7 +759,7 @@ built in Celso's PPA.
     >>> anon_browser.getLink('View PPA').click()
     >>> print_build_status(anon_browser.contents)
     Source                    Build Status
-    cdrkit - 1.0              /@@/build-building i386
+    cdrkit - 1.0              /@@/build-needed i386
     commercialpackage - 1.0-1 /@@/yes None
 
 Again the architecture tags listed on the 'built' column link to the
@@ -812,15 +810,3 @@ PPA itself.
     >>> anon_browser.getLink('Celso Providelo').click()
     >>> print anon_browser.title
     PPA for Celso Providelo
-
-
-== Compatibility URL Redirection ==
-
-PPAs are being enhanced to allow multiple named PPAs per owner.  Specifying an
-old-style +archive URL without the name in it will redirect to the correct 
-newer +ppa URL with the default PPA name, "default".
-
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> admin_browser.url
-    'http://launchpad.dev/~cprov/+ppa/default'
-

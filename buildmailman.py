@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.launchpad.mailman.config import (
     configure_prefix, configure_siteowner)
 from canonical.launchpad.mailman.monkeypatches import monkey_patch
-from canonical.lazr.config import as_username_groupname
+from lazr.config import as_username_groupname
 from configs import generate_overrides
 
 basepath = [part for part in sys.path if part]
