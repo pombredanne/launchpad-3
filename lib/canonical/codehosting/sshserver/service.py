@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = ['SSHService']
 
 
+import logging
 import os
 
 from twisted.application import service, strports
@@ -18,6 +19,7 @@ from twisted.web.xmlrpc import Proxy
 from canonical.config import config
 
 from canonical.codehosting.sshserver import server as sshserver
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class SSHService(service.Service):
@@ -64,7 +66,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
-        sshserver.set_up_logging()
+        set_up_logging()
         service.Service.startService(self)
         self.service.startService()
 
@@ -72,3 +74,21 @@ class SSHService(service.Service):
         """Stop the SFTP service."""
         service.Service.stopService(self)
         return self.service.stopService()
+
+
+def set_up_logging(configure_oops_reporting=False):
+    """Set up logging for the smart server.
+
+    This sets up a debugging handler on the 'codehosting' logger, makes sure
+    that things logged there won't go to stderr (necessary because of
+    bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
+
+    In addition, if configure_oops_reporting is True, install a
+    Twisted log observer that ensures unhandled exceptions get
+    reported as OOPSes.
+    """
+    log = logging.getLogger('codehosting')
+    log.setLevel(logging.CRITICAL)
+    if configure_oops_reporting:
+        set_up_oops_reporting('codehosting')
+    return log
