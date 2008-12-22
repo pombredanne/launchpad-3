@@ -17,8 +17,6 @@ import binascii
 import os
 import logging
 
-from bzrlib import trace
-
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
