@@ -22,7 +22,7 @@ from twisted.web.xmlrpc import Proxy
 
 from canonical.config import config
 
-from canonical.codehosting.sshserver.server import (
+from canonical.codehosting.sshserver.auth import (
     PublicKeyFromLaunchpadChecker, Realm, SSHUserAuthServer)
 
 
