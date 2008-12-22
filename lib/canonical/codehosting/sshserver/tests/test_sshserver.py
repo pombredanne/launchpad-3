@@ -11,7 +11,7 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import userauth
 from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.ssh.keys import BadKeyError
+from twisted.conch.ssh.keys import BadKeyError, Key
 from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 from twisted.internet import defer
 from twisted.python import failure
@@ -20,10 +20,10 @@ from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.sshserver import server as sshserver
-from canonical.codehosting.sshserver.service import getPublicKeyString
 from canonical.config import config
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
+
 
 class MockRealm:
     """A mock realm for testing userauth.SSHUserAuthServer.
@@ -204,9 +204,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     def _makeKey(self):
         keydir = sibpath(__file__, 'keys')
-        public_key = getPublicKeyString(
-            data=open(os.path.join(keydir,
-                                   'ssh_host_key_rsa.pub'), 'rb').read())
+        public_key = Key.fromString(
+            open(os.path.join(keydir, 'ssh_host_key_rsa.pub'), 'rb').read())
         if isinstance(public_key, str):
             return chr(0) + NS('rsa') + NS(public_key)
         else:

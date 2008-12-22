@@ -20,16 +20,6 @@ from canonical.config import config
 from canonical.codehosting.sshserver import server as sshserver
 
 
-def getPublicKeyString(data):
-    """Compatibility wrapper to get a public key string."""
-    return Key.fromString(data)
-
-
-def getPrivateKeyObject(data):
-    """Compatibility wrapper to get a private key object."""
-    return Key.fromString(data)
-
-
 class SSHService(service.Service):
     """A Twisted service for the supermirror SFTP server."""
 
@@ -66,12 +56,10 @@ class SSHService(service.Service):
         :return: (hostPublicKey, hostPrivateKey)
         """
         keydir = config.codehosting.host_key_pair_path
-        hostPublicKey = getPublicKeyString(
-            data=open(os.path.join(keydir,
-                                   'ssh_host_key_rsa.pub'), 'rb').read())
-        hostPrivateKey = getPrivateKeyObject(
-            data=open(os.path.join(keydir,
-                                   'ssh_host_key_rsa'), 'rb').read())
+        hostPublicKey = Key.fromString(
+            open(os.path.join(keydir, 'ssh_host_key_rsa.pub'), 'rb').read())
+        hostPrivateKey = Key.fromString(
+            open(os.path.join(keydir, 'ssh_host_key_rsa'), 'rb').read())
         return hostPublicKey, hostPrivateKey
 
     def startService(self):
