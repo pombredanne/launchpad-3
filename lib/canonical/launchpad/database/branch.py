@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import re
 
 from bzrlib.revision import NULL_REVISION
 import pytz
@@ -55,6 +54,8 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.database.branchcontainer import (
+    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -136,6 +137,18 @@ class Branch(SQLBase):
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
+
+    @property
+    def container(self):
+        """See `IBranch`."""
+        if self.product is None:
+            if self.distroseries is None:
+                return PersonContainer(self.owner)
+            else:
+                return PackageContainer(
+                    self.distroseries, self.sourcepackagename)
+        else:
+            return ProductContainer(self.product)
 
     @property
     def revision_history(self):
@@ -308,13 +321,6 @@ class Branch(SQLBase):
     def warehouse_url(self):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
-
-    @property
-    def product_name(self):
-        """See `IBranch`."""
-        if self.product is None:
-            return '+junk'
-        return self.product.name
 
     def _getContainerName(self):
         if self.product is not None:
@@ -1048,19 +1054,60 @@ class BranchSet:
             return branch
 
     def getByUniqueName(self, unique_name, default=None):
-        """Find a branch by its ~owner/product/name unique name."""
+        """Find a branch by its unique name.
+
+        For product branches, the unique name is ~user/product/branch; for
+        source package branches,
+        ~user/distro/distroseries/sourcepackagename/branch; for personal
+        branches, ~user/+junk/branch.
+        """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
-        # source package branches.
-        match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
-        if match is None:
+        # +dev alias, nor official source package branches.
+        path_segments = unique_name.split('/')
+        if len(path_segments) == 5:
+            return self._getSourcePackageBranch(path_segments, default)
+        if len(path_segments) != 3:
             return default
-        owner_name, product_name, branch_name = match.groups()
+        owner_name, product_name, branch_name = path_segments
+        owner_name = owner_name[1:]
         branch = self._getByUniqueNameElements(
             owner_name, product_name, branch_name)
         if branch is None:
             return default
         else:
             return branch
+
+    def _getSourcePackageBranch(self, path_segments, default):
+        """Find a source package branch given its path segments.
+
+        Only gets unofficial source package branches, that is, branches with
+        names like ~jml/ubuntu/jaunty/openssh/stuff.
+        """
+        # Avoid circular imports.
+        from canonical.launchpad.database import (
+            Distribution, DistroSeries, Person, SourcePackageName)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [
+            Branch,
+            Join(Person, Branch.owner == Person.id),
+            Join(SourcePackageName,
+                 Branch.sourcepackagename == SourcePackageName.id),
+            Join(DistroSeries,
+                 Branch.distroseries == DistroSeries.id),
+            Join(Distribution,
+                 DistroSeries.distribution == Distribution.id)]
+        owner, distribution, distroseries, sourcepackagename, branch = (
+            path_segments)
+        owner = owner[1:]
+        result = store.using(*origin).find(
+            Branch, Person.name == owner, Distribution.name == distribution,
+            DistroSeries.name == distroseries,
+            SourcePackageName.name == sourcepackagename,
+            Branch.name == branch)
+        branch = result.one()
+        if branch is None:
+            return default
+        return branch
 
     @staticmethod
     def _getByUniqueNameElements(owner_name, product_name, branch_name):

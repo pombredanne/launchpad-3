@@ -294,7 +294,7 @@ The headings:
     >>> print find_tag_by_id(anon_browser.contents, 'packages_list')
     <table class="listing" id="packages_list">
     <thead>
-    <tr class="ppa_package_row">
+    <tr class="archive_package_row">
     <th colspan="2">Source</th>
     <th>Published</th>
     <th>Status</th>
@@ -308,11 +308,11 @@ The headings:
 The source packages list is presented publicly, including the
 available changesfile.
 
-    >>> def print_ppa_package_rows(contents):
-    ...     for ppa_row in find_tags_by_class(contents, 'ppa_package_row'):
+    >>> def print_archive_package_rows(contents):
+    ...     for ppa_row in find_tags_by_class(contents, 'archive_package_row'):
     ...         print extract_text(ppa_row)
 
-    >>> print_ppa_package_rows(anon_browser.contents)
+    >>> print_archive_package_rows(anon_browser.contents)
     Source              Published   Status     Series      Section  Build
         Status
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
@@ -379,7 +379,7 @@ no results.
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'nonexistentpackage'
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> len(find_tags_by_class(anon_browser.contents, 'ppa_package_row'))
+    >>> len(find_tags_by_class(anon_browser.contents, 'archive_package_row'))
     0
 
 Searching for the package iceweasel shows that Celso is providing this.
@@ -387,7 +387,7 @@ Searching for the package iceweasel shows that Celso is providing this.
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'iceweasel'
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> len(find_tags_by_class(anon_browser.contents, 'ppa_package_row'))
+    >>> len(find_tags_by_class(anon_browser.contents, 'archive_package_row'))
     2
 
 In order to have a wider coverage in search status filter we will
@@ -415,7 +415,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = ''
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Build
         Status
@@ -426,7 +426,7 @@ Use can explicitly select 'published' filter and will get the same result.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['published']
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Build
         Status
@@ -438,7 +438,7 @@ result will only contain packages SUPERSEDED or DELETED.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source            Published    Status        Series   Section  Build
         Status
@@ -450,7 +450,7 @@ any package ever published in the context PPA.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['any']
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source             Published    Status     Series      Section  Build
         Status
@@ -474,7 +474,6 @@ link to a repository that doesn't exist yet.
     PPA for No Privileges Person
     URL: http://ppa.launchpad.dev/no-priv/ubuntu
     I am not allowed to say, I have no privs.
-    Packages
     This PPA does not contain any packages yet.
     ...
 
@@ -663,7 +662,7 @@ The package row headings show an Uploader column:
     >>> print find_tag_by_id(foo_browser.contents, 'packages_list')
     <table class="listing" id="packages_list">
     <thead>
-    <tr class="ppa_package_row">
+    <tr class="archive_package_row">
     <th colspan="2">Source</th>
     <th>Uploader</th>
     <th>Published</th>
@@ -677,7 +676,7 @@ The package row headings show an Uploader column:
 
 The package row data shows the uploader:
 
-    >>> print_ppa_package_rows(foo_browser.contents)
+    >>> print_archive_package_rows(foo_browser.contents)
     Source                 Uploader Published Status   Series  Section  Build
         Status
     mozilla-firefox - 0.9  name16             Pending  Hoary   Base
@@ -714,7 +713,7 @@ Anyone can see the build status for package in Celso's PPA.
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
 
     >>> def print_build_status(contents):
-    ...     rows = find_tags_by_class(contents, 'ppa_package_row')
+    ...     rows = find_tags_by_class(contents, 'archive_package_row')
     ...     headers = rows[0].findAll('th')
     ...     print extract_text(headers[0]), extract_text(headers[-1])
     ...     for row in rows[1:]:
@@ -760,7 +759,7 @@ built in Celso's PPA.
     >>> anon_browser.getLink('View PPA').click()
     >>> print_build_status(anon_browser.contents)
     Source                    Build Status
-    cdrkit - 1.0              /@@/build-building i386
+    cdrkit - 1.0              /@@/build-needed i386
     commercialpackage - 1.0-1 /@@/yes None
 
 Again the architecture tags listed on the 'built' column link to the
