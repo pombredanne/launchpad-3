@@ -37,8 +37,17 @@ class Factory(SSHFactory):
 
     def buildProtocol(self, address):
         transport = SSHFactory.buildProtocol(self, address)
+        transport._realConnectionLost = transport.connectionLost
+        transport.connectionLost = (
+            lambda reason: self.connectionLost(transport, reason))
         accesslog.log_event(accesslog.UserConnected(transport, address))
         return transport
+
+    def connectionLost(self, transport, reason):
+        try:
+            return transport._realConnectionLost(reason)
+        finally:
+            accesslog.log_event(accesslog.UserDisconnected(transport))
 
     def startFactory(self):
         SSHFactory.startFactory(self)

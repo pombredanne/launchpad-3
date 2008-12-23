@@ -14,7 +14,9 @@ __all__ = [
     'SFTPClosed',
     'SFTPStarted',
     'UserConnected',
+    'UserDisconnected',
     'UserLoggedIn',
+    'UserLoggedOut',
     ]
 
 import logging
@@ -110,6 +112,15 @@ class UserConnected(LoggingEvent):
     def __init__(self, transport, address):
         LoggingEvent.__init__(
             self, session_id=id(transport), address=address)
+
+
+class UserDisconnected(LoggingEvent):
+
+    level = logging.INFO
+    template = '[%(session_id)s] disconnected.'
+
+    def __init__(self, transport):
+        LoggingEvent.__init__(self, session_id=id(transport))
 
 
 class AvatarEvent(LoggingEvent):
