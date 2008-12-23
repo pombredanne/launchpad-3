@@ -29,10 +29,6 @@ from canonical.codehosting.sshserver import accesslog
 class SubsystemOnlySession(session.SSHSession, object):
     """Session adapter that corrects a bug in Conch."""
 
-    def closeReceived(self):
-        # Without this, the client hangs when its finished transferring.
-        self.loseConnection()
-
     def loseConnection(self):
         # XXX: JonathanLange 2008-03-31: This deliberately replaces the
         # implementation of session.SSHSession.loseConnection. The default
