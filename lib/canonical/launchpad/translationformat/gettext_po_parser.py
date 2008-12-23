@@ -582,7 +582,10 @@ class POParser(object):
                 if not self._message.translations:
                     raise TranslationFormatSyntaxError(
                         "File contains no messages.")
-                self._parseHeader()
+                self._parseHeader(
+                    self._message.translations[
+                        TranslationConstants.SINGULAR_FORM],
+                    self._message.comment)
 
             # There is nothing left to parse.
             return self._translation_file
@@ -639,12 +642,10 @@ class POParser(object):
             self._messageids.add(msgkey)
             self._message = None
 
-    def _parseHeader(self):
+    def _parseHeader(self, header_text, header_comment):
         try:
             self._translation_file.header = POHeader(
-                self._message.translations[
-                    TranslationConstants.SINGULAR_FORM],
-                self._message.comment)
+                header_text, header_comment)
         except TranslationFormatInvalidInputError, error:
             if error.line_number is None:
                 error.line_number = self._message_lineno
@@ -931,7 +932,10 @@ class POParser(object):
                 # When there is no msgid in the parsed message, it's the
                 # header for this file.
                 self._dumpCurrentSection()
-                self._parseHeader()
+                self._parseHeader(
+                    self._message.translations[
+                        TranslationConstants.SINGULAR_FORM],
+                    self._message.comment)
             else:
                 logging.warning(
                     POSyntaxWarning(self._lineno, 'We got a second header.'))
