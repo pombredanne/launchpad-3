@@ -262,7 +262,12 @@ class FileTransferServer(filetransfer.FileTransferServer):
 
     def connectionLost(self, reason):
         filetransfer.FileTransferServer.connectionLost(self, reason)
-        accesslog.log_event(accesslog.SFTPClosed(self.avatar))
+        # XXX: JonathanLange 2008-12-23: This method gets called twice! Still
+        # figuring out why.
+        if self.avatar is not None:
+            avatar = self.avatar
+            self.avatar = None
+            accesslog.log_event(accesslog.SFTPClosed(avatar))
 
 
 class TransportSFTPServer:
