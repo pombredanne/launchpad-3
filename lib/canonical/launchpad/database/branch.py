@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace)
+    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchcontainer import (
     PackageContainer, PersonContainer, ProductContainer)
@@ -1063,21 +1063,54 @@ class BranchSet:
         """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
         # +dev alias, nor official source package branches.
-        path_segments = unique_name.split('/')
-        if len(path_segments) == 5:
-            return self._getSourcePackageBranch(path_segments, default)
-        if len(path_segments) != 3:
+        try:
+            namespace_name, branch_name = unique_name.rsplit('/', 1)
+        except ValueError:
             return default
-        owner_name, product_name, branch_name = path_segments
-        owner_name = owner_name[1:]
-        branch = self._getByUniqueNameElements(
-            owner_name, product_name, branch_name)
+        try:
+            namespace_data = getUtility(IBranchNamespaceSet).parse(
+                namespace_name)
+        except InvalidNamespace:
+            return default
+        if namespace_data['product'] == '+junk':
+            return self._getPersonalBranch(
+                namespace_data['person'], branch_name, default)
+        elif namespace_data['product'] is None:
+            return self._getPackageBranch(
+                namespace_data['person'], namespace_data['distribution'],
+                namespace_data['distroseries'],
+                namespace_data['sourcepackagename'], branch_name, default)
+        else:
+            return self._getProductBranch(
+                namespace_data['person'], namespace_data['product'],
+                branch_name, default)
+
+    def _getPersonalBranch(self, person, branch_name, default):
+        query = ("Branch.owner = Person.id"
+                 + " AND Branch.product IS NULL"
+                 + " AND Person.name = " + quote(person)
+                 + " AND Branch.name = " + quote(branch_name))
+        tables = ['Person']
+        branch = Branch.selectOne(query, clauseTables=tables)
+        if branch is None:
+            return default
+        return branch
+
+    def _getProductBranch(self, person, product, branch_name, default):
+        query = ("Branch.owner = Person.id"
+                 + " AND Branch.product = Product.id"
+                 + " AND Person.name = " + quote(person)
+                 + " AND Product.name = " + quote(product)
+                 + " AND Branch.name = " + quote(branch_name))
+        tables = ['Person', 'Product']
+        branch = Branch.selectOne(query, clauseTables=tables)
         if branch is None:
             return default
         else:
             return branch
 
-    def _getSourcePackageBranch(self, path_segments, default):
+    def _getPackageBranch(self, owner, distribution, distroseries,
+                          sourcepackagename, branch, default):
         """Find a source package branch given its path segments.
 
         Only gets unofficial source package branches, that is, branches with
@@ -1096,9 +1129,6 @@ class BranchSet:
                  Branch.distroseries == DistroSeries.id),
             Join(Distribution,
                  DistroSeries.distribution == Distribution.id)]
-        owner, distribution, distroseries, sourcepackagename, branch = (
-            path_segments)
-        owner = owner[1:]
         result = store.using(*origin).find(
             Branch, Person.name == owner, Distribution.name == distribution,
             DistroSeries.name == distroseries,
@@ -1144,7 +1174,7 @@ class BranchSet:
         else:
             suffix = None
         if len(path_segments) < 3:
-            branch, series = klass._getProductBranch(*path_segments)
+            branch, series = klass._getDefaultProductBranch(*path_segments)
         else:
             series = None
             owner, product, name = path_segments[:3]
@@ -1158,7 +1188,7 @@ class BranchSet:
         return branch, suffix, series
 
     @staticmethod
-    def _getProductBranch(product_name, series_name=None):
+    def _getDefaultProductBranch(product_name, series_name=None):
         """Return the branch for a product.
 
         :param product_name: The name of the branch's product.

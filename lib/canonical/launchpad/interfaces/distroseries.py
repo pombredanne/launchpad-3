@@ -11,6 +11,7 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
+    'NoSuchDistroSeries',
     ]
 
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
@@ -29,6 +30,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
@@ -701,3 +703,9 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
+
+
+class NoSuchDistroSeries(NameLookupFailed):
+    """Raised when we try to find a DistroSeries that doesn't exist."""
+
+    _message_prefix = "No such distribution series"

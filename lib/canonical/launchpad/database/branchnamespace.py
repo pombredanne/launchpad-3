@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchNamespaceSet',
     'get_namespace',
     'PackageNamespace',
     'PersonalNamespace',
@@ -18,7 +19,16 @@ from zope.interface import implements
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, IBranchSet)
-from canonical.launchpad.interfaces.branchnamespace import IBranchNamespace
+from canonical.launchpad.interfaces.branchnamespace import (
+    IBranchNamespace, InvalidNamespace)
+from canonical.launchpad.interfaces.distribution import (
+    IDistributionSet, NoSuchDistribution)
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeriesSet, NoSuchDistroSeries)
+from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
+from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet, NoSuchSourcePackageName)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -173,3 +183,82 @@ class BranchNamespaceSet:
             return PackageNamespace(person, distroseries, sourcepackagename)
         else:
             return PersonalNamespace(person)
+
+    def parse(self, namespace_name):
+        """See `IBranchNamespaceSet`."""
+        data = dict(
+            person=None, product=None, distribution=None, distroseries=None,
+            sourcepackagename=None)
+        tokens = namespace_name.split('/')
+        if len(tokens) == 2:
+            data['person'] = tokens[0]
+            data['product'] = tokens[1]
+        elif len(tokens) == 4:
+            data['person'] = tokens[0]
+            data['distribution'] = tokens[1]
+            data['distroseries'] = tokens[2]
+            data['sourcepackagename'] = tokens[3]
+        else:
+            raise InvalidNamespace(namespace_name)
+        if not data['person'].startswith('~'):
+            raise InvalidNamespace(namespace_name)
+        data['person'] = data['person'][1:]
+        return data
+
+    def lookup(self, namespace_name):
+        """See `IBranchNamespaceSet`."""
+        names = self.parse(namespace_name)
+        data = self._realize(names)
+        return self.get(**data)
+
+    def _findOrRaise(self, error, name, finder, *args):
+        if name is None:
+            return None
+        args = list(args)
+        args.append(name)
+        result = finder(*args)
+        if result is None:
+            raise error(name)
+        return result
+
+    def _findPerson(self, person_name):
+        return self._findOrRaise(
+            NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
+
+    def _findProduct(self, product_name):
+        if product_name == '+junk':
+            return None
+        return self._findOrRaise(
+            NoSuchProduct, product_name,
+            getUtility(IProductSet).getByName)
+
+    def _findDistribution(self, distribution_name):
+        return self._findOrRaise(
+            NoSuchDistribution, distribution_name,
+            getUtility(IDistributionSet).getByName)
+
+    def _findDistroSeries(self, distribution, distroseries_name):
+        return self._findOrRaise(
+            NoSuchDistroSeries, distroseries_name,
+            getUtility(IDistroSeriesSet).queryByName, distribution)
+
+    def _findSourcePackageName(self, sourcepackagename_name):
+        return self._findOrRaise(
+            NoSuchSourcePackageName, sourcepackagename_name,
+            getUtility(ISourcePackageNameSet).queryByName)
+
+    def _realize(self, names):
+        """Turn a dict of object names into a dict of objects.
+
+        Takes the results of `IBranchNamespaceSet.parse` and turns them into a
+        dict where the values are Launchpad objects.
+        """
+        data = {}
+        data['person'] = self._findPerson(names['person'])
+        data['product'] = self._findProduct(names['product'])
+        distribution = self._findDistribution(names['distribution'])
+        data['distroseries'] = self._findDistroSeries(
+            distribution, names['distroseries'])
+        data['sourcepackagename'] = self._findSourcePackageName(
+            names['sourcepackagename'])
+        return data

@@ -284,6 +284,8 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, product_name):
+        # XXX: JonathanLange 2008-12-10 spec=package-branches: This is a big
+        # thing that needs to be changed for package branches.
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
             branch = self.context.getBranch(product_name, branch_name)
