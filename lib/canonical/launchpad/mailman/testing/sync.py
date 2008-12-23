@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'SyncDetails',
     'dump_list_info',
     'prepare_for_sync',
     ]
@@ -24,6 +25,19 @@ from canonical.database.sqlbase import commit
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import IEmailAddressSet, IPersonSet
+
+
+class SyncDetails:
+    """Details about the sync that just happened."""
+
+    def __init__(self, source_dir, mhonarc_path):
+        self.source_dir = source_dir
+        self.mhonarc_path = mhonarc_path
+
+    def cleanup(self):
+        """Clean up all artifacts of the sync."""
+        shutil.rmtree(self.source_dir)
+        shutil.rmtree(self.mhonarc_path)
 
 
 def prepare_for_sync():
@@ -47,7 +61,7 @@ def prepare_for_sync():
 
     Finally, after all this hackery, we copy the current Mailman tree to a
     temporary location.  Thus this temporary copy will look like production's
-    Mailman database, and thus the sync will be more realistic.
+    Mailman database, and the sync will be more realistic.
     """
     # Tweak each of the mailing lists by essentially breaking their host_name
     # and web_page_urls.  These will get repaired by the sync script.  Do this
@@ -69,9 +83,10 @@ def prepare_for_sync():
     # the production database was copied and when the Mailman data was copied.
     mlist = MailList()
     try:
+        mhonarc_path = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team')
         mlist.Create('fake-team', mm_cfg.SITE_LIST_OWNER, ' no password ')
         mlist.Save()
-        os.makedirs(os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team'))
+        os.makedirs(mhonarc_path)
     finally:
         mlist.Unlock()
     # Create a directory in which to put the simulated production database,
@@ -91,7 +106,7 @@ def prepare_for_sync():
         email.email = list_name + '@lists.prod.launchpad.dev'
     logout()
     commit()
-    return source_dir
+    return SyncDetails(source_dir, mhonarc_path)
 
 
 def dump_list_info():

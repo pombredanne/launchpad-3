@@ -13,10 +13,12 @@ __all__ = [
 
 
 import os
+import pdb
 import time
 import datetime
 
 # pylint: disable-msg=F0401
+from Mailman.MailList import MailList
 from Mailman.mm_cfg import LOG_DIR
 
 try:
@@ -27,8 +29,9 @@ except AttributeError:
     SEEK_END = 2
 
 
+BREAK_ON_TIMEOUT = False
 LINES_TO_CAPTURE = 50
-LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=5)
+LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=20)
 SECONDS_TO_SNOOZE = 0.1
 Empty = object()
 NL = '\n'
@@ -75,9 +78,20 @@ class LogWatcher:
         self._line_cache = []
         self.last_lines_read = []
 
+    def annotate(self, message):
+        """Annotate the log by writing the message to it.
+
+        This is mostly for debugging purposes.
+        """
+        log_file = open(self._log_path, 'a+')
+        try:
+            print >> log_file, datetime.datetime.now(), message
+        finally:
+            log_file.close()
+
     @property
     def lines(self):
-        # Keep a cache of the lines read from the file.
+        """Keep a cache of the lines read from the file."""
         while True:
             if len(self._line_cache) == 0:
                 # The cache is empty, so first return a special marker telling
@@ -95,14 +109,18 @@ class LogWatcher:
         'landmark' must appear on a single line.  Comparison is done with 'in'
         on each line of the file.
         """
-        until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
+        start = datetime.datetime.now()
+        until = start + LOG_GROWTH_WAIT_INTERVAL
         for line in self.lines:
             if line is Empty:
                 # There's nothing in the file for us.  See if we timed out and
                 # if not, sleep for a little while.
-                if datetime.datetime.now() > until:
+                now = datetime.datetime.now()
+                if now > until:
                     if not self.expecting_timeout:
                         print NL.join(self.last_lines_read)
+                        if BREAK_ON_TIMEOUT:
+                            pdb.set_trace()
                     # Resetting expectations so you don't have to.
                     self.expecting_timeout = False
                     return 'Timed out'
@@ -159,7 +177,7 @@ class SMTPDWatcher(LogWatcher):
     FILENAME = 'smtpd'
 
     def wait_for_mbox_delivery(self, message_id):
-        return self.wait('msgid: <%s>' % message_id)
+        return self.wait('delivered to mbox: <%s>' % message_id)
 
     def wait_for_list_traffic(self, team_name):
         return self.wait('to: %s@lists.launchpad.dev' % team_name)
@@ -185,9 +203,20 @@ class VetteWatcher(LogWatcher):
     def wait_for_discard(self, message_id):
         return self.wait('Message discarded, msgid: <%s>' % message_id)
 
-    def wait_for_hold(self, message_id):
-        return self.wait(
-            'Holding message for LP approval: <%s>' % message_id)
+    def wait_for_hold(self, team_name, message_id):
+        message_id = '<%s>' % message_id
+        wait = self.wait('Holding message for LP approval: %s' % message_id)
+        if wait is None:
+            # Wait a little longer to ensure that the mailing list has been
+            # saved and unlocked with the updated hold information.  Acquiring
+            # the lock does the proper synchronization.
+            try:
+                mlist = MailList(team_name)
+                assert message_id in mlist.held_message_ids, (
+                    'Held message is missing from mailing list')
+            finally:
+                mlist.Unlock()
+        return wait
 
 
 class QrunnerWatcher(LogWatcher):
