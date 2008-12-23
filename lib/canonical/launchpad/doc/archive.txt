@@ -51,19 +51,62 @@ The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
 essentially the password to the archive for the builder.
 
+It can only be set by users with launchpad.Admin permission in the
+archive, i.e. a launchpad-administrator.
+
+    >>> cprov_archive.buildd_secret = 'boing'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'buildd_secret', 'launchpad.Admin')
+
+Foo Bar, can set 'buildd_secret'.
+
     >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = "secret"
+    >>> cprov_archive.buildd_secret = 'not so secret'
+
+In a public PPA, 'buildd_secret' still visible to anyone.
+
+    >>> login(ANONYMOUS)
+    >>> print cprov_archive.private
+    False
+
+    >>> print cprov_archive.buildd_secret
+    not so secret
+
+Once made private, 'buildd_secret' content can only be read by users with
+'launchpad.View' in the archive.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = 'really secret'
+    >>> cprov_archive.private = True
+
     >>> login(ANONYMOUS)
     >>> print cprov_archive.buildd_secret
-    secret
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'buildd_secret', 'launchpad.View')
+
+Celso can read 'buildd_secret' contents for his PPA.
+
+    >>> login('celso.providelo@canonical.com')
+    >>> print cprov_archive.buildd_secret
+    really secret
+
+In order to continue the tests of public archive attributes we will
+make Celso's PPA public again.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+    >>> login(ANONYMOUS)
 
 Useful properties:
 
-    >>> cprov_archive.title
-    u'PPA for Celso Providelo'
+    >>> print cprov_archive.title
+    PPA for Celso Providelo
 
-    >>> cprov_archive.archive_url
-    u'http://ppa.launchpad.dev/cprov/ubuntu'
+    >>> print cprov_archive.archive_url
+    http://ppa.launchpad.dev/cprov/ubuntu
 
 Inquire what Distribution Series this archive has published sources to:
 
