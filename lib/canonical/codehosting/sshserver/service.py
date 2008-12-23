@@ -7,6 +7,7 @@ branches. For more information, see lib/canonical/codehosting/README.
 __metaclass__ = type
 __all__ = [
     'get_codehosting_logger',
+    'log_event',
     'LoggingEvent',
     'SSHService',
     ]
@@ -161,6 +162,15 @@ class LoggingEvent:
         for name, value in data.iteritems():
             setattr(self, name, value)
 
-    def log(self, logger):
+    def _log(self, logger):
         """Log the event to 'logger'."""
         logger.log(self.level, self.template % self._data)
+
+
+def log_event(logger, event):
+    """Log 'event' to 'logger'.
+
+    All events should be logged through this function, which provides a
+    convenient mocking point for tests.
+    """
+    return event._log(logger)
