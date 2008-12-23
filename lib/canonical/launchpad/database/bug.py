@@ -246,7 +246,7 @@ class Bug(SQLBase):
         result = result.prejoin(
             ["assignee", "product", "sourcepackagename",
              "owner", "bugwatch"])
-        # Do not use the defaul orderBy as the prejoins cause ambiguities
+        # Do not use the default orderBy as the prejoins cause ambiguities
         # across the tables.
         result = result.orderBy("id")
         return sorted(result, key=bugtask_sort_key)

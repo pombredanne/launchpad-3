@@ -46,18 +46,20 @@ class ArchivePopulator(SoyuzScript):
         'records.')
 
     def populateArchive(
-        self, from_distribution, from_suite, from_component, to_distribution,
-        to_suite, to_component, to_archive, to_user, reason, include_binaries,
+        self, from_distribution, from_suite, component, to_distribution,
+        to_suite, to_archive, to_user, reason, include_binaries,
         proc_families):
         """Create archive, populate it with packages and builds.
 
-        :param from_distribution: origin distribution.
-        :param from_suite: origin suite.
-        :param from_component: origin component.
+        Please note: if a component was specified for the origin then the
+        same component must be used for the destination.
+
+        :param from_distribution: the origin's distribution.
+        :param from_suite: the origin's suite.
+        :param component: the origin's component.
 
         :param to_distribution: destination distribution.
         :param to_suite: destination suite.
-        :param to_component: destination component.
 
         :param to_archive: destination copy archive name.
         :param to_user: destination archive owner name.
@@ -102,12 +104,10 @@ class ArchivePopulator(SoyuzScript):
             return location
 
         # Build the origin package location.
-        the_origin = build_location(
-            from_distribution, from_suite, from_component)
+        the_origin = build_location(from_distribution, from_suite, component)
 
         # Build the destination package location.
-        the_destination = build_location(
-            to_distribution, to_suite, to_component)
+        the_destination = build_location(to_distribution, to_suite, component)
 
         registrant = getUtility(IPersonSet).getByName(to_user)
         if registrant is None:
@@ -186,11 +186,10 @@ class ArchivePopulator(SoyuzScript):
 
         self.populateArchive(
             self.options.from_distribution, self.options.from_suite,
-            self.options.from_component, self.options.to_distribution,
-            self.options.to_suite, self.options.to_component,
-            self.options.to_archive, self.options.to_user, 
-            self.options.reason, self.options.include_binaries, 
-            self.options.proc_families)
+            self.options.component, self.options.to_distribution,
+            self.options.to_suite, self.options.to_archive,
+            self.options.to_user, self.options.reason,
+            self.options.include_binaries, self.options.proc_families)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -215,9 +214,6 @@ class ArchivePopulator(SoyuzScript):
         self.parser.add_option(
             '--from-suite', dest='from_suite', default=None,
             action='store', help='Origin suite name.')
-        self.parser.add_option(
-            '--from-component', dest='from_component', default=None,
-            action='store', help='Origin component name.')
 
         self.parser.add_option(
             '--to-distribution', dest='to_distribution',
@@ -226,9 +222,6 @@ class ArchivePopulator(SoyuzScript):
         self.parser.add_option(
             '--to-suite', dest='to_suite', default=None,
             action='store', help='Destination suite name.')
-        self.parser.add_option(
-            '--to-component', dest='to_component', default=None,
-            action='store', help='Destination component name.')
 
         self.parser.add_option(
             '--to-archive', dest='to_archive', default=None,
@@ -286,14 +279,15 @@ class ArchivePopulator(SoyuzScript):
             "Found %d source(s) published." % sources_published.count())
 
         def get_spn(pub):
+            """Return the source package name for a publishing record."""
             return pub.sourcepackagerelease.sourcepackagename.name
 
         for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
-                architectures_available=architectures,
-                logger=self.logger)
+                architectures_available=architectures, logger=self.logger)
             if len(builds) == 0:
                 self.logger.info("%s has no builds." % get_spn(pubrec))
-                continue
-            self.logger.info("%s has %s build(s)." %
-                             (get_spn(pubrec), len(builds)))
+            else:
+                self.logger.info(
+                    "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
+            self.txn.commit()

@@ -17,6 +17,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchiveSet, IBuildSet, IDistributionSet,
     PackagePublishingStatus)
+from canonical.launchpad.interfaces.archivearch import IArchiveArchSet
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
@@ -97,7 +98,7 @@ class TestPopulateArchiveScript(TestCase):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--from-component', 'main', '--to-component', 'main'
+            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -157,6 +158,12 @@ class TestPopulateArchiveScript(TestCase):
         :param extra_args: additional arguments to be passed to the
             script (if any).
         """
+        class FakeZopeTransactionManager:
+            def commit(self):
+                pass
+            def begin(self):
+                pass
+
         now = int(time.time())
         if archive_name is None:
             archive_name = "ra%s" % now
@@ -189,6 +196,7 @@ class TestPopulateArchiveScript(TestCase):
             test_args=script_args)
 
         script.logger = QuietFakeLogger()
+        script.txn = FakeZopeTransactionManager()
 
         if exception_type is not None:
             self.assertRaisesWithContent(
@@ -344,6 +352,20 @@ class TestPopulateArchiveScript(TestCase):
         build_spns = [
             get_spn(removeSecurityProxy(build)).name for build in builds]
         self.assertEqual(build_spns, self.expected_build_spns)
+
+        def get_family_names(result_set):
+            """Extract processor family names from result set."""
+            family_names = []
+            for archivearch in rset:
+                family_names.append(
+                    removeSecurityProxy(archivearch).processorfamily.name)
+            return family_names
+
+        # Make sure that the processor family names specified for the copy
+        # archive at hand were stored in the database.
+        rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
+        self.assertEqual(get_family_names(rset), [u'x86', u'hppa'])
+
 
     def _verifyClonedSourcePackages(self, copy_archive, series):
         """Verify that the expected source packages have been cloned.
