@@ -53,7 +53,7 @@ class LaunchpadAvatar(avatar.ConchUser):
         # subsystems...
         self.channelLookup = {'session': SubsystemOnlySession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
+        self.subsystemLookup = {'sftp': sftp.FileTransferServer}
 
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)

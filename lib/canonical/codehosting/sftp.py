@@ -11,8 +11,12 @@ The Bazaar Transport is special in two ways:
 We call such a transport a "Twisted Transport".
 """
 
-__all__ = ['AvatarToSFTPAdapter', 'TransportSFTPServer']
 __metaclass__ = type
+__all__ = [
+    'AvatarToSFTPAdapter',
+    'FileTransferServer',
+    'TransportSFTPServer',
+    ]
 
 
 import errno
@@ -248,6 +252,17 @@ def avatar_to_sftp_server(avatar):
     transport = AsyncLaunchpadTransport(server, server.get_url())
     accesslog.log_event(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
+
+
+class FileTransferServer(filetransfer.FileTransferServer):
+
+    def __init__(self, data=None, avatar=None):
+        filetransfer.FileTransferServer.__init__(self, data, avatar)
+        self.avatar = avatar
+
+    def connectionLost(self, reason):
+        filetransfer.FileTransferServer.connectionLost(self, reason)
+        accesslog.log_event(accesslog.SFTPClosed(self.avatar))
 
 
 class TransportSFTPServer:

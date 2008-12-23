@@ -5,14 +5,14 @@
 
 * Test each event
   * Log user connect
-  * Log sftp session finished
   * Log bzr+ssh finished
   * Log user disconnect
   * Log user auth fail
 
 * If oops reporting is enabled, then lots of Twisted crap goes to the access
   log. Why is this?
-* The emitted strings have an inadequate format -- no timestamp, for example.
 * Missing tests
+* SFTP reports disconnection twice: once from SSHChannel.closeReceived, once
+  from SSHSession.closed (self.client branch)
 
 ? Bind SIGHUP to rotate logs

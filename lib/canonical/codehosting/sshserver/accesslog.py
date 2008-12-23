@@ -8,6 +8,7 @@ __all__ = [
     'get_codehosting_logger',
     'log_event',
     'LoggingEvent',
+    'SFTPClosed',
     'SFTPStarted',
     'UserLoggedIn',
     ]
@@ -104,6 +105,11 @@ class UserLoggedIn(AvatarEvent):
 class SFTPStarted(AvatarEvent):
 
     template = '[%(session_id)s] %(username)s started SFTP session.'
+
+
+class SFTPClosed(AvatarEvent):
+
+    template = '[%(session_id)s] %(username)s closed SFTP session.'
 
 
 class BazaarSSHStarted(AvatarEvent):
