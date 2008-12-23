@@ -16,6 +16,17 @@
 
   <div metal:fill-slot="main">
 
+    <div style="font-size: larger; background: #e0f0d0;
+        padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
+       -webkit-border-radius: 5px;">
+      <strong>Requesting Ubuntu CDs</strong> is done at <a
+      href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
+      <form style="display: inline; font-size: smaller"
+            action="https://shipit.ubuntu.com/">
+        <input type="submit" value="Oh, I want Ubuntu CDs" />
+      </form>
+    </div>
+
     <div style="font-size: normal; float: right; width: 15em; padding: 0.5em;
       background: #e0f0d0; margin: 0.5em; margin-left: 1em;
       border: 1px solid #ccc; -moz-border-radius: 5px;">
@@ -73,17 +84,6 @@
           </form>
         </div>
       </li>
-
-      <li style="margin-top: 1em"><strong>Requesting Ubuntu CDs</strong> is done at <a
-      href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
-      <form style="display: inline; font-size: smaller"
-            action="https://shipit.ubuntu.com/">
-        <input type="submit" value="Oh, I want Ubuntu CDs" />
-      </form>
-      <br /><small>(this
-      may sound weird to you, but a lot of people register projects asking
-      for CDs!)</small></li>
-
 
       <li style="margin-top: 1em; list-style-type: circle">All set?
       Move on to <a href="/projects/+new"><strong>the registration form</strong></a>.

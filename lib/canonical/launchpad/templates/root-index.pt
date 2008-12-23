@@ -61,7 +61,10 @@
         </p>
 
         <h2>Start here:</h2>
-        <p>What are your looking for, or want to register?</p>
+        <p>
+          Are you looking for something, or do you want to register a
+          new project, distribution, person, or team?
+        </p>
         <ul style="font-size: larger">
           <li><a href="/projects">Open Source Projects</a></li>
           <li><a href="/distros">Distributions</a></li>
