@@ -754,6 +754,8 @@ class ObjectForTemplate:
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
 
+    export_subdirectories = True
+
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
 
