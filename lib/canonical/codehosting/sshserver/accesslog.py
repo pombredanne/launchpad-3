@@ -42,7 +42,7 @@ def set_up_logging(configure_oops_reporting=False):
     # test_logging tests don't restore stderr properly, resulting in broken
     # testrunner output.
     log = get_codehosting_logger()
-    log.setLevel(logging.CRITICAL)
+    log.setLevel(logging.INFO)
     log.addHandler(
         TimedRotatingFileHandler(
             config.codehosting.access_log,

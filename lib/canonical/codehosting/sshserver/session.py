@@ -130,6 +130,7 @@ class ExecOnlySession:
             log.err(
                 "ERROR: %r already running a command on transport %r"
                 % (self, self._transport))
+        accesslog.log_event(accesslog.BazaarSSHStarted(self.avatar))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 
@@ -210,7 +211,6 @@ def launch_smart_server(avatar):
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
     environment['BZR_EMAIL'] = '%s@%s' % (avatar.username, hostname)
-    accesslog.log_event(accesslog.BazaarSSHStarted(avatar))
     return RestrictedExecOnlySession(
         avatar,
         reactor,
