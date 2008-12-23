@@ -1181,7 +1181,7 @@ ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news {
-  list-style-image: url(/@@/news);
+  list-style-type: none;
   margin-bottom: 1em;
 }
 ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
@@ -1258,6 +1258,13 @@ beside the mugshot. */
 .product.series, .project {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
+/* --- Home --- */
+#home-stats {
+  margin: auto;
+  text-align: center;
+  color: gray;
+  max-width: 40em;
+}
 
 /* --- Code --- */
 
@@ -1637,6 +1644,7 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
   clear: none;
   float: left;
 }
+div.three.column.left { margin: 0;}
 .title {
   font-weight: bold;
 }

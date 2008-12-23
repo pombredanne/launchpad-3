@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.searchservice import ISearchService
+from canonical.launchpad.interfaces.specification import ISpecificationSet
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
@@ -67,18 +68,38 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def featured_projects_col_b(self):
         """Return a list of featured projects."""
         return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
+
     @property
     def branch_count(self):
+        """Return the total branch count in all of Launchpad."""
         return getUtility(IBranchSet).count()
 
     @property
     def bug_count(self):
+        """Return the total bug count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('bug_count')
 
     @property
     def project_count(self):
+        """Return the total project count in all of Launchpad."""
         return getUtility(IProductSet).count_all()
 
+    @property
+    def translation_count(self):
+        """Return the total count of translatable strings in all
+        of Launchpad
+        """
+        return getUtility(ILaunchpadStatisticSet).value('pomsgid_count')
+
+    @property
+    def blueprint_count(self):
+        """Return the total blueprint count in all of Launchpad."""
+        return getUtility(ISpecificationSet).specification_count
+
+    @property
+    def answer_count(self):
+        """Return the total blueprint count in all of Launchpad."""
+        return getUtility(ILaunchpadStatisticSet).value('question_count')
 
 
 class LaunchpadSearchFormView(LaunchpadView):
