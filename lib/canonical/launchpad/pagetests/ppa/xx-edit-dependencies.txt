@@ -152,7 +152,7 @@ sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'ppa-dependencies'))
+    ...     find_tag_by_id(user_browser.contents, 'archive-dependencies'))
     PPA dependencies
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
@@ -194,7 +194,7 @@ Once the dependencies are removed, the 'dependency-section' (including
 the warning message) are omitted from the PPA overview page
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
+    >>> print find_tag_by_id(user_browser.contents, 'archive-dependencies')
     None
 
 == Primary dependencies ==
@@ -211,10 +211,10 @@ configuration' field represents the current state of the PPA.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
     ( ) Basic (only released packages).
-    ( ) Security (basic dependencies and security fixes).
-    (*) Default (security dependencies and tested updates).
-    ( ) Backports (default dependencies and backports).
-    ( ) Proposed (backports dependencies and proposed binaries).
+    ( ) Security (basic dependencies and important security updates).
+    (*) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
 
 The user can modify this aspect by selecting a different option and
 clicking on 'Save'.
@@ -222,8 +222,8 @@ clicking on 'Save'.
 He will see a notification containing a summary of what was changed.
 
     >>> admin_browser.getControl(
-    ...     "Proposed (backports dependencies and proposed "
-    ...     "binaries).").selected = True
+    ...     "Proposed (default dependencies and proposed updates"
+    ...     ).selected = True
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -235,10 +235,10 @@ The option submitted by the user is now selected when the page loads.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
     ( ) Basic (only released packages).
-    ( ) Security (basic dependencies and security fixes).
-    ( ) Default (security dependencies and tested updates).
-    ( ) Backports (default dependencies and backports).
-    (*) Proposed (backports dependencies and proposed binaries).
+    ( ) Security (basic dependencies and important security updates).
+    ( ) Default (security dependencies and recommended updates).
+    (*) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
 
 The user can also see a corresponding entry in 'Current dependencies'
 section.
@@ -277,10 +277,10 @@ Now we see a PPA configured to depend only on RELEASE pocket.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
     (*) Basic (only released packages).
-    ( ) Security (basic dependencies and security fixes).
-    ( ) Default (security dependencies and tested updates).
-    ( ) Backports (default dependencies and backports).
-    ( ) Proposed (backports dependencies and proposed binaries).
+    ( ) Security (basic dependencies and important security updates).
+    ( ) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
 
     >>> print_ppa_dependencies(admin_browser.contents)
     Primary Archive for Ubuntu Linux - RELEASE
@@ -291,8 +291,8 @@ pre-defined option and the form will restore the default dependencies
 for him.
 
     >>> admin_browser.getControl(
-    ...     "Default (security dependencies and tested "
-    ...     "updates).").selected = True
+    ...     "Default (security dependencies and recommended updates"
+    ...     ).selected = True
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -304,10 +304,10 @@ The default option is now selected.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
     ( ) Basic (only released packages).
-    ( ) Security (basic dependencies and security fixes).
-    (*) Default (security dependencies and tested updates).
-    ( ) Backports (default dependencies and backports).
-    ( ) Proposed (backports dependencies and proposed binaries).
+    ( ) Security (basic dependencies and important security updates).
+    (*) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
 
 And no dependency overrides are listed.
 
@@ -334,10 +334,10 @@ contains a extra dependency.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
     ( ) Basic (only released packages).
-    ( ) Security (basic dependencies and security fixes).
-    (*) Default (security dependencies and tested updates).
-    ( ) Backports (default dependencies and backports).
-    ( ) Proposed (backports dependencies and proposed binaries).
+    ( ) Security (basic dependencies and important security updates).
+    (*) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
 
     >>> print_ppa_dependencies(admin_browser.contents)
      PPA for No Privileges Person
@@ -368,14 +368,30 @@ processed.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
     (*) Basic (only released packages).
-    ( ) Security (basic dependencies and security fixes).
-    ( ) Default (security dependencies and tested updates).
-    ( ) Backports (default dependencies and backports).
-    ( ) Proposed (backports dependencies and proposed binaries).
+    ( ) Security (basic dependencies and important security updates).
+    ( ) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
     Primary Archive for Ubuntu Linux - RELEASE
+
+
+== Primary dependencies in the PPA index page ==
+
+Primary dependencies are presented with pocket information in the PPA
+index page (see `IArchivedependency.title`).
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print admin_browser.title
+    PPA for Celso Providelo
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
+    PPA dependencies
+    PPA for Mark Shuttleworth (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
 
 
 == Cancelling a form request ==
@@ -383,11 +399,23 @@ processed.
 At anytime the form can be cancelled and the user will be taken to the
 PPA context page and the action won't be executed.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
-    >>> admin_browser.getLink("Cancel").click()
+    >>> admin_browser.getLink('Edit dependencies').click()
 
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl(
+    ...     name="field.selected_dependencies").value = ['sabdfl']
+    >>> admin_browser.getControl(
+    ...     "Default (security dependencies and recommended updates)."
+    ...     ).selected = True
+
+    >>> admin_browser.getLink("Cancel").click()
     >>> print admin_browser.title
     PPA for Celso Providelo
 
-    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
-    None
+The dependencies were not modified.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
+    PPA dependencies
+    PPA for Mark Shuttleworth (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)

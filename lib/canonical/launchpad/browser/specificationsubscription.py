@@ -13,15 +13,24 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.specificationsubscription import (
     ISpecificationSubscription)
 from canonical.launchpad.webapp import (
-    action, canonical_url, GeneralFormView, LaunchpadEditFormView)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 
 
+class SpecificationSubscriptionAddView(LaunchpadFormView):
 
-class SpecificationSubscriptionAddView(GeneralFormView):
+    schema = ISpecificationSubscription
+    field_names = ['person', 'essential']
+    label = 'Subscribe someone else'
+    for_input = True
 
-    def process(self, person, essential):
-        self._nextURL = canonical_url(self.context)
-        return self.context.subscribe(person, self.user, essential)
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
+        self.context.subscribe(data['person'], self.user, data['essential'])
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class SpecificationSubscriptionEditView(LaunchpadEditFormView):

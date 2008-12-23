@@ -24,7 +24,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -122,7 +122,7 @@ def get_license_status(license_approved, license_reviewed, licenses):
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
 
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product, licenses):
         self.product = product
@@ -281,7 +281,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        return self.development_focus.series_branch
+        default_branch = self.development_focus.series_branch
+        if default_branch is None:
+            return None
+        elif default_branch.last_mirrored is None:
+            return None
+        else:
+            return default_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):

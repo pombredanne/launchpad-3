@@ -22,7 +22,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
     PackagePublishingStatus)
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class DistroSeriesSourcePackageRelease:
@@ -32,7 +32,7 @@ class DistroSeriesSourcePackageRelease:
 
     implements(IDistroSeriesSourcePackageRelease)
 
-    decorates(ISourcePackageRelease, context='sourcepackagerelease')
+    delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distroseries, sourcepackagerelease):
         self.distroseries = distroseries

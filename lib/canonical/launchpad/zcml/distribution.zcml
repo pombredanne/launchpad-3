@@ -285,6 +285,15 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionArchivesView"
+    name="+archives"
+    permission="launchpad.View"
+    facet="overview"
+    template="../templates/distribution-archive-list.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
     name="+upstreamreport"
     class="canonical.launchpad.browser.DistributionUpstreamBugReport"
     permission="zope.Public"

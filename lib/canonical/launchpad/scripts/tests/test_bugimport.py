@@ -694,6 +694,12 @@ class BugImportScriptTestCase(unittest.TestCase):
         self.assertEqual(bug.bugtasks[0].product.name, 'netapplet')
 
 
+class FakeResultSet:
+
+    def any(self):
+        return False
+
+
 class TestBugWatch:
     """A mock bug watch object for testing `ExternalBugTracker.updateWatches`.
 
@@ -701,6 +707,7 @@ class TestBugWatch:
     is called if its `failing` attribute is True."""
 
     lastchecked = None
+    unpushed_comments = FakeResultSet()
 
     def __init__(self, id, bug, failing):
         """Initialize the object."""

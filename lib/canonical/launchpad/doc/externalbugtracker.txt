@@ -127,6 +127,19 @@ is, an error is raised.
     ...
     TooMuchTimeSkew: ...
 
+The error is in fact raised by the _getRemoteIdsToCheck() method of
+BugWatchUpdater, which is passed a server_time variable by
+updateBugWatches(). updateBugWatches() is responsible for logging the
+error and for setting the last_error_type on all affected BugWatches
+before re-raising the error.
+
+    >>> server_time = utc_now - timedelta(minutes=25)
+    >>> bug_watch_updater._getRemoteIdsToCheck(
+    ...     NegativeTimeSkewExternalBugTracker(), [], server_time, utc_now)
+    Traceback (most recent call last):
+    ...
+    TooMuchTimeSkew: ...
+
 If it's only a little skewed, it won't raise an error.
 
     >>> class CorrectTimeExternalBugTracker(TestExternalBugTracker):
@@ -192,7 +205,7 @@ know that their time is similar to ours.
     ...         print "getRemoteStatus() called: %r" % bug_id
     ...         return 'UNKNOWN'
 
-Only bugs that haven't been checked before are passed on to
+Only bugs that have been checked before are passed on to
 getModifiedRemoteBugs(). I.e., if we have a set of newly created bug
 watches, the getModifiedRemoteBugs() method won't be called.
 
@@ -222,9 +235,22 @@ watches, the getModifiedRemoteBugs() method won't be called.
     ...  if bug_watch.lastchecked is not None]
     []
 
+The method that determines which remote bug IDs need to be updated is
+_getRemoteIdsToCheck(), which returns the IDs as a list.
+
+    >>> external_bugtracker =  CheckModifiedExternalBugTracker(
+    ...     'http://example.com/')
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker, bug_watches,
+    ...     external_bugtracker.getCurrentDBTime())
+    >>> print sorted(ids)
+    [u'1', u'2', u'3', u'4']
+
+updateBugWatches() calls _getRemoteIdsToCheck() and passes its results
+to the ExternalBugTracker's initializeRemoteBugDB() method.
+
     >>> bug_watch_updater.updateBugWatches(
-    ...     CheckModifiedExternalBugTracker('http://example.com/'),
-    ...     bug_watches)
+    ...     external_bugtracker, bug_watches)
     COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
@@ -246,9 +272,16 @@ will then be passed on to initializeRemoteBugDB().
     ...     bug_watch.lastchecked = some_time_ago
     >>> flush_database_updates()
 
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker, bug_watches,
+    ...     external_bugtracker.getCurrentDBTime())
+    last_checked: 2007-03-17 15:...:...
+
+    >>> print sorted(ids)
+    [u'1', u'4']
+
     >>> bug_watch_updater.updateBugWatches(
-    ...     CheckModifiedExternalBugTracker('http://example.com/'),
-    ...     bug_watches)
+    ...     external_bugtracker, bug_watches)
     COMMIT
     last_checked: 2007-03-17 15:...:...
     getModifiedRemoteBugs() called: [u'1', u'2', u'3', u'4']
@@ -283,9 +316,9 @@ then some more just to be safe.
     >>> bug_watches[3].lastchecked = some_time_ago - timedelta(days=1)
     >>> flush_database_updates()
 
-    >>> bug_watch_updater.updateBugWatches(
-    ...     CheckModifiedExternalBugTracker(), bug_watches)
-    COMMIT
+    >>> bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker, bug_watches,
+    ...     external_bugtracker.getCurrentDBTime())
     last_checked: 2007-03-16 15:...:...
 
 If some of the bug watches are new, they won't be passed on to
@@ -328,6 +361,45 @@ always update all the bug watches.
     getRemoteStatus() called: u'2'
     getRemoteStatus() called: u'3'
     getRemoteStatus() called: u'4'
+
+The only exception to the rule of only updating modified bugs is the set
+of bug watches which have comments that need to be pushed to the remote
+server. _getRemoteIdsToCheck() will return these as needing to be
+updated, regardless of whether they have been checked recently. This is
+to ensure that new comments are pushed to the remote bugs as soon as
+possible.
+
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+
+    >>> class DummyExternalBugTracker(CheckModifiedExternalBugTracker):
+    ...     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
+    ...         return []
+
+    >>> external_bugtracker = DummyExternalBugTracker('http://example.com')
+    >>> bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker, bug_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    []
+
+    >>> comment_message = factory.makeMessage(
+    ...     "A test message", "That hasn't been pushed")
+    >>> bug_message = bug_watches[-1].addComment(None, comment_message)
+
+    >>> bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker, bug_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    [u'4']
+
+Once the comment has been pushed it will no longer appear in the list of
+IDs to be updated.
+
+    >>> bug_message.remote_comment_id = '1'
+    >>> bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker, bug_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    []
 
 
 === Converting statuses ===

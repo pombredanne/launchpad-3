@@ -31,7 +31,15 @@ when there is no search text.
 When text is not None, the title indicates what was searched.
 
     >>> def getSearchView(form):
-    ...     request = LaunchpadTestRequest(form=form)
+    ...     search_param_list = []
+    ...     for name in sorted(form):
+    ...         value = form[name]
+    ...         search_param_list.append('%s=%s' % (name, value))
+    ...     query_string = '&'.join(search_param_list)
+    ...     request = LaunchpadTestRequest(
+    ...         SERVER_URL='http://launchpad.dev/+search',
+    ...         QUERY_STRING=query_string,
+    ...         form=form)
     ...     search_view = getMultiAdapter((root, request), name="+search")
     ...     search_view.initialize()
     ...     return search_view
@@ -213,6 +221,23 @@ with a hyphen.
     >>> print search_view.person_or_team
     None
 
+Since our pillars can have aliases, it's also possible to look up a pillar
+by any of its aliases.
+
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> login('foo.bar@canonical.com')
+    >>> firefox.setAliases(['iceweasel'])
+    >>> login(ANONYMOUS)
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'iceweasel'})
+    >>> search_view._getNameToken(search_view.text)
+    u'iceweasel'
+    >>> search_view.has_matches
+    True
+    >>> search_view.pillar.displayname
+    u'Mozilla Firefox'
+
 This is a harder example that illustrates that text that is clearly not
 the name of a pillar will none-the-less be tried. See the `Page searches`
 section for how this kind of search can return matches.
@@ -261,7 +286,6 @@ matches. For example, the python-gnome2-dev product will not match a
 pillar, nor will nsv match Nicolas Velin's unclaimed account.
 
     >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces.product import IProductSet
 
     >>> python_gnome2 = getUtility(IProductSet).getByName('python-gnome2-dev')
     >>> python_gnome2.active
@@ -363,6 +387,13 @@ search terms.
     >>> search_view.pages
     <...GoogleBatchNavigator ...>
 
+The GoogleSearchService may not be available due to connectivity problems.
+The view's has_page_service attribute reports when the search was performed
+with Google page matches.
+
+    >>> search_view.has_page_service
+    True
+
 The batch navigation heading is created by the view. The heading
 property returns a 2-tuple of singular and plural heading. There
 is a heading when there are only Google page matches...
@@ -462,6 +493,61 @@ See `google-searchservice.txt` for more information about the
 GoogleSearchService and PageMatch objects.
 
 
+== No page matches ==
+
+When an empty PageMatches object is returned by the GoogleSearchService to
+the view, there are no matches to show.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'no-meaningful'})
+    >>> search_view.has_matches
+    False
+
+
+== Bad Google response handling ==
+
+Connectivity problems can cause missing or incomplete responses from
+Google. The LaunchpadSearchView will display the other searches and
+show a message explaining that the user can search again to find
+matching pages.
+
+    >>> from zope.error.interfaces import IErrorReportingUtility
+
+    >>> error_utility = getUtility(IErrorReportingUtility)
+    >>> prior_oops_id = getattr(
+    ...     error_utility.getLastOopsReport(), 'id', 'none')
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'gnomebaker'})
+    >>> search_view.has_matches
+    True
+    >>> search_view.pillar.displayname
+    u'gnomebaker'
+    >>> search_view.has_page_service
+    False
+
+The view provides the requested URL so that the template can make a
+link to try the search again
+
+    >>> print search_view.url
+    http://launchpad.dev/+search?field.text=gnomebaker
+
+An oops was reported by the view so that the GoogleResponseError can be
+tracked.
+
+# XXX sinzui 2008-12-12 bug=307571: 
+# These tests fail when run in the suite, but not in isolation. The
+# failure may be just `>>> oops.id != prior_oops_id`, or all three
+# tests 
+#    >>> oops = error_utility.getLastOopsReport()
+#    >>> oops.id != prior_oops_id
+#    True
+#    >>> oops.type
+#    'GoogleResponseError'
+#    >>> oops.value
+#    'The response was incomplete, no xml.'
+
+
 == SearchFormView and SearchFormPrimaryView ==
 
 Two companion views are used to help render the global search form.
@@ -508,7 +594,7 @@ field's value is 'bug', as was submitted above.
       name="sitesearch">
       <div>
         <input class="textType" type="text" size="36"
-          id="field.text" value="bug" name="field.text" />
+          id="field.text" value="gnomebaker" name="field.text" />
         <input class="button" type="submit" value="Search"
           id="field.text" name="field.actions.search" />
       </div>

@@ -26,6 +26,7 @@ __all__ = [
     'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
+    'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -81,6 +82,7 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -837,6 +839,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         The product_name may be None.
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
+        # longer appropriate, given source package branches. It's used in
+        # browser/person.py, browser/specification.py.
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
@@ -1050,17 +1055,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def addLanguage(language):
         """Add a language to this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
-        If the given language is already present, and IntegrityError will be
-        raised. This will be fixed soon; here's the discussion on this topic:
-        https://launchpad.ubuntu.com/malone/bugs/1317.
+        If the given language is one of the user's preferred languages
+        already, nothing will happen.
         """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
         """
@@ -1974,6 +1978,12 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class NoSuchPerson(NameLookupFailed):
+    """Raised when we try to look up an IPerson that doesn't exist."""
+
+    _message_prefix = "No such person"
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

@@ -23,7 +23,6 @@ __all__ = [
 import urllib
 
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
@@ -33,7 +32,6 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
@@ -53,6 +51,8 @@ from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
@@ -189,6 +189,22 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         except NotFoundError:
             return None
 
+    @stepthrough('+sourcepub')
+    def traverse_sourcepub(self, name):
+        try:
+            pub_id = int(name)
+        except ValueError:
+            return None
+
+        # The ID is not enough on its own to identify the publication,
+        # we need to make sure it matches the context archive as well.
+        results = getUtility(IPublishingSet).getByIdAndArchive(
+            pub_id, self.context)
+        if results.count() == 1:
+            return results[0]
+
+        return None
+
     @stepthrough('+upload')
     def traverse_upload_permission(self, name):
         """Traverse the data part of the URL for upload permissions."""
@@ -257,13 +273,25 @@ class ArchiveContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
+        """Display a delete menu option for non-copy archives."""
         text = 'Delete packages'
-        return Link('+delete-packages', text, icon='edit')
+        link = Link('+delete-packages', text, icon='edit')
+
+        # This link should not be available for copy archives.
+        if self.context.is_copy:
+            link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.AnyPerson')
     def copy(self):
+        """Display a copy menu option for non-copy archives."""
         text = 'Copy packages'
-        return Link('+copy-packages', text, icon='edit')
+        link = Link('+copy-packages', text, icon='edit')
+
+        # This link should not be available for copy archives.
+        if self.context.is_copy:
+            link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
@@ -274,7 +302,7 @@ class ArchiveContextMenu(ContextMenu):
 class ArchiveViewBase:
     """Common features for Archive view classes."""
 
-    @property
+    @cachedproperty
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
@@ -284,10 +312,11 @@ class ArchiveViewBase:
     @property
     def source_count_text(self):
         """Return the correct form of the source counter notice."""
-        if self.context.number_of_sources == 1:
-            return '%s source package' % self.context.number_of_sources
+        num_sources_published = self.context.number_of_sources_published
+        if num_sources_published == 1:
+            return '%s source package' % num_sources_published
         else:
-            return '%s source packages' % self.context.number_of_sources
+            return '%s source packages' % num_sources_published
 
     @property
     def binary_count_text(self):
@@ -323,6 +352,32 @@ class ArchiveViewBase:
             SimpleTerm(StatusCollection(), 'any', 'Any Status')
             ]
         return SimpleVocabulary(status_terms)
+
+    @property
+    def archive_url(self):
+        """Return an archive_url where available, or None."""
+        if self.is_active and not self.context.is_copy:
+            return self.context.archive_url
+        else:
+            return None
+
+    @property
+    def archive_label(self):
+        """Return either 'PPA' or 'Archive' as the label for archives.
+
+        It is desired to use the name 'PPA' for branding reasons where
+        appropriate, even though the template logic is the same (and hence
+        not worth splitting off into a separate template or macro)
+        """
+        if self.context.is_ppa:
+            return 'PPA'
+        else:
+            return 'Archive'
+
+    @cachedproperty
+    def build_counters(self):
+        """Return a dict representation of the build counters."""
+        return self.context.getBuildCounters()
 
 
 class ArchiveView(ArchiveViewBase, LaunchpadView):
@@ -366,7 +421,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
     def setupSourcesListEntries(self):
         """Setup of the sources list entries widget."""
         entries = SourcesListEntries(
-            self.context.distribution, self.context.archive_url,
+            self.context.distribution, self.archive_url,
             self.context.series_with_sources)
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
@@ -393,6 +448,11 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         results = list(self.batchnav.currentBatch())
         self.search_results = ArchiveSourcePublications(results)
 
+    @property
+    def package_copy_requests(self):
+        """Return any package copy requests associated with this archive."""
+        return(getUtility(
+                IPackageCopyRequestSet).getByTargetArchive(self.context))
 
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     """Base class to implement a source selection widget for PPAs."""
@@ -472,7 +532,8 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         return form.Fields(
             Choice(__name__='status_filter', title=_("Status Filter"),
                    vocabulary=self.simplified_status_vocabulary,
-                   required=True, default=self.default_status_filter.value))
+                   required=True, default=self.default_status_filter.value),
+            custom_widget=self.custom_widgets['status_filter'])
 
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
@@ -494,20 +555,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
                  default=[],
                  description=_('Select one or more sources to be submitted '
                                'to an action.')))
-
-    def refreshSelectedSourcesWidget(self):
-        """Refresh 'selected_sources' widget.
-
-        It's called after deletions to eliminate the just-deleted records
-        from the widget presented.
-        """
-        flush_database_caches()
-        self.form_fields = self.form_fields.omit('selected_sources')
-        self.form_fields = (
-            self.createSelectedSourcesField() + self.form_fields)
-        self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False)
 
     @property
     def sources(self):
@@ -949,8 +996,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
          || Release   || RELEASE   ||
          || Security  || SECURITY  ||
          || Default   || UPDATES   ||
-         || Backports || BACKPORTS ||
          || Proposed  || PROPOSED  ||
+         || Backports || BACKPORTS ||
 
         When omitted in the form, this widget defaults for 'Default'
         option when rendered.
@@ -960,18 +1007,19 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             _('Basic (only released packages).'))
         security = SimpleTerm(
             PackagePublishingPocket.SECURITY, 'SECURITY',
-            _('Security (basic dependencies and security fixes).'))
+            _('Security (basic dependencies and important security '
+              'updates).'))
         updates = SimpleTerm(
             PackagePublishingPocket.UPDATES, 'UPDATES',
-            _('Default (security dependencies and tested updates).'))
-        backports = SimpleTerm(
-            PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
-            _('Backports (default dependencies and backports).'))
+            _('Default (security dependencies and recommended updates).'))
         proposed = SimpleTerm(
             PackagePublishingPocket.PROPOSED, 'PROPOSED',
-            _('Proposed (backports dependencies and proposed binaries).'))
+            _('Proposed (default dependencies and proposed updates).'))
+        backports = SimpleTerm(
+            PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
+            _('Backports (default dependencies and unsupported updates).'))
 
-        terms = [release, security, updates, backports, proposed]
+        terms = [release, security, updates, proposed, backports]
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
@@ -1077,10 +1125,21 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     def validate(self, data):
         """Validate dependency configuration changes.
 
-        Currently it only needs to validate if the requested PPA dependency
-        is sane (different than the context PPA and not yet registered).
+        Skip checks if no dependency candidate was sent in the form.
+
+        Validate if the requested PPA dependency is sane (different than
+        the context PPA and not yet registered).
+
+        Also check if the dependency candidate is private, if so, it can
+        only be set if the user has 'launchpad.View' permission on it and
+        the context PPA is also private (this way P3A credentials will be
+        sanitized from buildlogs).
         """
         dependency_candidate = data.get('dependency_candidate')
+
+        if dependency_candidate is None:
+            return
+
         if dependency_candidate == self.context:
             self.setFieldError('dependency_candidate',
                                "An archive should not depend on itself.")
@@ -1090,6 +1149,18 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             self.setFieldError('dependency_candidate',
                                "This dependency is already registered.")
             return
+
+        from canonical.launchpad.webapp.authorization import check_permission
+        if not check_permission('launchpad.View', dependency_candidate):
+            self.setFieldError(
+                'dependency_candidate',
+                "You don't have permission to use this dependency.")
+            return
+
+        if dependency_candidate.private and not self.context.private:
+            self.setFieldError(
+                'dependency_candidate',
+                "Public PPAs cannot depend on private ones.")
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):

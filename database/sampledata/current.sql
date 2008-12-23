@@ -1399,12 +1399,12 @@ INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) 
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (28, 13, 38, NULL, NULL, true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (29, 14, 39, NULL, NULL, true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (30, 15, 40, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;

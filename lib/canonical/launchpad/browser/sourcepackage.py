@@ -34,7 +34,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
@@ -51,11 +50,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if (self.context.distroseries.hide_all_translations and
-            not check_permission('launchpad.Admin', sourcepackage_pots)):
-            raise TranslationUnavailable(
-                'Translation updates are in progress. Only administrators '
-                'may view translations for this source package.')
+        if not check_permission('launchpad.Admin', sourcepackage_pots):
+            self.context.distroseries.checkTranslationsViewable()
 
         return sourcepackage_pots
 

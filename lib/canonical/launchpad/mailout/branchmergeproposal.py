@@ -76,9 +76,14 @@ class RecipientReason:
         """
         merge_proposal = vote_reference.branch_merge_proposal
         branch = merge_proposal.source_branch
+        if vote_reference.comment is None:
+            reason_template = (
+                '%(entity_is)s requested to review %(merge_proposal)s.')
+        else:
+            reason_template = (
+                '%(entity_is)s reviewing %(merge_proposal)s.')
         return klass(vote_reference.reviewer, recipient, branch,
-                     merge_proposal, 'Reviewer',
-                     '%(entity_is)s requested to review %(merge_proposal)s.')
+                     merge_proposal, 'Reviewer', reason_template)
 
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
@@ -96,6 +101,9 @@ class RecipientReason:
                 (self.recipient.displayname, self.subscriber.displayname))
             template_values['entity_is'] = (
                 'Your team %s is' % self.subscriber.displayname)
+        elif self.subscriber.is_team:
+            template_values['entity_is'] = (
+                'Your team %s is' % self.subscriber.displayname)
         return (self.reason_template % template_values)
 
 
@@ -104,7 +112,7 @@ class BMPMailer(BaseMailer):
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None,
-                 requested_reviews=None, comment=None):
+                 requested_reviews=None, comment=None, review_diff=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id)
         self.merge_proposal = merge_proposal
@@ -112,6 +120,7 @@ class BMPMailer(BaseMailer):
             requested_reviews = []
         self.requested_reviews = requested_reviews
         self.comment = comment
+        self.review_diff = review_diff
 
     def sendAll(self):
         BaseMailer.sendAll(self)
@@ -142,7 +151,8 @@ class BMPMailer(BaseMailer):
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address, message_id=get_msgid(),
             requested_reviews=merge_proposal.votes,
-            comment=merge_proposal.root_comment)
+            comment=merge_proposal.root_comment,
+            review_diff=merge_proposal.review_diff)
 
     @classmethod
     def forModification(klass, old_merge_proposal, merge_proposal, from_user):
@@ -190,6 +200,12 @@ class BMPMailer(BaseMailer):
         if self.merge_proposal.root_message_id is not None:
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
+
+    def _addAttachments(self, ctrl):
+        if self.review_diff is not None:
+            ctrl.addAttachment(
+                self.review_diff.diff.text, content_type='text/x-diff',
+                inline=True, filename='review.diff')
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""

@@ -65,7 +65,7 @@ from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
-    rename_parameters_as, webservice_error)
+    mutator_for, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -527,6 +527,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @mutator_for(importance)
     @rename_parameters_as(new_importance='importance')
     @operation_parameters(new_importance=copy_field(importance))
     @call_with(user=REQUEST_USER)
@@ -557,6 +558,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         be a bug supervisor or the owner of the project.
         """
 
+    @mutator_for(status)
     @rename_parameters_as(new_status='status')
     @operation_parameters(
         new_status=copy_field(status))
@@ -576,6 +578,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @mutator_for(assignee)
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()
@@ -1033,7 +1036,8 @@ class BugTaskSearchParams:
         search_params.distribution = distribution
         if has_patch:
             # Import this here to avoid circular imports
-            from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
+            from canonical.launchpad.interfaces.bugattachment import (
+                BugAttachmentType)
             search_params.attachmenttype = BugAttachmentType.PATCH
             search_params.has_patch = has_patch
         search_params.has_cve = has_cve
@@ -1081,6 +1085,12 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
+        """
+
+    def getBugTasks(bug_ids):
+        """Return the bugs with the given IDs and all of its bugtasks.
+
+        :return: A dictionary mapping the bugs to their bugtasks.
         """
 
     def getBugTaskBadgeProperties(bugtasks):
@@ -1224,6 +1234,9 @@ class IBugTaskSet(Interface):
             'open_unassigned': The number of open unassigned bugs.
             'open_inprogress': The number of open bugs that are In Progress.
         """
+
+    def getOpenBugTasksPerProduct(user, products):
+        """Return open bugtask count for multiple products."""
 
 
 def valid_remote_bug_url(value):
