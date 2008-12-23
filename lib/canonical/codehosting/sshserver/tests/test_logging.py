@@ -131,7 +131,7 @@ class TestLoggingEvent(TestCase):
         return result
 
     def assertEventLogs(self, record, logging_event):
-        self.assertLogs([record], log_event, self.logger, logging_event)
+        self.assertLogs([record], log_event, logging_event)
 
     def setUp(self):
         TestCase.setUp(self)

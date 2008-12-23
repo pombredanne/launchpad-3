@@ -81,10 +81,10 @@ class LoggingEvent:
         logger.log(self.level, self.template % self._data)
 
 
-def log_event(logger, event):
-    """Log 'event' to 'logger'.
+def log_event(event):
+    """Log 'event' to the codehosting logger.
 
     All events should be logged through this function, which provides a
     convenient mocking point for tests.
     """
-    return event._log(logger)
+    return event._log(get_codehosting_logger())
