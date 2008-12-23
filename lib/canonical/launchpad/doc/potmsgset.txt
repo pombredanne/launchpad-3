@@ -306,18 +306,14 @@ A translation can be removed from the import by being set to an empty string.
     ...     upstream_pofile, carlos, {0: u''},
     ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
 
-Current translation is now empty and imported.
+Current translation is now unset, as is imported.
 
     >>> current = upstream_potmsgset.getCurrentTranslationMessage(catalan)
-    >>> current.is_imported
-    True
-    >>> current.translations
-    [None]
-
-An empty TranslationMessage has all the translations set to None.
-
-    >>> print current.all_msgstrs
-    [None, None, None, None, None, None]
+    >>> print current
+    None
+    >>> imported = upstream_potmsgset.getImportedTranslationMessage(catalan)
+    >>> print imported
+    None
 
 Given that we unset an imported translation, statistics remain unchanged.
 
@@ -336,7 +332,7 @@ The statistics change to reflect that the message is not available
 in upstream anymore, so it's now noted as newly translated in Launchpad.
 
     >>> upstream_pofile.updateStatistics()
-    (0, 0, 1, 1)
+    (0, 0, 0, 2)
 
 === Activating an existing suggestion ===
 
@@ -998,3 +994,32 @@ If we change it back to zero, it's removed from the table:
     False
     >>> potmsgset.getSequence(potemplate)
     0
+
+
+== POTMsgSet.flags ==
+
+The gettext format can associate flags with a POTMsgSet, such as "this
+is a fuzzily matched message" or "this message follows C format-string
+rules."  These flags are set in a comment starting with a comma, and
+flags are separated by further commas.
+
+    >>> from canonical.launchpad.database.potmsgset import POTMsgSet
+    >>> flagged_potmsgset = POTMsgSet(flagscomment=", fuzzy, c-format")
+
+The flags property produces these as a neat list of flags.
+
+    >>> def print_flags(potmsgset):
+    ...     for flag in sorted(potmsgset.flags):
+    ...         print '"%s"' % flag
+    ...     print '.'
+
+    >>> print_flags(flagged_potmsgset)
+    "c-format"
+    "fuzzy"
+    .
+
+If the message has no flags, that list is empty.
+
+    >>> print_flags(POTMsgSet())
+    .
+

@@ -276,9 +276,7 @@ up in the indirect subscriptions.
 
 The display names of subscribers are escaped in the subscribers list.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> login(ANONYMOUS)
-    >>> factory = LaunchpadObjectFactory()
     >>> abuser = factory.makePerson(
     ...     name='abuser',
     ...     displayname='<script>javascript:alert("YO")</script>')

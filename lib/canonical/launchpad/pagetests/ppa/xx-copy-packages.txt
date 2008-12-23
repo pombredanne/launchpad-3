@@ -80,7 +80,8 @@ copy package interface can see packages to be copied.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source            Published   Status     Series           Section  Built
+    Source            Published   Status     Series           Section  Build
+        Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
     iceweasel...(...) 2007-07-09  Published  Warty            Editors
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
@@ -139,7 +140,8 @@ There we go, James can be certain about which package to select, only
 pmount is presented.
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1  2007-07-09  Published  Warty            Editors
 
 James is intrigued and wants to see more information about this
@@ -240,7 +242,8 @@ also marked as pending build for i386.
     PPA for James Blackwell
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Hoary            Editors  i386
 
 Expanding the details area, James can see that the source copied is
@@ -321,7 +324,8 @@ James goes straight to the copy interface of his PPA.
     Copy packages from PPA for James Blackwell
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Hoary            Editors  i386
 
 Then selects pmount in hoary.
@@ -524,7 +528,8 @@ Note that only the i386 binary got copied to grumpy since it lacks
 hppa support.
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Pending    Hoary            Editors
 
@@ -567,7 +572,8 @@ really deleted.
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
@@ -584,7 +590,8 @@ By default the copy view presents only PUBLISHED or PENDING packages.
     ['published']
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Grumpy           Editors
 
 Packages in other status can be browsed by adjusting the status
@@ -593,7 +600,8 @@ filter dropdown box.
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl("Update").click()
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
@@ -641,7 +649,8 @@ James sees the just-copied 'pmount' source in warty pending
 publication.
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
@@ -737,7 +746,8 @@ sources and binaries are copied to their PPA.
     PPA for James Blackwell Friends
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source            Uploader    Published   Status   Series  Section  Built
+    Source            Uploader    Published   Status   Series  Section  Build
+        Status
     iceweasel...(...) no signer               Pending  Hoary   Editors
     pmount - 0.1-1    no signer               Pending  Hoary   Editors
 
@@ -825,7 +835,8 @@ insane because PPA-copy-ui is so cool.
     >>> jblack_browser.getControl("Update").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
@@ -862,7 +873,7 @@ corresponding series and are scheduled for rebuild.
     PPA for James Blackwell Sandbox
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source         Uploader  Published  Status   Series  Section  Built
+    Source         Uploader  Published  Status   Series  Section  Build Status
     pmount - 0.1-1 no signer            Pending   Hoary  Editors  i386
     pmount - 0.1-1 no signer            Pending   Grumpy Editors  i386
     pmount - 0.1-1 no signer            Pending   Warty  Editors  i386
@@ -911,7 +922,8 @@ deleted files will be re-published in his archive.
 
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
@@ -972,7 +984,8 @@ foo_2.0 version to his PPA.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     foo - 2.0                   Published  Hoary            Base
 
     >>> foo_pub_id = getPPAPubIDsFor('no-priv', 'foo')[0]
@@ -999,7 +1012,8 @@ packages since they would not be published in the destination anyway.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source            Published   Status     Series           Section  Built
+    Source            Published   Status     Series           Section  Build
+        Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
     foo - 1.1                     Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Warty            Editors
@@ -1042,7 +1056,8 @@ do not enforce coherent version ordering across suites.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     foo - 2.0                   Pending    Hoary            Base
     foo - 1.1                   Pending    Warty            Base
     pmount - 0.1-1              Pending    Hoary            Editors
@@ -1057,7 +1072,8 @@ to copy the *same* version with different contents to grumpy in his PPA.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source            Published   Status     Series           Section  Built
+    Source            Published   Status     Series           Section  Build
+        Status
     foo - 1.1                     Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
@@ -1088,7 +1104,7 @@ foo-9.9 source from 'James-Friend's PPA.
     >>> jblack_browser.getControl("Update").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source     Uploader  Published   Status     Series   Section  Built
+    Source     Uploader  Published   Status     Series   Section  Build Status
     foo - 9.9  name16                Published  Hoary    Base     i386
 
 But James doesn't think straight, he sees that foo-9.9 failed to build

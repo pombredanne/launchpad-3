@@ -90,7 +90,7 @@ it out:
     >>> user_browser.getControl(
     ...     'Download URL').value = 'http://www.testing.com/download/'
     >>> user_browser.getControl(
-    ...     'Programming Language').value = 'Visual Python++, C'
+    ...     'Programming Languages').value = 'Visual Python++, C'
     >>> user_browser.getControl('Summary').value = 'This is the summary'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
@@ -175,7 +175,7 @@ since the field is not required.
     >>> user_browser.getControl(
     ...     'Download URL').value = 'http://www.testing.com/download/'
     >>> user_browser.getControl(
-    ...     'Programming Language').value = 'Visual Python++, C'
+    ...     'Programming Languages').value = 'Visual Python++, C'
     >>> user_browser.getControl('Summary').value = 'This is the summary'
     >>> user_browser.getControl(name='field.licenses').value = [
     ...     'OTHER_PROPRIETARY']

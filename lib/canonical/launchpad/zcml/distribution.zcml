@@ -30,6 +30,12 @@
       permission="launchpad.TranslationsAdmin"
       set_attributes="language_pack_admin"
       />
+    <!-- IHasAliases -->
+    <allow attributes="aliases" />
+    <require
+      permission="launchpad.Admin"
+      attributes="setAliases"
+      />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
@@ -222,6 +228,15 @@
     template="../templates/distribution-newmirror.pt">
   </browser:page>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="zope.Public"
+    name="+search"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionPackageSearchView"
+    template="../templates/distribution-search.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.DistributionView"
@@ -235,11 +250,6 @@
       name="+series"
       facet="overview"
       template="../templates/distribution-series.pt"
-      />
-    <browser:page
-      name="+search"
-      facet="overview"
-      template="../templates/distribution-search.pt"
       />
     <browser:page
       name="+builds"
@@ -271,6 +281,15 @@
     permission="zope.Public"
     facet="overview"
     template="../templates/distribution-ppa-list.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionArchivesView"
+    name="+archives"
+    permission="launchpad.View"
+    facet="overview"
+    template="../templates/distribution-archive-list.pt"
     />
 
   <browser:page

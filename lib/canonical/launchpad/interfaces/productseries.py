@@ -23,6 +23,7 @@ from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
+from canonical.config import config
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title, URIField)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -73,9 +74,9 @@ class ImportStatus(DBEnumeratedType):
 
         The test import has failed. We will do further tests, and plan to
         complete this import eventually, but it may take a long time. For more
-        details, you can ask on the launchpad-users@canonical.com mailing list
+        details, you can ask on the %s mailing list
         or on IRC in the #launchpad channel on irc.freenode.net.
-        """)
+        """ % config.launchpad.users_address)
 
     AUTOTESTED = DBItem(4, """
         Test Successful

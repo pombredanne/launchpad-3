@@ -614,8 +614,6 @@ closed after a certain date.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.launchpad.searchbuilder import greater_than
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")

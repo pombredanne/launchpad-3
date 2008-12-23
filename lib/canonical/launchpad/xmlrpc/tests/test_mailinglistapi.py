@@ -9,8 +9,8 @@ __all__ = []
 import unittest
 
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS, logout
-from canonical.launchpad.ftests.mailinglists_helper import (
-    new_person, new_team)
+from canonical.launchpad.ftests.mailinglists_helper import new_team
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.xmlrpc.mailinglist import (
     MailingListAPIView, BYUSER, ENABLED)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -25,7 +25,7 @@ class MailingListAPITestCase(unittest.TestCase):
         """Create a team with a list and subscribe self.member to it."""
         login('foo.bar@canonical.com')
         self.team, self.mailing_list = new_team('team-a', with_list=True)
-        self.member = new_person('Bob')
+        self.member = LaunchpadObjectFactory().makePersonByName('Bob')
         self.member.join(self.team)
         self.mailing_list.subscribe(self.member)
         self.api = MailingListAPIView(None, None)

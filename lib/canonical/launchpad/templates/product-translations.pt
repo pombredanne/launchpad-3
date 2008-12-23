@@ -33,6 +33,14 @@
           Translation setup needed
         </h1>
       </tal:not-uses-translations>
+      <ul class="helplinks">
+        <li>
+          <a href="https://help.launchpad.net/Translations"
+             id="link-to-translations-help"
+             >Help for translations
+          </a>
+        </li>
+      </ul>
       <p>
         <strong tal:content="structure context/license_status/description">
           This project's license is open source.

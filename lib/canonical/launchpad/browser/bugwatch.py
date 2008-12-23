@@ -15,6 +15,8 @@ from canonical.widgets.textwidgets import URIWidget
 
 from canonical.launchpad import _
 from canonical.launchpad.browser import get_comments_for_bugtask
+from canonical.launchpad.browser.bugcomment import (
+    should_display_remote_comments)
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, ILaunchBag, ILaunchpadCelebrities,
@@ -46,7 +48,7 @@ class BugWatchView(LaunchpadView):
         """
         user = getUtility(ILaunchBag).user
         lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
-        if not user.inTeam(lp_developers):
+        if not should_display_remote_comments(user):
             return []
 
         bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],

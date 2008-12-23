@@ -428,12 +428,20 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
             'PPA for Andrew Bennetts is disabled\n'
             'Further error processing '
             'not possible because of a critical previous error.')
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "PPA for Andrew Bennetts is disabled",
+            "If you don't understand why your files were rejected please "
+                 "send an email",
+            ("to %s for help (requires membership)."
+             % config.launchpad.users_address),
+            ]
+        self.assertEmail(contents, ppa_header=None)
 
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroserieses of PPA uploads.

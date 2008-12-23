@@ -250,6 +250,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return self._getExternalTranslationMessages(language, used=False)
 
+    @property
     def flags(self):
         if self.flagscomment is None:
             return []
@@ -321,7 +322,7 @@ class POTMsgSet(SQLBase):
         # to know if gettext is unhappy with the input.
         try:
             helpers.validate_translation(
-                original_texts, translations, self.flags())
+                original_texts, translations, self.flags)
         except gettextpo.error:
             if ignore_errors:
                 # The translations are stored anyway, but we set them as
@@ -469,6 +470,15 @@ class POTMsgSet(SQLBase):
 
         return just_a_suggestion, warn_about_lock_timestamp
 
+    def allTranslationsAreEmpty(self, translations):
+        """Return true if all translations are empty strings or None."""
+        has_translations = False
+        for pluralform in translations:
+            translation = translations[pluralform]
+            if (translation is not None and translation != u""):
+                has_translations = True
+                break
+        return not has_translations
 
     def updateTranslation(self, pofile, submitter, new_translations,
                           is_imported, lock_timestamp, force_suggestion=False,
@@ -506,6 +516,10 @@ class POTMsgSet(SQLBase):
         matching_message = self._findTranslationMessage(
             pofile, potranslations, pofile.plural_forms)
 
+        if is_imported:
+            imported_message = self.getImportedTranslationMessage(
+                pofile.language, pofile.variant)
+
         if matching_message is None:
             # Creating a new message.
 
@@ -518,31 +532,40 @@ class POTMsgSet(SQLBase):
                 "Change this code to support %d plural forms."
                 % TranslationConstants.MAX_PLURAL_FORMS)
 
-            matching_message = TranslationMessage(
-                potmsgset=self,
-                potemplate=pofile.potemplate,
-                pofile=pofile,
-                language=pofile.language,
-                variant=pofile.variant,
-                origin=origin,
-                submitter=submitter,
-                msgstr0=potranslations[0],
-                msgstr1=potranslations[1],
-                msgstr2=potranslations[2],
-                msgstr3=potranslations[3],
-                msgstr4=potranslations[4],
-                msgstr5=potranslations[5],
-                validation_status=validation_status)
+            if (is_imported and
+                self.allTranslationsAreEmpty(sanitized_translations)):
+                # Don't create empty is_imported translations
+                if imported_message is not None:
+                    imported_message.is_imported = False
+                    if imported_message.is_current:
+                        imported_message.is_current = False
+                return None
+            else:
+                matching_message = TranslationMessage(
+                    potmsgset=self,
+                    potemplate=pofile.potemplate,
+                    pofile=pofile,
+                    language=pofile.language,
+                    variant=pofile.variant,
+                    origin=origin,
+                    submitter=submitter,
+                    msgstr0=potranslations[0],
+                    msgstr1=potranslations[1],
+                    msgstr2=potranslations[2],
+                    msgstr3=potranslations[3],
+                    msgstr4=potranslations[4],
+                    msgstr5=potranslations[5],
+                    validation_status=validation_status)
 
-            if just_a_suggestion:
-                # Adds suggestion karma: editors get their translations
-                # automatically approved, so they get 'reviewer' karma
-                # instead.
-                submitter.assignKarma(
-                    'translationsuggestionadded',
-                    product=self.potemplate.product,
-                    distribution=self.potemplate.distribution,
-                    sourcepackagename=self.potemplate.sourcepackagename)
+                if just_a_suggestion:
+                    # Adds suggestion karma: editors get their translations
+                    # automatically approved, so they get 'reviewer' karma
+                    # instead.
+                    submitter.assignKarma(
+                        'translationsuggestionadded',
+                        product=self.potemplate.product,
+                        distribution=self.potemplate.distribution,
+                        sourcepackagename=self.potemplate.sourcepackagename)
         else:
             # There is an existing matching message. Update it as needed.
             # Also update validation status if needed
@@ -567,8 +590,7 @@ class POTMsgSet(SQLBase):
         if is_imported:
             # If there is no previously existing imported message,
             # make this one current (revert current to imported).
-            if self.getImportedTranslationMessage(pofile.language,
-                                                  pofile.variant) is None:
+            if imported_message is None:
                 matching_message.is_current = True
 
             # Note that the message is imported.

@@ -388,7 +388,8 @@ collection of builds.
 
 We can find builds given a source package release and architecture tag.
 
-    >>> bs.getBuildBySRAndArchtag(20,'i386').count()
+    >>> i386_builds = bs.getBuildBySRAndArchtag(20, 'i386')
+    >>> i386_builds.count()
     4
 
 IHasBuildRecords uses a base method provided by IBuildSet,
@@ -446,6 +447,26 @@ primary archive.
     >>> [(build.archive.purpose.name, build.title) for build in
     ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
+
+`IBuildSet` also provides getStatusSummaryForBuilds which summarizes the
+build status of a set of builds:
+
+First we'll define a helper to print the build summary:
+
+    >>> def print_build_summary(summary):
+    ...     print "%s\n%s\nRelevant builds:\n%s" % (
+    ...         summary['status'].title,
+    ...         summary['status'].description,
+    ...         "\n".join(
+    ...             " - %s" % build.title for build in summary['builds'])
+    ...     )
+
+    >>> build_summary = bs.getStatusSummaryForBuilds(i386_builds)
+    >>> print_build_summary(build_summary)
+    Need building
+    There are some builds waiting to be built.
+    Relevant builds:
+     - i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
@@ -635,7 +656,9 @@ The default set of builds with no user specified excludes private builds:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    RELEASE
+    
     >>> bob_builds.count()
     13
 
@@ -654,7 +677,9 @@ three additional private builds for cprov:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
+        RELEASE
+    
     >>> bob_builds.count()
     16
 
@@ -670,6 +695,31 @@ Cprov can also see his own builds of course:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
+        RELEASE
+
+    >>> bob_builds.count()
+    16
+
+Buildd admins specifically are not allowed to see private builds, which will
+be filtered from the list returned:
+
+    >>> buildd_admin = factory.makePerson()
+    >>> buildd_admins = getUtility(
+    ...     IPersonSet).getByName('launchpad-buildd-admins')
+    >>> buildd_admins.addMember(buildd_admin, buildd_admin)
+    >>> bob_builds = bob.getBuildRecords(user=buildd_admin)
+    >>> print_build_details(bob_builds)
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ...
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    RELEASE
+    
+    >>> bob_builds.count()
+    13
 
 You can filter on build state:
 
@@ -973,18 +1023,36 @@ Likewise when logged in as cprov:
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
 
+A user who is a buildd admin is not allowed to see the build records for
+private builds. Even though they are admin, privacy must be maintained.
+
+    >>> login(buildd_admin.preferredemail.email)
+    >>> bob_builds = bob.getBuildRecords(user=admin)
+
+Define a helper function to catch the security exception:
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> def print_builds_with_exception(builds):
+    ...     try:
+    ...         print_build_details(bob_builds)
+    ...     except Unauthorized:
+    ...         print "Generated Unauthorized exception as expected"
+    ...     else:
+    ...         print "FAIL: should raise Unauthorized exception"
+
+And try to access the builds:
+
+    >>> print_builds_with_exception(bob_builds)
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    Generated Unauthorized exception as expected
+
 When logged in as anonymous this will generate a securtity exception
 when accessing the builds:
 
-    >>> from zope.security.interfaces import Unauthorized
     >>> login(ANONYMOUS)
     >>> bob_builds = bob.getBuildRecords(user=admin)
-    >>> try:
-    ...     print_build_details(bob_builds)
-    ... except Unauthorized:
-    ...     print "Generated Unauthorized exception as expected"
-    ... else:
-    ...     print "FAIL: should raise Unauthorized exception"
+    >>> print_builds_with_exception(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
@@ -1154,4 +1222,57 @@ being returned.
 
     >>> removeSecurityProxy(bs).getBuildsBySourcePackageRelease([])
     []
+
+
+== Getting the build records for a particular builder ==
+
+The getBuildsForBuilder method returns all the builds for the 
+specified builder ID, ordered from most-recently built.
+
+    Create some source packages with which to test the 
+    getBuildsForBuilder method:
+
+    >>> src_pkg_earlier = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='earlierbuildsrc', architecturehintlist='hppa i386')
+    >>> src_pkg_later = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='laterbuildsrc',
+    ...     architecturehintlist='hppa i386')
+    
+    Create the builds based on the source packages, with the builds
+    for 'earlierbuildsrc' built one day before the 'laterbuildsrc':
+
+    >>> frog_builder = getUtility(IBuilderSet)['frog']
+    >>> bob_builder = getUtility(IBuilderSet)['bob']
+
+    >>> earlier_builds = src_pkg_earlier.createMissingBuilds()
+    >>> eg_build_date = earlier_builds[0].datecreated
+    >>> for build in earlier_builds:
+    ...     build.datebuilt = eg_build_date - timedelta(1)
+
+    >>> later_builds = src_pkg_later.createMissingBuilds()
+    >>> for build in later_builds:
+    ...     build.datebuilt = eg_build_date
+    
+    Ensure that the i386 builds are created by the 'frog' builder,
+    while the hppa builds are created by 'bob' the builder:
+    
+    >>> builds = earlier_builds + later_builds
+    >>> for build in builds:
+    ...     if build.processor.name == u'386':
+    ...         build.builder = frog_builder
+    ...     else:
+    ...         build.builder = bob_builder
+
+    A call to getBuildsForBuilder returns only those builds that were
+    built by the specified builder, ordered by datebuilt DESC:
+    
+    >>> frog_builds = getUtility(IBuildSet).getBuildsForBuilder(
+    ...     frog_builder.id)
+    >>> print_build_details(frog_builds)
+    ubuntu-team: i386 build of laterbuildsrc 666 in ubuntutest
+        breezy-autotest RELEASE
+    ubuntu-team: i386 build of earlierbuildsrc 666 in ubuntutest
+        breezy-autotest RELEASE
 

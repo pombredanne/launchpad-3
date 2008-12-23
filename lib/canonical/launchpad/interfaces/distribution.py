@@ -11,6 +11,7 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoSuchDistribution',
     ]
 
 from zope.schema import Choice, Datetime, Text, TextLine
@@ -18,7 +19,9 @@ from zope.interface import Attribute, Interface
 
 from canonical.lazr.rest.declarations import (
    collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, exported)
+   export_as_webservice_entry, export_operation_as,
+   export_read_operation, exported, operation_parameters,
+   operation_returns_collection_of, operation_returns_entry)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -40,6 +43,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -181,7 +185,12 @@ class IDistributionPublic(
         "All unofficial mirrors of this Distribution.")
     pending_review_mirrors = Attribute(
         "All mirrors of this Distribution that haven't been reviewed yet.")
-    serieses = Attribute("DistroSeries'es inside this Distribution")
+    serieses = exported(
+        CollectionField(
+            title=_("DistroSeries inside this Distribution"),
+            # Really IDistroSeries, see below.
+            value_type=Reference(schema=Interface)),
+        exported_as="series")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     is_read_only = Attribute(
@@ -192,11 +201,17 @@ class IDistributionPublic(
         "this distribution."))
 
     # properties
-    currentseries = Attribute(
-        "The current development series of this distribution. Note that "
-        "all maintainerships refer to the current series. When people ask "
-        "about the state of packages in the distribution, we should "
-        "interpret that query in the context of the currentseries.")
+    currentseries = exported(
+        Reference(
+            Interface, # Really IDistroSeries, see below
+            title=_("Current series"),
+            description=_(
+                "The current development series of this distribution. "
+                "Note that all maintainerships refer to the current "
+                "series. When people ask about the state of packages "
+                "in the distribution, we should interpret that query "
+                "in the context of the currentseries.")),
+        exported_as="current_series")
 
     full_functionality = Attribute(
         "Whether or not we enable the full functionality of Launchpad for "
@@ -249,9 +264,17 @@ class IDistributionPublic(
     def __iter__():
         """Iterate over the series for this distribution."""
 
+    # Really IDistroSeries, see below
+    @operation_returns_collection_of(Interface)
+    @export_operation_as(name="getDevelopmentSeries")
+    @export_read_operation()
     def getDevelopmentSerieses():
         """Return the DistroSerieses which are marked as in development."""
 
+    @operation_parameters(
+        name_or_version=TextLine(title=_("Name or version"), required=True))
+    @operation_returns_entry(Interface) # Really IDistroSeries, see below
+    @export_read_operation()
     def getSeries(name_or_version):
         """Return the series with the name or version given."""
 
@@ -270,6 +293,11 @@ class IDistributionPublic(
         order to create a mirror.
         """
 
+    @operation_parameters(
+        name=TextLine(title=_("Package name"), required=True))
+    # Really returns IDistributionSourcePackage, see below.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
     def getSourcePackage(name):
         """Return a DistributionSourcePackage with the given name for this
         distribution, or None.
@@ -470,3 +498,26 @@ class IDistributionSet(Interface):
     def new(name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
         """Creaste a new distribution."""
+
+
+class NoSuchDistribution(NameLookupFailed):
+    """Raised when we try to find a distribution that doesn't exist."""
+
+    _message_prefix = "No such distribution"
+
+
+# Monkey patching to fix circular imports.
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+IDistribution['serieses'].value_type.schema = IDistroSeries
+IDistribution['currentseries'].schema = IDistroSeries
+IDistribution['getSeries'].queryTaggedValue(
+    'lazr.webservice.exported')[
+    'return_type'].schema = IDistroSeries
+IDistribution['getDevelopmentSerieses'].queryTaggedValue(
+    'lazr.webservice.exported')[
+    'return_type'].value_type.schema = IDistroSeries
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+IDistribution['getSourcePackage'].queryTaggedValue(
+    'lazr.webservice.exported')[
+    'return_type'].schema = IDistributionSourcePackage

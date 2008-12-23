@@ -51,9 +51,24 @@ Let's call that evo from now onwards just so the tests can be clearer.
 
     >>> evo = p
 
-We'll also fetch the a52dec product from the database.
+To fetch a product we use IProductSet.getByName() or IProductSet.__getitem__.
+The former will, by default, reeturn active and inactive products, while the
+later returns only active ones. Both can be used to look up products by their
+aliases, though.
 
     >>> a52dec = productset.getByName('a52dec')
+    >>> a52dec.name
+    u'a52dec'
+    >>> productset['a52dec'].name
+    u'a52dec'
+    
+    >>> a52dec.setAliases(['a51dec'])
+    >>> a52dec.aliases
+    [u'a51dec']
+    >>> productset['a51dec'].name
+    u'a52dec'
+    >>> productset.getByName('a51dec').name
+    u'a52dec'
 
 Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:
@@ -605,19 +620,29 @@ branch is 'stacked' on to a default base branch, called the 'default
 stacked-on branch' in Bazaar terminology. This default stacked-on branch
 is the development focus branch of a product.
 
-In the sample data, Firefox has no development focus branch set, so it
-has no default stacked-on branch:
+A freshly created product has a development focus series but this
+series has no branch set, so the product has no
+default_stacked_on_branch.
 
-    >>> print firefox.development_focus.series_branch
+    >>> product = factory.makeProduct()
+    >>> print product.development_focus.series_branch
     None
-    >>> print firefox.default_stacked_on_branch
+    >>> print product.default_stacked_on_branch
     None
 
-However, Evolution has a branch for its development focus in the sample
-data so it has a default stacked-on branch.
+If a product has a development focus branch, it must have a non-NULL
+last_mirrored time to be suitable for use as a default stacked-on
+branch.
 
-    >>> evolution = getUtility(IProductSet).getByName('evolution')
-    >>> print evolution.development_focus.series_branch.unique_name
-    ~vcs-imports/evolution/main
-    >>> print evolution.default_stacked_on_branch.unique_name
-    ~vcs-imports/evolution/main
+    >>> branch = factory.makeBranch(name='trunk')
+    >>> print branch.last_mirrored
+    None
+    >>> product.development_focus.user_branch = branch
+    >>> print product.default_stacked_on_branch
+    None
+    >>> branch.startMirroring()
+    >>> branch.mirrorComplete('rev1')
+    >>> branch.last_mirrored
+    datetime.datetime(...)
+    >>> print product.default_stacked_on_branch.name
+    trunk

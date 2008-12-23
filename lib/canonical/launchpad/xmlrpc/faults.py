@@ -67,6 +67,7 @@ class NoSuchProduct(LaunchpadFault):
 
     def __init__(self, product_name):
         LaunchpadFault.__init__(self, product_name=product_name)
+        self.product_name = product_name
 
 
 class NoSuchPerson(LaunchpadFault):
@@ -366,3 +367,28 @@ class NoUrlForBranch(LaunchpadFault):
 
     def __init__(self, unique_name):
         LaunchpadFault.__init__(self, unique_name=unique_name)
+
+
+class PathTranslationError(LaunchpadFault):
+    """Raised when a virtual path cannot be translated to a real one.
+
+    This can be raised when the path is utterly unrecognizable, or when the
+    path looks sensible, but points to a resource we can't find.
+    """
+
+    error_code = 290
+    msg_template = "Could not translate '%(path)s'."
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)
+
+
+class InvalidPath(LaunchpadFault):
+    """Raised when `translatePath` is passed something that's not a path."""
+
+    error_code = 300
+    msg_template = (
+        "Could not translate '%(path)s'. Can only translate absolute paths.")
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)

@@ -146,8 +146,6 @@ the review status.  This is done using the code import method
 'updateFromData'.  updateFromData returns a MODIFY CodeImportEvent if
 any changes were made, or None if not.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> code_import = factory.makeCodeImport(
     ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title

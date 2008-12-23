@@ -21,6 +21,16 @@ class LaunchpadFormHarness:
         has_interaction = queryInteraction() is not None
         if not has_interaction:
             newInteraction(self.request)
+        else:
+            # Copy over the principal from the set-up interaction, to the
+            # fake request.
+            principals = [
+                participation.principal
+                for participation in list(queryInteraction().participations)
+                if participation.principal is not None
+                ]
+            assert len(principals) <= 1, 'More than one principal found.'
+            self.request.setPrincipal(principals[0])
         self.view = self.view_class(self.context, self.request)
         self.view.initialize()
         if not has_interaction:

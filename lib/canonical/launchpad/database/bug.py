@@ -246,7 +246,7 @@ class Bug(SQLBase):
         result = result.prejoin(
             ["assignee", "product", "sourcepackagename",
              "owner", "bugwatch"])
-        # Do not use the defaul orderBy as the prejoins cause ambiguities
+        # Do not use the default orderBy as the prejoins cause ambiguities
         # across the tables.
         result = result.orderBy("id")
         return sorted(result, key=bugtask_sort_key)
@@ -627,14 +627,16 @@ class Bug(SQLBase):
             notification.syncUpdate()
 
     def newMessage(self, owner=None, subject=None,
-                   content=None, parent=None, bugwatch=None):
+                   content=None, parent=None, bugwatch=None,
+                   remote_comment_id=None):
         """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
         MessageChunk(message=msg, content=content, sequence=1)
 
-        bugmsg = self.linkMessage(msg, bugwatch)
+        bugmsg = self.linkMessage(
+            msg, bugwatch, remote_comment_id=remote_comment_id)
         if not bugmsg:
             return
 
@@ -736,6 +738,13 @@ class Bug(SQLBase):
             bugcve = BugCve(bug=self, cve=cve)
             notify(SQLObjectCreatedEvent(bugcve, user=user))
             return bugcve
+
+    # XXX intellectronica 2008-11-06 Bug #294858:
+    # See canonical.launchpad.interfaces.bug
+    def linkCVEAndReturnNothing(self, cve, user):
+        """See `IBug`."""
+        self.linkCVE(cve, user)
+        return None
 
     def unlinkCVE(self, cve, user=None):
         """See `IBug`."""

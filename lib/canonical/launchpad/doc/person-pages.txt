@@ -21,8 +21,8 @@ the world.
 
     >>> from canonical.launchpad.interfaces.person import IPersonSet
 
-    >>> personset = getUtility(IPersonSet)
-    >>> mark = personset.getByEmail('mark@hbd.com')
+    >>> person_set = getUtility(IPersonSet)
+    >>> mark = person_set.getByEmail('mark@hbd.com')
     >>> mark.preferredemail.email
     u'mark@hbd.com'
     >>> mark.hide_email_addresses
@@ -32,17 +32,7 @@ Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
 are there any email addresses.
 
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
-    >>> def request_person_view(person, name='+index'):
-    ...     """Return a the named Person view."""
-    ...     request = LaunchpadTestRequest()
-    ...     view = getMultiAdapter((person, request), name=name)
-    ...     view.initialize()
-    ...     return view
-
-    >>> view = request_person_view(mark)
+    >>> view = create_initialized_view(mark, '+index')
     >>> view.email_address_visibility.is_login_required
     True
     >>> print view.visible_email_address_description
@@ -55,7 +45,7 @@ state is PUBLIC. There is a description of who can see the list of
 email addresses.
 
     >>> login('test@canonical.com')
-    >>> view = request_person_view(mark)
+    >>> view = create_initialized_view(mark, '+index')
     >>> view.email_address_visibility.are_public
     True
     >>> view.visible_email_address_description
@@ -66,13 +56,13 @@ email addresses.
 As for Sample Person, he has chosen not to disclose his email addresses.
 
     >>> login(ANONYMOUS)
-    >>> sample_person = personset.getByEmail('test@canonical.com')
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
     >>> sample_person.hide_email_addresses
     True
 
 Anonymous users can't see them because the state is LOGIN_REQUIRED.
 
-    >>> view = request_person_view(sample_person)
+    >>> view = create_initialized_view(sample_person, '+index')
     >>> view.email_address_visibility.is_login_required
     True
     >>> view.visible_email_addresses
@@ -83,7 +73,7 @@ HIDDEN. There is no description for the email addresses because
 he cannot view them.
 
     >>> login('no-priv@canonical.com')
-    >>> view = request_person_view(sample_person)
+    >>> view = create_initialized_view(sample_person, '+index')
     >>> view.email_address_visibility.are_hidden
     True
     >>> print view.visible_email_address_description
@@ -97,7 +87,7 @@ The description states that the email addresses are not disclosed to
 others.
 
     >>> login('foo.bar@canonical.com')
-    >>> view = request_person_view(sample_person)
+    >>> view = create_initialized_view(sample_person, '+index')
     >>> view.email_address_visibility.are_allowed
     True
     >>> view.visible_email_address_description
@@ -106,7 +96,7 @@ others.
     [u'test@canonical.com', u'testing@canonical.com']
 
     >>> login('commercial-member@canonical.com')
-    >>> view = request_person_view(sample_person)
+    >>> view = create_initialized_view(sample_person, '+index')
     >>> view.email_address_visibility.are_allowed
     True
     >>> view.visible_email_addresses
@@ -116,8 +106,8 @@ Teams are like Persons. No email address is disclosed when the user is
 anonymous.
 
     >>> login(ANONYMOUS)
-    >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> view = request_person_view(ubuntu_team)
+    >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> view = create_initialized_view(ubuntu_team, '+index')
     >>> view.email_address_visibility.is_login_required
     True
     >>> view.visible_email_addresses
@@ -127,7 +117,7 @@ A logged in user can see the team's contact address because it cannot
 be hidden.
 
     >>> login('no-priv@canonical.com')
-    >>> view = request_person_view(ubuntu_team)
+    >>> view = create_initialized_view(ubuntu_team, '+index')
     >>> view.email_address_visibility.are_public
     True
     >>> view.visible_email_addresses
@@ -136,8 +126,8 @@ be hidden.
 When the user or team does not have a validated contact address, the
 email addresses state is NONE_AVAILABLE.
 
-    >>> landscape_developers = personset.getByName('landscape-developers')
-    >>> view = request_person_view(landscape_developers)
+    >>> landscape_developers = person_set.getByName('landscape-developers')
+    >>> view = create_initialized_view(landscape_developers, '+index')
     >>> view.email_address_visibility.are_none_available
     True
     >>> print view.visible_email_address_description
@@ -156,11 +146,8 @@ The +portlet-currentfocus view is responsible for rendering the
 is rendered when the user does not have any assigned bug or specs
 that are not in progress.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-
-    >>> factory = LaunchpadObjectFactory()
     >>> user = factory.makePerson(name='ken', password='test')
-    >>> view = request_person_view(user, name='+portlet-currentfocus')
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     False
     >>> view.assigned_bugs_in_progress.count()
@@ -200,7 +187,7 @@ the user is working on.
     >>> newstate = spec.updateLifecycleStatus(user)
     >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
     >>> newstate = spec.updateLifecycleStatus(user)
-    >>> view = request_person_view(user, name='+portlet-currentfocus')
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
     >>> view.assigned_bugs_in_progress.count()
@@ -293,8 +280,8 @@ that we're willing to display.
     ...     IDistributionSet)
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> name16 = getUtility(IPersonSet).getByName('name16')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> name16 = person_set.getByName('name16')
+    >>> sabdfl = person_set.getByName('sabdfl')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> from canonical.launchpad.tests.test_publishing import (
@@ -302,10 +289,7 @@ that we're willing to display.
     >>> test_pub = SoyuzTestPublisher()
     >>> test_pub.person = name16
 
-    >>> view = getMultiAdapter(
-    ...     (name16, LaunchpadTestRequest()), name='+related-software')
-    >>> view.initialize()
-
+    >>> view = create_initialized_view(name16, '+related-software')
     >>> for count in range(0, view.SUMMARY_PAGE_PACKAGE_LIMIT + 3):
     ...     source_name = "foo" + str(count)
     ...     # Add the PPA packages.
@@ -362,3 +346,31 @@ at the head of each table.
     >>> view._tableHeaderMessage(1)
     '1 package'
 
+
+== Contacting the person ==
+
+For consistency and testing purposes, the "+contactuser" page is available
+even when someone is looking at their own profile page.  The wording on the
+tooltip is different though.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(mark, '+index')
+    >>> print view.contact_link_title
+    Send an email to this user through Launchpad
+
+    >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
+    >>> view = create_initialized_view(no_priv, '+index')
+    >>> print view.contact_link_title
+    Send an email to yourself through Launchpad
+
+This is true even when the user is hiding their email addresses.
+
+    >>> name12 = person_set.getByName('name12')
+    >>> view = create_initialized_view(name12, '+index')
+    >>> print view.contact_link_title
+    Send an email to this user through Launchpad
+
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(name12, '+index')
+    >>> print view.contact_link_title
+    Send an email to yourself through Launchpad

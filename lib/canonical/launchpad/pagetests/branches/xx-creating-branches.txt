@@ -191,6 +191,7 @@ the user is a member of, or to themselves.
     ...     print option
     Sample Person (name12)
     Landscape Developers (landscape-developers)
+    Launchpad Users (launchpad-users)
     Ubuntu Gnome Team (name18)
     Warty Security Team (name20)
 

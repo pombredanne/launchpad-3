@@ -6,6 +6,7 @@ __metaclass__ = type
 
 all = ['entry_adapter_for_schema']
 
+import simplejson
 import textwrap
 import urllib
 
@@ -13,13 +14,16 @@ from epydoc.markup import DocstringLinker
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
+from zope.component import queryAdapter
 from zope.interface.interfaces import IInterface
 from zope.schema import getFields
 from zope.schema.interfaces import IBytes, IChoice, IObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 
+from canonical.lazr.rest import EntryResource, ResourceJSONEncoder
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
@@ -76,6 +80,31 @@ def generate_wadl_doc(doc):
             "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
 
     return WADL_DOC_TEMPLATE % parsed.to_html(WadlDocstringLinker())
+
+class WebLayerAPI:
+    """Namespace for web service functions used in the website.
+
+    These functions are used to prepopulate a client cache with JSON
+    representations of resources.
+    """
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def is_entry(self):
+        """Whether the object is published as an entry."""
+        return queryAdapter(self.context, IEntry) != None
+
+    @property
+    def json_entry(self):
+        """Return a JSON description of the object."""
+        request = WebServiceLayer(get_current_browser_request())
+        if queryAdapter(self.context, IEntry):
+            resource = EntryResource(self.context, request)
+        else:
+            return ""
+        return simplejson.dumps(resource, cls=ResourceJSONEncoder)
 
 
 class WadlResourceAPI(RESTUtilityBase):

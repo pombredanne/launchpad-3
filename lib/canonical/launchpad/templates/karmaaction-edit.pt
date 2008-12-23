@@ -10,14 +10,11 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div><a href="../">Actions that give people karma</a>:</div>
-      <h1 tal:content="context/title">Doing something</h1>
-    </metal:heading>
-
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div><a href="../">Actions that give people karma</a>:</div>
+
+    <div metal:use-macro="context/@@launchpad_form/form">
     
 
     </div>

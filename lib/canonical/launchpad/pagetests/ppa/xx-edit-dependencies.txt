@@ -58,7 +58,7 @@ via the POST form.
     ...     empty_dep = find_tag_by_id(contents, 'empty-dependencies')
     ...     if empty_dep is not None:
     ...         print extract_text(empty_dep)
-    ...     dependencies = find_tags_by_class(contents, 'ppa_dependency_row')
+    ...     dependencies = find_tags_by_class(contents, 'ppa-dependencies')
     ...     for dep in dependencies:
     ...         print extract_text(dep)
 
@@ -77,53 +77,54 @@ The adding dependency input offers a interface to look for PPAs based
 on the PPA fti and/or the PPA owner's fti via a IHugeVocabulary
 popup. A valid term is the owner username.
 
-An empty or unknown term results in an error.
+An empty request doesn't change anything.
 
-    >>> admin_browser.getControl("PPA Dependency").value = ''
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Add PPA dependency").value = ''
+    >>> admin_browser.getControl("Save").click()
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
+
+An unknown term results in an error.
+
+    >>> admin_browser.getControl("Add PPA dependency").value = 'whatever'
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    Choose one dependency to add.
-
-    >>> admin_browser.getControl("PPA Dependency").value = 'whatever'
-    >>> admin_browser.getControl("Add Dependency").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    Choose one dependency to add.
+    Invalid value
 
 When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
-    >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     Dependency added: PPA for Mark Shuttleworth
 
+    >>> admin_browser.reload()
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
 
 Trying to add a dependency that is already recorded results in a error.
 
-    >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    This dependency is already recorded.
+    This dependency is already registered.
 
 Trying to add a dependency for the context PPA itself also results in
 a error.
 
-    >>> admin_browser.getControl("PPA Dependency").value = 'cprov'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Add PPA dependency").value = 'cprov'
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -132,8 +133,8 @@ a error.
 
 If it's a new dependency everything is fine.
 
-    >>> admin_browser.getControl("PPA Dependency").value = 'no-priv'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -141,21 +142,18 @@ If it's a new dependency everything is fine.
 
 Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
 
+    >>> admin_browser.reload()
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
 
 The dependencies are presented in a separated section (bellow the
-sources.list widget) associated with a warning, telling the users to
-consider the dependencies in their systems if it becomes necessary.
+sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'ppa-dependencies'))
+    ...     find_tag_by_id(user_browser.contents, 'archive-dependencies'))
     PPA dependencies
-    When installing packages from this PPA you may need to enable one
-    or more of the following PPAs, which have been considered for
-    building packages in this context.
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
@@ -163,18 +161,14 @@ consider the dependencies in their systems if it becomes necessary.
 == Removing dependencies ==
 
 One or more dependencies can be removed via this page, they are
-presented as a vertical array of check-boxes labeled by dependency PPA
+presented as a vertical array of check-boxes labelled by dependency PPA
 title.
 
-If no dependency is selected and the dependency removal is requested
-an error is raised.
+If no dependency is selected and the configuration is save, no
+dependencies get removed.
 
-    >>> admin_browser.getControl("Remove Dependencies").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    No dependencies selected.
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
@@ -184,10 +178,8 @@ On successful removals, a notification is rendered and the list of
 dependencies is refreshed.
 
     >>> admin_browser.getControl(
-    ...     "PPA for Mark Shuttleworth").selected = True
-    >>> admin_browser.getControl(
-    ...     "PPA for No Privileges Person").selected = True
-    >>> admin_browser.getControl("Remove Dependencies").click()
+    ...     name="field.selected_dependencies").value = ['sabdfl', 'no-priv']
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -202,5 +194,228 @@ Once the dependencies are removed, the 'dependency-section' (including
 the warning message) are omitted from the PPA overview page
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
+    >>> print find_tag_by_id(user_browser.contents, 'archive-dependencies')
     None
+
+== Primary dependencies ==
+
+A user can modify how a PPA depends on its corresponding
+primary archive.
+
+A set of predefined options is presented as a radio button
+selection.
+
+When the page is loaded the selected option for 'Dependency
+configuration' field represents the current state of the PPA.
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_dependencies')
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and important security updates).
+    (*) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
+
+The user can modify this aspect by selecting a different option and
+clicking on 'Save'.
+
+He will see a notification containing a summary of what was changed.
+
+    >>> admin_browser.getControl(
+    ...     "Proposed (default dependencies and proposed updates"
+    ...     ).selected = True
+    >>> admin_browser.getControl("Save").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Primary dependency added: Primary Archive for Ubuntu Linux - PROPOSED
+
+The option submitted by the user is now selected when the page loads.
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_dependencies')
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and important security updates).
+    ( ) Default (security dependencies and recommended updates).
+    (*) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
+
+The user can also see a corresponding entry in 'Current dependencies'
+section.
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+    Primary Archive for Ubuntu Linux - PROPOSED
+
+The user can remove a primary dependency by selecting it and clicking
+'Save' as it's done for PPA dependencies.
+
+    >>> admin_browser.getControl(
+    ...     name="field.selected_dependencies").value = ['ubuntu-team']
+    >>> admin_browser.getControl("Save").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Dependencies removed:
+    Primary Archive for Ubuntu Linux
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
+
+We will override the primary dependency configuration to only RELEASE
+pocket in order to illustrate another way the user can modify it.
+
+    >>> admin_browser.getControl(
+    ...     "Basic (only released packages).").selected = True
+    >>> admin_browser.getControl("Save").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Primary dependency added: Primary Archive for Ubuntu Linux - RELEASE
+
+Now we see a PPA configured to depend only on RELEASE pocket.
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_dependencies')
+    (*) Basic (only released packages).
+    ( ) Security (basic dependencies and important security updates).
+    ( ) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+    Primary Archive for Ubuntu Linux - RELEASE
+
+Instead of deleting the primary dependency override to make the PPA
+use the default dependencies again the user can simply select this
+pre-defined option and the form will restore the default dependencies
+for him.
+
+    >>> admin_browser.getControl(
+    ...     "Default (security dependencies and recommended updates"
+    ...     ).selected = True
+    >>> admin_browser.getControl("Save").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Default primary dependencies restored.
+
+The default option is now selected.
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_dependencies')
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and important security updates).
+    (*) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
+
+And no dependency overrides are listed.
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
+
+
+== Everything in one click ==
+
+The form can perform multiple actions in a single submit.
+
+First we will create a PPA dependency for No privileged' PPA.
+
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl("Save").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Dependency added: PPA for No Privileges Person
+
+Now the PPA uses the default primary dependency configuration and
+contains a extra dependency.
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_dependencies')
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and important security updates).
+    (*) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+     PPA for No Privileges Person
+
+In a single submit we will remove the PPA dependency, add another one
+from 'Mark Shuttleworth' PPA and modify the primary dependency to
+RELEASE.
+
+    >>> admin_browser.getControl(
+    ...     name="field.selected_dependencies").value = ['no-priv']
+
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
+
+    >>> admin_browser.getControl(
+    ...     "Basic (only released packages).").selected = True
+
+    >>> admin_browser.getControl("Save").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Primary dependency added: Primary Archive for Ubuntu Linux - RELEASE
+    Dependency added: PPA for Mark Shuttleworth
+    Dependencies removed: PPA for No Privileges Person
+
+All the modifications are immediately visible once the form is
+processed.
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_dependencies')
+    (*) Basic (only released packages).
+    ( ) Security (basic dependencies and important security updates).
+    ( ) Default (security dependencies and recommended updates).
+    ( ) Proposed (default dependencies and proposed updates).
+    ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+    PPA for Mark Shuttleworth
+    Primary Archive for Ubuntu Linux - RELEASE
+
+
+== Primary dependencies in the PPA index page ==
+
+Primary dependencies are presented with pocket information in the PPA
+index page (see `IArchivedependency.title`).
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print admin_browser.title
+    PPA for Celso Providelo
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
+    PPA dependencies
+    PPA for Mark Shuttleworth (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
+
+
+== Cancelling a form request ==
+
+At anytime the form can be cancelled and the user will be taken to the
+PPA context page and the action won't be executed.
+
+    >>> admin_browser.getLink('Edit dependencies').click()
+
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl(
+    ...     name="field.selected_dependencies").value = ['sabdfl']
+    >>> admin_browser.getControl(
+    ...     "Default (security dependencies and recommended updates)."
+    ...     ).selected = True
+
+    >>> admin_browser.getLink("Cancel").click()
+    >>> print admin_browser.title
+    PPA for Celso Providelo
+
+The dependencies were not modified.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
+    PPA dependencies
+    PPA for Mark Shuttleworth (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)

@@ -160,3 +160,13 @@ http://savannah.nognu.org/
     >>> for alias in celebs.savannah_tracker.aliases:
     ...     print alias
     http://savannah.nognu.org/
+
+
+== PPA key guard ==
+
+There is a 'PPA key guard' celebrity which owns all PPA
+'signing_keys'.
+
+    >>> ppa_key_guard = personset.getByName('ppa-key-guard')
+    >>> celebs.ppa_key_guard == ppa_key_guard
+    True

@@ -55,6 +55,7 @@ __all__ = [
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
+    'TranslationTemplateVocabulary',
     'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -85,24 +86,45 @@ from canonical.launchpad.database import (
     Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
     Component, Country, Distribution, DistroArchSeries, DistroSeries,
     EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, Person, PillarName, Processor, ProcessorFamily,
+    MailingList, Milestone, Person, PillarName, POTemplate,
+    Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TranslationGroup, TranslationMessage)
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTrackerType, DistroSeriesStatus, EmailAddressStatus,
-    IBranch, IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
-    IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification,
-    SpecificationFilter, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus, PersonVisibility)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.bugtask import (
+    IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
+    IUpstreamBugTask)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.language import ILanguage
+from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.milestone import IMilestoneSet
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, ITeam, PersonVisibility)
+from canonical.launchpad.interfaces.pillar import IPillarName
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.specification import (
+    ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import (
     DateTimeFormatterAPI, FormattersAPI)
 from canonical.launchpad.webapp.vocabulary import (
@@ -666,6 +688,30 @@ class TranslationMessageVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         for message in self.context.messages:
             yield self.toTerm(message)
+
+
+class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
+    """The set of all POTemplates for a given product or package."""
+
+    _table = POTemplate
+    _orderBy = 'name'
+
+    def __init__(self, context):
+        if context.productseries != None:
+            self._filter = AND(
+                POTemplate.iscurrent == True,
+                POTemplate.productseries == context.productseries
+            )
+        else:
+            self._filter = AND(
+                POTemplate.iscurrent == True,
+                POTemplate.distroseries == context.distroseries,
+                POTemplate.sourcepackagename == context.sourcepackagename
+            )
+        super(TranslationTemplateVocabulary, self).__init__(context)
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
 
 
 class NonMergedPeopleAndTeamsVocabulary(
@@ -1957,14 +2003,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
             assert obj.active, 'Inactive object %s %d' % (
                     obj.__class__.__name__, obj.id
                     )
-            if obj.product is not None:
-                obj = obj.product
-            elif obj.distribution is not None:
-                obj = obj.distribution
-            elif obj.project is not None:
-                obj = obj.project
-            else:
-                raise AssertionError('Broken PillarName')
+            obj = obj.pillar
 
         # It is a hack using the class name here, but it works
         # fine and avoids an ugly if statement.
@@ -1978,10 +2017,19 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
-    _filter = AND(OR(
-            PillarName.q.distributionID != None,
-            PillarName.q.productID != None
-            ), PillarName.q.active == True)
+    _filter = """
+        -- An active product/distro.
+        (active IS TRUE
+         AND (product IS NOT NULL OR distribution IS NOT NULL)
+        )
+        OR
+        -- Or an alias for an active product/distro.
+        (alias_for IN (
+            SELECT id FROM PillarName
+            WHERE active IS TRUE AND 
+                (product IS NOT NULL OR distribution IS NOT NULL))
+        )
+        """
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):

@@ -15,6 +15,11 @@
         <allow interface="canonical.launchpad.interfaces.IHWDBApplication" />
     </securedutility>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="HWDBApplicationNavigation"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IHWDBApplication"
         path_expression="string:+hwdb"
@@ -88,11 +93,6 @@
         name="+hwdb-submissions"
         />
 
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="HWDBSubmissionSetNavigation"
-        />
-
     <class class="canonical.launchpad.browser.hwdb.HWDBFingerprintSetView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
@@ -123,8 +123,13 @@
 
     <class class="canonical.launchpad.database.HWDevice">
         <allow interface="canonical.launchpad.interfaces.IHWDevice" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDevice"
+        path_expression="string:+device/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWDeviceSet"
@@ -147,8 +152,13 @@
     <class class="canonical.launchpad.database.HWDriver">
         <allow
             interface="canonical.launchpad.interfaces.IHWDriver" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDriver"
+        path_expression="string:+driver/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWDriverSet"

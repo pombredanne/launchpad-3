@@ -397,14 +397,16 @@ only contain those teams of which the user is an administrator.
 
     >>> login('test@canonical.com')
     >>> request = LaunchpadTestRequest()
-    >>> view = getMultiAdapter((package, request), name='+subscribe') 
+    >>> view = getMultiAdapter((package, request), name='+subscribe')
 
-Sample person is a member of two teams:
+Sample Person is a member of three teams:
 
     >>> sample_person = view.user
     >>> ["%s: %s" % (membership.team.displayname, membership.status.name)
     ...  for membership in sample_person.myactivememberships]
-    [u'Landscape Developers: ADMIN', u'Warty Security Team: APPROVED']
+    [u'Landscape Developers: ADMIN',
+     u'Launchpad Users: ADMIN',
+     u'Warty Security Team: APPROVED']
 
 But is only an administrator of Landscape Developers, so that is the only
 team that will be listed when the user is changing a package bug supervisor:
@@ -412,4 +414,4 @@ team that will be listed when the user is changing a package bug supervisor:
     >>> for team in view.user.getAdministratedTeams():
     ...     print team.displayname
     Landscape Developers
-
+    Launchpad Users

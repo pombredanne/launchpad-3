@@ -225,9 +225,7 @@ If the person has no time_zone specified, we use UTC.
 
 For branches, fmt:link links to the branch page.
 
-    >>> from canonical.launchpad.testing import (
-    ...     LaunchpadObjectFactory, login_person)
-    >>> factory = LaunchpadObjectFactory()
+    >>> from canonical.launchpad.testing import login_person
     >>> eric = factory.makePerson(name='eric')
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeBranch(
@@ -290,8 +288,10 @@ title might be interpreted by the browser.
 Branch subscriptions show the person and branch name.  For users
 without adequate permissions, a link is not generated.
 
-    >>> subscription = factory.makeBranchSubscription('My Branch',
-    ...     'My Person')
+    >>> branch = factory.makeBranch(title='My Branch')
+    >>> person = factory.makePerson(displayname='My Person')
+    >>> subscription = factory.makeBranchSubscription(
+    ...     branch=branch, person=person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'Subscription of My Person to My Branch'
 
@@ -311,7 +311,9 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> proposal.source_branch.title = 'baz'
     >>> proposal.target_branch.title = 'qux'
     >>> test_tales("proposal/fmt:link", proposal=proposal)
-    u'<a href="...">Proposed merge of baz into qux</a>'
+    u'<a href="...">[Merge]
+    lp://dev/~person-name38/product-name30/branch40 into
+    lp://dev/~person-name24/product-name30/branch26</a>'
 
 
 === Code review comments ===

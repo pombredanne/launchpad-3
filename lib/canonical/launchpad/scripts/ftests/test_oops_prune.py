@@ -135,6 +135,20 @@ class TestOopsPrune(unittest.TestCase):
                     'New OOPS %s unwanted' % unwanted_path
                     )
 
+    def test_referenced_oops_in_urls(self):
+        # Sometimes OOPS ids appears as part of an URL. We don't want the
+        # POSIX regexp matching on those OOPS ids since the FormattersAPI
+        # doesn't match them.
+        cur = cursor()
+        cur.execute("""
+            UPDATE Bug SET
+                title='Some title',
+                description='https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-1Foo666'
+            """)
+        self.failUnlessEqual(
+                set([self.referenced_oops_code]),
+                referenced_oops())
+
     def test_script(self):
         unwanted = unwanted_oops_files(self.oops_dir, 90)
         # Commit so our script can see changes made by the setUp method

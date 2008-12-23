@@ -27,8 +27,7 @@ paths.
 This server does most of its work by delegating to a `LaunchpadBranch` object.
 This object can be constructed from a virtual path and then operated on. It in
 turn delegates to the "authserver", an internal XML-RPC server that actually
-talks to the database. We cache requests to the authserver using
-`CachingAuthserverClient`, in order to speed things up a bit.
+talks to the database.
 
 We hook the `LaunchpadServer` into Bazaar by implementing a
 `AsyncVirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
@@ -56,27 +55,28 @@ import xmlrpclib
 
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.errors import (
-    BzrError, NoSuchFile, PermissionDenied, TransportNotPossible)
-from bzrlib import urlutils
-from bzrlib.transport import (
-    get_transport, register_transport, Server, unregister_transport)
+    NoSuchFile, PermissionDenied, TransportNotPossible)
+from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
+from bzrlib.urlutils import unescape
 
 from twisted.internet import defer
 from twisted.python import failure
-from twisted.web.xmlrpc import Fault
+
+from zope.interface import implements, Interface
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
-    BlockingProxy, CachingAuthserverClient)
+    BlockingProxy, BranchFileSystemClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.transport import (
-    AsyncVirtualTransport, _MultiServer, get_chrooted_transport,
-    get_readonly_transport, SynchronousAdapter, TranslationError)
+    AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
+    get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
-    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+from canonical.launchpad.xmlrpc import faults
 
 
 # The directories allowed directly beneath a branch directory. These are the
@@ -84,6 +84,21 @@ from canonical.launchpad.interfaces.codehosting import (
 ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr')
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
+
+
+class NotABranchPath(TranslationError):
+    """Raised when we cannot translate a virtual URL fragment to a branch.
+
+    In particular, this is raised when there is some intrinsic deficiency in
+    the path itself.
+    """
+
+    _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
+            "%(reason)s")
+
+
+class UnknownTransportType(Exception):
+    """Raised when we don't know the transport type."""
 
 
 def get_path_segments(path, maximum_segments=-1):
@@ -100,120 +115,67 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
-class BranchNotFound(BzrError):
-    """Raised when on translating a virtual path for a non-existent branch."""
+def get_scanner_server():
+    """Get a Launchpad internal server for scanning branches."""
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    branchfs_endpoint = BlockingProxy(proxy)
+    branch_transport = get_readonly_transport(
+        get_transport(config.supermirror.warehouse_root_url))
+    return LaunchpadInternalServer(
+        'lp-mirrored:///', branchfs_endpoint, branch_transport)
 
-    _fmt = ("Could not find id for branch ~%(owner)s/%(product)s/%(name)s.")
 
+def get_puller_server():
+    """Get a server for the Launchpad branch puller.
 
-class NotABranchPath(TranslationError):
-    """Raised when we cannot translate a virtual URL fragment to a branch.
-
-    In particular, this is raised when there is some intrinsic deficiency in
-    the path itself.
+    The server wraps up two `LaunchpadInternalServer`s. One of them points to
+    the hosted branch area and is read-only, the other points to the mirrored
+    area and is read/write.
     """
-
-    _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
-            "%(reason)s")
-
-
-class NotEnoughInformation(NotABranchPath):
-    """Raised when there's not enough information in the path."""
-
-    reason = "Not enough information."
-
-
-class InvalidOwnerDirectory(NotABranchPath):
-    """Raised when the owner directory is invalid.
-
-    This generally means that it doesn't start with a tilde (~).
-    """
-
-    reason = "Path must start with a user or team directory."
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    branchfs_endpoint = BlockingProxy(proxy)
+    hosted_transport = get_chrooted_transport(
+        config.codehosting.branches_root)
+    mirrored_transport = get_chrooted_transport(
+        config.supermirror.branchesdest)
+    hosted_server = LaunchpadInternalServer(
+        'lp-hosted:///', branchfs_endpoint,
+        get_readonly_transport(hosted_transport))
+    mirrored_server = LaunchpadInternalServer(
+        'lp-mirrored:///', branchfs_endpoint, mirrored_transport)
+    return _MultiServer(hosted_server, mirrored_server)
 
 
-class InvalidControlDirectory(BzrError):
-    """Raised when we try to parse an invalid control directory."""
+class ITransportDispatch(Interface):
+    """Turns descriptions of transports into transports."""
 
+    def makeTransport(transport_tuple):
+        """Return a transport and trailing path for 'transport_tuple'.
 
-class LaunchpadBranch:
-    """A branch on Launchpad.
+        :param transport_tuple: a tuple of (transport_type, transport_data,
+            trailing_path), as returned by IBranchFileSystem['translatePath'].
 
-    This abstractly represents a branch on Launchpad without exposing details
-    of the naming of Launchpad branches. It contains and maintains the
-    knowledge of how a virtual path, such as '~owner/product/branch' is
-    translated into the underlying storage systems.
-
-    It also exposes operations on Launchpad branches that we in turn expose
-    via the codehosting system. Namely, creating a branch and requesting that
-    a branch be mirrored.
-    """
-
-    @classmethod
-    def from_virtual_path(cls, authserver, virtual_url_fragment):
-        """Construct a LaunchpadBranch from a virtual URL fragment.
-
-        :param authserver: An XML-RPC client to the Launchpad authserver.
-            This is used to get information about the branch and to perform
-            database operations on the branch. This XML-RPC client should
-            implement 'callRemote'.
-        :param virtual_path: A public path to a branch, or to a file or
-            directory within a branch. This path is required to be URL
-            escaped.
-
-        :raise NotABranchPath: If `virtual_path` cannot be translated into a
-            (potential) path to a branch. See also `NotEnoughInformation`
-            and `InvalidOwnerDirectory`.
-
-        :return: (launchpad_branch, rest_of_path), where `launchpad_branch`
-            is an instance of LaunchpadBranch that represents the branch at
-            the virtual path, and `rest_of_path` is a URL fragment within
-            that branch.
+        :return: A transport and a path on that transport that point to a
+            place that matches the one described in transport_tuple.
+        :rtype: (`bzrlib.transport.Transport`, str)
         """
-        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
-        segments = get_path_segments(virtual_path, 3)
-        # If we don't have at least an owner, product and name, then we don't
-        # have enough information for a branch.
-        if len(segments) < 3:
-            raise NotEnoughInformation(virtual_path)
-        # If we have only an owner, product, name tuple, append an empty path.
-        if len(segments) == 3:
-            segments.append('')
-        user_dir, product, name, path = segments
-        # The Bazaar client will look for a .bzr directory in the owner and
-        # product directories to see if there's a shared repository. There
-        # won't be, so we should treat this case the same as trying to access
-        # a branch without enough information.
-        if '.bzr' in (user_dir, product, name):
-            raise NotEnoughInformation(virtual_path)
-        if not user_dir.startswith('~'):
-            raise InvalidOwnerDirectory(virtual_path)
-        escaped_path = urlutils.escape(path)
-        return cls(authserver, user_dir[1:], product, name), escaped_path
 
-    def __init__(self, authserver, owner, product, name):
-        """Construct a LaunchpadBranch object.
 
-        In general, don't call this directly, use
-        `LaunchpadBranch.from_virtual_path` instead. This prevents assumptions
-        about branch naming spreading throughout the code.
+class BranchTransportDispatch:
+    """Turns BRANCH_TRANSPORT tuples into transports that point to branches.
 
-        :param authserver: An XML-RPC client to the Launchpad authserver.
-            This is used to get information about the branch and to perform
-            database operations on the branch. The client should implement
-            `callRemote`.
-        :param owner: The owner of the branch. A string that is the name of a
-            Launchpad `IPerson`.
-        :param product: The project that the branch belongs to. A string that
-            is either '+junk' or the name of a Launchpad `IProduct`.
-        :param branch: The name of the branch.
-        """
-        self._authserver = authserver
-        self._owner = owner
-        self._product = product
-        self._name = name
+    This transport dispatch knows how branches are laid out on the disk in a
+    particular "area". It doesn't know anything about the "hosted" or
+    "mirrored" areas.
 
-    def checkPath(self, path_on_branch):
+    This is used directly by our internal services (puller and scanner).
+    """
+    implements(ITransportDispatch)
+
+    def __init__(self, base_transport):
+        self.base_transport = base_transport
+
+    def _checkPath(self, path_on_branch):
         """Raise an error if `path_on_branch` is not valid.
 
         This allows us to enforce a certain level of policy about what goes
@@ -230,114 +192,101 @@ class LaunchpadBranch:
             raise PermissionDenied(
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
-    def create(self):
-        """Create a branch in the database.
+    def makeTransport(self, transport_tuple):
+        """See `ITransportDispatch`.
 
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
-        :raise PermissionDenied: If the branch cannot be created in the
-            database. This might indicate that the branch already exists, or
-            that its creation is forbidden by a policy.
+        :raise PermissionDenied: If the path on the branch's transport is
+            forbidden because it's not in ALLOWED_DIRECTORIES.
         """
-        deferred = self._authserver.createBranch(
-            self._owner, self._product, self._name)
-
-        def convert_fault(failure):
-            failure.trap(Fault)
-            fault = failure.value
-            if fault.faultCode == NOT_FOUND_FAULT_CODE:
-                # One might think that it would make sense to raise
-                # NoSuchFile here, but that makes the client do "clever"
-                # things like say "Parent directory of
-                # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
-                # does not exist.  You may supply --create-prefix to
-                # create all leading parent directories."  Which is just
-                # misleading.
-                raise PermissionDenied(fault.faultString)
-            elif fault.faultCode == PERMISSION_DENIED_FAULT_CODE:
-                raise PermissionDenied(fault.faultString)
-            else:
-                raise
-
-        return deferred.addErrback(convert_fault)
-
-    def ensureUnderlyingPath(self, transport):
-        """Ensure that the directory for the branch exists on the transport.
-        """
-        deferred = self.getRealPath('')
-        deferred.addErrback(lambda failure: failure.trap(BranchNotFound))
-        deferred.addCallback(
-            lambda real_path: ensure_base(transport.clone(real_path)))
-        return deferred
-
-    def getRealPath(self, url_fragment_on_branch):
-        """Return the 'real' URL-escaped path to a path within this branch.
-
-        :param path_on_branch: A URL fragment referring to a path within this
-             branch.
-
-        :raise BranchNotFound: if the branch does not exist.
-        :raise PermissionDenied: if `url_fragment_on_branch` is forbidden.
-
-        :return: A path relative to the base directory where all branches
-            are stored. This path will look like '00/AB/02/43/.bzr/foo', where
-            'AB0243' is the database ID of the branch expressed in hex and
-            '.bzr/foo' is `path_on_branch`.
-        """
+        transport_type, data, trailing_path = transport_tuple
+        if transport_type != BRANCH_TRANSPORT:
+            raise UnknownTransportType(transport_type)
+        self._checkPath(trailing_path)
+        transport = self.base_transport.clone(branch_id_to_path(data['id']))
         try:
-            self.checkPath(url_fragment_on_branch)
-        except PermissionDenied:
-            return defer.fail(failure.Failure())
-        deferred = self.getID()
-        return deferred.addCallback(
-            lambda branch_id: '/'.join(
-                [branch_id_to_path(branch_id), url_fragment_on_branch]))
+            ensure_base(transport)
+        except TransportNotPossible:
+            # Silently ignore TransportNotPossible. This is raised when the
+            # base transport is read-only.
+            pass
+        return transport, trailing_path
 
-    def getID(self):
-        """Return the database ID of this branch.
 
-        :raise BranchNotFound: if the branch does not exist.
-        :return: the database ID of the branch, an integer.
+class TransportDispatch:
+    """Make transports for hosted, mirrored areas and virtual control dirs.
+
+    This transport dispatch knows about whether a particular branch should be
+    served from the hosted or mirrored area. It also knows how to serve .bzr
+    control directories for products (to enable default stacking).
+
+    This is used for the rich codehosting VFS that we serve publically.
+    """
+    implements(ITransportDispatch)
+
+    def __init__(self, hosted_transport, mirrored_transport):
+        self._hosted_dispatch = BranchTransportDispatch(hosted_transport)
+        self._mirrored_dispatch = BranchTransportDispatch(mirrored_transport)
+        self._transport_factories = {
+            BRANCH_TRANSPORT: self._makeBranchTransport,
+            CONTROL_TRANSPORT: self._makeControlTransport,
+            }
+
+    def makeTransport(self, transport_tuple):
+        transport_type, data, trailing_path = transport_tuple
+        factory = self._transport_factories[transport_type]
+        data['trailing_path'] = trailing_path
+        return factory(**data), trailing_path
+
+    def _makeBranchTransport(self, id, writable, trailing_path=''):
+        if writable:
+            dispatch = self._hosted_dispatch
+        else:
+            dispatch = self._mirrored_dispatch
+        transport, ignored = dispatch.makeTransport(
+            (BRANCH_TRANSPORT, dict(id=id), trailing_path))
+        if not writable:
+            transport = get_readonly_transport(transport)
+        return transport
+
+    def _makeControlTransport(self, default_stack_on, trailing_path=None):
+        """Make a transport that points to a control directory.
+
+        A control directory is a .bzr directory containing a 'control.conf'
+        file. This is used to specify configuration for branches created
+        underneath the directory that contains the control directory.
+
+        :param default_stack_on: The default stacked-on branch URL for
+            branches that respect this control directory. If empty, then
+            we'll return an empty memory transport.
+        :return: A read-only `MemoryTransport` containing a working BzrDir,
+            configured to use the given default stacked-on location.
         """
-        return self._getInfo().addCallback(lambda branch_info: branch_info[0])
-
-    def getPermissions(self):
-        """Return the permissions that the current user has for this branch.
-
-        :raise BranchNotFound: if the branch does not exist.
-        :return: WRITABLE if the user can write to the branch, READ_ONLY
-            otherwise.
-        """
-        return self._getInfo().addCallback(lambda branch_info: branch_info[1])
-
-    def _getInfo(self):
-        deferred = self._authserver.getBranchInformation(
-            self._owner, self._product, self._name)
-        def check_branch_id(branch_info):
-            (branch_id, permissions) = branch_info
-            if branch_id == '':
-                raise BranchNotFound(
-                    owner=self._owner, product=self._product, name=self._name)
-            return branch_info
-        return deferred.addCallback(check_branch_id)
-
-    def requestMirror(self):
-        """Request that the branch be mirrored as soon as possible.
-
-        :raise BranchNotFound: if the branch does not exist.
-        """
-        deferred = self.getID()
-        deferred.addCallback(self._authserver.requestMirror)
-        return deferred
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        transport = get_transport(memory_server.get_url())
+        if default_stack_on == '':
+            return transport
+        format = BzrDirFormat.get_default_format()
+        bzrdir = format.initialize_on_transport(transport)
+        bzrdir.get_config().set_default_stack_on(unescape(default_stack_on))
+        return get_readonly_transport(transport)
 
 
-class _BaseLaunchpadServer(Server):
-    """Bazaar Server for Launchpad branches.
+class _BaseLaunchpadServer(AsyncVirtualServer):
+    """Bazaar `Server` for translating Lanuchpad paths via XML-RPC.
 
     This server provides facilities for transports that use a virtual
     filesystem, backed by an XML-RPC server.
 
     For more information, see the module docstring.
+
+    :ivar _authserver: An object that has a method 'translatePath' that
+        returns a Deferred that fires information about how a path can be
+        translated into a transport. See `IBranchFilesystem['translatePath']`.
+
+    :ivar _transport_dispatch: An `ITransportDispatch` provider used to
+        convert the data from the authserver into an actual transport and
+        path on that transport.
     """
 
     def __init__(self, scheme, authserver, user_id):
@@ -348,205 +297,31 @@ class _BaseLaunchpadServer(Server):
         :param user_id: The database ID for the user who is accessing
             branches.
         """
-        # bzrlib's Server class does not have a constructor, so we cannot
-        # safely upcall it.
-        # pylint: disable-msg=W0231
-        self._scheme = scheme
-        self._authserver = CachingAuthserverClient(authserver, user_id)
+        AsyncVirtualServer.__init__(self, scheme)
+        self._authserver = BranchFileSystemClient(authserver, user_id)
         self._is_set_up = False
-
-    def _buildControlDirectory(self, stack_on_url):
-        """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        memory_server = MemoryServer()
-        memory_server.setUp()
-        transport = get_transport(memory_server.get_url())
-        if stack_on_url == '':
-            return transport
-        format = BzrDirFormat.get_default_format()
-        bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(stack_on_url)
-        return get_transport('readonly+' + transport.base)
-
-    def _transportFactory(self, url):
-        """Create a transport for this server pointing at `url`.
-
-        Override this in subclasses.
-        """
-        raise NotImplementedError("Override this in subclasses.")
-
-    def _getLaunchpadBranch(self, virtual_path):
-        return LaunchpadBranch.from_virtual_path(
-            self._authserver, virtual_path)
-
-    def _getTransportForLaunchpadBranch(self, lp_branch):
-        """Return the transport for accessing `lp_branch`."""
-        raise NotImplementedError("Override this in subclasses.")
-
-    def _parseProductControlDirectory(self, virtual_path):
-        """Parse `virtual_path` and return a product and path in that product.
-
-        If we can't parse `virtual_path`, raise `InvalidControlDirectory`.
-        """
-        segments = get_path_segments(virtual_path, 3)
-        if len(segments) < 3:
-            raise InvalidControlDirectory(virtual_path)
-        user, product, control = segments[:3]
-        if not user.startswith('~'):
-            raise InvalidControlDirectory(virtual_path)
-        if control != '.bzr':
-            raise InvalidControlDirectory(virtual_path)
-        return product, '/'.join([control] + segments[3:])
-
-    def _translateControlPath(self, virtual_url_fragment):
-        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
-        product, path = self._parseProductControlDirectory(virtual_path)
-        deferred = self._authserver.getDefaultStackedOnBranch(product)
-        deferred.addCallback(self._buildControlDirectory)
-        return deferred.addCallback(
-            lambda transport: (transport, urlutils.escape(path)))
 
     def translateVirtualPath(self, virtual_url_fragment):
-        """Translate 'virtual_url_fragment' into a transport and sub-fragment.
+        """See `AsyncVirtualServer.translateVirtualPath`.
 
-        :param virtual_url_fragment: A virtual URL fragment to be translated.
-
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
-        :raise BranchNotFound: If `virtual_path` looks like a path to a
-            branch, but there is no branch in the database that matches.
-        :raise NoSuchFile: If `virtual_path` is *inside* a non-existing
-            branch.
-        :raise PermissionDenied: if the path on the branch is forbidden.
-
-        :return: (transport, path_on_transport)
+        Call 'translatePath' on the authserver with the fragment and then use
+        'makeTransport' on the _transport_dispatch to translate that result
+        into a transport and trailing path.
         """
-        try:
-            lp_branch, path = self._getLaunchpadBranch(virtual_url_fragment)
-        except NotABranchPath:
-            fail = failure.Failure()
-            deferred = defer.maybeDeferred(
-                self._translateControlPath, virtual_url_fragment)
-            deferred.addErrback(lambda ignored: fail)
-            return deferred
+        deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
-        virtual_path_deferred = lp_branch.getRealPath(path)
+        def path_not_translated(failure):
+            trap_fault(failure, faults.PathTranslationError.error_code)
+            raise NoSuchFile(virtual_url_fragment)
 
-        def branch_not_found(failure):
-            failure.trap(BranchNotFound)
-            if path == '':
-                # We are trying to translate a branch path that doesn't exist.
-                return failure
-            else:
-                # We are trying to translate a path within a branch that
-                # doesn't exist.
-                raise NoSuchFile(virtual_url_fragment)
+        def unknown_transport_type(failure):
+            failure.trap(UnknownTransportType)
+            raise NoSuchFile(virtual_url_fragment)
 
-        virtual_path_deferred.addErrback(branch_not_found)
-
-        def get_transport(real_path):
-            deferred = self._getTransportForLaunchpadBranch(lp_branch)
-            deferred.addCallback(lambda transport: (transport, real_path))
-            return deferred
-
-        return virtual_path_deferred.addCallback(get_transport)
-
-    def get_url(self):
-        """Return the URL of this server."""
-        return self._scheme
-
-    def setUp(self):
-        """See Server.setUp."""
-        register_transport(self.get_url(), self._transportFactory)
-        self._is_set_up = True
-
-    def tearDown(self):
-        """See Server.tearDown."""
-        if not self._is_set_up:
-            return
-        self._is_set_up = False
-        unregister_transport(self.get_url(), self._transportFactory)
-
-
-class LaunchpadServer(_BaseLaunchpadServer):
-    """The Server used for codehosting services.
-
-    This server provides a VFS that backs onto two transports: a 'hosted'
-    transport and a 'mirrored' transport. When users push up 'hosted'
-    branches, the branches are written to the hosted transport. Similarly,
-    whenever users access branches that they can write to, they are accessed
-    from the hosted transport. The mirrored transport is used for branches
-    that the user can only read.
-
-    In addition to basic VFS operations, this server provides operations for
-    creating a branch and requesting for a branch to be mirrored. The
-    associated transport, `AsyncLaunchpadTransport`, has hooks in certain
-    filesystem-level operations to trigger these.
-    """
-
-    def __init__(self, authserver, user_id, hosted_transport,
-                 mirror_transport):
-        scheme = 'lp-%d:///' % id(self)
-        super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
-        self._hosted_transport = hosted_transport
-        self._mirror_transport = get_transport(
-            'readonly+' + mirror_transport.base)
-
-    def _transportFactory(self, url):
-        """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.get_url())
-        return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
-
-    def _getTransportForPermissions(self, permissions, lp_branch):
-        """Get the appropriate transport for `permissions` on `lp_branch`."""
-        if permissions == READ_ONLY:
-            return self._mirror_transport
-        else:
-            transport = self._hosted_transport
-            deferred = lp_branch.ensureUnderlyingPath(transport)
-            deferred.addCallback(lambda ignored: transport)
-            return deferred
-
-    def _getTransportForLaunchpadBranch(self, lp_branch):
-        """Return the transport for accessing `lp_branch`."""
-        permissions_deferred = lp_branch.getPermissions()
-        return permissions_deferred.addCallback(
-            self._getTransportForPermissions, lp_branch)
-
-    def createBranch(self, virtual_url_fragment):
-        """Make a new directory for the given virtual URL fragment.
-
-        If `virtual_url_fragment` is a branch directory, create the branch in
-        the database, then create a matching directory on the backing
-        transport.
-
-        :param virtual_url_fragment: A virtual path to be translated.
-
-        :raise NotABranchPath: If `virtual_path` does not have at least a
-            valid path to a branch.
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
-        :raise PermissionDenied: If the branch cannot be created in the
-            database. This might indicate that the branch already exists, or
-            that its creation is forbidden by a policy.
-        """
-        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
-        deferred = lp_branch.create()
-
-        def ensure_path(branch_id):
-            deferred = lp_branch.ensureUnderlyingPath(self._hosted_transport)
-            return deferred.addCallback(lambda ignored: branch_id)
-        return deferred.addCallback(ensure_path)
-
-    def requestMirror(self, virtual_url_fragment):
-        """Mirror the branch that owns 'virtual_url_fragment'.
-
-        :param virtual_path: A virtual URL fragment to be translated.
-
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
-        """
-        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
-        return lp_branch.requestMirror()
+        deferred.addCallbacks(
+            self._transport_dispatch.makeTransport, path_not_translated)
+        deferred.addErrback(unknown_transport_type)
+        return deferred
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
@@ -560,57 +335,19 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     """
 
     def __init__(self, scheme, authserver, branch_transport):
+        """Construct a `LaunchpadInternalServer`.
+
+        :param scheme: The URL scheme to use.
+
+        :param authserver: An object that provides a 'translatePath' method.
+
+        :param branch_transport: A Bazaar `Transport` that refers to an
+            area where Launchpad branches are stored, generally either the
+            hosted or mirrored areas.
+        """
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES)
-        self._branch_transport = branch_transport
-
-    def _getTransportForLaunchpadBranch(self, lp_branch):
-        """Return the transport for accessing `lp_branch`."""
-        deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
-        # We try to make the branch's directory on the underlying transport.
-        # If the transport is read-only, then we just continue silently.
-        def if_not_readonly(failure):
-            failure.trap(TransportNotPossible)
-            return self._branch_transport
-        deferred.addCallback(lambda ignored: self._branch_transport)
-        deferred.addErrback(if_not_readonly)
-        return deferred
-
-    def _transportFactory(self, url):
-        """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.get_url())
-        return SynchronousAdapter(AsyncVirtualTransport(self, url))
-
-
-def get_scanner_server():
-    """Get a Launchpad internal server for scanning branches."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    authserver = BlockingProxy(proxy)
-    branch_transport = get_transport(
-        'readonly+' + config.supermirror.warehouse_root_url)
-    return LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, branch_transport)
-
-
-def get_puller_server():
-    """Get a server for the Launchpad branch puller.
-
-    The server wraps up two `LaunchpadInternalServer`s. One of them points to
-    the hosted branch area and is read-only, the other points to the mirrored
-    area and is read/write.
-    """
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    authserver = BlockingProxy(proxy)
-    hosted_transport = get_readonly_transport(
-        get_chrooted_transport(config.codehosting.branches_root))
-    mirrored_transport = get_chrooted_transport(
-        config.supermirror.branchesdest)
-    hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', authserver,
-        get_readonly_transport(hosted_transport))
-    mirrored_server = LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, mirrored_transport)
-    return _MultiServer(hosted_server, mirrored_server)
+        self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):
@@ -624,20 +361,6 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
     valid branch path') into Bazaar errors (such as 'no such file').
     """
 
-    def _getUnderylingTransportAndPath(self, relpath):
-        """Return the underlying transport and path for `relpath`."""
-        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
-            self, relpath)
-        def convert_failure(failure):
-            failure.trap(NotABranchPath)
-            # If a virtual path doesn't point to a branch, then we cannot
-            # translate it to an underlying transport. For almost all
-            # purposes, this is as good as not existing at all.
-            exception = failure.value
-            raise NoSuchFile(
-                exception.virtual_url_fragment, exception.reason)
-        return deferred.addErrback(convert_failure)
-
     def mkdir(self, relpath, mode=None):
         # We hook into mkdir so that we can request the creation of a branch
         # and so that we can provide useful errors in the special case where
@@ -648,21 +371,13 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
             self, relpath)
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
-            failure.trap(BranchNotFound)
+            failure.trap(NoSuchFile)
             return self.server.createBranch(self._abspath(relpath))
-        def check_permission_denied(failure):
-            # You can't ever create a directory that's not even a valid branch
-            # name. That's strictly forbidden.
-            failure.trap(NotABranchPath)
-            exc_object = failure.value
-            raise PermissionDenied(
-                exc_object.virtual_url_fragment, exc_object.reason)
         def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
         deferred.addCallback(real_mkdir)
         deferred.addErrback(maybe_make_branch_in_db)
-        deferred.addErrback(check_permission_denied)
         return deferred
 
     def rename(self, rel_from, rel_to):
@@ -683,7 +398,130 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # products and people from the VFS.
         virtual_url_fragment = self._abspath(relpath)
         path_segments = virtual_url_fragment.lstrip('/').split('/')
+        # XXX: JonathanLange 2008-11-19 bug=300551: This code assumes stuff
+        # about the VFS! We need to figure out the best way to delegate the
+        # decision about permission-to-delete to the XML-RPC server.
         if len(path_segments) <= 3:
             return defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment)))
         return AsyncVirtualTransport.rmdir(self, relpath)
+
+
+class LaunchpadServer(_BaseLaunchpadServer):
+    """The Server used for the public SSH codehosting service.
+
+    This server provides a VFS that backs onto two transports: a 'hosted'
+    transport and a 'mirrored' transport. When users push up 'hosted'
+    branches, the branches are written to the hosted transport. Similarly,
+    whenever users access branches that they can write to, they are accessed
+    from the hosted transport. The mirrored transport is used for branches
+    that the user can only read.
+
+    In addition to basic VFS operations, this server provides operations for
+    creating a branch and requesting for a branch to be mirrored. The
+    associated transport, `AsyncLaunchpadTransport`, has hooks in certain
+    filesystem-level operations to trigger these.
+    """
+
+    asyncTransportFactory = AsyncLaunchpadTransport
+
+    def __init__(self, authserver, user_id, hosted_transport,
+                 mirror_transport):
+        """Construct a `LaunchpadServer`.
+
+        See `_BaseLaunchpadServer` for more information.
+
+        :param authserver: An object that has 'createBranch' and
+            'requestMirror' methods in addition to a 'translatePath' method.
+            These methods should return Deferreds.
+            XXX: JonathanLange 2008-11-19: Specify this interface better.
+
+        :param user_id: The database ID of the user to connect as.
+
+        :param hosted_transport: A Bazaar `Transport` that points to the
+            "hosted" area of Launchpad. See module docstring for more
+            information.
+
+        :param mirror_transport: A Bazaar `Transport` that points to the
+            "mirrored" area of Launchpad. See module docstring for more
+            information.
+        """
+        scheme = 'lp-%d:///' % id(self)
+        super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
+        mirror_transport = get_readonly_transport(mirror_transport)
+        self._transport_dispatch = TransportDispatch(
+            hosted_transport, mirror_transport)
+
+    def createBranch(self, virtual_url_fragment):
+        """Make a new directory for the given virtual URL fragment.
+
+        If `virtual_url_fragment` is a branch directory, create the branch in
+        the database, then create a matching directory on the backing
+        transport.
+
+        :param virtual_url_fragment: A virtual path to be translated.
+
+        :raise NotABranchPath: If `virtual_path` does not have at least a
+            valid path to a branch.
+        :raise NotEnoughInformation: If `virtual_path` does not map to a
+            branch.
+        :raise PermissionDenied: If the branch cannot be created in the
+            database. This might indicate that the branch already exists, or
+            that its creation is forbidden by a policy.
+        :raise Fault: If the XML-RPC server raises errors.
+        """
+        deferred = self._authserver.createBranch(virtual_url_fragment)
+
+        def translate_fault(failure):
+            # We turn NOT_FOUND_FAULT_CODE into a PermissionDenied, even
+            # though one might think that it would make sense to raise
+            # NoSuchFile. Sadly, raising that makes the client do "clever"
+            # things like say "Parent directory of
+            # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch does not
+            # exist. You may supply --create-prefix to create all leading
+            # parent directories", which is just misleading.
+            fault = trap_fault(
+                failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+            raise PermissionDenied(virtual_url_fragment, fault.faultString)
+
+        return deferred.addErrback(translate_fault)
+
+    def requestMirror(self, virtual_url_fragment):
+        """Mirror the branch that owns 'virtual_url_fragment'.
+
+        :param virtual_path: A virtual URL fragment to be translated.
+
+        :raise NotABranchPath: If `virtual_url_fragment` points to a path
+            that's not a branch.
+        :raise NotEnoughInformation: If `virtual_url_fragment` cannot be
+            translated to a branch.
+        :raise Fault: If the XML-RPC server raises errors.
+        """
+        deferred = self._authserver.translatePath('/' + virtual_url_fragment)
+
+        def got_path_info((transport_type, data, trailing_path)):
+            if transport_type != BRANCH_TRANSPORT:
+                raise NotABranchPath(virtual_url_fragment)
+            return self._authserver.requestMirror(data['id'])
+
+        return deferred.addCallback(got_path_info)
+
+
+def get_lp_server(branchfs_client, user_id, hosted_url, mirror_url):
+    """Create a Launchpad server.
+
+    :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
+        branch file system end-point.
+    :param user_id: A unique database ID of the user whose branches are
+        being served.
+    :param hosted_url: Where the branches are uploaded to.
+    :param mirror_url: Where all Launchpad branches are mirrored.
+    :return: A `LaunchpadServer`.
+    """
+    # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
+    hosted_transport = get_chrooted_transport(hosted_url)
+    mirror_transport = get_chrooted_transport(mirror_url)
+    lp_server = LaunchpadServer(
+        BlockingProxy(branchfs_client), user_id,
+        hosted_transport, mirror_transport)
+    return lp_server

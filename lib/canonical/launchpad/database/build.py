@@ -37,7 +37,7 @@ from canonical.launchpad.helpers import (
      contactEmailAddresses, filenameToContentType, get_email_template)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
@@ -758,13 +758,12 @@ class BuildSet:
 
         self._handleOptionalParams(queries, status, name)
 
+        # This code MUST match the logic in the Build security adapter,
+        # otherwise users are likely to get 403 errors, or worse.
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
         if user is not None:
-            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-                    or
-                    user.inTeam(
-                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 queries.append("""
                 (Archive.private = FALSE
                  OR %s IN (SELECT TeamParticipation.person
@@ -775,23 +774,10 @@ class BuildSet:
         else:
             queries.append("Archive.private = FALSE")
 
-        # Ordering according status
-        # * SUPERSEDED & All by -datecreated
-        # * FULLYBUILT & FAILURES by -datebuilt
-        # It should present the builds in a more natural order.
-        if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
-        else:
-            orderBy = ["-Build.datebuilt"]
-
-        # all orders fallback to id if the primary order doesn't succeed
-        orderBy.append("id")
-
-
         queries.append("builder=%s" % builder_id)
 
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy=orderBy)
+                            orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None):
@@ -943,3 +929,45 @@ class BuildSet:
         return Build.select(
             query, orderBy=["-datecreated", "id"],
             clauseTables=["Archive"])
+
+    def getStatusSummaryForBuilds(self, builds):
+        """See `IBuildSet`."""
+        # Create a small helper function to collect the builds for a given
+        # list of build states:
+        def collect_builds(*states):
+            wanted = []
+            for state in states:
+                candidates = [build for build in builds
+                                if build.buildstate == state]
+                wanted.extend(candidates)
+            return wanted
+
+        failed = collect_builds(BuildStatus.FAILEDTOBUILD,
+                                BuildStatus.MANUALDEPWAIT,
+                                BuildStatus.CHROOTWAIT,
+                                BuildStatus.FAILEDTOUPLOAD)
+        needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
+        building = collect_builds(BuildStatus.BUILDING)
+
+        # Note: the BuildStatus DBItems are used here to summarize the
+        # status of a set of builds:s
+        if len(building) != 0:
+            return {
+                'status': BuildSetStatus.BUILDING,
+                'builds': building,
+                }
+        elif len(needsbuild) != 0:
+            return {
+                'status': BuildSetStatus.NEEDSBUILD,
+                'builds': needsbuild,
+                }
+        elif len(failed) != 0:
+            return {
+                'status': BuildSetStatus.FAILEDTOBUILD,
+                'builds': failed,
+                }
+        else:
+            return {
+                'status': BuildSetStatus.FULLYBUILT,
+                'builds': builds,
+                }

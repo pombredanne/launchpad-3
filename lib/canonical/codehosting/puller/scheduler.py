@@ -334,6 +334,7 @@ class PullerMaster:
             self.destination_url, str(self.branch_id), str(self.unique_name),
             self.branch_type.name, self.oops_prefix,
             self.default_stacked_on_url]
+        self.logger.debug("executing %s", command)
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
         reactor.spawnProcess(protocol, sys.executable, command, env=env)

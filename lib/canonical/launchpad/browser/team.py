@@ -28,7 +28,6 @@ from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
@@ -54,7 +53,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     PostedMessageStatus)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
+    ImmutableVisibilityError, PersonVisibility, TeamContactMethod,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -122,7 +122,10 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
 
     @action('Save', name='save')
     def action_save(self, action, data):
-        self.updateContextFromData(data)
+        try:
+            self.updateContextFromData(data)
+        except ImmutableVisibilityError, error:
+            self.request.response.addErrorNotification(str(error))
         self.next_url = canonical_url(self.context)
 
     def validate(self, data):
@@ -744,20 +747,14 @@ class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
         self.next_url = canonical_url(team)
 
 
-class ProposedTeamMembersEditView:
+class ProposedTeamMembersEditView(LaunchpadFormView):
+    schema = Interface
+    label = 'Proposed team members'
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-
-    def processProposed(self):
-        if self.request.method != "POST":
-            return
-
-        team = self.context
-        expires = team.defaultexpirationdate
-        for person in team.proposedmembers:
+    @action('Save changes', name='save')
+    def action_save(self, action, data):
+        expires = self.context.defaultexpirationdate
+        for person in self.context.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
             if action == "approve":
                 status = TeamMembershipStatus.APPROVED
@@ -766,14 +763,13 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipData(
-                person, status, reviewer=self.user, expires=expires)
+            self.context.setMembershipData(
+                person, status, reviewer=self.user, expires=expires,
+                comment=self.request.form.get('comment'))
 
-        # Need to flush all changes we made, so subsequent queries we make
-        # with this transaction will see this changes and thus they'll be
-        # displayed on the page that calls this method.
-        flush_database_updates()
-        self.request.response.redirect('%s/+members' % canonical_url(team))
+    @property
+    def next_url(self):
+        return '%s/+members' % canonical_url(self.context)
 
 
 class TeamBrandingView(BrandingChangeView):

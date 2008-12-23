@@ -12,6 +12,7 @@ __all__ = [
     'JabberID',
     'JabberIDSet',
     'Person',
+    'PersonLanguage',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
@@ -20,6 +21,7 @@ __all__ = [
     'WikiNameSet']
 
 from datetime import datetime, timedelta
+from operator import attrgetter
 import pytz
 import random
 import re
@@ -35,6 +37,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
+from storm.expr import And
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -45,6 +48,8 @@ from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -92,9 +97,10 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility, PersonalStanding,
-    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
+    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -171,14 +177,15 @@ def validate_person_visibility(person, attr, value):
 
     if (value == PersonVisibility.PUBLIC and
         person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None):
-        raise ValueError('This team cannot be made public since it has '
-                         'a mailing list')
+        mailing_list is not None and
+        mailing_list.status != MailingListStatus.PURGED):
+        raise ImmutableVisibilityError(
+            'This team cannot be made public since it has a mailing list')
 
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
-            raise ValueError(warning)
+            raise ImmutableVisibilityError(warning)
 
     return value
 
@@ -333,12 +340,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = SQLRelatedJoin('Language', joinColumn='person',
-                            otherColumn='language',
-                            intermediateTable='PersonLanguage',
-                            orderBy='englishname')
-
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -366,6 +367,57 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @cachedproperty('_languages_cache')
+    def languages(self):
+        """See `IPerson`."""
+        results = Store.of(self).find(
+            Language, And(Language.id == PersonLanguage.languageID,
+                          PersonLanguage.personID == self.id))
+        results.order_by(Language.englishname)
+        return list(results)
+
+    def getLanguagesCache(self):
+        """Return this person's cached languages.
+
+        :raises AttributeError: If the cache doesn't exist.
+        """
+        return self._languages_cache
+
+    def setLanguagesCache(self, languages):
+        """Set this person's cached languages.
+
+        Order them by name if necessary.
+        """
+        self._languages_cache = sorted(
+            languages, key=attrgetter('englishname'))
+
+    def deleteLanguagesCache(self):
+        """Delete this person's cached languages, if it exists."""
+        if safe_hasattr(self, '_languages_cache'):
+            del self._languages_cache
+
+    def addLanguage(self, language):
+        """See `IPerson`."""
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        if person_language is not None:
+            # Nothing to do.
+            return
+        PersonLanguage(person=self, language=language)
+        self.deleteLanguagesCache()
+
+    def removeLanguage(self, language):
+        """See `IPerson`."""
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        if person_language is None:
+            # Nothing to do.
+            return
+        PersonLanguage.delete(person_language.id)
+        self.deleteLanguagesCache()
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -869,19 +921,17 @@ class Person(
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
-        # Import here to work around a circular import problem.
-        from canonical.launchpad.database import Product
-
         if product_name is None or product_name == '+junk':
             return Branch.selectOne(
                 'owner=%d AND product is NULL AND name=%s'
                 % (self.id, quote(branch_name)))
         else:
-            product = Product.selectOneBy(name=product_name)
-            if product is None:
+            pillar = getUtility(IPillarNameSet).getByName(product_name)
+            if not IProduct.providedBy(pillar):
+                # pillar is either None or not a Product.
                 return None
-            return Branch.selectOneBy(owner=self, product=product,
-                                      name=branch_name)
+            return Branch.selectOneBy(
+                owner=self, product=pillar, name=branch_name)
 
     def findPathToTeam(self, team):
         """See `IPerson`."""
@@ -1173,15 +1223,17 @@ class Person(
     @property
     def karma_category_caches(self):
         """See `IPerson`."""
-        return KarmaCache.select(
-            AND(
-                KarmaCache.q.personID == self.id,
-                KarmaCache.q.categoryID != None,
-                KarmaCache.q.productID == None,
-                KarmaCache.q.projectID == None,
-                KarmaCache.q.distributionID == None,
-                KarmaCache.q.sourcepackagenameID == None),
-            orderBy=['category'])
+        store = Store.of(self)
+        conditions = And(
+            KarmaCache.category == KarmaCategory.id,
+            KarmaCache.person == self.id,
+            KarmaCache.product == None,
+            KarmaCache.project == None,
+            KarmaCache.distribution == None,
+            KarmaCache.sourcepackagename == None)
+        result = store.find((KarmaCache, KarmaCategory), conditions)
+        result = result.order_by(KarmaCategory.title)
+        return [karma_cache for (karma_cache, category) in result]
 
     @property
     def karma(self):
@@ -1213,25 +1265,6 @@ class Person(
             return True
         except SQLObjectNotFound:
             return False
-
-    @property
-    def is_openid_enabled(self):
-        """See `IPerson`."""
-        if not self.is_valid_person:
-            return False
-
-        if config.launchpad.openid_users == 'all':
-            return True
-
-        openid_users = getUtility(IPersonSet).getByName(
-                config.launchpad.openid_users
-                )
-        assert openid_users is not None, \
-                'No Person %s found' % config.launchpad.openid_users
-        if self.inTeam(openid_users):
-            return True
-
-        return False
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -1422,12 +1455,7 @@ class Person(
 
         expires = self.defaultexpirationdate
         tm = TeamMembership.selectOneBy(person=person, team=self)
-        if tm is not None:
-            # We can't use tm.setExpirationDate() here because the reviewer
-            # here will be the member themselves when they join an OPEN team.
-            tm.dateexpires = expires
-            tm.setStatus(status, reviewer, comment)
-        else:
+        if tm is None:
             tm = TeamMembershipSet().new(
                 person, self, status, reviewer, dateexpires=expires,
                 comment=comment)
@@ -1435,6 +1463,11 @@ class Person(
             # creation has been flushed to the database.
             tm_id = tm.id
             notify(event(person, self))
+        else:
+            # We can't use tm.setExpirationDate() here because the reviewer
+            # here will be the member themselves when they join an OPEN team.
+            tm.dateexpires = expires
+            tm.setStatus(status, reviewer, comment)
 
         if not person.is_team and may_subscribe_to_list:
             person.autoSubscribeToMailingList(self.mailing_list,
@@ -1549,8 +1582,10 @@ class Person(
         return EmailAddress.select(query)
 
     @property
-    def allwikis(self):
-        return getUtility(IWikiNameSet).getAllWikisByPerson(self)
+    def wiki_names(self):
+        """See `IPerson`."""
+        result =  Store.of(self).find(WikiName, WikiName.person == self.id)
+        return result.order_by(WikiName.wiki, WikiName.wikiname)
 
     @property
     def title(self):
@@ -1883,6 +1918,9 @@ class Person(
             # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
+            # Skip mailing lists because if the mailing list is purged, it's
+            # not a problem.  Do this check separately below.
+            ('mailinglist', 'team')
             ]
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
@@ -1923,6 +1961,12 @@ class Person(
                 'a source package subscriber']):
             if count > 0:
                 warnings.add(warning)
+
+        # Non-purged mailing list check.
+        mailing_list = getUtility(IMailingListSet).get(self.name)
+        if (mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED):
+            warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)
@@ -3616,10 +3660,6 @@ class WikiNameSet:
     def getByWikiAndName(self, wiki, wikiname):
         """See `IWikiNameSet`."""
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname)
-
-    def getAllWikisByPerson(self, person):
-        """See `IWikiNameSet`."""
-        return WikiName.selectBy(person=person)
 
     def get(self, id):
         """See `IWikiNameSet`."""

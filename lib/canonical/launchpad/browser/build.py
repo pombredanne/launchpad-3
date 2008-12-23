@@ -18,7 +18,6 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
@@ -43,6 +42,9 @@ class BuildUrl:
     On the other hand, PPA builds will be presented under the PPA page:
 
        /~cprov/+archive/+build/1235
+
+    Copy archives will be presented under the archives page:
+       /ubuntu/+archive/my-special-archive/+build/1234
     """
     implements(ICanonicalUrlData)
     rootsite = None
@@ -52,7 +54,7 @@ class BuildUrl:
 
     @property
     def inside(self):
-        if self.context.archive.purpose == ArchivePurpose.PPA:
+        if self.context.archive.is_ppa or self.context.archive.is_copy:
             return self.context.archive
         else:
             return self.context.distributionsourcepackagerelease
@@ -82,7 +84,7 @@ class BuildContextMenu(ContextMenu):
     @property
     def is_ppa_build(self):
         """Some links are only displayed on PPA."""
-        return self.context.archive.purpose == ArchivePurpose.PPA
+        return self.context.archive.is_ppa
 
     def ppa(self):
         return Link(

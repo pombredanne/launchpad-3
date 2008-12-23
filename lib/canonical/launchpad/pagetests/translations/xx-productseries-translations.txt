@@ -79,8 +79,9 @@ Nor does it appear on the template upload pages.
 Now this is changed: Evolution's owner configures it not to use
 Launchpad Translations.
 
-    >>> from canonical.launchpad.database.product import ProductSet
-    >>> ProductSet().getByName('evolution').official_rosetta = False
+    # Use the raw DB object to bypass the security proxy.
+    >>> from canonical.launchpad.database.product import Product
+    >>> Product.byName('evolution').official_rosetta = False
 
 When the owner now visits the upload page for trunk, there's a notice.
 
@@ -120,14 +121,11 @@ notice but not the link to the project's settings.
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IPersonSet, ITeamMembershipSet,
     ...     TeamMembershipStatus)
-    >>> from canonical.launchpad.testing.factory import (
-    ...     LaunchpadObjectFactory)
 
     # Log in so as to be able to create objects
     >>> admin_email = 'foo.bar@canonical.com'
     >>> login(admin_email)
     >>> admin_user = getUtility(IPersonSet).getByEmail(admin_email)
-    >>> factory = LaunchpadObjectFactory()
 
     >>> jtv = factory.makePerson(
     ...     email='jtv-sample@canonical.com', password='test')

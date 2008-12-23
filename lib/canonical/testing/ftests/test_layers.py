@@ -19,7 +19,7 @@ from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-from canonical.lazr.config import as_host_port
+from lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lazr.pidfile import pidfile_path

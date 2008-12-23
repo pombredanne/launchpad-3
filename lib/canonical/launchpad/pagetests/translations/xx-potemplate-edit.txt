@@ -90,7 +90,7 @@ We should be sure that the edit form get only the non admin fields.
 And that we are able to POST it.
 
   >>> browser.getControl(name='field.description').value = u'foo'
-  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> browser.getControl('Change').click()
   >>> print browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
 

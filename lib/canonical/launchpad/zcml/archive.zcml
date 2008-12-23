@@ -6,8 +6,16 @@
 
   <!-- Archive -->
   <class class="canonical.launchpad.database.Archive">
-    <allow interface="canonical.launchpad.interfaces.IArchive"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.archive.IArchivePublic"/>
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.archive.IArchiveView"
+      />
+    <require
+      permission="launchpad.Append"
+      interface="canonical.launchpad.interfaces.archive.IArchiveAppend"
+      />
     <require
       permission="launchpad.Edit"
       set_attributes="description whiteboard"
@@ -15,7 +23,7 @@
     <require
       permission="launchpad.Admin"
       set_attributes="authorized_size buildd_secret distribution enabled
-                      private name require_virtualized"
+                      private name require_virtualized signing_key"
       />
   </class>
 
@@ -30,6 +38,12 @@
       provides="canonical.launchpad.webapp.badge.IHasBadges"
       factory="canonical.launchpad.browser.ArchiveBadges"
       permission="zope.Public"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.archive.IArchive"
+      provides="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"
+      factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"
       />
 
   <browser:menus

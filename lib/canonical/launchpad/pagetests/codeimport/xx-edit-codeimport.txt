@@ -7,8 +7,6 @@ to edit the details.
 
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> svn_import = factory.makeCodeImport(
     ...     svn_branch_url='svn://svn.example.com/fooix/trunk')
     >>> from canonical.launchpad.webapp import canonical_url

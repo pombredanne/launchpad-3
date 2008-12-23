@@ -30,7 +30,7 @@
         <tal:date replace="comment/message/datecreated/fmt:displaydate" />
 
       </div>
-      <div class="boardCommentBody" tal:condition="message">
+      <div class="boardCommentBody codereviewcomment" tal:condition="message">
         <tal:message replace="structure message/fmt:nice_pre" />
         <tal:short-message-view condition="view/message_summary|nothing">
           <tal:long-message condition="view/is_long_message">
@@ -39,6 +39,15 @@
             tal:content="expander_text">full message</a>)
           </tal:long-message>
         </tal:short-message-view>
+        <tal:good-attachments repeat="attachment view/display_attachments">
+          <div class="boardComment attachment" tal:define="body_text python:str(attachment.read())">
+            <div class="boardCommentDetails filename"><a tal:content="attachment/filename" tal:attributes="href attachment/getURL"/></div>
+            <div class="boardCommentBody attachmentBody" tal:content="structure body_text/fmt:nice_pre"/>
+          </div>
+        </tal:good-attachments>
+        <tal:other-attachments repeat="attachment view/other_attachments">
+          <tal:comment replace="structure string:<!-- '${attachment/filename}' '${attachment/mimetype}' -->"/>
+        </tal:other-attachments>
       </div>
     </div>
   </metal:macro>

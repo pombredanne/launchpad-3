@@ -4,8 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveOverrider',
-    'ArchiveOverriderError',
     'ArchiveCruftChecker',
     'ArchiveCruftCheckerError',
     'ChrootManager',
@@ -36,8 +34,8 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IBinaryPackageNameSet, IBinaryPackageReleaseSet,
     IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
-    NotFoundError, PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus, pocketsuffix)
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    pocketsuffix)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.ftpmasterbase import (
@@ -45,208 +43,6 @@ from canonical.launchpad.scripts.ftpmasterbase import (
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
-
-
-class ArchiveOverriderError(Exception):
-    """ArchiveOverrider specific exception.
-
-    Mostly used to describe errors in the initialisation of this object.
-    """
-
-
-class ArchiveOverrider:
-    """Perform overrides on published packages.
-
-    Use self.initialize() method to validate passed parameters.
-    It will raise ArchiveOverriderError exception if anything goes wrong.
-    """
-    distro = None
-    distroseries = None
-    pocket = None
-    component = None
-    section = None
-    priority = None
-
-    def __init__(self, log, distro_name=None, suite=None, component_name=None,
-                 section_name=None, priority_name=None):
-        """Locally store passed attributes."""
-        self.distro_name = distro_name
-        self.suite = suite
-        self.component_name = component_name
-        self.section_name = section_name
-        self.priority_name = priority_name
-        self.log = log
-
-    def initialize(self):
-        """Initialises and validates current attributes.
-
-        Raises ArchiveOverriderError if failed.
-        """
-        if (not self.component_name and not self.section_name and
-            not self.priority_name):
-            raise ArchiveOverriderError(
-                "Need either a component, section or priority to change.")
-
-        try:
-            self.distro = getUtility(IDistributionSet)[self.distro_name]
-        except NotFoundError:
-            raise ArchiveOverriderError(
-                "Invalid distribution: '%s'" % self.distro_name)
-
-        if not self.suite:
-            self.distroseries = self.distro.currentseries
-            self.pocket = PackagePublishingPocket.RELEASE
-        else:
-            try:
-                self.distroseries, self.pocket = (
-                    self.distro.getDistroSeriesAndPocket(self.suite))
-            except NotFoundError:
-                raise ArchiveOverriderError(
-                    "Invalid suite: '%s'" % self.suite)
-
-        if self.component_name:
-            valid_components = dict(
-                [(component.name, component)
-                 for component in self.distroseries.upload_components])
-            if self.component_name not in valid_components:
-                raise ArchiveOverriderError(
-                    "%s is not a valid component for %s/%s."
-                    % (self.component_name, self.distro.name,
-                       self.distroseries.name))
-            self.component = valid_components[self.component_name]
-            self.log.info("Override Component to: '%s'" % self.component.name)
-
-        if self.section_name:
-            valid_sections = dict(
-                [(section.name, section)
-                 for section in self.distroseries.sections])
-            if self.section_name not in valid_sections:
-                raise ArchiveOverriderError(
-                    "%s is not a valid section for %s/%s."
-                    % (self.section_name, self.distro.name,
-                       self.distroseries.name))
-            self.section = valid_sections[self.section_name]
-            self.log.info("Override Section to: '%s'" % self.section.name)
-
-        if self.priority_name:
-            valid_priorities = dict(
-                [(priority.name.lower(), priority)
-                 for priority in PackagePublishingPriority.items])
-            if self.priority_name not in valid_priorities:
-                raise ArchiveOverriderError(
-                    "%s is not a valid priority for %s/%s."
-                    % (self.priority_name, self.distro.name,
-                       self.distroseries.name))
-            self.priority = valid_priorities[self.priority_name]
-            self.log.info("Override Priority to: '%s'" % self.priority.name)
-
-    def processSourceChange(self, package_name):
-        """Perform changes in a given source package name.
-
-        It changes only the current published package release.
-        """
-        sp = self.distroseries.getSourcePackage(package_name)
-
-        if (not sp or not sp.currentrelease or
-            not sp.currentrelease.current_published):
-            self.log.error("'%s' source isn't published in %s"
-                           % (package_name, self.distroseries.name))
-            return
-
-        override = sp.currentrelease.current_published.changeOverride(
-            new_component=self.component, new_section=self.section)
-
-        if override is None:
-            self.log.info("'%s/%s/%s' remained the same"
-                          % (sp.currentrelease.sourcepackagerelease.title,
-                             sp.currentrelease.component.name,
-                             sp.currentrelease.section.name))
-        else:
-            self.log.info("'%s/%s/%s' source overridden"
-                          % (sp.currentrelease.sourcepackagerelease.title,
-                             sp.currentrelease.component.name,
-                             sp.currentrelease.section.name))
-
-    def processBinaryChange(self, package_name):
-        """Perform changes in a given binary package name
-
-        It tries to change the current binary publication in all architectures.
-        """
-        # Check if the name is known.
-        try:
-            binarypackagename = getUtility(IBinaryPackageNameSet)[
-                package_name]
-        except NotFoundError:
-            self.log.error("'%s' binary not found." % package_name)
-            return
-
-        for distroarchseries in self.distroseries.architectures:
-            self._performBinaryOverride(distroarchseries, package_name)
-
-    def processChildrenChange(self, package_name):
-        """Perform changes on all binary packages generated by this source.
-
-        Affects only the currently published release where the binary is
-        directly related to the source version.
-        """
-        sp = self.distroseries.getSourcePackage(package_name)
-        if not sp or not sp.currentrelease:
-            self.log.error("'%s' source isn't published in %s"
-                           % (package_name, self.distroseries.name))
-            return
-        if sp.currentrelease.binaries.count() == 0:
-            self.log.warn("'%s' has no binaries published in %s"
-                          % (package_name, self.distroseries.name))
-            return
-
-        # Process all binaries related to the current source package release.
-        for bpr in sp.currentrelease.binaries:
-            # Inspect binary architecturespecific flag and avoid unnecessary
-            # iterations (on distroarchseries that obviously do not contain
-            # any publication).
-            if bpr.architecturespecific:
-                archtag = bpr.build.distroarchseries.architecturetag
-                architecture = self.distroseries[archtag]
-                considered_archs = [architecture]
-            else:
-                considered_archs = self.distroseries.architectures
-            # Perform overrides.
-            for distroarchseries in considered_archs:
-                self._performBinaryOverride(distroarchseries, bpr.name)
-
-    def _performBinaryOverride(self, distroarchseries, binaryname):
-        """Override the published binary version in the given context.
-
-        Receive a binary name and a distroarchseries, warns and return if
-        no published version could be found.
-        """
-        dasbp = distroarchseries.getBinaryPackage(binaryname)
-        try:
-            current = dasbp.current_published
-        except NotFoundError:
-            self.log.warn("'%s' binary isn't published in %s/%s"
-                          % (binaryname, self.distroseries.name,
-                             distroarchseries.architecturetag))
-            return
-        dasbpr = dasbp[current.binarypackagerelease.version]
-        override = dasbpr.current_publishing_record.changeOverride(
-            new_component=self.component,
-            new_priority=self.priority,
-            new_section=self.section)
-
-        if override is None:
-            self.log.info(
-                "'%s/%s/%s/%s' remained the same"
-                % (current.binarypackagerelease.title,
-                   current.component.name,
-                   current.section.name, current.priority.name))
-        else:
-            self.log.info(
-                "'%s/%s/%s/%s' binary overridden in %s"
-                % (override.binarypackagerelease.title,
-                   current.component.name,
-                   current.section.name, current.priority.name,
-                   override.distroarchseries.displayname))
 
 
 class ArchiveCruftCheckerError(Exception):

@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0404
+# (Suppress warning about two datetimes being imported)
 #
 # Contains code from msgfmt.py (available from python source code),
 #     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
@@ -901,11 +903,15 @@ class POParser(object):
             to the line's section.  Otherwise, None.
         """
         is_obsolete = False
-        if line[:2] == '#~':
-            is_obsolete = True
-            line = line[2:].lstrip()
-            if len(line) == 0:
+        if line.startswith('#~'):
+            if line.startswith('#~|'):
+                # This is an old msgid for an obsolete message.
                 return None
+            else:
+                is_obsolete = True
+                line = line[2:].lstrip()
+                if len(line) == 0:
+                    return None
 
         # If we get a comment line after a msgstr or a line starting with
         # msgid or msgctxt, this is a new entry.

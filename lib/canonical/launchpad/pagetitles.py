@@ -448,7 +448,8 @@ codereviewcomment_index = 'Code review comment'
 
 codereviewcomment_reply = 'Reply to code review comment'
 
-contact_user = 'Contact this user'
+def contact_user(context, view):
+    return view.specific_contact_title_text
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -477,6 +478,8 @@ distributionmirror_review = ContextTitle('Review mirror %s')
 distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
+
+distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
@@ -1086,6 +1089,8 @@ productseries_index = ContextTitle('Overview of %s')
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
+productseries_review = ContextTitle('Review %s')
+
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
@@ -1320,12 +1325,6 @@ specification_dependency = 'Create a blueprint dependency'
 
 specification_deptree = 'Complete dependency tree'
 
-specification_milestone = 'Target feature to milestone'
-
-specification_people = 'Change blueprint assignee, drafter, and reviewer'
-
-specification_priority = 'Change blueprint priority'
-
 specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
@@ -1339,8 +1338,6 @@ specification_requestfeedback = 'Request feedback on this blueprint'
 specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
-
-specification_status = 'Edit blueprint status'
 
 specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
 

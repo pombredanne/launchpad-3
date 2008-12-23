@@ -28,6 +28,7 @@ from canonical.launchpad.browser.feeds import (
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
 from canonical.launchpad.interfaces import (
+    bazaar_identity,
     BranchLifecycleStatus,
     BranchLifecycleStatusFilter,
     BranchListingSort,
@@ -42,7 +43,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.widgets import LaunchpadDropdownWidget
 
 
@@ -53,7 +54,7 @@ class BranchListingItem(BranchBadges):
     to get on the fly for each branch in the listing.  These items are
     prefetched by the view and decorate the branch.
     """
-    decorates(IBranch, 'context')
+    delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, is_dev_focus,
@@ -65,6 +66,13 @@ class BranchListingItem(BranchBadges):
         self._now = now
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
+
+    @property
+    def bzr_identity(self):
+        """Produce the bzr identity from our known associated series."""
+        return bazaar_identity(
+            self.context, self.associated_product_series,
+            self.is_development_focus)
 
     @property
     def since_updated(self):

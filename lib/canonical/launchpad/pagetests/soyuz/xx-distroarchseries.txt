@@ -45,9 +45,10 @@ result is displayed as the binary package name followed by the binary
 package summary.
 
 More details are available by clicking on the binary package name.
-
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
+    1 &rarr; 3 of 3 results
+    First &bull; Previous &bull; Next &bull; Last
     mozilla-firefox: Mozilla Firefox Web Browser
     mozilla-firefox-data: Mozilla Firefox Data
     mozilla-firefox: ff from iceweasel
@@ -59,7 +60,7 @@ that was done, and explain that no matches were found.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
-    No packages matching "biscoito" are published in Ubuntu Warty i386.
+    No packages matching 'biscoito' are published in Ubuntu Warty i386.
 
 
 == DistroArchseries Actions ==

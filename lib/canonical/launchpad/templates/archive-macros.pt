@@ -3,6 +3,88 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
+<metal:source_package_list define-macro="source-package-list">
+  <tal:comment replace="nothing">
+    Presents a table listing all the published source packages for an
+    archive.
+  </tal:comment>
+
+  <div style="padding-top: 1em;" tal:define="batch view/search_results">
+    <form name="package_search" action="" method="GET" style="clear:both">
+      <label for="name">Package name contains:</label>
+      <input id="field.name_filter" title="Package Name" size="20"
+              type="text" name="field.name_filter"
+              tal:attributes="value request/field.name_filter|nothing"/>
+      <tal:status_filter
+          replace="structure view/plain_status_filter_widget" />
+      <input type="submit" value="Search" />
+    </form>
+
+    <tal:navigation_top
+        replace="structure view/batchnav/@@+navigation-links-upper" />
+
+    <table class="listing" id="packages_list" tal:condition="batch">
+      <thead>
+        <tr class="archive_package_row">
+        <th colspan="2">Source</th>
+        <th tal:condition="context/owner/isTeam">Uploader</th>
+        <th>Published</th>
+        <th>Status</th>
+        <th>Series</th>
+        <th>Section</th>
+        <th>Build Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tal:block repeat="publishing batch"
+                   replace="structure publishing/@@+listing-archive-detailed">
+        </tal:block>
+      </tbody>
+    </table>
+
+    <tal:navigation_bottom
+        replace="structure view/batchnav/@@+navigation-links-lower" />
+
+    <div id="empty-result"
+            tal:define="name_filter request/field.name_filter|nothing"
+            tal:condition="not: batch">
+      No matching package for '<tal:name_filter replace="name_filter" />'.
+    </div>
+
+  </div>
+
+</metal:source_package_list>
+
+<metal:package_copy_request_list define-macro="package-copy-request-list">
+  <tal:comment replace="nothing">
+    Presents a table listing all the published source packages for an
+    archive.
+  </tal:comment>
+  <tal:block define="requests view/package_copy_requests">
+    <p tal:condition="not: requests">
+      There are currently no requests to copy packages into this archive.
+    </p>
+    <tal:request_list tal:condition="requests">
+      <p>
+        The following requests have been made to copy packages
+        into this archive:
+      </p>
+      <ul>
+        <li tal:repeat="request requests">
+          <tal:src_archive replace="request/source_archive/name" />
+          <tal:src_distroseries replace="request/source_distroseries/name" />-<tal:src_pocket replace="request/source_pocket/name/fmt:lower" />
+          <tal:src_component condition="request/source_component">
+            (<tal:src_component_name replace="request/source_component/name" />)
+          </tal:src_component>
+          requested by <tal:requestor replace="request/requester/name" />
+          at <tal:requested_date replace="request/date_created/fmt:approximatedate" />
+          (status: <tal:status replace="request/status/name" />)
+        </li>
+      </ul>
+    </tal:request_list>
+  </tal:block>
+</metal:package_copy_request_list>
+
 <metal:selectable_sources define-macro="selectable-sources">
 
   <tal:comment replace="nothing">
@@ -34,21 +116,21 @@
                        error python:view.getFieldError(field_name);">
     <table class="listing" style="margin-top: 1em;">
       <thead>
-      <tr class="ppa_package_row">
+      <tr class="archive_package_row">
         <th colspan="2">Source</th>
         <th tal:condition="context/owner/isTeam">Uploader</th>
         <th>Published</th>
         <th>Status</th>
         <th>Series</th>
         <th>Section</th>
-        <th>Built</th>
+        <th>Build Status</th>
       </tr>
       </thead>
       <tbody>
       <tal:terms tal:repeat="term widget/vocabulary">
         <tal:block
           define="pub term/value"
-          replace="structure pub/@@+listing-ppa-detailed-selectable" />
+          replace="structure pub/@@+listing-archive-detailed-selectable" />
       </tal:terms>
       </tbody>
       <tfoot tal:condition="view/has_undisplayed_sources">
@@ -100,5 +182,38 @@
   </div>
 
 </metal:package_counters>
+
+<metal:build_status_summary define-macro="build-status-summary">
+
+  <tal:comment replace="nothing">
+    Present the build pie chart for the context IArchiveRebuild.
+    :archive: targetted IArchive.
+  </tal:comment>
+
+  <table id="build-count-table"
+         summary="An overview of the build status for this archive."
+         tal:define="build_counters view/build_counters">
+    <tr>
+      <th>Total builds:</th>
+      <th tal:content="view/build_counters/total">100</th>
+    </tr>
+    <tr>
+      <th>Failed</th>
+      <td tal:content="build_counters/failed">100</td>
+    </tr>
+    <tr>
+      <th>Pending</th>
+      <td tal:content="build_counters/pending">100</td>
+    </tr>
+    <tr>
+      <th>Superseded</th>
+      <td tal:content="build_counters/superseded">100</td>
+    </tr>
+    <tr>
+      <th>Succeeded</th>
+      <td tal:content="build_counters/succeeded">100</td>
+    </tr>
+  </table>
+</metal:build_status_summary>
 
 </tal:root>

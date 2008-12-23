@@ -240,8 +240,8 @@ Now we'll mark the second bug as a duplicate of the first:
     >>> browser.getControl('Duplicate').value = bug_1_nickname
     >>> browser.getControl('Change').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Reported...
-    This report is a duplicate...
+    Bug #20 reported...
+    Duplicate of bug #19...
 
 Since duplicate bugs are not listed in milestone listings, only our first bug
 is listed in the 1.0 milestone listing:
@@ -260,7 +260,7 @@ is listed in the 1.0 milestone listing:
 However, it's also possible to clear the duplicate status of our second bug:
 
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('Mark as duplicate').click()
+    >>> browser.getLink(id='change_duplicate_bug').click()
     >>> browser.getControl('Duplicate').value = ''
     >>> browser.getControl('Change').click()
     >>> 'This report is a duplicate' in find_main_content(browser.contents)

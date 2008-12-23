@@ -64,6 +64,12 @@
       permission="launchpad.TranslationsAdmin"
       set_attributes="official_rosetta"
       />
+    <!-- IHasAliases -->
+    <allow attributes="aliases" />
+    <require
+      permission="launchpad.Admin"
+      attributes="setAliases"
+      />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages

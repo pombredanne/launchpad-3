@@ -1385,7 +1385,7 @@ class HALDevice:
         Devices are identifed by (bus, vendor_id, product_id).
         At present we cannot generate reliable vendor and/or product
         IDs for devices where
-        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia').
+        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc').
 
         info.bus == 'platform' is used for devices like the i8042
         which controls keyboard and mouse; HAL has no vendor
@@ -1395,6 +1395,14 @@ class HALDevice:
         info.bus == 'pnp' is used for components like the ancient
         AT DMA controller or the keyboard. Like for the bus
         'platform', HAL does not provide any vendor data.
+
+        info.bus == 'mmc' is used for SD/MMC cards. We do not not
+        have at present enough background information to properly
+        extract a vendor and product ID from these cards.
+
+        info.bus == 'misc' and info.bus == 'unknown' are obviously
+        not very useful, except for the computer itself, which has
+        the bus 'unknown'.
 
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
@@ -1418,7 +1426,12 @@ class HALDevice:
         Provided that a device is not excluded by the above criteria,
         ensure that we have vendor ID, product ID and product name.
         """
-        if self.raw_bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
+        bus = self.raw_bus
+        if bus == 'unknown' and self.udi != ROOT_UDI:
+            # The root node is course a real device; storing data
+            # about other devices with the bus "unkown" is pointless.
+            return False
+        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc', 'misc'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;
@@ -1442,6 +1455,41 @@ class HALDevice:
             return False
         return True
 
+    def getScsiVendorAndModelName(self):
+        """Separate vendor and model name of SCSI decvices.
+
+        SCSI devcies are identified by an 8 charcter vendor name
+        and an 16 character model name. The Linux kernel use the
+        the SCSI command set to access block devices connected
+        via USB, IEEE1394 and ATA buses too.
+
+        For ATA disks, the Linux kernel sets the vendor name to "ATA"
+        and prepends the model name with the real vendor name, but only
+        if the combined length if not larger than 16. Otherwise the
+        real vendor name is omitted.
+
+        This method provides a safe way to retrieve the  the SCSI vendor
+        and model name.
+
+        If the vendor name is 'ATA', and if the model name contains
+        at least one ' ' character, the string before the first ' ' is
+        returned as the vendor name, and the the string after the first
+        ' ' is returned as the model name.
+
+        In all other cases, vendor and model name are returned unmodified.
+        """
+        vendor = self.getProperty('scsi.vendor')
+        if vendor == 'ATA':
+            # The assumption below that the vendor name does not
+            # contain any spaces is not necessarily correct, but
+            # it is hard to find a better heuristic to separate
+            # the vendor name from the product name.
+            splitted_name = self.getProperty('scsi.model').split(' ', 1)
+            if len(splitted_name) < 2:
+                return 'ATA', splitted_name[0]
+            return splitted_name
+        return (vendor, self.getProperty('scsi.model'))
+
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
 
@@ -1460,28 +1508,11 @@ class HALDevice:
             # below does not work properly.
             return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
+            vendor, product = self.getScsiVendorAndModelName()
             if type_ == 'vendor':
-                result = self.getProperty('scsi.vendor').strip()
-                if result == 'ATA':
-                    # A weirdness of the kernel's SCSI emulation layer
-                    # for the IDE and SATA busses: The HAL property
-                    # scsi.vendor is always 'ATA', and the vendor name
-                    # is stored as the first part of the SCSI model
-                    # string.
-                    #
-                    # The assumption below that the vendor name does not
-                    # contain any spaces is not necessarily correct, but
-                    # it is hard to find a better heuristic to separate
-                    # the vendor name from the product name.
-                    return self.getProperty('scsi.model').split(' ', 1)[0]
-                return result
+                return vendor
             else:
-                # What is called elsewhere "product", is called "model"
-                # for the SCSI bus.
-                result = self.getProperty('scsi.model').strip()
-                if self.getProperty('scsi.vendor') == 'ATA':
-                    return result.split(' ', 1)[1]
-                return result
+                return product
         else:
             result = self.getProperty('info.' + type_)
             if result is None:
@@ -1608,14 +1639,14 @@ class HALDevice:
             bus not in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
             hw_vendor_id_set = getUtility(IHWVendorIDSet)
             hw_vendor_id = hw_vendor_id_set.getByBusAndVendorID(
-                bus, self.vendor_id)
+                bus, self.vendor_id_for_db)
             if hw_vendor_id is None:
                 hw_vendor_name_set = getUtility(IHWVendorNameSet)
                 hw_vendor_name = hw_vendor_name_set.getByName(self.vendor)
                 if hw_vendor_name is None:
                     hw_vendor_name = hw_vendor_name_set.create(self.vendor)
                 hw_vendor_id_set.create(
-                    self.real_bus, self.vendor_id, hw_vendor_name)
+                    self.real_bus, self.vendor_id_for_db, hw_vendor_name)
 
     def createDBData(self, submission, parent_submission_device):
         """Create HWDB records for this HAL device and its children.

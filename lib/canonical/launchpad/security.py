@@ -14,7 +14,8 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branch import (
+    IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -36,6 +37,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
@@ -149,6 +152,7 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 
@@ -166,6 +170,7 @@ class ViewPillar(AuthorizationBase):
         else:
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.launchpad_developers)
                     or user.inTeam(celebrities.admin))
 
 
@@ -724,6 +729,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
+                user.inTeam(admins))
+
+
+class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of a distribution should be able to edit its source
+    package information"""
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
                 user.inTeam(admins))
 
 
@@ -1331,8 +1348,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
 
-        # If it's a PPA only allow its owner.
-        if self.obj.archive.is_ppa:
+        # If it's a PPA or a copy archive only allow its owner.
+        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
             return (self.obj.archive.owner and
                     user.inTeam(self.obj.archive.owner))
 
@@ -1349,10 +1366,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
 class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
 
+    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
+    # otherwise users are likely to get 403 errors, or worse.
+
     def checkAuthenticated(self, user):
-        """Private restricts to admins, BuilddAdmins, archive members."""
+        """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
             # Anyone can see non-private archives.
+            return True
+
+        if user.inTeam(self.obj.archive.owner):
+            # Anyone in the PPA team gets the nod.
+            return True
+
+        # LP admins may also see it.
+        lp_admin = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(lp_admin):
             return True
 
         # If the permission check on the sourcepackagerelease for this
@@ -1364,7 +1393,8 @@ class ViewBuildRecord(EditBuildRecord):
         if auth_spr.checkAuthenticated(user):
             return True
 
-        return EditBuildRecord.checkAuthenticated(self, user)
+        # You're not a celebrity, get out of here.
+        return False
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the build if it's not private."""
@@ -1471,8 +1501,7 @@ class AccessBranch(AuthorizationBase):
         for subscriber in branch.subscribers:
             if user.inTeam(subscriber):
                 return True
-        celebs = getUtility(ILaunchpadCelebrities)
-        return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+        return user_has_special_branch_access(user)
 
     def checkAuthenticated(self, user, checked_branches=None):
         if checked_branches is None:
@@ -1507,10 +1536,8 @@ class EditBranch(AuthorizationBase):
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
-                user.inTeam(celebs.admin) or
-                user.inTeam(celebs.bazaar_experts))
+                user_has_special_branch_access(user))
 
 
 class AdminBranch(AuthorizationBase):
@@ -1777,6 +1804,31 @@ class ViewArchive(AuthorizationBase):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
 
+class AppendArchive(ViewArchive):
+    """Restrict appending (upload and copy) operations on archives.
+
+    Restrict the group that can already view the PPAs to users with valid
+    membership on it.
+    """
+    permission = 'launchpad.Append'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can append (upload) the archive.
+
+        Anyone with valid membership in the public PPA (owner) can append.
+        Only team members can append to private PPAs.
+        """
+        can_view = ViewArchive.checkAuthenticated(self, user)
+        if can_view and user.inTeam(self.obj.owner):
+            return True
+
+        return False
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users cannot append PPAs."""
+        return False
+
 
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
@@ -1798,7 +1850,8 @@ class ViewSourcePackageRelease(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
         for archive in self.obj._cached_published_archives:
-            if check_permission('launchpad.View', archive):
+            auth_archive = ViewArchive(archive)
+            if auth_archive.checkAuthenticated(user):
                 return True
         return False
 
@@ -1868,6 +1921,7 @@ class ViewEmailAddress(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
 

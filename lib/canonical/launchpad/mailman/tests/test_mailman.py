@@ -18,6 +18,7 @@ from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
     tearDown as tearDownBrowser)
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import LayerProcessController
 
@@ -30,6 +31,7 @@ def setUp(testobj):
     # We'll always need an smtp server.
     setUpBrowser(testobj)
     LayerProcessController.smtp_controller.reset()
+    testobj.globs['factory'] = LaunchpadObjectFactory()
     testobj.globs['smtpd'] = LayerProcessController.smtp_controller
     testobj.globs['mhonarc_watcher'] = MailmanLayer.mhonarc_watcher
     testobj.globs['smtpd_watcher'] = MailmanLayer.smtpd_watcher

@@ -6,6 +6,7 @@ the top 5 overall contributors of that KarmaContext
 +topcontributors page, where we list the top overall contributors and the
 top contributors by category (Bugs, Specs, Translation, etc).
 
+  
 == Top contributors of a distribution ==
 
     # The top-contributors portlet has been removed from the distros page
@@ -27,6 +28,12 @@ top contributors by category (Bugs, Specs, Translation, etc).
     >>> anon_browser.getLink('More contributors').click()
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+topcontributors'
+    
+   # Check that distro name populates correctly in intro text. 
+   >>> print find_tag_by_id(anon_browser.contents, 'project-name').renderContents()
+   <BLANKLINE>   
+   ...Ubuntu...
+    
     >>> print anon_browser.contents
     <!DOCTYPE...
     ...Overall...
@@ -39,6 +46,8 @@ top contributors by category (Bugs, Specs, Translation, etc).
     ...Sample Person...
     ...Specification Tracking...
     ...Mark Shuttleworth...
+
+
 
 
 == Top contributors of a product ==

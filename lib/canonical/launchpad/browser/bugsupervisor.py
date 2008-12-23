@@ -10,6 +10,7 @@ __all__ = ['BugSupervisorEditView']
 from canonical.launchpad.interfaces import IHasBugSupervisor
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -80,7 +81,8 @@ class BugSupervisorEditView(LaunchpadEditFormView):
         supervisor = data['bug_supervisor']
 
         if (supervisor is not None and supervisor.isTeam() and
-            supervisor not in self.user.getAdministratedTeams()):
+            supervisor not in self.user.getAdministratedTeams() and not
+            check_permission('launchpad.Admin', self.user)):
             error = structured(
                 "You cannot set %(team)s as the bug supervisor for "
                 "%(target)s because you are not an administrator of that "

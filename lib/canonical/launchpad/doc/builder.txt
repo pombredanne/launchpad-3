@@ -37,6 +37,25 @@ Test 'status' property:
     >>> print builder.status
     Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
+In case of copy archives the status string will show both the copy
+archive owner as well as the copy archive name.
+
+    >>> from canonical.launchpad.interfaces import ArchivePurpose
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> builder_archive = removeSecurityProxy(
+    ...     builder.currentjob.build.archive)
+    >>> saved_purpose = builder_archive.purpose
+    >>> builder_archive.purpose = ArchivePurpose.COPY
+
+The archive owner and name are shown at the end of the status string.
+
+    >>> print builder.status
+    Building ... mozilla-firefox 0.9 in ubuntu ... [ubuntu-team/primary]
+
+Restore the original archive purpose.
+
+    >>> builder_archive.purpose = saved_purpose
+
 Confirm we can get the slave xmlrpc interface
 
     >>> s = builder.slave

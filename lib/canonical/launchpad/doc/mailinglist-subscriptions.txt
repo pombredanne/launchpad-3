@@ -12,8 +12,8 @@ people, a team and its team mailing list.
     >>> from canonical.launchpad.ftests import syncUpdate
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
-    ...     get_alternative_email, new_person)
-    >>> anne = new_person('Anne')
+    ...     get_alternative_email)
+    >>> anne = factory.makePersonByName('Anne')
 
 Anne gets two email addresses.  One is her preferred address...
 
@@ -25,7 +25,7 @@ Anne gets two email addresses.  One is her preferred address...
     >>> get_alternative_email(anne).email
     u'aperson@example.org'
 
-    >>> bart = new_person('Bart')
+    >>> bart = factory.makePersonByName('Bart')
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one, list_one = new_team('team-one', with_list=True)
 
@@ -156,7 +156,7 @@ we first create team-two as a subteam of team-one.
 Cris joins team-two, becoming a direct member of team-two and an indirect
 member of team-one.
 
-    >>> cris = new_person('Cris')
+    >>> cris = factory.makePersonByName('Cris')
     >>> cris.join(team_two)
     >>> sorted(member.displayname for member in team_two.allmembers)
     [u'Cris Person', u'No Privileges Person']
@@ -216,7 +216,7 @@ mailing list.
     >>> super_team, super_team_list = new_team('super-team', with_list=True)
     >>> sub_team, sub_team_list = new_team('sub-team', with_list=True)
     >>> super_team.addMember(sub_team, salgado, force_team_add=True)
-    >>> lars = new_person('Lars')
+    >>> lars = factory.makePersonByName('Lars')
     >>> lars.join(super_team)
     >>> lars.join(sub_team)
     >>> super_team_list.subscribe(lars)
@@ -232,7 +232,7 @@ allowed due to indirect membership in the superteam.
 
     >>> team_three, list_three = new_team('team-three', with_list=True)
     >>> team_one.addMember(team_three, salgado, force_team_add=True)
-    >>> dirk = new_person('Dirk')
+    >>> dirk = factory.makePersonByName('Dirk')
     >>> dirk.join(team_two)
     >>> dirk.join(team_three)
     >>> list_one.subscribe(dirk)
@@ -294,7 +294,7 @@ address or any other email address they own.  If they choose to use their
 preferred email address, this will automatically track changes to their
 preferred address.
 
-    >>> elle = new_person('Elle')
+    >>> elle = factory.makePersonByName('Elle')
     >>> elle.preferredemail.email
     u'elle.person@example.com'
     >>> elle_alternative = get_alternative_email(elle)
@@ -311,7 +311,7 @@ preferred address.
 
 A person cannot subscribe an email address they do not own.
 
-    >>> fred = new_person('Fred')
+    >>> fred = factory.makePersonByName('Fred')
     >>> anne.join(team_four)
     >>> list_four.subscribe(anne, fred.preferredemail)
     Traceback (most recent call last):
@@ -369,9 +369,9 @@ more than one subteam.
 
     >>> team_five = new_team('team-five')
     >>> team_one.addMember(team_five, salgado, force_team_add=True)
-    >>> gwen = new_person('Gwen')
-    >>> hank = new_person('Hank')
-    >>> iona = new_person('Iona')
+    >>> gwen = factory.makePersonByName('Gwen')
+    >>> hank = factory.makePersonByName('Hank')
+    >>> iona = factory.makePersonByName('Iona')
 
     >>> gwen.join(team_five)
     >>> hank.join(team_five)
@@ -452,7 +452,7 @@ subscription gets re-instated.  Currently, the subscribed email address is the
 only relevant preference.
 
     >>> team_six, list_six = new_team('team-six', with_list=True)
-    >>> jack = new_person('Jack')
+    >>> jack = factory.makePersonByName('Jack')
     >>> jack.join(team_six)
     >>> list_six.subscribe(jack)
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
@@ -467,7 +467,7 @@ only relevant preference.
 This is true even if they subscribe with an address that's different than
 their preferred email address.
 
-    >>> kara = new_person('Kara')
+    >>> kara = factory.makePersonByName('Kara')
     >>> kara.join(team_six)
     >>> kara_alternative = get_alternative_email(kara)
     >>> kara_alternative.email
@@ -539,7 +539,7 @@ mailing list.  Full membership is only required to post to or receive
 emails from it.
 
     >>> team_seven, list_seven = new_team('team-7', with_list=True)
-    >>> sam = new_person('Samuel')
+    >>> sam = factory.makePersonByName('Samuel')
 
     >>> list_seven.subscribe(sam)
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
@@ -612,10 +612,10 @@ When a subscribed user has her account disabled, she will no longer be able to
 post to the mailing list, nor will she receive mailing list posts.
 
     >>> team_nine, list_nine = new_team('team-9', with_list=True)
-    >>> umma = new_person('Umma')
+    >>> umma = factory.makePersonByName('Umma')
     >>> umma.join(team_nine)
     >>> list_nine.subscribe(umma)
-    >>> vera = new_person('Vera')
+    >>> vera = factory.makePersonByName('Vera')
     >>> vera.join(team_nine)
     >>> list_nine.subscribe(vera)
     >>> print sorted(
@@ -660,7 +660,7 @@ for states in which the list /cannot/ be subscribed to, such as the
 DEACTIVATED state.
 
     >>> team_eight, list_eight = new_team('team-8', with_list=True)
-    >>> teri = new_person('Teri')
+    >>> teri = factory.makePersonByName('Teri')
     >>> teri.join(team_seven)
 
     # We don't need to test the ACTIVE state, as that's represented above.
@@ -740,7 +740,7 @@ and try to recover gracefully from errors.  The method will return a
 True or False value to indicate if the user was subscribed to the list.
 
     >>> team_eight, list_eight = new_team('team-eight', with_list=True)
-    >>> mary = new_person('Mary', use_default_autosubscribe_policy=True)
+    >>> mary = factory.makePersonByName('Mary', use_default_autosubscribe_policy=True)
 
 Mary is not a member of list-eight, so she will have no problem joining.
 
@@ -774,7 +774,7 @@ recover gracefully.
 
 And we can't subscribe someone who does not have a preferred email address.
 
-    >>> qbert = new_person('Qbert', set_preferred_email=False,
+    >>> qbert = factory.makePersonByName('Qbert', set_preferred_email=False,
     ...                    use_default_autosubscribe_policy=True)
     >>> print qbert.preferredemail
     None
@@ -798,7 +798,7 @@ By default, new users have a policy to only join a list if they
 explicitly request it.  If someone else adds them to a list, then they
 are only subscribed to the list if their policy is set to 'ALWAYS'.
 
-    >>> kathy = new_person('Kathy', use_default_autosubscribe_policy=True)
+    >>> kathy = factory.makePersonByName('Kathy', use_default_autosubscribe_policy=True)
     >>> kathy.mailing_list_auto_subscribe_policy
     <...ON_REGISTRATION...>
 
@@ -811,7 +811,7 @@ are only subscribed to the list if their policy is set to 'ALWAYS'.
 
 Setting the policy to NEVER should be self-explanatory.
 
-    >>> norbert = new_person('Norbert')
+    >>> norbert = factory.makePersonByName('Norbert')
     >>> norbert.mailing_list_auto_subscribe_policy = NEVER
     >>> norbert.autoSubscribeToMailingList(list_eight)
     False

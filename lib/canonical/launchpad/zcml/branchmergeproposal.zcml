@@ -14,7 +14,7 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by title
                        date_created date_review_requested date_reviewed
-                       votes root_comment all_comments
+                       review_diff votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
                        getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions root_message_id
@@ -22,7 +22,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message
-                        root_message_id"
+                        root_message_id review_diff"
         attributes="deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
@@ -39,7 +39,7 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
 
   <subscriber
@@ -49,18 +49,13 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
     handler="canonical.launchpad.subscribers.karma.branch_merge_proposed" />
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.interfaces.branchmergeproposal.IBranchMergeProposalApprovedEvent"
-    handler="canonical.launchpad.subscribers.karma.branch_merge_approved" />
-
-  <subscriber
-    for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.interfaces.branchmergeproposal.IBranchMergeProposalRejectedEvent"
-    handler="canonical.launchpad.subscribers.karma.branch_merge_rejected" />
+         canonical.launchpad.event.interfaces.IBranchMergeProposalStatusChangeEvent"
+    handler="canonical.launchpad.subscribers.karma.branch_merge_status_changed" />
 
   <adapter
       for="canonical.launchpad.interfaces.IBranchMergeProposal"

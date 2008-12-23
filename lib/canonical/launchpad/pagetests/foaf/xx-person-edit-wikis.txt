@@ -32,8 +32,8 @@ But he wants to register another one.
     >>> browser.url
     'http://localhost/~sabdfl/+editwikinames'
     >>> print_existing_wikinames(browser.contents)
-    https://wiki.ubuntu.com/MarkShuttleworth
     http://foo.bar/wiki/FooBar
+    https://wiki.ubuntu.com/MarkShuttleworth
 
 He can't have two identical wiki names, though.
 
@@ -100,7 +100,7 @@ Only http and https URLs are allowed for wikis.
 Mark can remove any of his wiki names, and here he'll remove the one he
 just added.
 
-    >>> browser.getControl('Remove', index=1).selected = True
+    >>> browser.getControl('Remove', index=0).selected = True
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
     'http://localhost/~sabdfl/+editwikinames'

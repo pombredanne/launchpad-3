@@ -118,6 +118,8 @@ class AbstractUploadPolicy:
 
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""
+        if self.archive.is_copy:
+            upload.reject("Uploads to copy archives are not allowed.")
         if upload.is_ppa:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(

@@ -13,6 +13,7 @@ __all__ = [
     'IProductSet',
     'License',
     'LicenseStatus',
+    'NoSuchProduct',
     ]
 
 import sets
@@ -40,6 +41,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -50,8 +52,7 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -118,7 +119,7 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
+    ILaunchpadUsage, IMakesAnnouncements, ISpecificationTarget, IPillar):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -148,8 +149,8 @@ class IProductPublic(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("Project owner, it can either a valid Person or "
-                          "Team inside Launchpad context.")))
+            description=_("The person or team who maintains the project "
+                          "information in Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
@@ -157,8 +158,8 @@ class IProductPublic(
             required=True,
             readonly=True,
             vocabulary='ValidPersonOrTeam',
-            description=_("Project registrant, a valid Person "
-                          "within Launchpad context.")))
+            description=_("This person registered the project in "
+                          "Launchpad.")))
 
     driver = exported(
         PublicPersonChoice(
@@ -253,7 +254,7 @@ class IProductPublic(
 
     programminglang = exported(
         TextLine(
-            title=_('Programming Language'),
+            title=_('Programming Languages'),
             required=False,
             description=_("""A comma delimited list of programming
                 languages used for this project.""")),
@@ -526,11 +527,11 @@ class IProductSet(Interface):
         raised.
         """
 
-    def getByName(name, default=None, ignore_inactive=False):
+    def getByName(name, ignore_inactive=False):
         """Return the product with the given name, ignoring inactive products
         if ignore_inactive is True.
 
-        Return the default value if there is no such product.
+        Return None if there is no such product.
         """
 
     def getProductsWithBranches(num_products=None):
@@ -714,3 +715,9 @@ class IProductReviewSearch(Interface):
 
     subscription_modified_before = Date(
         title=_("and"), required=False)
+
+
+class NoSuchProduct(NameLookupFailed):
+    """Raised when we try to find a product that doesn't exist."""
+
+    _message_prefix = "No such product"

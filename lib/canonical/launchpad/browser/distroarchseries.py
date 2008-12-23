@@ -4,20 +4,22 @@ __metaclass__ = type
 
 __all__ = [
     'DistroArchSeriesAddView',
-    'DistroArchSeriesBinariesView',
+    'DistroArchSeriesPackageSearchView',
     'DistroArchSeriesContextMenu',
     'DistroArchSeriesNavigation',
     'DistroArchSeriesView',
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, ContextMenu,
-    GetitemNavigation, LaunchpadFormView, Link)
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
-
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.webapp.launchpadform import (
+    action, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import (
+    ContextMenu, enabled_with_permission, Link)
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class DistroArchSeriesNavigation(GetitemNavigation):
@@ -47,41 +49,12 @@ class DistroArchSeriesView(BuildRecordsView):
     """Default DistroArchSeries view class."""
 
 
-class DistroArchSeriesBinariesView:
+class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
+    """Customised PackageSearchView for DistroArchSeries"""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.text = self.request.get("text", None)
-        self.matches = 0
-        self.detailed = True
-        self._results = None
-
-        self.searchrequested = False
-        if self.text:
-            self.searchrequested = True
-
-    def searchresults(self):
-        """Try to find the binary packages in this port that match
-        the given text, then present those as a list. Cache previous results
-        so the search is only done once.
-        """
-        if self._results is None:
-            self._results = self.context.searchBinaryPackages(self.text)
-        self.matches = len(self._results)
-        if self.matches > 5:
-            self.detailed = False
-        return self._results
-
-
-    def binaryPackagesBatchNavigator(self):
-        # XXX: kiko 2006-03-17: This is currently disabled in the template.
-
-        if self.text:
-            binary_packages = self.context.searchBinaryPackages(self.text)
-        else:
-            binary_packages = []
-        return BatchNavigator(binary_packages, self.request)
+    def contextSpecificSearch(self):
+        """See `AbstractPackageSearchView`."""
+        return self.context.searchBinaryPackages(self.text)
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):

@@ -43,7 +43,7 @@ from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError, getFields, getFieldsInOrder
+from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
@@ -205,12 +205,28 @@ class HTTPResource:
         generated ETag, it sets the response code to 412
         ("Precondition Failed").
 
+        If the PUT or PATCH request is being tunneled through POST
+        with X-HTTP-Method-Override, the media type of the incoming
+        representation will be obtained from X-Content-Type-Override
+        instead of Content-Type, should X-C-T-O be provided.
+
         :return: The media type of the incoming representation. If
             this value is None, the incoming ETag didn't match the
             generated ETag and the incoming representation should be
             ignored.
         """
-        media_type = self.request.headers.get('Content-Type', self.JSON_TYPE)
+        media_type = self.request.headers.get('X-Content-Type-Override')
+        if media_type is not None:
+            if self.request.method != 'POST':
+                # X-C-T-O should not be used unless the underlying
+                # method is POST. Set response code 400 ("Bad
+                # Request").
+                self.request.response.setStatus(400)
+                return None
+        else:
+            media_type = self.request.headers.get(
+                'Content-Type', self.JSON_TYPE)
+
         incoming_etags = self._parseETags('If-Match')
         if len(incoming_etags) == 0:
             # This is not a conditional write.
@@ -599,38 +615,52 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
+        self.etags_by_media_type = {}
         self.entry = IEntry(context)
         self._unmarshalled_field_cache = {}
 
-    def getETag(self, media_type):
-        """Calculate an ETag for a representation of this resource.
+    def getETag(self, media_type, unmarshalled_field_values=None):
+        """Calculate the ETag for an entry.
 
-        We implement a simple (though not terribly efficient) ETag
-        algorithm that concatenates the current values of all the
-        fields that aren't read-only, and calculates a SHA1 hash of
-        the resulting string.
+        :arg unmarshalled_field_values: A dict mapping field names to
+        unmarshalled values, obtained during some other operation such
+        as the construction of a representation.
         """
-        etag = super(EntryResource, self).getETag(media_type)
+        # Try to find a cached value.
+        etag = self.etags_by_media_type.get(media_type)
         if etag is not None:
             return etag
 
+        # Try to make the superclass handle it.
+        etag = super(EntryResource, self).getETag(media_type)
+        if etag is not None:
+            self.etags_by_media_type[media_type] = etag
+            return etag
+
+        # Calculate the ETag for a JSON representation only.
         if media_type != self.JSON_TYPE:
             return None
 
+        hash_object = sha.new()
         values = []
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
-                ignored, value = self._unmarshallField(name, field)
+                if (unmarshalled_field_values is not None
+                    and unmarshalled_field_values.get(name)):
+                    value = unmarshalled_field_values[name]
+                else:
+                    ignored, value = self._unmarshallField(name, field)
                 values.append(unicode(value))
-
-        hash_object = sha.new()
         hash_object.update("\0".join(values).encode("utf-8"))
 
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
         hash_object.update("\0" + str(versioninfo.revno))
-        return '"%s"' % hash_object.hexdigest()
+
+        etag = '"%s"' % hash_object.hexdigest()
+        self.etags_by_media_type[media_type] = etag
+        return etag
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -639,11 +669,16 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         the resource interface.
         """
         data = {}
-        data['self_link'] = canonical_url(self.context)
+        data['self_link'] = canonical_url(self.context, self.request)
         data['resource_type_link'] = self.type_url
-        for name, field in getFields(self.entry.schema).items():
+        unmarshalled_field_values = {}
+        for name, field in getFieldsInOrder(self.entry.schema):
             repr_name, repr_value = self._unmarshallField(name, field)
             data[repr_name] = repr_value
+            unmarshalled_field_values[name] =  repr_value
+
+        etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
+        data['http_etag'] = etag
         return data
 
     def processAsJSONHash(self, media_type, representation):
@@ -746,7 +781,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         return "%s#%s" % (
             canonical_url(self.request.publication.getApplication(
-                    self.request)),
+                    self.request), self.request),
             adapter.singular_type)
 
     def isModifiableField(self, field, is_external_client):
@@ -816,7 +851,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         modified_read_only_attribute = ("%s: You tried to modify a "
                                         "read-only attribute.")
         if 'self_link' in changeset:
-            if changeset['self_link'] != canonical_url(self.context):
+            if changeset['self_link'] != canonical_url(self.context,
+                                                       self.request):
                 errors.append(modified_read_only_attribute % 'self_link')
             del changeset['self_link']
 
@@ -825,6 +861,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 errors.append(modified_read_only_attribute %
                               'resource_type_link')
             del changeset['resource_type_link']
+
+        if 'http_etag' in changeset:
+            if changeset['http_etag'] != self.getETag(self.JSON_TYPE):
+                errors.append(modified_read_only_attribute %
+                              'http_etag')
+            del changeset['http_etag']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
@@ -975,7 +1017,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.entry.context, providing=providedBy(self.entry.context))
 
         # Store the entry's current URL so we can see if it changes.
-        original_url = canonical_url(self.context)
+        original_url = canonical_url(self.context, self.request)
         # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.entry, name, value)
@@ -990,7 +1032,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
-        new_url = canonical_url(self.context)
+        new_url = canonical_url(self.context, self.request)
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
@@ -1104,7 +1146,7 @@ class ServiceRootResource(HTTPResource):
         """Handle a GET request."""
         method = self.getRequestMethod(REQUEST)
         if method is None:
-            result = HTTP_METHOD_OVERRIDE_ERROR
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
         elif method == "GET":
             result = self.do_GET()
         else:
@@ -1194,12 +1236,14 @@ class ServiceRootResource(HTTPResource):
         """
         type_url = "%s#%s" % (
             canonical_url(
-                self.request.publication.getApplication(self.request)),
+                self.request.publication.getApplication(self.request),
+                self.request),
             "service-root")
         data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
-            data_for_json[link_name] = canonical_url(publication)
+            data_for_json[link_name] = canonical_url(publication,
+                                                     self.request)
         return data_for_json
 
     def getTopLevelPublications(self):

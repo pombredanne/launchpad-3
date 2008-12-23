@@ -4,8 +4,10 @@ Some helpful explanatory text - guidelines - can be set for
 distributions, product groups and products.
 
     >>> primary_contexts = [
-    ...     ('Ubuntu', 'ubuntu'), ('Mozilla', 'mozilla'),
-    ...     ('Firefox', 'firefox')]
+    ...     ('Ubuntu', 'ubuntu'),
+    ...     ('Mozilla', 'mozilla'),
+    ...     ('Firefox', 'firefox'),
+    ...     ]
 
     >>> for context_name, context_path in primary_contexts:
     ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
@@ -18,13 +20,32 @@ distributions, product groups and products.
     ...     else:
     ...         admin_browser.getControl('Change').click()
 
+They can also be set for distribution source packages, but not via the
+web UI at present.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> alsa_utils_in_ubuntu = ubuntu.getSourcePackage('alsa-utils')
+    >>> alsa_utils_in_ubuntu.bug_reporting_guidelines = (
+    ...     u"The version of ALSA you're using.")
+    >>> logout()
+
+    >>> primary_contexts_no_package = primary_contexts[:]
+    >>> primary_contexts.append(
+    ...     ('alsa-utils in Ubuntu', 'ubuntu/+source/alsa-utils'))
+
 The guidelines are not displayed on the initial basic bug-reporting
 page, because that page does not include a bug description field.
 
     >>> def print_guidelines(name, browser):
-    ...     print '* ' + name
-    ...     print '  - ' + user_browser.url
-    ...     print '  - ' + extract_text(find_tag_by_id(
+    ...     print '*'
+    ...     print name
+    ...     print '  <%s>' % user_browser.url
+    ...     print extract_text(find_tag_by_id(
     ...         user_browser.contents, 'bug-reporting-guidelines'))
 
     >>> for context_name, context_path in primary_contexts:
@@ -44,40 +65,45 @@ include a bug description field.
     ...         'http://launchpad.dev/%s/+filebug-advanced' % (context_path,))
     ...     user_browser.open(filebug_url)
     ...     print_guidelines(context_name, user_browser)
-    * Ubuntu
-      - http://launchpad.dev/ubuntu/+filebug-advanced
-      - Please include, if possible:
+    *
+    Ubuntu
+      <http://launchpad.dev/ubuntu/+filebug-advanced>
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
-    * Mozilla
-      - http://launchpad.dev/mozilla/+filebug-advanced
-      - Please include, if possible:
+    *
+    Mozilla
+      <http://launchpad.dev/mozilla/+filebug-advanced>
+    The Mozilla Project guidelines:
     The version of Mozilla you're using.
-    * Firefox
-      - http://launchpad.dev/firefox/+filebug-advanced
-      - Please include, if possible:
+    *
+    Firefox
+      <http://launchpad.dev/firefox/+filebug-advanced>
+    Mozilla Firefox guidelines:
     The version of Firefox you're using.
+    *
+    alsa-utils in Ubuntu
+      <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug-advanced>
+    alsa-utils (Ubuntu) guidelines:
+    The version of ALSA you're using.
+    Ubuntu guidelines:
+    The version of Ubuntu you're using.
 
-They are also displayed on the basic bug-reporting page, once you've
-got to the step of entering a bug description.
+Note how the alsa-utils in Ubuntu specific guidelines were displayed
+followed by the general Ubuntu guidelines.
+
+The guidelines are also displayed on the basic bug-reporting page,
+once you've got to the step of entering a bug description.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+filebug')
     >>> user_browser.getControl('Summary').value = "It doesn't work"
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Please include, if possible:
+    Mozilla Firefox guidelines:
     The version of Firefox you're using.
 
-Bugs can also be reported directly against distribution source
-packages and distribution series, but for both of these the
-guidelines are taken from their respective distributions.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/evolution/+filebug-advanced')
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Please include, if possible:
-    The version of Ubuntu you're using.
+Bugs can also be reported directly against a distribution series, for
+which the guidelines are taken from the respective distribution.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/warty/+filebug')
@@ -85,18 +111,96 @@ guidelines are taken from their respective distributions.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Please include, if possible:
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
 
 
-== Edit Access ==
+== Other contexts ==
+
+When filing a bug through the bugs front page the guidelines are also
+shown.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/bugs/+filebug')
+    >>> user_browser.getControl('Distribution').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.distribution').value = ['ubuntu']
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.package').value = "alsa-utils"
+    >>> user_browser.getControl('Summary').value = "It doesn't work"
+    >>> user_browser.getControl('Continue').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    alsa-utils (Ubuntu) guidelines:
+    The version of ALSA you're using.
+    Ubuntu guidelines:
+    The version of Ubuntu you're using.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/bugs/+filebug')
+    >>> user_browser.getControl('Project').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = "firefox"
+    >>> user_browser.getControl('Summary').value = "It doesn't work"
+    >>> user_browser.getControl('Continue').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Mozilla Firefox guidelines:
+    The version of Firefox you're using.
+
+
+== Limitations ==
+
+There are some limitations to where we can show guidelines, because
+it's not always possible to know what the current context is. The
+following pages are known to be affected:
+
+    /bugs/+filebug
+    /bugs/+filebug-advanced
+    /<distro>/+filebug
+    /<distro>/+filebug-advanced
+    /<distro>/<distroseries>/+filebug
+    /<distro>/<distroseries>/+filebug-advanced
+    /<project-group>/+filebug
+    /<project-group>/+filebug-advanced
+
+In all cases, the problem is that the user can change the context
+(i.e. distro, package, project) without having to advance a page. This
+may mean that no guidelines are shown or the wrong guidelines are
+shown.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+filebug-advanced')
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Ubuntu guidelines:
+    The version of Ubuntu you're using.
+
+Changing the package to alsa-utils does not make the alsa-utils
+guidelines appear.
+
+    >>> user_browser.getControl(
+    ...     name='packagename_option').value = ['choose']
+    >>> user_browser.getControl(
+    ...     name='field.packagename').value = "alsa-utils"
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Ubuntu guidelines:
+    The version of Ubuntu you're using.
+
+XXX: allenap 2008-11-14 bug=297743: These limitations have been filed
+as bug #297743, "When filing a bug always display the appropriate
+reporting guidelines".
+
+
+== Editing the guidelines ==
 
 Unprivileged Launchpad users do not see the link to the page where the
 bug reporting guidelines can be changed, but admins do.
 
     >>> import sys
 
-    >>> for context_name, context_path in primary_contexts:
+    >>> for context_name, context_path in primary_contexts_no_package:
     ...     overview_url = 'http://launchpad.dev/%s' % (context_path,)
     ...     print '* ' + context_name
     ...     print '  - User:',
@@ -123,9 +227,7 @@ bug reporting guidelines can be changed, but admins do.
 Unprivileged cannot access the page for changing bug reporting
 guidelines.
 
-    >>> import traceback
-
-    >>> for context_name, context_path in primary_contexts:
+    >>> for context_name, context_path in primary_contexts_no_package:
     ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
     ...     print '* ' + context_name
     ...     try:

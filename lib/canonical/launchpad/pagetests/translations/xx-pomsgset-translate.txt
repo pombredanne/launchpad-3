@@ -476,10 +476,8 @@ We replace it with an empty, imported translation:
     >>> translation_message = potmsgset.updateTranslation(
     ...     evolution_pofile, carlos, {0: u''}, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> translation_message.is_imported
-    True
-    >>> translation_message.translations
-    [None]
+    >>> print translation_message
+    None
 
     >>> logout()
 

@@ -14,7 +14,8 @@
       <div>
         <tal:icon replace="structure context/image:icon" />
         <tal:badges replace="structure context/image:badges" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
+        <a tal:attributes="href context/bug/fmt:url">
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
     </metal:heading>

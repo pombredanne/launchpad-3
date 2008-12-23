@@ -49,9 +49,6 @@ class IWikiNameSet(Interface):
         Return None if it doesn't exists.
         """
 
-    def getAllWikisByPerson(person):
-        """Return all WikiNames of the given person."""
-
     def get(id):
         """Return the WikiName with the given id or None."""
 

@@ -38,6 +38,7 @@ from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
@@ -682,6 +683,54 @@ class FileBugViewBase(LaunchpadFormView):
                 return bugtask
         return None
 
+    @property
+    def bugtarget(self):
+        """The bugtarget we're currently assuming.
+
+        The same as the context.
+        """
+        return self.context
+
+    @property
+    def bug_reporting_guidelines(self):
+        """Guidelines for filing bugs in the current context.
+
+        Returns a list of dicts, with each dict containing values for
+        "preamble" and "content".
+        """
+        def target_name(target):
+            # IProject can be considered the target of a bug during
+            # the bug filing process, but does not extend IBugTarget
+            # and ultimately cannot actually be the target of a
+            # bug. Hence this function to determine a suitable
+            # name/title to display. Hurrumph.
+            if IBugTarget.providedBy(target):
+                return target.bugtargetdisplayname
+            else:
+                return target.title
+
+        guidelines = []
+        context = self.bugtarget
+        if context is not None:
+            content = context.bug_reporting_guidelines
+            if content is not None and len(content) > 0:
+                guidelines.append({
+                        "source": target_name(context),
+                        "content": content,
+                        })
+            # Distribution source packages are shown with both their
+            # own reporting guidelines and those of their
+            # distribution.
+            if IDistributionSourcePackage.providedBy(context):
+                distribution = context.distribution
+                content = distribution.bug_reporting_guidelines
+                if content is not None and len(content) > 0:
+                    guidelines.append({
+                            "source": target_name(distribution),
+                            "content": content,
+                            })
+        return guidelines
+
 
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
@@ -918,6 +967,19 @@ class FrontPageFileBugMixin:
         product_or_distro = self.getProductOrDistroFromContext()
         return IProduct.providedBy(product_or_distro)
 
+    @property
+    def bugtarget(self):
+        """The bugtarget we're currently assuming.
+
+        This needs to be obtained from form data because we're on the
+        front page, and not already within a product/distro/etc
+        context.
+        """
+        if self.widgets['bugtarget'].hasValidInput():
+            return self.widgets['bugtarget'].getInputValue()
+        else:
+            return None
+
     def getProductOrDistroFromContext(self):
         """Return the product or distribution relative to the context.
 
@@ -925,13 +987,10 @@ class FrontPageFileBugMixin:
         distribution related to it. This method will return None if the
         context is not related to a product or a distro.
         """
-        context = self.context
-
         # We need to find a product or distribution from what we've had
         # submitted to us.
-        if self.widgets['bugtarget'].hasValidInput():
-            context = self.widgets['bugtarget'].getInputValue()
-        else:
+        context = self.bugtarget
+        if context is None:
             return None
 
         if IProduct.providedBy(context) or IDistribution.providedBy(context):

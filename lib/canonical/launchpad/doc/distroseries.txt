@@ -161,18 +161,22 @@ the upload will have to wait for manual approval anyway:
 You can search through binary packages publishing in a distribution
 release by using the searchPackages method, which uses magical fti:
 
-    >>> len(warty.searchPackages("pmount"))
+    >>> warty.searchPackages("pmount").count()
     1
 
 This also works for small or weirdly named packages that don't work
 through fti, and even for substrings:
 
-    >>> len(warty.searchPackages("linux-2.6.12"))
+    >>> warty.searchPackages("linux-2.6.12").count()
     1
-    >>> len(warty.searchPackages("at"))
+    >>> warty.searchPackages("at").count()
     1
-    >>> len(warty.searchPackages("inux-2"))
-    1
+    >>> pkgs = warty.searchPackages('a')
+    >>> for dsbp in pkgs:
+    ...     print "%s: %s" % (dsbp.__class__.__name__, dsbp.name)
+    DistroSeriesBinaryPackage: foobar
+    DistroSeriesBinaryPackage: mozilla-firefox
+    DistroSeriesBinaryPackage: at
 
 
 == DistroSeriess have components and sections ==
@@ -997,6 +1001,8 @@ sets the defer_translation_imports flag itself before copying.
     >>> print error_output
     INFO    creating lockfile
     INFO    Starting...
+    INFO    Populating blank distroseries ... with translations from 3.
+    ...
     INFO    Done...
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
@@ -1012,10 +1018,10 @@ flag to its previous value (off).
     True
 
 
-    >>> # Set the flag again to facilitate further testing.
+    # Set the flag again to facilitate further testing.
     >>> testing_series.defer_translation_imports = True
 
-Once the script finished, new distro series does have templates.
+Once the script has finished, the new distro series does have templates.
 
     >>> len(testing_series.getCurrentTranslationTemplates()) > 0
     True

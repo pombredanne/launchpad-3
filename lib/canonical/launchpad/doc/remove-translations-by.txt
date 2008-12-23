@@ -7,7 +7,6 @@ bad faith, or all messages in a specific POFile, and so on.
 
     >>> script = "scripts/rosetta/remove-translations-by.py"
     >>> login('foo.bar@canonical.com')
-    >>> factory = LaunchpadObjectFactory()
 
 In this example, we have a template with Dutch and German translations.
 
