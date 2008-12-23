@@ -117,6 +117,11 @@ class UserLoggedIn(AvatarEvent):
     template = '[%(session_id)s] %(username)s logged in.'
 
 
+class UserLoggedOut(AvatarEvent):
+
+    template = '[%(session_id)s] %(username)s disconnected.'
+
+
 class SFTPStarted(AvatarEvent):
 
     template = '[%(session_id)s] %(username)s started SFTP session.'

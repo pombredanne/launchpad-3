@@ -55,6 +55,9 @@ class LaunchpadAvatar(avatar.ConchUser):
         # ...and set the only subsystem to be SFTP.
         self.subsystemLookup = {'sftp': sftp.FileTransferServer}
 
+    def logout(self):
+        accesslog.log_event(accesslog.UserLoggedOut(self))
+
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
 
@@ -82,7 +85,7 @@ class Realm:
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
             avatar = self.avatarFactory(userDict, self.branchfs_proxy)
-            return interfaces[0], avatar, lambda: None
+            return interfaces[0], avatar, avatar.logout
         return deferred.addCallback(gotUserDict)
 
 

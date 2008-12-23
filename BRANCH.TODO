@@ -5,7 +5,6 @@
 
 * Test each event
   * Log user connect
-  * Log user disconnect
   * Log user auth fail
 
 * If oops reporting is enabled, then lots of Twisted crap goes to the access
