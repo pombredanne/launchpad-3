@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BazaarSSHClosed',
     'BazaarSSHStarted',
     'get_codehosting_logger',
     'log_event',
@@ -115,6 +116,11 @@ class SFTPClosed(AvatarEvent):
 class BazaarSSHStarted(AvatarEvent):
 
     template = '[%(session_id)s] %(username)s started bzr+ssh session.'
+
+
+class BazaarSSHClosed(AvatarEvent):
+
+    template = '[%(session_id)s] %(username)s closed bzr+ssh session.'
 
 
 def log_event(event):

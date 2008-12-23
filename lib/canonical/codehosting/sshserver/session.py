@@ -94,6 +94,7 @@ class ExecOnlySession:
     def closed(self):
         """See ISession."""
         if self._transport is not None:
+            accesslog.log_event(accesslog.BazaarSSHClosed(self.avatar))
             try:
                 self._transport.signalProcess('HUP')
             except (OSError, ProcessExitedAlready):
@@ -126,6 +127,9 @@ class ExecOnlySession:
             log.err(
                 "ERROR: %r already running a command on transport %r"
                 % (self, self._transport))
+        # XXX: JonathanLange 2008-12-23: This is something of an abstraction
+        # violation. Apart from this line, this class knows nothing about
+        # Bazaar.
         accesslog.log_event(accesslog.BazaarSSHStarted(self.avatar))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
