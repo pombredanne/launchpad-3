@@ -2,22 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-* Add source package tests for getByLPPath / fix it so that it works.
-* Get rid of the direct SQL involved in all of this.
-* Clear up some of the LPPath stuff so it's less Fault-y and more Python-y
-
-* Fix the Branch edit form
-* Fix the Branch registration forms
-* Fix up getRewriteMap (maybe just do this properly!)
-* Traversal! browser/person.py
-* Fix up the auto branch URL creation (in vocab) to auto-register source
-  package branches
-* Fix up BranchExists error text to be more sensitive to source packages.
-
-* Use SourcePackage object, rather than distroseries, sourcepackagename in as
-  many places as possible.
-* Make the Container stuff more sensible (vague!)
-
-* OFFICIAL SOURCE PACKAGE BRANCHES
-* +DEV ALIAS
