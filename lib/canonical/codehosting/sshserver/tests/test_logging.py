@@ -12,7 +12,8 @@ import sys
 
 from bzrlib.tests import TestCase as BzrTestCase
 
-from canonical.codehosting.sshserver.service import set_up_logging
+from canonical.codehosting.sshserver.service import (
+    get_codehosting_logger, set_up_logging)
 from canonical.testing import reset_logging
 
 
@@ -38,22 +39,26 @@ class TestLoggingSetup(BzrTestCase):
         # make it easier to test this particular logging system.
         reset_logging()
 
-    def test_returnsCodehostingLogger(self):
-        # set_up_logging returns the 'codehosting' logger.
-        self.assertIs(set_up_logging(), logging.getLogger('codehosting'))
+    def test_returns_codehosting_logger(self):
+        # get_codehosting_logger returns the 'codehosting' logger.
+        self.assertIs(
+            logging.getLogger('codehosting'), get_codehosting_logger())
 
-    def test_codehostingLogDoesntGoToStderr(self):
+    def test_set_up_returns_codehosting_logger(self):
+        # set_up_logging returns the codehosting logger.
+        self.assertIs(get_codehosting_logger(), set_up_logging())
+
+    def test_codehosting_log_doesnt_go_to_stderr(self):
         # Once set_up_logging is called, any messages logged to the
         # codehosting logger should *not* be logged to stderr. If they are,
         # they will appear on the user's terminal.
-
         set_up_logging()
 
         # Make sure that a logged message does not go to stderr.
-        logging.getLogger('codehosting').info('Hello hello')
+        get_codehosting_logger().info('Hello hello')
         self.assertEqual(sys.stderr.getvalue(), '')
 
-    def test_leavesBzrHandlersUnchanged(self):
+    def test_leaves_bzr_handlers_unchanged(self):
         # Bazaar's log handling is untouched by set_up_logging.
         root_handlers = logging.getLogger('').handlers
         bzr_handlers = logging.getLogger('bzr').handlers

@@ -6,6 +6,7 @@ branches. For more information, see lib/canonical/codehosting/README.
 
 __metaclass__ = type
 __all__ = [
+    'get_codehosting_logger',
     'SSHService',
     ]
 
@@ -98,6 +99,14 @@ class SSHService(service.Service):
         return self.service.stopService()
 
 
+def get_codehosting_logger():
+    """Return the codehosting logger."""
+    # This is its own function to avoid spreading the string 'codehosting'
+    # everywhere and to avoid duplicating information about how log objects
+    # are acquired.
+    return logging.getLogger('codehosting')
+
+
 def set_up_logging(configure_oops_reporting=False):
     """Set up logging for the smart server.
 
@@ -112,7 +121,7 @@ def set_up_logging(configure_oops_reporting=False):
     # all the time? Part of the answer is that when I set it to True, the
     # test_logging tests don't restore stderr properly, resulting in broken
     # testrunner output.
-    log = logging.getLogger('codehosting')
+    log = get_codehosting_logger()
     log.setLevel(logging.CRITICAL)
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
