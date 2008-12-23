@@ -15,10 +15,11 @@ from bzrlib.tests import TestCase as BzrTestCase
 from canonical.codehosting.sshserver.service import (
     get_codehosting_logger, set_up_logging)
 from canonical.config import config
+from canonical.launchpad.testing import TestCase
 from canonical.testing import reset_logging
 
 
-class TestLoggingSetup(BzrTestCase):
+class TestLoggingBazaarInteraction(BzrTestCase):
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -32,22 +33,24 @@ class TestLoggingSetup(BzrTestCase):
         # default logging).
         self._finishLogFile()
 
-    def tearDown(self):
-        sys.stderr = self._real_stderr
-        BzrTestCase.tearDown(self)
         # We don't use BaseLayer because we want to keep the amount of
         # pre-configured logging systems to an absolute minimum, in order to
         # make it easier to test this particular logging system.
-        reset_logging()
+        self.addCleanup(reset_logging)
 
-    def test_returns_codehosting_logger(self):
-        # get_codehosting_logger returns the 'codehosting' logger.
-        self.assertIs(
-            logging.getLogger('codehosting'), get_codehosting_logger())
+    def tearDown(self):
+        sys.stderr = self._real_stderr
+        BzrTestCase.tearDown(self)
 
-    def test_set_up_returns_codehosting_logger(self):
-        # set_up_logging returns the codehosting logger.
-        self.assertIs(get_codehosting_logger(), set_up_logging())
+    def test_leaves_bzr_handlers_unchanged(self):
+        # Bazaar's log handling is untouched by set_up_logging.
+        root_handlers = logging.getLogger('').handlers
+        bzr_handlers = logging.getLogger('bzr').handlers
+
+        set_up_logging()
+
+        self.assertEqual(root_handlers, logging.getLogger('').handlers)
+        self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
 
     def test_codehosting_log_doesnt_go_to_stderr(self):
         # Once set_up_logging is called, any messages logged to the
@@ -59,15 +62,24 @@ class TestLoggingSetup(BzrTestCase):
         get_codehosting_logger().info('Hello hello')
         self.assertEqual(sys.stderr.getvalue(), '')
 
-    def test_leaves_bzr_handlers_unchanged(self):
-        # Bazaar's log handling is untouched by set_up_logging.
-        root_handlers = logging.getLogger('').handlers
-        bzr_handlers = logging.getLogger('bzr').handlers
 
-        set_up_logging()
+class TestLoggingSetup(TestCase):
 
-        self.assertEqual(root_handlers, logging.getLogger('').handlers)
-        self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
+    def setUp(self):
+        TestCase.setUp(self)
+        # We don't use BaseLayer because we want to keep the amount of
+        # pre-configured logging systems to an absolute minimum, in order to
+        # make it easier to test this particular logging system.
+        self.addCleanup(reset_logging)
+
+    def test_returns_codehosting_logger(self):
+        # get_codehosting_logger returns the 'codehosting' logger.
+        self.assertIs(
+            logging.getLogger('codehosting'), get_codehosting_logger())
+
+    def test_set_up_returns_codehosting_logger(self):
+        # set_up_logging returns the codehosting logger.
+        self.assertIs(get_codehosting_logger(), set_up_logging())
 
     def test_handlers(self):
         # set_up_logging installs a rotating log handler that logs output to
