@@ -23,6 +23,7 @@ from twisted.python import log
 
 from canonical.config import config
 from canonical.codehosting import get_bzr_path
+from canonical.codehosting.sshserver import accesslog
 
 
 class SubsystemOnlySession(session.SSHSession, object):
@@ -209,6 +210,7 @@ def launch_smart_server(avatar):
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
     environment['BZR_EMAIL'] = '%s@%s' % (avatar.username, hostname)
+    accesslog.log_event(accesslog.BazaarSSHStarted(avatar))
     return RestrictedExecOnlySession(
         avatar,
         reactor,

@@ -4,9 +4,12 @@
 
 __metaclass__ = type
 __all__ = [
+    'BazaarSSHStarted',
     'get_codehosting_logger',
     'log_event',
     'LoggingEvent',
+    'SFTPStarted',
+    'UserLoggedIn',
     ]
 
 import logging
@@ -96,6 +99,17 @@ class SFTPStarted(LoggingEvent):
 
     level = logging.INFO
     template = '[%(session_id)s] %(username)s started SFTP session.'
+
+    def __init__(self, avatar):
+        self.avatar = avatar
+        LoggingEvent.__init__(
+            self, session_id=id(avatar), username=avatar.username)
+
+
+class BazaarSSHStarted(LoggingEvent):
+
+    level = logging.INFO
+    template = '[%(session_id)s] %(username)s started bzr+ssh session.'
 
     def __init__(self, avatar):
         self.avatar = avatar

@@ -5,10 +5,7 @@
 
 * Test each event
   * Log user connect
-  * Log user auth success
-  * Log sftp session started
   * Log sftp session finished
-  * Log bzr+ssh session started
   * Log bzr+ssh finished
   * Log user disconnect
   * Log user auth fail
