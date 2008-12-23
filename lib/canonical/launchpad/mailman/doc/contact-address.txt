@@ -163,7 +163,7 @@ server.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
 
-Mailman then delivers two messages's to the team mailing list's recipients.
+Mailman then delivers two messages to the team mailing list's recipients.
 One is sent to Anne and the other is sent to the archiver.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')

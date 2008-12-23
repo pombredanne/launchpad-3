@@ -40,14 +40,13 @@ Similarly, an address that has been registered with Launchpad but not verified
 will also be summarily discarded.  Anne registers with Launchpad but does not
 validate her alternative address.
 
-    >>> import transaction
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
-    ...     get_alternative_email, new_person)
+    ...     get_alternative_email)
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
 
     >>> login('foo.bar@canonical.com')
-    >>> anne = new_person('Anne')
+    >>> anne = factory.makePersonByName('Anne')
     >>> alternative_email = get_alternative_email(anne)
 
     # Simulate Anne not having validated her alternative address.
@@ -92,7 +91,7 @@ administrator.
     ...
     ... Hi, I am not a member of this team's list (yet).
     ... """)
-    >>> vette_watcher.wait_for_hold('caribou')
+    >>> vette_watcher.wait_for_hold('itest-one', 'caribou')
 
 The team administrator will receive a notification of the held message.
 
@@ -205,7 +204,7 @@ discards it.  No rejection notice is sent to Anne.
     ... Hi, do you want to buy something?
     ... """)
 
-    >>> vette_watcher.wait_for_hold('donkey')
+    >>> vette_watcher.wait_for_hold('itest-one', 'donkey')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -252,7 +251,7 @@ This time, her message is on topic and is accepted.
     ... Hi, I am still not yet a member of this team's list.
     ... """)
 
-    >>> vette_watcher.wait_for_hold('elephant')
+    >>> vette_watcher.wait_for_hold('itest-one', 'elephant')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -346,25 +345,29 @@ the mailing list, she will not get a copy of the message.
     ...     approval.destroySelf()
     >>> transaction.commit()
 
+    >>> helpers.ensure_nonmembership('itest-one', anne)
+
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> transaction.commit()
+
+    >>> helpers.ensure_membership('itest-one', anne)
     >>> helpers.ensure_addresses_are_disabled(
-    ... 'itest-one', 'anne.person@example.com')
+    ...     'itest-one', 'anne.person@example.com')
     >>> logout()
 
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A member post
-    ... Message-ID: <otter>
+    ... Message-ID: <emu>
     ...
     ... Hi, I have just joined this team.
     ... """)
-    >>> smtpd_watcher.wait_for_mbox_delivery('otter')
+    >>> smtpd_watcher.wait_for_mbox_delivery('emu')
 
 Only the archiver gets the message delivery.
 
@@ -374,7 +377,7 @@ Only the archiver gets the message delivery.
     >>> print messages[0].as_string()
     From: anne.person@example.com
     To: itest-one@lists.launchpad.dev
-    Message-ID: <otter>
+    Message-ID: <emu>
     Subject: [Itest-one] A member post
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
@@ -393,7 +396,7 @@ In addition, the in-house MHonArc archiver has archived this message.
 
     >>> mhonarc_watcher.wait_for_message_number(2)
     >>> helpers.collect_archive_message_ids('itest-one')
-    ['elephant', 'otter']
+    ['elephant', 'emu']
 
 
 == Verified and registered member postings ==
@@ -473,7 +476,7 @@ In addition, the in-house MHonArc archiver has archived this message.
 
     >>> mhonarc_watcher.wait_for_message_number(3)
     >>> helpers.collect_archive_message_ids('itest-one')
-    ['elephant', 'falcon', 'otter']
+    ['elephant', 'emu', 'falcon']
 
 Anne cannot post from her alternative email address because it has not been
 validated yet.
@@ -579,7 +582,7 @@ Because she is not a team member, her message is held for moderation.
     ...
     ... Hi, I am not a team member.
     ... """)
-    >>> vette_watcher.wait_for_hold('horse')
+    >>> vette_watcher.wait_for_hold('itest-one', 'horse')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -647,7 +650,7 @@ Normally, Launchpad members who are not subscribed to the mailing list will
 have their posts held for moderation.
 
     >>> login('foo.bar@canonical.com')
-    >>> bart = new_person('Bart')
+    >>> bart = factory.makePersonByName('Bart')
     >>> transaction.commit()
     >>> bart.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
@@ -669,7 +672,7 @@ have their posts held for moderation.
     ...
     ... Hi, I am not a member of the mailing list.
     ... """)
-    >>> vette_watcher.wait_for_hold('jackal')
+    >>> vette_watcher.wait_for_hold('itest-one', 'jackal')
     >>> print_message_summaries()
     Number of messages: 1
     bounces@canonical.com
@@ -749,7 +752,7 @@ But a person in poor standing will have their messages held for approval.
     ...
     ... Hi, I am not a member of the mailing list.
     ... """)
-    >>> vette_watcher.wait_for_hold('mongoose')
+    >>> vette_watcher.wait_for_hold('itest-one', 'mongoose')
     >>> print_message_summaries()
     Number of messages: 1
     bounces@canonical.com
