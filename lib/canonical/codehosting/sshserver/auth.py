@@ -3,12 +3,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'LaunchpadAvatar',
     'get_portal',
-    'PublicKeyFromLaunchpadChecker',
-    'Realm',
     'SSHUserAuthServer',
-    'UserDisplayedUnauthorizedLogin',
     ]
 
 import binascii
