@@ -50,7 +50,7 @@
     important things before you proceed with the actual registration.
     </p>
 
-    <ul style="font-size: larger">
+    <ol style="font-size: larger">
       <li tal:condition="not: is_demo" id="staging-message">
       <strong>Want to test drive Launchpad?</strong>
       If you've never used Launchpad before, start off at <a
@@ -85,10 +85,10 @@
         </div>
       </li>
 
-      <li style="margin-top: 1em; list-style-type: circle">All set?
+      <li style="margin-top: 1em;">All set?
       Move on to <a href="/projects/+new"><strong>the registration form</strong></a>.
       Thanks for listening!</li>
-    </ul>
+    </ol>
 
   </div>
 
