@@ -84,37 +84,30 @@ class LoggingEvent:
         logger.log(self.level, self.template % self._data)
 
 
-class UserLoggedIn(LoggingEvent):
+class AvatarEvent(LoggingEvent):
+    """Base avatar event."""
 
     level = logging.INFO
+
+    def __init__(self, avatar):
+        self.avatar = avatar
+        LoggingEvent.__init__(
+            self, session_id=id(avatar), username=avatar.username)
+
+
+class UserLoggedIn(AvatarEvent):
+
     template = '[%(session_id)s] %(username)s logged in.'
 
-    def __init__(self, avatar):
-        self.avatar = avatar
-        LoggingEvent.__init__(
-            self, session_id=id(avatar), username=avatar.username)
 
+class SFTPStarted(AvatarEvent):
 
-class SFTPStarted(LoggingEvent):
-
-    level = logging.INFO
     template = '[%(session_id)s] %(username)s started SFTP session.'
 
-    def __init__(self, avatar):
-        self.avatar = avatar
-        LoggingEvent.__init__(
-            self, session_id=id(avatar), username=avatar.username)
 
+class BazaarSSHStarted(AvatarEvent):
 
-class BazaarSSHStarted(LoggingEvent):
-
-    level = logging.INFO
     template = '[%(session_id)s] %(username)s started bzr+ssh session.'
-
-    def __init__(self, avatar):
-        self.avatar = avatar
-        LoggingEvent.__init__(
-            self, session_id=id(avatar), username=avatar.username)
 
 
 def log_event(event):
