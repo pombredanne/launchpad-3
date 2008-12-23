@@ -525,3 +525,27 @@ as_valid_email_address are True.
 The daily quota is set to 3 emails per day. See the "Message quota"
 in `doc/user-to-user.txt` to see how these two attributes are used.
 
+
+== Invalid users and anonymous contacters ==
+
+Invalid users, users without a preferred email address or are not ACTIVE,
+cannot be contacted.
+
+    >>> former_user = person_set.getByEmail('former-user@canonical.com')
+    >>> view = create_initialized_view(former_user, '+contactuser')
+    >>> view.request.response.getStatus()
+    302
+    >>> print view.request.response.getHeader('Location')
+    http://launchpad.dev/~former-user-deactivatedaccount
+
+Anonymous users cannot contact anyone, they are redirect to the person
+or team's profile page. This can happen when off-site links point to a
+person or team's contact page.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> view.request.response.getStatus()
+    302
+    >>> print view.request.response.getHeader('Location')
+    http://launchpad.dev/~landscape-developers
+

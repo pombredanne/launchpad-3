@@ -2487,12 +2487,12 @@ class PersonView(LaunchpadView, FeedsMixin):
     def can_contact(self):
         """Can the user contact this context (this person or team)?
 
-        Users can contact other valid users, and team that they are
-        members of.
+        Users can contact other valid users and teams. Anonymous users
+        cannot contact persons and teams, nor can anyone contact a non-valid
+        person (not active with a preferred email address).
         """
         return (
-            self.context.is_valid_person or
-            self.user is not None and self.user.inTeam(self.context))
+            self.user is not None and self.context.is_valid_person_or_team)
 
     @property
     def contact_link_title(self):
@@ -5070,6 +5070,13 @@ class EmailToPersonView(LaunchpadFormView):
     schema = IEmailToPerson
     field_names = ['subject', 'message']
     custom_widget('subject', TextWidget, displayWidth=60)
+
+    def initialize(self):
+        """See `ILaunchpadFormView`."""
+        # Send the user to the profile page if contact is not possible.
+        if self.user is None or not self.context.is_valid_person_or_team:
+            return self.request.response.redirect(canonical_url(self.context))
+        LaunchpadFormView.initialize(self)
 
     def setUpFields(self):
         """Set up fields for this view.
