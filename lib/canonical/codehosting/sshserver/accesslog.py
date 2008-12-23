@@ -92,6 +92,17 @@ class UserLoggedIn(LoggingEvent):
             self, session_id=id(avatar), username=avatar.username)
 
 
+class SFTPStarted(LoggingEvent):
+
+    level = logging.INFO
+    template = '[%(session_id)s] %(username)s started SFTP session.'
+
+    def __init__(self, avatar):
+        self.avatar = avatar
+        LoggingEvent.__init__(
+            self, session_id=id(avatar), username=avatar.username)
+
+
 def log_event(event):
     """Log 'event' to the codehosting logger.
 

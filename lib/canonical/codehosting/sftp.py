@@ -31,6 +31,7 @@ from zope.interface import implements
 
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, LaunchpadServer)
+from canonical.codehosting.sshserver import accesslog
 from canonical.config import config
 from canonical.twistedsupport import gatherResults
 
@@ -245,6 +246,7 @@ def avatar_to_sftp_server(avatar):
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.setUp()
     transport = AsyncLaunchpadTransport(server, server.get_url())
+    accesslog.log_event(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
 
 
