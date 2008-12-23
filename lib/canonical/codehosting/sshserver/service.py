@@ -7,6 +7,7 @@ branches. For more information, see lib/canonical/codehosting/README.
 __metaclass__ = type
 __all__ = [
     'get_codehosting_logger',
+    'LoggingEvent',
     'SSHService',
     ]
 
@@ -131,3 +132,35 @@ def set_up_logging(configure_oops_reporting=False):
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
     return log
+
+
+class LoggingEvent:
+    """An event that can log itself to a logger.
+
+    :ivar level: The level to log itself as. This should be defined as a
+        class variable in subclasses.
+    :ivar template: The format string of the message to log. This should be
+        defined as a class variable in subclasses.
+    """
+
+    def __init__(self, level=None, template=None, **data):
+        """Construct a logging event.
+
+        :param level: The level to log the event as. If specified, overrides
+            the 'level' class variable.
+        :param template: The format string of the message to log. If
+            specified, overrides the 'template' class variable.
+        :param **data: Information to be logged. Entries will be substituted
+            into the template and stored as attributes.
+        """
+        if level is not None:
+            self.level = level
+        if template is not None:
+            self.template = template
+        self._data = data
+        for name, value in data.iteritems():
+            setattr(self, name, value)
+
+    def log(self, logger):
+        """Log the event to 'logger'."""
+        logger.log(self.level, self.template % self._data)
