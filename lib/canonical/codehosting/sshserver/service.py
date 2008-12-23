@@ -105,9 +105,13 @@ def set_up_logging(configure_oops_reporting=False):
     that things logged there won't go to stderr (necessary because of
     bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
 
-    In addition, install a Twisted log observer that ensures unhandled
-    exceptions get reported as OOPSes.
+    In addition, if configure_oops_reporting is True, install a Twisted log
+    observer that ensures unhandled exceptions get reported as OOPSes.
     """
+    # XXX: JonathanLange 2008-12-23: Why isn't configure_oops_reporting True
+    # all the time? Part of the answer is that when I set it to True, the
+    # test_logging tests don't restore stderr properly, resulting in broken
+    # testrunner output.
     log = logging.getLogger('codehosting')
     log.setLevel(logging.CRITICAL)
     if configure_oops_reporting:
