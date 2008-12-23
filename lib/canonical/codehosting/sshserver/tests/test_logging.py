@@ -87,8 +87,11 @@ class TestLoggingSetup(TestCase):
         # config.codehosting.access_log.
         set_up_logging()
         [handler] = get_codehosting_logger().handlers
+        # XXX: JonathanLange 2008-12-23: Is TimedRotatingFileHandler really
+        # what would be best for IS?
         self.assertIsInstance(handler, TimedRotatingFileHandler)
         self.assertEqual(config.codehosting.access_log, handler.baseFilename)
+        self.assertEqual("MIDNIGHT", handler.when)
 
 
 def test_suite():

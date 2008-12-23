@@ -3,9 +3,6 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* Use rotating log handler
-* Test with a very Pythonic handler that appends to a list or something
-* Bind SIGHUP to rotate logs
 * Test each event
   * Log user connect
   * Log user auth success
@@ -15,3 +12,5 @@
   * Log bzr+ssh finished
   * Log user disconnect
   * Log user auth fail
+* Test with a very Pythonic handler that appends to a list or something
+* Bind SIGHUP to rotate logs

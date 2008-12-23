@@ -124,7 +124,10 @@ def set_up_logging(configure_oops_reporting=False):
     # testrunner output.
     log = get_codehosting_logger()
     log.setLevel(logging.CRITICAL)
-    log.addHandler(TimedRotatingFileHandler(config.codehosting.access_log))
+    log.addHandler(
+        TimedRotatingFileHandler(
+            config.codehosting.access_log,
+            when='midnight'))
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
     return log
