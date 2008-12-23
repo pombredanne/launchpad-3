@@ -369,9 +369,12 @@ to explain exactly who is being contacted.
     Contact Sample Person
     >>> print view.specific_contact_title_text
     Contact this user
+    >>> print view.recipients.to_header_name
+    ('the "Contact this user" link on your profile page',
+     'ContactViaWeb user')
     >>> print view.recipients.description
     You are contacting Sample Person (name12).
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'test@canonical.com']
 
 
@@ -396,7 +399,7 @@ The EmailToPersonView provides the explanation about who is being contacted.
     Contact yourself
     >>> print view.recipients.description
     You are contacting No Privileges Person (no-priv).
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'no-priv@canonical.com']
 
 
@@ -418,10 +421,13 @@ team owner.
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
     Contact this team
+    >>> print view.recipients.to_header_name
+    (u'the "Contact this team" owner link on the Landscape Developers team page',
+     u'ContactViaWeb owner (landscape-developers team)')
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team
     owner, Sample Person (name12).
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'test@canonical.com']
 
 
@@ -429,7 +435,7 @@ team owner.
 
 Members can contact their team. How they are contacted depends upon
 whether the team's contact address is set. Sample Person can contact
-his team Landscape developers even though they do not have a contact
+his team, Landscape developers, even though they do not have a contact
 address.
 
     >>> login('test@canonical.com')
@@ -444,6 +450,9 @@ The EmailToPersonView can be used by members to contact their team.
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
     Contact your team
+    >>> print view.recipients.to_header_name
+    (u'the "Contact this team" link to 2 members on the Landscape Developers team page.',
+     u'ContactViaWeb member (landscape-developers team 2 members)')
     >>> print view.recipients.description
     You are contacting 2 members of the Landscape Developers
     (landscape-developers) team directly.
@@ -485,7 +494,7 @@ EmailToPersonView will use the contact address when the team has one.
     Contact your team
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team.
-    >>> view.recipients.email
+    >>> list(view.recipients.email)
     [u'landscapers@canonical.com']
 
 
@@ -500,21 +509,6 @@ has_valid_email_address are both True.
     True
     >>> view.contact_is_possible
     True
-
-But when the user being contact does not have a valid address, the value
-is False. The contact_is_possible property will also be False when
-valid_email_address False. Users cannot hack the URL of non-active users
-to attempt to send them emails.
-
-    >>> nonactive_user = person_set.getByName('nsv')
-    >>> nonactive_user.account.status
-    <DBItem AccountStatus.NOACCOUNT, ...>
-
-    >>> view = create_initialized_view(nonactive_user, '+contactuser')
-    >>> view.has_valid_email_address
-    False
-    >>> view.contact_is_possible
-    False
 
 The EmailToPersonView provides two properties that check that the user
 is_allowed to send emails because he has not exceeded the daily quota. The

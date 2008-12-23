@@ -5052,7 +5052,9 @@ class Recipients:
     """Who is being contacted."""
     def __init__(self):
         self.description = None
-        self.email = []
+        self.to_header_name = None
+        # The email attribute will be an iterator.
+        self.email = None
 
     def appendEmail(self, email_address):
         """Add the email from the EmailAddress to the list of emails.
@@ -5061,7 +5063,22 @@ class Recipients:
             by a SecurityProxy.
         :type email_address: EmailAddress.
         """
+        if self.email is None:
+            self.email = []
         self.email.append(removeSecurityProxy(email_address).email)
+
+
+class MemberWrapper:
+    def __init__(self, team):
+        self.team = team
+
+    def __len__(self):
+        return self.team.getMembersWithPreferredEmailsCount()
+
+    def __iter__(self):
+        for person in self.team.getMembersWithPreferredEmails():
+            naked_email = removeSecurityProxy(person.preferredemail)
+            yield naked_email.email
 
 
 class EmailToPersonView(LaunchpadFormView):
@@ -5117,32 +5134,40 @@ class EmailToPersonView(LaunchpadFormView):
             recipients.description = (
                 'You are contacting %s (%s).' %
                 (self.context.displayname, self.context.name))
+            recipients.to_header_name = (
+                'the "Contact this user" link on your profile page',
+                'ContactViaWeb user')
         elif self.context.is_team:
             if self.user.inTeam(self.context):
                 if self.context.preferredemail is None:
                     # Contact each member.
-                    # XXX sinzui 2008-12-11:
-                    # Replace this loop with a query to get the addresses.
-                    for person in self.context.allmembers:
-                        if (not person.is_team
-                            and person.preferredemail is not None):
-                            # This is either a team or a person without a
-                            # preferred email, so don't send a notification.
-                            recipients.appendEmail(person.preferredemail)
-                    if len(recipients.email) == 1:
+                    # This actually instantiates a generator, so the function
+                    # won't be executed until it is iterated over.
+                    recipients.email = MemberWrapper(self.context)
+                    recipients_count = len(recipients.email)
+                    if recipients_count == 1:
                         plural_suffix = ''
                     else:
                         plural_suffix = 's'
+                    text = '%d member%s' % (recipients_count, plural_suffix)
                     recipients.description = (
-                        'You are contacting %d member%s of the %s (%s) '
+                        'You are contacting %s of the %s (%s) '
                         'team directly.' %
-                        (len(recipients.email), plural_suffix,
-                         self.context.displayname, self.context.name))
+                        (text, self.context.displayname, self.context.name))
+                    recipients.to_header_name = (
+                        'the "Contact this team" link to %s on the %s '
+                        'team page' % (text, self.context.displayname),
+                        'ContactViaWeb member (%s team %s)' %
+                        (self.context.name, text))
                 else:
                     recipients.appendEmail(self.context.preferredemail)
                     recipients.description = (
                         'You are contacting the %s (%s) team.' %
                         (self.context.displayname, self.context.name))
+                    recipients.to_header_name = (
+                        'the "Contact this team" link on the '
+                        '%s team page' %  self.context.displayname,
+                        'ContactViaWeb member (%s team)' % self.context.name)
             else:
                 # A non-member can only send emails to a single person to
                 # hinder spam and to prevent leaking membership
@@ -5155,6 +5180,10 @@ class EmailToPersonView(LaunchpadFormView):
                     'You are contacting the %s (%s) team owner, %s (%s).' %
                     (self.context.displayname, self.context.name,
                      owner.displayname, owner.name))
+                recipients.to_header_name = (
+                    'the "Contact this team" owner link on the '
+                    '%s team page' %  self.context.displayname,
+                    'ContactViaWeb owner (%s team)' % self.context.name)
         else:
             # Let the next guard handle the no recipients condition.
             pass
@@ -5166,6 +5195,10 @@ class EmailToPersonView(LaunchpadFormView):
             recipients.description = (
                 '%s (%s) does not have an email address.' %
                 (self.context.displayname, self.context.name))
+
+        assert recipients.description is not None
+        assert recipients.to_header_name is not None
+        assert recipients.email is not None
         return recipients
 
     @action(_('Send'), name='send')
@@ -5183,7 +5216,8 @@ class EmailToPersonView(LaunchpadFormView):
             return
         try:
             send_direct_contact_email(
-                sender_email, self.recipients.email, subject, message)
+                sender_email, self.recipients.email,
+                self.recipients.to_header_name, subject, message)
         except QuotaReachedError, error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(

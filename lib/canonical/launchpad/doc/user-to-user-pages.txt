@@ -291,8 +291,10 @@ Non-members cannot are may only contact the team owner.
     Bodies:
     Can one of you help me?
     --
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    This message was sent from Launchpad by
+    Bart (http://launchpad.dev/~bart)
+    using the "Contact this team" owner link on the GuadaMen team page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Message-IDs: 1
     Recipients:
@@ -328,10 +330,12 @@ subject and body from the same sender.
     Bodies:
     Can one of you help me?
     --
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    This message was sent from Launchpad by
+    Foo Bar (http://launchpad.dev/~name16)
+    using the "Contact this team" link to 10 members on the GuadaMen team page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
-    # of Message-IDs: 9
+    # of Message-IDs: 10
     Recipients:
         Alexander Limi <limi@plone.org>
         Celso Providelo <celso.providelo@canonical.com>
@@ -342,6 +346,7 @@ subject and body from the same sender.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
         Mark Shuttleworth <mark@hbd.com>
         Steve Alexander <steve.alexander@ubuntulinux.com>
+        Ubuntu Team <support@ubuntu.com>
 
 The Guadamen team creates a mailing list but does not set it to be the
 contact address. The mailing list will not be used.
@@ -375,10 +380,12 @@ Foo Bar's message gets sent to each individual member of he team.
     Bodies:
     Really, can one of you help me!
     --
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    This message was sent from Launchpad by
+    Foo Bar (http://launchpad.dev/~name16)
+    using the "Contact this team" link to 10 members on the GuadaMen team page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
-    # of Message-IDs: 9
+    # of Message-IDs: 10
     Recipients:
         Alexander Limi <limi@plone.org>
         Celso Providelo <celso.providelo@canonical.com>
@@ -389,6 +396,7 @@ Foo Bar's message gets sent to each individual member of he team.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
         Mark Shuttleworth <mark@hbd.com>
         Steve Alexander <steve.alexander@ubuntulinux.com>
+        Ubuntu Team <support@ubuntu.com>
 
 The Guadamen team now registers an external contact address (they could
 have also used the their Launchpad mailing list address).
@@ -426,13 +434,15 @@ that to the new contact address.
     To: GuadaMen <guadamen@example.com>
     Subject: Hello again Guadamen
     ...
-    X-Launchpad-Message-Rationale: ContactViaWeb
+    X-Launchpad-Message-Rationale: ContactViaWeb member (guadamen team)
     ...
     <BLANKLINE>
     Can one of you help me?
     --
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    This message was sent from Launchpad by
+    Foo Bar (http://launchpad.dev/~name16)
+    using the "Contact this team" link on the GuadaMen team page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 
@@ -498,12 +508,14 @@ contains an explanation as well.
     To: Dave <dave@example.com>
     Subject: Hi Dave
     ...
-    X-Launchpad-Message-Rationale: ContactViaWeb
+    X-Launchpad-Message-Rationale: ContactViaWeb user
     ...
     <BLANKLINE>
     Can you help me?
     <BLANKLINE>
     --
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    This message was sent from Launchpad by
+    Cris (http://launchpad.dev/~cris)
+    using the "Contact this user" link on your profile page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
