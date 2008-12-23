@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 from datetime import datetime, timedelta
+from urllib import urlencode
 import unittest
 
 from openid.message import Message
@@ -17,9 +18,12 @@ from zope.testing import doctest
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces import IPersonSet, IOpenIDRPConfigSet
+from canonical.launchpad.database.openidserver import OpenIDAuthorization
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
+from canonical.launchpad.testing.pages import setupBrowser
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -91,6 +95,34 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('nickname', u'no-priv'),
             ('email', u'no-priv@canonical.com'),
             ('timezone', u'Europe/Paris')])
+
+
+class PreAuthorizeRPViewTestCase(unittest.TestCase):
+    """Test for the PreAuthorizeRPView."""
+    layer = DatabaseFunctionalLayer
+
+    def test_pre_authorize_works_with_slave_store(self):
+        """
+        By using a browser using basic authorization, we make sure
+        that the slave will be used. The pre-authorization acceptance test
+        uses the login form and thus uses the MASTER store.
+        """
+
+        browser = setupBrowser('Basic no-priv@canonical.com:test')
+        args = urlencode({
+            'trust_root': 'http://launchpad.dev/',
+            'callback': 'http://launchpad.dev/people/+me'})
+        browser.open(
+            'http://openid.launchpad.dev/+pre-authorize-rp?%s' % args)
+
+        login(ANONYMOUS)
+        no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+
+        # We do not use the isAuthorized API because we don't know the client
+        # id used by browser, since no cookie were used.
+        self.failUnless(OpenIDAuthorization.selectOneBy(
+            person=no_priv, trust_root='http://launchpad.dev/'),
+            "Pre-authorization record wasn't created.")
 
 
 class FakeOpenIdRequest:
@@ -192,4 +224,3 @@ def test_suite():
 
 if __name__ == '__main__':
     unittest.main()
-

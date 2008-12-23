@@ -26,7 +26,7 @@
    to copy'n paste it.
   </tal:comment>
 
-  <pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
+  <pre id="sources-list-entries">
 deb <a tal:attributes="href context/archive_url"
        tal:content="context/archive_url"
     /> <span id="series-deb" tal:content="view/default_series_name"
