@@ -137,12 +137,6 @@ class IArchivePublic(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
-    buildd_secret = TextLine(
-        title=_("Buildd Secret"), required=False,
-        description=_("The password used by the builder to access the "
-                      "archive.")
-        )
-
     sources_cached = Int(
         title=_("Number of sources cached"), required=False,
         description=_("Number of source packages cached in this PPA."))
@@ -605,6 +599,12 @@ class IArchivePublic(IHasOwner):
 
 class IArchiveView(Interface):
     """Archive interface for operations restricted by view privilege."""
+
+    buildd_secret = TextLine(
+        title=_("Buildd Secret"), required=False,
+        description=_("The password used by the builder to access the "
+                      "archive.")
+        )
 
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
