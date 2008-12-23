@@ -4,7 +4,6 @@
 # be converted to bugs so they can be scheduled.
 
 * Test each event
-  * Server start, server stop
   * Log user connect
   * Log user disconnect
   * Log user auth fail

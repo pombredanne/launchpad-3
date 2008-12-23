@@ -17,7 +17,7 @@ from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.web.xmlrpc import Proxy
 
-from canonical.codehosting.sshserver.accesslog import set_up_logging
+from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
 
@@ -37,7 +37,11 @@ class Factory(SSHFactory):
 
     def startFactory(self):
         SSHFactory.startFactory(self)
+        accesslog.log_event(accesslog.ServerStarting())
         os.umask(0022)
+
+    def stopFactory(self):
+        accesslog.log_event(accesslog.ServerStopping())
 
 
 class SSHService(service.Service):
@@ -79,7 +83,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
-        set_up_logging(configure_oops_reporting=False)
+        accesslog.set_up_logging(configure_oops_reporting=False)
         service.Service.startService(self)
         self.service.startService()
 

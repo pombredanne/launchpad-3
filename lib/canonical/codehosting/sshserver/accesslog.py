@@ -9,6 +9,8 @@ __all__ = [
     'get_codehosting_logger',
     'log_event',
     'LoggingEvent',
+    'ServerStarting',
+    'ServerStopping',
     'SFTPClosed',
     'SFTPStarted',
     'UserLoggedIn',
@@ -85,6 +87,18 @@ class LoggingEvent:
     def _log(self, logger):
         """Log the event to 'logger'."""
         logger.log(self.level, self.template % self._data)
+
+
+class ServerStarting(LoggingEvent):
+
+    level = logging.INFO
+    template = '---- Server started ----'
+
+
+class ServerStopping(LoggingEvent):
+
+    level = logging.INFO
+    template = '---- Server stopping ----'
 
 
 class AvatarEvent(LoggingEvent):
