@@ -29,18 +29,17 @@ from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class Factory(SSHFactory):
-    services = {
-        'ssh-userauth': SSHUserAuthServer,
-        'ssh-connection': SSHConnection
-    }
+    """SSH factory that uses our authentication service."""
 
-    def __init__(self, hostPublicKey, hostPrivateKey):
+    def __init__(self, hostPublicKey, hostPrivateKey, portal):
         self.publicKeys = {
             'ssh-rsa': hostPublicKey
         }
         self.privateKeys = {
             'ssh-rsa': hostPrivateKey
         }
+        self.services['ssh-userauth'] = SSHUserAuthServer
+        self.portal = portal
 
     def startFactory(self):
         SSHFactory.startFactory(self)
@@ -61,9 +60,7 @@ class SSHService(service.Service):
             config.codehosting.authentication_endpoint)
         branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
         portal = get_portal(authentication_proxy, branchfs_proxy)
-        sftpfactory = Factory(hostPublicKey, hostPrivateKey)
-        sftpfactory.portal = portal
-        return sftpfactory
+        return Factory(hostPublicKey, hostPrivateKey, portal)
 
     def makeService(self):
         """Return a service that provides an SFTP server. This is called in
