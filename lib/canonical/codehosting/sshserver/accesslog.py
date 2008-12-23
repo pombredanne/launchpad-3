@@ -81,6 +81,17 @@ class LoggingEvent:
         logger.log(self.level, self.template % self._data)
 
 
+class UserLoggedIn(LoggingEvent):
+
+    level = logging.INFO
+    template = '[%(session_id)s] %(username)s logged in.'
+
+    def __init__(self, avatar):
+        self.avatar = avatar
+        LoggingEvent.__init__(
+            self, session_id=id(avatar), username=avatar.username)
+
+
 def log_event(event):
     """Log 'event' to the codehosting logger.
 

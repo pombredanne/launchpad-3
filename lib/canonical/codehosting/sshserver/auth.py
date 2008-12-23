@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import binascii
-import logging
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
@@ -24,6 +23,7 @@ from twisted.cred.portal import IRealm, Portal
 from twisted.python import components, failure
 
 from canonical.codehosting import sftp
+from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.session import (
     launch_smart_server, SubsystemOnlySession)
 from canonical.config import config
@@ -47,8 +47,7 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.branchfs_proxy = branchfs_proxy
         self.user_id = userDict['id']
         self.username = userDict['name']
-        logging.getLogger('codehosting.ssh').info(
-            '%r logged in', self.username)
+        accesslog.log_event(accesslog.UserLoggedIn(self))
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
