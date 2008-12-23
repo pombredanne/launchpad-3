@@ -213,7 +213,17 @@ class Roundup(ExternalBugTracker):
             _status_lookup_python_1)),       # Failback
         )
 
-    # Status tree for roundup.mplayerhq.hu Roundup instances.
+    # Status tree for roundup.mplayerhq.hu Roundup instances. This is
+    # a mapping of all statuses that have ever been used (as of
+    # December 2008) in the Mplayer Roundup instance, not a
+    # comprehensive mapping of all /possible/ statuses. Appropriate
+    # mappings have been guessed at by looking at example bugs for
+    # each combination found.
+    #
+    # If new combinations are used, we will see OOPSes, and we should
+    # then see what they have used that combination to mean before
+    # adding them to this lookup tree.
+    #
     _status_lookup_mplayerhq = LookupTree(
         # status (new)
         (1, LookupTree(
