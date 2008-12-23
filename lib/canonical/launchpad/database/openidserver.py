@@ -37,14 +37,25 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIDAuthorization(SQLBase):
     implements(IOpenIDAuthorization)
+
     _table = 'OpenIDAuthorization'
+
+    @staticmethod
+    def _get_store():
+        """See `SQLBase`.
+
+        The authorization check should always use the master flavor,
+        principally because +rp-preauthorize will create them on GET requests.
+        """
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     client_id = StringCol()
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -80,8 +91,11 @@ class OpenIDAuthorizationSet:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
+            # Even though OpenIDAuthorizationSet always uses the master
+            # store, it's likely that the person can come from the slave.
+            # That's why we are using the ID to create the reference.
             OpenIDAuthorization(
-                    person=person, trust_root=trust_root,
+                    personID=person.id, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
 
@@ -155,7 +169,7 @@ class OpenIDRPConfigSet:
 
     def getAll(self):
         """See `IOpenIDRPConfigSet`"""
-        return OpenIDRPConfig.select(orderBy=['displayname','trust_root'])
+        return OpenIDRPConfig.select(orderBy=['displayname', 'trust_root'])
 
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""

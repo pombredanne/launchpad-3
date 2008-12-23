@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, IBranchSet)
 from canonical.launchpad.interfaces.branchnamespace import IBranchNamespace
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class _BaseNamespace:
