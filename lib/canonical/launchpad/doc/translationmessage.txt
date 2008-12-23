@@ -8,8 +8,6 @@ Let's do some imports we will need to test this class.
     ...     ILanguageSet, IPersonSet, ITranslationMessage,
     ...     ITranslatorSet)
 
-    >>> factory = LaunchpadObjectFactory()
-
     >>> login('carlos@canonical.com')
     >>> pofile_es = factory.makePOFile(language_code='es')
     >>> potemplate = pofile_es.potemplate

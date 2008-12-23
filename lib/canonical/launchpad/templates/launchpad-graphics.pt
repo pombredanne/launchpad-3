@@ -480,8 +480,7 @@
         <td>milestone</td>
         <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
-        bug or feature has been targeted. <i>XXX should rename this to
-        "milestone"?</i></td>
+        bug or feature has been targeted.</td>
       </tr>
       <tr>
         <td>team-badge</td>

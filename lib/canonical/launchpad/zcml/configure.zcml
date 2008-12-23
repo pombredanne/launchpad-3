@@ -7,6 +7,7 @@
     <!-- Content class configuration -->
     <include file="account.zcml" />
     <include file="announcement.zcml" />
+    <include file="archivearch.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
@@ -15,7 +16,9 @@
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
+    <include file="branchcontainer.zcml" />
     <include file="branchmergeproposal.zcml" />
+    <include file="branchnamespace.zcml" />
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
     <include file="branchsubscription.zcml" />

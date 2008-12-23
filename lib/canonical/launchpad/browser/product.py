@@ -58,7 +58,7 @@ from zope.formlib import form
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces import (
@@ -679,11 +679,11 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     serieses = None
     development_focus = None
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
@@ -709,10 +709,10 @@ class SeriesWithReleases:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     releases = None
-    decorates(IProductSeries, 'series')
+    delegates(IProductSeries, 'series')
 
     def __init__(self, series):
         self.series = series
@@ -737,10 +737,10 @@ class ReleaseWithFiles:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     files = None
-    decorates(IProductRelease, 'release')
+    delegates(IProductRelease, 'release')
 
     def __init__(self, release):
         self.release = release
@@ -1370,39 +1370,14 @@ class ProductSetView(LaunchpadView):
     __used_for__ = IProductSet
 
     max_results_to_display = config.launchpad.default_batch_size
+    results = None
+    searchrequested = False
 
     def initialize(self):
         form = self.request.form_ng
-        self.soyuz = form.getOne('soyuz')
-        self.rosetta = form.getOne('rosetta')
-        self.malone = form.getOne('malone')
-        self.bazaar = form.getOne('bazaar')
         self.search_string = form.getOne('text')
-        self.results = None
-
-        self.searchrequested = False
-        if (self.search_string is not None or
-            self.bazaar is not None or
-            self.malone is not None or
-            self.rosetta is not None or
-            self.soyuz is not None):
+        if self.search_string is not None:
             self.searchrequested = True
-
-        if form.getOne('exact_name'):
-            # If exact_name is supplied, we try and locate this name in
-            # the ProductSet -- if we find it, bingo, redirect. This
-            # argument can be optionally supplied by callers.
-            try:
-                product = self.context[self.search_string]
-            except NotFoundError:
-                # No product found, perform a normal search instead.
-                pass
-            else:
-                url = canonical_url(product)
-                if form.getOne('malone'):
-                    url = url + "/+bugs"
-                self.request.response.redirect(url)
-                return
 
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
@@ -1447,10 +1422,14 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget(
         'licenses', CheckBoxMatrixWidget, column_count=4,
         orientation='vertical')
-    custom_widget('active', LaunchpadRadioWidget)
-    custom_widget('license_reviewed', LaunchpadRadioWidget)
-    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
-    custom_widget('has_zero_licenses', LaunchpadRadioWidget)
+    custom_widget('active', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('license_reviewed', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('has_zero_licenses', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
     custom_widget('subscription_expires_after', DateWidget)
@@ -1735,10 +1714,10 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # text.  Only one part of the tuple will be set.
         committers = set()
         for (revision, author) in self._recent_revisions:
-            if author.person is None:
+            if author.personID is None:
                 committers.add((None, author.name))
             else:
-                committers.add((author.person.name, None))
+                committers.add((author.personID, None))
         return len(committers)
 
     @cachedproperty

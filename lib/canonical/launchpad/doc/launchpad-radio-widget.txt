@@ -11,8 +11,7 @@ an enumerated type.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBranch, IBranchSet, BranchType)
+    >>> from canonical.launchpad.interfaces import IBranch
     >>> branch = factory.makeBranch()
     >>> branch_type_field = IBranch['branch_type'].bind(branch)
     >>> request = LaunchpadTestRequest()
@@ -83,8 +82,7 @@ to associate the label with the radio button input.
 If the enumerated type doesn't have any descriptions, then the extra
 rows are not rendered.
 
-    >>> from canonical.lazr import (
-    ...     EnumeratedType, DBEnumeratedType, Item, DBItem, use_template)
+    >>> from canonical.lazr import EnumeratedType, Item
     >>> class SomeFruit(EnumeratedType):
     ...     "A choice of fruit."
     ...     APPLE = Item('Apple')

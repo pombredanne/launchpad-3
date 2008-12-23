@@ -44,17 +44,14 @@
         attribute="__call__"
         />
 
-    <browser:generalform
+    <browser:page
         name="+sign"
         for="canonical.launchpad.interfaces.ICodeOfConduct"
-        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
-        label="Sign a code of conduct"
-        fields="signedcode"
         class="canonical.launchpad.browser.SignedCodeOfConductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/signedcodeofconduct-add.pt"
         >
-    </browser:generalform>
+    </browser:page>
 
     <!-- CodeOfConductConf -->
     <securedutility

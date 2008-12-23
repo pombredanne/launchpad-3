@@ -174,7 +174,7 @@ team, however.
     ...     url=None)
     Traceback (most recent call last):
       ...
-    BranchCreationNoTeamOwnedJunkBranches: Cannot create team-owned junk ...
+    BranchCreationNoTeamOwnedJunkBranches: ...
 
 The ~vcs-imports celebrity team is exempt from this restriction to
 allow the creation of code import branches without an associated
@@ -267,7 +267,7 @@ existing branches.
 Now we create a few branches that we pretend were updated in a
 definite order.
 
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> from canonical.launchpad.testing import time_counter
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
@@ -343,18 +343,6 @@ returned.
     None
     >>> print branchset.getByUrl(not_there_url, 123)
     123
-
-
-== Branches and products ==
-
-Branch not associated to a product are called "junk" branch and treated for
-navigation purposes as if they were associated to a magic product named
-"+junk".
-
-    >>> factory.makeBranch(product=None).product_name
-    '+junk'
-    >>> factory.makeBranch(product=product).product_name
-    u'product'
 
 
 == Branch names ==

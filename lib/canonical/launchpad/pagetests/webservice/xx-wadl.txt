@@ -258,6 +258,7 @@ utilities/create-lp-wadl.py does: clear out the cache on the class.
 
     >>> wadl = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    >>> wadl = wadl.decode('UTF-8')
 
     >>> len(wadl) > len(test_wadl)
     True
@@ -273,7 +274,8 @@ We can examine the real wadl now.
 
     # We need to replace the nbsp entity, because the validator
     # doesn't support embedded definition.
-    >>> wadl_schema.validate(wadl.replace('&nbsp;', '&#160;'))
+    >>> wadl_schema.validate(
+    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
     True
     >>> wadl_schema.error_log
     ''
@@ -346,15 +348,15 @@ The JSON representation contains a link for each collection resource
 exposed at the top level. The WADL representation has a <param> tag
 for every link in the JSON representation.
 
-
     >>> def name_attrib(tag):
     ...     return tag.attrib['name']
 
     >>> params = sorted([param for param in service_root_repr], key=name_attrib)
-    >>> (bug_set_param, cve_set_param, distro_set_param, me_param,
-    ...  person_set_param, pillar_param, project_group_set_param,
-    ...  project_set_param, resource_type_param) = params
 
+    >>> (bug_set_param, cve_set_param, distro_set_param, hwdb_param,
+    ...  me_param, person_set_param, pillar_param,
+    ...  project_group_set_param, project_set_param,
+    ...  resource_type_param) = params
     >>> person_set_param.tag
     '...param'
     >>> person_set_param.attrib['name']
@@ -679,8 +681,8 @@ resources.
 
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    ['archive', 'archive_permission', 'branch', 'bug', 'bug_attachment',
-     'bug_subscription', ...]
+    ['archive', 'archive_permission', 'branch', 'branch_merge_proposal',
+     'bug', 'bug_attachment', 'bug_subscription', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -745,13 +747,23 @@ look up the element called "bug_link".
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> doc = full_params[2][0]
+    >>> [date_closed] = [param for param in full_params
+    ...                  if param.attrib['name'] == 'date_closed']
+    >>> doc = date_closed[0]
     >>> doc.tag
     '...doc'
     >>> print "\n".join([node.text for node in doc])
     Date Closed
     The date on which this task was marked either Fix Committed or Fix
     Released.
+
+Every entry resource has the 'http_etag' parameter, which includes the
+current value used in the 'ETag' HTTP header for the entry.
+
+    >>> [etag] = [param for param in full_params
+    ...           if param.attrib['name'] == 'http_etag']
+    >>> etag.attrib['path']
+    "$['http_etag']"
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
@@ -808,6 +820,12 @@ define a second representation for use with PATCH requests.
     True
     >>> 'related_tasks_collection_link' in diff_rep_names
     False
+
+Fields that have server-side mutators are considered read-write
+fields, and show up in the PATCH representation.
+
+    >>> 'status' in diff_rep_names
+    True
 
 Most <param> tags don't tell the client much beyond where to find a
 certain parameter, but some of our parameters take values from a

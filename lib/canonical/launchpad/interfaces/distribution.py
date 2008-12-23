@@ -11,6 +11,7 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoSuchDistribution',
     ]
 
 from zope.schema import Choice, Datetime, Text, TextLine
@@ -42,6 +43,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -291,6 +293,11 @@ class IDistributionPublic(
         order to create a mirror.
         """
 
+    @operation_parameters(
+        name=TextLine(title=_("Package name"), required=True))
+    # Really returns IDistributionSourcePackage, see below.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
     def getSourcePackage(name):
         """Return a DistributionSourcePackage with the given name for this
         distribution, or None.
@@ -493,6 +500,12 @@ class IDistributionSet(Interface):
         """Creaste a new distribution."""
 
 
+class NoSuchDistribution(NameLookupFailed):
+    """Raised when we try to find a distribution that doesn't exist."""
+
+    _message_prefix = "No such distribution"
+
+
 # Monkey patching to fix circular imports.
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 IDistribution['serieses'].value_type.schema = IDistroSeries
@@ -503,3 +516,8 @@ IDistribution['getSeries'].queryTaggedValue(
 IDistribution['getDevelopmentSerieses'].queryTaggedValue(
     'lazr.webservice.exported')[
     'return_type'].value_type.schema = IDistroSeries
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+IDistribution['getSourcePackage'].queryTaggedValue(
+    'lazr.webservice.exported')[
+    'return_type'].schema = IDistributionSourcePackage

@@ -18,8 +18,10 @@
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
-  <!-- XXX: matsubara 2006-02-13 bug=31342
-       The main template is broken when there is no actions portlet -->
+  <tal:XXX condition="nothing">
+   # XXX: matsubara 2006-02-13 bug=31342
+   # The main template is broken when there is no actions portlet -->
+  </tal:XXX>
   <metal:rightportlets fill-slot="portlets_two">
     <div>&nbsp;</div>
   </metal:rightportlets>
