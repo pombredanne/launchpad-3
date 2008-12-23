@@ -13,6 +13,7 @@ __all__ = [
     'ServerStopping',
     'SFTPClosed',
     'SFTPStarted',
+    'UserConnected',
     'UserLoggedIn',
     ]
 
@@ -101,6 +102,16 @@ class ServerStopping(LoggingEvent):
     template = '---- Server stopping ----'
 
 
+class UserConnected(LoggingEvent):
+
+    level = logging.INFO
+    template = '[%(session_id)s] %(address)s connected.'
+
+    def __init__(self, transport, address):
+        LoggingEvent.__init__(
+            self, session_id=id(transport), address=address)
+
+
 class AvatarEvent(LoggingEvent):
     """Base avatar event."""
 
@@ -109,7 +120,7 @@ class AvatarEvent(LoggingEvent):
     def __init__(self, avatar):
         self.avatar = avatar
         LoggingEvent.__init__(
-            self, session_id=id(avatar), username=avatar.username)
+            self, session_id=id(avatar.transport), username=avatar.username)
 
 
 class UserLoggedIn(AvatarEvent):

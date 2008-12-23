@@ -47,7 +47,6 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.branchfs_proxy = branchfs_proxy
         self.user_id = userDict['id']
         self.username = userDict['name']
-        accesslog.log_event(accesslog.UserLoggedIn(self))
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
@@ -72,8 +71,6 @@ class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
 class Realm:
     implements(IRealm)
 
-    avatarFactory = LaunchpadAvatar
-
     def __init__(self, authentication_proxy, branchfs_proxy):
         self.authentication_proxy = authentication_proxy
         self.branchfs_proxy = branchfs_proxy
@@ -84,7 +81,7 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = self.avatarFactory(userDict, self.branchfs_proxy)
+            avatar = LaunchpadAvatar(userDict, self.branchfs_proxy)
             return interfaces[0], avatar, avatar.logout
         return deferred.addCallback(gotUserDict)
 
@@ -128,6 +125,15 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
         return d
+
+    def _cbFinishedAuth(self, result):
+        ret = userauth.SSHUserAuthServer._cbFinishedAuth(self, result)
+        # Tell the avatar about the transport, so we can tie it to the
+        # connection in the logs.
+        avatar = self.transport.avatar
+        avatar.transport = self.transport
+        accesslog.log_event(accesslog.UserLoggedIn(avatar))
+        return ret
 
     def _ebLogToBanner(self, reason):
         reason.trap(UserDisplayedUnauthorizedLogin)

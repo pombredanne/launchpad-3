@@ -35,6 +35,11 @@ class Factory(SSHFactory):
         self.services['ssh-userauth'] = SSHUserAuthServer
         self.portal = portal
 
+    def buildProtocol(self, address):
+        transport = SSHFactory.buildProtocol(self, address)
+        accesslog.log_event(accesslog.UserConnected(transport, address))
+        return transport
+
     def startFactory(self):
         SSHFactory.startFactory(self)
         accesslog.log_event(accesslog.ServerStarting())

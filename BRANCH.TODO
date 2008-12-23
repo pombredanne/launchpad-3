@@ -4,7 +4,6 @@
 # be converted to bugs so they can be scheduled.
 
 * Test each event
-  * Log user connect
   * Log user auth fail
 
 * If oops reporting is enabled, then lots of Twisted crap goes to the access
