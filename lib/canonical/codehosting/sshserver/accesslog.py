@@ -43,10 +43,11 @@ def set_up_logging(configure_oops_reporting=False):
     # testrunner output.
     log = get_codehosting_logger()
     log.setLevel(logging.INFO)
-    log.addHandler(
-        TimedRotatingFileHandler(
-            config.codehosting.access_log,
-            when='midnight'))
+    handler = TimedRotatingFileHandler(
+        config.codehosting.access_log, when='midnight')
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    log.addHandler(handler)
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
     return log
