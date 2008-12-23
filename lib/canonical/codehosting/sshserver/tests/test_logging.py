@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import codecs
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from StringIO import StringIO
 import unittest
 import sys
@@ -85,9 +86,8 @@ class TestLoggingSetup(TestCase):
         # set_up_logging installs a rotating log handler that logs output to
         # config.codehosting.access_log.
         set_up_logging()
-        handlers = get_codehosting_logger().handlers
-        self.assertEqual(1, len(handlers))
-        handler = handlers[0]
+        [handler] = get_codehosting_logger().handlers
+        self.assertIsInstance(handler, TimedRotatingFileHandler)
         self.assertEqual(config.codehosting.access_log, handler.baseFilename)
 
 

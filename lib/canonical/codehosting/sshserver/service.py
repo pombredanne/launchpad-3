@@ -12,6 +12,7 @@ __all__ = [
 
 
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import os
 
 from twisted.application import service, strports
@@ -123,7 +124,7 @@ def set_up_logging(configure_oops_reporting=False):
     # testrunner output.
     log = get_codehosting_logger()
     log.setLevel(logging.CRITICAL)
-    log.addHandler(logging.FileHandler(config.codehosting.access_log))
+    log.addHandler(TimedRotatingFileHandler(config.codehosting.access_log))
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
     return log
