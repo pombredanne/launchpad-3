@@ -14,6 +14,7 @@ from bzrlib.tests import TestCase as BzrTestCase
 
 from canonical.codehosting.sshserver.service import (
     get_codehosting_logger, set_up_logging)
+from canonical.config import config
 from canonical.testing import reset_logging
 
 
@@ -67,6 +68,15 @@ class TestLoggingSetup(BzrTestCase):
 
         self.assertEqual(root_handlers, logging.getLogger('').handlers)
         self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
+
+    def test_handlers(self):
+        # set_up_logging installs a rotating log handler that logs output to
+        # config.codehosting.access_log.
+        set_up_logging()
+        handlers = get_codehosting_logger().handlers
+        self.assertEqual(1, len(handlers))
+        handler = handlers[0]
+        self.assertEqual(config.codehosting.access_log, handler.baseFilename)
 
 
 def test_suite():
