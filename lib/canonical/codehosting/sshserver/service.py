@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Provides an SFTP server which Launchpad users can use to host their Bazaar
 branches. For more information, see lib/canonical/codehosting/README.
@@ -6,26 +6,20 @@ branches. For more information, see lib/canonical/codehosting/README.
 
 __metaclass__ = type
 __all__ = [
-    'get_codehosting_logger',
-    'log_event',
-    'LoggingEvent',
     'SSHService',
     ]
 
 
-import logging
-from logging.handlers import TimedRotatingFileHandler
 import os
 
 from twisted.application import service, strports
-from twisted.conch.ssh.connection import SSHConnection
 from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.web.xmlrpc import Proxy
 
+from canonical.codehosting.sshserver.accesslog import set_up_logging
 from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class Factory(SSHFactory):
@@ -93,77 +87,3 @@ class SSHService(service.Service):
         """Stop the SFTP service."""
         service.Service.stopService(self)
         return self.service.stopService()
-
-
-def get_codehosting_logger():
-    """Return the codehosting logger."""
-    # This is its own function to avoid spreading the string 'codehosting'
-    # everywhere and to avoid duplicating information about how log objects
-    # are acquired.
-    return logging.getLogger('codehosting')
-
-
-def set_up_logging(configure_oops_reporting=False):
-    """Set up logging for the smart server.
-
-    This sets up a debugging handler on the 'codehosting' logger, makes sure
-    that things logged there won't go to stderr (necessary because of
-    bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
-
-    In addition, if configure_oops_reporting is True, install a Twisted log
-    observer that ensures unhandled exceptions get reported as OOPSes.
-    """
-    # XXX: JonathanLange 2008-12-23: Why isn't configure_oops_reporting True
-    # all the time? Part of the answer is that when I set it to True, the
-    # test_logging tests don't restore stderr properly, resulting in broken
-    # testrunner output.
-    log = get_codehosting_logger()
-    log.setLevel(logging.CRITICAL)
-    log.addHandler(
-        TimedRotatingFileHandler(
-            config.codehosting.access_log,
-            when='midnight'))
-    if configure_oops_reporting:
-        set_up_oops_reporting('codehosting')
-    return log
-
-
-class LoggingEvent:
-    """An event that can log itself to a logger.
-
-    :ivar level: The level to log itself as. This should be defined as a
-        class variable in subclasses.
-    :ivar template: The format string of the message to log. This should be
-        defined as a class variable in subclasses.
-    """
-
-    def __init__(self, level=None, template=None, **data):
-        """Construct a logging event.
-
-        :param level: The level to log the event as. If specified, overrides
-            the 'level' class variable.
-        :param template: The format string of the message to log. If
-            specified, overrides the 'template' class variable.
-        :param **data: Information to be logged. Entries will be substituted
-            into the template and stored as attributes.
-        """
-        if level is not None:
-            self.level = level
-        if template is not None:
-            self.template = template
-        self._data = data
-        for name, value in data.iteritems():
-            setattr(self, name, value)
-
-    def _log(self, logger):
-        """Log the event to 'logger'."""
-        logger.log(self.level, self.template % self._data)
-
-
-def log_event(logger, event):
-    """Log 'event' to 'logger'.
-
-    All events should be logged through this function, which provides a
-    convenient mocking point for tests.
-    """
-    return event._log(logger)

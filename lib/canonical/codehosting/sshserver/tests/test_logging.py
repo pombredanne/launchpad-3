@@ -13,7 +13,7 @@ import sys
 
 from bzrlib.tests import TestCase as BzrTestCase
 
-from canonical.codehosting.sshserver.service import (
+from canonical.codehosting.sshserver.accesslog import (
     get_codehosting_logger, log_event, LoggingEvent, set_up_logging)
 from canonical.config import config
 from canonical.launchpad.testing import TestCase
