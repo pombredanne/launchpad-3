@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'LaunchpadAvatar',
+    'get_portal',
     'PublicKeyFromLaunchpadChecker',
     'Realm',
     'SSHUserAuthServer',
@@ -22,7 +23,7 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
-from twisted.cred.portal import IRealm
+from twisted.cred.portal import IRealm, Portal
 
 from twisted.python import components, failure
 
@@ -188,3 +189,11 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UnauthorizedLogin(
             "Your SSH key does not match any key registered for Launchpad "
             "user %s" % credentials.username)
+
+
+def get_portal(authentication_proxy, branchfs_proxy):
+    """Get a portal for connecting to Launchpad codehosting."""
+    portal = Portal(Realm(authentication_proxy, branchfs_proxy))
+    portal.registerChecker(
+        PublicKeyFromLaunchpadChecker(authentication_proxy))
+    return portal

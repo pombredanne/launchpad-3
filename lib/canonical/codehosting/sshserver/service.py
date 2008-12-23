@@ -21,11 +21,9 @@ from twisted.application import service, strports
 from twisted.conch.ssh.connection import SSHConnection
 from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
-from twisted.cred.portal import Portal
 from twisted.web.xmlrpc import Proxy
 
-from canonical.codehosting.sshserver.auth import (
-    PublicKeyFromLaunchpadChecker, Realm, SSHUserAuthServer)
+from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
@@ -62,9 +60,7 @@ class SSHService(service.Service):
         authentication_proxy = Proxy(
             config.codehosting.authentication_endpoint)
         branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-        portal = Portal(Realm(authentication_proxy, branchfs_proxy))
-        portal.registerChecker(
-            PublicKeyFromLaunchpadChecker(authentication_proxy))
+        portal = get_portal(authentication_proxy, branchfs_proxy)
         sftpfactory = Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory
