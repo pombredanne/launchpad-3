@@ -12,7 +12,8 @@
 * If oops reporting is enabled, then lots of Twisted crap goes to the access
   log. Why is this?
 * Missing tests
-* SFTP reports disconnection twice: once from SSHChannel.closeReceived, once
-  from SSHSession.closed (self.client branch)
+* SFTP reports disconnection twice: once from SSHChannel.closeReceived (the
+  client has closed the channel), once from SSHSession.closed, in the
+  self.client branch (we have already sent a closed message)
 
 ? Bind SIGHUP to rotate logs
