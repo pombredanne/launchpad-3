@@ -47,7 +47,12 @@ class IBranchNamespace(Interface):
         """Return the branches in this namespace."""
 
     def getBranchName(name):
-        """Get the potential unique name for a branch called 'name'."""
+        """Get the potential unique name for a branch called 'name'.
+
+        Note that this name is not guaranteed to be unique. Rather, if there
+        *was* such a branch with that name, this would be the value of its
+        `IBranch.unique_name` property.
+        """
 
     def getByName(name, default=None):
         """Find the branch in this namespace called 'name'.
@@ -85,6 +90,21 @@ class IBranchNamespaceSet(Interface):
         :return: An `IBranchNamespace`.
         """
 
+    def interpret(person, product, distribution, distroseries,
+                  sourcepackagename):
+        """Like `get`, but takes names of objects.
+
+        :raise NoSuchPerson: if the person referred to cannot be found.
+        :raise NoSuchProduct: if the product referred to cannot be found.
+        :raise NoSuchDistribution: if the distribution referred to cannot be
+            found.
+        :raise NoSuchDistroSeries: if the distroseries referred to cannot be-
+            found.
+        :raise NoSuchSourcePackageName: if the sourcepackagename referred to
+            cannot be found.
+        :return: An `IBranchNamespace`.
+        """
+
     def parse(namespace_name):
         """Parse 'namespace_name' into its components.
 
@@ -109,6 +129,26 @@ class IBranchNamespaceSet(Interface):
         :raise InvalidNamespace: if the name is too long, too short or is
             malformed.
         :return: A dict with keys matching each component in 'namespace_name'.
+        """
+
+    def parseBranchPath(branch_path):
+        """Parse 'branch_path' into a namespace dict and a trailing path.
+
+        See `IBranchNamespaceSet.parse` for what we mean by 'namespace dict'.
+
+        Since some paths can be parsed as either package branch paths or
+        product branch paths, this method yields possible parses of the given
+        path. The order of the yielded parses is undefined and shouldn't be
+        relied on.
+
+        Note that at most one of the parses will actually be valid. This can
+        be determined by looking the objects up in the database, or by using
+        `IBranchNamespaceSet.interpret`.
+
+        :param branch_path: A path to or within a branch. This will often, but
+            not always, include a '.bzr' segment.
+        :return: An iterator that yields '(namespace_dict, branch_name,
+            trailing_path)' for all valid parses of 'branch_path'.
         """
 
 

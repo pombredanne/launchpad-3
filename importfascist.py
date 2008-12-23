@@ -32,7 +32,6 @@ permitted_database_imports = text_lines_to_set("""
     canonical.launchpad.vocabularies.dbobjects
     canonical.launchpad.validators.person
     canonical.librarian.client
-    importd.Job
     """)
 
 
