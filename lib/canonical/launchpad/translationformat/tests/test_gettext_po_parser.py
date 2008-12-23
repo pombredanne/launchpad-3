@@ -22,6 +22,16 @@ class POBasicTestCase(unittest.TestCase):
     def setUp(self):
         self.parser = POParser()
 
+    def testEmptyFile(self):
+        # The parser reports an empty file as an error.
+        self.assertRaises(TranslationFormatSyntaxError, self.parser.parse, '')
+
+    def testContentlessFile(self):
+        # The parser reports a non-empty file holding no messages as an
+        # error.
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse, '# Comment')
+
     def testSingular(self):
         translation_file = self.parser.parse(
             '%smsgid "foo"\nmsgstr "bar"\n' % DEFAULT_HEADER)
