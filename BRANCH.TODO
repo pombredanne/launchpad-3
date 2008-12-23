@@ -9,5 +9,10 @@
   * Log bzr+ssh finished
   * Log user disconnect
   * Log user auth fail
-* Test with a very Pythonic handler that appends to a list or something
-* Bind SIGHUP to rotate logs
+
+* If oops reporting is enabled, then lots of Twisted crap goes to the access
+  log. Why is this?
+* The emitted strings have an inadequate format -- no timestamp, for example.
+* Missing tests
+
+? Bind SIGHUP to rotate logs

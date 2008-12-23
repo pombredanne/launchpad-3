@@ -21,6 +21,10 @@ from canonical.launchpad.webapp import errorlog
 class OOPSLoggingObserver(log.PythonLoggingObserver):
     """A version of `PythonLoggingObserver` that logs OOPSes for errors."""
 
+    # XXX: JonathanLange 2008-12-23: As best as I can tell, this ought to be a
+    # log *handler*, not a feature of the bridge from Twisted->Python logging.
+    # Ask Michael about this.
+
     def emit(self, eventDict):
         """See `PythonLoggingObserver.emit`."""
         if eventDict.get('isError', False) and 'failure' in eventDict:
