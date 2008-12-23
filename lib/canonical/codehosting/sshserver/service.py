@@ -88,7 +88,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
-        set_up_logging()
+        set_up_logging(configure_oops_reporting=True)
         service.Service.startService(self)
         self.service.startService()
 
@@ -98,7 +98,7 @@ class SSHService(service.Service):
         return self.service.stopService()
 
 
-def set_up_logging():
+def set_up_logging(configure_oops_reporting=False):
     """Set up logging for the smart server.
 
     This sets up a debugging handler on the 'codehosting' logger, makes sure
@@ -110,5 +110,6 @@ def set_up_logging():
     """
     log = logging.getLogger('codehosting')
     log.setLevel(logging.CRITICAL)
-    set_up_oops_reporting('codehosting')
+    if configure_oops_reporting:
+        set_up_oops_reporting('codehosting')
     return log
