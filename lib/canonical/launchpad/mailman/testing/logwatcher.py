@@ -29,7 +29,7 @@ except AttributeError:
     SEEK_END = 2
 
 
-BREAK_ON_TIMEOUT = True
+BREAK_ON_TIMEOUT = False
 LINES_TO_CAPTURE = 50
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=20)
 SECONDS_TO_SNOOZE = 0.1
