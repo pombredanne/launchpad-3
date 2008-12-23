@@ -118,16 +118,10 @@
               Join the beta of our web services API and Python library.
             </a>
          </li>
-          <li class="news">
-            <a href="http://news.launchpad.net/?p=115">
-              <strong>Bugzilla and Trac plugins now in beta</strong><br />
-              Run Bugzilla or Trac? Help beta test our new
-              plugins to start sharing bug comments with Launchpad.
-            </a>
-         </li>
+
         </ul>
         <div class="discreet" style="text-align: right">
-          Updated 2008-11-19.
+          Updated 2008-12-17.
           <a href="http://news.launchpad.net">More...</a>
         </div>
       </div>

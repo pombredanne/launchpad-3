@@ -152,7 +152,7 @@ sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'ppa-dependencies'))
+    ...     find_tag_by_id(user_browser.contents, 'archive-dependencies'))
     PPA dependencies
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
@@ -194,7 +194,7 @@ Once the dependencies are removed, the 'dependency-section' (including
 the warning message) are omitted from the PPA overview page
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
+    >>> print find_tag_by_id(user_browser.contents, 'archive-dependencies')
     None
 
 == Primary dependencies ==
@@ -378,16 +378,44 @@ processed.
     Primary Archive for Ubuntu Linux - RELEASE
 
 
+== Primary dependencies in the PPA index page ==
+
+Primary dependencies are presented with pocket information in the PPA
+index page (see `IArchivedependency.title`).
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print admin_browser.title
+    PPA for Celso Providelo
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
+    PPA dependencies
+    PPA for Mark Shuttleworth (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)
+
+
 == Cancelling a form request ==
 
 At anytime the form can be cancelled and the user will be taken to the
 PPA context page and the action won't be executed.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
-    >>> admin_browser.getLink("Cancel").click()
+    >>> admin_browser.getLink('Edit dependencies').click()
 
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl(
+    ...     name="field.selected_dependencies").value = ['sabdfl']
+    >>> admin_browser.getControl(
+    ...     "Default (security dependencies and recommended updates)."
+    ...     ).selected = True
+
+    >>> admin_browser.getLink("Cancel").click()
     >>> print admin_browser.title
     PPA for Celso Providelo
 
-    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
-    None
+The dependencies were not modified.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
+    PPA dependencies
+    PPA for Mark Shuttleworth (included ... ago)
+    Primary Archive for Ubuntu Linux - RELEASE (included ... ago)

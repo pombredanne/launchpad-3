@@ -32,8 +32,8 @@
       template="../templates/publishinghistory-macros.pt" />
 
     <browser:page
-      name="+listing-ppa-detailed"
-      template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
+      name="+listing-archive-detailed"
+      template="../templates/sourcepackagepublishinghistory-listing-archive-detailed.pt"
       />
     <browser:page
       name="+record-details"
@@ -46,10 +46,17 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.SourcePublishingRecordSelectableView">
     <browser:page
-      name="+listing-ppa-detailed-selectable"
-      template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
+      name="+listing-archive-detailed-selectable"
+      template="../templates/sourcepackagepublishinghistory-listing-archive-detailed.pt"
       />
   </browser:pages>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
+    path_expression="string:+sourcepub"
+    attribute_to_parent="archive"
+    urldata="canonical.launchpad.browser.publishing.SourcePublicationURL"
+  />
 
   <!-- SourcePackageFilePublishing -->
   <class class="canonical.launchpad.database.SourcePackageFilePublishing">

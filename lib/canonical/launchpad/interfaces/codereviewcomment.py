@@ -85,6 +85,14 @@ class ICodeReviewComment(Interface):
 
     title = TextLine()
 
+    def getAttachments():
+        """Get the attachments from the original message.
+
+        :return: two lists, the first being attachments that we would display
+            (being plain text or diffs), and a second list being any other
+            attachments.
+        """
+
 
 class ICodeReviewCommentDeletion(Interface):
     """This interface provides deletion of CodeReviewComments.

@@ -103,10 +103,11 @@ But it's not within anything other than its tasks' targets.
 
 A branch is within its product, in case it is associated with one.
 
-    >>> from canonical.launchpad.interfaces.branch import IBranchSet
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> firefox_main = getUtility(IBranchSet).getBranch(
-    ...     sample_person, firefox, 'main')
+    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    ...     get_branch_namespace)
+    >>> firefox_main = get_branch_namespace(
+    ...     sample_person, product=firefox).getByName('main')
     >>> ILaunchpadContainer(firefox_main).isWithin(firefox)
     True
     >>> ILaunchpadContainer(firefox_main).isWithin(mozilla)
@@ -115,8 +116,7 @@ A branch is within its product, in case it is associated with one.
 If the branch is not associated with a product, then it's not within
 anything.
 
-    >>> junk = getUtility(IBranchSet).getBranch(
-    ...     sample_person, None, 'junk.dev')
+    >>> junk= get_branch_namespace(sample_person).getByName('junk.dev')
     >>> print junk.product
     None
     >>> ILaunchpadContainer(junk).isWithin(firefox)

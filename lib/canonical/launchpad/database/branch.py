@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import re
 
 from bzrlib.revision import NULL_REVISION
 import pytz
@@ -38,9 +37,9 @@ from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationException, BranchCreationForbidden,
+    BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
     BranchMergeProposalStatus, BranchPersonSearchRestriction,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -52,7 +51,11 @@ from canonical.launchpad.interfaces import (
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.database.branchcontainer import (
+    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -134,6 +137,18 @@ class Branch(SQLBase):
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
+
+    @property
+    def container(self):
+        """See `IBranch`."""
+        if self.product is None:
+            if self.distroseries is None:
+                return PersonContainer(self.owner)
+            else:
+                return PackageContainer(
+                    self.distroseries, self.sourcepackagename)
+        else:
+            return ProductContainer(self.product)
 
     @property
     def revision_history(self):
@@ -306,13 +321,6 @@ class Branch(SQLBase):
     def warehouse_url(self):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
-
-    @property
-    def product_name(self):
-        """See `IBranch`."""
-        if self.product is None:
-            return '+junk'
-        return self.product.name
 
     def _getContainerName(self):
         if self.product is not None:
@@ -831,11 +839,6 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def getBranch(self, owner, product, branch_name):
-        """See `IBranchSet`."""
-        return Branch.selectOneBy(
-            owner=owner, product=product, name=branch_name)
-
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
 
@@ -894,8 +897,7 @@ class BranchSet:
             # ~vcs-imports.
             if (owner.isTeam() and
                 owner != getUtility(ILaunchpadCelebrities).vcs_imports):
-                raise BranchCreationNoTeamOwnedJunkBranches(
-                    "Cannot create team-owned junk branches.")
+                raise BranchCreationNoTeamOwnedJunkBranches()
             # All junk branches are public.
             return PUBLIC_BRANCH
         # First check if the owner has a defined visibility rule.
@@ -981,17 +983,12 @@ class BranchSet:
 
         # Make sure that the new branch has a unique name if not a junk
         # branch.
-        if not self.isBranchNameAvailable(owner, product, name):
-            params = {'name': name}
-            if product is None:
-                params['maybe_junk'] = 'junk '
-                params['context'] = owner.name
-            else:
-                params['maybe_junk'] = ''
-                params['context'] = "%s in %s" % (owner.name, product.name)
-            raise BranchCreationException(
-                'A %(maybe_junk)sbranch with the name "%(name)s" already '
-                'exists for %(context)s.' % params)
+        namespace = get_branch_namespace(
+            owner, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        existing_branch = namespace.getByName(name)
+        if existing_branch is not None:
+            raise BranchExists(existing_branch)
 
         branch = Branch(
             registrant=registrant,
@@ -1057,12 +1054,22 @@ class BranchSet:
             return branch
 
     def getByUniqueName(self, unique_name, default=None):
-        """Find a branch by its ~owner/product/name unique name."""
-        # import locally to avoid circular imports
-        match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
-        if match is None:
+        """Find a branch by its unique name.
+
+        For product branches, the unique name is ~user/product/branch; for
+        source package branches,
+        ~user/distro/distroseries/sourcepackagename/branch; for personal
+        branches, ~user/+junk/branch.
+        """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
+        # +dev alias, nor official source package branches.
+        path_segments = unique_name.split('/')
+        if len(path_segments) == 5:
+            return self._getSourcePackageBranch(path_segments, default)
+        if len(path_segments) != 3:
             return default
-        owner_name, product_name, branch_name = match.groups()
+        owner_name, product_name, branch_name = path_segments
+        owner_name = owner_name[1:]
         branch = self._getByUniqueNameElements(
             owner_name, product_name, branch_name)
         if branch is None:
@@ -1070,8 +1077,43 @@ class BranchSet:
         else:
             return branch
 
+    def _getSourcePackageBranch(self, path_segments, default):
+        """Find a source package branch given its path segments.
+
+        Only gets unofficial source package branches, that is, branches with
+        names like ~jml/ubuntu/jaunty/openssh/stuff.
+        """
+        # Avoid circular imports.
+        from canonical.launchpad.database import (
+            Distribution, DistroSeries, Person, SourcePackageName)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [
+            Branch,
+            Join(Person, Branch.owner == Person.id),
+            Join(SourcePackageName,
+                 Branch.sourcepackagename == SourcePackageName.id),
+            Join(DistroSeries,
+                 Branch.distroseries == DistroSeries.id),
+            Join(Distribution,
+                 DistroSeries.distribution == Distribution.id)]
+        owner, distribution, distroseries, sourcepackagename, branch = (
+            path_segments)
+        owner = owner[1:]
+        result = store.using(*origin).find(
+            Branch, Person.name == owner, Distribution.name == distribution,
+            DistroSeries.name == distroseries,
+            SourcePackageName.name == sourcepackagename,
+            Branch.name == branch)
+        branch = result.one()
+        if branch is None:
+            return default
+        return branch
+
     @staticmethod
     def _getByUniqueNameElements(owner_name, product_name, branch_name):
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Not sure why
+        # this is using direct SQL instead of Storm. Also not sure whether
+        # this method makes sense in source package branch land.
         if product_name == '+junk':
             query = ("Branch.owner = Person.id"
                      + " AND Branch.product IS NULL"
@@ -1090,6 +1132,11 @@ class BranchSet:
     @classmethod
     def getByLPPath(klass, path):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This
+        # implementation needs to be updated to handle five-part source
+        # package branches and three-part source package branches. Might also
+        # be a good idea to support the +dev alias (or whatever the spec
+        # suggests).
         path_segments = path.split('/', 3)
         series_name = None
         if len(path_segments) > 3:
@@ -1160,6 +1207,8 @@ class BranchSet:
         # Left-join Product so that we still publish +junk branches.
         prejoin = store.using(
             LeftJoin(Branch, Product, Branch.product == Product.id), Person)
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This pre-join
+        # isn't good enough to handle source package branches.
         return (branch for (owner, product, branch) in prejoin.find(
             (Person, Product, Branch),
             Branch.branch_type != BranchType.REMOTE,
@@ -1359,17 +1408,6 @@ class BranchSet:
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
 
-    def getHostedBranchesForPerson(self, person):
-        """See `IBranchSet`."""
-        branches = Branch.select("""
-            Branch.branch_type = %s
-            AND Branch.owner IN (
-            SELECT TeamParticipation.team
-            FROM TeamParticipation
-            WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(BranchType.HOSTED, person))
-        return branches
-
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See `IBranchSet`."""
@@ -1382,15 +1420,6 @@ class BranchSet:
             limit=quantity,
             orderBy=['-date_created', '-id'])
 
-    def getByProductAndName(self, product, name):
-        """See `IBranchSet`."""
-        return Branch.selectBy(name=name, product=product.id)
-
-    def getByProductAndNameStartsWith(self, product, name):
-        """See `IBranchSet`."""
-        return Branch.select(
-            'product = %s AND name LIKE %s' % sqlvalues(product, name + '%%'))
-
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
         return Branch.select(
@@ -1400,6 +1429,9 @@ class BranchSet:
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Why the hell is
+        # this using SQL? In any case, we want to change this to allow source
+        # packages.
         return Branch.select("""
             BranchMergeProposal.target_branch = Branch.id
             AND BranchMergeProposal.registrant = %s
@@ -1407,11 +1439,6 @@ class BranchSet:
             """ % sqlvalues(user, product),
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
-
-    def isBranchNameAvailable(self, owner, product, branch_name):
-        """See `IBranchSet`."""
-        branch = self.getBranch(owner, product, branch_name)
-        return branch is None
 
 
 class BranchQueryBuilder:

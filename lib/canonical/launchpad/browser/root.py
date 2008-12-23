@@ -7,9 +7,12 @@ __all__ = [
     'LaunchpadSearchView',
     ]
 
+
 import re
+import sys
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
@@ -24,7 +27,8 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
-from canonical.launchpad.interfaces.searchservice import ISearchService
+from canonical.launchpad.interfaces.searchservice import (
+    GoogleResponseError, ISearchService)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
@@ -180,6 +184,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         Set the state of the search_params and matches.
         """
         super(LaunchpadSearchView, self).__init__(context, request)
+        self.has_page_service = True
         self._bug = None
         self._question = None
         self._person_or_team = None
@@ -307,6 +312,15 @@ class LaunchpadSearchView(LaunchpadFormView):
                  self.person_or_team, self.has_shipit, self.pages)
         return self.containsMatchingKind(kinds)
 
+    @property
+    def url(self):
+        """Return the requested URL."""
+        if 'QUERY_STRING' in self.request:
+            query_string = self.request['QUERY_STRING']
+        else:
+            query_string = ''
+        return self.request.getURL() + '?' + query_string
+
     def containsMatchingKind(self, kinds):
         """Return True if one of the items in kinds is not None, or False."""
         for kind in kinds:
@@ -402,8 +416,15 @@ class LaunchpadSearchView(LaunchpadFormView):
         if query_terms in [None , '']:
             return None
         google_search = getUtility(ISearchService)
-        page_matches = google_search.search(terms=query_terms, start=start)
-        if page_matches.total == 0:
+        try:
+            page_matches = google_search.search(
+                terms=query_terms, start=start)
+        except GoogleResponseError:
+            error_utility = getUtility(IErrorReportingUtility)
+            error_utility.raising(sys.exc_info(), self.request)
+            self.has_page_service = False
+            return None
+        if len(page_matches) == 0:
             return None
         navigator = GoogleBatchNavigator(
             page_matches, self.request, start=start)

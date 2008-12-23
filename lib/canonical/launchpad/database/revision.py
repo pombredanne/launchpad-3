@@ -11,6 +11,7 @@ import email
 
 import pytz
 from storm.expr import And, Asc, Desc, Exists, Not, Select
+from storm.locals import Min
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -314,16 +315,20 @@ class RevisionSet:
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
 
-        return Store.of(product).find(
+        revision_subselect = Select(
+            Min(Revision.id), revision_time_limit(days))
+
+        result_set = Store.of(product).find(
             (Revision, RevisionAuthor),
-            revision_time_limit(days),
             Revision.revision_author == RevisionAuthor.id,
-            Exists(
-                Select(True,
-                       And(BranchRevision.revision == Revision.id,
-                           BranchRevision.branch == Branch.id,
-                           Branch.product == product),
-                       (Branch, BranchRevision))))
+            revision_time_limit(days),
+            BranchRevision.revision == Revision.id,
+            BranchRevision.branch == Branch.id,
+            Branch.product == product,
+            Not(Branch.private),
+            BranchRevision.revisionID >= revision_subselect)
+        result_set.config(distinct=True)
+        return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
     def getRevisionsNeedingKarmaAllocated():

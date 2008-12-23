@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
@@ -191,7 +191,7 @@ class IIndexedMessage(Interface):
 
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
-    decorates(IMessage)
+    delegates(IMessage)
     implements(IIndexedMessage)
 
     def __init__(self, context, inside, index):

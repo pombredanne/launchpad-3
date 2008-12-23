@@ -139,7 +139,7 @@ account to ACTIVE, nor will it reset his password.
     <DBItem AccountStatus.SUSPENDED, ...>
 
     >>> login_token = login_token_set.new(
-    ...     former_user, 'suspended-user@canonical.com',
+    ...     suspended_user, 'suspended-user@canonical.com',
     ...     'suspended-user@canonical.com', LoginTokenType.PASSWORDRECOVERY)
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
@@ -294,6 +294,41 @@ The existing Account, Person and EmailAddress are updated.
     u'Activated by new account.'
     >>> andrelop.is_valid_person
     True
+
+
+== Creating a new account cannot reactivate a suspended profile ==
+
+An existing account that is SUSPENDED cannot be reactivated by claiming
+the email address during account creation.
+
+    >>> login_token = login_token_set.new(
+    ...     suspended_user, 'suspended-user@canonical.com',
+    ...     'suspended-user@canonical.com', LoginTokenType.NEWACCOUNT)
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/token/%s/+newaccount' % login_token.token,
+    ...     method='POST',
+    ...     form={
+    ...         'field.displayname': 'Bad User',
+    ...         'field.hide_email_addresses.used': '',
+    ...         'field.password': 'bad-intentions',
+    ...         'field.password_dupe': 'bad-intentions',
+    ...         'field.actions.continue': 'Continue',
+    ...         })
+    >>> login(ANONYMOUS, request)
+    >>> claimprofile_view = getMultiAdapter(
+    ...     (login_token, request), name="+newaccount")
+    >>> claimprofile_view.initialize()
+    >>> claimprofile_view.errors
+    []
+
+    >>> login('foo.bar@canonical.com')
+    >>> suspended_user.is_valid_person
+    False
+    >>> suspended_user.account.password == original_password
+    True
+    >>> suspended_user.account.status
+    <DBItem AccountStatus.SUSPENDED, ...>
 
 
 == Validating GPG keys ==

@@ -355,22 +355,22 @@ tooltip is different though.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(mark, '+index')
-    >>> print view.contactuser_link_title
+    >>> print view.contact_link_title
     Send an email to this user through Launchpad
 
     >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
     >>> view = create_initialized_view(no_priv, '+index')
-    >>> print view.contactuser_link_title
+    >>> print view.contact_link_title
     Send an email to yourself through Launchpad
 
 This is true even when the user is hiding their email addresses.
 
     >>> name12 = person_set.getByName('name12')
     >>> view = create_initialized_view(name12, '+index')
-    >>> print view.contactuser_link_title
+    >>> print view.contact_link_title
     Send an email to this user through Launchpad
 
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(name12, '+index')
-    >>> print view.contactuser_link_title
+    >>> print view.contact_link_title
     Send an email to yourself through Launchpad
