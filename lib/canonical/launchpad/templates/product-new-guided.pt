@@ -43,7 +43,7 @@
 
     <h2>A brand new project in Launchpad</h2>
 
-    <p style="font-size: larger">
+    <p id="instructions" style="font-size: larger">
     Launchpad is a service for <strong>registering and hosting software
     projects</strong>. Service is provided free for open source/free software
     projects. But let us steal a minute of your time to point out a few

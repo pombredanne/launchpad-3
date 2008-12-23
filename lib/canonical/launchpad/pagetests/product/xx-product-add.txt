@@ -13,14 +13,12 @@ chooses the 'Register a project' link.
 The first page of project registration provides information about
 registration. Sample Person reads the explanation:
 
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Hi there!
-    ...
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'instructions'))
     Launchpad is a service for registering and hosting software
     projects. Service is provided free for open source/free software
     projects. But let us steal a minute of your time to point out a few
     important things before you proceed with the actual registration.
-    ...
 
 He sees hints to the existence of staging, the user guide and the tour:
 
