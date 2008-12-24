@@ -81,19 +81,17 @@
 
       </div>
 
-      <div class="left" id="signing-key"
-	   tal:define="signing_key context/signing_key"
+      <div id="signing-key"
+           tal:define="signing_key context/signing_key"
 	   tal:condition="signing_key">
-
         <p>This repository is signed with
           <a tal:attributes="href signing_key/keyserverURL">
             <code tal:content="signing_key/fingerprint">
               0123456789012345678901234567890123456789
             </code></a> OpenPGP key.
-            Follow <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories"
-            >these instructions</a> for installing packages from this PPA.
-        </p>
-
+          <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories"
+          >Follow these instructions</a>
+          for installing packages from this PPA.</p>
       </div> <!-- signing-key -->
 
       <div id="archive-dependencies" tal:condition="context/dependencies">
