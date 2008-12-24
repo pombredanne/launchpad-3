@@ -145,6 +145,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.launchpad import (
+    INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.product import IProduct
@@ -5048,37 +5050,152 @@ class IEmailToPerson(Interface):
         title=_('Message'), required=True, readonly=False)
 
 
-class Recipients:
-    """Who is being contacted."""
-    def __init__(self):
-        self.description = None
-        self.to_header_name = None
-        # The email attribute will be an iterator.
-        self.email = None
+class ContactViaWebNotificationRecipientSet:
+    """A set of notification recipients and rationales from ContactViaWeb."""
+    implements(INotificationRecipientSet)
 
-    def appendEmail(self, email_address):
-        """Add the email from the EmailAddress to the list of emails.
+    def __init__(self, context):
+        self.context = context
+        self._primary_recipient = None
+        self._reason = None
+        self._header = None
+        self._is_multiple_users = False
+        self._all_recipients_dict = None
+        self._count_recipients = None
 
-        :param email_address: an EmailAddress, possibly wrapped
-            by a SecurityProxy.
-        :type email_address: EmailAddress.
-        """
-        if self.email is None:
-            self.email = []
-        self.email.append(removeSecurityProxy(email_address).email)
+    def _reset_state(self):
+        """Reset the lazr cache because the recipients changed."""
+        self._is_multiple_users = False
+        self._all_recipients_dict = None
+        self._count_recipients = None
 
+    @property
+    def description(self):
+        """The description of the recipients for the contacting user."""
+        if self.context.is_valid_person:
+            return (
+                'You are contacting %s (%s).' %
+                (self.context.displayname, self.context.name))
+        elif self.context.is_team and self._primary_recipient.is_valid_person:
+            return (
+                'You are contacting the %s (%s) team owner, %s (%s).' %
+                (self.context.displayname, self.context.name,
+                 self._primary_recipient.displayname,
+                 self._primary_recipient.name))
+        elif self.context.is_team and self.context.preferredemail is not None:
+            return (
+                'You are contacting the %s (%s) team.' %
+                (self.context.displayname, self.context.name))
+        else:
+            # This is a team without a contact address.
+            recipients_count = len(self)
+            if recipients_count == 1:
+                plural_suffix = ''
+            else:
+                plural_suffix = 's'
+            text = '%d member%s' % (recipients_count, plural_suffix)
+            return (
+                'You are contacting %s of the %s (%s) team directly.'
+                % (text, self.context.displayname, self.context.name))
 
-class MemberWrapper:
-    def __init__(self, team):
-        self.team = team
+    @property
+    def _all_recipients(self):
+        """Set the cache of all recipients."""
+        if self._all_recipients_dict is None:
+            self._all_recipients_dict = {}
+            if self._is_multiple_users:
+                team = self._primary_recipient
+                for recipient in team.getMembersWithPreferredEmails():
+                    email = removeSecurityProxy(
+                        recipient).preferredemail.email
+                    self._all_recipients_dict[email] = recipient
+            elif self._primary_recipient.is_valid_person_or_team:
+                email = removeSecurityProxy(
+                    self._primary_recipient).preferredemail.email
+                self._all_recipients_dict[email] = self._primary_recipient
+            else:
+                # The user or team owner is not active.
+                pass
+        return self._all_recipients_dict
 
-    def __len__(self):
-        return self.team.getMembersWithPreferredEmailsCount()
+    def getEmails(self):
+        """See `INotificationRecipientSet`."""
+        for email in sorted(self._all_recipients.keys()):
+            yield email
+
+    def getRecipients(self):
+        """See `INotificationRecipientSet`."""
+        for recipient in sorted(
+            self._all_recipients.values(), key=attrgetter('displayname')):
+            yield recipient
+
+    def getRecipientPersons(self):
+        """See `INotificationRecipientSet`."""
+        for email, person in self._all_recipients.items():
+            yield (email, person)
 
     def __iter__(self):
-        for person in self.team.getMembersWithPreferredEmails():
-            naked_email = removeSecurityProxy(person.preferredemail)
-            yield naked_email.email
+        """See `INotificationRecipientSet`."""
+        for recipient in self._all_recipients:
+            yield recipient
+
+    def __contains__(self, person_or_email):
+        """See `INotificationRecipientSet`."""
+        if IPerson.implementedBy(person_or_email):
+            return person_or_email in self._all_recipients.values()
+        else:
+            return person_or_email in self._all_recipients.keys()
+
+    def __len__(self):
+        """The number of recipients in the set."""
+        if self._count_recipients is None:
+            recipient = self._primary_recipient
+            if self._is_multiple_users:
+                self._count_recipients = (
+                    recipient.getMembersWithPreferredEmailsCount())
+            elif recipient.is_valid_person_or_team:
+                self._count_recipients = 1
+            else:
+                # The user or team owner is deactivated.
+                self._count_recipients = 0
+        return self._count_recipients
+
+    def __nonzero__(self):
+        """See `INotificationRecipientSet`."""
+        return len(self) > 0
+
+    def getReason(self, person_or_email):
+        """See `INotificationRecipientSet`."""
+        if person_or_email not in self:
+            raise UnknownRecipientError(
+                '%s in not in the recipients' % person_or_email)
+        # All users have the same reason based on the primary recipient.
+        return (self._reason, self._header)
+
+    def add(self, person, reason, header):
+        """See `INotificationRecipientSet`.
+
+        This method sets the primary recipient of the email. If the primary
+        recipient is a team without a contact address, all the members will
+        be recipients. Calling this method more than once resets the
+        recipients.
+        """
+        self._reset_state()
+        naked_person = removeSecurityProxy(person)
+        if person.is_team and naked_person.preferredemail is None:
+            self._is_multiple_users = True
+        self._primary_recipient = person
+        self._reason = reason
+        self._header = header
+
+    def update(self, recipient_set):
+        """See `INotificationRecipientSet`.
+
+        This method is is not relevant to this implementation because the
+        set is generated based on the primary recipient. use the add() to
+        set the primary recipient.
+        """
+        pass
 
 
 class EmailToPersonView(LaunchpadFormView):
@@ -5123,82 +5240,39 @@ class EmailToPersonView(LaunchpadFormView):
     def recipients(self):
         """The recipients of the email message.
 
-        :return: recipients is an object with two attributes:
-            description: a summary of who or which team is being contacted.
-            emails: a list of addresses that will be used to send the message.
-        :rtype: `Recipients`.
+        :return: the recipients of the message.
+        :rtype: `ContactViaWebNotificationRecipientSet`.
         """
-        recipients = Recipients()
-        if self.context.is_valid_person:
-            recipients.appendEmail(self.context.preferredemail)
-            recipients.description = (
-                'You are contacting %s (%s).' %
-                (self.context.displayname, self.context.name))
-            recipients.to_header_name = (
-                'the "Contact this user" link on your profile page',
-                'ContactViaWeb user')
-        elif self.context.is_team:
+        if self.context.is_team:
             if self.user.inTeam(self.context):
                 if self.context.preferredemail is None:
-                    # Contact each member.
-                    # This actually instantiates a generator, so the function
-                    # won't be executed until it is iterated over.
-                    recipients.email = MemberWrapper(self.context)
-                    recipients_count = len(recipients.email)
-                    if recipients_count == 1:
-                        plural_suffix = ''
-                    else:
-                        plural_suffix = 's'
-                    text = '%d member%s' % (recipients_count, plural_suffix)
-                    recipients.description = (
-                        'You are contacting %s of the %s (%s) '
-                        'team directly.' %
-                        (text, self.context.displayname, self.context.name))
-                    recipients.to_header_name = (
-                        'the "Contact this team" link to %s on the %s '
-                        'team page' % (text, self.context.displayname),
-                        'ContactViaWeb member (%s team %s)' %
-                        (self.context.name, text))
+                    reason = (
+                        'the "Contact this team" link on the ' '%s team page '
+                        'to each\nmember directly' % self.context.displayname)
                 else:
-                    recipients.appendEmail(self.context.preferredemail)
-                    recipients.description = (
-                        'You are contacting the %s (%s) team.' %
-                        (self.context.displayname, self.context.name))
-                    recipients.to_header_name = (
+                    reason = (
                         'the "Contact this team" link on the '
-                        '%s team page' %  self.context.displayname,
-                        'ContactViaWeb member (%s team)' % self.context.name)
+                        '%s team page' %  self.context.displayname)
+                person = self.context
+                header = (
+                    'ContactViaWeb member (%s team)' % self.context.name)
             else:
                 # A non-member can only send emails to a single person to
                 # hinder spam and to prevent leaking membership
                 # information for private teams when the members reply.
-                owner = self.context.teamowner
-                while owner.is_team:
-                    owner = owner.teamowner
-                recipients.appendEmail(owner.preferredemail)
-                recipients.description = (
-                    'You are contacting the %s (%s) team owner, %s (%s).' %
-                    (self.context.displayname, self.context.name,
-                     owner.displayname, owner.name))
-                recipients.to_header_name = (
+                person = self.context.teamowner
+                while person.is_team:
+                    person = person.teamowner
+                reason = (
                     'the "Contact this team" owner link on the '
-                    '%s team page' %  self.context.displayname,
-                    'ContactViaWeb owner (%s team)' % self.context.name)
+                    '%s team page' %  self.context.displayname)
+                header = 'ContactViaWeb owner (%s team)' % self.context.name
         else:
-            # Let the next guard handle the no recipients condition.
-            pass
-        if len(recipients.email) == 0:
-            # It's possible that this a person's page and that person
-            # has no preferred email address.  It is possible that old
-            # data may not be valid, or that someone is crafting a URL to
-            # access a non-active user.
-            recipients.description = (
-                '%s (%s) does not have an email address.' %
-                (self.context.displayname, self.context.name))
-
-        assert recipients.description is not None
-        assert recipients.to_header_name is not None
-        assert recipients.email is not None
+            person = self.context
+            reason = 'the "Contact this user" link on your profile page'
+            header = 'ContactViaWeb user'
+        recipients = ContactViaWebNotificationRecipientSet(self.context)
+        recipients.add(person, reason, header)
         return recipients
 
     @action(_('Send'), name='send')
@@ -5208,7 +5282,7 @@ class EmailToPersonView(LaunchpadFormView):
         subject = data['subject']
         message = data['message']
 
-        if len(self.recipients.email) == 0:
+        if not self.recipients:
             self.request.response.addErrorNotification(
                 _('Your message was not sent because the recipient '
                   'does not have a preferred email address.'))
@@ -5216,8 +5290,7 @@ class EmailToPersonView(LaunchpadFormView):
             return
         try:
             send_direct_contact_email(
-                sender_email, self.recipients.email,
-                self.recipients.to_header_name, subject, message)
+                sender_email, self.recipients, subject, message)
         except QuotaReachedError, error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
@@ -5246,7 +5319,7 @@ class EmailToPersonView(LaunchpadFormView):
     @property
     def has_valid_email_address(self):
         """Whether there is a contact address."""
-        return len(self.recipients.email) > 0
+        return len(self.recipients) > 0
 
     @property
     def contact_is_possible(self):

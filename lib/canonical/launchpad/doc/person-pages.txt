@@ -369,12 +369,9 @@ to explain exactly who is being contacted.
     Contact Sample Person
     >>> print view.specific_contact_title_text
     Contact this user
-    >>> print view.recipients.to_header_name
-    ('the "Contact this user" link on your profile page',
-     'ContactViaWeb user')
     >>> print view.recipients.description
     You are contacting Sample Person (name12).
-    >>> list(view.recipients.email)
+    >>> list(view.recipients)
     [u'test@canonical.com']
 
 
@@ -399,7 +396,7 @@ The EmailToPersonView provides the explanation about who is being contacted.
     Contact yourself
     >>> print view.recipients.description
     You are contacting No Privileges Person (no-priv).
-    >>> list(view.recipients.email)
+    >>> list(view.recipients)
     [u'no-priv@canonical.com']
 
 
@@ -421,13 +418,10 @@ team owner.
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
     Contact this team
-    >>> print view.recipients.to_header_name
-    (u'the "Contact this team" owner link on the Landscape Developers team page',
-     u'ContactViaWeb owner (landscape-developers team)')
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team
     owner, Sample Person (name12).
-    >>> list(view.recipients.email)
+    >>> list(view.recipients)
     [u'test@canonical.com']
 
 
@@ -450,14 +444,19 @@ The EmailToPersonView can be used by members to contact their team.
     Contact Landscape Developers
     >>> print view.specific_contact_title_text
     Contact your team
-    >>> print view.recipients.to_header_name
-    (u'the "Contact this team" link to 2 members on the Landscape Developers team page.',
-     u'ContactViaWeb member (landscape-developers team 2 members)')
     >>> print view.recipients.description
     You are contacting 2 members of the Landscape Developers
     (landscape-developers) team directly.
-    >>> sorted(view.recipients.email)
+    >>> sorted(view.recipients)
     [u'guilherme.salgado@canonical.com', u'test@canonical.com']
+
+There are 2 recipients, so the object is treats are True.
+
+    >>> recipients = view.recipients
+    >>> len(recipients)
+    2
+    >>> bool(recipients)
+    True
 
 If there is only one member of the team, who must therefore be the user
 sending the email, and also be the team owner, The view provides a special
@@ -472,7 +471,7 @@ message just for him.
     Contact your team
     >>> print view.recipients.description
     You are contacting 1 member of the Vanity (vanity) team directly.
-    >>> sorted(view.recipients.email)
+    >>> sorted(view.recipients)
     [u'test@canonical.com']
 
 EmailToPersonView will use the contact address when the team has one.
@@ -494,7 +493,7 @@ EmailToPersonView will use the contact address when the team has one.
     Contact your team
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team.
-    >>> list(view.recipients.email)
+    >>> list(view.recipients)
     [u'landscapers@canonical.com']
 
 
@@ -531,6 +530,11 @@ cannot be contacted.
     302
     >>> print view.request.response.getHeader('Location')
     http://launchpad.dev/~former-user-deactivatedaccount
+    >>> recipients = view.recipients
+    >>> len(recipients)
+    0
+    >>> bool(recipients)
+    False
 
 Anonymous users cannot contact anyone, they are redirect to the person
 or team's profile page. This can happen when off-site links point to a

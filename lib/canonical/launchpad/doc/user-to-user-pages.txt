@@ -332,7 +332,8 @@ subject and body from the same sender.
     --
     This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link to 10 members on the GuadaMen team page.
+    using the "Contact this team" link on the GuadaMen team page to each
+    member directly.
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Message-IDs: 10
@@ -382,7 +383,8 @@ Foo Bar's message gets sent to each individual member of he team.
     --
     This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link to 10 members on the GuadaMen team page.
+    using the "Contact this team" link on the GuadaMen team page to each
+    member directly.
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Message-IDs: 10

@@ -1886,13 +1886,13 @@ def encode(value):
 
 
 def send_direct_contact_email(
-    sender_email, recipients_email, to_header_name, subject, body):
+    sender_email, recipients_set, subject, body):
     """Send a direct user-to-user email.
 
     :param sender_email: The email address of the sender.
     :type sender_email: string
-    :param recipients_email: The email address of the recipients.
-    :type recipients_email:' list of strings
+    :param recipients_set: The recipients.
+    :type recipients_set:' A ContactViaWebNotificationSet
     :param subject: The Subject header.
     :type subject: unicode
     :param body: The message body.
@@ -1903,7 +1903,6 @@ def send_direct_contact_email(
     # Craft the email message.  Start by checking whether the subject and
     # message bodies are ASCII or not.
     subject_header = encode(subject)
-    rational_footer, rational_header = to_header_name
     try:
         body.encode('us-ascii')
         charset = 'us-ascii'
@@ -1930,7 +1929,7 @@ def send_direct_contact_email(
         u'-- ',
         u'This message was sent from Launchpad by',
         u'%s (%s)' % (sender_name , canonical_url(sender)),
-        u'using %s.' % rational_footer,
+        u'using %s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ]
@@ -1938,14 +1937,11 @@ def send_direct_contact_email(
     encoded_body = body.encode(charset)
     # Craft and send one message per recipient.
     message = None
-    for recipient_email in recipients_email:
-        # XXX sinzui 2008-12-23:  Get rid of this lookup.
-        recipient = person_set.getByEmail(recipient_email)
-        assert recipient is not None, (
-            'No person for recipient %s' % recipient_email)
+    for recipient_email, recipient in recipients_set.getRecipientPersons():
         recipient_name = str(encode(recipient.displayname))
-
-        message = MIMEText(encoded_body, _charset=charset)
+        reason, rational_header = recipients_set.getReason(recipient_email)
+        reason = str(encode(reason))
+        message = MIMEText(encoded_body % reason, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
         message['To'] = formataddr((recipient_name, recipient_email))
         message['Subject'] = subject_header
