@@ -1,1 +1,43 @@
-<include package="z3c.pt"/>
+<configure xmlns="http://namespaces.zope.org/zope">
+  <!-- 
+       The contents of this file were hand-picked from chameleon.zpt and
+       z3c.pt to avoid a direct dependency on repoze.zcml, which is not
+       compatible with zope 3.4 
+  -->
+
+  <include package="zope.component" file="meta.zcml" />
+
+  <!-- From chameleon.zpt -->
+  <configure package="chameleon.zpt">
+    <utility
+	name="python"
+	component=".expressions.python_translator" />
+
+    <adapter
+	name="string"
+	factory=".expressions.StringTranslator" />
+
+  </configure>
+
+  <!-- From z3c.pt -->
+  <configure package="z3c.pt">
+    <include package="chameleon.core" />
+
+    <utility
+	name="path"
+	component=".expressions.path_translator" />
+
+    <adapter
+	name="not"
+	factory=".expressions.NotTranslator" />
+
+    <utility
+	name="provider"
+	component=".expressions.provider_translator" />
+
+    <utility
+	name="exists"
+	component=".expressions.exists_translator" />
+  </configure>
+
+</configure>
