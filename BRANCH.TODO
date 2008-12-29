@@ -3,14 +3,10 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-- ``repoze.zcml`` 0.2 is not compatible with Zope 3.4. It throws a
-  TypeError trying to provide a ``factory`` argument to
-  ``registerUtility``. See: http://tinyurl.com/a68hsr
-
 - Need to pull the following dependencies into ``sourcecode``:
-  ``repoze.zcml``, ``z3c.ptcompat``, ``z3c.pt``, ``chameleon.zpt``,
+  ``z3c.ptcompat``, ``z3c.pt``, ``chameleon.zpt``,
   ``chameleon.core``, ``sourcecodegen``. The last 4 are on launchpad
-  already, the first two are being imported.
+  already, the first is being imported.
 
 - ``chameleon.zpt`` does not support path adapters just yet.
 
