@@ -6,6 +6,7 @@
 
   <!-- Meta configuration (new directives) -->
   <include package="zope.app" file="meta.zcml" />
+  <includeOverrides package="z3c.ptcompat" file="meta.zcml" />
   <include package="zope.app.publisher.xmlrpc" file="meta.zcml" />
 
   <!-- Note that we need to do this early, as later startup
