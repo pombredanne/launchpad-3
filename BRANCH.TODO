@@ -22,3 +22,6 @@
 
 - Waiting for review and merge by ``mborch``: 
   ``lp:~sidnei/z3c.pt/tales-function-namespaces``
+
+- Global ``modules`` is not available by default. Need to find where
+  it's supposed to be registered.
