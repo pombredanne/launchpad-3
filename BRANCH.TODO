@@ -8,8 +8,6 @@
   ``chameleon.core``, ``sourcecodegen``. The last 4 are on launchpad
   already, the first is being imported.
 
-- ``chameleon.zpt`` does not support path adapters just yet.
-
 - Got it to run on a hacked virtualenv: 
 
   - symlink ``zope`` and ``zope.interface-3.3.1.egg-info`` from
@@ -19,5 +17,8 @@
   - Check out the 5 dependencies above and do a ``python setup.py
     develop`` from each, making sure the virtualenv is activated.
 
-  - run launchpad with ``make run PYTHON=`which python```, again with
-    the virtualenv being active.
+  - run launchpad with ``PREFER_Z3C_PT=true make run PYTHON=`which
+    python```, again with the virtualenv being active.
+
+- Waiting for review and merge by ``mborch``: 
+  ``lp:~sidnei/z3c.pt/tales-function-namespaces``
