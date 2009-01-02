@@ -821,6 +821,12 @@ define a second representation for use with PATCH requests.
     >>> 'related_tasks_collection_link' in diff_rep_names
     False
 
+Fields that have server-side mutators are considered read-write
+fields, and show up in the PATCH representation.
+
+    >>> 'status' in diff_rep_names
+    True
+
 Most <param> tags don't tell the client much beyond where to find a
 certain parameter, but some of our parameters take values from a
 proscribed vocabulary. These parameters correspond to Choice fields
