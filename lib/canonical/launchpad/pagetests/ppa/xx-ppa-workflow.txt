@@ -15,7 +15,7 @@ menu.
    Profile
    Related Software: ...
    Karma: ...
-   Personal Package Archive: http://launchpad.dev/~cprov/+ppa/default
+   Personal Package Archive: http://launchpad.dev/~cprov/+archive
 
 Since cprov's Personal Package Archive is already activated in
 sampledata, the 'Personal Package Archive' menu item takes you to his
@@ -28,7 +28,7 @@ archive.
     >>> cprov_browser.title
     'PPA for Celso Providelo'
     >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+ppa/default'
+    'http://launchpad.dev/~cprov/+archive'
 
 If, by any chance, the user tries to access the Personal Package
 Archive activation page for already activated PPA (hand-made or save
@@ -36,7 +36,7 @@ URLs) it will get redirected to the PPA page automatically:
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+activate-ppa")
     >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+ppa/default'
+    'http://launchpad.dev/~cprov/+archive'
 
 Checking if the Person action-menu is sane, by not presenting links to
 a Personal Package Archive that doesn't exist yet, let's use the
@@ -48,10 +48,10 @@ a Personal Package Archive that doesn't exist yet, let's use the
 Accessing a nonexistent Personal Package Archive page with a hand-made
 URL results in NotFound error:
 
-    >>> sample_browser.open("http://launchpad.dev/~name12/+ppa/default")
+    >>> sample_browser.open("http://launchpad.dev/~name12/+archive")
     Traceback (most recent call last):
     ...
-    NotFound: Object: <Person at ...>, name: u'+ppa'
+    NotFound: Object: <Person at ...>, name: u'+archive'
 
 Sample Person hasn't activated his PPA yet, but he has a 'Personal
 Package Archive' link in the navigation menu on his home page.  The
@@ -104,7 +104,7 @@ checkbox must be checked:
 A successful activation redirects to the Personal Package Archive page:
 
     >>> sample_browser.url
-    'http://launchpad.dev/~name12/+ppa/default'
+    'http://launchpad.dev/~name12/+archive'
 
 Where we can check for the submitted description:
 
@@ -133,7 +133,7 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
     >>> sample_browser.getControl("Save").click()
 
     >>> sample_browser.url
-    'http://launchpad.dev/~name12/+ppa/default'
+    'http://launchpad.dev/~name12/+archive'
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -177,7 +177,7 @@ Let's proceed with the required permissions:
     >>> sample_browser.getControl("Activate").click()
 
     >>> sample_browser.url
-    'http://launchpad.dev/~landscape-developers/+ppa/default'
+    'http://launchpad.dev/~landscape-developers/+archive'
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -235,7 +235,7 @@ name of other users or teams:
     >>> admin_browser.getControl("Activate").click()
 
     >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+ppa/default'
+    'http://launchpad.dev/~carlos/+archive'
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'description'))
@@ -252,7 +252,7 @@ LP-admins can also 'edit' PPAs of other people:
 But more importantly, only LP administrators can 'administer' Personal
 Package Archives.
 
-    >>> sample_browser.open("http://launchpad.dev/~carlos/+ppa/default")
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive")
     >>> print sample_browser.getLink("Administer archive")
     Traceback (most recent call last):
     ...
@@ -260,12 +260,11 @@ Package Archives.
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+ppa/default/+admin'
+    'http://launchpad.dev/~carlos/+archive/+admin'
 
 Trying to shortcut the URL as a non-privileged user does not work:
 
-    >>> sample_browser.open(
-    ...     "http://launchpad.dev/~carlos/+ppa/default/+admin")
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -304,14 +303,14 @@ build on a virtualized builder.
     >>> admin_browser.getControl("Save").click()
 
     >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+ppa/default'
+    'http://launchpad.dev/~carlos/+archive'
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
     PPA whiteboard:
     Here lives a lazy community.
 
-    >>> admin_browser.open("http://launchpad.dev/~carlos/+ppa/default/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
     >>> admin_browser.getControl(name="field.enabled").value
     False
     >>> admin_browser.getControl(name="field.private").value
@@ -349,7 +348,7 @@ MiB. Submitting the form with an authorized_size that is too large
 will result in an error:
 
     >>> limit = 20 * 1024
-    >>> admin_browser.open("http://launchpad.dev/~carlos/+ppa/default/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
     >>> admin_browser.getControl(
     ...     name="field.authorized_size").value = str(limit + 1)
     >>> admin_browser.getControl("Save").click()
@@ -362,7 +361,7 @@ will result in an error:
 The whiteboard section can be viewed by the PPA owner:
 
     >>> carlos_browser = setupBrowser(auth="Basic carlos@canonical.com:test")
-    >>> carlos_browser.open("http://launchpad.dev/~carlos/+ppa/default")
+    >>> carlos_browser.open("http://launchpad.dev/~carlos/+archive")
     >>> print extract_text(
     ...     find_tag_by_id(carlos_browser.contents, 'whiteboard'))
     PPA whiteboard:
@@ -417,7 +416,7 @@ Activate the first browser:
 A successful activation redirects to the Personal Package Archive page:
 
     >>> browser1.url
-    'http://launchpad.dev/~name16/+ppa/default'
+    'http://launchpad.dev/~name16/+archive'
 
 Where we can check for the submitted description:
 
@@ -432,7 +431,7 @@ Activate the second browser:
 It will be directed to the Personal Package Archive page:
 
     >>> browser2.url
-    'http://launchpad.dev/~name16/+ppa/default'
+    'http://launchpad.dev/~name16/+archive'
 
 And the description matches the first submission's:
 
