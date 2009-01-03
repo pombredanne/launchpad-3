@@ -25,7 +25,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, Navigation, LaunchpadFormView,
     LaunchpadView)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class CodeImportMachineSetNavigation(Navigation):
@@ -66,7 +66,7 @@ class UpdateMachineStateForm(Interface):
 class DecoratedEvent:
     """A CodeImportEvent with cached items."""
 
-    decorates(ICodeImportEvent, 'event')
+    delegates(ICodeImportEvent, 'event')
 
     def __init__(self, event):
         self.event = event
