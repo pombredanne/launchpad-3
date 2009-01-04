@@ -109,8 +109,8 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.lazr import decorates
-from canonical.lazr.config import as_timedelta
+from lazr.delegates import delegates
+from lazr.config import as_timedelta
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -284,6 +284,8 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, product_name):
+        # XXX: JonathanLange 2008-12-10 spec=package-branches: This is a big
+        # thing that needs to be changed for package branches.
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
             branch = self.context.getBranch(product_name, branch_name)
@@ -1352,18 +1354,47 @@ class TeamOverviewNavigationMenu(
         return Link(target, text)
 
 
+class ActiveBatchNavigator(BatchNavigator):
+    """A paginator for active items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'active_start'
+    batch_variable_name = 'active_batch'
+
+
+class InactiveBatchNavigator(BatchNavigator):
+    """A paginator for inactive items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'inactive_start'
+    batch_variable_name = 'inactive_batch'
+
+
 class TeamMembershipView(LaunchpadView):
     """The view behins ITeam/+members."""
+
+    @cachedproperty
+    def active_memberships(self):
+        """Current members of the team."""
+        return ActiveBatchNavigator(
+            self.context.member_memberships, self.request)
+
     @cachedproperty
     def inactive_memberships(self):
-        return list(self.context.getInactiveMemberships())
+        """Former members of the team."""
+        return InactiveBatchNavigator(
+            self.context.getInactiveMemberships(), self.request)
 
     @cachedproperty
     def invited_memberships(self):
+        """Other teams invited to become members of this team."""
         return list(self.context.getInvitedMemberships())
 
     @cachedproperty
     def proposed_memberships(self):
+        """Users who have requested to join this team."""
         return list(self.context.getProposedMemberships())
 
     @property
@@ -1586,13 +1617,13 @@ class RedirectToEditLanguagesView(LaunchpadView):
 class PersonWithKeysAndPreferredEmail:
     """A decorated person that includes GPG keys and preferred emails."""
 
-    # These need to be predeclared to avoid decorates taking them over.
+    # These need to be predeclared to avoid delegates taking them over.
     # Would be nice if there was a way of allowing writes to just work
     # (i.e. no proxying of __set__).
     gpgkeys = None
     sshkeys = None
     preferredemail = None
-    decorates(IPerson, 'person')
+    delegates(IPerson, 'person')
 
     def __init__(self, person):
         self.person = person
@@ -4557,7 +4588,7 @@ class SourcePackageReleaseWithStats:
     """An ISourcePackageRelease, with extra stats added."""
 
     implements(ISourcePackageRelease)
-    decorates(ISourcePackageRelease)
+    delegates(ISourcePackageRelease)
     failed_builds = None
     needs_building = None
 

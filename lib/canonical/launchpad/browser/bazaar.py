@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.product import IProduct, IProductSet
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
@@ -89,7 +89,7 @@ class BazaarApplicationView(LaunchpadView):
 
 class ProductInfo:
 
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(
         self, product, num_branches, branch_size, elapsed, important):

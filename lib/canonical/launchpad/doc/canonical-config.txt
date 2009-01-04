@@ -100,7 +100,7 @@ can be changed for a feature.
 And the test can remove the data when it is done to restore the config.
 
     >>> config.pop('test_data')
-    (<canonical.lazr.config.ConfigData ...>,)
+    (<lazr.config.ConfigData ...>,)
     >>> config.answertracker.email_domain
     'answers.launchpad.net'
 
@@ -234,4 +234,3 @@ argument to the constructor.
 #    'launchpad_ftest'
 #    >>> config._cache.testrunner
 #    <SectionValue for canonical 'testrunner'>
-
