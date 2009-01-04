@@ -98,6 +98,7 @@ Now we can build the source package using the generated tarball.
      biscuit (1.0-1) hoary; urgency=low
      .
        * Initial Upstream package
+    ...
     Files:
      ... devel optional biscuit_1.0-1.dsc
      ... devel optional biscuit_1.0.orig.tar.gz
