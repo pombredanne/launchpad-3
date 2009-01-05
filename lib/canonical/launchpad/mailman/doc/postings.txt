@@ -296,7 +296,9 @@ This time, her message is on topic and is accepted.
     >>> len(holds)
     0
 
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+This message is delivered to the archive.
+
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1

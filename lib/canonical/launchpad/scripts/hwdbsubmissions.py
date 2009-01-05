@@ -1298,7 +1298,7 @@ class HALDevice:
           These sub-devices can be identified by the device class their
           parent and by their USB vendor/product IDs, which are 0:0.
         """
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         if bus in (None, 'usb', 'ssb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or

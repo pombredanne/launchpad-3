@@ -29,7 +29,7 @@ except AttributeError:
     SEEK_END = 2
 
 
-BREAK_ON_TIMEOUT = False
+BREAK_ON_TIMEOUT = bool(os.getenv('BREAK_ON_TIMEOUT'))
 LINES_TO_CAPTURE = 50
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=20)
 SECONDS_TO_SNOOZE = 0.1
@@ -111,6 +111,7 @@ class LogWatcher:
         """
         start = datetime.datetime.now()
         until = start + LOG_GROWTH_WAIT_INTERVAL
+        lines_seen = []
         for line in self.lines:
             if line is Empty:
                 # There's nothing in the file for us.  See if we timed out and
@@ -136,6 +137,9 @@ class LogWatcher:
                 # that a timeout will be able to provide more debugging.
                 self.last_lines_read.append(line)
                 del self.last_lines_read[0:-LINES_TO_CAPTURE]
+                # Also cache just the lines seen while doing this wait, for
+                # debugging purposes when BREAK_ON_TIMEOUT is set.
+                lines_seen.append(line)
 
     def close(self):
         self._log_file.close()
@@ -179,11 +183,34 @@ class SMTPDWatcher(LogWatcher):
     def wait_for_mbox_delivery(self, message_id):
         return self.wait('delivered to mbox: <%s>' % message_id)
 
-    def wait_for_list_traffic(self, team_name):
-        return self.wait('to: %s@lists.launchpad.dev' % team_name)
+    def wait_for_list_traffic(self, team_name, personal=False):
+        """Wait for list traffic through smtp2mbox.
+
+        :param team_name: The name of the team expecting list traffic
+        :param personal: True if this is email coming from the mailing list to
+            a personal email address, i.e. it is traffic /from/ the list, not
+            traffic /to/ the list.
+        """
+        wait = self.wait('to: %s@lists.launchpad.dev' % team_name)
+        if wait is None and personal:
+            # We really need to wait until the message if flushed to disk, and
+            # it has to be the case that the next flush message will be for
+            # the one we care about.  We could dig the message id out of the
+            # last line that matched the above wait, but it's difficult to get
+            # at that text and it's not really necessary.
+            wait = self.wait('delivered to mbox:')
+        return wait
 
     def wait_for_personal_traffic(self, address):
-        return self.wait('to: ' + address)
+        wait = self.wait('to: ' + address)
+        if wait is None:
+            # We really need to wait until the message if flushed to disk, and
+            # it has to be the case that the next flush message will be for
+            # the one we care about.  We could dig the message id out of the
+            # last line that matched the above wait, but it's difficult to get
+            # at that text and it's not really necessary.
+            wait = self.wait('delivered to mbox:')
+        return wait
 
 
 class MHonArcWatcher(LogWatcher):
