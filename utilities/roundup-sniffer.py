@@ -24,7 +24,7 @@ script is run many times, and also provides a measure of robustness
 against errors; there's no need to start from the beginning every
 time.
 
-Perhaps tThe best way to make this work for a new Roundup instance is
+Perhaps the best way to make this work for a new Roundup instance is
 to subclass RoundupSniffer and implement get_text_values() and
 populate the class-level "fields" variable. See MplayerStatusSniffer
 for an example.
