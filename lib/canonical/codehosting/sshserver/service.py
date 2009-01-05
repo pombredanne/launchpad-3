@@ -1,7 +1,8 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
-"""Provides an SFTP server which Launchpad users can use to host their Bazaar
-branches. For more information, see lib/canonical/codehosting/README.
+"""Twisted `service.Service` class for the codehosting SSH server.
+
+An `SSHService` object can be used to launch the SSH server.
 """
 
 __metaclass__ = type
@@ -26,33 +27,58 @@ from canonical.config import config
 
 
 class Factory(SSHFactory):
+    """SSH factory that uses the codehosting custom authentication.
+
+    This class tells the SSH service to use our custom authentication service
+    and configures the host keys for the SSH server.
+    """
+
     services = {
         'ssh-userauth': SSHUserAuthServer,
         'ssh-connection': SSHConnection
     }
 
-    def __init__(self, hostPublicKey, hostPrivateKey):
-        self.publicKeys = {
-            'ssh-rsa': hostPublicKey
-        }
-        self.privateKeys = {
-            'ssh-rsa': hostPrivateKey
-        }
+    def __init__(self, portal):
+        SSHFactory.__init__(self)
+        # Although 'portal' isn't part of the defined interface for
+        # `SSHFactory`, defining it here is how the `SSHUserAuthServer` gets
+        # at it. (Look for the beautiful line "self.portal =
+        # self.transport.factory.portal").
+        self.portal = portal
 
-    def startFactory(self):
-        SSHFactory.startFactory(self)
-        os.umask(0022)
+    def _loadKey(self, key_filename):
+        key_directory = config.codehosting.host_key_pair_path
+        key_path = os.path.join(key_directory, key_filename)
+        return Key.fromFile(key_path)
+
+    def getPublicKeys(self):
+        """Return the server's configured public key.
+
+        See `SSHFactory.getPublicKeys`.
+        """
+        public_key = self._loadKey('ssh_host_key_rsa.pub')
+        return {'ssh-rsa': public_key}
+
+    def getPrivateKeys(self):
+        """Return the server's configured private key.
+
+        See `SSHFactory.getPrivateKeys`.
+        """
+        private_key = self._loadKey('ssh_host_key_rsa')
+        return {'ssh-rsa': private_key}
 
 
 class SSHService(service.Service):
-    """A Twisted service for the supermirror SFTP server."""
+    """A Twisted service for the codehosting SSH server."""
 
     def __init__(self):
         self.service = self.makeService()
 
-    def makeFactory(self, hostPublicKey, hostPrivateKey):
-        """Create and return an SFTP server that uses the given public and
-        private keys.
+    def makePortal(self):
+        """Create and return a `Portal` for the SSH service.
+
+        This portal accepts SSH credentials and returns our customized SSH
+        avatars (see `canonical.codehosting.sshserver.auth.LaunchpadAvatar`).
         """
         authentication_proxy = Proxy(
             config.codehosting.authentication_endpoint)
@@ -60,39 +86,27 @@ class SSHService(service.Service):
         portal = Portal(Realm(authentication_proxy, branchfs_proxy))
         portal.registerChecker(
             PublicKeyFromLaunchpadChecker(authentication_proxy))
-        sftpfactory = Factory(hostPublicKey, hostPrivateKey)
-        sftpfactory.portal = portal
-        return sftpfactory
+        return portal
 
     def makeService(self):
         """Return a service that provides an SFTP server. This is called in
         the constructor.
         """
-        hostPublicKey, hostPrivateKey = self.makeKeys()
-        sftpfactory = self.makeFactory(hostPublicKey, hostPrivateKey)
-        return strports.service(config.codehosting.port, sftpfactory)
-
-    def makeKeys(self):
-        """Load the public and private host keys from the configured key pair
-        path. Returns both keys in a 2-tuple.
-
-        :return: (hostPublicKey, hostPrivateKey)
-        """
-        keydir = config.codehosting.host_key_pair_path
-        hostPublicKey = Key.fromString(
-            open(os.path.join(keydir, 'ssh_host_key_rsa.pub'), 'rb').read())
-        hostPrivateKey = Key.fromString(
-            open(os.path.join(keydir, 'ssh_host_key_rsa'), 'rb').read())
-        return hostPublicKey, hostPrivateKey
+        ssh_factory = Factory(self.makePortal())
+        return strports.service(config.codehosting.port, ssh_factory)
 
     def startService(self):
-        """Start the SFTP service."""
+        """Start the SSH service."""
         set_up_logging()
+        # By default, only the owner of files should be able to write to them.
+        # Perhaps in the future this line will be deleted and the umask
+        # managed by the startup script.
+        os.umask(0022)
         service.Service.startService(self)
         self.service.startService()
 
     def stopService(self):
-        """Stop the SFTP service."""
+        """Stop the SSH service."""
         service.Service.stopService(self)
         return self.service.stopService()
 
