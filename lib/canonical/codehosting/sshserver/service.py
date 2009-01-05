@@ -112,12 +112,7 @@ class SSHService(service.Service):
 
 
 def set_up_logging():
-    """Set up logging for the smart server.
-
-    This sets up a debugging handler on the 'codehosting' logger, makes sure
-    that things logged there won't go to stderr (necessary because of
-    bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
-    """
+    """Set up and return the codehosting logger."""
     log = logging.getLogger('codehosting')
     log.setLevel(logging.CRITICAL)
     return log
