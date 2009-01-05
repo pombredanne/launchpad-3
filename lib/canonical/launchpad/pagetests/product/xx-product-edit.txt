@@ -120,7 +120,7 @@ First a user adds a product named newproductname.
     >>> user_browser.getControl(name='field.description').value = 'description'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> print user_browser.url
     http://launchpad.dev/newproductname
 
@@ -134,7 +134,7 @@ Then a product named newproductname2.
     >>> user_browser.getControl(name='field.description').value = 'description2'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> print user_browser.url
     http://launchpad.dev/newproductname2
 
