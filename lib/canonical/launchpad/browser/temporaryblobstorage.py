@@ -30,8 +30,8 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
         self.actions[0].__name__ = 'FORM_SUBMIT'
         super(TemporaryBlobStorageAddView, self).initialize()
 
-    # This action is named FORM_SUBMIT because apport depends on it being
-    # named like that.
+    # NOTE: This action is named FORM_SUBMIT because apport depends on it
+    # being named like that.
     @action('Continue', name='FORM_SUBMIT')
     def continue_action(self, action, data):
         try:
