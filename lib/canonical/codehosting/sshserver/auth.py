@@ -36,7 +36,7 @@ from twisted.python import components, failure
 
 from canonical.codehosting import sftp
 from canonical.codehosting.sshserver.session import (
-    launch_smart_server, SubsystemOnlySession)
+    launch_smart_server, PatchedSSHSession)
 from canonical.config import config
 
 from zope.interface import implements
@@ -61,9 +61,9 @@ class LaunchpadAvatar(avatar.ConchUser):
         logging.getLogger('codehosting.ssh').info(
             '%r logged in', self.username)
 
-        # Set the only channel as a session that only allows requests for
-        # subsystems...
-        self.channelLookup = {'session': SubsystemOnlySession}
+        # Set the only channel as a standard SSH session (with a couple of bug
+        # fixes).
+        self.channelLookup = {'session': PatchedSSHSession}
         # ...and set the only subsystem to be SFTP.
         self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
 

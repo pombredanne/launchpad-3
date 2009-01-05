@@ -4,11 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'ExecOnlySession',
-    'ForbiddenCommand',
     'launch_smart_server',
-    'RestrictedExecOnlySession',
-    'SubsystemOnlySession',
+    'PatchedSSHSession',
     ]
 
 import os
@@ -25,11 +22,19 @@ from canonical.config import config
 from canonical.codehosting import get_bzr_path
 
 
-class SubsystemOnlySession(session.SSHSession, object):
-    """Session adapter that corrects a bug in Conch."""
+class PatchedSSHSession(session.SSHSession, object):
+    """Session adapter that corrects bugs in Conch.
+
+    This object provides no custom logic for Launchpad, it just addresses some
+    simple bugs in the base `session.SSHSession` class that are not yet fixed
+    upstream.
+    """
 
     def closeReceived(self):
-        # Without this, the client hangs when its finished transferring.
+        # Without this, the client hangs when it's finished transferring.
+        # XXX: JonathanLange 2009-01-05: This does not appear to have a
+        # corresponding bug in Twisted. We should test that the above comment
+        # is indeed correct and then file a bug upstream.
         self.loseConnection()
 
     def loseConnection(self):
@@ -38,6 +43,7 @@ class SubsystemOnlySession(session.SSHSession, object):
         # implementation will try to call loseConnection on the client
         # transport even if it's None. I don't know *why* it is None, so this
         # doesn't necessarily address the root cause.
+        # See http://twistedmatrix.com/trac/ticket/2754.
         transport = getattr(self.client, 'transport', None)
         if transport is not None:
             transport.loseConnection()
@@ -53,8 +59,8 @@ class SubsystemOnlySession(session.SSHSession, object):
         """
         # XXX: MichaelHudson 2008-06-27: Being cagey about whether
         # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above.  It would be good to know if and why it
-        # is necessary.
+        # in `loseConnection` above. It would be good to know if and why it is
+        # necessary. See http://twistedmatrix.com/trac/ticket/2754.
         transport = getattr(self.client, 'transport', None)
         if transport is not None:
             transport.pauseProducing()
@@ -67,8 +73,8 @@ class SubsystemOnlySession(session.SSHSession, object):
         """
         # XXX: MichaelHudson 2008-06-27: Being cagey about whether
         # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above.  It would be good to know if and why it
-        # is necessary.
+        # in `loseConnection` above. It would be good to know if and why it is
+        # necessary. See http://twistedmatrix.com/trac/ticket/2754.
         transport = getattr(self.client, 'transport', None)
         if transport is not None:
             transport.resumeProducing()
