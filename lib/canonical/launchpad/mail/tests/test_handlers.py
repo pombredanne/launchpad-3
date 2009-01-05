@@ -322,10 +322,12 @@ class TestCodeHandler(TestCaseWithFactory):
         source_branch = self.factory.makeBranch()
         md = self.makeMergeDirective(source_branch, target_branch)
         submitter = self.factory.makePerson()
+        self.switchDbUser(config.processmail.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
         self.assertEqual(mp_source, source_branch)
         self.assertEqual(mp_target, target_branch)
+        transaction.commit()
 
     def test_acquireBranchesForProposalRemoteTarget(self):
         """CodeHandler._acquireBranchesForProposal fails on remote targets."""
@@ -333,9 +335,11 @@ class TestCodeHandler(TestCaseWithFactory):
         md = self.makeMergeDirective(
             source_branch, target_branch_url='http://example.com')
         submitter = self.factory.makePerson()
+        self.switchDbUser(config.processmail.dbuser)
         self.assertRaises(
             NonLaunchpadTarget, self.code_handler._acquireBranchesForProposal,
             md, submitter)
+        transaction.commit()
 
     def test_acquireBranchesForProposalRemoteSource(self):
         """CodeHandler._acquireBranchesForProposal allows remote sources.
@@ -350,6 +354,7 @@ class TestCodeHandler(TestCaseWithFactory):
         branches = getUtility(IBranchSet)
         self.assertIs(None, branches.getByUrl(source_branch_url))
         submitter = self.factory.makePerson()
+        self.switchDbUser(config.processmail.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
         self.assertEqual(mp_target, target_branch)
@@ -358,6 +363,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(BranchType.REMOTE, mp_source.branch_type)
         self.assertEqual(mp_target.product, mp_source.product)
         self.assertEqual('suffix', mp_source.name)
+        transaction.commit()
 
     def test_acquireBranchesForProposalRemoteSourceDupeName(self):
         """CodeHandler._acquireBranchesForProposal creates names safely.
@@ -374,9 +380,11 @@ class TestCodeHandler(TestCaseWithFactory):
         submitter = self.factory.makePerson()
         duplicate_branch = self.factory.makeBranch(
             product=target_branch.product, name='suffix', owner=submitter)
+        self.switchDbUser(config.processmail.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
         self.assertEqual('suffix-1', mp_source.name)
+        transaction.commit()
 
     def test_findMergeDirectiveAndComment(self):
         """findMergeDirectiveAndComment works."""
@@ -385,10 +393,12 @@ class TestCodeHandler(TestCaseWithFactory):
             body='Hi!\n', attachment_contents=''.join(md.to_lines()),
             force_transfer_encoding=True)
         code_handler = CodeHandler()
+        self.switchDbUser(config.processmail.dbuser)
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
         self.assertEqual('Hi!\n', comment)
         self.assertEqual(md.revision_id, md2.revision_id)
         self.assertEqual(md.target_branch, md2.target_branch)
+        transaction.commit()
 
     def test_findMergeDirectiveAndCommentEmptyBody(self):
         """findMergeDirectiveAndComment handles empty message bodies.
@@ -398,9 +408,11 @@ class TestCodeHandler(TestCaseWithFactory):
         md = self.makeMergeDirective()
         message = self.factory.makeSignedMessage(
             body='', attachment_contents=''.join(md.to_lines()))
+        self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
         self.assertEqual('', comment)
+        transaction.commit()
 
     def test_findMergeDirectiveAndCommentNoMergeDirective(self):
         """findMergeDirectiveAndComment handles missing merge directives.
@@ -409,9 +421,11 @@ class TestCodeHandler(TestCaseWithFactory):
         """
         md = self.makeMergeDirective()
         message = self.factory.makeSignedMessage(body='Hi!\n')
+        self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         self.assertRaises(MissingMergeDirective,
             code_handler.findMergeDirectiveAndComment, message)
+        transaction.commit()
 
     def makeMergeDirectiveEmail(self, body='Hi!\n'):
         """Create an email with a merge directive attached.
@@ -429,6 +443,7 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_processMergeProposal(self):
         """processMergeProposal creates a merge proposal and comment."""
         message, source_branch, target_branch = self.makeMergeDirectiveEmail()
+        self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source_branch, bmp.source_branch)
@@ -436,6 +451,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
+        transaction.commit()
 
     def test_processMergeProposalEmptyMessage(self):
         """processMergeProposal handles empty message bodies.
@@ -445,20 +461,24 @@ class TestCodeHandler(TestCaseWithFactory):
         """
         message, source_branch, target_branch = (
             self.makeMergeDirectiveEmail(body=' '))
+        self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source_branch, bmp.source_branch)
         self.assertEqual(target_branch, bmp.target_branch)
         self.assertIs(None, comment)
         self.assertEqual(0, bmp.all_comments.count())
+        transaction.commit()
 
     def test_processWithMergeDirectiveEmail(self):
         """process creates a merge proposal from a merge directive email."""
         message, source, target = self.makeMergeDirectiveEmail()
+        self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', None)
         self.assertEqual(target, source.landing_targets[0].target_branch)
+        transaction.commit()
 
 
 class TestVoteEmailCommand(TestCase):

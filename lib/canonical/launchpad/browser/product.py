@@ -58,7 +58,7 @@ from zope.formlib import form
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces import (
@@ -679,11 +679,11 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     serieses = None
     development_focus = None
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
@@ -709,10 +709,10 @@ class SeriesWithReleases:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     releases = None
-    decorates(IProductSeries, 'series')
+    delegates(IProductSeries, 'series')
 
     def __init__(self, series):
         self.series = series
@@ -737,10 +737,10 @@ class ReleaseWithFiles:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     files = None
-    decorates(IProductRelease, 'release')
+    delegates(IProductRelease, 'release')
 
     def __init__(self, release):
         self.release = release
@@ -1518,7 +1518,7 @@ class ProductAddView(ProductAddViewBase):
             self.form_fields = self.form_fields.omit('owner',
                                                      'license_reviewed')
 
-    @action(_('Add'), name='add')
+    @action(_('Publish this Project'), name='add')
     def add_action(self, action, data):
         if self.user is None:
             raise zope.security.interfaces.Unauthorized(

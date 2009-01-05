@@ -317,7 +317,7 @@ with the wrong permission.
   >>> ignore = os.umask(old_mask)
 
   >>> ppa_root = config.personalpackagearchive.root
-  >>> ppa_dir = os.path.join(ppa_root, 'name16', 'default')
+  >>> ppa_dir = os.path.join(ppa_root, 'name16')
   >>> target_dir = os.path.join(ppa_dir, upgrade_dir)
   >>> content = sorted(os.listdir(target_dir))
   >>> content
