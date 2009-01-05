@@ -109,11 +109,6 @@ relevant publishing information:
     0.1-1
      * hoary - SUPERSEDED
 
-Binary packages of 'pmount in Ubuntu':
-
-    >>> dsp.binary_package_names
-    u'pmount'
-
 Current release of 'pmount in Ubuntu':
 
     >>> dsp.currentrelease.version
