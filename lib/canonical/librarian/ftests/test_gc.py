@@ -12,11 +12,15 @@ from datetime import datetime, timedelta
 
 from pytz import utc
 from sqlobject import SQLObjectNotFound
+from storm.locals import SQL, AutoReload
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import (
     connect, cursor, ISOLATION_LEVEL_AUTOCOMMIT)
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
 from canonical.testing import LaunchpadZopelessLayer
@@ -353,6 +357,72 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failUnlessEqual(
                 len(results), 0, 'Too many results %r' % (results,)
                 )
+
+    def test_flagExpiredFiles(self):
+        # Confirm that expired content gets its 'deleted' flag set
+        # when necessary, and more importantly, not set when there are
+        # still unexpired aliases referencing it.
+
+        # Create some entries to test with.
+        self.layer.switchDbUser('testadmin')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        def create_content(*expiries):
+            content = LibraryFileContent(
+                filesize=1, sha1='f00', md5='f00', deleted=False,
+                date_created=SQL("CURRENT_TIMESTAMP - interval '30 days'"))
+            store.add(content)
+            content.id = AutoReload
+            for expiry in expiries:
+                alias = LibraryFileAlias(
+                    content=content, filename='f00', mimetype='f00',
+                    expires=expiry)
+                store.add(alias)
+            return content
+
+        expired_ts = SQL("CURRENT_TIMESTAMP - interval '10 days'")
+        unexpired_ts = SQL("CURRENT_TIMESTAMP + interval '10 days'")
+        unexpirable_ts = None
+
+        expired_contents = []
+        expired_contents.append((
+            'one expired alias', create_content(expired_ts)))
+        expired_contents.append((
+            'two expired aliases', create_content(expired_ts, expired_ts)))
+
+        unexpired_contents = []
+        unexpired_contents.append((
+            'one unexpirable alias', create_content(unexpirable_ts)))
+        unexpired_contents.append((
+            'two unexpirable aliases',
+            create_content(unexpirable_ts, unexpirable_ts)))
+        unexpired_contents.append((
+            'one unexpirable alias and one expired alias',
+            create_content(unexpirable_ts, expired_ts)))
+        unexpired_contents.append((
+            'two unexpired aliases',
+            create_content(unexpired_ts, unexpired_ts)))
+        unexpired_contents.append((
+            'one expired alias and one unexpired alias',
+            create_content(unexpired_ts, expired_ts)))
+        unexpired_contents.append((
+            'one unexpired alias', create_content(unexpired_ts)))
+        store.commit()
+        self.layer.switchDbUser(config.librarian_gc.dbuser)
+
+        librariangc.flag_expired_files(self.con)
+
+        for name, expired_content in expired_contents:
+            expired_content.deleted = AutoReload
+            self.failUnlessEqual(
+                expired_content.deleted, True,
+                '%s should be flagged' % name)
+
+        for name, unexpired_content in unexpired_contents:
+            unexpired_content.deleted = AutoReload
+            self.failUnlessEqual(
+                unexpired_content.deleted, False,
+                '%s should not be flagged' % name)
 
     def test_deleteUnwantedFiles(self):
         self.ztm.begin()

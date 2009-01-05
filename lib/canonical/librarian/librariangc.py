@@ -38,6 +38,7 @@ def confirm_no_clock_skew(con):
             local_now - db_now,
             ))
 
+
 def delete_expired_blobs(con):
     """Remove expired TemporaryBlobStorage entries and their corresponding
        LibraryFileAlias entries.
@@ -319,6 +320,27 @@ def delete_unreferenced_content(con):
         # and the file is unreachable anyway so nothing will attempt to
         # access it between now and the next garbage collection run.
         con.commit()
+
+
+def flag_expired_files(con):
+    """Flag files past their expiry date as 'deleted' in the database.
+
+    Actual removal from disk is not performed here - that is deferred to
+    delete_unwanted_files().
+    """
+    cur = con.cursor()
+    cur.execute("""
+        UPDATE LibraryFileContent
+        SET deleted=TRUE
+        WHERE id NOT IN (
+            SELECT content
+            FROM LibraryFileAlias
+            WHERE expires IS NULL
+                OR expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            )
+        """)
+    log.info("%s expired files flagged for deletion." % cur.rowcount)
+    con.commit()
 
 
 def delete_unwanted_files(con):
