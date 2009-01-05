@@ -2,15 +2,20 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Processor', 'ProcessorFamily']
+__all__ = ['Processor', 'ProcessorFamily', 'ProcessorFamilySet']
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces import IProcessor, IProcessorFamily
+from canonical.launchpad.interfaces import (
+    IProcessor, IProcessorFamily, IProcessorFamilySet)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from storm.expr import And
 
 class Processor(SQLBase):
     implements(IProcessor)
@@ -33,3 +38,25 @@ class ProcessorFamily(SQLBase):
 
     processors = SQLMultipleJoin('Processor', joinColumn='family')
 
+
+class ProcessorFamilySet:
+    implements(IProcessorFamilySet)
+    def getByName(self, name):
+        """Please see `IProcessorFamilySet`."""
+        # Please note that ProcessorFamily.name is unique i.e. the database
+        # will return a result set that's either empty or contains just one
+        # ProcessorFamily row.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        rset = store.find(ProcessorFamily, ProcessorFamily.name == name)
+        return rset.one()
+
+    def getByProcessorName(self, name):
+        """Please see `IProcessorFamilySet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        rset = store.find(
+            ProcessorFamily,
+            Processor.name == name, Processor.family == ProcessorFamily.id)
+        # Each `Processor` is associated with exactly one `ProcessorFamily`
+        # but there is also the possibility that the user specified a name for
+        # a non-existent processor.
+        return rset.one()

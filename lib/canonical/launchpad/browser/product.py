@@ -1518,7 +1518,7 @@ class ProductAddView(ProductAddViewBase):
             self.form_fields = self.form_fields.omit('owner',
                                                      'license_reviewed')
 
-    @action(_('Add'), name='add')
+    @action(_('Publish this Project'), name='add')
     def add_action(self, action, data):
         if self.user is None:
             raise zope.security.interfaces.Unauthorized(

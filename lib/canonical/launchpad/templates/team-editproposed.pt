@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:do-this-first tal:content="view/processProposed" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -65,7 +64,13 @@
           </tr>
         </table>
 
-        <input style="float: right" type="submit" name="proposed" value="Submit" />
+        Comment:
+        <span class="formHelp">This comment will be sent together with the
+          notification of this change to all the approved or declined
+          users and all the team administrators.</span>
+        <textarea name="comment" id="comment"></textarea>
+
+        <input tal:replace="structure view/action_save/render" />
       </form>
       </div>
 
