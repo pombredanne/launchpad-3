@@ -40,7 +40,6 @@ class Factory(SSHFactory):
     }
 
     def __init__(self, portal):
-        SSHFactory.__init__(self)
         # Although 'portal' isn't part of the defined interface for
         # `SSHFactory`, defining it here is how the `SSHUserAuthServer` gets
         # at it. (Look for the beautiful line "self.portal =
