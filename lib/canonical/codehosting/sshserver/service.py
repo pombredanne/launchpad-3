@@ -18,6 +18,8 @@ from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.web.xmlrpc import Proxy
 
+from zope.event import notify
+
 from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
@@ -50,7 +52,7 @@ class Factory(SSHFactory):
         transport._realConnectionLost = transport.connectionLost
         transport.connectionLost = (
             lambda reason: self.connectionLost(transport, reason))
-        accesslog.log_event(accesslog.UserConnected(transport, address))
+        notify(accesslog.UserConnected(transport, address))
         return transport
 
     def connectionLost(self, transport, reason):
@@ -58,7 +60,7 @@ class Factory(SSHFactory):
         try:
             return transport._realConnectionLost(reason)
         finally:
-            accesslog.log_event(accesslog.UserDisconnected(transport))
+            notify(accesslog.UserDisconnected(transport))
 
     def _loadKey(self, key_filename):
         key_directory = config.codehosting.host_key_pair_path
@@ -109,7 +111,7 @@ class SSHService(service.Service):
     def startService(self):
         """Start the SSH service."""
         accesslog.set_up_logging(configure_oops_reporting=False)
-        accesslog.log_event(accesslog.ServerStarting())
+        notify(accesslog.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask
         # managed by the startup script.
@@ -123,4 +125,4 @@ class SSHService(service.Service):
         try:
             return self.service.stopService()
         finally:
-            accesslog.log_event(accesslog.ServerStopped())
+            notify(accesslog.ServerStopped())

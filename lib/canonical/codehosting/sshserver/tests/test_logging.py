@@ -14,7 +14,7 @@ import sys
 from bzrlib.tests import TestCase as BzrTestCase
 
 from canonical.codehosting.sshserver.accesslog import (
-    get_codehosting_logger, log_event, LoggingEvent, set_up_logging)
+    get_codehosting_logger, _log_event, LoggingEvent, set_up_logging)
 from canonical.config import config
 from canonical.launchpad.testing import TestCase
 from canonical.testing import reset_logging
@@ -131,7 +131,7 @@ class TestLoggingEvent(TestCase):
         return result
 
     def assertEventLogs(self, record, logging_event):
-        self.assertLogs([record], log_event, logging_event)
+        self.assertLogs([record], _log_event, logging_event)
 
     def setUp(self):
         TestCase.setUp(self)

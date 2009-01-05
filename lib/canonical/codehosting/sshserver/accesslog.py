@@ -7,7 +7,6 @@ __all__ = [
     'BazaarSSHClosed',
     'BazaarSSHStarted',
     'get_codehosting_logger',
-    'log_event',
     'LoggingEvent',
     'ServerStarting',
     'ServerStopped',
@@ -21,6 +20,9 @@ __all__ = [
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
+
+from zope import component
+from zope.interface import Attribute, implements, Interface
 
 from canonical.config import config
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
@@ -57,7 +59,16 @@ def set_up_logging(configure_oops_reporting=False):
     log.addHandler(handler)
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
+    # Make sure that our logging event handler is there, ready to receive
+    # logging events.
+    component.provideHandler(_log_event)
     return log
+
+
+class ILoggingEvent(Interface):
+
+    level = Attribute("The level to log the event at.")
+    message = Attribute("The message to log.")
 
 
 class LoggingEvent:
@@ -68,6 +79,8 @@ class LoggingEvent:
     :ivar template: The format string of the message to log. This should be
         defined as a class variable in subclasses.
     """
+
+    implements(ILoggingEvent)
 
     def __init__(self, level=None, template=None, **data):
         """Construct a logging event.
@@ -80,16 +93,22 @@ class LoggingEvent:
             into the template and stored as attributes.
         """
         if level is not None:
-            self.level = level
+            self._level = level
         if template is not None:
             self.template = template
         self._data = data
         for name, value in data.iteritems():
             setattr(self, name, value)
 
-    def _log(self, logger):
-        """Log the event to 'logger'."""
-        logger.log(self.level, self.template % self._data)
+    @property
+    def level(self):
+        """See `ILoggingEvent`."""
+        return self._level
+
+    @property
+    def message(self):
+        """See `ILoggingEvent`."""
+        return self.template % self._data
 
 
 class ServerStarting(LoggingEvent):
@@ -164,10 +183,11 @@ class BazaarSSHClosed(AvatarEvent):
     template = '[%(session_id)s] %(username)s closed bzr+ssh session.'
 
 
-def log_event(event):
+@component.adapter(ILoggingEvent)
+def _log_event(event):
     """Log 'event' to the codehosting logger.
 
     All events should be logged through this function, which provides a
     convenient mocking point for tests.
     """
-    return event._log(get_codehosting_logger())
+    get_codehosting_logger().log(event.level, event.message)

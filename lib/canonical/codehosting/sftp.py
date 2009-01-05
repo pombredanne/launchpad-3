@@ -31,6 +31,8 @@ from twisted.conch.ls import lsLine
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.internet import defer
 from twisted.python import util
+
+from zope.event import notify
 from zope.interface import implements
 
 from canonical.codehosting.branchfs import (
@@ -250,7 +252,7 @@ def avatar_to_sftp_server(avatar):
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.setUp()
     transport = AsyncLaunchpadTransport(server, server.get_url())
-    accesslog.log_event(accesslog.SFTPStarted(avatar))
+    notify(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
 
 

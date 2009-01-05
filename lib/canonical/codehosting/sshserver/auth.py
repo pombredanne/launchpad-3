@@ -30,13 +30,14 @@ from twisted.cred.portal import IRealm, Portal
 
 from twisted.python import components, failure
 
+from zope.event import notify
+from zope.interface import implements
+
 from canonical.codehosting import sftp
 from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.session import (
     launch_smart_server, PatchedSSHSession)
 from canonical.config import config
-
-from zope.interface import implements
 
 
 class LaunchpadAvatar(avatar.ConchUser):
@@ -63,7 +64,7 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.subsystemLookup = {'sftp': sftp.FileTransferServer}
 
     def logout(self):
-        accesslog.log_event(accesslog.UserLoggedOut(self))
+        notify(accesslog.UserLoggedOut(self))
 
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
@@ -140,7 +141,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         # connection in the logs.
         avatar = self.transport.avatar
         avatar.transport = self.transport
-        accesslog.log_event(accesslog.UserLoggedIn(avatar))
+        notify(accesslog.UserLoggedIn(avatar))
         return ret
 
     def _ebLogToBanner(self, reason):
