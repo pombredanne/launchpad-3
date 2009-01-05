@@ -1073,8 +1073,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
               self.context.distribution.displayname))
         follow_primary = SimpleTerm(
             None, 'FOLLOW_PRIMARY',
-            _('Use the same components used in %s primary archive.' %
-              self.context.distribution.displayname))
+            _('Use the same components used for each source in %s '
+              'primary archive.' % self.context.distribution.displayname))
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
@@ -1095,8 +1095,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                    title=_('%s components' %
                            self.context.distribution.displayname),
                    vocabulary=primary_components_vocabulary,
-                   description=_("Which %s components should be used when "
-                                 "fetching build dependencies." %
+                   description=_("Which %s components of the archive pool "
+                                 "should be used when fetching build "
+                                 "dependencies." %
                                  self.context.distribution.displayname),
                    missing_value=current_term,
                    default=default_value,
