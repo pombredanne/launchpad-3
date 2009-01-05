@@ -16,8 +16,8 @@ import ZConfig
 import optparse
 import traceback
 
-from canonical.lazr.config import ConfigSchema
-from canonical.lazr.interfaces.config import ConfigErrors
+from lazr.config import ConfigSchema
+from lazr.config.interfaces import ConfigErrors
 
 # Calculate some landmark paths.
 import canonical.config

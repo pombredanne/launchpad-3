@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, redirection)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.utils import smartquote
 
 
@@ -84,7 +84,7 @@ class DecoratedDistributionSourcePackageRelease:
     The publishing history and package diffs for the release are
     pre-cached.
     """
-    decorates(IDistributionSourcePackageRelease, 'context')
+    delegates(IDistributionSourcePackageRelease, 'context')
 
     def __init__(self, distributionsourcepackagerelease,
                  publishing_history, package_diffs):

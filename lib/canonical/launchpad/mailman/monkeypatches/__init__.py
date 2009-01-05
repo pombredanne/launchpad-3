@@ -4,7 +4,7 @@
 import os
 import shutil
 
-from canonical.lazr.config import as_host_port
+from lazr.config import as_host_port
 
 
 def monkey_patch(mailman_path, config):
