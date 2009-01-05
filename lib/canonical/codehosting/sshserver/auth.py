@@ -1,6 +1,14 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 
+"""Custom authentication for the SSH server.
+
+Launchpad's SSH server authenticates users against a XML-RPC service (see
+`canonical.launchpad.interfaces.authserver.IAuthServer` and
+`PublicKeyFromLaunchpadChecker`) and provides richer error messages in the
+case of failed authentication (see `SSHUserAuthServer`).
+"""
+
 __metaclass__ = type
 __all__ = [
     'get_portal',
@@ -25,7 +33,7 @@ from twisted.python import components, failure
 from canonical.codehosting import sftp
 from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.session import (
-    launch_smart_server, SubsystemOnlySession)
+    launch_smart_server, PatchedSSHSession)
 from canonical.config import config
 
 from zope.interface import implements
@@ -48,9 +56,9 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.user_id = userDict['id']
         self.username = userDict['name']
 
-        # Set the only channel as a session that only allows requests for
-        # subsystems...
-        self.channelLookup = {'session': SubsystemOnlySession}
+        # Set the only channel as a standard SSH session (with a couple of bug
+        # fixes).
+        self.channelLookup = {'session': PatchedSSHSession}
         # ...and set the only subsystem to be SFTP.
         self.subsystemLookup = {'sftp': sftp.FileTransferServer}
 

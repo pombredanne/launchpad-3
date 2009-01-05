@@ -107,9 +107,9 @@ def branch_id_to_path(branch_id):
     digit hexadecimal number.
 
     Some filesystems are not capable of dealing with large numbers of inodes.
-    The supermirror, which can potentially have tens of thousands of branches,
-    needs the branches split into several directories. The launchpad id is
-    used in order to determine the splitting.
+    The codehosting system has tens of thousands of branches and thus splits
+    the branches into several directories. The Launchpad id is used in order
+    to determine the splitting.
     """
     h = "%08x" % int(branch_id)
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
