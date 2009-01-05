@@ -21,13 +21,13 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class BranchMergeProposalListingItem:
     """A branch merge proposal that knows summary values for comments."""
 
-    decorates(IBranchMergeProposal, 'context')
+    delegates(IBranchMergeProposal, 'context')
 
     def __init__(self, branch_merge_proposal, summary):
         self.context = branch_merge_proposal
