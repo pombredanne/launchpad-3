@@ -9,28 +9,21 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
-
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    BlobTooLarge, ITemporaryBlobStorage, ITemporaryStorageManager)
+from canonical.launchpad.interfaces import ITemporaryStorageManager
+from canonical.launchpad.webapp import GeneralFormView
+from canonical.launchpad.interfaces import BlobTooLarge
 from canonical.librarian.interfaces import UploadFailed
 
 
-class TemporaryBlobStorageAddView(LaunchpadFormView):
-    schema = ITemporaryBlobStorage
-    label = 'Store BLOB'
-    field_names = ['blob']
-    for_input = True
+class TemporaryBlobStorageAddView(GeneralFormView):
 
-    @action('Continue', name='continue')
-    def continue_action(self, action, data):
+    def process(self, blob):
         try:
-            uuid = getUtility(ITemporaryStorageManager).new(data['blob'])
+            uuid = getUtility(ITemporaryStorageManager).new(blob)
             self.request.response.setHeader('X-Launchpad-Blob-Token', uuid)
-            self.request.response.addInfoNotification(
-                'Your ticket is "%s"' % uuid)
+            return 'Your ticket is "%s"' % uuid
         except BlobTooLarge:
-            self.addError('Uploaded file was too large.')
+            return 'Uploaded file was too large.'
         except UploadFailed:
-            self.addError('File storage unavailable - try again later.')
+            return 'File storage unavailable - try again later.'
 
