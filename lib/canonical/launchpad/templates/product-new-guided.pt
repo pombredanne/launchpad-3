@@ -16,8 +16,20 @@
 
   <div metal:fill-slot="main">
 
+    <div style="font-size: larger; background: #e0f0d0;
+        padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
+       -webkit-border-radius: 5px;">
+      <strong>Requesting Ubuntu CDs</strong> is done at <a
+      href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
+      <form style="display: inline; font-size: smaller"
+            action="https://shipit.ubuntu.com/">
+        <input type="submit" value="Oh, I want Ubuntu CDs" />
+      </form>
+    </div>
+
     <div style="font-size: normal; float: right; width: 15em; padding: 0.5em;
-    background: #e0f0d0; margin: 0.5em; margin-left: 1em">
+      background: #e0f0d0; margin: 0.5em; margin-left: 1em;
+      border: 1px solid #ccc; -moz-border-radius: 5px;">
       <p style="margin: 0">Hi there! This is a message from the team
       that develops Launchpad (this is <a
       href="/~launchpad/+mugshots">what we look like</a> if you're
@@ -31,15 +43,16 @@
 
     <h2>A brand new project in Launchpad</h2>
 
-    <p style="font-size: larger">
+    <p id="instructions" style="font-size: larger">
     Launchpad is a service for <strong>registering and hosting software
     projects</strong>. Service is provided free for open source/free software
     projects. But let us steal a minute of your time to point out a few
     important things before you proceed with the actual registration.
     </p>
 
-    <ul style="font-size: larger">
-      <li><strong>Want to test drive Launchpad?</strong>
+    <ol style="font-size: larger">
+      <li tal:condition="not: is_demo" id="staging-message">
+      <strong>Want to test drive Launchpad?</strong>
       If you've never used Launchpad before, start off at <a
       href="https://staging.launchpad.net/"><strong>staging.launchpad.net</strong></a>,
       our code staging instance. You can use that server to create sample
@@ -53,38 +66,29 @@
       href="https://launchpad.net/+tour">take our guided tour</a>.</li>
 
       <li style="margin-top: 1em"><strong>Is the project already registered?</strong>
-      Launchpad is both a hosting and a registration facility, and someone
-      else may have already registered the project.</li>
-      <div>
-        <strong style="margin-left: 1em">Check here:</strong>
-        <form style="display: inline; font-size: smaller" action="/projects">
-          <input type="text" name="text" />
-          <input type="submit" value="go!" />
-        </form>
-      </div>
-      <ul style="margin-top: 0; margin-bottom: 0">
-        <li>If you find a project you run,
-        <a href="/launchpad/+addquestion">ask us</a> and we'll hand the
-        project over to you.</li>
-        <li>To set that project up for translation to your language, <a
-        href="/rosetta/+addquestion">ask the Translations staff</a>.</li>
-      </ul>
+        Launchpad is both a hosting and a registration facility, and someone
+        else may have already registered the project. <em>If you have not
+        already searched for the project,</em>  then do so.
+        <ul style="margin-top: 0; margin-bottom: 0">
+          <li>If you find a project you run,
+          <a href="/launchpad/+addquestion">ask us</a> and we'll hand the
+          project over to you.</li>
+          <li>To set that project up for translation to your language, <a
+          href="/rosetta/+addquestion">ask the Translations staff</a>.</li>
+        </ul>
+        <div>
+          <strong>Projects in Launchpad:</strong>
+          <form style="display: inline; font-size: smaller" action="/projects">
+            <input type="text" name="text" />
+            <input type="submit" value="Search" />
+          </form>
+        </div>
+      </li>
 
-      <li style="margin-top: 1em"><strong>Requesting Ubuntu CDs</strong> is done at <a
-      href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
-      <form style="display: inline; font-size: smaller"
-            action="https://shipit.ubuntu.com/">
-        <input type="submit" value="Oh, I want Ubuntu CDs" />
-      </form>
-      <br /><small>(this
-      may sound weird to you, but a lot of people register projects asking
-      for CDs!)</small></li>
-
-
-      <li style="margin-top: 1em; list-style-type: circle">All set?
+      <li style="margin-top: 1em;">All set?
       Move on to <a href="/projects/+new"><strong>the registration form</strong></a>.
       Thanks for listening!</li>
-    </ul>
+    </ol>
 
   </div>
 

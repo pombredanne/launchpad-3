@@ -42,6 +42,9 @@ class BuildUrl:
     On the other hand, PPA builds will be presented under the PPA page:
 
        /~cprov/+archive/+build/1235
+
+    Copy archives will be presented under the archives page:
+       /ubuntu/+archive/my-special-archive/+build/1234
     """
     implements(ICanonicalUrlData)
     rootsite = None
@@ -51,10 +54,8 @@ class BuildUrl:
 
     @property
     def inside(self):
-        if self.context.archive.is_ppa:
+        if self.context.archive.is_ppa or self.context.archive.is_copy:
             return self.context.archive
-        elif self.context.archive.is_copy:
-            raise NotImplementedError("Copy archives are not supported yet.")
         else:
             return self.context.distributionsourcepackagerelease
 
