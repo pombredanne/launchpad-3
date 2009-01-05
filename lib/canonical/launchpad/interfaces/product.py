@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
@@ -212,6 +212,7 @@ class IProductPublic(
     datecreated = exported(
         Datetime(
             title=_('Date Created'),
+            required=True, readonly=True,
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
 
@@ -310,25 +311,30 @@ class IProductPublic(
                 "should be no bigger than 100kb in size.")),
         exported_as='brand')
 
-    autoupdate = Bool(title=_('Automatic update'),
-        description=_("""Whether or not this project's attributes are
-        updated automatically."""))
+    autoupdate = Bool(
+        title=_('Automatic update'),
+        description=_("Whether or not this project's attributes are"
+                      "updated automatically."))
 
-    license_reviewed = Bool(
-        title=_('License reviewed'),
-        description=_("""Whether or not this project's license has been
-        reviewed. Editable only by reviewers (Admins & Commercial Admins).
-        """))
+    license_reviewed = exported(
+        Bool(
+            title=_('License reviewed'),
+            description=_("Whether or not this project's license has been"
+                          "reviewed. Editable only by reviewers (Admins & "
+                          "Commercial Admins).")))
 
-    private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
-        or not bugs reported into this project are private by default"""))
+    private_bugs = Bool(title=_('Private bugs'),
+                        description=_(
+                            "Whether or not bugs reported into this project "
+                            "are private by default"))
 
-    reviewer_whiteboard = Text(
-        title=_('Notes for the project reviewer'),
-        required=False,
-        description=_(
-            "Notes on the project's license, editable only by reviewers "
-            "(Admins & Commercial Admins)."))
+    reviewer_whiteboard = exported(
+        Text(
+            title=_('Notes for the project reviewer'),
+            required=False,
+            description=_(
+                "Notes on the project's license, editable only by reviewers "
+                "(Admins & Commercial Admins).")))
 
     licenses = exported(
         Set(title=_('Licenses'),
@@ -561,7 +567,8 @@ class IProductSet(Interface):
                    'project', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
-                   'licenses', 'license_info', 'registrant'])
+                   'license_reviewed', 'licenses', 'license_info',
+                   'registrant'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -597,7 +604,7 @@ class IProductSet(Interface):
     @call_with(quantity=None)
     @export_read_operation()
     def latest(quantity=5):
-        """Return the latest projects registered in the Launchpad.
+        """Return the latest projects registered in Launchpad.
 
         If the quantity is not specified or is a value that is not 'None'
         then the set of projects returned is limited to that value (the
