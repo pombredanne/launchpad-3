@@ -138,7 +138,7 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             allow_plugins=True, retcode=retcode)
 
     def _run_bzr_error(self, args):
-        """XXX
+        """Run bzr expecting an error, returning the error message.
         """
         output, error = self._run_bzr(args, retcode=3)
         for line in error.splitlines():
