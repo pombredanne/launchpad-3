@@ -8,10 +8,10 @@ __metaclass__ = type
 __all__ = [
     'IProcessor',
     'IProcessorFamily',
-    'IProcessorFamilySet',
     ]
 
 from zope.interface import Interface, Attribute
+from canonical.launchpad import _
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
@@ -29,21 +29,3 @@ class IProcessorFamily(Interface):
     description = Attribute("The Processor Name Description")
 
     processors = Attribute("The Processors in this family.")
-
-class IProcessorFamilySet(Interface):
-    """Operations related to ProcessorFamily instances."""
-    def getByName(name):
-        """Return the ProcessorFamily instance with the matching name.
-
-        :param name: The name to look for.
-
-        :return: A `IProcessorFamily` instance if found, None otherwise.
-        """
-
-    def getByProcessorName(name):
-        """Given a processor name return the ProcessorFamily it belongs to.
-
-        :param name: The name of the processor to look for.
-
-        :return: A `IProcessorFamily` instance if found, None otherwise.
-        """
