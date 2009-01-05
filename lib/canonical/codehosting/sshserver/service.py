@@ -123,5 +123,4 @@ class SSHService(service.Service):
         try:
             return self.service.stopService()
         finally:
-            accesslog.log_event(accesslog.ServerStopping())
-
+            accesslog.log_event(accesslog.ServerStopped())

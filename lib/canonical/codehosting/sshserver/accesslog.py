@@ -10,7 +10,7 @@ __all__ = [
     'log_event',
     'LoggingEvent',
     'ServerStarting',
-    'ServerStopping',
+    'ServerStopped',
     'SFTPClosed',
     'SFTPStarted',
     'UserConnected',
@@ -98,10 +98,10 @@ class ServerStarting(LoggingEvent):
     template = '---- Server started ----'
 
 
-class ServerStopping(LoggingEvent):
+class ServerStopped(LoggingEvent):
 
     level = logging.INFO
-    template = '---- Server stopping ----'
+    template = '---- Server stopped ----'
 
 
 class UserConnected(LoggingEvent):
