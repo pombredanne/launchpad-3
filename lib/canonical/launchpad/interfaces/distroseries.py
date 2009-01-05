@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
@@ -11,6 +11,7 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
+    'NoSuchDistroSeries',
     ]
 
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
@@ -29,6 +30,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
@@ -361,6 +363,17 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getTranslatableSourcePackages():
         """Return a list of Source packages in this distribution series
         that can be translated.
+        """
+
+    def checkTranslationsViewable():
+        """Raise `TranslationUnavailable` if translations are hidden.
+
+        Checks the `hide_all_translations` flag.  If it is set, these
+        translations are not to be shown to the public.  In that case an
+        appropriate message is composed based on the series' `status`,
+        and a `TranslationUnavailable` exception is raised.
+
+        Simply returns if translations are not hidden.
         """
 
     def getUnlinkedTranslatableSourcePackages():
@@ -701,3 +714,9 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
+
+
+class NoSuchDistroSeries(NameLookupFailed):
+    """Raised when we try to find a DistroSeries that doesn't exist."""
+
+    _message_prefix = "No such distribution series"

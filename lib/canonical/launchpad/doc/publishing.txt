@@ -1246,3 +1246,50 @@ agree regarding the changesfile existence.
     >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
     >>> print decorated_source.upload_changesfile.filename
     foo.changes
+
+
+== IPublishingSet.getBuildStatusSummariesForSourcePubHistoryIds() ==
+
+This extra method on IPublishingSet is exported in the API and allows
+a summary of the build status for a set of sources to be presented.
+
+First we'll grab two source publishing history records:
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_source_pub = firefox_source.publishing_history[0]
+    >>> foobar = ubuntu.getSourcePackage('foobar')
+    >>> foo_pub = foobar.publishing_history[0]
+
+Create a small function for displaying the results:
+
+    >>> def print_build_summary(summary):
+    ...     print "%s\n%s\nRelevant builds:\n%s" % (
+    ...         summary['status'].title,
+    ...         summary['status'].description,
+    ...         "\n".join(
+    ...             " - %s" % build.title for build in summary['builds'])
+    ...     )
+
+    >>> def print_build_summaries(summaries):
+    ...     for source_id, summary in sorted(summaries.items()):
+    ...         print "Source ID: %s" % source_id
+    ...         print_build_summary(summary)
+
+    >>> build_summaries = publishing_set.getBuildStatusSummariesForSourceIds(
+    ...     [firefox_source_pub.id, foo_pub.id])
+    >>> print_build_summaries(build_summaries)
+    Source ID: 18
+    Successfully built
+    All builds were built successfully.
+    Relevant builds:
+     - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+     - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    Source ID: 22
+    Failed to build
+    There were build failures.
+    Relevant builds:
+     - i386 build of foobar 1.0 in ubuntu warty RELEASE
+

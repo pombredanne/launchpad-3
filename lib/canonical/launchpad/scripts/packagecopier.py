@@ -347,10 +347,6 @@ class PackageCopier(SoyuzScript):
             action='store', help='Destination PPA owner name.')
 
         self.parser.add_option(
-            '--to-ppa-name', dest='to_ppa_name', default='default',
-            action='store', help='Destination PPA name.')
-
-        self.parser.add_option(
             '--to-partner', dest='to_partner', default=False,
             action='store_true', help='Destination set to PARTNER archive.')
 
@@ -454,8 +450,7 @@ class PackageCopier(SoyuzScript):
                 self.options.to_distribution,
                 self.options.to_suite,
                 ArchivePurpose.PPA,
-                self.options.to_ppa,
-                self.options.to_ppa_name)
+                self.options.to_ppa)
         else:
             self.destination = build_package_location(
                 self.options.to_distribution,
@@ -500,11 +495,6 @@ class UnembargoSecurityPackage(PackageCopier):
             "-p", "--ppa", dest="archive_owner_name",
             default="ubuntu-security", action="store",
             help="Private PPA owner's name.")
-
-        self.parser.add_option(
-            "--ppa-name", dest="archive_name",
-            default="default", action="store",
-            help="Private PPA name.")
 
     def setUpCopierOptions(self):
         """Set up options needed by PackageCopier.
