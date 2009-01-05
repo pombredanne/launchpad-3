@@ -10,14 +10,18 @@
       interface="canonical.launchpad.interfaces.ITemporaryBlobStorage" />
   </class>
 
-  <browser:page
+  <browser:generalform
     name="+storeblob"
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
     class="canonical.launchpad.browser.TemporaryBlobStorageAddView"
+    schema="canonical.launchpad.interfaces.ITemporaryBlobStorage"
+    label="Store BLOB"
+    fields="blob"
+    keyword_arguments="blob"
     permission="zope.Public"
     template="../templates/temporaryblobstorage-storeblob.pt"
     >
-  </browser:page>
+  </browser:generalform>
 
   <!-- TemporaryStorageManager -->
   <class class="canonical.launchpad.database.TemporaryStorageManager">

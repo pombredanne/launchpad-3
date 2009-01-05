@@ -27,6 +27,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.interfaces import (
@@ -43,6 +44,8 @@ from canonical.launchpad.interfaces import (
     License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
     ShippingRequestStatus, SpecificationDefinitionStatus,
     TeamSubscriptionPolicy, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.archive import (
+    IArchiveSet, ArchivePurpose)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
@@ -59,6 +62,7 @@ from canonical.launchpad.interfaces.poll import (
     IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database.diff import StaticDiffJob
@@ -140,6 +144,20 @@ class LaunchpadObjectFactory(ObjectFactory):
     When this is done, the returned object should have unique references
     for any other required objects.
     """
+
+    def makeCopyArchiveLocation(self, distribution=None, owner=None,
+        name=None):
+        """Create and return a new arbitrary location for copy packages."""
+        copy_archive = self._makeArchive(distribution, owner, name,
+                                         ArchivePurpose.COPY)
+
+        distribution = copy_archive.distribution
+        distroseries = distribution.currentseries
+        pocket = PackagePublishingPocket.RELEASE
+
+        location = PackageLocation(copy_archive, distribution, distroseries,
+            pocket)
+        return location
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
@@ -1012,6 +1030,26 @@ class LaunchpadObjectFactory(ObjectFactory):
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
+
+    def _makeArchive(self, distribution=None, owner=None, name=None,
+                    purpose = None):
+        """Create and return a new arbitrary archive.
+
+        Note: this shouldn't generally be used except by other factory
+        methods such as makeCopyArchiveLocation.
+        """
+        if distribution is None:
+            distribution = self.makeDistribution()
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString()
+        if purpose is None:
+            purpose = ArchivePurpose.PPA
+
+        return getUtility(IArchiveSet).new(
+            owner=owner, purpose=purpose,
+            distribution=distribution, name=name)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,

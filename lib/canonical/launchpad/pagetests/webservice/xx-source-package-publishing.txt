@@ -3,7 +3,7 @@
 Source package publishing details are available via a custom operation on
 archives, getPublishedSources().
 
-    >>> cprov_archive = webservice.get("/~cprov/+ppa/default").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+archive").jsonBody()
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
 
@@ -56,7 +56,7 @@ Each source publication exposes a number of properties:
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
-    archive_link: u'http://.../~cprov/+ppa/default'
+    archive_link: u'http://.../~cprov/+archive'
     component_name: u'main'
     datecreated: u'2007-07-09T12:00:00+00:00'
     datemadepending: None
@@ -71,7 +71,7 @@ Each source publication exposes a number of properties:
     resource_type_link: u'http://.../#source_package_publishing_history'
     scheduleddeletiondate: None
     section_name: u'editors'
-    self_link: u'http://.../~cprov/+ppa/default/+sourcepub/28'
+    self_link: u'http://.../~cprov/+archive/+sourcepub/28'
     source_package_name: u'iceweasel'
     source_package_version: u'1.0'
     status: u'Published'
