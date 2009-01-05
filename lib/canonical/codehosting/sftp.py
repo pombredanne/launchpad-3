@@ -269,7 +269,7 @@ class FileTransferServer(filetransfer.FileTransferServer):
         if self.avatar is not None:
             avatar = self.avatar
             self.avatar = None
-            accesslog.log_event(accesslog.SFTPClosed(avatar))
+            notify(accesslog.SFTPClosed(avatar))
 
 
 class TransportSFTPServer:
