@@ -67,7 +67,7 @@
   </div> <!-- launchpad_form -->
 
 <script type="text/javascript">
-   YUI().use("node-style", function(Y) {
+   YUI().use("*", function(Y) {
 
        // Highlight (setting bold font-weight) the label for the
        // selected option in a given NodesList. Assumes the input is
@@ -107,21 +107,22 @@
        // 'red'. Options not selected (or unselected) text will be
        // rendered in 'blue' and without any decoration.
        var inputs = main_area.queryAll("input.line-through-when-checked");
-       inputs.each(function(input) {
-           input.on("click", function(e) {
-               var input = e.currentTarget;
-               var link = input.next();
-               if (input.get("checked")) {
-                   link.setStyle("color", "red");
-                   link.setStyle("textDecoration", "line-through");
-               }
-               else {
-                   link.setStyle("color", "blue");
-                   link.setStyle("textDecoration", "none");
-               }
+       if (inputs) {
+           inputs.each(function(input) {
+               input.on("click", function(e) {
+                   var input = e.currentTarget;
+                   var link = input.next();
+                   if (input.get("checked")) {
+                       link.setStyle("color", "red");
+                       link.setStyle("textDecoration", "line-through");
+                   }
+                   else {
+                       link.setStyle("color", "blue");
+                       link.setStyle("textDecoration", "none");
+                   }
+               });
            });
-       });
-
+       };
    });
 </script>
 
