@@ -1125,10 +1125,21 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     def validate(self, data):
         """Validate dependency configuration changes.
 
-        Currently it only needs to validate if the requested PPA dependency
-        is sane (different than the context PPA and not yet registered).
+        Skip checks if no dependency candidate was sent in the form.
+
+        Validate if the requested PPA dependency is sane (different than
+        the context PPA and not yet registered).
+
+        Also check if the dependency candidate is private, if so, it can
+        only be set if the user has 'launchpad.View' permission on it and
+        the context PPA is also private (this way P3A credentials will be
+        sanitized from buildlogs).
         """
         dependency_candidate = data.get('dependency_candidate')
+
+        if dependency_candidate is None:
+            return
+
         if dependency_candidate == self.context:
             self.setFieldError('dependency_candidate',
                                "An archive should not depend on itself.")
@@ -1138,6 +1149,18 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             self.setFieldError('dependency_candidate',
                                "This dependency is already registered.")
             return
+
+        from canonical.launchpad.webapp.authorization import check_permission
+        if not check_permission('launchpad.View', dependency_candidate):
+            self.setFieldError(
+                'dependency_candidate',
+                "You don't have permission to use this dependency.")
+            return
+
+        if dependency_candidate.private and not self.context.private:
+            self.setFieldError(
+                'dependency_candidate',
+                "Public PPAs cannot depend on private ones.")
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):
