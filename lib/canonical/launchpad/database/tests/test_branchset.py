@@ -13,8 +13,7 @@ import transaction
 
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.ftests import (
-    login, login_person, logout, ANONYMOUS, syncUpdate)
+from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,

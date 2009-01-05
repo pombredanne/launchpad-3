@@ -61,6 +61,10 @@
         </p>
 
         <h2>Start here:</h2>
+        <p>
+          Are you looking for something, or do you want to register a
+          new project, distribution, person, or team?
+        </p>
         <ul style="font-size: larger">
           <li><a href="/projects">Open Source Projects</a></li>
           <li><a href="/distros">Distributions</a></li>
@@ -142,22 +146,5 @@
         </p>
       </div>
     </div><!--main-->
-    <div metal:fill-slot="help">
-      <p>
-      This panel provides help on individual Launchpad pages.
-      Open it on any page that you don&rsquo;t understand.
-      </p>
-      <p>
-      You can browse our dedicated help site, <a
-      href="https://help.launchpad.net/">help.launchpad.net</a>, for a
-      complete set of documents about Launchpad
-      </p>
-      <p>
-      You can also find help on the <a
-      href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
-      users mailing list</a> or online via IRC, on <a
-      href="http://freenode.net/">Freenode</a>, channel #launchpad.
-      </p>
-    </div>
   </body>
 </html>

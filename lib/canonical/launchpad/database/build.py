@@ -37,7 +37,7 @@ from canonical.launchpad.helpers import (
      contactEmailAddresses, filenameToContentType, get_email_template)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
@@ -929,3 +929,45 @@ class BuildSet:
         return Build.select(
             query, orderBy=["-datecreated", "id"],
             clauseTables=["Archive"])
+
+    def getStatusSummaryForBuilds(self, builds):
+        """See `IBuildSet`."""
+        # Create a small helper function to collect the builds for a given
+        # list of build states:
+        def collect_builds(*states):
+            wanted = []
+            for state in states:
+                candidates = [build for build in builds
+                                if build.buildstate == state]
+                wanted.extend(candidates)
+            return wanted
+
+        failed = collect_builds(BuildStatus.FAILEDTOBUILD,
+                                BuildStatus.MANUALDEPWAIT,
+                                BuildStatus.CHROOTWAIT,
+                                BuildStatus.FAILEDTOUPLOAD)
+        needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
+        building = collect_builds(BuildStatus.BUILDING)
+
+        # Note: the BuildStatus DBItems are used here to summarize the
+        # status of a set of builds:s
+        if len(building) != 0:
+            return {
+                'status': BuildSetStatus.BUILDING,
+                'builds': building,
+                }
+        elif len(needsbuild) != 0:
+            return {
+                'status': BuildSetStatus.NEEDSBUILD,
+                'builds': needsbuild,
+                }
+        elif len(failed) != 0:
+            return {
+                'status': BuildSetStatus.FAILEDTOBUILD,
+                'builds': failed,
+                }
+        else:
+            return {
+                'status': BuildSetStatus.FULLYBUILT,
+                'builds': builds,
+                }
