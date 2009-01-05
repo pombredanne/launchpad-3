@@ -99,7 +99,6 @@ Now we can build the source package using the generated tarball.
      .
        * Initial Upstream package
     ...
-    Files:
      ... devel optional biscuit_1.0-1.dsc
      ... devel optional biscuit_1.0.orig.tar.gz
      ... devel optional biscuit_1.0-1.diff.gz
