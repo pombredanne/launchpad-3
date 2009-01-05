@@ -62,6 +62,13 @@ def prepare_for_sync():
     Finally, after all this hackery, we copy the current Mailman tree to a
     temporary location.  Thus this temporary copy will look like production's
     Mailman database, and the sync will be more realistic.
+
+    :return: An object containing the details of the sync.  The returned
+        object will have a `source_dir` attribute indicating the sync source
+        directory, and a `mhonarch_path` attribute indicating the path to the
+        fake team's MHonArc archive.  The returned object will have a
+        `cleanup()` method that must be called at the end of the test.
+    :rtype: `SyncDetails`
     """
     # Tweak each of the mailing lists by essentially breaking their host_name
     # and web_page_urls.  These will get repaired by the sync script.  Do this
