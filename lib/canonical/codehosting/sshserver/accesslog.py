@@ -21,7 +21,8 @@ __all__ = [
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-from zope import component
+# This non-standard import is necessary to hook up the event system.
+import zope.component.event
 from zope.interface import Attribute, implements, Interface
 
 from canonical.config import config
@@ -61,7 +62,7 @@ def set_up_logging(configure_oops_reporting=False):
         set_up_oops_reporting('codehosting')
     # Make sure that our logging event handler is there, ready to receive
     # logging events.
-    component.provideHandler(_log_event)
+    zope.component.provideHandler(_log_event)
     return log
 
 
@@ -183,7 +184,7 @@ class BazaarSSHClosed(AvatarEvent):
     template = '[%(session_id)s] %(username)s closed bzr+ssh session.'
 
 
-@component.adapter(ILoggingEvent)
+@zope.component.adapter(ILoggingEvent)
 def _log_event(event):
     """Log 'event' to the codehosting logger.
 
