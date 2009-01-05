@@ -284,6 +284,8 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, product_name):
+        # XXX: JonathanLange 2008-12-10 spec=package-branches: This is a big
+        # thing that needs to be changed for package branches.
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
             branch = self.context.getBranch(product_name, branch_name)
@@ -1352,18 +1354,47 @@ class TeamOverviewNavigationMenu(
         return Link(target, text)
 
 
+class ActiveBatchNavigator(BatchNavigator):
+    """A paginator for active items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'active_start'
+    batch_variable_name = 'active_batch'
+
+
+class InactiveBatchNavigator(BatchNavigator):
+    """A paginator for inactive items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'inactive_start'
+    batch_variable_name = 'inactive_batch'
+
+
 class TeamMembershipView(LaunchpadView):
     """The view behins ITeam/+members."""
+
+    @cachedproperty
+    def active_memberships(self):
+        """Current members of the team."""
+        return ActiveBatchNavigator(
+            self.context.member_memberships, self.request)
+
     @cachedproperty
     def inactive_memberships(self):
-        return list(self.context.getInactiveMemberships())
+        """Former members of the team."""
+        return InactiveBatchNavigator(
+            self.context.getInactiveMemberships(), self.request)
 
     @cachedproperty
     def invited_memberships(self):
+        """Other teams invited to become members of this team."""
         return list(self.context.getInvitedMemberships())
 
     @cachedproperty
     def proposed_memberships(self):
+        """Users who have requested to join this team."""
         return list(self.context.getProposedMemberships())
 
     @property
