@@ -1,6 +1,14 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 
+"""Custom authentication for the SSH server.
+
+Launchpad's SSH server authenticates users against a XML-RPC service (see
+`canonical.launchpad.interfaces.authserver.IAuthServer` and
+`PublicKeyFromLaunchpadChecker`) and provides richer error messages in the
+case of failed authentication (see `SSHUserAuthServer`).
+"""
+
 __metaclass__ = type
 __all__ = [
     'LaunchpadAvatar',
