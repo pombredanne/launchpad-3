@@ -15,39 +15,38 @@ sync, but we can get close.  Start off by creating a few mailing lists.  When
 the mailing lists are created, messages get sent to the members of the team
 informing them of their new list.  We can ignore these.
 
-    >>> import transaction
     >>> from canonical.launchpad.ftests import (
     ...     login, logout, mailinglists_helper)
 
     >>> login('foo.bar@canonical.com')
-    >>> team_one = mailinglists_helper.new_team('itest-one')
-    >>> team_two = mailinglists_helper.new_team('itest-two')
+    >>> team_one = mailinglists_helper.new_team('staging-one')
+    >>> team_two = mailinglists_helper.new_team('staging-two')
     >>> transaction.commit()
     >>> logout()
     >>> browser = Browser('no-priv@canonical.com:test')
 
     >>> from canonical.launchpad.mailman.testing import helpers
-    >>> helpers.apply_for_list(browser, 'itest-one')
-    >>> helpers.apply_for_list(browser, 'itest-two')
+    >>> helpers.apply_for_list(browser, 'staging-one')
+    >>> helpers.apply_for_list(browser, 'staging-two')
 
-    >>> list_one = helpers.review_list('itest-one')
-    >>> list_two = helpers.review_list('itest-two')
+    >>> list_one = helpers.review_list('staging-one')
+    >>> list_two = helpers.review_list('staging-two')
 
 Anne subscribes to two mailing lists.  Bart and Cris both subscribe to only
 one of the mailing lists.
 
-    >>> helpers.subscribe('Anne', 'itest-one')
-    >>> helpers.subscribe('Anne', 'itest-two')
-    >>> helpers.subscribe('Bart', 'itest-one')
-    >>> helpers.subscribe('Cris', 'itest-two')
+    >>> helpers.subscribe('Anne', 'staging-one')
+    >>> helpers.subscribe('Anne', 'staging-two')
+    >>> helpers.subscribe('Bart', 'staging-one')
+    >>> helpers.subscribe('Cris', 'staging-two')
 
 A bunch of messages are sent to the mailing lists.
 
     >>> smtpd.reset()
     >>> from Mailman.Post import inject
-    >>> inject('itest-one', """\
+    >>> inject('staging-one', """\
     ... From: anne.person@example.com
-    ... To: itest-one@lists.launchpad.dev
+    ... To: staging-one@lists.launchpad.dev
     ... Subject: hello
     ... Message-ID: <first-injection>
     ...
@@ -58,9 +57,9 @@ A bunch of messages are sent to the mailing lists.
     >>> for index in range(3):
     ...     smtpd_watcher.wait_for_mbox_delivery('first-injection')
 
-    >>> inject('itest-two', """\
+    >>> inject('staging-two', """\
     ... From: anne.person@example.com
-    ... To: itest-two@lists.launchpad.dev
+    ... To: staging-two@lists.launchpad.dev
     ... Subject: hello
     ... Message-ID: <second-injection>
     ...
@@ -71,9 +70,9 @@ A bunch of messages are sent to the mailing lists.
     >>> for index in range(3):
     ...     smtpd_watcher.wait_for_mbox_delivery('second-injection')
 
-    >>> inject('itest-one', """\
+    >>> inject('staging-one', """\
     ... From: bart.person@example.com
-    ... To: itest-one@lists.launchpad.dev
+    ... To: staging-one@lists.launchpad.dev
     ... Subject: hello
     ... Message-ID: <third-injection>
     ...
@@ -84,9 +83,9 @@ A bunch of messages are sent to the mailing lists.
     >>> for index in range(3):
     ...     smtpd_watcher.wait_for_mbox_delivery('third-injection')
 
-    >>> inject('itest-two', """\
+    >>> inject('staging-two', """\
     ... From: cris.person@example.com
-    ... To: itest-two@lists.launchpad.dev
+    ... To: staging-two@lists.launchpad.dev
     ... Subject: hello
     ... Message-ID: <fourth-injection>
     ...
@@ -100,18 +99,18 @@ A bunch of messages are sent to the mailing lists.
     >>> from operator import itemgetter
     >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
     ...     print message['sender']
-    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    itest-one-bounces+bart.person=example.com@lists.launchpad.dev
-    itest-one-bounces+bart.person=example.com@lists.launchpad.dev
-    itest-two-bounces+anne.person=example.com@lists.launchpad.dev
-    itest-two-bounces+anne.person=example.com@lists.launchpad.dev
-    itest-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    itest-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    itest-two-bounces+cris.person=example.com@lists.launchpad.dev
-    itest-two-bounces+cris.person=example.com@lists.launchpad.dev
+    staging-one-bounces+anne.person=example.com@lists.launchpad.dev
+    staging-one-bounces+anne.person=example.com@lists.launchpad.dev
+    staging-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    staging-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    staging-one-bounces+bart.person=example.com@lists.launchpad.dev
+    staging-one-bounces+bart.person=example.com@lists.launchpad.dev
+    staging-two-bounces+anne.person=example.com@lists.launchpad.dev
+    staging-two-bounces+anne.person=example.com@lists.launchpad.dev
+    staging-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    staging-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    staging-two-bounces+cris.person=example.com@lists.launchpad.dev
+    staging-two-bounces+cris.person=example.com@lists.launchpad.dev
 
 Give one of the mailing lists a contact address, to further simulate what the
 sync script has to deal with.
@@ -121,7 +120,7 @@ sync script has to deal with.
     ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
-    >>> team = getUtility(IPersonSet).getByName('itest-two')
+    >>> team = getUtility(IPersonSet).getByName('staging-two')
     >>> email = getUtility(IEmailAddressSet).new(
     ...     'contact@example.com', team, EmailAddressStatus.VALIDATED)
     >>> team.setContactAddress(email)
@@ -132,9 +131,9 @@ Now we need to simulate the difference between the staging and production
 databases.  To do this, we'll use a helper, but first we need to stop Mailman.
 
     >>> from canonical.launchpad.mailman import runmailman
-    >>> from canonical.testing.layers import AppServerLayer
+    >>> from canonical.testing.layers import LayerProcessController
     >>> runmailman.stop_mailman(
-    ...     quiet=True, config=AppServerLayer.appserver_config)
+    ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_shutdown()
 
 In a typical synchronization situation, the production Launchpad database is
@@ -159,7 +158,7 @@ That way if the list is created in Launchpad on staging, the Mailman list will
 also be created.
 
     >>> from canonical.launchpad.mailman.testing import sync
-    >>> source_dir = sync.prepare_for_sync()
+    >>> sync_details = sync.prepare_for_sync()
 
 Our simulation now has a staging database that has been copied, but the
 Mailman data has not yet been copied.  Let's take a look at what staging's
@@ -171,13 +170,13 @@ illustrates a mailing list that exists in Mailman but not in Launchpad.
     fake-team
         lists.launchpad.dev http://lists.launchpad.dev/mailman/
         No Launchpad team: fake-team
-    itest-one
+    staging-one
         lists.prod.launchpad.dev http://lists.prod.launchpad.dev/
-        itest-one@lists.prod.launchpad.dev
-    itest-two
+        staging-one@lists.prod.launchpad.dev
+    staging-two
         lists.prod.launchpad.dev http://lists.prod.launchpad.dev/
         contact@example.com
-        itest-two@lists.prod.launchpad.dev
+        staging-two@lists.prod.launchpad.dev
 
 Do the Mailman synchronization by calling the script.  We must set the
 LPCONFIG environment variable for the script to find the correct
@@ -188,9 +187,9 @@ launchpad.conf file.
     >>> from subprocess import *
     >>> proc = Popen(
     ...     ('scripts/mlist-sync.py', '--hostname',
-    ...      'lists.prod.launchpad.dev', source_dir),
+    ...      'lists.prod.launchpad.dev', sync_details.source_dir),
     ...     stdout=PIPE, stderr=PIPE,
-    ...     cwd=AppServerLayer.appserver_config.root,
+    ...     cwd=LayerProcessController.appserver_config.root,
     ...     env=dict(LPCONFIG='testrunner-appserver',
     ...              PYTHONPATH=os.pathsep.join(sys.path)))
     >>> stdout, stderr = proc.communicate()
@@ -212,19 +211,18 @@ web_page_url attributes for these lists should not point to 'prod'.
     >>> from canonical.database.sqlbase import rollback
     >>> rollback()
     >>> sync.dump_list_info()
-    itest-one
+    staging-one
         lists.launchpad.dev http://lists.launchpad.dev/mailman/
-        itest-one@lists.launchpad.dev
-    itest-two
+        staging-one@lists.launchpad.dev
+    staging-two
         lists.launchpad.dev http://lists.launchpad.dev/mailman/
         contact@example.com
-        itest-two@lists.launchpad.dev
+        staging-two@lists.launchpad.dev
 
 
 == Clean up ==
 
-    >>> import shutil
-    >>> shutil.rmtree(source_dir)
+    >>> sync_details.cleanup()
     >>> runmailman.start_mailman(
-    ...     quiet=True, config=AppServerLayer.appserver_config)
+    ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_restart()

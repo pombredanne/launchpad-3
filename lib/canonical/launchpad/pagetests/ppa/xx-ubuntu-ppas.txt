@@ -549,7 +549,7 @@ help wiki are presented in the PPA index page.
     >>> print extract_text(signing_key_section)
     This repository is signed with
     ABCDEF0123456789ABCDDCBA0000111112345678 OpenPGP key.
-    Follow these instructions if you want to install packages from this PPA.
+    Follow these instructions for installing packages from this PPA.
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
