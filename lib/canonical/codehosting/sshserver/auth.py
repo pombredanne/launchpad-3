@@ -1,29 +1,30 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 
+"""Custom authentication for the SSH server.
+
+Launchpad's SSH server authenticates users against a XML-RPC service (see
+`canonical.launchpad.interfaces.authserver.IAuthServer` and
+`PublicKeyFromLaunchpadChecker`) and provides richer error messages in the
+case of failed authentication (see `SSHUserAuthServer`).
+"""
+
 __metaclass__ = type
 __all__ = [
     'LaunchpadAvatar',
-    'Factory',
     'PublicKeyFromLaunchpadChecker',
     'Realm',
-    'set_up_logging',
     'SSHUserAuthServer',
-    'SubsystemOnlySession',
     'UserDisplayedUnauthorizedLogin',
     ]
 
 import binascii
-import os
 import logging
-
-from bzrlib import trace
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import (
-    channel, connection, factory, filetransfer, session, userauth)
+from twisted.conch.ssh import filetransfer, userauth
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
@@ -34,60 +35,11 @@ from twisted.cred.portal import IRealm
 from twisted.python import components, failure
 
 from canonical.codehosting import sftp
-from canonical.codehosting.smartserver import launch_smart_server
+from canonical.codehosting.sshserver.session import (
+    launch_smart_server, PatchedSSHSession)
 from canonical.config import config
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 from zope.interface import implements
-
-
-class SubsystemOnlySession(session.SSHSession, object):
-    """Session adapter that corrects a bug in Conch."""
-
-    def closeReceived(self):
-        # Without this, the client hangs when its finished transferring.
-        self.loseConnection()
-
-    def loseConnection(self):
-        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
-        # implementation of session.SSHSession.loseConnection. The default
-        # implementation will try to call loseConnection on the client
-        # transport even if it's None. I don't know *why* it is None, so this
-        # doesn't necessarily address the root cause.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            transport.loseConnection()
-        # This is called by session.SSHSession.loseConnection. SSHChannel is
-        # the base class of SSHSession.
-        channel.SSHChannel.loseConnection(self)
-
-    def stopWriting(self):
-        """See `session.SSHSession.stopWriting`.
-
-        When the client can't keep up with us, we ask the child process to
-        stop giving us data.
-        """
-        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
-        # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above.  It would be good to know if and why it
-        # is necessary.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            transport.pauseProducing()
-
-    def startWriting(self):
-        """See `session.SSHSession.startWriting`.
-
-        The client is ready for data again, so ask the child to start
-        producing data again.
-        """
-        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
-        # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above.  It would be good to know if and why it
-        # is necessary.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            transport.resumeProducing()
 
 
 class LaunchpadAvatar(avatar.ConchUser):
@@ -109,9 +61,9 @@ class LaunchpadAvatar(avatar.ConchUser):
         logging.getLogger('codehosting.ssh').info(
             '%r logged in', self.username)
 
-        # Set the only channel as a session that only allows requests for
-        # subsystems...
-        self.channelLookup = {'session': SubsystemOnlySession}
+        # Set the only channel as a standard SSH session (with a couple of bug
+        # fixes).
+        self.channelLookup = {'session': PatchedSSHSession}
         # ...and set the only subsystem to be SFTP.
         self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
 
@@ -192,25 +144,6 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         return reason
 
 
-class Factory(factory.SSHFactory):
-    services = {
-        'ssh-userauth': SSHUserAuthServer,
-        'ssh-connection': connection.SSHConnection
-    }
-
-    def __init__(self, hostPublicKey, hostPrivateKey):
-        self.publicKeys = {
-            'ssh-rsa': hostPublicKey
-        }
-        self.privateKeys = {
-            'ssh-rsa': hostPrivateKey
-        }
-
-    def startFactory(self):
-        factory.SSHFactory.startFactory(self)
-        os.umask(0022)
-
-
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     """Cred checker for getting public keys from launchpad.
 
@@ -263,32 +196,3 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UnauthorizedLogin(
             "Your SSH key does not match any key registered for Launchpad "
             "user %s" % credentials.username)
-
-
-class _NotFilter(logging.Filter):
-    """A Filter that only allows records that do *not* match.
-
-    A _NotFilter initialized with "A.B" will allow "C", "A.BB" but not allow
-    "A.B", "A.B.C" etc.
-    """
-
-    def filter(self, record):
-        return not logging.Filter.filter(self, record)
-
-
-def set_up_logging(configure_oops_reporting=False):
-    """Set up logging for the smart server.
-
-    This sets up a debugging handler on the 'codehosting' logger, makes sure
-    that things logged there won't go to stderr (necessary because of
-    bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
-
-    In addition, if configure_oops_reporting is True, install a
-    Twisted log observer that ensures unhandled exceptions get
-    reported as OOPSes.
-    """
-    log = logging.getLogger('codehosting')
-    log.setLevel(logging.CRITICAL)
-    if configure_oops_reporting:
-        set_up_oops_reporting('codehosting')
-    return log
