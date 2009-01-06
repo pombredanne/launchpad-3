@@ -35,7 +35,6 @@ feature is exposed.
     >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> logout()
-    >>> import transaction
     >>> transaction.commit()
     >>> xmlrpc_watcher.wait_for_create('itest-one')
 

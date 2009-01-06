@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from zope.component import getAdapter, getUtility
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
