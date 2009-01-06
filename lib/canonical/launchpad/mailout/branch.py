@@ -51,7 +51,7 @@ def email_branch_modified_notifications(branch, to_addresses,
         # The only time that the subscription will be empty is if the owner
         # of the branch is being notified.
         if subscription is None:
-            params['rationale'] = (
+            params['reason'] = (
                 "You are getting this email as you are the owner of "
                 "the branch and someone has edited the details.")
         elif not subscription.person.isTeam():
