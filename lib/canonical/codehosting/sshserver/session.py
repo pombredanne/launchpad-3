@@ -1,10 +1,12 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-"""Smart server support for the supermirror."""
+"""SSH session implementations for the codehosting SSH server."""
 
 __metaclass__ = type
 __all__ = [
-    'ExecOnlySession', 'RestrictedExecOnlySession', 'launch_smart_server']
+    'launch_smart_server',
+    'PatchedSSHSession',
+    ]
 
 import os
 import urlparse
@@ -12,11 +14,70 @@ import urlparse
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
+from twisted.conch.ssh import channel, session
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
 from canonical.config import config
 from canonical.codehosting import get_bzr_path
+
+
+class PatchedSSHSession(session.SSHSession, object):
+    """Session adapter that corrects bugs in Conch.
+
+    This object provides no custom logic for Launchpad, it just addresses some
+    simple bugs in the base `session.SSHSession` class that are not yet fixed
+    upstream.
+    """
+
+    def closeReceived(self):
+        # Without this, the client hangs when it's finished transferring.
+        # XXX: JonathanLange 2009-01-05: This does not appear to have a
+        # corresponding bug in Twisted. We should test that the above comment
+        # is indeed correct and then file a bug upstream.
+        self.loseConnection()
+
+    def loseConnection(self):
+        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
+        # implementation of session.SSHSession.loseConnection. The default
+        # implementation will try to call loseConnection on the client
+        # transport even if it's None. I don't know *why* it is None, so this
+        # doesn't necessarily address the root cause.
+        # See http://twistedmatrix.com/trac/ticket/2754.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.loseConnection()
+        # This is called by session.SSHSession.loseConnection. SSHChannel is
+        # the base class of SSHSession.
+        channel.SSHChannel.loseConnection(self)
+
+    def stopWriting(self):
+        """See `session.SSHSession.stopWriting`.
+
+        When the client can't keep up with us, we ask the child process to
+        stop giving us data.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above. It would be good to know if and why it is
+        # necessary. See http://twistedmatrix.com/trac/ticket/2754.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.pauseProducing()
+
+    def startWriting(self):
+        """See `session.SSHSession.startWriting`.
+
+        The client is ready for data again, so ask the child to start
+        producing data again.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above. It would be good to know if and why it is
+        # necessary. See http://twistedmatrix.com/trac/ticket/2754.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.resumeProducing()
 
 
 class ForbiddenCommand(Exception):
