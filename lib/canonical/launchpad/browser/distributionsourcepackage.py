@@ -7,7 +7,8 @@ __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageView'
+    'DistributionSourcePackageView',
+    'DistributionSourcePackageEditView',
     ]
 
 import itertools
@@ -26,8 +27,9 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link,
-    StandardLaunchpadFacets, action, canonical_url, redirection)
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, Link, StandardLaunchpadFacets, action, canonical_url,
+    redirection)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 from lazr.delegates import delegates
@@ -253,3 +255,23 @@ class DistributionSourcePackageView(LaunchpadFormView):
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
             for (dspr, spphs) in dspr_pubs]
+
+
+class DistributionSourcePackageEditView(LaunchpadEditFormView):
+    """Edit a distribution source package."""
+
+    schema = IDistributionSourcePackage
+    label = "Change package details"
+    field_names = [
+        'bug_reporting_guidelines',
+        ]
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url

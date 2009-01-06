@@ -26,6 +26,9 @@
   <h1>
     &ldquo;<span tal:replace="context/name" />&rdquo; source package in
     <span tal:replace="context/distribution/displayname" />
+    <a tal:attributes="href context/fmt:url/+edit" title="Edit package details">
+      <img src="/@@/edit" />
+    </a>
   </h1>
 
   <p class="error message"
