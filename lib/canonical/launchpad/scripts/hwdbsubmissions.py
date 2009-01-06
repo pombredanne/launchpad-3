@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
     IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
     IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.errorlog import (
@@ -1722,6 +1723,7 @@ class ProcessingLoop(object):
         self.valid_submissions = 0
         self.invalid_submissions = 0
         self.finished = False
+        self.janitor = getUtility(ILaunchpadCelebrities).janitor
 
     def _validateSubmission(self, submission):
         submission.status = HWSubmissionProcessingStatus.PROCESSED
@@ -1742,7 +1744,9 @@ class ProcessingLoop(object):
         # a limit for an SQL query, convert it into an integer.
         chunk_size = int(chunk_size)
         submissions = getUtility(IHWSubmissionSet).getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
+            HWSubmissionProcessingStatus.SUBMITTED,
+            user=self.janitor
+            )[:chunk_size]
         if submissions.count() < chunk_size:
             self.finished = True
         for submission in submissions:
