@@ -1,6 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-"""Tests for smart server support on the supermirror."""
+"""Tests for SSH session support on the codehosting SSH server."""
 
 __metaclass__ = type
 
@@ -12,10 +12,12 @@ from twisted.conch.interfaces import ISession
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from canonical.codehosting.sshserver import LaunchpadAvatar
+from canonical.codehosting.sshserver.auth import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
-from canonical.codehosting import get_bzr_plugins_path, smartserver
+from canonical.codehosting import get_bzr_path, get_bzr_plugins_path
+from canonical.codehosting.sshserver.session import (
+    ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
 
 
 class MockReactor:
@@ -72,7 +74,7 @@ class TestExecOnlySession(AvatarTestCase):
         AvatarTestCase.setUp(self)
         self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
-        self.session = smartserver.ExecOnlySession(self.avatar, self.reactor)
+        self.session = ExecOnlySession(self.avatar, self.reactor)
 
     def test_getPtyIsANoOp(self):
         # getPty is called on the way to establishing a shell. Since we don't
@@ -175,9 +177,9 @@ class TestExecOnlySession(AvatarTestCase):
         # ExecOnlySession can be easily registered as an adapter for Conch
         # avatars.
         from twisted.internet import reactor
-        adapter = smartserver.ExecOnlySession.getAvatarAdapter()
+        adapter = ExecOnlySession.getAvatarAdapter()
         session = adapter(self.avatar)
-        self.failUnless(isinstance(session, smartserver.ExecOnlySession),
+        self.failUnless(isinstance(session, ExecOnlySession),
                         "ISession(avatar) doesn't adapt to ExecOnlySession. "
                         "Got %r instead." % (session,))
         self.assertIdentical(self.avatar, session.avatar)
@@ -186,8 +188,8 @@ class TestExecOnlySession(AvatarTestCase):
     def test_environment(self):
         # The environment for the executed process can be specified in the
         # ExecOnlySession constructor.
-        session = smartserver.ExecOnlySession(self.avatar, self.reactor,
-                                              environment={'FOO': 'BAR'})
+        session = ExecOnlySession(
+            self.avatar, self.reactor, environment={'FOO': 'BAR'})
         protocol = ProcessProtocol()
         session.execCommand(protocol, 'yes')
         self.assertEqual({'FOO': 'BAR'}, session.environment)
@@ -199,7 +201,7 @@ class TestExecOnlySession(AvatarTestCase):
     def test_environmentInGetAvatarAdapter(self):
         # We can pass the environment into getAvatarAdapter so that it is used
         # when we adapt the session.
-        adapter = smartserver.ExecOnlySession.getAvatarAdapter(
+        adapter = ExecOnlySession.getAvatarAdapter(
             environment={'FOO': 'BAR'})
         session = adapter(self.avatar)
         self.assertEqual({'FOO': 'BAR'}, session.environment)
@@ -221,15 +223,15 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         AvatarTestCase.setUp(self)
         self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
-        self.session = smartserver.RestrictedExecOnlySession(
+        self.session = RestrictedExecOnlySession(
             self.avatar, self.reactor, 'foo', 'bar baz %(user_id)s')
 
     def test_makeRestrictedExecOnlySession(self):
         # A RestrictedExecOnlySession is constructed with an avatar, a reactor
         # and an expected command.
         self.failUnless(
-            isinstance(self.session, smartserver.RestrictedExecOnlySession),
-            "%r not an instance of smartserver.RestrictedExecOnlySession"
+            isinstance(self.session, RestrictedExecOnlySession),
+            "%r not an instance of RestrictedExecOnlySession"
             % (self.session,))
         self.assertEqual(self.avatar, self.session.avatar)
         self.assertEqual(self.reactor, self.session.reactor)
@@ -263,11 +265,11 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # RestrictedExecOnlySession can be easily registered as an adapter for
         # Conch avatars.
         from twisted.internet import reactor
-        adapter = smartserver.RestrictedExecOnlySession.getAvatarAdapter(
+        adapter = RestrictedExecOnlySession.getAvatarAdapter(
             allowed_command='foo', executed_command_template='bar baz')
         session = adapter(self.avatar)
         self.failUnless(
-            isinstance(session, smartserver.RestrictedExecOnlySession),
+            isinstance(session, RestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to RestrictedExecOnlySession. "
             "Got %r instead." % (session,))
         self.assertIdentical(self.avatar, session.avatar)
@@ -291,7 +293,7 @@ class TestSessionIntegration(AvatarTestCase):
         # RestrictedExecOnlySession handles any requests to execute a command.
         session = ISession(self.avatar)
         self.failUnless(
-            isinstance(session, smartserver.RestrictedExecOnlySession),
+            isinstance(session, RestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to ExecOnlySession. "
             "Got %r instead." % (session,))
         self.assertEqual(
@@ -305,11 +307,11 @@ class TestSessionIntegration(AvatarTestCase):
             'bzr serve --inet --directory=/ --allow-writes')
         self.assertEqual(sys.executable, executable)
         self.assertEqual(
-            [sys.executable, smartserver.get_bzr_path(), 'lp-serve', '--inet',
+            [sys.executable, get_bzr_path(), 'lp-serve', '--inet',
              str(self.avatar.user_id)],
             list(arguments))
-        self.assertRaises(smartserver.ForbiddenCommand,
-                          session.getCommandToRun, 'rm -rf /')
+        self.assertRaises(
+            ForbiddenCommand, session.getCommandToRun, 'rm -rf /')
 
 
 def test_suite():

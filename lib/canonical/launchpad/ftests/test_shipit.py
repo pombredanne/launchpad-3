@@ -85,9 +85,9 @@ class TestFraudDetection(unittest.TestCase):
                 'field.phone': '43242352',
                 'field.country': '226',
                 'ordertype': str(standardoption.id),
-                'FORM_SUBMIT': 'Request',
+                'field.actions.continue': 'Request',
                 }
-        request = LaunchpadTestRequest(form=form)
+        request = LaunchpadTestRequest(form=form, method='POST')
         # The request object on the ShipIt layers has that attribute.
         request.icing_url = '/+icing-%s' % flavour.name
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
@@ -96,11 +96,9 @@ class TestFraudDetection(unittest.TestCase):
         if flavour == ShipItFlavour.SERVER:
             page = 'myrequest-server'
         view = getMultiAdapter((ShipItApplication(), request), name=page)
-        if distroseries is not None:
-            view.series = distroseries
-        view.renderStandardrequestForm()
-        errors = getattr(view, 'errors', None)
-        self.assertEqual(errors, None)
+        view.initialize(distroseries=distroseries)
+        self.assertEqual(view.errors, [])
+        self.assertEqual(view.form_wide_errors, [])
         return view.current_order
 
     def test_first_request_is_approved(self):
@@ -143,7 +141,7 @@ class TestFraudDetection(unittest.TestCase):
             'field.postcode': '12242790',
             'field.phone': '43242352',
             'field.country': '226',
-            'FORM_SUBMIT': 'Request',
+            'field.actions.continue': 'Request',
             }
         flavour = ShipItFlavour.UBUNTU
         option = self._get_standard_option(flavour)
@@ -168,19 +166,19 @@ class TestFraudDetection(unittest.TestCase):
         request2 = self._make_new_request_through_web(
             flavour, user_email='foo.bar@canonical.com', form=form,
             distroseries=ShipItDistroSeries.DAPPER)
-        self.failUnless(request2.isApproved(), flavour)
         self.failIfEqual(request.distroseries, request2.distroseries)
         self.assertEqual(
             request2.normalized_address, request.normalized_address)
+        self.failUnless(request2.isApproved(), flavour)
 
         # Now when a second request for CDs of the same release are made using
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
             flavour, user_email='tim@canonical.com', form=form)
         self.assertEqual(request.distroseries, request3.distroseries)
-        self.failUnless(request3.isDuplicatedAddress(), flavour)
         self.assertEqual(
             request3.normalized_address, request.normalized_address)
+        self.failUnless(request3.isDuplicatedAddress(), flavour)
 
         # The same happens for any subsequent requests for that release with
         # the same address.

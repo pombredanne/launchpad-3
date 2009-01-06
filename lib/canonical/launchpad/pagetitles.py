@@ -676,11 +676,6 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_js is standard javascript
 
-# XXX: kiko 2005-09-29:
-# The general form is a fallback form; I'm not sure why it is
-# needed, nor why it needs a pagetitle, but I can't debug this today.
-launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
-
 launchpad_invalidbatchsize = "Invalid Batch Size"
 
 launchpad_legal = 'Launchpad legalese'
