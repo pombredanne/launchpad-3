@@ -19,8 +19,8 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus, active_publishing_status)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
@@ -102,8 +102,8 @@ class TestPackageRemover(unittest.TestCase):
     user_name = 'sabdfl'
     removal_comment = 'fooooooo'
 
-    def getRemover(self, name='mozilla-firefox', version=None,
-                   suite='warty', distribution_name='ubuntu',
+    def getRemover(self, name='foo', version=None,
+                   suite='hoary', distribution_name='ubuntu',
                    component=None, arch=None, partner=False, ppa=None,
                    user_name=None, removal_comment=None,
                    binary_only=False, source_only=False):
@@ -171,7 +171,7 @@ class TestPackageRemover(unittest.TestCase):
          * empty removed_by,
          * empty removal_comment.
         """
-        self.assertTrue(pub.status.name in ['PUBLISHED', 'PENDING'])
+        self.assertTrue(pub.status in active_publishing_status)
         self.assertEqual(None, pub.removed_by)
         self.assertEqual(None, pub.removal_comment)
 
@@ -184,11 +184,37 @@ class TestPackageRemover(unittest.TestCase):
          * removed_by.name equal to self.user_name,
          * removal_comment equal to self.removal_comment.
         """
-        self.assertEqual('DELETED', pub.status.name)
+        self.assertEqual(pub.status, PackagePublishingStatus.DELETED)
         self.assertEqual(self.user_name, pub.removed_by.name)
         self.assertEqual(self.removal_comment, pub.removal_comment)
 
+    def compareRemovals(self, removed, expected):
+        """Check if the removed set contains the expected data.
+
+        :param removed: a list of `SecureSourcePackagePublishingHistory` or
+            `SecureBinaryPackagePublishingHistory` returned by the
+            `PackageRemover` instance.
+        :param expected: a list of `SourcePackagePublishingHistory` or
+            `BinaryPackagePublishingHistory` usually assembled at the call
+            site with the records expected to be DELETED.
+
+        :raises AssertionError: if the `removed` set does not match the
+            `expected` one or if the removals are not properly 'deleted'
+            (see `assertDeleted`).
+        """
+        self.assertEqual(
+            sorted([pub.id for pub in removed]),
+            sorted([pub.id for pub in expected]))
+
+        for pub in expected:
+            self.assertDeleted(pub.secure_record)
+
     def getTestPublisher(self):
+        """Return a initialized `SoyuzTestPublisher` object.
+
+        The object will be configured to published sources and binaries
+        for ubuntu/hoary on i386 and hppa architectures.
+        """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher = SoyuzTestPublisher()
@@ -196,76 +222,63 @@ class TestPackageRemover(unittest.TestCase):
         test_publisher.addFakeChroots(hoary)
         return test_publisher
 
+    def setUp(self):
+        """Instantiate a `SoyuzTestPublisher`."""
+        self.test_publisher = self.getTestPublisher()
+
     def testRemoveSourceAndBinaries(self):
         """Check how PackageRemoval behaves on a successful removal.
 
         Default mode is 'remove source and binaries':
         `lp-remove-package.py foo`
         """
-        test_publisher = self.getTestPublisher()
+        # Create 'foo' source and its 'foo-bin' binary publications in
+        # hoary i386 and hppa.
+        source = self.test_publisher.getPubSource(sourcename='foo')
+        binaries = self.test_publisher.getPubBinaries(pub_source=source)
 
+        # All the created publishing records should be deleted.
         removal_candidates = []
-        source = test_publisher.getPubSource(sourcename='foo')
-        binaries = test_publisher.getPubBinaries(pub_source=source)
         removal_candidates.append(source)
         removal_candidates.extend(binaries)
 
-        remover = self.getRemover(name='foo', suite='hoary')
+        remover = self.getRemover()
         removals = remover.mainTask()
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]),
-            sorted([pub.id for pub in removal_candidates]))
-
-        for pub in removal_candidates:
-            self.assertDeleted(pub.secure_record)
+        self.compareRemovals(removals, removal_candidates)
 
     def testRemoveMultiplePackages(self):
         """Package remover accepts multiple non-option arguments.
 
         `lp-remove-packages` is capable of operating on multiple packages.
         """
-        test_publisher = self.getTestPublisher()
-
+        # Create multiple source and binaries to be removed.
         removal_candidates = []
         for name in ['foo', 'bar', 'baz']:
-            source = test_publisher.getPubSource(sourcename=name)
-            binaries = test_publisher.getPubBinaries(pub_source=source)
+            source = self.test_publisher.getPubSource(sourcename=name)
+            binaries = self.test_publisher.getPubBinaries(pub_source=source)
             removal_candidates.append(source)
             removal_candidates.extend(binaries)
 
-        remover = self.getRemover(name='foo bar baz', suite='hoary')
+        remover = self.getRemover(name='foo bar baz')
         removals = remover.mainTask()
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]),
-            sorted([pub.id for pub in removal_candidates]))
-
-        for pub in removal_candidates:
-            self.assertDeleted(pub.secure_record)
+        self.compareRemovals(removals, removal_candidates)
 
     def testRemoveSourceOnly(self):
         """Check how PackageRemoval behaves on source-only removals.
 
         `lp-remove-package.py foo -S`
         """
-        test_publisher = self.getTestPublisher()
+        # Create source and binaries, but expect only the source to be
+        # removed.
+        source = self.test_publisher.getPubSource(sourcename='foo')
+        binaries = self.test_publisher.getPubBinaries(pub_source=source)
+        removal_candidates = [source]
 
-        removal_candidates = []
-        source = test_publisher.getPubSource(sourcename='foo')
-        binaries = test_publisher.getPubBinaries(pub_source=source)
-
-        removal_candidates.append(source)
-
-        remover = self.getRemover(
-            name='foo', suite='hoary', source_only=True)
+        remover = self.getRemover(source_only=True)
         removals = remover.mainTask()
+        self.compareRemovals(removals, removal_candidates)
 
-        self.assertEqual(
-            sorted([pub.id for pub in removals]),
-            sorted([pub.id for pub in removal_candidates]))
-
-        self.assertDeleted(source.secure_record)
+        # Binaries remained published.
         for pub in binaries:
             self.assertPublished(pub.secure_record)
 
@@ -274,120 +287,102 @@ class TestPackageRemover(unittest.TestCase):
 
         `lp-remove-package.py foo-bin -b`
         """
-        test_publisher = self.getTestPublisher()
-        source = test_publisher.getPubSource(sourcename='foo')
-
+        # Create a source ('foo') with multiple binaries ('foo-bin' and
+        # 'foo-data').
+        source = self.test_publisher.getPubSource(sourcename='foo')
         builds = source.createMissingBuilds()
         binaries = []
         for build in builds:
             for binaryname in ['foo-bin', 'foo-data']:
-                binarypackagerelease = test_publisher.uploadBinaryForBuild(
-                    build, binaryname)
-                binary = test_publisher.publishBinaryInArchive(
+                binarypackagerelease = (
+                    self.test_publisher.uploadBinaryForBuild(
+                        build, binaryname))
+                binary = self.test_publisher.publishBinaryInArchive(
                     binarypackagerelease, source.archive)
                 binaries.extend(binary)
 
+        # Only 'foo-bin' will be removed across all architectures.
         removal_candidates = [
             pub for pub in binaries
             if pub.binarypackagerelease.name == 'foo-bin']
 
-        remover = self.getRemover(
-            name='foo-bin', suite='hoary', binary_only=True)
+        remover = self.getRemover(name='foo-bin', binary_only=True)
         removals = remover.mainTask()
+        self.compareRemovals(removals, removal_candidates)
 
-        self.assertEqual(
-            sorted([pub.id for pub in removals]),
-            sorted([pub.id for pub in removal_candidates]))
-
+        # Source and other binaries than 'foo-bin' remained published
         self.assertPublished(source.secure_record)
-
         remained_binaries = [
             pub for pub in binaries
             if pub.binarypackagerelease.name != 'foo-bin']
         for pub in remained_binaries:
             self.assertPublished(pub.secure_record)
 
-        for pub in removal_candidates:
-            self.assertDeleted(pub.secure_record)
-
     def testRemoveBinaryOnlySpecificArch(self):
         """Check binary-only removals in a specific architecture.
 
         `lp-remove-package.py foo-bin -b -a i386`
         """
-        test_publisher = self.getTestPublisher()
-        source = test_publisher.getPubSource(sourcename='foo')
-        binaries = test_publisher.getPubBinaries(pub_source=source)
+        # Create source ('foo') and a binary ('foo-bin') for i386 and
+        # hppa architectures.
+        source = self.test_publisher.getPubSource(sourcename='foo')
+        binaries = self.test_publisher.getPubBinaries(pub_source=source)
+
+        # Only the 'foo-bin' on i386 will be removed.
         removal_candidates = [
             pub for pub in binaries
-            if pub.distroarchseries.architecturetag == 'i386'
-            ]
+            if pub.distroarchseries.architecturetag == 'i386']
 
         # See the comment in testRemoveBinaryOnly.
         remover = self.getRemover(
-            name='foo-bin', suite='hoary', binary_only=True, arch='i386')
+            name='foo-bin', binary_only=True, arch='i386')
         removals = remover.mainTask()
+        self.compareRemovals(removals, removal_candidates)
 
-        self.assertEqual(
-            sorted([pub.id for pub in removals]),
-            sorted([pub.id for pub in removal_candidates]))
-
+        # Source and non-i386 binaries remained published.
         self.assertPublished(source.secure_record)
-
         remained_binaries = [
             pub for pub in binaries
-            if pub.distroarchseries.architecturetag != 'i386'
-            ]
+            if pub.distroarchseries.architecturetag != 'i386']
         for pub in remained_binaries:
             self.assertPublished(pub.secure_record)
 
-        for pub in removal_candidates:
-            self.assertDeleted(pub.secure_record)
-
     def testRemoveFromPartner(self):
         """Source and binary package removal for Partner archive."""
-        test_publisher = self.getTestPublisher()
-        ubuntu = test_publisher.distroseries.distribution
+        # Retrieve the ubuntu PARTNER archives.
+        ubuntu = self.test_publisher.distroseries.distribution
         partner_archive = ubuntu.getArchiveByComponent('partner')
 
-        source = test_publisher.getPubSource(
+        # Create source and a binary publication in the PARTNER archive.
+        source = self.test_publisher.getPubSource(
             sourcename='foo', archive=partner_archive)
-        binaries = test_publisher.getPubBinaries(
+        binaries = self.test_publisher.getPubBinaries(
             pub_source=source, archive=partner_archive)
+
+        # Expect all created publishing records to be removed.
         removal_candidates = [source]
         removal_candidates.extend(binaries)
 
-        remover = self.getRemover(
-            name='foo', suite='hoary', partner=True)
+        remover = self.getRemover(partner=True)
         removals = remover.mainTask()
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]),
-            sorted([pub.id for pub in removal_candidates]))
-
-        for pub in removal_candidates:
-            self.assertDeleted(pub.secure_record)
+        self.compareRemovals(removals, removal_candidates)
 
     def testRemoveFromPPA(self):
         """Source and binary package removal for PPAs."""
+        # Create source and a binary for Celso's PPA>
         cprov = getUtility(IPersonSet).getByName('cprov')
-        test_publisher = self.getTestPublisher()
-        source = test_publisher.getPubSource(
+        source = self.test_publisher.getPubSource(
             sourcename='foo', archive=cprov.archive)
-        binaries = test_publisher.getPubBinaries(
+        binaries = self.test_publisher.getPubBinaries(
             pub_source=source, archive=cprov.archive)
+
+        # Expect all created publishing records to be removed.
         removal_candidates = [source]
         removal_candidates.extend(binaries)
 
-        remover = self.getRemover(name='foo', suite='hoary', ppa='cprov')
+        remover = self.getRemover(ppa='cprov')
         removals = remover.mainTask()
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]),
-            sorted([pub.id for pub in removal_candidates]))
-
-        for pub in removal_candidates:
-            self.assertDeleted(pub.secure_record)
+        self.compareRemovals(removals, removal_candidates)
 
     def testRemoveComponentFilter(self):
         """Check the component filter behaviour.
@@ -396,6 +391,10 @@ class TestPackageRemover(unittest.TestCase):
         the same result than not passing any component filter, because
         all test publications are in main component.
         """
+        source = self.test_publisher.getPubSource(sourcename='foo')
+
+        self.layer.commit()
+
         remover = self.getRemover()
         removals_without_component = remover.mainTask()
 
@@ -403,6 +402,7 @@ class TestPackageRemover(unittest.TestCase):
 
         remover = self.getRemover(component='main')
         removals_with_main_component = remover.mainTask()
+
         self.assertEqual(
             len(removals_without_component),
             len(removals_with_main_component))
@@ -414,6 +414,8 @@ class TestPackageRemover(unittest.TestCase):
         `SoyuzScriptError` because the selected publications are in main
         component.
         """
+        source = self.test_publisher.getPubSource(sourcename='foo')
+
         remover = self.getRemover(component='multiverse')
         self.assertRaises(SoyuzScriptError, remover.mainTask)
 
