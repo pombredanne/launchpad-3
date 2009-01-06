@@ -112,6 +112,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
 from canonical.lazr.interface import copy_field, use_template
+from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
@@ -2490,8 +2491,8 @@ class PersonView(LaunchpadView, FeedsMixin):
         """Can the user contact this context (this person or team)?
 
         Users can contact other valid users and teams. Anonymous users
-        cannot contact persons and teams, nor can anyone contact a non-valid
-        person (not active with a preferred email address).
+        cannot contact persons or teams, and no one can contact an invalid
+        person (inactive or without a preferred email address).
         """
         return (
             self.user is not None and self.context.is_valid_person_or_team)
@@ -5054,40 +5055,128 @@ class ContactViaWebNotificationRecipientSet:
     """A set of notification recipients and rationales from ContactViaWeb."""
     implements(INotificationRecipientSet)
 
-    def __init__(self, context):
-        self.context = context
+    # Primary reason enumerations.
+    TO_USER = object()
+    TO_TEAM = object()
+    TO_MEMBERS = object()
+    TO_OWNER = object()
+
+    def __init__(self, user, person_or_team):
+        """Initialize the state based on the context and the user.
+
+        The recipients are determined by the relationship between the user
+        and the context that he is contacting: another user, himself, his
+        team, another team.
+
+        :param user: The person doing the contacting.
+        :type user: an `IPerson`.
+        :param person_or_team: The party that is the context of the email.
+        :type person_or_team: `IPerson`.
+        """
+        self.user = user
+        self.description = None
+        self._primary_reason = None
         self._primary_recipient = None
         self._reason = None
         self._header = None
-        self._is_multiple_users = False
-        self._all_recipients_dict = None
         self._count_recipients = None
+        self.add(person_or_team, None, None)
 
     def _reset_state(self):
-        """Reset the lazr cache because the recipients changed."""
-        self._is_multiple_users = False
-        self._all_recipients_dict = None
+        """Reset the cache because the recipients changed."""
         self._count_recipients = None
+        if safe_hasattr(self, '_all_recipients_cached'):
+            # The clear the cache of _all_recipients. The caching will fail
+            # if this method creates the attribute before _all_recipients.
+            del self._all_recipients_cached
 
-    @property
-    def description(self):
-        """The description of the recipients for the contacting user."""
-        if self.context.is_valid_person:
+    def _getPrimaryReason(self, person_or_team):
+        """Return the primary reason enumeration.
+
+        :param person_or_team: The party that is the context of the email.
+        :type person_or_team: `IPerson`.
+        """
+        if person_or_team.is_team:
+            if self.user.inTeam(person_or_team):
+                if removeSecurityProxy(person_or_team).preferredemail is None:
+                    # Send to each team member.
+                    return self.TO_MEMBERS
+                else:
+                    # Send to the team's contact address.
+                    return self.TO_TEAM
+            else:
+                # A non-member can only send emails to a single person to
+                # hinder spam and to prevent leaking membership
+                # information for private teams when the members reply.
+                return self.TO_OWNER
+        else:
+            # Send to the user
+            return self.TO_USER
+
+    def _getPrimaryRecipient(self, person_or_team):
+        """Return the primary recipient.
+
+        The primary recipient is the ``person_or_team`` in all cases
+        except for then the email is restricted to a team owner.
+
+        :param person_or_team: The party that is the context of the email.
+        :type person_or_team: `IPerson`.
+        """
+        if self._primary_reason is self.TO_OWNER:
+            person_or_team = person_or_team.teamowner
+            while person_or_team.is_team:
+                person_or_team = person_or_team.teamowner
+        return person_or_team
+
+    def _getReasonAndHeader(self, person_or_team):
+        """Return the reason and header why the email was received.
+
+        :param person_or_team: The party that is the context of the email.
+        :type person_or_team: `IPerson`.
+        """
+        if self._primary_reason is self.TO_USER:
+            reason = 'the "Contact this user" link on your profile page'
+            header = 'ContactViaWeb user'
+        elif self._primary_reason is self.TO_OWNER:
+            reason = (
+                'the "Contact this team" owner link on the '
+                '%s team page' %  person_or_team.displayname)
+            header = 'ContactViaWeb owner (%s team)' % person_or_team.name
+        elif self._primary_reason is self.TO_TEAM:
+            reason = (
+                'the "Contact this team" link on the '
+                '%s team page' %  person_or_team.displayname)
+            header = 'ContactViaWeb member (%s team)' % person_or_team.name
+        else:
+            # self._primary_reason is self.TO_MEMBERS.
+            reason = (
+                'the "Contact this team" link on the ' '%s team page '
+                'to each\nmember directly' % person_or_team.displayname)
+            header = 'ContactViaWeb member (%s team)' % person_or_team.name
+        return (reason, header)
+
+    def _getDescription(self, person_or_team):
+        """Return the description of the recipients being contacted.
+
+        :param person_or_team: The party that is the context of the email.
+        :type person_or_team: `IPerson`.
+        """
+        if self._primary_reason is self.TO_USER:
             return (
                 'You are contacting %s (%s).' %
-                (self.context.displayname, self.context.name))
-        elif self.context.is_team and self._primary_recipient.is_valid_person:
+                (person_or_team.displayname, person_or_team.name))
+        elif self._primary_reason is self.TO_OWNER:
             return (
                 'You are contacting the %s (%s) team owner, %s (%s).' %
-                (self.context.displayname, self.context.name,
+                (person_or_team.displayname, person_or_team.name,
                  self._primary_recipient.displayname,
                  self._primary_recipient.name))
-        elif self.context.is_team and self.context.preferredemail is not None:
+        elif self._primary_reason is self.TO_TEAM:
             return (
                 'You are contacting the %s (%s) team.' %
-                (self.context.displayname, self.context.name))
+                (person_or_team.displayname, person_or_team.name))
         else:
-            # This is a team without a contact address.
+            # This is a team without a contact address (self.TO_MEMBERS).
             recipients_count = len(self)
             if recipients_count == 1:
                 plural_suffix = ''
@@ -5096,27 +5185,25 @@ class ContactViaWebNotificationRecipientSet:
             text = '%d member%s' % (recipients_count, plural_suffix)
             return (
                 'You are contacting %s of the %s (%s) team directly.'
-                % (text, self.context.displayname, self.context.name))
+                % (text, person_or_team.displayname, person_or_team.name))
 
-    @property
+    @cachedproperty('_all_recipients_cached')
     def _all_recipients(self):
         """Set the cache of all recipients."""
-        if self._all_recipients_dict is None:
-            self._all_recipients_dict = {}
-            if self._is_multiple_users:
-                team = self._primary_recipient
-                for recipient in team.getMembersWithPreferredEmails():
-                    email = removeSecurityProxy(
-                        recipient).preferredemail.email
-                    self._all_recipients_dict[email] = recipient
-            elif self._primary_recipient.is_valid_person_or_team:
-                email = removeSecurityProxy(
-                    self._primary_recipient).preferredemail.email
-                self._all_recipients_dict[email] = self._primary_recipient
-            else:
-                # The user or team owner is not active.
-                pass
-        return self._all_recipients_dict
+        all_recipients = {}
+        if self._primary_reason is self.TO_MEMBERS:
+            team = self._primary_recipient
+            for recipient in team.getMembersWithPreferredEmails():
+                email = removeSecurityProxy(recipient).preferredemail.email
+                all_recipients[email] = recipient
+        elif self._primary_recipient.is_valid_person_or_team:
+            email = removeSecurityProxy(
+                self._primary_recipient).preferredemail.email
+            all_recipients[email] = self._primary_recipient
+        else:
+            # The user or team owner is not active.
+            pass
+        return all_recipients
 
     def getEmails(self):
         """See `INotificationRecipientSet`."""
@@ -5136,8 +5223,7 @@ class ContactViaWebNotificationRecipientSet:
 
     def __iter__(self):
         """See `INotificationRecipientSet`."""
-        for recipient in self._all_recipients:
-            yield recipient
+        return iter(self.getRecipients())
 
     def __contains__(self, person_or_email):
         """See `INotificationRecipientSet`."""
@@ -5150,7 +5236,7 @@ class ContactViaWebNotificationRecipientSet:
         """The number of recipients in the set."""
         if self._count_recipients is None:
             recipient = self._primary_recipient
-            if self._is_multiple_users:
+            if self._primary_reason is self.TO_MEMBERS:
                 self._count_recipients = (
                     recipient.getMembersWithPreferredEmailsCount())
             elif recipient.is_valid_person_or_team:
@@ -5181,12 +5267,13 @@ class ContactViaWebNotificationRecipientSet:
         recipients.
         """
         self._reset_state()
-        naked_person = removeSecurityProxy(person)
-        if person.is_team and naked_person.preferredemail is None:
-            self._is_multiple_users = True
-        self._primary_recipient = person
+        self._primary_reason = self._getPrimaryReason(person)
+        self._primary_recipient = self._getPrimaryRecipient(person)
+        if reason is None:
+            reason, header = self._getReasonAndHeader(person)
         self._reason = reason
         self._header = header
+        self.description = self._getDescription(person)
 
     def update(self, recipient_set):
         """See `INotificationRecipientSet`.
@@ -5243,37 +5330,7 @@ class EmailToPersonView(LaunchpadFormView):
         :return: the recipients of the message.
         :rtype: `ContactViaWebNotificationRecipientSet`.
         """
-        if self.context.is_team:
-            if self.user.inTeam(self.context):
-                if self.context.preferredemail is None:
-                    reason = (
-                        'the "Contact this team" link on the ' '%s team page '
-                        'to each\nmember directly' % self.context.displayname)
-                else:
-                    reason = (
-                        'the "Contact this team" link on the '
-                        '%s team page' %  self.context.displayname)
-                person = self.context
-                header = (
-                    'ContactViaWeb member (%s team)' % self.context.name)
-            else:
-                # A non-member can only send emails to a single person to
-                # hinder spam and to prevent leaking membership
-                # information for private teams when the members reply.
-                person = self.context.teamowner
-                while person.is_team:
-                    person = person.teamowner
-                reason = (
-                    'the "Contact this team" owner link on the '
-                    '%s team page' %  self.context.displayname)
-                header = 'ContactViaWeb owner (%s team)' % self.context.name
-        else:
-            person = self.context
-            reason = 'the "Contact this user" link on your profile page'
-            header = 'ContactViaWeb user'
-        recipients = ContactViaWebNotificationRecipientSet(self.context)
-        recipients.add(person, reason, header)
-        return recipients
+        return ContactViaWebNotificationRecipientSet(self.user, self.context)
 
     @action(_('Send'), name='send')
     def action_send(self, action, data):

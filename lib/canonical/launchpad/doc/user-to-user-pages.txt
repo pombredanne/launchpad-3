@@ -291,7 +291,7 @@ Non-members cannot are may only contact the team owner.
     Bodies:
     Can one of you help me?
     --
-    This message was sent from Launchpad by
+    This message was sent from Launchpad by the user
     Bart (http://launchpad.dev/~bart)
     using the "Contact this team" owner link on the GuadaMen team page.
     For more information see
@@ -330,7 +330,7 @@ subject and body from the same sender.
     Bodies:
     Can one of you help me?
     --
-    This message was sent from Launchpad by
+    This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
     using the "Contact this team" link on the GuadaMen team page to each
     member directly.
@@ -381,7 +381,7 @@ Foo Bar's message gets sent to each individual member of he team.
     Bodies:
     Really, can one of you help me!
     --
-    This message was sent from Launchpad by
+    This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
     using the "Contact this team" link on the GuadaMen team page to each
     member directly.
@@ -441,7 +441,7 @@ that to the new contact address.
     <BLANKLINE>
     Can one of you help me?
     --
-    This message was sent from Launchpad by
+    This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
     using the "Contact this team" link on the GuadaMen team page.
     For more information see
@@ -516,7 +516,7 @@ contains an explanation as well.
     Can you help me?
     <BLANKLINE>
     --
-    This message was sent from Launchpad by
+    This message was sent from Launchpad by the user
     Cris (http://launchpad.dev/~cris)
     using the "Contact this user" link on your profile page.
     For more information see

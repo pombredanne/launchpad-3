@@ -1927,7 +1927,7 @@ def send_direct_contact_email(
     additions = [
         u'',
         u'-- ',
-        u'This message was sent from Launchpad by',
+        u'This message was sent from Launchpad by the user',
         u'%s (%s)' % (sender_name , canonical_url(sender)),
         u'using %s.',
         u'For more information see',
