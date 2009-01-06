@@ -17,7 +17,7 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.component import getUtility
 from zope.component.zcml import adapter
 from zope.configuration.fields import (
-    GlobalInterface, GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
+    GlobalInterface, GlobalObject, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
@@ -33,8 +33,6 @@ from zope.app.component.contentdirective import ClassDirective
 from zope.security.zcml import IPermissionDirective
 
 from canonical.launchpad.layers import FeedsLayer
-from canonical.launchpad.webapp.generalform import (
-    GeneralFormView, GeneralFormViewFactory)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
     IFacetMenu, INavigationMenu)
@@ -580,108 +578,6 @@ class AddFormDirective(
             self.bases += (new_class, )
 
         zope.app.form.browser.metaconfigure.AddFormDirective.__call__(self)
-
-
-class IGeneralFormDirective(
-    zope.app.form.browser.metadirectives.ICommonFormInformation,
-    IAssociatedWithAFacet):
-    """
-    Define a general form
-
-    The standard Zope addform and editform make many assumptions about the
-    type of data you are expecting, and the sorts of results you want (in
-    particular, they conflate the "interface" of the schema you are using
-    for the rendered form with the interface of any resulting object).
-
-    The Launchpad GeneralForm is simpler - it provides the same ability to
-    render a form automatically but then it allows you to process the
-    user input and do whatever you want with it.
-    """
-
-    description = MessageID(
-        title=u"A longer description of the form.",
-        description=u"""
-        A UI may display this with the item or display it when the
-        user requests more assistance.""",
-        required=False
-        )
-
-    arguments = Tokens(
-        title=u"Arguments",
-        description=u"""
-        A list of field names to supply as positional arguments to the
-        factory.""",
-        required=False,
-        value_type=PythonIdentifier()
-        )
-
-    keyword_arguments = Tokens(
-        title=u"Keyword arguments",
-        description=u"""
-        A list of field names to supply as keyword arguments to the
-        factory.""",
-        required=False,
-        value_type=PythonIdentifier()
-        )
-
-
-class GeneralFormDirective(
-    zope.app.form.browser.metaconfigure.BaseFormDirective):
-
-    view = GeneralFormView
-    default_template = '../templates/template-generalform.pt'
-
-    # This makes 'facet' a valid attribute for the directive:
-    facet = None
-
-    # default form information
-    description = None
-    arguments = None
-    keyword_arguments = None
-
-    def _handle_arguments(self, leftover=None):
-        schema = self.schema
-        fields = self.fields
-        arguments = self.arguments
-        keyword_arguments = self.keyword_arguments
-
-        if leftover is None:
-            leftover = fields
-
-        if arguments:
-            missing = [n for n in arguments if n not in fields]
-            if missing:
-                raise ValueError(
-                    "Some arguments are not included in the form", missing)
-            optional = [n for n in arguments if not schema[n].required]
-            if optional:
-                raise ValueError("Some arguments are optional, use"
-                                 " keyword_arguments for them",
-                                 optional)
-            leftover = [n for n in leftover if n not in arguments]
-
-        if keyword_arguments:
-            missing = [n for n in keyword_arguments if n not in fields]
-            if missing:
-                raise ValueError(
-                    "Some keyword_arguments are not included in the form",
-                    missing)
-            leftover = [n for n in leftover if n not in keyword_arguments]
-
-    def __call__(self):
-        facet = self.facet or getattr(self._context, 'facet', None)
-        if facet is not None:
-            cdict = {'__launchpad_facetname__': facet}
-            new_class = type('SimpleLaunchpadViewClass', (), cdict)
-            self.bases += (new_class, )
-        self._processWidgets()
-        self._handle_arguments()
-        self._context.action(
-            discriminator=self._discriminator(),
-            callable=GeneralFormViewFactory,
-            args=self._args()+(self.arguments, self.keyword_arguments),
-            kw={'menu': self.menu},
-            )
 
 
 class IGroupingFacet(IAssociatedWithAFacet):

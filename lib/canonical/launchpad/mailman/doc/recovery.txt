@@ -32,7 +32,6 @@ failed.  The mailing list would be in the CONSTRUCTING state.  We
 simulate that here by manually tweaking the list back to that transitory
 state.
 
-    >>> import transaction
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces import (

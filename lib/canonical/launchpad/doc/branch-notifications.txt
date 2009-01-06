@@ -398,8 +398,8 @@ that is used rather than the email addresses of the seven members.
     # and the email body
     >>> def print_email_details(email):
     ...     body = email.get_payload(decode=True)
-    ...     if email.get_charset() is not None:
-    ...         body = body.decode(email.get_charset())
+    ...     if email.get_param('charset') is not None:
+    ...         body = body.decode(email.get_param('charset'))
     ...     else:
     ...         body = body.decode('iso-8859-1')
     ...     print u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
@@ -534,18 +534,19 @@ must also handle the unicode.
     >>> print_email_details(notifications.pop())
     To: Sample Person <test@canonical.com>
     From: Sample Person <test@canonical.com>
-    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_title_?=
-        Title: New title => New  00 title 
+    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_ti?=
+      =?utf-8?q?tle_?=
+        Title: New title => New ꀀ title 
     <BLANKLINE>
     Summary changed to:
     <BLANKLINE>
-    A new  00 summary
+    A new ꀀ summary
     <BLANKLINE>
     --
-    New  00 title 
+    New ꀀ title 
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are subscribed to branch New  00 title .
+    You are subscribed to branch lp://dev/~name12/firefox/new-name.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
 

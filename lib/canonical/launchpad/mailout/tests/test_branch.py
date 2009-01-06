@@ -28,7 +28,7 @@ class TestRecipientReason(TestCaseWithFactory):
             subscriber = self.factory.makePerson()
         source_branch = self.factory.makeBranch(title='foo')
         target_branch = self.factory.makeBranch(product=source_branch.product,
-                title='bar')
+            title='bar')
         merge_proposal = source_branch.addLandingTarget(
             source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(
@@ -47,6 +47,7 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual(merge_proposal.source_branch, reason.branch)
 
     def makeReviewerAndSubscriber(self):
+        """Return a tuple of vote_reference, subscriber."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
         login_person(merge_proposal.registrant)
@@ -67,7 +68,9 @@ class TestRecipientReason(TestCaseWithFactory):
         vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(
-            'You are requested to review the proposed merge of lp://dev/~person-name5/product-name11/branch7 into lp://dev/~person-name16/product-name11/branch18.',
+            'You are requested to review the proposed merge of'
+            ' lp://dev/~person-name5/product-name11/branch7 into'
+            ' lp://dev/~person-name16/product-name11/branch18.',
             reason.getReason())
 
     def test_getReasonPerson(self):
@@ -75,7 +78,8 @@ class TestRecipientReason(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
             subscription, subscription.person, '', merge_proposal)
-        self.assertEqual('You are subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
+        self.assertEqual('You are subscribed to branch'
+            ' lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
     def test_getReasonTeam(self):
@@ -86,7 +90,8 @@ class TestRecipientReason(TestCaseWithFactory):
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
             subscription, team_member, '', bmp)
-        self.assertEqual('Your team Qux is subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
+        self.assertEqual('Your team Qux is subscribed to branch'
+            ' lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
 def test_suite():
