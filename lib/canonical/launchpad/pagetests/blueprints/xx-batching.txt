@@ -18,7 +18,7 @@ To demonstrate this, we'll create a new project:
   >>> browser.getControl('Summary').value = 'A big project indeed.'
   >>> browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
   >>> browser.getControl(name='field.license_info').value = 'foo'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Publish this Project').click()
   >>> browser.url
   'http://launchpad.dev/big-project'
 
