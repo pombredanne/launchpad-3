@@ -61,7 +61,7 @@ also sends the email to the list of recipients.
     ~name12/firefox/main
     >>> print branch_notification['X-Launchpad-Message-Rationale']
     Subscriber
-    >>> notification_body = branch_notification.get_payload(decode=True)
+    >>> notification_body = branch_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     The contents.
     <BLANKLINE>
@@ -70,7 +70,8 @@ also sends the email to the list of recipients.
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You are receiving this branch notification because you are subscribed to it.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/main/+edit-subscription.
     <BLANKLINE>
     >>> branch.unsubscribe(branch.owner)
 
@@ -203,7 +204,7 @@ to allow email filtering.
     # A helper function to print out the To header and
     # email body
     >>> def print_to_and_body(email):
-    ...     print 'To: %s\n%s' % (email['To'], email.get_payload(decode=True))
+    ...     print 'To: %s\n%s' % (email['To'], email.get_payload())
 
 We need to create some sufficiently large diffs to compare against.
 
@@ -240,15 +241,15 @@ There are also some useful headers for filtering emails.
     To: celso.providelo@canonical.com
     Test message.
     <BLANKLINE>
-    The size of the diff (6000 lines) is larger than your specified limit of
-    1000 lines...
+    The size of the diff (6000 lines) is larger than your specified limit of 10=
+    00 lines...
 
     >>> print_to_and_body(notifications.pop(0))
     To: daf@canonical.com
     Test message.
     <BLANKLINE>
-    The size of the diff (6000 lines) is larger than your specified limit of
-    5000 lines...
+    The size of the diff (6000 lines) is larger than your specified limit of 50=
+    00 lines...
 
 Foo Bar is getting the email due to his membership in the Launchpad
 developers team.  Since the email is due to a team, there is no
@@ -259,15 +260,14 @@ unsubscribe link.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    You are receiving this branch notification because you are subscribed to
-    it.
+    You are receiving this branch notification because you are subscribed to it.
 
     >>> print_to_and_body(notifications.pop(0))
     To: jeff.waugh@ubuntulinux.com
     Test message.
     <BLANKLINE>
-    The size of the diff (6000 lines) is larger than your specified limit of
-    500 lines...
+    The size of the diff (6000 lines) is larger than your specified limit of 50=
+    0 lines...
 
 Mark's unsubscription link is to his personal branch subscription.
 
@@ -276,8 +276,8 @@ Mark's unsubscription link is to his personal branch subscription.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/main/+edit-subscription.
 
 And just to be sure, lets create one with 800 lines.
 
@@ -327,8 +327,8 @@ Limit hit for jeff:
     To: jeff.waugh@ubuntulinux.com
     Test message.
     <BLANKLINE>
-    The size of the diff (800 lines) is larger than your specified limit of 500
-    lines...
+    The size of the diff (800 lines) is larger than your specified limit of 500=
+     lines...
 
 And everything for mark:
 
@@ -396,13 +396,8 @@ that is used rather than the email addresses of the seven members.
     # Another helper function to print out the To, From and Subject headers
     # and the email body
     >>> def print_email_details(email):
-    ...     body = email.get_payload(decode=True)
-    ...     if email.get_charset() is not None:
-    ...         body = body.decode(email.get_charset())
-    ...     else:
-    ...         body = body.decode('iso-8859-1')
-    ...     print u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
-    ...         email['To'], email['From'], email['Subject'], body)
+    ...     print 'To: %s\nFrom: %s\nSubject: %s\n%s' % (
+    ...         email['To'], email['From'], email['Subject'], email.get_payload())
 
 It is the form infrastructure that fires off the SQLObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
@@ -437,7 +432,7 @@ names just now, we'll pass them through anyway
     >>> len(notifications)
     1
     >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
+    To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Branch ~name12/firefox/main] Mozilla Firefox Mainline
     Whiteboard changed to:
@@ -448,9 +443,9 @@ names just now, we'll pass them through anyway
     Mozilla Firefox Mainline
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
-    You are subscribed to branch Mozilla Firefox Mainline.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/main/+edit-subscription.
 
 
 The fields that are currently tracked with the delta, and cause
@@ -487,13 +482,14 @@ something like this:
     >>> len(notifications)
     1
     >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
+    To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Branch ~name12/firefox/new-name] New title
-        Name: main => new-name
-        Title: Mozilla Firefox Mainline => New title
-        Branch URL: http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0 => http://example.com/foo
-        Status: New => Development
+        Name: main =3D> new-name
+        Title: Mozilla Firefox Mainline =3D> New title
+        Branch URL: http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--=
+    MAIN--0 =3D> http://example.com/foo
+        Status: New =3D> Development
     <BLANKLINE>
     Summary changed to:
     <BLANKLINE>
@@ -502,16 +498,16 @@ something like this:
     Whiteboard changed to:
     <BLANKLINE>
     This is a multiline whiteboard
-    with a really long line that should invoke the splitting algorithm in the
-    mail wrapper to make sure that the line is not too long
+    with a really long line that should invoke the splitting algorithm in the m=
+    ail wrapper to make sure that the line is not too long
     <BLANKLINE>
     --
     New title
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are subscribed to branch New title.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/new-name/+edit-subscription.
 
 
 == Unicode in emails ==
@@ -531,22 +527,23 @@ must also handle the unicode.
     >>> len(notifications)
     1
     >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
+    To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_title_?=
-        Title: New title => New  00 title 
+    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_ti?=
+             =?utf-8?q?tle_?=
+        Title: New title =3D> New =EA=80=80 title =
     <BLANKLINE>
     Summary changed to:
     <BLANKLINE>
-    A new  00 summary
+    A new =EA=80=80 summary
     <BLANKLINE>
     --
-    New  00 title 
+    New =EA=80=80 title =
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are subscribed to branch New  00 title .
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/new-name/+edit-subscription.
 
 
 == Blank titles ==
@@ -567,18 +564,18 @@ by pushing the branch to launchpad.
     >>> len(notifications)
     1
     >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
+    To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Branch ~name12/firefox/foo]
-        Name: new-name => foo
+        Name: new-name =3D> foo
     <BLANKLINE>
     --
     <BLANKLINE>
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
-    You are subscribed to branch ~name12/firefox/foo.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/foo/+edit-subscription.
 
 
 == Overwriting Nones  ==
@@ -597,18 +594,18 @@ We don't want to show None in the email, so we show (not set) instead.
     >>> len(notifications)
     1
     >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
+    To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Branch ~name12/firefox/foo] A new title
-        Title: (not set) => A new title
+        Title: (not set) =3D> A new title
     <BLANKLINE>
     --
     A new title
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
-    You are subscribed to branch A new title.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/foo/+edit-subscription.
 
 
 == Modifications by users other than the branch owner ==
@@ -640,9 +637,10 @@ Login as an admin user so we can alter the branch.
     >>> len(notifications)
     1
     >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
+    To: test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
+    <BLANKLINE>
     Summary changed to:
     <BLANKLINE>
     Removed profanity
@@ -655,5 +653,5 @@ Login as an admin user so we can alter the branch.
     GNOME Terminal Mainline
     http://code.launchpad.dev/~name12/gnome-terminal/main
     <BLANKLINE>
-    You are getting this email as you are the owner of the branch and someone
-    has edited the details.
+    You are getting this email as you are the owner of the branch and someone h=
+    as edited the details.

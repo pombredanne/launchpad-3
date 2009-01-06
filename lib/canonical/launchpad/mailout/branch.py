@@ -5,15 +5,12 @@
 __metaclass__ = type
 
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
-from canonical.launchpad.mail import (get_msgid, simple_sendmail,
-    format_address)
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch)
+from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mailout import text_delta
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
 
@@ -51,7 +48,7 @@ def email_branch_modified_notifications(branch, to_addresses,
         # The only time that the subscription will be empty is if the owner
         # of the branch is being notified.
         if subscription is None:
-            params['rationale'] = (
+            params['reason'] = (
                 "You are getting this email as you are the owner of "
                 "the branch and someone has edited the details.")
         elif not subscription.person.isTeam():
@@ -117,32 +114,36 @@ def send_branch_modified_notifications(branch, event):
         return
     # If there is no one interested, then bail out early.
     recipients = branch.getNotificationRecipients()
-    interested_levels = (
-        BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-        BranchSubscriptionNotificationLevel.FULL)
-    actual_recipients = {}
     # If the person editing the branch isn't in the team of the owner
     # then notify the branch owner of the changes as well.
     if not event.user.inTeam(branch.owner):
         # Existing rationales are kept.
-        recipients.add(branch.owner, None, None)
-    for recipient in recipients:
-        subscription, rationale = recipients.getReason(recipient)
-        if (subscription is not None and
-            subscription.notification_level not in interested_levels):
-            continue
-        if subscription is None:
-            actual_recipients[recipient] = RecipientReason.forBranchOwner(
-                branch, recipient)
-        else:
-            actual_recipients[recipient] = \
-                RecipientReason.forBranchSubscriber(
-                    subscription, recipient, rationale)
+        recipients.add(branch.owner, None, "Owner")
+
+    to_addresses = set()
+    interested_levels = (
+        BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+        BranchSubscriptionNotificationLevel.FULL)
+    for email_address in recipients.getEmails():
+        subscription, ignored = recipients.getReason(email_address)
+        if (subscription is None or
+            subscription.notification_level in interested_levels):
+            # The subscription is None if we added the branch owner above.
+            to_addresses.add(email_address)
+
+    contents = text_delta(
+        branch_delta, ('name', 'title', 'url', 'lifecycle_status'),
+        ('summary', 'whiteboard'), IBranch)
+
+    if not contents:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+
     from_address = format_address(
         event.user.displayname, event.user.preferredemail.email)
-    mailer = BranchMailer.forBranchModified(branch, actual_recipients,
-        from_address, branch_delta)
-    mailer.sendAll()
+    email_branch_modified_notifications(
+        branch, to_addresses, from_address, contents, recipients)
 
 
 class RecipientReason:
@@ -223,15 +224,6 @@ class RecipientReason:
 
 class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
-
-    @staticmethod
-    def forBranchModified(branch, recipients, from_address, delta):
-        branch_title = branch.title
-        if branch_title is None:
-            branch_title = ''
-        subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
-        return BranchMailer(subject, 'branch-modified.txt', recipients,
-                            from_address, delta=delta)
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
