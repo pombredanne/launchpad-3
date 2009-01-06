@@ -5,15 +5,11 @@
 __metaclass__ = type
 
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
-from canonical.launchpad.mail import (get_msgid, simple_sendmail,
-    format_address)
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
 
