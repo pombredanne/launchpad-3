@@ -41,6 +41,109 @@ class Roundup(ExternalBugTracker):
         MPLAYERHQ_BUGS_HOSTNAME: ('status', 'substatus'),
         }
 
+    # Our mapping of Roundup => Launchpad statuses. Roundup statuses
+    # are integer-only and highly configurable.  Therefore we map the
+    # statuses available by default.
+    _status_lookup_standard = LookupTree(
+        (1, BugTaskStatus.NEW),          # Roundup status 'unread'
+        (2, BugTaskStatus.CONFIRMED),    # Roundup status 'deferred'
+        (3, BugTaskStatus.INCOMPLETE),   # Roundup status 'chatting'
+        (4, BugTaskStatus.INCOMPLETE),   # Roundup status 'need-eg'
+        (5, BugTaskStatus.INPROGRESS),   # Roundup status 'in-progress'
+        (6, BugTaskStatus.INPROGRESS),   # Roundup status 'testing'
+        (7, BugTaskStatus.FIXCOMMITTED), # Roundup status 'done-cbb'
+        (8, BugTaskStatus.FIXRELEASED),  # Roundup status 'resolved'
+        )
+
+    # Python bugtracker statuses come in two parts: status and
+    # resolution. Both of these are integer values.
+    _status_lookup_python_1 = LookupTree(
+        # Open issues (status=1). We also use this as a fallback for
+        # statuses 2 and 3, for which the mappings are different only
+        # in a few instances.
+        (None, BugTaskStatus.NEW),       # No resolution
+        (1, BugTaskStatus.CONFIRMED),    # Resolution: accepted
+        (2, BugTaskStatus.CONFIRMED),    # Resolution: duplicate
+        (3, BugTaskStatus.FIXCOMMITTED), # Resolution: fixed
+        (4, BugTaskStatus.INVALID),      # Resolution: invalid
+        (5, BugTaskStatus.CONFIRMED),    # Resolution: later
+        (6, BugTaskStatus.INVALID),      # Resolution: out-of-date
+        (7, BugTaskStatus.CONFIRMED),    # Resolution: postponed
+        (8, BugTaskStatus.WONTFIX),      # Resolution: rejected
+        (9, BugTaskStatus.CONFIRMED),    # Resolution: remind
+        (10, BugTaskStatus.WONTFIX),     # Resolution: wontfix
+        (11, BugTaskStatus.INVALID),     # Resolution: works for me
+        )
+    _status_lookup_python = LookupTree(
+        (1, _status_lookup_python_1),
+        (2, LookupTree(
+            (None, BugTaskStatus.WONTFIX),   # No resolution
+            (1, BugTaskStatus.FIXCOMMITTED), # Resolution: accepted
+            (3, BugTaskStatus.FIXRELEASED),  # Resolution: fixed
+            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
+            _status_lookup_python_1)),       # Failback
+        (3, LookupTree(
+            (None, BugTaskStatus.INCOMPLETE),# No resolution
+            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
+            _status_lookup_python_1)),       # Failback
+        )
+
+    # Status tree for roundup.mplayerhq.hu Roundup instances. This is
+    # a mapping of all statuses that have ever been used (as of
+    # December 2008) in the Mplayer Roundup instance, not a
+    # comprehensive mapping of all /possible/ statuses. Appropriate
+    # mappings have been guessed at by looking at example bugs for
+    # each combination found.
+    #
+    # If new combinations are used, we will see OOPSes, and we should
+    # then see what they have used that combination to mean before
+    # adding them to this lookup tree.
+    #
+    _status_lookup_mplayerhq = LookupTree(
+        # status (new)
+        (1, LookupTree(
+                # substatus (new, open)
+                (1, 2, BugTaskStatus.NEW),
+                # substatus (analyzed)
+                (4, BugTaskStatus.TRIAGED),
+                )),
+        # status (open)
+        (2, LookupTree(
+                # substatus (open)
+                (2, BugTaskStatus.NEW),
+                # substatus (reproduced)
+                (3, BugTaskStatus.CONFIRMED),
+                # substatus (analyzed, approved)
+                (4, 6, 7, BugTaskStatus.TRIAGED),
+                # substatus (needs_more_info)
+                (5, BugTaskStatus.INCOMPLETE),
+                # substatus (fixed)
+                (10, BugTaskStatus.FIXCOMMITTED),
+                # substatus (implemented)
+                (13, BugTaskStatus.INPROGRESS),
+                )),
+        # status (closed)
+        (3, LookupTree(
+                # substatus (analyzed, needs_more_info, approved,
+                #            duplicate, invalid, works_for_me, reject)
+                (4, 5, 6, 8, 9, 12, BugTaskStatus.INVALID),
+                # substatus (fixed, implemented, applied)
+                (10, 13, 15, BugTaskStatus.FIXRELEASED),
+                # substatus (wont_fix, wont_implement, reject)
+                (11, 14, 16, BugTaskStatus.WONTFIX),
+                )),
+        )
+
+    # Combine custom mappings with the standard mappings, using the
+    # remote host as the first key into the tree.
+    _status_lookup_titles = (
+        'Remote host', 'Roundup status', 'Roundup resolution')
+    _status_lookup = LookupTree(
+        (PYTHON_BUGS_HOSTNAME, _status_lookup_python),
+        (MPLAYERHQ_BUGS_HOSTNAME, _status_lookup_mplayerhq),
+        (_status_lookup_standard,), # Default
+        )
+
     def __init__(self, baseurl):
         """Create a new Roundup instance.
 
@@ -165,109 +268,6 @@ class Roundup(ExternalBugTracker):
         BugTaskImportance.UNKNOWN will always be returned.
         """
         return BugTaskImportance.UNKNOWN
-
-    # Our mapping of Roundup => Launchpad statuses. Roundup statuses
-    # are integer-only and highly configurable.  Therefore we map the
-    # statuses available by default.
-    _status_lookup_standard = LookupTree(
-        (1, BugTaskStatus.NEW),          # Roundup status 'unread'
-        (2, BugTaskStatus.CONFIRMED),    # Roundup status 'deferred'
-        (3, BugTaskStatus.INCOMPLETE),   # Roundup status 'chatting'
-        (4, BugTaskStatus.INCOMPLETE),   # Roundup status 'need-eg'
-        (5, BugTaskStatus.INPROGRESS),   # Roundup status 'in-progress'
-        (6, BugTaskStatus.INPROGRESS),   # Roundup status 'testing'
-        (7, BugTaskStatus.FIXCOMMITTED), # Roundup status 'done-cbb'
-        (8, BugTaskStatus.FIXRELEASED),  # Roundup status 'resolved'
-        )
-
-    # Python bugtracker statuses come in two parts: status and
-    # resolution. Both of these are integer values.
-    _status_lookup_python_1 = LookupTree(
-        # Open issues (status=1). We also use this as a fallback for
-        # statuses 2 and 3, for which the mappings are different only
-        # in a few instances.
-        (None, BugTaskStatus.NEW),       # No resolution
-        (1, BugTaskStatus.CONFIRMED),    # Resolution: accepted
-        (2, BugTaskStatus.CONFIRMED),    # Resolution: duplicate
-        (3, BugTaskStatus.FIXCOMMITTED), # Resolution: fixed
-        (4, BugTaskStatus.INVALID),      # Resolution: invalid
-        (5, BugTaskStatus.CONFIRMED),    # Resolution: later
-        (6, BugTaskStatus.INVALID),      # Resolution: out-of-date
-        (7, BugTaskStatus.CONFIRMED),    # Resolution: postponed
-        (8, BugTaskStatus.WONTFIX),      # Resolution: rejected
-        (9, BugTaskStatus.CONFIRMED),    # Resolution: remind
-        (10, BugTaskStatus.WONTFIX),     # Resolution: wontfix
-        (11, BugTaskStatus.INVALID),     # Resolution: works for me
-        )
-    _status_lookup_python = LookupTree(
-        (1, _status_lookup_python_1),
-        (2, LookupTree(
-            (None, BugTaskStatus.WONTFIX),   # No resolution
-            (1, BugTaskStatus.FIXCOMMITTED), # Resolution: accepted
-            (3, BugTaskStatus.FIXRELEASED),  # Resolution: fixed
-            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-            _status_lookup_python_1)),       # Failback
-        (3, LookupTree(
-            (None, BugTaskStatus.INCOMPLETE),# No resolution
-            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-            _status_lookup_python_1)),       # Failback
-        )
-
-    # Status tree for roundup.mplayerhq.hu Roundup instances. This is
-    # a mapping of all statuses that have ever been used (as of
-    # December 2008) in the Mplayer Roundup instance, not a
-    # comprehensive mapping of all /possible/ statuses. Appropriate
-    # mappings have been guessed at by looking at example bugs for
-    # each combination found.
-    #
-    # If new combinations are used, we will see OOPSes, and we should
-    # then see what they have used that combination to mean before
-    # adding them to this lookup tree.
-    #
-    _status_lookup_mplayerhq = LookupTree(
-        # status (new)
-        (1, LookupTree(
-                # substatus (new, open)
-                (1, 2, BugTaskStatus.NEW),
-                # substatus (analyzed)
-                (4, BugTaskStatus.TRIAGED),
-                )),
-        # status (open)
-        (2, LookupTree(
-                # substatus (open)
-                (2, BugTaskStatus.NEW),
-                # substatus (reproduced)
-                (3, BugTaskStatus.CONFIRMED),
-                # substatus (analyzed, approved)
-                (4, 6, 7, BugTaskStatus.TRIAGED),
-                # substatus (needs_more_info)
-                (5, BugTaskStatus.INCOMPLETE),
-                # substatus (fixed)
-                (10, BugTaskStatus.FIXCOMMITTED),
-                # substatus (implemented)
-                (13, BugTaskStatus.INPROGRESS),
-                )),
-        # status (closed)
-        (3, LookupTree(
-                # substatus (analyzed, needs_more_info, approved,
-                #            duplicate, invalid, works_for_me, reject)
-                (4, 5, 6, 8, 9, 12, BugTaskStatus.INVALID),
-                # substatus (fixed, implemented, applied)
-                (10, 13, 15, BugTaskStatus.FIXRELEASED),
-                # substatus (wont_fix, wont_implement, reject)
-                (11, 14, 16, BugTaskStatus.WONTFIX),
-                )),
-        )
-
-    # Combine custom mappings with the standard mappings, using the
-    # remote host as the first key into the tree.
-    _status_lookup_titles = (
-        'Remote host', 'Roundup status', 'Roundup resolution')
-    _status_lookup = LookupTree(
-        (PYTHON_BUGS_HOSTNAME, _status_lookup_python),
-        (MPLAYERHQ_BUGS_HOSTNAME, _status_lookup_mplayerhq),
-        (_status_lookup_standard,), # Default
-        )
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
