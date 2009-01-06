@@ -162,347 +162,232 @@ class TestPackageRemover(unittest.TestCase):
         remover.setupLocation()
         return remover
 
-    def _getPublicationIDs(self, source_name='mozilla-firefox',
-                           distribution_name='ubuntu',
-                           distroseries_name='warty'):
-        """Return the current publication IDs for the given sourcename.
+    def assertPublished(self, pub):
+        """Check if the given publishing record is PUBLISHED.
 
-        Return the publication IDs for the sources and binaries.
-
-        We return IDs instead of the records because they won't be useful in
-        callsites without a `flush_database_updates`.
-        """
-        distribution = getUtility(IDistributionSet)[distribution_name]
-        distroseries = distribution[distroseries_name]
-
-        sp = distroseries.getSourcePackage(source_name)
-        src_pub = sp.currentrelease.current_published
-        bin_pub_ids = [
-            bin.current_publishing_record.id
-            for bin in sp.currentrelease.published_binaries]
-
-        return (src_pub.id, bin_pub_ids)
-
-    def _preparePublicationIDs(self, pub_ids, source=True):
-        """Prepare the given publication ID list for checks.
-
-        Ensure that 'pub_ids' is a list and find the correct database
-        'getter' (`SourcePackagePublishingHistory` or
-        `BinaryPackagePublishingHistory`).
-
-        Return a tuple (pub_ids, getter).
-        """
-        if not isinstance(pub_ids, list):
-            pub_ids = [pub_ids]
-
-        if source:
-            getter = SecureSourcePackagePublishingHistory
-        else:
-            getter = SecureBinaryPackagePublishingHistory
-
-        return pub_ids, getter
-
-    def assertPublished(self, pub_ids, source):
-        """Check if the given pub_ids list items are PUBLISHED.
-
-        `pub_ids` can be a list of publishing records IDs or a single ID.
-
-        Performs a lookup on publishing table and checks each entry for:
+        Published implies in:
 
          * PUBLISHED or PENDING status,
          * empty removed_by,
          * empty removal_comment.
-
-        The 'source' flag indicates if the lookup should be in the source or
-        binary tables.
         """
-        pub_ids, getter = self._preparePublicationIDs(pub_ids, source)
-        for pub_id in pub_ids:
-            pub = getter.get(pub_id)
-            self.assertTrue(pub.status.name in ['PUBLISHED', 'PENDING'])
-            self.assertEqual(None, pub.removed_by)
-            self.assertEqual(None, pub.removal_comment)
+        self.assertTrue(pub.status.name in ['PUBLISHED', 'PENDING'])
+        self.assertEqual(None, pub.removed_by)
+        self.assertEqual(None, pub.removal_comment)
 
-    def assertDeleted(self, pub_ids, source):
-        """Check if the given pub_ids list items are DELETED.
+    def assertDeleted(self, pub):
+        """Check if the given publishing record is DELETED.
 
-        `pub_ids` can be a list of publishing records IDs or a single ID.
+        Deleted implies in:
 
-        Performs a lookup on publishing table and checks each entry for:
          * DELETED status,
          * removed_by.name equal to self.user_name,
          * removal_comment equal to self.removal_comment.
-
-        The 'source' flag indicates if the lookup should be in the source or
-        binary tables.
         """
-        pub_ids, getter = self._preparePublicationIDs(pub_ids, source)
-        for pub_id in pub_ids:
-            pub = getter.get(pub_id)
-            self.assertEqual('DELETED', pub.status.name)
-            self.assertEqual(self.user_name, pub.removed_by.name)
-            self.assertEqual(self.removal_comment, pub.removal_comment)
+        self.assertEqual('DELETED', pub.status.name)
+        self.assertEqual(self.user_name, pub.removed_by.name)
+        self.assertEqual(self.removal_comment, pub.removal_comment)
+
+    def getTestPublisher(self):
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.addFakeChroots(hoary)
+        return test_publisher
 
     def testRemoveSourceAndBinaries(self):
         """Check how PackageRemoval behaves on a successful removal.
 
         Default mode is 'remove source and binaries':
-        `lp-remove-package.py mozilla-firefox`
+        `lp-remove-package.py foo`
         """
-        mozilla_src_pub_id, mozilla_bin_pub_ids = self._getPublicationIDs()
-        removal_candidates = [mozilla_src_pub_id]
-        removal_candidates.extend(mozilla_bin_pub_ids)
+        test_publisher = self.getTestPublisher()
 
-        remover = self.getRemover()
+        removal_candidates = []
+        source = test_publisher.getPubSource(sourcename='foo')
+        binaries = test_publisher.getPubBinaries(pub_source=source)
+        removal_candidates.append(source)
+        removal_candidates.extend(binaries)
+
+        remover = self.getRemover(name='foo', suite='hoary')
         removals = remover.mainTask()
 
         self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+            sorted([pub.id for pub in removals]),
+            sorted([pub.id for pub in removal_candidates]))
 
-        self.assertDeleted(mozilla_src_pub_id, source=True)
-        self.assertDeleted(mozilla_bin_pub_ids, source=False)
+        for pub in removal_candidates:
+            self.assertDeleted(pub.secure_record)
 
     def testRemoveMultiplePackages(self):
         """Package remover accepts multiple non-option arguments.
 
         `lp-remove-packages` is capable of operating on multiple packages.
         """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-
-        fake_chroot = getUtility(ILibraryFileAliasSet)[1]
-        hoary['i386'].addOrUpdateChroot(fake_chroot)
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.person = getUtility(IPersonSet).getByName("name16")
+        test_publisher = self.getTestPublisher()
 
         removal_candidates = []
         for name in ['foo', 'bar', 'baz']:
-            source = test_publisher.getPubSource(
-                sourcename=name, distroseries=hoary)
-            binaries = test_publisher.getPubBinaries(
-                pub_source=source, distroseries=hoary)
-            removal_candidates.append(source.id)
-            removal_candidates.extend([pub.id for pub in binaries])
+            source = test_publisher.getPubSource(sourcename=name)
+            binaries = test_publisher.getPubBinaries(pub_source=source)
+            removal_candidates.append(source)
+            removal_candidates.extend(binaries)
 
         remover = self.getRemover(name='foo bar baz', suite='hoary')
         removals = remover.mainTask()
 
         self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+            sorted([pub.id for pub in removals]),
+            sorted([pub.id for pub in removal_candidates]))
 
-        for pub_id in removals:
-            self.assertEqual('DELETED', pub.status.name)
-            self.assertEqual(self.user_name, pub.removed_by.name)
-            self.assertEqual(self.removal_comment, pub.removal_comment)
+        for pub in removal_candidates:
+            self.assertDeleted(pub.secure_record)
 
     def testRemoveSourceOnly(self):
         """Check how PackageRemoval behaves on source-only removals.
 
-        `lp-remove-package.py mozilla-firefox -S`
+        `lp-remove-package.py foo -S`
         """
-        mozilla_src_pub_id, mozilla_bin_pub_ids = self._getPublicationIDs()
-        removal_candidates = [mozilla_src_pub_id]
+        test_publisher = self.getTestPublisher()
 
-        remover = self.getRemover(source_only=True)
+        removal_candidates = []
+        source = test_publisher.getPubSource(sourcename='foo')
+        binaries = test_publisher.getPubBinaries(pub_source=source)
+
+        removal_candidates.append(source)
+
+        remover = self.getRemover(
+            name='foo', suite='hoary', source_only=True)
         removals = remover.mainTask()
 
-        self.assertEqual(len(removals), 1)
-
         self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+            sorted([pub.id for pub in removals]),
+            sorted([pub.id for pub in removal_candidates]))
 
-        self.assertDeleted(mozilla_src_pub_id, source=True)
-        self.assertPublished(mozilla_bin_pub_ids, source=False)
+        self.assertDeleted(source.secure_record)
+        for pub in binaries:
+            self.assertPublished(pub.secure_record)
 
     def testRemoveBinaryOnly(self):
         """Check how PackageRemoval behaves on binary-only removals.
 
-        `lp-remove-package.py mozilla-firefox -b`
+        `lp-remove-package.py foo-bin -b`
         """
-        mozilla_src_pub_id, mozilla_bin_pub_ids = self._getPublicationIDs()
-        removal_candidates = []
+        test_publisher = self.getTestPublisher()
+        source = test_publisher.getPubSource(sourcename='foo')
 
-        # Extract only binaries named 'mozilla-firefox'
-        mozilla_firefox_bin_pub_ids = []
-        other_bin_pub_ids = []
-        for pub_bin_id in mozilla_bin_pub_ids:
-            bin_pub = SecureBinaryPackagePublishingHistory.get(pub_bin_id)
-            if bin_pub.binarypackagerelease.name == 'mozilla-firefox':
-                mozilla_firefox_bin_pub_ids.append(bin_pub.id)
-            else:
-                other_bin_pub_ids.append(bin_pub.id)
+        builds = source.createMissingBuilds()
+        binaries = []
+        for build in builds:
+            for binaryname in ['foo-bin', 'foo-data']:
+                binarypackagerelease = test_publisher.uploadBinaryForBuild(
+                    build, binaryname)
+                binary = test_publisher.publishBinaryInArchive(
+                    binarypackagerelease, source.archive)
+                binaries.extend(binary)
 
-        removal_candidates.extend(mozilla_firefox_bin_pub_ids)
-
-        # XXX cprov 20071002: use a specific version because the
-        # binary mozilla-firefox_0.9 in warty i386 is going to be
-        # superseded in sampledata by the 1.0 version.
-        remover = self.getRemover(binary_only=True, version='0.9')
-        removals = remover.mainTask()
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
-
-        self.assertPublished(mozilla_src_pub_id, source=True)
-        self.assertPublished(other_bin_pub_ids, source=False)
-        self.assertDeleted(mozilla_firefox_bin_pub_ids, source=False)
-
-    def testRemoveSourceAndBinariesFromPartner(self):
-        """Source and binary package removal for Partner archive."""
-        src_pub_id, bin_pub_ids = self._getPublicationIDs(
-            'commercialpackage', distroseries_name='breezy-autotest')
-        removal_candidates = [src_pub_id]
-        removal_candidates.extend(bin_pub_ids)
+        removal_candidates = [
+            pub for pub in binaries
+            if pub.binarypackagerelease.name == 'foo-bin']
 
         remover = self.getRemover(
-            name='commercialpackage', suite='breezy-autotest', partner=True)
+            name='foo-bin', suite='hoary', binary_only=True)
         removals = remover.mainTask()
 
         self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+            sorted([pub.id for pub in removals]),
+            sorted([pub.id for pub in removal_candidates]))
 
-        self.assertDeleted(src_pub_id, source=True)
-        self.assertDeleted(bin_pub_ids, source=False)
+        self.assertPublished(source.secure_record)
 
-    def testRemoveSourceOnlyFromPartner(self):
-        """Source-only package removal for Partner archive."""
-        src_pub_id, bin_pub_ids = self._getPublicationIDs(
-            'commercialpackage', distroseries_name='breezy-autotest')
-        removal_candidates = [src_pub_id]
+        remained_binaries = [
+            pub for pub in binaries
+            if pub.binarypackagerelease.name != 'foo-bin']
+        for pub in remained_binaries:
+            self.assertPublished(pub.secure_record)
 
-        remover = self.getRemover(
-            name='commercialpackage', suite='breezy-autotest', partner=True,
-            source_only=True)
-        removals = remover.mainTask()
-
-        self.assertEqual(len(removals), 1)
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
-
-        self.assertDeleted(src_pub_id, source=True)
-        self.assertPublished(bin_pub_ids, source=False)
-
-    def testRemoveBinaryOnlyFromPartner(self):
-        """Binary-only package removal for Partner archive."""
-        src_pub_id, bin_pub_ids = self._getPublicationIDs(
-            'commercialpackage', distroseries_name='breezy-autotest')
-        removal_candidates = []
-        removal_candidates.extend(bin_pub_ids)
-
-        remover = self.getRemover(
-            name='commercialpackage', suite='breezy-autotest', partner=True,
-            binary_only=True)
-        removals = remover.mainTask()
-
-        self.assertEqual(len(removals), 1)
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
-
-        self.assertPublished(src_pub_id, source=True)
-        self.assertDeleted(bin_pub_ids, source=False)
-
-    def _getPublicationsIDsForPPA(self):
-        """Return a set of PPA publications IDs.
-
-        Using pmount_0.1-1 in warty from Cprov PPA.
-        """
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov_ppa = cprov.archive
-        warty = cprov.archive.distribution['warty']
-
-        src_pub = cprov_ppa.getPublishedSources(
-            name='pmount', version='0.1-1', exact_match=True)[0]
-        bin_pubs = src_pub.getPublishedBinaries()
-        src_pub_id = src_pub.id
-        bin_pub_ids = [p.id for p in bin_pubs]
-
-        return src_pub_id, bin_pub_ids
-
-    def testRemoveSourceAndBinariesFromPPA(self):
-        """Source and binary package removal for PPAs."""
-        src_pub_id, bin_pub_ids = self._getPublicationsIDsForPPA()
-        removal_candidates = [src_pub_id]
-        removal_candidates.extend(bin_pub_ids)
-
-        remover = self.getRemover(name='pmount', suite='warty', ppa='cprov')
-        removals = remover.mainTask()
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
-
-        self.assertDeleted(src_pub_id, source=True)
-        self.assertDeleted(bin_pub_ids, source=False)
-
-    def testRemoveSourceOnlyFromPPA(self):
-        """Source-only package removal for PPAs."""
-        src_pub_id, bin_pub_ids = self._getPublicationsIDsForPPA()
-        removal_candidates = [src_pub_id]
-
-        remover = self.getRemover(
-            name='pmount', suite='warty', ppa='cprov', source_only=True)
-        removals = remover.mainTask()
-
-        self.assertEqual(len(removals), 1)
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
-
-        self.assertDeleted(src_pub_id, source=True)
-        self.assertPublished(bin_pub_ids, source=False)
-
-    def testRemoveBinaryOnlyFromPPA(self):
-        """Binary-only package removal for PPAs."""
-        src_pub_id, bin_pub_ids = self._getPublicationsIDsForPPA()
-        removal_candidates = []
-        removal_candidates.extend(bin_pub_ids)
-
-        remover = self.getRemover(
-            name='pmount', suite='warty', ppa='cprov', binary_only=True)
-        removals = remover.mainTask()
-
-        self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
-
-        self.assertPublished(src_pub_id, source=True)
-        self.assertDeleted(bin_pub_ids, source=False)
+        for pub in removal_candidates:
+            self.assertDeleted(pub.secure_record)
 
     def testRemoveBinaryOnlySpecificArch(self):
         """Check binary-only removals in a specific architecture.
 
-        `lp-remove-package.py mozilla-firefox -b -a i386`
+        `lp-remove-package.py foo-bin -b -a i386`
         """
-        mozilla_src_pub_id, mozilla_bin_pub_ids = self._getPublicationIDs()
-        removal_candidates = []
-
-        # Extract only binaries named 'mozilla-firefox' published in
-        # 'i386' architecture
-        mozilla_firefox_bin_pub_ids = []
-        other_bin_pub_ids = []
-        for pub_bin_id in mozilla_bin_pub_ids:
-            bin_pub = SecureBinaryPackagePublishingHistory.get(pub_bin_id)
-            if bin_pub.binarypackagerelease.name == 'mozilla-firefox':
-                if bin_pub.distroarchseries.architecturetag == 'i386':
-                    mozilla_firefox_bin_pub_ids.append(bin_pub.id)
-                else:
-                    other_bin_pub_ids.append(bin_pub.id)
-            else:
-                other_bin_pub_ids.append(bin_pub.id)
-
-        removal_candidates.extend(mozilla_firefox_bin_pub_ids)
+        test_publisher = self.getTestPublisher()
+        source = test_publisher.getPubSource(sourcename='foo')
+        binaries = test_publisher.getPubBinaries(pub_source=source)
+        removal_candidates = [
+            pub for pub in binaries
+            if pub.distroarchseries.architecturetag == 'i386'
+            ]
 
         # See the comment in testRemoveBinaryOnly.
         remover = self.getRemover(
-            binary_only=True, version='0.9', arch='i386')
+            name='foo-bin', suite='hoary', binary_only=True, arch='i386')
         removals = remover.mainTask()
 
         self.assertEqual(
-            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+            sorted([pub.id for pub in removals]),
+            sorted([pub.id for pub in removal_candidates]))
 
-        self.assertPublished(mozilla_src_pub_id, source=True)
-        self.assertPublished(other_bin_pub_ids, source=False)
-        self.assertDeleted(mozilla_firefox_bin_pub_ids, source=False)
+        self.assertPublished(source.secure_record)
+
+        remained_binaries = [
+            pub for pub in binaries
+            if pub.distroarchseries.architecturetag != 'i386'
+            ]
+        for pub in remained_binaries:
+            self.assertPublished(pub.secure_record)
+
+        for pub in removal_candidates:
+            self.assertDeleted(pub.secure_record)
+
+    def testRemoveFromPartner(self):
+        """Source and binary package removal for Partner archive."""
+        test_publisher = self.getTestPublisher()
+        ubuntu = test_publisher.distroseries.distribution
+        partner_archive = ubuntu.getArchiveByComponent('partner')
+
+        source = test_publisher.getPubSource(
+            sourcename='foo', archive=partner_archive)
+        binaries = test_publisher.getPubBinaries(
+            pub_source=source, archive=partner_archive)
+        removal_candidates = [source]
+        removal_candidates.extend(binaries)
+
+        remover = self.getRemover(
+            name='foo', suite='hoary', partner=True)
+        removals = remover.mainTask()
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]),
+            sorted([pub.id for pub in removal_candidates]))
+
+        for pub in removal_candidates:
+            self.assertDeleted(pub.secure_record)
+
+    def testRemoveFromPPA(self):
+        """Source and binary package removal for PPAs."""
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        test_publisher = self.getTestPublisher()
+        source = test_publisher.getPubSource(
+            sourcename='foo', archive=cprov.archive)
+        binaries = test_publisher.getPubBinaries(
+            pub_source=source, archive=cprov.archive)
+        removal_candidates = [source]
+        removal_candidates.extend(binaries)
+
+        remover = self.getRemover(name='foo', suite='hoary', ppa='cprov')
+        removals = remover.mainTask()
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]),
+            sorted([pub.id for pub in removal_candidates]))
+
+        for pub in removal_candidates:
+            self.assertDeleted(pub.secure_record)
 
     def testRemoveComponentFilter(self):
         """Check the component filter behaviour.
