@@ -5,10 +5,6 @@
 __metaclass__ = type
 
 
-import transaction
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)

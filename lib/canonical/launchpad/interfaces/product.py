@@ -83,7 +83,7 @@ class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
     ACADEMIC = DBItem(10, "Academic Free License")
-    AFFERO = DBItem(20, "Affero GPL")
+    AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
@@ -213,6 +213,7 @@ class IProductPublic(
     datecreated = exported(
         Datetime(
             title=_('Date Created'),
+            required=True, readonly=True,
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
 

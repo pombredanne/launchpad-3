@@ -43,9 +43,15 @@ class LibrarianGC(LaunchpadCronScript):
                 help="Skip removing expired TemporaryBlobStorage rows"
                 )
         self.parser.add_option(
+                '', "--skip-expired", action="store_true", default=False,
+                dest="skip_expired",
+                help="Skip flagging expired files for deletion."
+                )
+        self.parser.add_option(
                 '', "--skip-files", action="store_true", default=False,
                 dest="skip_files",
                 help="Skip removing files on disk with no database references"
+                     " or flagged for deletion."
                 )
 
     def main(self):
@@ -72,6 +78,8 @@ class LibrarianGC(LaunchpadCronScript):
             librariangc.delete_unreferenced_aliases(conn)
         if not self.options.skip_content:
             librariangc.delete_unreferenced_content(conn) # second sweep
+        if not self.options.skip_expired:
+            librariangc.flag_expired_files(conn)
         if not self.options.skip_files:
             librariangc.delete_unwanted_files(conn)
 
