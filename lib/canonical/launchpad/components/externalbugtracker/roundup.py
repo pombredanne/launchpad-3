@@ -21,7 +21,7 @@ PYTHON_BUGS_HOSTNAME = 'bugs.python.org'
 MPLAYERHQ_BUGS_HOSTNAME = 'roundup.mplayerhq.hu'
 
 
-def query_encode(items):
+def create_query_string(items):
     """Join the items to form a valid URL query string.
 
     There is urllib.urlencode that does a similar job, but you can't
@@ -75,12 +75,12 @@ class Roundup(ExternalBugTracker):
         """Return the URL for single bug CSV export."""
         query = list(self.query_base)
         query.append(('id', str(bug_id)))
-        return "%s/issue?%s" % (self.baseurl, query_encode(query))
+        return "%s/issue?%s" % (self.baseurl, create_query_string(query))
 
     def getBatchBugExportURL(self):
         """Return the URL for batch (all bugs) CSV export."""
         query = self.query_base
-        return "%s/issue?%s" % (self.baseurl, query_encode(query))
+        return "%s/issue?%s" % (self.baseurl, create_query_string(query))
 
     def _getBug(self, bug_id):
         """Return the bug with the ID bug_id from the internal bug list.
