@@ -371,10 +371,10 @@ for UPDATES pocket (see archive-dependencies.txt for more information).
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
 
-The happened for the primary components widget, which contains two
-pre-defined options. By default all PPAs use all ubuntu components
-available to satify build dependencies, i.e. the 'multiverse'
-component
+A similar widget is used for the primary archive component overrides ,
+which contains two pre-defined options. By default all PPAs use all
+ubuntu components available to satisfy build dependencies, i.e. the
+'multiverse' component.
 
     >>> primary_components = view.widgets.get(
     ...     'primary_components').vocabulary
@@ -448,7 +448,7 @@ when there is an explicit override.
     ...     'primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
 
-Attempts to override only the component dependencies are also dected
+Attempts to override only the component dependencies are also detected
 and processed correctly.
 
     >>> add_proposed_primary_view = create_initialized_view(
@@ -516,6 +516,7 @@ PPA the form fails because he has no permission to view its contents.
     ...     'field.selected_dependencies': [],
     ...     'field.dependency_candidate': 'pirulito-team',
     ...     'field.primary_dependencies': 'UPDATES',
+    ...     'field.primary_components': 'FOLLOW_PRIMARY',
     ...     'field.actions.save': 'Save',
     ...     }
 

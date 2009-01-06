@@ -1056,7 +1056,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         """Create the 'primary_components' field.
 
         'primary_components' widget is a choice, rendered as radio-buttons,
-        with two options that provides a IComponent as its value:
+        with two options that provides an IComponent as its value:
 
          ||      Option    ||   Value    ||
          || ALL_COMPONENTS || multiverse ||
@@ -1073,7 +1073,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
               self.context.distribution.displayname))
         follow_primary = SimpleTerm(
             None, 'FOLLOW_PRIMARY',
-            _('Use the same components used for each source in %s '
+            _('Use the same components used for each source in the %s '
               'primary archive.' % self.context.distribution.displayname))
 
         primary_dependency = self.context.getArchiveDependency(

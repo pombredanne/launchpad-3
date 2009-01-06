@@ -1470,7 +1470,7 @@ immediately recognises 'cprov' rights on it.
     PPA for Launchpad Buildd Admins
 
 When there is no active PPA for the team a user participates the
-method returns a empty SelectResults.
+method returns an empty SelectResults.
 
     >>> jblack = getUtility(IPersonSet).getByName('jblack')
 

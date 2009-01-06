@@ -221,7 +221,7 @@ Same for the 'Ubuntu components' field:
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_components')
     (*) Use all Ubuntu components available.
-    ( ) Use the same components used for each source in Ubuntu
+    ( ) Use the same components used for each source in the Ubuntu
         primary archive.
 
 The user can modify this aspect by selecting a different option and
@@ -274,7 +274,7 @@ Now we see a PPA configured to depend only on RELEASE pocket.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_components')
     (*) Use all Ubuntu components available.
-    ( ) Use the same components used for each source in Ubuntu
+    ( ) Use the same components used for each source in the Ubuntu
         primary archive.
 
 In order to make the PPA use the default dependencies again the user
@@ -303,13 +303,13 @@ The default option is now selected.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_components')
     (*) Use all Ubuntu components available.
-    ( ) Use the same components used for each source in Ubuntu
+    ( ) Use the same components used for each source in the Ubuntu
         primary archive.
 
 Now we can simply change the primary archive components field.
 
     >>> admin_browser.getControl(
-    ...     "Use the same components used for each source in Ubuntu "
+    ...     "Use the same components used for each source in the Ubuntu "
     ...     "primary archive."
     ...     ).selected = True
     >>> admin_browser.getControl("Save").click()
@@ -329,7 +329,7 @@ Now we can simply change the primary archive components field.
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_components')
     ( ) Use all Ubuntu components available.
-    (*) Use the same components used for each source in Ubuntu
+    (*) Use the same components used for each source in the Ubuntu
         primary archive.
 
 
