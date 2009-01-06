@@ -448,7 +448,7 @@ names just now, we'll pass them through anyway
     Mozilla Firefox Mainline
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
-    You are subscribed to branch Mozilla Firefox Mainline.
+    You are subscribed to branch lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
 
@@ -509,7 +509,7 @@ something like this:
     New title
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are subscribed to branch New title.
+    You are subscribed to branch lp://dev/~name12/firefox/new-name.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
 
@@ -544,7 +544,7 @@ must also handle the unicode.
     New  00 title 
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are subscribed to branch New  00 title .
+    You are subscribed to branch lp://dev/~name12/firefox/new-name.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
 
@@ -576,7 +576,7 @@ by pushing the branch to launchpad.
     <BLANKLINE>
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
-    You are subscribed to branch ~name12/firefox/foo.
+    You are subscribed to branch lp://dev/~name12/firefox/foo.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
 
@@ -606,7 +606,7 @@ We don't want to show None in the email, so we show (not set) instead.
     A new title
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
-    You are subscribed to branch A new title.
+    You are subscribed to branch lp://dev/~name12/firefox/foo.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
 
