@@ -23,6 +23,7 @@ from zope.event import notify
 from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
+from canonical.twistedsupport import gather_maybe_results
 
 
 class Factory(SSHFactory):
@@ -120,9 +121,10 @@ class SSHService(service.Service):
 
     def stopService(self):
         """Stop the SSH service."""
-        # XXX: Deferred!
-        service.Service.stopService(self)
-        try:
-            return self.service.stopService()
-        finally:
+        deferred = gather_maybe_results([
+            service.Service.stopService(self),
+            self.service.stopService()])
+        def log_stopped(ignored):
             notify(accesslog.ServerStopped())
+            return ignored
+        return deferred.addBoth(log_stopped)

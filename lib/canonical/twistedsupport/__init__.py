@@ -3,7 +3,12 @@
 """Useful tools for interacting with Twisted."""
 
 __metaclass__ = type
-__all__ = ['defer_to_thread', 'gatherResults', 'suppress_stderr']
+__all__ = [
+    'defer_to_thread',
+    'gather_maybe_results',
+    'gatherResults',
+    'suppress_stderr',
+    ]
 
 
 import StringIO
@@ -43,6 +48,16 @@ def gatherResults(deferredList):
     d.addCallback(defer._parseDListResult)
     d.addErrback(convert_first_error_to_real)
     return d
+
+
+def gather_maybe_results(result_list):
+    """Like `gatherResults`, except 'result_list' can contain non-Deferreds.
+
+    :param result_list: A list of Deferreds or non-Deferreds. All of these
+        will be wrapped using `defer.maybeDeferred`.
+    :return: `defer.Deferred`.
+    """
+    return gatherResults(map(defer.maybeDeferred, result_list))
 
 
 def suppress_stderr(function):
