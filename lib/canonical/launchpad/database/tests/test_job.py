@@ -54,17 +54,17 @@ class TestJob(TestCase):
         job.start()
         self.assertEqual(2, job.attempt_count)
 
-    def test_start_when_completed(self):
+    def test_start_when_completed_is_invalid(self):
         """When a job is completed, attempting to start is invalid."""
         job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.start)
 
-    def test_start_when_failed(self):
+    def test_start_when_failed_is_invalid(self):
         """When a job is failed, attempting to start is invalid."""
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.start)
 
-    def test_start_when_running(self):
+    def test_start_when_running_is_invalid(self):
         """When a job is running, attempting to start is invalid."""
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.start)
@@ -80,17 +80,17 @@ class TestJob(TestCase):
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.COMPLETED)
 
-    def test_complete_waiting(self):
+    def test_complete_when_waiting_is_invalid(self):
         """When a job is waiting, attempting to complete is invalid."""
         job = Job(_status=JobStatus.WAITING)
         self.assertRaises(InvalidTransition, job.complete)
 
-    def test_complete_completed(self):
+    def test_complete_when_completed_is_invalid(self):
         """When a job is completed, attempting to complete is invalid."""
         job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.complete)
 
-    def test_complete_failed(self):
+    def test_complete_when_failed_is_invalid(self):
         """When a job is failed, attempting to complete is invalid."""
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.complete)
@@ -106,17 +106,17 @@ class TestJob(TestCase):
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.FAILED)
 
-    def test_fail_waiting(self):
+    def test_fail_when_waiting_is_invalid(self):
         """When a job is waiting, attempting to fail is invalid."""
         job = Job(_status=JobStatus.WAITING)
         self.assertRaises(InvalidTransition, job.fail)
 
-    def test_fail_completed(self):
+    def test_fail_when_completed_is_invalid(self):
         """When a job is completed, attempting to fail is invalid."""
         job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.fail)
 
-    def test_fail_failed(self):
+    def test_fail_when_failed_is_invalid(self):
         """When a job is failed, attempting to fail is invalid."""
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.fail)
@@ -132,17 +132,17 @@ class TestJob(TestCase):
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.WAITING)
 
-    def test_queue_completed(self):
+    def test_queue_when_completed_is_invalid(self):
         """When a job is completed, attempting to queue is invalid."""
         job = Job(_status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.queue)
 
-    def test_queue_waiting(self):
+    def test_queue_when_waiting_is_invalid(self):
         """When a job is waiting, attempting to queue is invalid."""
         job = Job(_status=JobStatus.WAITING)
         self.assertRaises(InvalidTransition, job.queue)
 
-    def test_queue_failed(self):
+    def test_queue_when_failed_is_invalid(self):
         """When a job is failed, attempting to queue is invalid."""
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.queue)
