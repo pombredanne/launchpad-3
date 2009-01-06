@@ -138,12 +138,16 @@ class BasePublishingRecordView(LaunchpadView):
         return """
         <script type="text/javascript">
            registerLaunchpadFunction(function() {
+               // Set the style of the expander icon so that it appears
+               // clickable when js is enabled:
+               var view_icon = document.getElementById('pub%s-expander');
+               view_icon.style.cursor = 'pointer';
                connect('pub%s-expander', 'onclick', function (e) {
                    toggleExpandableTableRow('pub%s');
                    });
                });
         </script>
-        """ % (self.context.id, self.context.id)
+        """ % (self.context.id, self.context.id, self.context.id)
 
     @property
     def removal_comment(self):
