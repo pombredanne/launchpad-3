@@ -344,17 +344,15 @@ def flag_expired_files(connection):
         """)
     unexpired_ids = set(row[0] for row in cur.fetchall())
 
-    # Destroy our all_ids set to create the set of unexpired ids.
+    # Destroy our all_ids set to create the set of expired ids.
     # We do it this way, as we are dealing with large sets and need to
     # be careful of RAM usage on the production server.
-    all_ids.difference_update(unexpired_ids)
+    all_ids -= unexpired_ids
     expired_ids = all_ids
     del all_ids
     del unexpired_ids
 
-    commit_counter = 0
-    for content_id in expired_ids:
-        commit_counter += 1
+    for commit_counter, content_id in enumerate(expired_ids):
         log.debug("%d is expired." % content_id)
         cur = connection.cursor()
         cur.execute("""
