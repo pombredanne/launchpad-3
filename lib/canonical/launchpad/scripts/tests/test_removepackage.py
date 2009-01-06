@@ -18,11 +18,14 @@ from canonical.config import config
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingStatus)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -147,7 +150,7 @@ class TestPackageRemover(unittest.TestCase):
         else:
             test_args.extend(['-m', removal_comment])
 
-        test_args.append(name)
+        test_args.extend(name.split())
 
         remover = PackageRemover(
             name='lp-remove-package', test_args=test_args)
@@ -258,6 +261,39 @@ class TestPackageRemover(unittest.TestCase):
 
         self.assertDeleted(mozilla_src_pub_id, source=True)
         self.assertDeleted(mozilla_bin_pub_ids, source=False)
+
+    def testRemoveMultiplePackages(self):
+        """Package remover accepts multiple non-option arguments.
+
+        `lp-remove-packages` is capable of operating on multiple packages.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+
+        fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+        hoary['i386'].addOrUpdateChroot(fake_chroot)
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.person = getUtility(IPersonSet).getByName("name16")
+
+        removal_candidates = []
+        for name in ['foo', 'bar', 'baz']:
+            source = test_publisher.getPubSource(
+                sourcename=name, distroseries=hoary)
+            binaries = test_publisher.getPubBinaries(
+                pub_source=source, distroseries=hoary)
+            removal_candidates.append(source.id)
+            removal_candidates.extend([pub.id for pub in binaries])
+
+        remover = self.getRemover(name='foo bar baz', suite='hoary')
+        removals = remover.mainTask()
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+
+        for pub_id in removals:
+            self.assertEqual('DELETED', pub.status.name)
+            self.assertEqual(self.user_name, pub.removed_by.name)
+            self.assertEqual(self.removal_comment, pub.removal_comment)
 
     def testRemoveSourceOnly(self):
         """Check how PackageRemoval behaves on source-only removals.
