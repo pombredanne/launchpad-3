@@ -790,10 +790,11 @@ class TestPublisher(TestPublisherBase):
         generate/list debian-installer (d-i) indexes in NoMoreAptFtpArchive
         approach.
 
-        Another different against the primary repositories is that PPA
-        Release files for the distroseries and its architectures have a
-        distinct 'Origin:' value, the are specific to each PPA, following
-        'LP-PPA-%(owner_name)s'. This allow properly pinning of PPA packages.
+        Another difference between the primary repositories and PPAs is that
+        PPA Release files for the distroseries and its architectures have a
+        distinct 'Origin:' value.  The origin is specific to each PPA, using
+        the pattern 'LP-PPA-%(owner_name)s'.  This allows proper pinning of
+        the PPA packages.
         """
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
