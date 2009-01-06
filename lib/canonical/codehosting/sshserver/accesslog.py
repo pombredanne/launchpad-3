@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'BazaarSSHClosed',
     'BazaarSSHStarted',
-    'get_codehosting_logger',
     'LoggingEvent',
     'ServerStarting',
     'ServerStopped',
@@ -37,6 +36,10 @@ def get_codehosting_logger():
     return logging.getLogger('codehosting')
 
 
+def get_access_logger():
+    return logging.getLogger('codehosting.access')
+
+
 def set_up_logging(configure_oops_reporting=False):
     """Set up logging for the smart server.
 
@@ -53,11 +56,12 @@ def set_up_logging(configure_oops_reporting=False):
     # testrunner output.
     log = get_codehosting_logger()
     log.setLevel(logging.INFO)
+    access_log = get_access_logger()
     handler = TimedRotatingFileHandler(
         config.codehosting.access_log, when='midnight')
     handler.setFormatter(
         logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-    log.addHandler(handler)
+    access_log.addHandler(handler)
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
     # Make sure that our logging event handler is there, ready to receive
@@ -191,4 +195,4 @@ def _log_event(event):
     All events should be logged through this function, which provides a
     convenient mocking point for tests.
     """
-    get_codehosting_logger().log(event.level, event.message)
+    get_access_logger().log(event.level, event.message)

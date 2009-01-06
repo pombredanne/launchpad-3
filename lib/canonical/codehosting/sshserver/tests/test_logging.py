@@ -17,7 +17,8 @@ from zope import component
 from zope.event import notify
 
 from canonical.codehosting.sshserver.accesslog import (
-    _log_event, get_codehosting_logger, LoggingEvent, set_up_logging)
+    _log_event, get_access_logger, get_codehosting_logger, LoggingEvent,
+    set_up_logging)
 from canonical.config import config
 from canonical.launchpad.testing import TestCase
 from canonical.testing import reset_logging
@@ -89,7 +90,7 @@ class TestLoggingSetup(TestCase):
         # set_up_logging installs a rotating log handler that logs output to
         # config.codehosting.access_log.
         set_up_logging()
-        [handler] = get_codehosting_logger().handlers
+        [handler] = get_access_logger().handlers
         # XXX: JonathanLange 2008-12-23: Is TimedRotatingFileHandler really
         # what would be best for IS?
         self.assertIsInstance(handler, TimedRotatingFileHandler)
