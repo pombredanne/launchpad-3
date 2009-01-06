@@ -46,6 +46,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
     description = StringCol(notNull=False, default=None)
+    codename = StringCol(notNull=False, default=None)
 
     # joins
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',

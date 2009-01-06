@@ -662,6 +662,7 @@ class SortSeriesMixin:
         The series list is sorted by version in reverse order.
         The development focus is always first in the list.
         """
+        import pdb; pdb.set_trace()
         series_list = list(self.product.serieses)
         series_list.remove(self.product.development_focus)
         # Now sort the list by name with newer versions before older.

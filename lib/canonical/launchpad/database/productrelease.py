@@ -10,6 +10,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
+from storm.expr import Join
+from storm.store import Store, EmptyResultSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -21,6 +23,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UpstreamFileType)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
@@ -33,19 +37,12 @@ class ProductRelease(SQLBase):
     _defaultOrder = ['-datereleased']
 
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    _deprecated_version = StringCol(dbName='version', notNull=True)
-    codename = StringCol(notNull=False, default=None)
-    summary = StringCol(notNull=False, default=None)
-    _deprecated_description = StringCol(dbName='description', notNull=False,
-                                        default=None)
     changelog = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_public_person, notNull=True)
-    _deprecated_productseries = ForeignKey(dbName='productseries',
-                               foreignKey='ProductSeries', notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
     files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
@@ -54,7 +51,16 @@ class ProductRelease(SQLBase):
     # properties
     @property
     def version(self):
+        return self.milestone.codename
+
+    @property
+    def version(self):
         return self.milestone.name
+
+    @property
+    def summary(self):
+        # XXX remove this
+        return self.description
 
     @property
     def description(self):
@@ -204,12 +210,20 @@ class ProductReleaseSet(object):
 
     def getReleasesForSerieses(self, serieses):
         """See `IProductReleaseSet`."""
+        # Local import of Milestone to avoid import loop.
+        from canonical.launchpad.database.milestone import Milestone
         if len(list(serieses)) == 0:
-            return ProductRelease.select('1 = 2')
-        return ProductRelease.select("""
-            ProductRelease.productseries IN %s
-            """ % sqlvalues([series.id for series in serieses]),
-            orderBy='-datereleased')
+            return EmptyResultSet()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        series_ids = [series.id for series in serieses]
+        origin = [
+            Milestone,
+            Join(ProductRelease, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.find(
+            ProductRelease,
+            Milestone.productseries.is_in(series_ids))
+        return result.order_by(Desc(ProductRelease.datereleased))
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""
