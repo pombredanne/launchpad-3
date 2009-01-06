@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AuthenticationFailed',
     'BazaarSSHClosed',
     'BazaarSSHStarted',
     'LoggingEvent',
@@ -136,6 +137,15 @@ class UserConnected(LoggingEvent):
     def __init__(self, transport, address):
         LoggingEvent.__init__(
             self, session_id=id(transport), address=address)
+
+
+class AuthenticationFailed(LoggingEvent):
+
+    level = logging.INFO
+    template = '[%(session_id)s] failed to authenticate.'
+
+    def __init__(self, transport):
+        LoggingEvent.__init__(self, session_id=id(transport))
 
 
 class UserDisconnected(LoggingEvent):

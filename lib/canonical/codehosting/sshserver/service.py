@@ -60,6 +60,18 @@ class Factory(SSHFactory):
         try:
             return transport._realConnectionLost(reason)
         finally:
+            # Conch's userauth module sets 'avatar' on the transport if the
+            # authentication succeeded. Thus, if it's not there,
+            # authentication failed. We can't generate this event from the
+            # authentication layer since:
+            #
+            # a) almost every SSH login has at least one failure to
+            # authenticate due to multiple keys on the client-side.
+            #
+            # b) the server doesn't normally generate a "go away" event.
+            # Rather, the client simply stops trying.
+            if getattr(transport, 'avatar', None) is None:
+                notify(accesslog.AuthenticationFailed(transport))
             notify(accesslog.UserDisconnected(transport))
 
     def _loadKey(self, key_filename):
