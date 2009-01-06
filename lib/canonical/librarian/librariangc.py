@@ -329,17 +329,34 @@ def flag_expired_files(connection):
     delete_unwanted_files().
     """
     cur = connection.cursor()
+
+    # First get the list of all LibraryFileContent.
+    cur.execute("SELECT id FROM LibraryFileContent WHERE deleted IS FALSE")
+    all_ids = set(row[0] for row in cur.fetchall())
+
+    # Now the list of unexpired content. May contain some ids not in the
+    # all_ids set if uploads are currently in progress.
     cur.execute("""
-        UPDATE LibraryFileContent
-        SET deleted=TRUE
-        WHERE id NOT IN (
-            SELECT content
-            FROM LibraryFileAlias
-            WHERE expires IS NULL
-                OR expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            )
+        SELECT DISTINCT content
+        FROM LibraryFileAlias
+        WHERE expires IS NULL
+            OR expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
         """)
-    log.info("%s expired files flagged for deletion." % cur.rowcount)
+    unexpired_ids = set(row[0] for row in cur.fetchall())
+
+    expired_ids = all_ids.difference(unexpired_ids)
+
+    commit_counter = 0
+    for content_id in expired_ids:
+        commit_counter += 1
+        log.debug("%d is expired." % content_id)
+        cur = connection.cursor()
+        cur.execute("""
+            UPDATE LibraryFileContent SET deleted=TRUE
+            WHERE id = %d
+            """ % content_id)
+        if commit_counter % 100 == 0:
+            connection.commit()
     connection.commit()
 
 
