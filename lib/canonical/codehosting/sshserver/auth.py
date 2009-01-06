@@ -149,11 +149,6 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.sendBanner(reason.getErrorMessage())
         return reason
 
-    def _ebBadAuth(self, reason):
-        if self.loginAttempts >= self.attemptsBeforeDisconnect:
-            notify(accesslog.AuthenticationFailed(self.transport))
-        return userauth.SSHUserAuthServer._ebBadAuth(self, reason)
-
 
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     """Cred checker for getting public keys from launchpad.
