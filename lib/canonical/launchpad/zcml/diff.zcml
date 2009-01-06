@@ -19,7 +19,7 @@
     <allow interface="canonical.launchpad.interfaces.diff.IStaticDiffJob" />
   </class>
   <securedutility
-      class="canonical.launchpad.database.diff.StaticDiffJobSource"
+      component="canonical.launchpad.database.diff.StaticDiffJob"
       provides="canonical.launchpad.interfaces.diff.IStaticDiffJobSource" >
     <allow
      interface="canonical.launchpad.interfaces.diff.IStaticDiffJobSource" />

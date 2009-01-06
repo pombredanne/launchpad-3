@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import get_msgid
-from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mailout.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url

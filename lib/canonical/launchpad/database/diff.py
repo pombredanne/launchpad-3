@@ -183,6 +183,7 @@ class BranchJob(SQLBase):
 class StaticDiffJob(BranchJob):
 
     implements(IStaticDiffJob)
+    classProvides(IStaticDiffJobSource)
 
     def __init__(self, branch, from_revision_spec, to_revision_spec):
         metadata = {
@@ -190,6 +191,12 @@ class StaticDiffJob(BranchJob):
             'to_revision_spec': to_revision_spec,
         }
         BranchJob.__init__(self, branch, BranchJobType.STATIC_DIFF, metadata)
+
+    @staticmethod
+    def create(branch, from_revision_spec, to_revision_spec):
+        return StaticDiffJob(
+            branch=branch, from_revision_spec=from_revision_spec,
+            to_revision_spec=to_revision_spec)
 
     @property
     def from_revision_spec(self):
@@ -215,13 +222,3 @@ class StaticDiffJob(BranchJob):
             from_revision_id, to_revision_id, bzr_branch.repository)
         self.job.complete()
         return static_diff
-
-
-class StaticDiffJobSource:
-
-    implements(IStaticDiffJobSource)
-    @staticmethod
-    def create(branch, from_revision_spec, to_revision_spec):
-        return StaticDiffJob(
-            branch=branch, from_revision_spec=from_revision_spec,
-            to_revision_spec=to_revision_spec)
