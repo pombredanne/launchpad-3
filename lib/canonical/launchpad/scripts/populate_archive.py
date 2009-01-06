@@ -16,11 +16,13 @@ from canonical.launchpad.components.packagelocation import (
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.archivearch import IArchiveArchSet
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.processor import IProcessorFamilySet
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from canonical.launchpad.validators.name import valid_name
@@ -45,7 +47,8 @@ class ArchivePopulator(SoyuzScript):
 
     def populateArchive(
         self, from_distribution, from_suite, component, to_distribution,
-        to_suite, to_archive, to_user, reason, include_binaries, arch_tags):
+        to_suite, to_archive, to_user, reason, include_binaries,
+        proc_families):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -63,8 +66,28 @@ class ArchivePopulator(SoyuzScript):
         :param reason: reason for the package copy operation.
 
         :param include_binaries: whether binaries should be copied as well.
-        :param arch_tags: architecture tags for which to create builds.
+        :param proc_families: processor families for which to create builds.
         """
+        def loadProcessorFamilies(proc_family_names):
+            """Load processor families for specified family names."""
+            proc_family_set = getUtility(IProcessorFamilySet)
+            proc_families = set()
+            for name in proc_family_names:
+                proc_family = proc_family_set.getByName(name)
+                if proc_family is None:
+                    raise SoyuzScriptError(
+                        "Invalid processor family: '%s'" % name)
+                else:
+                    proc_families.add(proc_family)
+
+            return proc_families
+
+        def set_archive_architectures(archive, proc_families):
+            """Associate the archive with the processor families."""
+            aa_set = getUtility(IArchiveArchSet)
+            for proc_family in proc_families:
+                ignore_this = aa_set.new(archive, proc_family)
+
         def build_location(distro, suite, component):
             """Build and return package location."""
             if suite is not None:
@@ -96,17 +119,25 @@ class ArchivePopulator(SoyuzScript):
 
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
+            # First load the processor families for the specified family names
+            # from the database. This will fail if an invalid processor family
+            # name was specified on the command line; that's why it should be
+            # done before creating the copy archive.
+            proc_families = loadProcessorFamilies(self.options.proc_families)
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, to_archive,
                 the_destination.distribution, reason)
             the_destination.archive = copy_archive
+            # Associate the newly created copy archive with the processor
+            # families specified by the user.
+            set_archive_architectures(copy_archive, proc_families)
         else:
             raise SoyuzScriptError(
                 "A copy archive named '%s' exists already" % to_archive)
 
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
-        pcr = getUtility(IPackageCopyRequestSet).new(
+        getUtility(IPackageCopyRequestSet).new(
             the_origin, the_destination, registrant,
             copy_binaries=include_binaries, reason=unicode(reason))
 
@@ -117,12 +148,17 @@ class ArchivePopulator(SoyuzScript):
 
         # Create builds for the cloned packages.
         self._createMissingBuilds(
-            the_destination.distroseries, the_destination.archive, arch_tags)
+            the_destination.distroseries, the_destination.archive,
+            proc_families)
 
     def mainTask(self):
         """Main function entry point."""
         def not_specified(option):
             return (option is None or option == '')
+
+        if not_specified(self.options.proc_families):
+            raise SoyuzScriptError(
+                "error: processor families not specified.")
 
         if not_specified(self.options.from_distribution):
             raise SoyuzScriptError(
@@ -153,7 +189,7 @@ class ArchivePopulator(SoyuzScript):
             self.options.component, self.options.to_distribution,
             self.options.to_suite, self.options.to_archive,
             self.options.to_user, self.options.reason,
-            self.options.include_binaries, self.options.arch_tags)
+            self.options.include_binaries, self.options.proc_families)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -163,8 +199,8 @@ class ArchivePopulator(SoyuzScript):
         self.parser.remove_option('-a')
 
         self.parser.add_option(
-            "-a", "--architecture", dest="arch_tags", action="append",
-            help="The architecture tag(s) for which to create build "
+            "-a", "--architecture", dest="proc_families", action="append",
+            help="The processor families for which to create build "
                  "records, repeat for each architecture required.")
         self.parser.add_option(
             "-b", "--include-binaries", dest="include_binaries",
@@ -200,12 +236,12 @@ class ArchivePopulator(SoyuzScript):
             help="The reason for this packages copy operation.")
 
     def _createMissingBuilds(
-        self, distroseries, archive, arch_tags=None):
+        self, distroseries, archive, proc_families):
         """Create builds for all cloned source packages.
 
         :param distroseries: the distro series for which to create builds.
         :param archive: the archive for which to create builds.
-        :param arch_tags: the list of architecture tags for
+        :param proc_families: the list of processor families for
             which to create builds (optional).
         """
         self.logger.info("Processing %s." % distroseries.name)
@@ -213,11 +249,11 @@ class ArchivePopulator(SoyuzScript):
         # Listify the architectures to avoid hitting this MultipleJoin
         # multiple times.
         architectures = list(distroseries.architectures)
-        if arch_tags is not None:
-            # Filter the list of DistroArchSeries so that only the ones
-            # specified on the command line remain.
-            architectures = [architecture for architecture in architectures
-                 if architecture.architecturetag in arch_tags]
+
+        # Filter the list of DistroArchSeries so that only the ones
+        # specified on the command line remain.
+        architectures = [architecture for architecture in architectures
+             if architecture.processorfamily in proc_families]
 
         if len(architectures) == 0:
             self.logger.info(
