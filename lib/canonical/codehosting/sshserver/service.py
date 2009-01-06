@@ -120,6 +120,7 @@ class SSHService(service.Service):
 
     def stopService(self):
         """Stop the SSH service."""
+        # XXX: Deferred!
         service.Service.stopService(self)
         try:
             return self.service.stopService()
