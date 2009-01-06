@@ -20,14 +20,7 @@ from logging import getLogger
 import os
 import re
 import sys
-
-try:
-    import xml.elementtree.cElementTree as etree
-except ImportError:
-    try:
-        import cElementTree as etree
-    except ImportError:
-        import elementtree.ElementTree as etree
+import cElementTree as etree
 
 import pytz
 
