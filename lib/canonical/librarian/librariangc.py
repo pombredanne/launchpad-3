@@ -344,7 +344,13 @@ def flag_expired_files(connection):
         """)
     unexpired_ids = set(row[0] for row in cur.fetchall())
 
-    expired_ids = all_ids.difference(unexpired_ids)
+    # Destroy our all_ids set to create the set of unexpired ids.
+    # We do it this way, as we are dealing with large sets and need to
+    # be careful of RAM usage on the production server.
+    all_ids.difference_update(unexpired_ids)
+    expired_ids = all_ids
+    del all_ids
+    del unexpired_ids
 
     commit_counter = 0
     for content_id in expired_ids:
@@ -358,7 +364,7 @@ def flag_expired_files(connection):
         if commit_counter % 100 == 0:
             connection.commit()
     connection.commit()
-
+    log.info("Flagged %d expired files for removal." % len(expired_ids))
 
 def delete_unwanted_files(con):
     """Delete files found on disk that have no corresponding record in the
