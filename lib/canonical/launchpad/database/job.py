@@ -23,6 +23,7 @@ UTC = pytz.timezone('UTC')
 
 
 class InvalidTransition(Exception):
+    """Invalid transition from one job status to another attempted."""
 
     def __init__(self, current_status, requested_status):
         Exception.__init__(
@@ -54,9 +55,12 @@ class Job(SQLBase):
 
     # List of the valid target states from a given state.
     _valid_transitions = {
-        JobStatus.WAITING: (JobStatus.RUNNING,),
-        JobStatus.RUNNING: (
-            JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.WAITING),
+        JobStatus.WAITING:
+            (JobStatus.RUNNING,),
+        JobStatus.RUNNING:
+            (JobStatus.COMPLETED,
+             JobStatus.FAILED,
+             JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
     }
