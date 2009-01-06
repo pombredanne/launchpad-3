@@ -322,13 +322,13 @@ def delete_unreferenced_content(con):
         con.commit()
 
 
-def flag_expired_files(con):
+def flag_expired_files(connection):
     """Flag files past their expiry date as 'deleted' in the database.
 
     Actual removal from disk is not performed here - that is deferred to
     delete_unwanted_files().
     """
-    cur = con.cursor()
+    cur = connection.cursor()
     cur.execute("""
         UPDATE LibraryFileContent
         SET deleted=TRUE
@@ -340,7 +340,7 @@ def flag_expired_files(con):
             )
         """)
     log.info("%s expired files flagged for deletion." % cur.rowcount)
-    con.commit()
+    connection.commit()
 
 
 def delete_unwanted_files(con):

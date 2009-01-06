@@ -550,7 +550,6 @@ class TestLibrarianGarbageCollection(TestCase):
             librariangc.time = org_time
 
 
-
 class TestBlobCollection(TestCase):
     layer = LaunchpadZopelessLayer
 
