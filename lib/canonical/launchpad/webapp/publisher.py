@@ -23,17 +23,19 @@ __all__ = [
     'UserAttributeCache',
     ]
 
-from zope.interface import implements
-from zope.component import getUtility, queryMultiAdapter
-from zope.app import zapi
-from zope.interface.advice import addClassAdvisor
+
 import zope.security.management
-from zope.security.checker import ProxyFactory, NamesChecker
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
+
+from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
+from zope.component import getUtility, queryMultiAdapter
+from zope.interface import implements
+from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces.http import IHTTPApplicationRequest
+from zope.security.checker import ProxyFactory, NamesChecker
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.layers import (
@@ -602,7 +604,26 @@ class Navigation:
 
         Otherwise, return the object.
         """
-        if nextobj is None:
+        # Avoid circular imports.
+        from canonical.launchpad.interfaces.launchpad import (
+            ILaunchpadCelebrities)
+        from canonical.launchpad.interfaces.person import (
+            IPerson, PersonVisibility)
+        # If the next object is a private team that the principle does not
+        # have permission to access, then raise an exception that makes it
+        # look as if the team doesn't even exist.
+        as_person = IPerson(nextobj, None)
+        user = getUtility(IOpenLaunchBag).user
+        if (as_person is not None and
+            as_person.is_team and
+            as_person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
+            # Also to anonymous users, the team does not exist.
+            (user is None or
+             (not user.inTeam(as_person) and
+              not user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+             )):
+            raise NotFound(self.context, name)
+        elif nextobj is None:
             raise NotFound(self.context, name)
         elif isinstance(nextobj, redirection):
             return RedirectionView(
