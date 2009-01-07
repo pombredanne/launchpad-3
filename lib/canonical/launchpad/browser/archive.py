@@ -444,7 +444,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
             self.series_vocabulary.getTermByToken(series_filter))
 
         field = Choice(
-            __name__ = 'series_filter', title=_("Series Filter"),
+            __name__='series_filter', title=_("Series Filter"),
             vocabulary=self.series_vocabulary, required=True)
         setUpWidget(self, 'series_filter', field, IInputWidget)
 
