@@ -23,15 +23,15 @@ class XpiPropertiesSubExporter:
         # Escape backslashes first, before we start inserting ones of
         # our own.  Then the other stuff.  Replace newlines by \n etc.,
         # and encode non-ASCII characters as \uXXXX.
-        string = string.replace('\\', '\\\\')
-        string = re.sub('''(["'])''', '\\\\\\1', string)
+        string = string.replace('\\', r'\\')
+        string = re.sub('''(["'])''', r'\\\1', string)
         # Escape newlines as \n etc, and non-ASCII as \uXXXX
         return string.encode('ascii', 'backslashreplace')
 
     def _escape_comment(self, comment):
         """Escape comment string for use in properties file."""
         # Prevent comment from breaking out of /* ... */ block.
-        comment = re.sub('\*\/', '*X/', comment)
+        comment = comment.replace('*/', '*X/')
         return comment.encode('ascii', 'unicode-escape')
 
     def export(self, translation_file):
