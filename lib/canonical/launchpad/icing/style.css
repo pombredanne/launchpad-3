@@ -1242,6 +1242,46 @@ beside the mugshot. */
 .product.series, .project {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
+/* Soyuz-related styles (that don't have a facet, but generally are
+ * under Overview)
+ */
+#sources-list-entries {
+  border: 1px solid gray;
+  padding: 0.3em;
+  float: left; /* So the border doesn't use 100% of the page */
+}
+
+#package_counters {
+    clear: left;
+}
+
+div#build-status-summary {
+    clear:right;
+    float:right;
+}
+
+div#build-status-summary h2 {
+    margin-top:0;
+}
+
+div#build-status-summary th {
+    text-align:left;
+}
+
+div#signing-key {
+    clear: both;
+    float: left;
+}
+
+div#signing-key p {
+    max-width: none;
+    background: url(/@@/info) center left no-repeat;
+    padding-left: 18px;
+}
+
+div#signing-key a {
+    font-weight: bold;
+}
 
 /* --- Code --- */
 

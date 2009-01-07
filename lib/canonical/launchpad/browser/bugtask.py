@@ -125,7 +125,8 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import decorates, EnumeratedType, Item
+from canonical.lazr import EnumeratedType, Item
+from lazr.delegates import delegates
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.interfaces.rest import IJSONRequestCache
 
@@ -1533,7 +1534,7 @@ class BugTaskListingItem:
     to get on the fly for each bug task in the listing.  These items are
     prefetched by the view and decorate the bug task.
     """
-    decorates(IBugTask, 'bugtask')
+    delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
                  has_specification):

@@ -20,7 +20,8 @@ from canonical.database.sqlbase import SQLBase, quote_like, cursor, sqlvalues
 from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary)
 from canonical.launchpad.interfaces import (
-    ISourcePackageName, ISourcePackageNameSet, NotFoundError)
+    ISourcePackageName, ISourcePackageNameSet, NoSuchSourcePackageName,
+    NotFoundError)
 
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator)
@@ -56,7 +57,7 @@ class SourcePackageNameSet:
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
-            raise NotFoundError(name)
+            raise NoSuchSourcePackageName(name)
 
     def get(self, sourcepackagenameid):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""

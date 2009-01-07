@@ -125,7 +125,7 @@ Apparently GPGME is able to import an incomplete public key:
 But we get an error if the damage is big:
 (what probably happened in bug #2547)
 
-    >>> key = gpghandler.importPublicKey(pubkey[:-400])
+    >>> key = gpghandler.importPublicKey(pubkey[:-500])
     Traceback (most recent call last):
     ...
     GPGKeyNotFoundError: ...
