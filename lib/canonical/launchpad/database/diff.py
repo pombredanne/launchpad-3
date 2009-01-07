@@ -214,9 +214,9 @@ class StaticDiffJob(BranchJob):
         """See IStaticDiffJob."""
         self.job.start()
         bzr_branch = Branch.open(self.branch.warehouse_url)
-        from_revision_id=self._get_revision_id(
+        from_revision_id = self._get_revision_id(
             bzr_branch, self.from_revision_spec)
-        to_revision_id=self._get_revision_id(
+        to_revision_id = self._get_revision_id(
             bzr_branch, self.to_revision_spec)
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)

@@ -149,7 +149,6 @@ class TestStaticDiffJob(BzrTestCase):
         job = StaticDiffJob(branch=branch, from_revision_spec='1',
                             to_revision_spec='2')
         static_diff = job.run()
-        import transaction
         transaction.commit()
         static_diff.diff.diff_text.open()
         content_lines = static_diff.diff.diff_text.read().splitlines()
