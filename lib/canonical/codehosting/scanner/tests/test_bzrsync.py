@@ -89,7 +89,7 @@ class FakeTransportServer:
 
     def tearDown(self):
         """Deactivate the transport URL."""
-        self._chroot_server.tearDown
+        self._chroot_server.tearDown()
         unregister_transport(self._url_prefix, self._transportFactory)
 
     def _transportFactory(self, url):
@@ -1133,7 +1133,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         # The proposal should stay in the same state.
         self.assertEqual(current_proposal_status, proposal.queue_status)
 
-    def test_autoMergeProposals_not_merged_proposal_target_scanned_first(self):
+    def test_autoMergeProposals_not_merged_with_updated_source(self):
         # If there is a merge proposal where the tip of the source is not in
         # the ancestry of the target it is not marked as merged.
 
