@@ -55,13 +55,19 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['subscribe', 'publishinghistory']
+    links = ['subscribe', 'publishinghistory', 'edit']
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
+
+    def edit(self):
+        """Edit the details of this source package."""
+        # This is titled "Edit bug reporting guidelines" because that
+        # is the only editable property of a source package right now.
+        return Link('+edit', 'Edit bug reporting guidelines', icon='edit')
 
 
 class DistributionSourcePackageBugsMenu(
@@ -261,7 +267,7 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     """Edit a distribution source package."""
 
     schema = IDistributionSourcePackage
-    label = "Change package details"
+    label = "Change source package details"
     field_names = [
         'bug_reporting_guidelines',
         ]
