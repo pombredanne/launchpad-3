@@ -20,7 +20,9 @@
     <div metal:fill-slot="extra_info" class="documentDescription">
       <p style="font-size: larger; background: #F5DE89;
         padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
-       -webkit-border-radius: 5px;">
+        -webkit-border-radius: 5px;"
+        id="staging-message"
+        tal:condition="not: is_demo">
       <strong>Want to test drive Launchpad?</strong>
       Use <a href="https://staging.launchpad.net/">
       <strong>staging.launchpad.net</strong></a>,

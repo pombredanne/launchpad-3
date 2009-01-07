@@ -237,6 +237,23 @@ class IHWSubmissionSet(Interface):
         status are returned.
         """
 
+    def search(user=None, device=None, driver=None, distribution=None,
+               architecture=None):
+        """Return the submissions matiching the given parmeters.
+
+        :param user: The `IPerson` running the query. Private submissions
+            are returned only if the person running the query is the
+            owner or an admin.
+        :param device: Limit results to submissions containing this
+            `IHWDevice`.
+        :param driver: Limit results to submissions containing devices
+            that use this `IHWDriver`.
+        :param distribution: Limit results to submissions made for
+            this `IDistribution`.
+        :param architecture: Limit results to submissions made for
+            a specific architecture.
+        """
+
 
 class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""

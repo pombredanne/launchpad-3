@@ -18,8 +18,8 @@ from bzrlib import urlutils
 import bzrlib.ui
 
 from canonical.config import config
-from canonical.codehosting import ProgressUIFactory
 from canonical.codehosting.branchfs import get_puller_server
+from canonical.codehosting.bzrutils import ProgressUIFactory
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces.branch import (
     BranchType, get_blacklisted_hostnames)

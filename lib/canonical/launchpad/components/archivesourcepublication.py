@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class ArchiveSourcePackageRelease:
@@ -30,7 +30,7 @@ class ArchiveSourcePackageRelease:
     It receives the related `PackageDiff` records, so they don't need
     to be recalculated.
     """
-    decorates(ISourcePackageRelease)
+    delegates(ISourcePackageRelease)
 
     def __init__(self, context, packagediffs, changesfile):
         self.context = context
@@ -49,12 +49,12 @@ class ArchiveSourcePackageRelease:
 
 
 class ArchiveSourcePublication:
-    """Decorates `ISourcePackagePublishingHistory`.
+    """Delegates to `ISourcePackagePublishingHistory`.
 
     It receives the expensive external references when it is created
     and provide them as through the decorated interface transparently.
     """
-    decorates(ISourcePackagePublishingHistory)
+    delegates(ISourcePackagePublishingHistory)
 
     def __init__(self, context, sourceandbinarylibraryfiles,
                  publishedbinaries, builds, packagediffs, changesfile):
@@ -191,4 +191,3 @@ class ArchiveSourcePublications:
             results.append(complete_pub)
 
         return iter(results)
-

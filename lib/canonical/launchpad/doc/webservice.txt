@@ -554,18 +554,18 @@ define an adapter to IFieldMarshaller.
 
 Here's the implementation of IAuthorEntry: a simple decorator on the
 original model object. It subclasses Entry, a simple base class that
-defines a constructor. (See lazr/doc/decorates.txt for more on
-decorates().)
+defines a constructor. (See lazr/delegates/README.txt for more on
+delegates().)
 
     >>> from zope.component import adapts
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.lazr import decorates
+    >>> from lazr.delegates import delegates
     >>> from canonical.lazr.rest import Entry
 
     >>> class AuthorEntry(Entry):
     ...     """An author, as exposed through the web service."""
     ...     adapts(IAuthor)
-    ...     decorates(IAuthorEntry)
+    ...     delegates(IAuthorEntry)
     ...     schema = IAuthorEntry
 
     >>> verifyObject(IAuthorEntry, AuthorEntry(A1))
@@ -586,7 +586,7 @@ But the invariant will complain if that doesn't isn't true.
 
     >>> class InvalidAuthorEntry(Entry):
     ...     adapts(IAuthor)
-    ...     decorates(IAuthorEntry)
+    ...     delegates(IAuthorEntry)
     ...     schema = ICookbookEntry
 
     >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
@@ -605,24 +605,24 @@ Other entries are defined similarly.
     >>> class CookbookEntry(Entry):
     ...     """A cookbook, as exposed through the web service."""
     ...     adapts(ICookbook)
-    ...     decorates(ICookbookEntry)
+    ...     delegates(ICookbookEntry)
     ...     schema = ICookbookEntry
 
     >>> class DishEntry(Entry):
     ...     """A dish, as exposed through the web service."""
     ...     adapts(IDish)
-    ...     decorates(IDishEntry)
+    ...     delegates(IDishEntry)
     ...     schema = IDishEntry
 
     >>> class CommentEntry(Entry):
     ...     """A comment, as exposed through the web service."""
     ...     adapts(IComment)
-    ...     decorates(ICommentEntry)
+    ...     delegates(ICommentEntry)
     ...     schema = ICommentEntry
 
     >>> class RecipeEntry(Entry):
     ...     adapts(IRecipe)
-    ...     decorates(IRecipeEntry)
+    ...     delegates(IRecipeEntry)
     ...     schema = IRecipeEntry
 
 We need to register these entries as an adapter from (eg.) IAuthor to

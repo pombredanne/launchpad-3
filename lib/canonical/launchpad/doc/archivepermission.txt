@@ -192,7 +192,7 @@ to be thrown.
     ...     ubuntu.main_archive, "fakepackage")
     Traceback (most recent call last):
     ...
-    SourceNotFound: 'fakepackage'
+    SourceNotFound: No such source package: 'fakepackage'.
 
 Similarly, packagesForUploader() returns the ArchivePermission records where
 the supplied user has permission to upload to packages.
