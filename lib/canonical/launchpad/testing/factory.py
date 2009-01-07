@@ -1082,6 +1082,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             potemplate = self.makePOTemplate(owner=owner)
         return potemplate.newPOFile(language_code, requester=potemplate.owner)
 
+    def makePOMsgID(self, text=None):
+        """Make a new POMsgID or return an existing one if it's there."""
+        if text is None:
+            text = self.getUniqueString()
+        try:
+            msgid = POMsgID.byMsgid(text)
+        except SQLObjectNotFound:
+            msgid = POMsgID(msgid=text)
+        return msgid
+
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
         """Make a new `POTMsgSet` in the given template."""

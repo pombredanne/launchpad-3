@@ -173,6 +173,33 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
         # Let's restore the POTMsgSet's participation in the template.
         self.potmsgset.setSequence(self.devel_potemplate, 1)
 
+    def test_createPOTMsgSetFromMsgIDs(self):
+        # We need a 'naked' potemplate to make use of getOrCreatePOMsgID
+        # private method.
+        naked_potemplate = removeSecurityProxy(self.devel_potemplate)
+
+        # Let's create a new POTMsgSet.
+        singular_text = self.factory.getUniqueString()
+        msgid_singular = naked_potemplate.getOrCreatePOMsgID(singular_text)
+        potmsgset = self.devel_potemplate.createPOTMsgSetFromMsgIDs(
+            msgid_singular=msgid_singular)
+        self.assertEquals(potmsgset.msgid_singular, msgid_singular)
+
+        # And let's add it to the devel_potemplate.
+        potmsgset.setSequence(self.devel_potemplate, 5)
+        devel_potmsgsets = list(self.devel_potemplate.getPOTMsgSets())
+        self.assertEquals(len(devel_potmsgsets), 2)
+
+        # Creating it with a different context also works.
+        msgid_context = self.factory.getUniqueString()
+        potmsgset_context = self.devel_potemplate.createPOTMsgSetFromMsgIDs(
+            msgid_singular=msgid_singular, context=msgid_context)
+        self.assertEquals(potmsgset_context.msgid_singular, msgid_singular)
+        self.assertEquals(potmsgset_context.context, msgid_context)
+
+        # Clean up by removing the added POTMsgSet from devel_potemplate.
+        potmsgset.setSequence(self.devel_potemplate, 0)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
