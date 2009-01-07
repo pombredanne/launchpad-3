@@ -354,11 +354,11 @@ class ArchiveViewBase:
         return SimpleVocabulary(status_terms)
 
     @cachedproperty
-    def simplified_series_vocabulary(self):
-        """Return a simplified distro series vocabulary.
+    def series_vocabulary(self):
+        """Return a vocabulary for selecting a distribution series.
 
-        Allows users to select between a valid series for the archive
-        distribution, or 'Any Series'.
+        This property defines the _vocabulary_ of a widget that allows the
+        selection of a series
         """
         series_terms = [SimpleTerm(None, token='any', title='Any Series')]
         for distroseries in self.context.series_with_sources:
@@ -436,15 +436,16 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
     def setupSeriesFilterWidget(self):
         """Build a customized archive series select widget.
 
-        See `ArchiveViewBase.simplified_series_vocabulary`.
+        Allows users to select between a valid distribution series for the
+        archive distribution, or 'Any Series'.
         """
         series_filter = self.request.get('field.series_filter', 'any')
         self.selected_series_filter = (
-            self.simplified_series_vocabulary.getTermByToken(series_filter))
+            self.series_vocabulary.getTermByToken(series_filter))
 
         field = Choice(
             __name__ = 'series_filter', title=_("Series Filter"),
-            vocabulary=self.simplified_series_vocabulary, required=True)
+            vocabulary=self.series_vocabulary, required=True)
         setUpWidget(self, 'series_filter', field, IInputWidget)
 
     @property

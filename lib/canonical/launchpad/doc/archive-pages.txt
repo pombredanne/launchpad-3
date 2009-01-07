@@ -71,10 +71,10 @@ vocabulary for selecting a status filter:
     Superseded
     Any Status
 
-An ArchiveView provides a helper method returning a simplified series
+An ArchiveView provides a helper method returning a distribution series
 vocabulary for selecting a series filter:
 
-    >>> for term in ppa_archive_view.simplified_series_vocabulary:
+    >>> for term in ppa_archive_view.series_vocabulary:
     ...     print term.title
     Any Series
     Breezy Badger Autotest
@@ -89,7 +89,7 @@ to get all the publishing records for an archive:
     iceweasel
     pmount
 
-The getPublishingRecords() method can also filters by distroseries when
+The getPublishingRecords() method can also filter by distroseries when
 appropriate:
 
     >>> filtered_view = create_initialized_view(
