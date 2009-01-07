@@ -144,6 +144,14 @@ class BranchMailer(BaseMailer):
 
     @classmethod
     def forBranchModified(klass, branch, recipients, from_address, delta):
+        """Construct a BranchMailer for mail about a branch modification.
+
+        :param branch: The branch that was modified.
+        :param recipients: A dict of {Person: RecipientReason} for all people
+            who should be notified.
+        :from_address: The email address this message should come from.
+        :delta: an IBranchDelta representing the modification.
+        """
         subject = klass._branchSubject(branch)
         return BranchMailer(subject, 'branch-modified.txt', recipients,
                             from_address, delta=delta)
