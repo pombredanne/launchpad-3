@@ -50,7 +50,7 @@ Salgado receives the email message from No Priv.
     <BLANKLINE>
     Just saying hello
     --
-    This message was sent from Launchpad by
+    This message was sent from Launchpad by the user
     No Privileges Person (http://launchpad.dev/~no-priv)
     using the "Contact this user" link on your profile page.
     For more information see
@@ -109,7 +109,7 @@ alternative addresses.
     <BLANKLINE>
     Hello again
     --
-    This message was sent from Launchpad by
+    This message was sent from Launchpad by the user
     Sample Person (http://launchpad.dev/~name12)
     using the "Contact this user" link on your profile page.
     For more information see
