@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.widgets import LaunchpadDropdownWidget
 
 
@@ -54,7 +54,7 @@ class BranchListingItem(BranchBadges):
     to get on the fly for each branch in the listing.  These items are
     prefetched by the view and decorate the branch.
     """
-    decorates(IBranch, 'context')
+    delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, is_dev_focus,

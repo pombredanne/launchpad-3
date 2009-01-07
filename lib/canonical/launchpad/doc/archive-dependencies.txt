@@ -212,7 +212,7 @@ returned 'sources_list' content.
     	main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
 Similarly, populated PPA dependencies are listed in the building
 'sources_list'.
@@ -233,8 +233,8 @@ Similarly, populated PPA dependencies are listed in the building
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
-    deb http://ppa.launchpad.dev/sabdfl/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
 
 The authentication information gets added for private PPA
 dependencies.
@@ -243,7 +243,7 @@ dependencies.
     >>> sabdfl.archive.private = True
 
     >>> print_building_sources_list(a_build)
-    deb http://buildd:not-so-secret@private-ppa.launchpad.dev/sabdfl/default/ubuntu
+    deb http://buildd:not-so-secret@private-ppa.launchpad.dev/sabdfl/ubuntu
     	hoary main
     deb http://ftpmaster.internal/ubuntu hoary
     	main restricted universe multiverse
@@ -251,7 +251,7 @@ dependencies.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
 Good enough, let's delete the archive dependency on Mark's PPA.
 
@@ -280,7 +280,7 @@ we can't find any suitable ancestry in the primary archive.
     universe
 
     >>> print_building_sources_list(a_build)
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/default/ubuntu
+    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
     	hoary main
     deb http://ftpmaster.internal/ubuntu hoary main universe
     deb http://ftpmaster.internal/ubuntu hoary-security main universe
@@ -293,7 +293,7 @@ the main component.
     main
 
     >>> print_building_sources_list(a_build)
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/default/ubuntu
+    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
     	hoary main
     deb http://ftpmaster.internal/ubuntu hoary main
     deb http://ftpmaster.internal/ubuntu hoary-security main
@@ -307,7 +307,7 @@ The same thing happens when the ancestry component is overridden.
     restricted
 
     >>> print_building_sources_list(a_build)
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/default/ubuntu
+    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
     	hoary main
     deb http://ftpmaster.internal/ubuntu hoary main restricted
     deb http://ftpmaster.internal/ubuntu hoary-security main restricted
@@ -338,7 +338,7 @@ dependencies.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
 The default build behaviour will remain unchanged when we override the
 default primary archive dependencies with exactly the same values.
@@ -354,7 +354,7 @@ default primary archive dependencies with exactly the same values.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -372,7 +372,7 @@ the primary archive.
         main restricted
     deb http://ftpmaster.internal/ubuntu hoary-security
         main restricted
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -386,7 +386,7 @@ original ubuntu release.
 
     >>> print_building_sources_list(a_build)
     deb http://ftpmaster.internal/ubuntu hoary main restricted
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -406,7 +406,7 @@ environment.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -425,6 +425,6 @@ Similarly an extension of the BACKPORTS environment can be set.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/default/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)

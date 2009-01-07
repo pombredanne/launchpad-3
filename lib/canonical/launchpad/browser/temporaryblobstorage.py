@@ -22,7 +22,17 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
     field_names = ['blob']
     for_input = True
 
-    @action('Continue', name='continue')
+    def initialize(self):
+        # Need this hack here to ensure Action.__get__ doesn't add the view's
+        # prefix to the action's __name__.  See note below to understand why
+        # we need the action's name to be FORM_SUBMIT.
+        self.actions = [action for action in self.actions]
+        self.actions[0].__name__ = 'FORM_SUBMIT'
+        super(TemporaryBlobStorageAddView, self).initialize()
+
+    # NOTE: This action is named FORM_SUBMIT because apport depends on it
+    # being named like that.
+    @action('Continue', name='FORM_SUBMIT')
     def continue_action(self, action, data):
         try:
             uuid = getUtility(ITemporaryStorageManager).new(data['blob'])
