@@ -21,10 +21,10 @@ from bzrlib.urlutils import escape, local_path_to_url
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
-    AsyncLaunchpadTransport, LaunchpadInternalServer, LaunchpadServer,
-    BranchTransportDispatch, TransportDispatch, UnknownTransportType)
+    AsyncLaunchpadTransport, branch_id_to_path, LaunchpadInternalServer,
+    LaunchpadServer, BranchTransportDispatch, TransportDispatch,
+    UnknownTransportType)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport

@@ -21,7 +21,7 @@ import tempfile
 from email import message_from_file
 
 from canonical.config import config
-from canonical.lazr.config import as_host_port
+from lazr.config import as_host_port
 from canonical.testing import smtp2mbox
 
 

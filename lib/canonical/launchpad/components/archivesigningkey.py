@@ -63,7 +63,7 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
 
-        key_displayname = "%s signing key" % self.archive.title
+        key_displayname = "Launchpad %s" % self.archive.title
         secret_key = getUtility(IGPGHandler).generateKey(key_displayname)
         self._setupSigningKey(secret_key)
 
