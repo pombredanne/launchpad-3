@@ -62,6 +62,46 @@ IPackageCopyRequest's associated with an archive:
     >>> ppa_archive_view.package_copy_requests.count()
     0
 
+An ArchiveView provides a helper method returning a simplified status
+vocabulary for selecting a status filter:
+
+    >>> for term in ppa_archive_view.simplified_status_vocabulary:
+    ...     print term.title
+    Published
+    Superseded
+    Any Status
+
+An ArchiveView provides a helper method returning a simplified series
+vocabulary for selecting a series filter:
+
+    >>> for term in ppa_archive_view.simplified_series_vocabulary:
+    ...     print term.title
+    Any Series
+    Breezy Badger Autotest
+    Warty
+
+An ArchiveView provides a getPublishingRecords() method that can be used
+to get all the publishing records for an archive:
+
+    >>> for publishing in ppa_archive_view.getPublishingRecords():
+    ...     print publishing.source_package_name
+    cdrkit
+    iceweasel
+    pmount
+
+The getPublishingRecords() method can also filters by distroseries when
+appropriate:
+
+    >>> filtered_view = create_initialized_view(
+    ...     cprov.archive,
+    ...     name="+index",
+    ...     method='GET',
+    ...     form={'field.series_filter': 'warty'})
+    >>> for publishing in filtered_view.getPublishingRecords():
+    ...     print publishing.source_package_name
+    iceweasel
+    pmount
+
 
 == ArchiveSourceSelectionFormView ==
 
