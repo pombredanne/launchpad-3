@@ -225,6 +225,14 @@ class BranchMailer(BaseMailer):
 
     @staticmethod
     def forBranchModified(branch, recipients, from_address, delta):
+        """Construct a BranchMailer for mail about a branch modification.
+
+        :param branch: The branch that was modified.
+        :param recipients: A dict of {Person: RecipientReason} for all people
+            who should be notified.
+        :from_address: The email address this message should come from.
+        :delta: an IBranchDelta representing the modification.
+        """
         branch_title = branch.title
         if branch_title is None:
             branch_title = ''
