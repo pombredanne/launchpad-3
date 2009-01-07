@@ -19,13 +19,13 @@ __all__ = [
     ]
 
 import logging
-from logging.handlers import TimedRotatingFileHandler
 
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 from zope.interface import Attribute, implements, Interface
 
 from canonical.config import config
+from canonical.launchpad.scripts import WatchedFileHandler
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
@@ -58,8 +58,7 @@ def set_up_logging(configure_oops_reporting=False):
     log = get_codehosting_logger()
     log.setLevel(logging.INFO)
     access_log = get_access_logger()
-    handler = TimedRotatingFileHandler(
-        config.codehosting.access_log, when='midnight')
+    handler = WatchedFileHandler(config.codehosting.access_log)
     handler.setFormatter(
         logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
     access_log.addHandler(handler)
