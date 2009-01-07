@@ -16,8 +16,10 @@
               type="text" name="field.name_filter"
               tal:attributes="value request/field.name_filter|nothing"/>
       <tal:status_filter
-          replace="structure view/plain_status_filter_widget" />
-      <input type="submit" value="Search" />
+          replace="structure view/plain_status_filter_widget" /> in
+      <tal:series_filter
+          replace="structure view/plain_series_filter_widget" />
+      <input type="submit" value="Filter" />
     </form>
 
     <tal:navigation_top

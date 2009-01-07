@@ -353,6 +353,20 @@ class ArchiveViewBase:
             ]
         return SimpleVocabulary(status_terms)
 
+    @cachedproperty
+    def series_vocabulary(self):
+        """Return a vocabulary for selecting a distribution series.
+
+        This property defines the _vocabulary_ of a widget that allows the
+        selection of a series
+        """
+        series_terms = [SimpleTerm(None, token='any', title='Any Series')]
+        for distroseries in self.context.series_with_sources:
+            series_terms.append(
+                SimpleTerm(distroseries, token=distroseries.name,
+                           title=distroseries.displayname))
+        return SimpleVocabulary(series_terms)
+
     @property
     def archive_url(self):
         """Return an archive_url where available, or None."""
@@ -396,6 +410,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         """
         self.setupSourcesListEntries()
         self.setupStatusFilterWidget()
+        self.setupSeriesFilterWidget()
         self.setupPackageBatchResult()
 
     def setupStatusFilterWidget(self):
@@ -418,6 +433,27 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         return self.status_filter_widget.renderValue(
             self.selected_status_filter.value)
 
+    def setupSeriesFilterWidget(self):
+        """Build a customized archive series select widget.
+
+        Allows users to select between a valid distribution series for the
+        archive distribution, or 'Any Series'.
+        """
+        series_filter = self.request.get('field.series_filter', 'any')
+        self.selected_series_filter = (
+            self.series_vocabulary.getTermByToken(series_filter))
+
+        field = Choice(
+            __name__='series_filter', title=_("Series Filter"),
+            vocabulary=self.series_vocabulary, required=True)
+        setUpWidget(self, 'series_filter', field, IInputWidget)
+
+    @property
+    def plain_series_filter_widget(self):
+        """Render a <select> control with no <div>s around it."""
+        return self.series_filter_widget.renderValue(
+            self.selected_series_filter.value)
+
     def setupSourcesListEntries(self):
         """Setup of the sources list entries widget."""
         entries = SourcesListEntries(
@@ -439,7 +475,8 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         name_filter = self.request.get('field.name_filter')
         return self.context.getPublishedSources(
             name=name_filter,
-            status=self.selected_status_filter.value.collection)
+            status=self.selected_status_filter.value.collection,
+            distroseries=self.selected_series_filter.value)
 
     def setupPackageBatchResult(self):
         """Setup of the package search results."""
