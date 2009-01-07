@@ -82,6 +82,8 @@ class WatchedFileHandler(logging.FileHandler):
             stat = None
             changed = 1
         else:
+            # BACKPORT: Doing a stat on every log seems unwise. A signal
+            # handling log handler might be better.
             stat = os.stat(self.baseFilename)
             changed = (stat[ST_DEV] != self.dev) or (stat[ST_INO] != self.ino)
         if changed and self.stream is not None:
