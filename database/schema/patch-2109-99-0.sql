@@ -23,6 +23,8 @@ CREATE INDEX translationtemplateitem__potemplate__potmsgset__sequence__idx ON tr
 
 ALTER TABLE potmsgset ALTER COLUMN potemplate DROP NOT NULL;
 
+ALTER TABLE potmsgset ALTER COLUMN sequence DROP NOT NULL;
+
 -- TranslationMessage table changes.
 -- Removes pointers to PO file and replaces them with (language, variant) pair.
 -- Also provides for shared (potemplate IS NULL) and
