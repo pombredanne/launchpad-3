@@ -123,6 +123,7 @@ class RecipientReason:
             assert self.recipient.hasParticipationEntryFor(self.subscriber), (
                 '%s does not participate in team %s.' %
                 (self.recipient.displayname, self.subscriber.displayname))
+        if self.recipient != self.subscriber or self.subscriber.is_team:
             template_values['entity_is'] = (
                 'Your team %s is' % self.subscriber.displayname)
             template_values['lc_entity_is'] = (
