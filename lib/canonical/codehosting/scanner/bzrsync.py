@@ -30,16 +30,15 @@ from canonical.launchpad.interfaces import (
     IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchDiffJobSource,
+    IBranchSet,)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.interfaces.diff import IStaticDiffJobSource
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
-
 from canonical.launchpad.webapp.uri import URI
 
 

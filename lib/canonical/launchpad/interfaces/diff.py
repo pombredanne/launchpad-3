@@ -9,15 +9,12 @@ __all__ = [
     'IDiff',
     'IStaticDiff',
     'IStaticDiffSource',
-    'IStaticDiffJob',
-    'IStaticDiffJobSource',
     ]
 
 from zope.schema import Object, Int, Text, TextLine
 from zope.interface import Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 
@@ -68,30 +65,4 @@ class IStaticDiffSource(Interface):
         """
 
 
-class IStaticDiffJob(Interface):
-    """A job to create a static diff."""
 
-    job = Object(schema=IJob, required=True)
-
-    branch = Object(
-        title=_('Branch to use for this diff'), required=True,
-        schema=ILibraryFileAlias)
-
-    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
-
-    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
-
-    def destroySelf():
-        """Destroy this object."""
-
-    def run():
-        """Acquire the static diff this job requires.
-
-        :return: the generated StaticDiff.
-        """
-
-
-class IStaticDiffJobSource(Interface):
-
-    def create(branch, from_revision_spec, to_revision_spec):
-        """Substitute for being able to use a constructor."""

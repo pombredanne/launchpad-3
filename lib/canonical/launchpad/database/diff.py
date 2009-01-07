@@ -3,55 +3,22 @@
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'StaticDiff', 'StaticDiffJob', 'StaticDiffJobSource']
+__all__ = ['Diff', 'StaticDiff']
 
 from cStringIO import StringIO
 
-from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.revisionspec import RevisionSpec
-import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.diff import (
-    IDiff, IStaticDiff, IStaticDiffSource, IStaticDiffJob,
-    IStaticDiffJobSource)
-from canonical.launchpad.database.job import Job
+    IDiff, IStaticDiff, IStaticDiffSource)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
-
-class BranchJobType(DBEnumeratedType):
-    """Values that ICodeImportJob.state can take."""
-
-    STATIC_DIFF = DBItem(0, """
-        Static Diff
-
-        This job runs against a branch to produce a diff that cannot change.
-        """)
-
-    RUNNING = DBItem(1, """
-        Running
-
-        The job is currently running.
-        """)
-
-    COMPLETED = DBItem(2, """
-        Completed
-
-        The job has run to successful completion.
-        """)
-
-    FAILED = DBItem(3, """
-        Failed
-
-        The job was run, but failed.  Will not be run again.
-        """)
 
 class Diff(SQLBase):
     """See `IDiff`."""
@@ -151,74 +118,3 @@ class StaticDiff(SQLBase):
         diff = self.diff
         SQLBase.destroySelf(self)
         diff.destroySelf()
-
-
-class BranchJob(SQLBase):
-
-    _table = 'BranchJob'
-
-    job = ForeignKey(foreignKey='Job', notNull=True)
-
-    branch = ForeignKey(foreignKey='Branch', notNull=True)
-
-    job_type = EnumCol(enum=BranchJobType, notNull=True)
-
-    _json_data = StringCol(dbName='json_data')
-
-    @property
-    def metadata(self):
-        return simplejson.loads(self._json_data)
-
-    def __init__(self, branch, job_type, metadata):
-        json_data = simplejson.dumps(metadata)
-        SQLBase.__init__(
-            self, job=Job(), branch=branch, job_type=job_type,
-            _json_data=json_data)
-
-    def destroySelf(self):
-        SQLBase.destroySelf(self)
-        self.job.destroySelf()
-
-
-class StaticDiffJob(BranchJob):
-
-    implements(IStaticDiffJob)
-    classProvides(IStaticDiffJobSource)
-
-    def __init__(self, branch, from_revision_spec, to_revision_spec):
-        metadata = {
-            'from_revision_spec': from_revision_spec,
-            'to_revision_spec': to_revision_spec,
-        }
-        BranchJob.__init__(self, branch, BranchJobType.STATIC_DIFF, metadata)
-
-    @staticmethod
-    def create(branch, from_revision_spec, to_revision_spec):
-        return StaticDiffJob(
-            branch=branch, from_revision_spec=from_revision_spec,
-            to_revision_spec=to_revision_spec)
-
-    @property
-    def from_revision_spec(self):
-        return self.metadata['from_revision_spec']
-
-    @property
-    def to_revision_spec(self):
-        return self.metadata['to_revision_spec']
-
-    def _get_revision_id(self, bzr_branch, spec_string):
-        spec = RevisionSpec.from_string(spec_string)
-        return spec.as_revision_id(bzr_branch)
-
-    def run(self):
-        """See IStaticDiffJob."""
-        self.job.start()
-        bzr_branch = Branch.open(self.branch.warehouse_url)
-        from_revision_id = self._get_revision_id(
-            bzr_branch, self.from_revision_spec)
-        to_revision_id = self._get_revision_id(
-            bzr_branch, self.to_revision_spec)
-        static_diff = StaticDiff.acquire(
-            from_revision_id, to_revision_id, bzr_branch.repository)
-        self.job.complete()
-        return static_diff
