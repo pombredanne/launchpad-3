@@ -744,7 +744,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         sync = self.makeBzrSync(self.db_branch)
 
         revision = self.bzr_branch.repository.get_revision(first_revision)
-        diff = get_diff(self.db_branch, self.bzr_branch, revision)
+        diff = get_diff(self.db_branch, revision)
         expected = (
             "=== added file 'hello.txt'" '\n'
             "--- hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
@@ -787,7 +787,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             "  hello.txt" '\n' % self.bzr_branch.nick)
         revision = self.bzr_branch.repository.get_revision(second_revision)
         self.bzr_branch.lock_read()
-        diff = get_diff(self.db_branch, self.bzr_branch, revision)
+        diff = get_diff(self.db_branch, revision)
         self.bzr_branch.unlock()
         self.assertEqualDiff(diff, expected_diff)
         message = get_revision_message(self.bzr_branch, revision)
@@ -834,7 +834,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.commitRevision(rev_id=rev_id, timestamp=1000000000.0, timezone=0)
         sync = self.makeBzrSync(self.db_branch)
         revision = self.bzr_branch.repository.get_revision(rev_id)
-        diff = get_diff(self.db_branch, self.bzr_branch, revision)
+        diff = get_diff(self.db_branch, revision)
         # The diff must be a unicode object, characters that could not be
         # decoded as utf-8 replaced by the unicode substitution character.
         expected = (
