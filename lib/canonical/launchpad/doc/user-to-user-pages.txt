@@ -53,7 +53,7 @@ No Priv decides, what the heck, let's contact Salgado after all.
     # Capture the date of the last contact for later.
     >>> from canonical.config import config
     >>> from canonical.launchpad.database.message import UserToUserEmail
-    >>> from canonical.lazr.config import as_timedelta
+    >>> from lazr.config import as_timedelta
     >>> from storm.locals import Store
     >>> first_contact = Store.of(no_priv).find(
     ...     UserToUserEmail,
@@ -287,14 +287,14 @@ are sent, one to each team member.
 
 Everyone gets a message with the same subject and body from the same sender.
 Everyone does get a unique copy of the message though.
-    
+
     >>> transaction.commit()
     >>> print_messages()
     Senders: set(['Bart <bart@example.com>'])
     Subjects: set(['Hello Guadamen'])
     Bodies:
     Can one of you help me?
-    --
+    -- 
     This message was sent by Launchpad via the Contact user/team
     link on your profile page.  For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople

@@ -37,6 +37,7 @@ __all__ = [
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
+    'NoSuchBranch',
     'RepositoryFormat',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
@@ -398,6 +399,14 @@ class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
     Raised when a user is attempting to create a team-owned +junk branch.
     """
 
+    error_message = (
+        "+junk branches are only available for individuals. Please consider "
+        "registering a project for collaborating on branches: "
+        "https://help.launchpad.net/Projects/Registering")
+
+    def __init__(self):
+        BranchCreationException.__init__(self, self.error_message)
+
 
 class BranchCreatorNotOwner(BranchCreationException):
     """A user cannot create a branch belonging to another user.
@@ -414,6 +423,14 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
+
+
+class NoSuchBranch(Exception):
+    """Raised when we try to load a branch that does not exist."""
+
+    def __init__(self, unique_name):
+        self.unique_name = unique_name
+        Exception.__init__(self, "No such branch: %s" % (unique_name,))
 
 
 class BadBranchSearchContext(Exception):
@@ -662,6 +679,10 @@ class IBranch(IHasOwner):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
+    # XXX: JonathanLange 2008-12-08 spec=package-branches: decorates blows up
+    # if we call this 'context'!
+    container = Attribute("The context that this branch belongs to.")
+
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
     # IBranch and we'd get import errors.  IPerson does a similar trick.
@@ -674,11 +695,6 @@ class IBranch(IHasOwner):
             schema=Interface,
             description=_("The project this branch belongs to.")),
         exported_as='project')
-
-    # XXX: JonathanLange 2008-12-01 spec=package-branches: This needs to be
-    # removed and replaced with the name of the container. It's only used for
-    # URL traversal, so maybe we can work out a smarter way of doing that.
-    product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
     unique_name = exported(
@@ -1045,10 +1061,10 @@ class IBranchSet(Interface):
         special case of the ~vcs-imports celebrity.
         """
 
-    def getByUniqueName(unique_name, default=None):
+    def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
-        Return the default value if no match was found.
+        Return None if no match was found.
         """
 
     def getRewriteMap():

@@ -12,7 +12,8 @@
 <body>
 
     <div metal:fill-slot="main"
-         tal:define="ppa_active view/is_active">
+         tal:define="archive_active view/is_active;
+                     archive_label view/archive_label">
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
@@ -33,54 +34,69 @@
           replace="structure link/render" />
       </div>
 
-      <h2 style="margin-top: 0">
+      <h2 style="margin-top: 0" tal:condition="not: context/is_copy">
         URL:
-        <a tal:condition="ppa_active"
-           tal:attributes="href context/archive_url"
-           tal:content="context/archive_url">url</a>
+        <a tal:condition="archive_active"
+           tal:attributes="href view/archive_url"
+           tal:content="view/archive_url">url</a>
         <tal:no-link
-           condition="not: ppa_active"
+           condition="not: archive_active"
            content="context/archive_url">url</tal:no-link>
       </h2>
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
               tal:condition="context/whiteboard">
-           <p>PPA whiteboard:</p>
+           <p><tal:archive_label replace="archive_label" /> whiteboard:</p>
            <tal:archive-whiteboard
               replace="structure context/whiteboard/fmt:text-to-html" />
          </div>
       </tal:whiteboard>
 
+      <div tal:define="archive context"
+           tal:condition="archive_active"
+           id="build-status-summary">
+        <h2>
+          <tal:archive_label replace="archive_label" /> build status
+        </h2>
+
+        <metal:build-status-summary
+            use-macro="archive/@@+macros/build-status-summary" />
+      </div>
+
       <div id="description">
          <tal:archive-description condition="context/description"
             replace="structure context/description/fmt:text-to-html" />
+
+        <tal:package-copy-request-list tal:condition="context/is_copy">
+          <metal:package-copy-request-list
+              use-macro="context/@@+macros/package-copy-request-list" />
+        </tal:package-copy-request-list>
       </div>
 
-      <div tal:condition="ppa_active">
+      <div tal:condition="archive_active">
 
         <h2>apt sources.list entries</h2>
-
         <tal:entries replace="structure view/sources_list_entries" />
 
-        <p id="signing-key"
-	   tal:define="signing_key context/signing_key"
+      </div>
+
+      <div id="signing-key"
+           tal:define="signing_key context/signing_key"
 	   tal:condition="signing_key">
-          This repository is signed with
+        <p>This repository is signed with
           <a tal:attributes="href signing_key/keyserverURL">
             <code tal:content="signing_key/fingerprint">
               0123456789012345678901234567890123456789
-            </code>
-          </a> OpenPGP key.
-          Follow <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories">these instructions</a> if you want to
-	  install packages from this PPA.
-        </p>
+            </code></a> OpenPGP key.
+          <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories"
+          >Follow these instructions</a>
+          for installing packages from this PPA.</p>
+      </div> <!-- signing-key -->
 
-      </div>
+      <div id="archive-dependencies" tal:condition="context/dependencies">
 
-      <div id="ppa-dependencies" tal:condition="context/dependencies">
-
-        <h3>PPA dependencies</h3>
+        <h3><tal:archive_label replace="archive_label" /> dependencies</h3>
 
         <ul>
            <li tal:repeat="dependency context/dependencies">
@@ -91,15 +107,14 @@
            </li>
         </ul>
 
-      </div> <!-- ppa-dependencies -->
+      </div> <!-- archive-dependencies -->
 
-      <h2>Packages</h2>
-
-      <p tal:condition="not: ppa_active">
-        This PPA does not contain any packages yet.
+      <p tal:condition="not: archive_active">
+        This <tal:archive_label replace="archive_label" /> does not contain
+        any packages yet.
       </p>
 
-      <tal:active_ppa condition="ppa_active">
+      <tal:active_archive condition="archive_active">
 
       <!--Disabled section due to performance issues. -->
       <tal:contents tal:define="archive context"
@@ -111,7 +126,7 @@
         Package counters and estimated archive size temporarily unavailable.
       </p>
 
-      <div class="actions" style="float:right;">
+      <div class="actions" style="clear:right;float:right;">
         <tal:builds
           define="link context/menu:context/builds"
           condition="link/enabled"
@@ -126,54 +141,10 @@
           replace="structure link/render" />
       </div>
 
-      <div>
-        <form name="package_search" action="" method="GET">
-           <label for="name">Package name contains:</label>
-           <input id="field.name_filter" title="Package Name" size="20"
-                  type="text" name="field.name_filter"
-                  tal:attributes="value request/field.name_filter|nothing"/>
-           <tal:status_filter
-             replace="structure view/plain_status_filter_widget" />
-           <input type="submit" value="Search" />
-        </form>
-      </div>
+      <metal:package-list
+          use-macro="context/@@+macros/source-package-list" />
 
-      <div style="padding-top: 1em;" tal:define="batch view/search_results">
-
-      <tal:navigation_top
-           replace="structure view/batchnav/@@+navigation-links-upper" />
-
-      <table class="listing" id="packages_list" tal:condition="batch">
-        <thead>
-          <tr class="ppa_package_row">
-            <th colspan="2">Source</th>
-            <th tal:condition="context/owner/isTeam">Uploader</th>
-            <th>Published</th>
-            <th>Status</th>
-            <th>Series</th>
-            <th>Section</th>
-            <th>Build Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tal:block repeat="publishing batch"
-                     replace="structure publishing/@@+listing-ppa-detailed">
-          </tal:block>
-        </tbody>
-      </table>
-
-      <tal:navigation_bottom
-           replace="structure view/batchnav/@@+navigation-links-lower" />
-
-        <div id="empty-result"
-             tal:define="name_filter request/field.name_filter|nothing"
-             tal:condition="not: batch">
-           No matching package for '<tal:name_filter replace="name_filter" />'.
-        </div>
-
-      </div>
-
-      </tal:active_ppa>
+      </tal:active_archive>
 
     </div> <!--main -->
 
