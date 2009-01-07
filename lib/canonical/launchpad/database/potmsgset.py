@@ -762,8 +762,6 @@ class POTMsgSet(SQLBase):
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
-        assert self.potemplate == potemplate, (
-            'Given potemplate is not correct"')
         self.sequence = sequence
         translation_template_item = TranslationTemplateItem.selectOneBy(
             potmsgset=self, potemplate=potemplate)
