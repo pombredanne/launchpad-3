@@ -57,6 +57,7 @@ def set_up_logging(configure_oops_reporting=False):
     # testrunner output.
     log = get_codehosting_logger()
     log.setLevel(logging.INFO)
+    log.addHandler(_NullHandler())
     access_log = get_access_logger()
     handler = WatchedFileHandler(config.codehosting.access_log)
     handler.setFormatter(
@@ -68,6 +69,18 @@ def set_up_logging(configure_oops_reporting=False):
     # logging events.
     zope.component.provideHandler(_log_event)
     return log
+
+
+class _NullHandler(logging.Handler):
+    """Logging handler that does nothing with messages.
+
+    At the moment, we don't want to do anything with the Twisted log messages
+    that go to the 'codehosting' logger, and we also don't want warnings about
+    there being no handlers. Hence, we use this do-nothing handler.
+    """
+
+    def emit(self, record):
+        pass
 
 
 class ILoggingEvent(Interface):

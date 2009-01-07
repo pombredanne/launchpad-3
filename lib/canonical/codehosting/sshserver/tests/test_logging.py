@@ -86,7 +86,14 @@ class TestLoggingSetup(TestCase):
         # set_up_logging returns the codehosting logger.
         self.assertIs(get_codehosting_logger(), set_up_logging())
 
-    def test_handlers(self):
+    def test_codehosting_handlers(self):
+        # There needs to be at least one handler for the codehosting root
+        # logger.
+        set_up_logging()
+        handlers = get_codehosting_logger().handlers
+        self.assertNotEqual([], handlers)
+
+    def test_access_handlers(self):
         # set_up_logging installs a rotatable log handler that logs output to
         # config.codehosting.access_log.
         set_up_logging()
