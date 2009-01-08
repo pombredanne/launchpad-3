@@ -37,7 +37,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
-from storm.expr import And
+from storm.expr import And, Join
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -1587,6 +1587,40 @@ class Person(
             TeamParticipation.person != %s
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
+
+    def _getMembersWithPreferredEmails(self, include_teams=False):
+        """Helper method for public getMembersWithPreferredEmails.
+
+        We can't return the preferred email address directly to the
+        browser code, since it would circumvent the security restrictions
+        on accessing person.preferredemail.
+        """
+        store = Store.of(self)
+        origin = [
+            Person,
+            Join(TeamParticipation, TeamParticipation.person == Person.id),
+            Join(EmailAddress, EmailAddress.person == Person.id),
+            ]
+        conditions = And(
+            TeamParticipation.team == self.id,
+            EmailAddress.status == EmailAddressStatus.PREFERRED)
+        return store.using(*origin).find((Person, EmailAddress), conditions)
+
+    def getMembersWithPreferredEmails(self, include_teams=False):
+        """See `IPerson`."""
+        result = self._getMembersWithPreferredEmails(
+            include_teams=include_teams)
+        person_list = []
+        for person, email in result:
+            person._preferredemail_cached = email
+            person_list.append(person)
+        return person_list
+
+    def getMembersWithPreferredEmailsCount(self, include_teams=False):
+        """See `IPerson`."""
+        result = self._getMembersWithPreferredEmails(
+            include_teams=include_teams)
+        return result.count()
 
     @property
     def all_member_count(self):

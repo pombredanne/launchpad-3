@@ -15,6 +15,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.components.archivedependencies import (
+    component_dependencies)
 from canonical.launchpad.interfaces.archivedependency import (
     IArchiveDependency)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -55,6 +57,7 @@ class ArchiveDependency(SQLBase):
         if self.component is None:
             return pocket_title
 
-        full_title = "%s - %s" % (
-            pocket_title, self.component.name)
-        return full_title
+        component_part = ", ".join(
+            component_dependencies[self.component.name])
+
+        return "%s (%s)" % (pocket_title, component_part)
