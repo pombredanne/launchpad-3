@@ -736,8 +736,8 @@ project group.
 
     >>> pprint_collection(webservice.named_get(
     ...     '/mozilla', 'searchTasks',
-    ...     milestone='http://api.launchpad.dev/beta/'
-    ...               'mozilla/+milestone/1.0').jsonBody())
+    ...     milestone=webservice.getAbsoluteUrl(
+    ...         '/mozilla/+milestone/1.0')).jsonBody())
     start: None
     total_size: 0
     ---

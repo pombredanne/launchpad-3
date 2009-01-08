@@ -1471,10 +1471,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # but sometimes we want to pass them to fields
             # that rely on this vocabulary for validation
             # so we special-case them here just for that purpose.
-            for milestone in obj.target.milestones:
-                if milestone.name == obj.name:
-                    return milestone
-            return None
+            return obj.target.getMilestone(obj.name)
         else:
             return SQLObjectVocabularyBase.__contains__(self, obj)
 
