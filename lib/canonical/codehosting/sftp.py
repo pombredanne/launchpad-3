@@ -263,9 +263,11 @@ class FileTransferServer(filetransfer.FileTransferServer):
         self.avatar = avatar
 
     def connectionLost(self, reason):
+        # This method gets called twice: once from `SSHChannel.closeReceived`
+        # when the client closes the channel and once from `SSHSession.closed`
+        # when the server closes the session. We change the avatar attribute
+        # to avoid logging the `SFTPClosed` event twice.
         filetransfer.FileTransferServer.connectionLost(self, reason)
-        # XXX: JonathanLange 2008-12-23: This method gets called twice! Still
-        # figuring out why.
         if self.avatar is not None:
             avatar = self.avatar
             self.avatar = None
