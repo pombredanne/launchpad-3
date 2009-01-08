@@ -645,7 +645,6 @@ allowed if they are the same.
     pmount-bin 0.1-1 in warty hppa
     pmount-bin 0.1-1 in warty i386
 
-
 James sees the just-copied 'pmount' source in warty pending
 publication.
 

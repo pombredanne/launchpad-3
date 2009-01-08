@@ -192,7 +192,6 @@ test this feature.
 
     >>> test_publisher.prepareBreezyAutotest()
 
-
 We will create a publication for a source (foo) and two
 architecture-specific binaries in ubuntu/breezy-autotest.
 
@@ -259,7 +258,8 @@ Let's perform the copy of the source and all its binaries.
     ...     copied_binaries.extend(
     ...         bin.copyTo(distroseries, pocket, archive))
 
-The 'copied' records are instance of {Source,Binary}PackagePublishingHistory:
+The 'copied' records are instances of
+{Source,Binary}PackagePublishingHistory:
 
     >>> ISourcePackagePublishingHistory.providedBy(copied_source)
     True
@@ -422,8 +422,9 @@ because it's used below.
 
 == Copying and inspecting architecture independent binaries ==
 
-copyTo() behaves differently for architecture independent binaries. We
-will create an suitable publication called 'pirulito' perform a copy
+copyTo() behaves differently for architecture independent and
+architecture specific binaries. We will create a
+architecture-independent publication called 'pirulito' perform a copy
 using it.
 
     >>> source_all = test_publisher.getPubSource(
@@ -444,10 +445,13 @@ using it.
     pirulito 666 in breezy-autotest i386
     pirulito 666 in breezy-autotest hppa
 
-Source are treated in the same way, one publication for each copy
+Sources are treated in the same way, one publication for each copy
 request.
 
     >>> copied_source_all = source_all.copyTo(distroseries, pocket, archive)
+
+    >>> print copied_source_all.displayname
+    pirulito 666 in breezy-autotest
 
 Architecture independent binaries, however, when copied results in
 multiple publications, one for it supported architecture in the
@@ -462,10 +466,18 @@ atomic.
     >>> bin_i386.binarypackagerelease.architecturespecific
     False
 
-    >>> copied_binaries_all = bin_i386.copyTo(
-    ...     distroseries, pocket, archive)
+    >>> binary_copies = bin_i386.copyTo(distroseries, pocket, archive)
 
 The same binary is published in both supported architecture.
+
+    >>> for bin in binary_copies:
+    ...     print bin.displayname
+    pirulito 666 in breezy-autotest hppa
+    pirulito 666 in breezy-autotest i386
+
+getPublishedBinaries() on the copied sources return both binary
+publications, even if they refer to the same architecture independent
+binary.
 
     >>> copied_binaries_all = copied_source_all.getPublishedBinaries()
 
@@ -479,7 +491,7 @@ The same binary is published in both supported architecture.
     >>> copy_i386.binarypackagerelease == copy_hppa.binarypackagerelease
     True
 
-In this case, getBuiltBinaries() would return only one publication
+getBuiltBinaries(), on the other hand, return only one publication
 (the one for the 'nominatedarchindep' architecture in the destination
 distroseries).
 

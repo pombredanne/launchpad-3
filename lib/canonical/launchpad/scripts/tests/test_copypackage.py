@@ -462,7 +462,7 @@ class TestCopyPackage(TestCase):
             arch.architecturetag for arch in warty.architectures
             if arch.getChroot()]
         self.assertEqual(
-            sorted(active_warty_architectures), ['i386'])
+            active_warty_architectures, ['i386'])
 
         # Setup ubuntu/hoary supporting i386 and hppa architetures.
         hoary = ubuntu.getSeries('hoary')
