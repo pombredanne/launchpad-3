@@ -11,6 +11,7 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoSuchDistribution',
     ]
 
 from zope.schema import Choice, Datetime, Text, TextLine
@@ -42,6 +43,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -496,6 +498,12 @@ class IDistributionSet(Interface):
     def new(name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
         """Creaste a new distribution."""
+
+
+class NoSuchDistribution(NameLookupFailed):
+    """Raised when we try to find a distribution that doesn't exist."""
+
+    _message_prefix = "No such distribution"
 
 
 # Monkey patching to fix circular imports.

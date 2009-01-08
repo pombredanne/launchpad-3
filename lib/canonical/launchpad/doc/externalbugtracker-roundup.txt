@@ -24,7 +24,10 @@ implements IExternalBugTracker.
 
 == Status Conversion ==
 
-The basic Roundup bug statuses (i.e. those available by default in new Roundup instances) map to Launchpad bug statuses. Roundup.convertRemoteStatus() handles the conversion.
+The basic Roundup bug statuses (i.e. those available by default in new
+Roundup instances) map to Launchpad bug statuses.
+
+Roundup.convertRemoteStatus() handles the conversion.
 
     >>> roundup = Roundup('http://example.com/')
     >>> roundup.convertRemoteStatus('1').title
@@ -44,13 +47,25 @@ The basic Roundup bug statuses (i.e. those available by default in new Roundup i
     >>> roundup.convertRemoteStatus('8').title
     'Fix Released'
 
+Some Roundup trackers are set up to use multiple fields (columns in
+Roundup terminology) to represent bug statuses. We store multiple
+values by joining them with colons. The Roundup class knows how many
+fields are expected for a particular remote host (for those that we
+support), and will generate an error when we have more or less field
+values compared to the expected number of fields.
+
+    >>> roundup.convertRemoteStatus('1:2')
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError: 1 field(s) expected, got 2: 1:2
+
 If the status isn't something that our Roundup ExternalBugTracker can
 understand an UnknownRemoteStatusError will be raised.
 
     >>> roundup.convertRemoteStatus('eggs').title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError: eggs
+    UnknownRemoteStatusError: Unrecognized value for field 1 (status): eggs
 
 
 == Initialization ==

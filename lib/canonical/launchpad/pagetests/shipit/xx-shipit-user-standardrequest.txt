@@ -18,9 +18,9 @@ fields are filled.
   >>> browser.url
   'http://shipit.ubuntu.dev/myrequest'
 
-  >>> for message in get_feedback_messages(browser.contents):
-  ...     print message
-  Please fix the problems below and try again...
+  >>> print_errors(browser.contents)
+  (Required)
+  Required input is missing...
 
 For some countries like the US, our shipping company requires a postcode, so
 we can't accept a request from the US without a postcode.
@@ -39,7 +39,6 @@ we can't accept a request from the US without a postcode.
 
   >>> for message in get_feedback_messages(browser.contents):
   ...     print message
-  Please fix the problems below and try again.
   Shipping to your country requires a postcode, but you didn't provide one...
 
 Now we fill in the last remaining required field and the request is
