@@ -3,7 +3,7 @@
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'StaticDiff']
+__all__ = ['Diff', 'StaticDiff',]
 
 from cStringIO import StringIO
 
@@ -12,7 +12,6 @@ from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces.diff import (

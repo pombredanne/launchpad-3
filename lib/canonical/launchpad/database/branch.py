@@ -329,6 +329,7 @@ class Branch(SQLBase):
         return 'lp-mirrored:///%s' % self.unique_name
 
     def getBzrBranch(self):
+        """Return the BzrBranch for this database Branch."""
         return BzrBranch.open(self.warehouse_url)
 
     def _getContainerName(self):
@@ -1575,26 +1576,9 @@ class BranchJobType(DBEnumeratedType):
         This job runs against a branch to produce a diff that cannot change.
         """)
 
-    RUNNING = DBItem(1, """
-        Running
-
-        The job is currently running.
-        """)
-
-    COMPLETED = DBItem(2, """
-        Completed
-
-        The job has run to successful completion.
-        """)
-
-    FAILED = DBItem(3, """
-        Failed
-
-        The job was run, but failed.  Will not be run again.
-        """)
-
 
 class BranchJob(SQLBase):
+    """Base class for jobs related to branches."""
 
     _table = 'BranchJob'
 
@@ -1622,6 +1606,7 @@ class BranchJob(SQLBase):
 
 
 class BranchDiffJob(BranchJob):
+    """A Job that calculates the a diff related to a Branch."""
 
     implements(IBranchDiffJob)
     classProvides(IBranchDiffJobSource)
@@ -1635,6 +1620,7 @@ class BranchDiffJob(BranchJob):
 
     @classmethod
     def create(klass, branch, from_revision_spec, to_revision_spec):
+        """See `IBranchDiffJobSource`."""
         return klass(
             branch=branch, from_revision_spec=from_revision_spec,
             to_revision_spec=to_revision_spec)
@@ -1652,7 +1638,7 @@ class BranchDiffJob(BranchJob):
         return spec.as_revision_id(bzr_branch)
 
     def run(self):
-        """See IStaticDiffJob."""
+        """See IBranchDiffJob."""
         self.job.start()
         bzr_branch = self.branch.getBzrBranch()
         from_revision_id = self._get_revision_id(

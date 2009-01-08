@@ -81,7 +81,7 @@ def set_bug_branch_status(bug, branch, status):
 def get_diff(db_branch, bzr_revision):
     """Return the diff for `bzr_revision` on `bzr_branch`.
 
-    :param db_branch: A `canonical.launchpad.databse.Branch` object.
+    :param db_branch: A `canonical.launchpad.database.Branch` object.
     :param bzr_revision: A Bazaar `Revision` object.
     :return: A byte string that is the diff of the changes introduced by
         `bzr_revision` on `db_branch`.
@@ -92,7 +92,7 @@ def get_diff(db_branch, bzr_revision):
         basis = NULL_REVISION
     basis_spec = 'revid:%s' % basis
     revision_spec = 'revid:%s' % bzr_revision.revision_id
-    diff_job = getUtility(IStaticDiffJobSource).create(
+    diff_job = getUtility(IBranchDiffJobSource).create(
         db_branch, basis_spec, revision_spec)
     static_diff = diff_job.run()
     diff_job.destroySelf()

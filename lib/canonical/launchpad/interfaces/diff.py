@@ -63,6 +63,3 @@ class IStaticDiffSource(Interface):
 
         If a StaticDiff exists for this revision_id pair, the text is ignored.
         """
-
-
-

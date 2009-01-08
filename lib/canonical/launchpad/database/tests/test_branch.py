@@ -1447,14 +1447,17 @@ class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
 
 
 class TestBranchDiffJob(TestCaseWithFactory):
+    """Tests for BranchDiffJob."""
 
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
         verifyObject(IBranchDiffJob, BranchDiffJob(
             1, from_revision_spec='0', to_revision_spec='1'))
 
     def test_run_revision_ids(self):
+        """Ensure that run calculates revision ids."""
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit', rev_id='rev1')
@@ -1465,6 +1468,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.assertEqual('rev1', static_diff.to_revision_id)
 
     def test_run_diff_content(self):
+        """Ensure that run generates expected diff."""
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         open('file', 'wb').write('foo\n')
@@ -1476,13 +1480,14 @@ class TestBranchDiffJob(TestCaseWithFactory):
                             to_revision_spec='2')
         static_diff = job.run()
         transaction.commit()
-        static_diff.diff.diff_text.open()
-        content_lines = static_diff.diff.diff_text.read().splitlines()
+        content_lines = static_diff.diff.text.splitlines()
         self.assertEqual(
-            ['@@ -1,1 +1,1 @@', '-foo', '+bar', ''], content_lines[3:])
+            content_lines[3:], ['@@ -1,1 +1,1 @@', '-foo', '+bar', ''],
+            content_lines[3:])
         self.assertEqual(7, len(content_lines))
 
     def test_run_is_idempotent(self):
+        """Ensure running an equivalent job emits the same diff."""
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit')
@@ -1494,7 +1499,8 @@ class TestBranchDiffJob(TestCaseWithFactory):
         static_diff2 = job2.run()
         self.assertTrue(static_diff1 is static_diff2)
 
-    def test_run_sets_complete(self):
+    def test_run_sets_status_completed(self):
+        """Ensure status is set to completed when a job runs to completion."""
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit')
@@ -1504,6 +1510,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
 
     def test_destroySelf_destroys_job(self):
+        """Ensure that BranchDiffJob.destroySelf destroys the Job as well."""
         branch = self.factory.makeBranch()
         static_diff_job = BranchDiffJob(branch=branch, from_revision_spec='0',
                                         to_revision_spec='1')
