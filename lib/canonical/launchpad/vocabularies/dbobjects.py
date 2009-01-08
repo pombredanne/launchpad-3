@@ -112,7 +112,8 @@ from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import IMilestoneSet
+from canonical.launchpad.interfaces.milestone import (
+    IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillarName
@@ -1462,6 +1463,20 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         for milestone in self.visible_milestones:
             yield self.toTerm(milestone)
+
+    def __contains__(self, obj):
+        if IProjectMilestone.providedBy(obj):
+            # Project milestones are pseudo content objects
+            # which aren't really a part of this vocabulary,
+            # but sometimes we want to pass them to fields
+            # that rely on this vocabulary for validation
+            # so we special-case them here just for that purpose.
+            for milestone in obj.target.milestones:
+                if milestone.name == obj.name:
+                    return milestone
+            return None
+        else:
+            return SQLObjectVocabularyBase.__contains__(self, obj)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
