@@ -738,7 +738,7 @@ class IPublishingSet(Interface):
     def getByIdAndArchive(id, archive):
         """Return the source publication matching id AND archive."""
 
-    def getBuildsForSources(one_or_more_source_publications):
+    def getBuildsForSourceIds(source_ids):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -752,11 +752,19 @@ class IPublishingSet(Interface):
          1. Ascending `SourcePackagePublishingHistory.id`,
          2. Ascending `DistroArchSeries.architecturetag`.
 
-        :param one_or_more_source_publication: list of or a single
+        :param source_ids: list of or a single
             `SourcePackagePublishingHistory` object.
-
+        :type source_ids: ``list`` or `SourcePackagePublishingHistory`
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+        :rtype: `storm.store.ResultSet`.
+        """
+
+    def getBuildsForSources(one_or_more_source_publications):
+        """Return all builds related with each given source publication.
+
+        Extracts the source ids from one_or_more_source_publications and
+        calls getBuildsForSourceIds.
         """
 
     def getFilesForSources(one_or_more_source_publication):
@@ -862,6 +870,27 @@ class IPublishingSet(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
+    def getBuildStatusSummariesForSourceIds(source_ids):
+        """Return a summary of the build statuses for source publishing ids.
+
+        This method collects all the builds for the provided source package
+        publishing history ids, and returns the build status summary for
+        the builds associated with each source package.
+
+        See the `getStatusSummaryForBuilds()` method of `IBuildSet`.for
+        details of the summary.
+
+        :param source_ids: A list of source publishing history record ids.
+        :type source_ids: ``list``
+        :returns A dict consisting of the overall status summaries for the
+            given ids. For example:
+                {
+                    18: {'status': 'succeeded'},
+                    25: {'status': 'building', 'builds':[building_builds]},
+                    35: {'status': 'failed', 'builds': [failed_builds]}
+                }
+        :rtype: ``dict``.
+        """
 
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",

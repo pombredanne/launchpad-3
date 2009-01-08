@@ -42,13 +42,14 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IArchiveSafePublisher,
+    ArchivePurpose, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PackageUploadStatus,
     PoolFileOverwriteError)
+from canonical.launchpad.interfaces.build import IBuildSet, BuildStatus
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
 from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
@@ -943,6 +944,32 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
+    def getBuildsForSourceIds(self, source_publication_ids):
+        """See `IPublishingSet`."""
+        # Import Build and DistroArchSeries locally to avoid circular
+        # imports, since that Build uses SourcePackagePublishingHistory
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            Build.distroarchseriesID == DistroArchSeries.id,
+            SourcePackagePublishingHistory.archiveID == Build.archiveID,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(
+            SourcePackagePublishingHistory.id,
+            DistroArchSeries.architecturetag)
+
+        return result_set
+
     def getByIdAndArchive(self, id, archive):
         """See `IPublishingSet`."""
         return Store.of(archive).find(
@@ -968,33 +995,11 @@ class PublishingSet:
                 for source_publication in source_publications]
 
     def getBuildsForSources(self, one_or_more_source_publications):
-        """See `PublishingSet`."""
-        # Import Build and DistroArchSeries locally to avoid circular
-        # imports, since that Build uses SourcePackagePublishingHistory
-        # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from canonical.launchpad.database.build import Build
-        from canonical.launchpad.database.distroarchseries import (
-            DistroArchSeries)
-
+        """See `IPublishingSet`."""
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
-            (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            Build.distroarchseriesID == DistroArchSeries.id,
-            SourcePackagePublishingHistory.archiveID == Build.archiveID,
-            SourcePackagePublishingHistory.distroseriesID ==
-                DistroArchSeries.distroseriesID,
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
-
-        result_set.order_by(
-            SourcePackagePublishingHistory.id,
-            DistroArchSeries.architecturetag)
-
-        return result_set
+        return self.getBuildsForSourceIds(source_publication_ids)
 
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
@@ -1140,6 +1145,29 @@ class PublishingSet:
 
         result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
+
+    def getBuildStatusSummariesForSourceIds(self, source_ids):
+        """See `IPublishingSet`."""
+        # source_ids can be None or an empty sequence.
+        if not source_ids:
+            return {}
+
+        # Get the builds for all the requested sources.
+        result_set = self.getBuildsForSourceIds(source_ids)
+
+        # Populate the list of builds for each id in a dict.
+        source_builds = {}
+        for src_pub, build, distroarchseries in result_set:
+            source_builds.setdefault(src_pub.id, []).append(build)
+
+        # Gset the overall build status for each source's builds.
+        build_set = getUtility(IBuildSet)
+        source_build_statuses = {}
+        for source_id, builds in source_builds.items():
+            status_summary = build_set.getStatusSummaryForBuilds(builds)
+            source_build_statuses[source_id] = status_summary
+
+        return source_build_statuses
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""

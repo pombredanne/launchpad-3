@@ -24,8 +24,6 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
@@ -202,17 +200,6 @@ class DistributionSourcePackage(BugTargetBase,
                             self.sourcepackagename.id),
             orderBy='-datecreated',
             limit=quantity)
-
-    @property
-    def binary_package_names(self):
-        """See `IDistributionSourcePackage`."""
-        cache = DistributionSourcePackageCache.selectOne("""
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id))
-        if cache is None:
-            return None
-        return cache.binpkgnames
 
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""

@@ -40,7 +40,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
 
 
@@ -253,7 +253,7 @@ class HiddenBuilder:
     This class modifies IBuilder attributes that should not be exposed
     while building a job for private job (private PPA or Security).
     """
-    decorates(IBuilder)
+    delegates(IBuilder)
 
     failnotes = None
     currentjob = None

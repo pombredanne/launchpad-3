@@ -85,9 +85,9 @@ class Server(smtpd.SMTPServer):
         # Get the localpart of the recipient.  If this localpart corresponds
         # to an existing mailing list, drop the message into Mailman's
         # incoming queue.
-        log.debug('msgid: %s, to: %s, beenthere: %s',
+        log.debug('msgid: %s, to: %s, beenthere: %s rcpt: %s',
                   message['message-id'], message['to'],
-                  message['x-beenthere'])
+                  message['x-beenthere'], rcpttos)
         try:
             local, hostname = message['to'].split('@', 1)
         except ValueError:
