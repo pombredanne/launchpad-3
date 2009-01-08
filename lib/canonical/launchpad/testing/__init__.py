@@ -10,7 +10,6 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
@@ -180,7 +179,7 @@ class TestCase(unittest.TestCase):
         except excClass, e:
             return e
         else:
-            if getattr(excClass,'__name__', None) is not None:
+            if getattr(excClass, '__name__', None) is not None:
                 excName = excClass.__name__
             else:
                 # probably a tuple

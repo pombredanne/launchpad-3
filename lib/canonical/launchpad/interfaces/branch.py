@@ -88,7 +88,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
