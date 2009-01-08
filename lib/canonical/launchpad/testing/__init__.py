@@ -316,6 +316,15 @@ class TestCaseWithFactory(TestCase):
         server = FakeTransportServer(get_transport('.'))
         server.setUp()
         self.addCleanup(server.tearDown)
+        # Avoid leaking local user configuration into tests.
+        old_bzr_home = os.environ.get('BZR_HOME')
+        def restore_bzr_home():
+            if old_bzr_home is None:
+                del os.environ['BZR_HOME']
+            else:
+                os.environ['BZR_HOME'] = old_bzr_home
+        os.environ['BZR_HOME'] = os.getcwd()
+        self.addCleanup(restore_bzr_home)
 
 
 def capture_events(callable_obj, *args, **kwargs):
