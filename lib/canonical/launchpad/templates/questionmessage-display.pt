@@ -24,14 +24,6 @@
 
   <div class="boardCommentBody"
     tal:attributes="class view/getBodyCSSClass"
-    tal:condition="view/user"
-    tal:content="structure context/text_contents/fmt:email-to-html">
-    Message text.
-  </div>
-
-  <div class="boardCommentBody"
-    tal:attributes="class view/getBodyCSSClass"
-    tal:condition="not:view/user"
     tal:content="structure
       context/text_contents/fmt:obfuscate-email/fmt:email-to-html">
     Message text.

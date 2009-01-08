@@ -37,7 +37,7 @@ Salgado receives the email message from No Priv.
     To: Guilherme Salgado <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
     Message-ID: ...
-    X-Launchpad-Message-Rationale: ContactViaWeb
+    X-Launchpad-Message-Rationale: ContactViaWeb user
     Date: ...
     Reply-To: No Privileges Person <no-priv@canonical.com>
     Sender: bounces@canonical.com
@@ -49,9 +49,11 @@ Salgado receives the email message from No Priv.
     X-Launchpad-Hash: ...
     <BLANKLINE>
     Just saying hello
-    -- 
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    --
+    This message was sent from Launchpad by the user
+    No Privileges Person (http://launchpad.dev/~no-priv)
+    using the "Contact this user" link on your profile page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 No Priv starts to send another message to Salgado, but then changes her mind.
@@ -94,7 +96,7 @@ alternative addresses.
     To: Guilherme Salgado <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
     Message-ID: ...
-    X-Launchpad-Message-Rationale: ContactViaWeb
+    X-Launchpad-Message-Rationale: ContactViaWeb user
     Date: ...
     Reply-To: Sample Person <testing@canonical.com>
     Sender: bounces@canonical.com
@@ -106,9 +108,11 @@ alternative addresses.
     X-Launchpad-Hash: ...
     <BLANKLINE>
     Hello again
-    -- 
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    --
+    This message was sent from Launchpad by the user
+    Sample Person (http://launchpad.dev/~name12)
+    using the "Contact this user" link on your profile page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 
@@ -195,7 +199,7 @@ directly.
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink('Contact this team').click()
     >>> print admin_browser.title
-    Contact this team
+    Contact your team
 
 Foo Bar registers an explicit contact address for Guadamen...
 
@@ -221,7 +225,7 @@ Foo Bar registers an explicit contact address for Guadamen...
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink('Contact this team').click()
     >>> print admin_browser.title
-    Contact this team
+    Contact your team
 
 Foo Bar later registers a Launchpad mailing list for Guadamen...
 
@@ -236,4 +240,4 @@ Foo Bar later registers a Launchpad mailing list for Guadamen...
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink('Contact this team').click()
     >>> print admin_browser.title
-    Contact this team
+    Contact your team
