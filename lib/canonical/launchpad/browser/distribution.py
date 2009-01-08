@@ -61,7 +61,6 @@ from canonical.launchpad.interfaces.distribution import (
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -735,16 +734,6 @@ class DistributionEditView(LaunchpadEditFormView):
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-
-    def isAdmin(self):
-        return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-
-    def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        if not self.isAdmin():
-            self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers',
-                'enable_bug_expiration')
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
