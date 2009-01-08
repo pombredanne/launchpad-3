@@ -21,6 +21,7 @@ from zope.event import notify
 from zope.interface import classProvides, implements
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.delegates import delegates
 from storm.expr import And, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
@@ -55,7 +56,8 @@ from canonical.launchpad.interfaces import (
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchDiffJob, IBranchDiffJobSource,
-    IBranchNavigationMenu, NoSuchBranch, user_has_special_branch_access)
+    IBranchJob, IBranchNavigationMenu, NoSuchBranch,
+    user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -1580,6 +1582,8 @@ class BranchJobType(DBEnumeratedType):
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
 
+    implements(IBranchJob)
+
     _table = 'BranchJob'
 
     job = ForeignKey(foreignKey='Job', notNull=True)
@@ -1595,35 +1599,45 @@ class BranchJob(SQLBase):
         return simplejson.loads(self._json_data)
 
     def __init__(self, branch, job_type, metadata):
+        """Constructor.
+
+        :param branch: The database branch this job relates to.
+        :param job_type: The BranchJobType of this job.
+        :param metadata: The type-specific variables, as a JSON-compatible
+            dict.
+        """
         json_data = simplejson.dumps(metadata)
         SQLBase.__init__(
             self, job=Job(), branch=branch, job_type=job_type,
             _json_data=json_data)
 
     def destroySelf(self):
+        """See `IBranchJob`."""
         SQLBase.destroySelf(self)
         self.job.destroySelf()
 
 
-class BranchDiffJob(BranchJob):
+class BranchDiffJob(object):
     """A Job that calculates the a diff related to a Branch."""
 
     implements(IBranchDiffJob)
+
     classProvides(IBranchDiffJobSource)
 
-    def __init__(self, branch, from_revision_spec, to_revision_spec):
-        metadata = {
-            'from_revision_spec': from_revision_spec,
-            'to_revision_spec': to_revision_spec,
-        }
-        BranchJob.__init__(self, branch, BranchJobType.STATIC_DIFF, metadata)
+    delegates(IBranchJob)
+
+    def __init__(self, branch_job):
+        self.context = branch_job
 
     @classmethod
     def create(klass, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
-        return klass(
-            branch=branch, from_revision_spec=from_revision_spec,
-            to_revision_spec=to_revision_spec)
+        metadata = {
+            'from_revision_spec': from_revision_spec,
+            'to_revision_spec': to_revision_spec,
+        }
+        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
+        return klass(branch_job)
 
     @property
     def from_revision_spec(self):

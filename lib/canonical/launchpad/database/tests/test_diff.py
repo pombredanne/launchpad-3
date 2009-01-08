@@ -8,7 +8,6 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from canonical.testing import LaunchpadZopelessLayer, DatabaseFunctionalLayer
-from sqlobject import SQLObjectNotFound
 import transaction
 
 from canonical.launchpad.database.diff import Diff, StaticDiff
