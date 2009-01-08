@@ -10,7 +10,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
-from storm.expr import Join
+from storm.expr import And, Desc, Join
 from storm.store import Store, EmptyResultSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -216,13 +216,10 @@ class ProductReleaseSet(object):
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         series_ids = [series.id for series in serieses]
-        origin = [
-            Milestone,
-            Join(ProductRelease, ProductRelease.milestone == Milestone.id),
-            ]
         result = store.find(
             ProductRelease,
-            Milestone.productseries.is_in(series_ids))
+            And(ProductRelease.milestone == Milestone.id),
+                Milestone.productseriesID.is_in(series_ids))
         return result.order_by(Desc(ProductRelease.datereleased))
 
     def getFilesForReleases(self, releases):

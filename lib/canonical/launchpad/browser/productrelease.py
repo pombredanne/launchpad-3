@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
 from canonical.launchpad.interfaces.productseries import IProductSeriesSet
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
