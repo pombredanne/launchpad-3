@@ -24,6 +24,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -101,7 +103,9 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, IStoreSelector, MAIN_STORE, SLAVE_FLAVOR,
+    TranslationUnavailable)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -663,6 +667,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 archtag, self.distribution.name, self.name))
         return item
 
+    def checkTranslationsViewable(self):
+        """See `IDistroSeries`."""
+        if not self.hide_all_translations:
+            # Yup, viewable.
+            return
+
+        future = [
+            DistroSeriesStatus.EXPERIMENTAL,
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FUTURE,
+            ]
+        if self.status in future:
+            raise TranslationUnavailable(
+                "Translations for this release series are not available yet.")
+        elif self.status == DistroSeriesStatus.OBSOLETE:
+            raise TranslationUnavailable(
+                "This release series is obsolete.  Its translations are no "
+                "longer available.")
+        else:
+            raise TranslationUnavailable(
+                "Translations for this release series are not currently "
+                "available.  Please come back soon.")
+
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
         query = """
@@ -1101,7 +1128,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def searchPackages(self, text):
         """See `IDistroSeries`."""
 
-        store = Store.of(self)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,

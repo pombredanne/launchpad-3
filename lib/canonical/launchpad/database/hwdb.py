@@ -41,6 +41,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.database.distribution import Distribution
+from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.hwdb import (
@@ -252,6 +255,46 @@ class HWSubmissionSet:
                                 HWSubmission.status == status,
                                 self._userHasAccessStormClause(user))
         result_set.order_by(HWSubmission.date_submitted, HWSubmission.id)
+        return result_set
+
+    def search(self, user=None, device=None, driver=None, distribution=None,
+               architecture=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if device is not None:
+            args.append(HWDeviceDriverLink.device == HWDevice.id)
+            args.append(HWDevice.id == device.id)
+        if driver is not None:
+            args.append(HWDeviceDriverLink.driver == HWDriver.id)
+            args.append(HWDriver.id == driver.id)
+        # HWDevice and HWDriver are linked to submissions via
+        # HWDeviceDriverLink and HWSubmissionDevice.
+        if args:
+            args.append(HWSubmissionDevice.device_driver_link ==
+                        HWDeviceDriverLink.id)
+            args.append(HWSubmissionDevice.submission == HWSubmission.id)
+
+        if distribution is not None or architecture is not None:
+            args.append(HWSubmission.distroarchseries == DistroArchSeries.id)
+            if architecture is not None:
+                args.append(DistroArchSeries.architecturetag == architecture)
+            if distribution is not None:
+                args.append(DistroArchSeries.distroseries == DistroSeries.id)
+                args.append(DistroSeries.distribution == Distribution.id)
+                args.append(Distribution.id == distribution.id)
+        result_set = store.find(
+            HWSubmission,
+            self._userHasAccessStormClause(user),
+            *args)
+        # Many devices are associated with more than one driver, even
+        # for one submission, hence we may have more than one
+        # HWSubmissionDevice record and more than one HWDeviceDriverLink
+        # for one device and one submission matching the WHERE clause
+        # defined above. This leads to duplicate results without a
+        # DISTINCT clause.
+        result_set.config(distinct=True)
+        result_set.order_by(HWSubmission.id)
         return result_set
 
 
@@ -575,6 +618,12 @@ class HWDriver(SQLBase):
     implements(IHWDriver)
     _table = 'HWDriver'
 
+    # XXX: Abel Deuring 2008-12-10 bug=306265: package_name should
+    # be declared notNull=True. This fixes the ambiguity that
+    # "package_name is None" as well as "package_name == ''" can
+    # indicate "we don't know to which package this driver belongs",
+    # moreover, it gives a more clear meaning to the parameter value
+    #package_name='' in webservice API calls.
     package_name = StringCol(notNull=False)
     name = StringCol(notNull=True)
     license = EnumCol(enum=License, notNull=False)
@@ -601,6 +650,26 @@ class HWDriverSet:
         if link is None:
             return self.create(package_name, name, license)
         return link
+
+    def search(self, package_name=None, name=None):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if package_name is not None:
+            if len(package_name) == 0:
+                args.append(Or(HWDriver.package_name == None,
+                               HWDriver.package_name == ''))
+            else:
+                args.append(HWDriver.package_name == package_name)
+        if name != None:
+            args.append(HWDriver.name == name)
+        result_set = store.find(HWDriver, *args)
+        return result_set.order_by(HWDriver.id)
+
+    def getByID(self, id):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDriver, HWDriver.id == id).one()
 
 
 class HWDeviceDriverLink(SQLBase):

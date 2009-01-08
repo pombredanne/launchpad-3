@@ -23,7 +23,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -121,7 +121,7 @@ def get_license_status(license_approved, license_reviewed, licenses):
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
 
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product, licenses):
         self.product = product
@@ -1084,6 +1084,9 @@ class ProductSet:
                               % sqlvalues(created_before))
 
         needs_join = False
+        if has_subscription is True:
+
+
         if subscription_expires_after is not None:
             conditions.append('CommercialSubscription.date_expires >= %s'
                               % sqlvalues(subscription_expires_after))

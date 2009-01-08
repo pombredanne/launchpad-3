@@ -8,11 +8,13 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductEditRestricted',
+    'IProductViewRestricted',
     'IProductPublic',
     'IProductReviewSearch',
     'IProductSet',
     'License',
     'LicenseStatus',
+    'NoSuchProduct',
     ]
 
 import sets
@@ -40,6 +42,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -50,8 +53,7 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -107,10 +109,26 @@ class License(DBEnumeratedType):
 
 
 class IProductEditRestricted(Interface):
-    """IProduct properties which require launchpad.Edit permission."""
+    """`IProduct` properties which require launchpad.Edit permission."""
 
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
+
+class IProductViewRestricted(Interface):
+    """`IProduct` properties which require launchpad.Commercial permission."""
+
+    reviewer_whiteboard = exported(
+        Text(
+            title=_('Notes for the project reviewer'),
+            required=False,
+            description=_(
+                "Notes on the project's license, editable only by reviewers "
+                "(Admins & Commercial Admins).")))
+
+    private_bugs = Bool(title=_('Private bugs'),
+                        description=_(
+                            "Whether or not bugs reported into this project "
+                            "are private by default"))
 
 
 class IProductPublic(
@@ -323,19 +341,6 @@ class IProductPublic(
                           "reviewed. Editable only by reviewers (Admins & "
                           "Commercial Admins).")))
 
-    private_bugs = Bool(title=_('Private bugs'),
-                        description=_(
-                            "Whether or not bugs reported into this project "
-                            "are private by default"))
-
-    reviewer_whiteboard = exported(
-        Text(
-            title=_('Notes for the project reviewer'),
-            required=False,
-            description=_(
-                "Notes on the project's license, editable only by reviewers "
-                "(Admins & Commercial Admins).")))
-
     licenses = exported(
         Set(title=_('Licenses'),
             value_type=Choice(vocabulary=License)))
@@ -490,7 +495,7 @@ class IProductPublic(
     def userCanEdit(user):
         """Can the user edit this product?"""
 
-class IProduct(IProductEditRestricted, IProductPublic):
+class IProduct(IProductEditRestricted, IProductViewRestricted, IProductPublic):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -721,3 +726,9 @@ class IProductReviewSearch(Interface):
 
     subscription_modified_before = Date(
         title=_("and"), required=False)
+
+
+class NoSuchProduct(NameLookupFailed):
+    """Raised when we try to find a product that doesn't exist."""
+
+    _message_prefix = "No such product"

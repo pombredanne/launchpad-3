@@ -51,19 +51,62 @@ The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
 essentially the password to the archive for the builder.
 
+It can only be set by users with launchpad.Admin permission in the
+archive, i.e. a launchpad-administrator.
+
+    >>> cprov_archive.buildd_secret = 'boing'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'buildd_secret', 'launchpad.Admin')
+
+Foo Bar, can set 'buildd_secret'.
+
     >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = "secret"
+    >>> cprov_archive.buildd_secret = 'not so secret'
+
+In a public PPA, 'buildd_secret' still visible to anyone.
+
+    >>> login(ANONYMOUS)
+    >>> print cprov_archive.private
+    False
+
+    >>> print cprov_archive.buildd_secret
+    not so secret
+
+Once made private, 'buildd_secret' content can only be read by users with
+'launchpad.View' in the archive.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = 'really secret'
+    >>> cprov_archive.private = True
+
     >>> login(ANONYMOUS)
     >>> print cprov_archive.buildd_secret
-    secret
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'buildd_secret', 'launchpad.View')
+
+Celso can read 'buildd_secret' contents for his PPA.
+
+    >>> login('celso.providelo@canonical.com')
+    >>> print cprov_archive.buildd_secret
+    really secret
+
+In order to continue the tests of public archive attributes we will
+make Celso's PPA public again.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+    >>> login(ANONYMOUS)
 
 Useful properties:
 
-    >>> cprov_archive.title
-    u'PPA for Celso Providelo'
+    >>> print cprov_archive.title
+    PPA for Celso Providelo
 
-    >>> cprov_archive.archive_url
-    u'http://ppa.launchpad.dev/cprov/ubuntu'
+    >>> print cprov_archive.archive_url
+    http://ppa.launchpad.dev/cprov/ubuntu
 
 Inquire what Distribution Series this archive has published sources to:
 
@@ -514,6 +557,45 @@ and 'exact_match' flag:
     >>> status_lookup.count()
     2
 
+== getBuildCounters ==
+
+IArchive.getBuildCounters() allows callsites to quickly present
+the number of builds in a pre-defined status for a given IArchive.
+
+    >>> def print_build_counters(build_counters):
+    ...     sorted_keys = sorted(build_counters)
+    ...     for key in sorted_keys:
+    ...         print key, build_counters[key]
+
+Build counters for Celso's PPA.
+
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    pending    0
+    succeeded  3
+    superseded 0
+    total      4
+
+Build counters for ubuntu primary archive.
+
+    >>> print_build_counters(ubuntu.main_archive.getBuildCounters())
+    failed     5
+    pending    2
+    succeeded  8
+    superseded 3
+    total      18
+
+An option argument can be used to exclude any builds that have the status
+`NEEDSBUILD`:
+
+    >>> print_build_counters(
+    ...     ubuntu.main_archive.getBuildCounters(include_needsbuild=False))
+    failed 5
+    pending 1
+    succeeded 8
+    superseded 3
+    total 17
+
 
 == Package Counters ==
 
@@ -521,7 +603,7 @@ IArchive provides properties to calculate the number and the size of
 the packages (sources and binaries) currently published in the
 archive. They are based in the publication lookup methods.
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     3
     >>> cprov_archive.number_of_binaries
     3
@@ -538,7 +620,7 @@ in the archive (+1kbytes for each publication)
     ...     cprov_archive.sources_size + cprov_archive.binaries_size)
 
     >>> number_of_publications = (
-    ...     cprov_archive.number_of_sources +
+    ...     cprov_archive.number_of_sources_published +
     ...     cprov_archive.number_of_binaries)
     >>> indexes_size = number_of_publications * 1024
 
@@ -602,14 +684,14 @@ see if the counter decreases.
 Superseding a source package and verifying that the source counter
 decreases.
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     3
     >>> superseded = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(superseded)
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     2
 
 Superseding a binary package and verifying that the binary counter
@@ -1091,6 +1173,37 @@ Then a lookup on Celso's PPA will find it.
     True
 
 
+== Creating a package copy request from an IArchive ==
+
+The IArchive interface includes a convenience method for creating a
+package copy request:
+
+    >>> requestor = factory.makePerson(name='me-copy')
+    >>> target = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...     name='my-copy-archive')
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor)
+    >>> print pcr
+    Package copy request
+    source = primary/hoary/-/RELEASE
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
+The requestPackageCopy method can also take an optional suite name:
+
+    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
+    ...     target, requestor, suite="hoary-updates");
+    >>> print package_copy_request
+    Package copy request
+    source = primary/hoary/-/UPDATES
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other
@@ -1241,7 +1354,7 @@ including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    15
+    16
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
@@ -1556,6 +1669,75 @@ archive.
     total      1
 
 
+== A general way to get specific archives for a distribution ==
+
+IArchiveSet also includes the helper method `getArchivesForDistribution`
+which can be used to get archives of a specific purpose(s) for a distribution
+(note: the sample data currently contains one copy archive for ubuntu, and
+one has been created above):
+
+First create a function to print the names of a set of archives:
+
+    >>> def print_archive_names(archives):
+    ...     names = [archive.name for archive in archives]
+    ...     names.sort()
+    ...     for name in names:
+    ...         print name
+
+    >>> archive_set = getUtility(IArchiveSet)
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.COPY)
+    >>> print_archive_names(ubuntu_copy_archives)
+    my-copy-archive
+    there-we-go
+
+
+The method `getArchivesForDistribution` can also be used with multiple
+purposes. First we'll check how many partner archives are in the DB:
+
+    >>> partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.PARTNER)
+    >>> print_archive_names(partner_archives)
+    partner
+
+And then use `getArchivesForDistribution` to get all copy and partner
+archives:
+    >>> copy_n_partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
+    >>> print_archive_names(copy_n_partner_archives)
+    my-copy-archive
+    partner
+    there-we-go
+
+After we create three copy archives for ubuntu, the
+`getArchivesForDistribution` finds the relevant COPY archives:
+
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="ultimate-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="fine-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="copy-r-us")
+
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY])
+    >>> print_archive_names(ubuntu_copy_archives)
+    copy-r-us
+    fine-copy
+    my-copy-archive
+    there-we-go
+    ultimate-copy
+
+
+The `getArchivesForDistribution` method can also be used to get an
+archive using an archive name:
+
+    >>> primary_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, name='primary')
+    >>> print_archive_names(primary_archives)
+    primary
+
+
 == Archive Permission Checking ==
 
 IArchive has two public methods, canUpload() and canAdministerQueue()
@@ -1691,9 +1873,17 @@ hoary:
 
 Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
 can ask syncSources to synchronise these packages into sabdfl's PPA in the
-release pocket:
+release pocket, but to do so we must have edit permissions on the archive.
 
     >>> sources = ["package1", "package2"]
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+Let's log in as sabdfl and it will work:
+
+    >>> login("mark@hbd.com")
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
     [u'package1', u'package2']
     >>> [sabdfl_one] = sabdfl.archive.getPublishedSources(name="package1")
@@ -1731,7 +1921,7 @@ all result in a NotFound exception:
     >>> sabdfl.archive.syncSources(["bogus"], cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    SourceNotFound: 'bogus'
+    SourceNotFound: No such source package: 'bogus'.
 
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "badpocket")
     Traceback (most recent call last):
@@ -1762,8 +1952,19 @@ as it's potentially dangerous, since through the API there is no "are
 you sure!" type transaction.
 
 When copying a single package, if we supply a package name of "pack" it will
-only match one of the test packages we created above rather than all of them:
+only match one of the test packages we created above rather than all of them.
 
+As with syncSources() you need to have edit permission on the archive.
+
+    >>> login(ANONYMOUS)
+    >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+    
+Login as sabdfl to continue.
+
+    >>> login("mark@hbd.com")
     >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
     >>> [pack] = sabdfl.archive.getPublishedSources(
     ...     name="pack", exact_match=True)

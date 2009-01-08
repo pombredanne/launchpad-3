@@ -128,6 +128,7 @@ Projects are available at their canonical URL on the API virtual host.
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     resource_type_link: u'http://.../#project'
+    reviewer_whiteboard: None
     screenshots_url: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'

@@ -71,8 +71,39 @@ Each source publication exposes a number of properties:
     resource_type_link: u'http://.../#source_package_publishing_history'
     scheduleddeletiondate: None
     section_name: u'editors'
-    self_link: u'http://.../~cprov/+archive/+sourcepub/28' 
+    self_link: u'http://.../~cprov/+archive/+sourcepub/28'
     source_package_name: u'iceweasel'
     source_package_version: u'1.0'
     status: u'Published'
 
+When Celso's PPA becomes private ...
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov.archive.buildd_secret = 'boing'
+    >>> cprov.archive.private = True
+
+    >>> transaction.commit()
+
+    >>> logout()
+
+Only Celso (or anyone who participates on the PPA owner team) has
+access to the PPA publications.
+
+    >>> response = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources')
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+Any other user attempt would result in a 401 error.
+
+    >>> response = user_webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources')
+    >>> print response.getOutput()
+    HTTP/1.1 401 Unauthorized
+    ...

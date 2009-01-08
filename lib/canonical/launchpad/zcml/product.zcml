@@ -55,8 +55,10 @@
 
     <require
       permission="launchpad.Commercial"
-      set_attributes="active private_bugs license_reviewed
-                      license_approved reviewer_whiteboard"
+      interface="canonical.launchpad.interfaces.product.IProductViewRestricted"
+      set_schema="canonical.launchpad.interfaces.product.IProductViewRestricted"
+      set_attributes="active license_reviewed
+                      license_approved"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->

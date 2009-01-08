@@ -42,3 +42,19 @@ class CodeReviewComment(SQLBase):
             {'source': self.branch_merge_proposal.source_branch.displayname,
              'target': self.branch_merge_proposal.target_branch.displayname,
             })
+
+    def getAttachments(self):
+        """See `ICodeReviewComment`."""
+        attachments = [chunk.blob for chunk in self.message.chunks
+                       if chunk.blob is not None]
+        # Attachments to show.
+        good_mimetypes = set(['text/plain', 'text/x-diff', 'text/x-patch'])
+        display_attachments = [
+            attachment for attachment in attachments
+            if ((attachment.mimetype in good_mimetypes) or
+                attachment.filename.endswith('.diff') or
+                attachment.filename.endswith('.patch'))]
+        other_attachments = [
+            attachment for attachment in attachments
+            if attachment not in display_attachments]
+        return display_attachments, other_attachments
