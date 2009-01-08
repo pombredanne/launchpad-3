@@ -319,7 +319,7 @@ getBuiltBinaries() follows binaries in any state.
     >>> len(source.getBuiltBinaries())
     2
 
-Note that getPublishedBinaries() return a SelectResult and
+Note that getPublishedBinaries() returns a SelectResult and
 getBuiltBinaries() returns a list.
 
 When we supersede one of the original binary publications, it gets
@@ -475,7 +475,7 @@ The same binary is published in both supported architecture.
     pirulito 666 in breezy-autotest hppa
     pirulito 666 in breezy-autotest i386
 
-getPublishedBinaries() on the copied sources return both binary
+getPublishedBinaries() on the copied sources returns both binary
 publications, even if they refer to the same architecture independent
 binary.
 
@@ -491,7 +491,7 @@ binary.
     >>> copy_i386.binarypackagerelease == copy_hppa.binarypackagerelease
     True
 
-getBuiltBinaries(), on the other hand, return only one publication
+getBuiltBinaries(), on the other hand, returns only one publication
 (the one for the 'nominatedarchindep' architecture in the destination
 distroseries).
 
