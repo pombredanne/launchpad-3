@@ -325,7 +325,6 @@ class RevisionSet:
             BranchRevision.revision == Revision.id,
             BranchRevision.branch == Branch.id,
             Branch.product == product,
-            Not(Branch.private),
             BranchRevision.revisionID >= revision_subselect)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
