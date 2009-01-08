@@ -24,17 +24,17 @@ StandardShipItRequests.
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.systemhomes import ShipItApplication
     >>> shipit = ShipItApplication()
-    >>> myrequest_view = create_view(
+    >>> myrequest_view = create_initialized_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
     >>> myrequest_view.is_open = False
     >>> myrequest_view.request.icing_url = '/+icing-ubuntu'
-    >>> html = myrequest_view.renderStandardrequestForm()
+    >>> html = myrequest_view.render()
     >>> from BeautifulSoup import BeautifulSoup
     >>> print BeautifulSoup(html).findAll('h1')[-1].renderContents()
     ShipIt is currently closed
 
     >>> myrequest_view.is_open = True
-    >>> html = myrequest_view.renderStandardrequestForm()
+    >>> html = myrequest_view.render()
     >>> headers = BeautifulSoup(html).findAll('h1')
     >>> 'ShipIt is currently closed' in headers
     False
@@ -49,7 +49,7 @@ the user but we will not create a new ShippingRequest.
 Our logged in user, Sample Person, doesn't have a current shipit order,
 so he'll make one now.
 
-    >>> myrequest_view = create_view(
+    >>> myrequest_view = create_initialized_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
     >>> print myrequest_view.current_order
     None
@@ -67,17 +67,16 @@ option we just deleted.
     ...         'field.recipientdisplayname': 'Pablo Escobar',
     ...         'field.addressline1': 'Rua Pablo Escobar, 1',
     ...         'field.phone': '4325125', 'field.postcode': '12343',
-    ...         'field.country': 31, 'FORM_SUBMIT': 'Submit',
+    ...         'field.country': 31, 'field.actions.continue': 'Submit',
     ...         'ordertype': option_id}
-    >>> myrequest_view = create_view(
+    >>> myrequest_view = create_initialized_view(
     ...     shipit, 'myrequest', form=form, layer=ShipItUbuntuLayer,
     ...     method='POST')
-    >>> myrequest_view._setUpWidgets()
 
 As expected, he gets an error message and he still has no current order.
 
-    >>> print myrequest_view.process_form()
-    The option you chose was not found...
+    >>> print myrequest_view.form_wide_errors
+    [u'The option you chose was not found...]
     >>> print myrequest_view.current_order
     None
 
@@ -94,7 +93,7 @@ headers, or we'll start shipping wrong CDs to people. This order is specified
 by the ordered_flavours and ordered_architectures attributes of the view
 class.
 
-    >>> review_request_view = create_view(
+    >>> review_request_view = create_initialized_view(
     ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
     ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Ubuntu Server Edition']

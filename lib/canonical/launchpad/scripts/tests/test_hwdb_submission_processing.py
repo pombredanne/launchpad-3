@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
     IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
     IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.librarian.ftests.harness import fillLibrarianFile
 from canonical.launchpad.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
@@ -3050,7 +3051,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             'Unexpected value for '
             'submitted_usb_controller_usb.hal_device_id')
 
-    def createSubmissionData(self, data, compress, submission_key):
+    def createSubmissionData(self, data, compress, submission_key,
+                             private=False):
         """Create a submission."""
         if compress:
             data = bz2.compress(data)
@@ -3058,7 +3060,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         submission = getUtility(IHWSubmissionSet).createSubmission(
             date_created=datetime(2007, 9, 9, tzinfo=pytz.timezone('UTC')),
             format=HWSubmissionFormat.VERSION_1,
-            private=False,
+            private=private,
             contactable=False,
             submission_key=submission_key,
             emailaddress=u'test@canonical.com',
@@ -3264,6 +3266,10 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         submission_key = 'submission-6'
         self.createSubmissionData(submission_data, False, submission_key)
 
+        submission_key = 'private-submission'
+        self.createSubmissionData(submission_data, False, submission_key,
+                                  private=True)
+
         submission_key = 'submission-7'
         submission_data = """<?xml version="1.0" ?>
         <foo>
@@ -3273,17 +3279,19 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.createSubmissionData(submission_data, False, submission_key)
         process_pending_submissions(self.layer.txn, self.log)
 
+        janitor = getUtility(ILaunchpadCelebrities).janitor
         valid_submissions = submission_set.getByStatus(
-            HWSubmissionProcessingStatus.PROCESSED)
+            HWSubmissionProcessingStatus.PROCESSED, user=janitor)
         valid_submission_keys = [
             submission.submission_key for submission in valid_submissions]
         self.assertEqual(
             valid_submission_keys,
-            [u'test_submission_id_1', u'sample-submission', u'submission-6'],
+            [u'test_submission_id_1', u'sample-submission', u'submission-6',
+             u'private-submission'],
             'Unexpected set of valid submissions: %r' % valid_submission_keys)
 
         invalid_submissions = submission_set.getByStatus(
-            HWSubmissionProcessingStatus.INVALID)
+            HWSubmissionProcessingStatus.INVALID, user=janitor)
         invalid_submission_keys = [
             submission.submission_key for submission in invalid_submissions]
         self.assertEqual(
@@ -3292,7 +3300,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             % invalid_submission_keys)
 
         new_submissions = submission_set.getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED)
+            HWSubmissionProcessingStatus.SUBMITTED, user=janitor)
         new_submission_keys = [
             submission.submission_key for submission in new_submissions]
         self.assertEqual(
@@ -3304,7 +3312,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.assertEqual(
             messages,
             "Parsing submission submission-7: root node is not '<system>'\n"
-            "Processed 2 valid and 1 invalid HWDB submissions",
+            "Processed 3 valid and 1 invalid HWDB submissions",
             'Unexpected log messages: %r' % messages)
 
     def testOopsLogging(self):
