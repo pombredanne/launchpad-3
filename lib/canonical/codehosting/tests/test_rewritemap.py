@@ -7,9 +7,7 @@ __metaclass__ = type
 from StringIO import StringIO
 from unittest import TestLoader
 
-from zope.security.proxy import removeSecurityProxy
-
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.codehosting import rewritemap

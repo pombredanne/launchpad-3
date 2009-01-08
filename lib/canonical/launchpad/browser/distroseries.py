@@ -1,6 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-"""View classes related to IDistroSeries."""
+"""View classes related to `IDistroSeries`."""
 
 __metaclass__ = type
 
@@ -47,7 +47,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, Link, enabled_with_permission)
@@ -85,11 +84,8 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroserieslang = distroserieslangset.getDummy(
                 self.context, lang)
 
-        if (self.context.hide_all_translations and
-            not check_permission('launchpad.Admin', distroserieslang)):
-            raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators '
-                'may view translations for this distribution series.')
+        if not check_permission('launchpad.Admin', distroserieslang):
+            self.context.checkTranslationsViewable()
 
         return distroserieslang
 

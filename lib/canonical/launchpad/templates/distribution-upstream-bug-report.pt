@@ -83,11 +83,8 @@
         against it.
       </tal:no-bugs>
 
-      <p class="warning message" tal:condition="view/data"
-         style="width: 40%">
-        This report is a beta release and has accounting limitations.
-        You can use it to guide your work, but do not take the
-        percentages too literally. See the
+      <p tal:condition="view/data">
+        See the
         <a href="https://wiki.ubuntu.com/Bugs/Upstream/UpstreamReport"
           >UpstreamReport wiki page</a>
         for information on how to read this report.

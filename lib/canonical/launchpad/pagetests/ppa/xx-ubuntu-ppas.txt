@@ -378,7 +378,7 @@ no results.
 
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'nonexistentpackage'
-    >>> anon_browser.getControl('Search', index=0).click()
+    >>> anon_browser.getControl('Filter', index=0).click()
     >>> len(find_tags_by_class(anon_browser.contents, 'archive_package_row'))
     0
 
@@ -386,7 +386,7 @@ Searching for the package iceweasel shows that Celso is providing this.
 
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'iceweasel'
-    >>> anon_browser.getControl('Search', index=0).click()
+    >>> anon_browser.getControl('Filter', index=0).click()
     >>> len(find_tags_by_class(anon_browser.contents, 'archive_package_row'))
     2
 
@@ -414,7 +414,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = ''
-    >>> anon_browser.getControl('Search', index=0).click()
+    >>> anon_browser.getControl('Filter', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Build
@@ -425,7 +425,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 Use can explicitly select 'published' filter and will get the same result.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['published']
-    >>> anon_browser.getControl('Search', index=0).click()
+    >>> anon_browser.getControl('Filter', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Build
@@ -437,7 +437,7 @@ When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
-    >>> anon_browser.getControl('Search', index=0).click()
+    >>> anon_browser.getControl('Filter', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source            Published    Status        Series   Section  Build
@@ -449,7 +449,7 @@ The 'Any Status' filter is also available, so the user can search over
 any package ever published in the context PPA.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['any']
-    >>> anon_browser.getControl('Search', index=0).click()
+    >>> anon_browser.getControl('Filter', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
     ...    print extract_text(ppa_row)
     Source             Published    Status     Series      Section  Build
@@ -458,6 +458,34 @@ any package ever published in the context PPA.
     co...(changesfile)              Pending    Warty       Devel
     ic...(changesfile) 2007-07-09   Superseded Warty       Editors
     pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
+
+The default series filter is 'any' which means that by default the
+results will include packages from any distro series. A user can 
+explicitly set the 'Any Series' filter and get the same result:
+
+    >>> anon_browser.getControl(name='field.series_filter').value = (
+    ...     ['any'])
+    >>> anon_browser.getControl('Filter', index=0).click()
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
+    ...    print extract_text(ppa_row)
+    Source             Published    Status     Series      Section  Build
+        Status
+    cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
+    co...(changesfile)              Pending    Warty       Devel
+    ic...(changesfile) 2007-07-09   Superseded Warty       Editors
+    pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
+
+If the packages are filtered by a particular series, then the result
+will contain only the corresponding packages:
+
+    >>> anon_browser.getControl(name='field.series_filter').value = (
+    ...     ['breezy-autotest'])
+    >>> anon_browser.getControl('Filter', index=0).click()
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'archive_package_row'):
+    ...    print extract_text(ppa_row)
+    Source             Published    Status     Series      Section  Build
+        Status
+    cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
 
 
 == Empty PPAs ==
@@ -549,7 +577,7 @@ help wiki are presented in the PPA index page.
     >>> print extract_text(signing_key_section)
     This repository is signed with
     ABCDEF0123456789ABCDDCBA0000111112345678 OpenPGP key.
-    Follow these instructions if you want to install packages from this PPA.
+    Follow these instructions for installing packages from this PPA.
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
