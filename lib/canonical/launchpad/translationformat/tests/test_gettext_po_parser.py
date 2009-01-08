@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 import doctest
 import re
@@ -25,6 +25,17 @@ class POBasicTestCase(unittest.TestCase):
     def testEmptyFile(self):
         # The parser reports an empty file as an error.
         self.assertRaises(TranslationFormatSyntaxError, self.parser.parse, '')
+
+    def testEmptyFileError(self):
+        # Trying to import an empty file produces a sensible error
+        # message.
+        try:
+            self.parser.parse('')
+            self.assertTrue(False, "Importing empty file failed to fail.")
+        except TranslationFormatSyntaxError, exception:
+            message = exception.represent("Default error message!")
+
+        self.assertEqual(message, "File contains no messages.")
 
     def testContentlessFile(self):
         # The parser reports a non-empty file holding no messages as an
