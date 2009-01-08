@@ -4,11 +4,11 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionSourcePackageBreadcrumbBuilder',
+    'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackageView',
-    'DistributionSourcePackageEditView',
     ]
 
 import itertools
