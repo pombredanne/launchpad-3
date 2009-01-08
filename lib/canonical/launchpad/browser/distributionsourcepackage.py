@@ -30,6 +30,7 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, Link, StandardLaunchpadFacets, action, canonical_url,
     redirection)
+from canonical.launchpad.webapp.menu import enabled_with_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 from lazr.delegates import delegates
@@ -63,6 +64,7 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         """Edit the details of this source package."""
         # This is titled "Edit bug reporting guidelines" because that
