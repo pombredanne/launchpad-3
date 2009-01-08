@@ -41,11 +41,10 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    ASCIILine, Bool, Bytes, Choice, Datetime, Int, Object, TextLine)
+    ASCIILine, Bool, Bytes, Choice, Datetime, Int, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -57,9 +56,8 @@ from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of)
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 
 def validate_new_submission_key(submission_key):
