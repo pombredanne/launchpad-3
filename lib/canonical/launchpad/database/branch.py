@@ -10,13 +10,17 @@ __all__ = [
 
 from datetime import datetime
 
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
+from bzrlib.revisionspec import RevisionSpec
 import pytz
+import simplejson
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
+from canonical.lazr import DBEnumeratedType, DBItem
 from storm.expr import And, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
@@ -50,8 +54,8 @@ from canonical.launchpad.interfaces import (
     IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
-    user_has_special_branch_access)
+    bazaar_identity, IBranchDiffJob, IBranchDiffJobSource,
+    IBranchNavigationMenu, NoSuchBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -64,6 +68,8 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.validators.person import (
     validate_public_person)
+from canonical.launchpad.database.diff import StaticDiff
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
@@ -321,6 +327,10 @@ class Branch(SQLBase):
     def warehouse_url(self):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
+
+    def getBzrBranch(self):
+        """Return the BzrBranch for this database Branch."""
+        return BzrBranch.open(self.warehouse_url)
 
     def _getContainerName(self):
         if self.product is not None:
@@ -1557,3 +1567,85 @@ class BranchQueryBuilder:
         return query
 
 
+class BranchJobType(DBEnumeratedType):
+    """Values that ICodeImportJob.state can take."""
+
+    STATIC_DIFF = DBItem(0, """
+        Static Diff
+
+        This job runs against a branch to produce a diff that cannot change.
+        """)
+
+
+class BranchJob(SQLBase):
+    """Base class for jobs related to branches."""
+
+    _table = 'BranchJob'
+
+    job = ForeignKey(foreignKey='Job', notNull=True)
+
+    branch = ForeignKey(foreignKey='Branch', notNull=True)
+
+    job_type = EnumCol(enum=BranchJobType, notNull=True)
+
+    _json_data = StringCol(dbName='json_data')
+
+    @property
+    def metadata(self):
+        return simplejson.loads(self._json_data)
+
+    def __init__(self, branch, job_type, metadata):
+        json_data = simplejson.dumps(metadata)
+        SQLBase.__init__(
+            self, job=Job(), branch=branch, job_type=job_type,
+            _json_data=json_data)
+
+    def destroySelf(self):
+        SQLBase.destroySelf(self)
+        self.job.destroySelf()
+
+
+class BranchDiffJob(BranchJob):
+    """A Job that calculates the a diff related to a Branch."""
+
+    implements(IBranchDiffJob)
+    classProvides(IBranchDiffJobSource)
+
+    def __init__(self, branch, from_revision_spec, to_revision_spec):
+        metadata = {
+            'from_revision_spec': from_revision_spec,
+            'to_revision_spec': to_revision_spec,
+        }
+        BranchJob.__init__(self, branch, BranchJobType.STATIC_DIFF, metadata)
+
+    @classmethod
+    def create(klass, branch, from_revision_spec, to_revision_spec):
+        """See `IBranchDiffJobSource`."""
+        return klass(
+            branch=branch, from_revision_spec=from_revision_spec,
+            to_revision_spec=to_revision_spec)
+
+    @property
+    def from_revision_spec(self):
+        return self.metadata['from_revision_spec']
+
+    @property
+    def to_revision_spec(self):
+        return self.metadata['to_revision_spec']
+
+    def _get_revision_id(self, bzr_branch, spec_string):
+        spec = RevisionSpec.from_string(spec_string)
+        return spec.as_revision_id(bzr_branch)
+
+    def run(self):
+        """See IBranchDiffJob."""
+        self.job.start()
+        bzr_branch = self.branch.getBzrBranch()
+        from_revision_id = self._get_revision_id(
+            bzr_branch, self.from_revision_spec)
+        to_revision_id = self._get_revision_id(
+            bzr_branch, self.to_revision_spec)
+        static_diff = StaticDiff.acquire(
+            from_revision_id, to_revision_id, bzr_branch.repository)
+        self.job.complete()
+        return static_diff
