@@ -725,7 +725,7 @@ class IPublishingSet(Interface):
     def getByIdAndArchive(id, archive):
         """Return the source publication matching id AND archive."""
 
-    def getBuildsForSourceIds(source_ids):
+    def getBuildsForSourceIds(source_ids, archive=None):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -733,6 +733,9 @@ class IPublishingSet(Interface):
         targeted `DistroArchSeries` in a 3-element tuple. This way the extra
         information will be cached and the callsites can group builds in
         any convenient form.
+
+        The optional archive parameter, if provided, will ensure that only
+        builds corresponding to the archive will be included in the results.
 
         The result is ordered by:
 
@@ -742,6 +745,9 @@ class IPublishingSet(Interface):
         :param source_ids: list of or a single
             `SourcePackagePublishingHistory` object.
         :type source_ids: ``list`` or `SourcePackagePublishingHistory`
+        :param archive: An optional archive with which to filter the source
+                        ids.
+        :type archive: `IArchive`
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
         :rtype: `storm.store.ResultSet`.
@@ -857,7 +863,7 @@ class IPublishingSet(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def getBuildStatusSummariesForSourceIds(source_ids):
+    def getBuildStatusSummariesForSourceIdsAndArchive(source_ids, archive):
         """Return a summary of the build statuses for source publishing ids.
 
         This method collects all the builds for the provided source package
@@ -869,8 +875,11 @@ class IPublishingSet(Interface):
 
         :param source_ids: A list of source publishing history record ids.
         :type source_ids: ``list``
+        :param archive: The archive which will be used to filter the source
+                        ids.
+        :type archive: `IArchive`
         :returns A dict consisting of the overall status summaries for the
-            given ids. For example:
+            given ids that belong in the archive. For example:
                 {
                     18: {'status': 'succeeded'},
                     25: {'status': 'building', 'builds':[building_builds]},
