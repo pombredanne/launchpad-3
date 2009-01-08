@@ -16,9 +16,9 @@ translators.
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open(
     ...     'http://translations.launchpad.dev/'
-    ...     '+groups/testing-translation-team/es/+edit')
+    ...     '+groups/testing-translation-team/es/+admin')
     >>> print carlos_browser.title
-    Edit Spanish translator for Just a testing team
+    Administer Spanish translator for Just a testing team
 
 This way he can also set the documentation URL.
 
@@ -48,3 +48,38 @@ Back on the translations page, the link is now present, too.
     Documentation
     >>> print documentation_url['href']
     http://www.ubuntu.com/
+
+Carlos appoints Sample Person as a translator for Esperanto.
+
+    >>> carlos_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     '+groups/testing-translation-team/+appoint')
+    >>> carlos_browser.getControl('Language').value = ['eo']
+    >>> carlos_browser.getControl('Translator').value = 'name12'
+    >>> carlos_browser.getControl('Add').click()
+    >>> print carlos_browser.url
+    http://translations.launchpad.dev/+groups/testing-translation-team
+
+Sample Person can not administer her ITranslator record but she can edit
+the documentation url through the edit view.
+
+    >>> test_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> from zope.security.interfaces import Unauthorized
+    >>> try:
+    ...     test_browser.open(
+    ...         'http://translations.launchpad.dev/'
+    ...         '+groups/testing-translation-team/eo/+admin')
+    ... except Unauthorized, e:
+    ...     print e
+    (...'launchpad.Admin')
+    >>> test_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     '+groups/testing-translation-team/eo/+edit')
+    >>> print test_browser.title
+    Edit Esperanto translator for Just a testing team
+    >>> test_browser.getControl('Documentation URL').value = (
+    ...     'http://www.launchpad.net/')
+    >>> test_browser.getControl('Change').click()
+    >>> print test_browser.url
+    http://translations.launchpad.dev/~name12
+
