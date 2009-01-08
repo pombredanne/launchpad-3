@@ -117,18 +117,12 @@
         <tr tal:condition="context/gpgkeys">
           <th>OpenPGP keys:</th>
           <td>
-            <tal:block repeat="key context/gpgkeys">
-              <tal:user condition="request/lp:person">
-                <a tal:attributes="href key/keyserverURL">
-                  <span tal:replace="key/keyid"
-                    /></a><span tal:condition="not: repeat/key/end">,</span>
-              </tal:user>
-              <tal:no-user condition="not: request/lp:person">
-                <tal:key replace="key/keyid">
-                  0xa345687b
-                </tal:key><span tal:condition="not: repeat/key/end">,</span>
-              </tal:no-user>
-            </tal:block>
+            <tal:keys repeat="key context/gpgkeys">
+              <a tal:attributes="href key/keyserverURL"
+                 tal:omit-tag="not: request/lp:person">
+                <tal:keyid replace="key/keyid"
+                  /></a><span tal:condition="not: repeat/key/end">,</span>
+            </tal:keys>
           </td>
         </tr>
 
