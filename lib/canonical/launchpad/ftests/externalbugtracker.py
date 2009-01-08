@@ -1151,7 +1151,7 @@ class TestRoundup(Roundup):
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
-        if self.isPython():
+        if self.host == 'bugs.python.org':
             return open(
                 file_path + '/' + 'python_example_ticket_export.csv', 'r')
         else:
