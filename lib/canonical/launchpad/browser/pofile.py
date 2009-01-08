@@ -545,40 +545,44 @@ class POFileTranslateView(BaseTranslationView):
         if show_option_changed and 'start' in self.request:
             del self.request.form['start']
 
+    def _handleShowAll(self):
+        """Get `POTMsgSet`s when filtering for "all" (but possibly searching).
+
+        Normally returns all `POTMsgSet`s for this `POFile`, but also handles
+        search requests which act as a separate form of filtering.
+        """
+        if self.search_text is None:
+            return self.context.potemplate.getPOTMsgSets()
+
+        if len(self.search_text) <= 1:
+            self.request.response.addWarningNotification(
+                "Please try searching for a longer string.")
+            return self.context.potemplate.getPOTMsgSets()
+
+        return self.context.findPOTMsgSetsContaining(text=self.search_text)
+
     def _getSelectedPOTMsgSets(self):
         """Return a list of the POTMsgSets that will be rendered."""
         # The set of message sets we get is based on the selection of kind
         # of strings we have in our form.
-        pofile = self.context
-        potemplate = pofile.potemplate
-        if self.show == 'all':
-            if self.search_text is not None:
-                if len(self.search_text) > 1:
-                    ret = pofile.findPOTMsgSetsContaining(
-                        text=self.search_text)
-                else:
-                    self.request.response.addWarningNotification(
-                        "Please try searching for a longer string.")
-                    ret = potemplate.getPOTMsgSets()
-            else:
-                ret = potemplate.getPOTMsgSets()
-        elif self.show == 'translated':
-            ret = pofile.getPOTMsgSetTranslated()
-        elif self.show == 'untranslated':
-            ret = pofile.getPOTMsgSetUntranslated()
-        elif self.show == 'new_suggestions':
-            ret = pofile.getPOTMsgSetWithNewSuggestions()
-        elif self.show == 'changed_in_launchpad':
-            ret = pofile.getPOTMsgSetChangedInLaunchpad()
-        else:
+        get_functions = {
+            'all': self._handleShowAll,
+            'translated': self.context.getPOTMsgSetTranslated,
+            'untranslated': self.context.getPOTMsgSetUntranslated,
+            'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
+            'changed_in_launchpad': 
+                self.context.getPOTMsgSetChangedInLaunchpad,
+            }
+
+        if self.show not in get_functions:
             raise UnexpectedFormData('show = "%s"' % self.show)
+
         # We cannot listify the results to avoid additional count queries,
-        # because we could end with a list of more than 32000 items with
+        # because we could end up with a list of more than 32000 items with
         # an average list of 5000 items.
         # The batch system will slice the list of items so we will fetch only
-        # the exact amount of entries we need to render the page and thus is a
-        # waste of resources to fetch all items always.
-        return ret
+        # the exact number of entries we need to render the page.
+        return get_functions[self.show]()
 
     @property
     def completeness(self):

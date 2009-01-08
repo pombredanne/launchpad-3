@@ -725,9 +725,9 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'externalbugtracker-python.txt':
+    'externalbugtracker-roundup-python-bugs.txt':
             LayeredDocFileSuite(
-                '../doc/externalbugtracker-python.txt',
+                '../doc/externalbugtracker-roundup-python-bugs.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer

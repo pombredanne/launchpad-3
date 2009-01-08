@@ -27,7 +27,8 @@
   <p>Active, pending and former members of this team.</p>
 
   <ul>
-    <li tal:condition="active_member_count">
+    <li tal:condition="active_member_count"
+        tal:define="membership_batch nocall:view/active_memberships/currentBatch">
       <h2>Active members</h2>
 
       <p>
@@ -39,6 +40,11 @@
         memberships.
       </p>
 
+      <div class="lesser" id="active-top-navigation">
+        <tal:navigation
+          content="structure view/active_memberships/@@+navigation-links-upper" />
+      </div>
+
       <table class="listing sortable" id="activemembers">
         <thead>
           <tr>
@@ -49,9 +55,8 @@
             <th tal:condition="user_can_edit_memberships">&nbsp;</th>
           </tr>
         </thead>
-
         <tbody>
-          <tr tal:repeat="membership context/member_memberships">
+          <tr tal:repeat="membership membership_batch">
             <tal:block define="member membership/person">
               <td>
                 <a tal:attributes="href member/fmt:url"
@@ -88,6 +93,11 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="lesser">
+        <tal:navigation
+          content="structure view/active_memberships/@@+navigation-links-lower" />
+      </div>
       <br />
     </li>
 
@@ -199,13 +209,19 @@
     </li>
     <br />
 
-    <li tal:condition="view/inactive_memberships">
+    <li tal:condition="view/inactive_memberships/batch/total"
+        tal:define="inactive_batch nocall:view/inactive_memberships/currentBatch">
       <h2>Former members</h2>
 
       <p>
         These are the members whose subscriptions have expired, or were
         deactivated by themselves or by a team administrator.
       </p>
+
+      <div class="lesser" id="inactive-top-navigation">
+        <tal:navigation
+          content="structure view/inactive_memberships/@@+navigation-links-upper" />
+      </div>
       <table class="listing sortable" id="inactivemembers">
         <thead>
           <tr>
@@ -216,7 +232,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="membership view/inactive_memberships">
+          <tr tal:repeat="membership inactive_batch">
             <tal:block define="member membership/person">
             <td>
               <a tal:attributes="href member/fmt:url"
@@ -243,6 +259,10 @@
           </tr>
         </tbody>
       </table>
+      <div class="lesser">
+        <tal:navigation
+          content="structure view/inactive_memberships/@@+navigation-links-lower" />
+      </div>
     </li>
   </ul>
 
