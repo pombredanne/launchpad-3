@@ -61,9 +61,9 @@ class WatchedFileHandler(logging.FileHandler):
         Open the current base file with the (original) mode and encoding.
         Return the resulting stream.
         """
-        # BACKPORT: In Python 2.6, the constructor & emit call out to this
-        # method. In Python 2.4, it's inlined in the constructor, and emit
-        # never calls it.
+        # BACKPORT: Copied from the 2.6 implementation so that emit() can call
+        # it. In the Python 2.6 version, this is also called by the
+        # constructor.
         if self.encoding is None:
             stream = open(self.baseFilename, self.mode)
         else:

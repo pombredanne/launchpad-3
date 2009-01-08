@@ -16,6 +16,7 @@ import os
 from twisted.application import service, strports
 from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
+from twisted.internet import defer
 from twisted.web.xmlrpc import Proxy
 
 from zope.event import notify
@@ -23,7 +24,7 @@ from zope.event import notify
 from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
-from canonical.twistedsupport import gather_maybe_results
+from canonical.twistedsupport import gatherResults
 
 
 class Factory(SSHFactory):
@@ -133,9 +134,9 @@ class SSHService(service.Service):
 
     def stopService(self):
         """Stop the SSH service."""
-        deferred = gather_maybe_results([
-            service.Service.stopService(self),
-            self.service.stopService()])
+        deferred = gatherResults([
+            defer.maybeDeferred(service.Service.stopService, self),
+            defer.maybeDeferred(self.service.stopService)])
         def log_stopped(ignored):
             notify(accesslog.ServerStopped())
             return ignored

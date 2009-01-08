@@ -51,10 +51,10 @@ def set_up_logging(configure_oops_reporting=False):
     In addition, if configure_oops_reporting is True, install a Twisted log
     observer that ensures unhandled exceptions get reported as OOPSes.
     """
-    # XXX: JonathanLange 2008-12-23: Why isn't configure_oops_reporting True
-    # all the time? Part of the answer is that when I set it to True, the
-    # test_logging tests don't restore stderr properly, resulting in broken
-    # testrunner output.
+    # XXX: JonathanLange 2008-12-23 bug=314950: Why isn't
+    # configure_oops_reporting True all the time? Part of the answer is that
+    # when I set it to True, the test_logging tests don't restore stderr
+    # properly, resulting in broken testrunner output.
     log = get_codehosting_logger()
     log.setLevel(logging.INFO)
     log.addHandler(_NullHandler())
@@ -68,7 +68,6 @@ def set_up_logging(configure_oops_reporting=False):
     # Make sure that our logging event handler is there, ready to receive
     # logging events.
     zope.component.provideHandler(_log_event)
-    return log
 
 
 class _NullHandler(logging.Handler):
@@ -84,13 +83,18 @@ class _NullHandler(logging.Handler):
 
 
 class ILoggingEvent(Interface):
+    """An event is a logging event if it has a message and a severity level.
+
+    Events that provide this interface will be logged in codehosting access
+    log.
+    """
 
     level = Attribute("The level to log the event at.")
     message = Attribute("The message to log.")
 
 
 class LoggingEvent:
-    """An event that can log itself to a logger.
+    """An event that can be logged to a Python logger.
 
     :ivar level: The level to log itself as. This should be defined as a
         class variable in subclasses.
@@ -115,8 +119,6 @@ class LoggingEvent:
         if template is not None:
             self.template = template
         self._data = data
-        for name, value in data.iteritems():
-            setattr(self, name, value)
 
     @property
     def level(self):
@@ -212,9 +214,5 @@ class BazaarSSHClosed(AvatarEvent):
 
 @zope.component.adapter(ILoggingEvent)
 def _log_event(event):
-    """Log 'event' to the codehosting logger.
-
-    All events should be logged through this function, which provides a
-    convenient mocking point for tests.
-    """
+    """Log 'event' to the codehosting logger."""
     get_access_logger().log(event.level, event.message)
