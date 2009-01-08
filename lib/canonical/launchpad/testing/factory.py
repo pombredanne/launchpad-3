@@ -67,7 +67,6 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database.diff import StaticDiffJob
 from canonical.launchpad.mail.signedmessage import SignedMessage
-from canonical.database.constants import DEFAULT
 
 SPACE = ' '
 

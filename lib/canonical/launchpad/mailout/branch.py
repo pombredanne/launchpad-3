@@ -119,7 +119,7 @@ class RecipientReason:
             target = self.merge_proposal.target_branch.bzr_identity
             template_values['merge_proposal'] = (
                 'the proposed merge of %s into %s' % (source, target))
-        if self.recipient != self.subscriber or self.subscriber.is_team:
+        if self.recipient != self.subscriber:
             assert self.recipient.hasParticipationEntryFor(self.subscriber), (
                 '%s does not participate in team %s.' %
                 (self.recipient.displayname, self.subscriber.displayname))

@@ -20,13 +20,14 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
-    BranchSet, BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation)
+    BranchDiffJob, BranchSet, BranchSubscription, ClearDependentBranch,
+    ClearSeriesBranch, DeleteCodeImport, DeletionCallable, DeletionOperation)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
@@ -38,14 +39,17 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
+    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchDiffJob,
+    NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -1440,6 +1444,79 @@ class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
             expert, celebs.bazaar_experts.teamowner)
 
         self.assertEqual(self.all_branches, self._getBranches(expert))
+
+
+class TestBranchDiffJob(TestCaseWithFactory):
+    """Tests for BranchDiffJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        verifyObject(IBranchDiffJob, BranchDiffJob(
+            1, from_revision_spec='0', to_revision_spec='1'))
+
+    def test_run_revision_ids(self):
+        """Ensure that run calculates revision ids."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit', rev_id='rev1')
+        job = BranchDiffJob(branch=branch, from_revision_spec='0',
+                            to_revision_spec='1')
+        static_diff = job.run()
+        self.assertEqual('null:', static_diff.from_revision_id)
+        self.assertEqual('rev1', static_diff.to_revision_id)
+
+    def test_run_diff_content(self):
+        """Ensure that run generates expected diff."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        open('file', 'wb').write('foo\n')
+        tree.add('file')
+        tree.commit('First commit')
+        open('file', 'wb').write('bar\n')
+        tree.commit('Next commit')
+        job = BranchDiffJob(branch=branch, from_revision_spec='1',
+                            to_revision_spec='2')
+        static_diff = job.run()
+        transaction.commit()
+        content_lines = static_diff.diff.text.splitlines()
+        self.assertEqual(
+            content_lines[3:], ['@@ -1,1 +1,1 @@', '-foo', '+bar', ''],
+            content_lines[3:])
+        self.assertEqual(7, len(content_lines))
+
+    def test_run_is_idempotent(self):
+        """Ensure running an equivalent job emits the same diff."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        job1 = BranchDiffJob(branch=branch, from_revision_spec='0',
+                             to_revision_spec='1')
+        static_diff1 = job1.run()
+        job2 = BranchDiffJob(branch=branch, from_revision_spec='0',
+                             to_revision_spec='1')
+        static_diff2 = job2.run()
+        self.assertTrue(static_diff1 is static_diff2)
+
+    def test_run_sets_status_completed(self):
+        """Ensure status is set to completed when a job runs to completion."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        job = BranchDiffJob(branch=branch, from_revision_spec='0',
+                            to_revision_spec='1')
+        job.run()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+
+    def test_destroySelf_destroys_job(self):
+        """Ensure that BranchDiffJob.destroySelf destroys the Job as well."""
+        branch = self.factory.makeBranch()
+        static_diff_job = BranchDiffJob(branch=branch, from_revision_spec='0',
+                                        to_revision_spec='1')
+        job_id = static_diff_job.job.id
+        static_diff_job.destroySelf()
+        self.assertRaises(SQLObjectNotFound, Job.get, job_id)
 
 
 def test_suite():
