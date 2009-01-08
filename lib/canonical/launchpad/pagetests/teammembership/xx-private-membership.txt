@@ -36,6 +36,7 @@ A team member should be able to view the +members page.
     >>> print_members(browser.contents, 'proposedmembers')
     No Privileges Person
 
+
 == Team Page ==
 
 Users who are not team members cannot see the recently approved members,
@@ -59,6 +60,7 @@ A team member will be able to see these parts of the team page.
 
     >>> find_tag_by_id(browser.contents, 'membership-summary')
     <...2 active members...1 proposed members...
+
 
 == Team Participation ==
 
@@ -204,6 +206,9 @@ no user can add that team as a member of a public team.
     >>> get_feedback_messages(admin_browser.contents)
     [...Constraint not satisfied...
 
+
+
+
 == Restrict Subscribing to Bugs ==
 
 To prevent leaking information about a team's private membership,
@@ -218,6 +223,7 @@ no user can subscribe that team to a bug.
     >>> get_feedback_messages(admin_browser.contents)
     [...Constraint not satisfied...
 
+
 == Restrict Subscribing to Blueprints ==
 
 To prevent leaking information about a team's private membership,
@@ -231,6 +237,7 @@ no user can subscribe that team to a blueprint.
     'http://blueprints.launchpad.dev/firefox/+spec/canvas/+addsubscriber'
     >>> get_feedback_messages(admin_browser.contents)
     [...Constraint not satisfied...
+
 
 == Restrict Appointing a Translator ==
 
@@ -247,6 +254,7 @@ no user can specify that team as a translator.
     >>> get_feedback_messages(admin_browser.contents)
     [...Constraint not satisfied...
 
+
 == Restrict Project Owner ==
 
 To prevent leaking information about a team's private membership,
@@ -259,6 +267,7 @@ no user can set that team as the owner/maintainer of a project.
     'http://launchpad.dev/mozilla/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
     [...The person/team named 'myteam' is not a valid owner for...
+
 
 == Restrict Product Maintainer ==
 
@@ -287,6 +296,7 @@ no user can set that team as the bug supervisor of a product.
     >>> get_feedback_messages(admin_browser.contents)
     [...You must choose a valid person or team to be the bug supervisor for...
 
+
 == Restrict Distro Registrant ==
 
 To prevent leaking information about a team's private membership,
@@ -299,6 +309,7 @@ no user can set that team as the registrant of a distribution.
     'http://launchpad.dev/ubuntu/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
     [...The person/team named 'myteam' is not a valid owner for...
+
 
 == Restrict Distro Bug Supervisor ==
 
