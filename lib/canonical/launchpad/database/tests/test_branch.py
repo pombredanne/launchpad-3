@@ -20,14 +20,14 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
-    BranchDiffJob, BranchSet, BranchSubscription, ClearDependentBranch,
-    ClearSeriesBranch, DeleteCodeImport, DeletionCallable, DeletionOperation)
+    BranchDiffJob, BranchJob, BranchJobType, BranchSet, BranchSubscription,
+    ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
+    DeletionCallable, DeletionOperation)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
-from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchDiffJob,
-    NoSuchBranch)
+    IBranchJob, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -1446,6 +1446,26 @@ class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
         self.assertEqual(self.all_branches, self._getBranches(expert))
 
 
+class TestBranchJob(TestCaseWithFactory):
+    """Tests for BranchJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        branch = self.factory.makeBranch()
+        verifyObject(
+            IBranchJob, BranchJob(branch, BranchJobType.STATIC_DIFF, {}))
+
+    def test_destroySelf_destroys_job(self):
+        """Ensure that BranchDiffJob.destroySelf destroys the Job as well."""
+        branch = self.factory.makeBranch()
+        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
+        job_id = branch_job.job.id
+        branch_job.destroySelf()
+        self.assertRaises(SQLObjectNotFound, BranchJob.get, job_id)
+
+
 class TestBranchDiffJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
 
@@ -1508,15 +1528,6 @@ class TestBranchDiffJob(TestCaseWithFactory):
                             to_revision_spec='1')
         job.run()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
-
-    def test_destroySelf_destroys_job(self):
-        """Ensure that BranchDiffJob.destroySelf destroys the Job as well."""
-        branch = self.factory.makeBranch()
-        static_diff_job = BranchDiffJob(branch=branch, from_revision_spec='0',
-                                        to_revision_spec='1')
-        job_id = static_diff_job.job.id
-        static_diff_job.destroySelf()
-        self.assertRaises(SQLObjectNotFound, Job.get, job_id)
 
 
 def test_suite():

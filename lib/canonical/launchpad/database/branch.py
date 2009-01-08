@@ -1582,6 +1582,8 @@ class BranchJobType(DBEnumeratedType):
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
 
+    implements(IBranchJob)
+
     _table = 'BranchJob'
 
     job = ForeignKey(foreignKey='Job', notNull=True)
