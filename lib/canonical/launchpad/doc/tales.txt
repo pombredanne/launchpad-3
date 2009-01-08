@@ -676,6 +676,7 @@ personal information may be in the content, and it will be shown to
 unauthenticated users, the email address can be hidden. The address
 is replaced with the message '<email address hidden>'.
 
+    >>> logout() # Pretend we're unauthenticated.
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
@@ -735,6 +736,12 @@ is replaced with the message '<email address hidden>'.
     ...     "...........................................................not")
     >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
     'medicalwei@sara:~$ ...'
+
+However, if the user is authenticated, the email address is not obfuscated.
+
+    >>> login('no-priv@canonical.com')
+    >>> test_tales('foo/fmt:obfuscate-email', foo='user@site.net')
+    'user@site.net'
 
 
 == Linkification of email addresses ==

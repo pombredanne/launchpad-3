@@ -1030,10 +1030,11 @@ COPY.
     ...     getUtility(IComponentSet)['universe'])
 
 Other dependencies than PPAs have an extended 'title', which includes
-the target 'pocket' and 'component'.
+the target 'pocket' and a human-readable reference to the components
+involved.
 
     >>> print primary_dependency.title
-    Primary Archive for Ubuntu Linux - UPDATES - universe
+    Primary Archive for Ubuntu Linux - UPDATES (main, universe)
 
 See further implications of archive dependencies in
 doc/archive-dependencies.txt.
@@ -1053,10 +1054,14 @@ dependency target.
 
     >>> no_priv.archive.removeArchiveDependency(ubuntu.main_archive)
 
-Non-PPA dependencies can have empty 'component' ...
+Non-PPA dependencies can have empty 'component', which has a slightly
+more concise title.
 
     >>> primary_component_dep = no_priv.archive.addArchiveDependency(
     ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
+
+    >>> print primary_component_dep.title
+    Primary Archive for Ubuntu Linux - SECURITY
 
 However only PRIMARY archive dependencies support pockets other than
 RELEASE or other components than 'main'.
@@ -1465,7 +1470,7 @@ immediately recognises 'cprov' rights on it.
     PPA for Launchpad Buildd Admins
 
 When there is no active PPA for the team a user participates the
-method returns a empty SelectResults.
+method returns an empty SelectResults.
 
     >>> jblack = getUtility(IPersonSet).getByName('jblack')
 

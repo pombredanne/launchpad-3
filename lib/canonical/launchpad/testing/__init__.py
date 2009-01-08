@@ -293,6 +293,39 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
+    def create_branch_and_tree(self, tree_location='.'):
+        """Create a database branch, bzr branch and bzr checkout."
+
+        :return: a `Branch` and a workingtree.
+        """
+        from bzrlib.bzrdir import BzrDir
+        from bzrlib.transport import get_transport
+        db_branch = self.factory.makeBranch()
+        transport = get_transport(db_branch.warehouse_url)
+        transport.clone('../..').ensure_base()
+        transport.clone('..').ensure_base()
+        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        return db_branch, bzr_branch.create_checkout(tree_location)
+
+    def useBzrBranches(self):
+        """Prepare for using bzr branches."""
+        from canonical.codehosting.scanner.tests.test_bzrsync import (
+            FakeTransportServer)
+        from bzrlib.transport import get_transport
+        self.useTempDir()
+        server = FakeTransportServer(get_transport('.'))
+        server.setUp()
+        self.addCleanup(server.tearDown)
+        # Avoid leaking local user configuration into tests.
+        old_bzr_home = os.environ.get('BZR_HOME')
+        def restore_bzr_home():
+            if old_bzr_home is None:
+                del os.environ['BZR_HOME']
+            else:
+                os.environ['BZR_HOME'] = old_bzr_home
+        os.environ['BZR_HOME'] = os.getcwd()
+        self.addCleanup(restore_bzr_home)
+
 
 def capture_events(callable_obj, *args, **kwargs):
     """Capture the events emitted by a callable.
