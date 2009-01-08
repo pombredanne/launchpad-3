@@ -2077,7 +2077,37 @@ ordered by displayname.  Note:  a project is considered commercial if
 it has a proprietary license or no license.  That's why some of these
 clearly FOSS project in our test data show up as commercial.
 
-    >>> comm_proj_vocab = vocabulary_registry.get(None, "CommercialProjects")
+
+For a normal user (one who does not have launchpad.Commercial
+permission) the owned commercial project vocabulary is a list of
+project the user either owns or manages.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login('celso.providelo@canonical.com')
+    >>> cprov = person_set.getByEmail('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Commercial', cprov)
+    False
+
+    >>> comm_proj_vocab = vocabulary_registry.get(cprov, "CommercialProjects")
+    >>> print comm_proj_vocab.displayname
+    Select a commercial project
+
+    >>> len(comm_proj_vocab)
+    1
+
+    >>> for term in comm_proj_vocab:
+    ...     print term.value.displayname
+    APTonCD
+
+If the user has launchpad.Commercial permission then all commercial
+projects are returned.
+
+    >>> login('commercial-member@canonical.com')
+    >>> commercial_member = person_set.getByEmail('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Commercial', commercial_member)
+    True
+
+    >>> comm_proj_vocab = vocabulary_registry.get(commercial_member, "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 
@@ -2094,18 +2124,3 @@ clearly FOSS project in our test data show up as commercial.
 
 
 == OwnedCommercialProjectsVocabulary ==
-
-The owned commercial project vocabulary is a list of project the
-user either owns or manages.
-
-    >>> bac = person_set.getByEmail('bac@canonical.com')
-    >>> owned_comm_proj_vocab = vocabulary_registry.get(bac, "OwnedCommercialProjects")
-    >>> print owned_comm_proj_vocab.displayname
-    Select one of the commercial projects administered by Brad Crittenden
-
-    >>> len(owned_comm_proj_vocab)
-    1
-
-    >>> for term in owned_comm_proj_vocab:
-    ...     print term.value.displayname
-    Mega Money Maker

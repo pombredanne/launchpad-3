@@ -247,12 +247,6 @@
     />
 
   <utility
-    name="OwnedCommercialProjects"
-    component="canonical.launchpad.vocabularies.OwnedCommercialProjectsVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    />
-
-  <utility
     name="Sprint"
     component="canonical.launchpad.vocabularies.SprintVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

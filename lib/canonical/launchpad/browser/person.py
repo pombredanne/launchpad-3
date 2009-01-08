@@ -2156,7 +2156,7 @@ class PersonVouchersView(LaunchpadFormView):
             Choice(__name__='project',
                    title=_('Select the project you wish to subscribe'),
                    description=_('Commercial projects you administer'),
-                   vocabulary=self._vocabulary_name,
+                   vocabulary="CommercialProjects",
                    required=True),
             render_context=self.render_context)
         return field
@@ -2189,18 +2189,6 @@ class PersonVouchersView(LaunchpadFormView):
         return unredeemed
 
     @cachedproperty
-    def _vocabulary_name(self):
-        """Get the name of the project vocabulary to use.
-
-        Regular users get a vocabulary listing commercial projects they own.
-        Commercial admins get all commercial projects.
-        """
-        if check_permission('launchpad.Commercial', self.context):
-            return 'CommercialProjects'
-        else:
-            return 'OwnedCommercialProjects'
-
-    @cachedproperty
     def managed_commercial_projects_vocabulary(self):
         """Get the commercial projects managed by the user.
 
@@ -2209,7 +2197,7 @@ class PersonVouchersView(LaunchpadFormView):
         """
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(self.context,
-                                             self._vocabulary_name)
+                                             "CommercialProjects")
         return vocabulary
 
     @action(_("Cancel"), name="cancel",

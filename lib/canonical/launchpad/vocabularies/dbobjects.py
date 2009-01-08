@@ -38,7 +38,6 @@ __all__ = [
     'LanguageVocabulary',
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
-    'OwnedCommercialProjectsVocabulary',
     'PPAVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
@@ -124,6 +123,7 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import (
@@ -1505,6 +1505,9 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     """List all commercial projects.
 
     A commercial project is one that does not qualify for free hosting.
+    For normal users only commercial projects that the user is the maintainer,
+    or in the maintainers team, will be listed.  For users with
+    launchpad.Commercial permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1535,9 +1538,16 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """Return terms where query is in the text of name
         or displayname, or matches the full text index.
         """
-        projects = self._getProjects(query)
-        commercial_projects = self._filter_projs(projects)
-        return commercial_projects
+        user = self.context
+        if user is None:
+            return self.emptySelectResults()
+        if check_permission('launchpad.Commercial', user):
+            product_set = getUtility(IProductSet)
+            projects = product_set.forReview(search_text=query,
+                                             active=True)
+        else:
+            projects = user.getOwnedProjects(match_name=query)
+        return self._filter_projs(projects)
 
     def toTerm(self, project):
         """Return the term for this object."""
@@ -1576,23 +1586,6 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def __contains__(self, obj):
         """See `IVocabulary`."""
         return obj in self._commercial_projects()
-
-
-class OwnedCommercialProjectsVocabulary(CommercialProjectsVocabulary):
-    """List commercial projects a user owns.
-
-    A commercial project is one that does not qualify for free hosting.
-    """
-    @property
-    def displayname(self):
-        return 'Select one of the commercial projects administered by %s' % (
-            self.context.displayname)
-
-    def _getProjects(self, query):
-        user = self.context
-        if user is None:
-            return self.emptySelectResults()
-        return user.getOwnedProjects(match_name=query)
 
 
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
