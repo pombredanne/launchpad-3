@@ -12,7 +12,7 @@
   <body>
     <div metal:fill-slot="main"
          tal:define="
-           commercial_projects view/managed_commercial_projects_vocabulary;
+           commercial_projects view/has_commercial_projects;
            config modules/canonical.config/config">
 
         <h1>Redeem Vouchers for Commercial Subscriptions</h1>

@@ -116,7 +116,8 @@ from canonical.launchpad.interfaces.milestone import IMilestoneSet
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import IProduct, IProductSet
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License)
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -1504,9 +1505,9 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     """List all commercial projects.
 
-    A commercial project is one that does not qualify for free hosting.
-    For normal users only commercial projects that the user is the maintainer,
-    or in the maintainers team, will be listed.  For users with
+    A commercial project is one that does not qualify for free hosting.  For
+    normal users only commercial projects for which the user is the
+    maintainer, or in the maintainers team, will be listed.  For users with
     launchpad.Commercial permission, all commercial projects are returned.
     """
 
@@ -1527,13 +1528,6 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             if not project.qualifies_for_free_hosting
             ]
 
-    def _getProjects(self, query):
-        """Get all of the projects, which will be filtered later."""
-        product_set = getUtility(IProductSet)
-        projects = product_set.forReview(search_text=query,
-                                         active=True)
-        return projects
-
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
         or displayname, or matches the full text index.
@@ -1544,10 +1538,12 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if check_permission('launchpad.Commercial', user):
             product_set = getUtility(IProductSet)
             projects = product_set.forReview(search_text=query,
+                                             licenses=[License.OTHER_PROPRIETARY],
                                              active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
-        return self._filter_projs(projects)
+            projects = self._filter_projs(projects)
+        return projects
 
     def toTerm(self, project):
         """Return the term for this object."""
@@ -1572,7 +1568,11 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def searchForTerms(self, query=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
-        return CountableIterator(len(results), results, self.toTerm)
+        if type(results) is list:
+            num = len(results)
+        else:
+            num = results.count()
+        return CountableIterator(num, results, self.toTerm)
 
     def _commercial_projects(self):
         """Return the list of commercial project owned by this user."""
@@ -1585,7 +1585,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def __contains__(self, obj):
         """See `IVocabulary`."""
-        return obj in self._commercial_projects()
+        return obj in self._filter_projs([obj])
 
 
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):

@@ -2142,7 +2142,7 @@ class PersonVouchersView(LaunchpadFormView):
         self.form_fields = []
         # Make the less expensive test for commercial projects first
         # to avoid the more costly fetching of unredeemed vouchers.
-        if (len(self.managed_commercial_projects_vocabulary) > 0 and
+        if (self.has_commercial_projects and
             len(self.unredeemed_vouchers) > 0):
             self.form_fields = (self.createProjectField() +
                                 self.createVoucherField())
@@ -2189,16 +2189,19 @@ class PersonVouchersView(LaunchpadFormView):
         return unredeemed
 
     @cachedproperty
-    def managed_commercial_projects_vocabulary(self):
-        """Get the commercial projects managed by the user.
+    def has_commercial_projects(self):
+        """Does the user manage one or more commercial project?
 
-        For users with launchpad.Commercial permission, the set of projects
-        will be all projects with a proprietary license.
+        Users with launchpad.Commercial permission can manage vouchers for any
+        project so the property is True always.  Otherwise it is true if the
+        vocabulary is not empty.
         """
+        if check_permission('launchpad.Commercial', self.context):
+            return True
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(self.context,
                                              "CommercialProjects")
-        return vocabulary
+        return len(vocabulary) > 0
 
     @action(_("Cancel"), name="cancel",
             validator='validate_cancel')
