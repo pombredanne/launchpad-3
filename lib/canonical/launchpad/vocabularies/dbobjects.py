@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -38,6 +38,7 @@ __all__ = [
     'LanguageVocabulary',
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
+    'OwnedCommercialProjectsVocabulary',
     'PPAVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
@@ -116,7 +117,7 @@ from canonical.launchpad.interfaces.milestone import IMilestoneSet
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.product import IProduct, IProductSet
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -1501,7 +1502,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
 
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
-    """List commercial projects a user administers.
+    """List all commercial projects.
 
     A commercial project is one that does not qualify for free hosting.
     """
@@ -1513,8 +1514,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     @property
     def displayname(self):
-        return 'Select one of the commercial projects administered by %s' % (
-            self.context.displayname)
+        return 'Select a commercial project'
 
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""
@@ -1524,15 +1524,18 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             if not project.qualifies_for_free_hosting
             ]
 
-    def _doSearch(self, query):
+    def _getProjects(self, query):
+        """Get all of the projects, which will be filtered later."""
+        product_set = getUtility(IProductSet)
+        projects = product_set.forReview(search_text=query,
+                                         active=True)
+        return projects
+
+    def _doSearch(self, query=None):
         """Return terms where query is in the text of name
         or displayname, or matches the full text index.
         """
-        user = self.context
-        if user is None:
-            return self.emptySelectResults()
-
-        projects = user.getOwnedProjects(match_name=query)
+        projects = self._getProjects(query)
         commercial_projects = self._filter_projs(projects)
         return commercial_projects
 
@@ -1563,10 +1566,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def _commercial_projects(self):
         """Return the list of commercial project owned by this user."""
-        user = self.context
-        if user is None:
-            return self.emptySelectResults()
-        return self._filter_projs(user.getOwnedProjects())
+        return self._filter_projs(self._doSearch())
 
     def __iter__(self):
         """See `IVocabulary`."""
@@ -1576,6 +1576,23 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def __contains__(self, obj):
         """See `IVocabulary`."""
         return obj in self._commercial_projects()
+
+
+class OwnedCommercialProjectsVocabulary(CommercialProjectsVocabulary):
+    """List commercial projects a user owns.
+
+    A commercial project is one that does not qualify for free hosting.
+    """
+    @property
+    def displayname(self):
+        return 'Select one of the commercial projects administered by %s' % (
+            self.context.displayname)
+
+    def _getProjects(self, query):
+        user = self.context
+        if user is None:
+            return self.emptySelectResults()
+        return user.getOwnedProjects(match_name=query)
 
 
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
@@ -2026,7 +2043,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
         -- Or an alias for an active product/distro.
         (alias_for IN (
             SELECT id FROM PillarName
-            WHERE active IS TRUE AND 
+            WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
         )
         """

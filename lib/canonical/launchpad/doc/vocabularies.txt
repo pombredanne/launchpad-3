@@ -2068,3 +2068,44 @@ do not raise an exception when instantiated.
     ...     # Assign the return value of pytz.timezone() to the zone
     ...     # variable to prevent printing out the return value.
     ...     zone = pytz.timezone(timezone.value)
+
+
+== CommercialProjectsVocabulary ==
+
+The commercial projects vocabulary contains all commercial projects,
+ordered by displayname.  Note:  a project is considered commercial if
+it has a proprietary license or no license.  That's why some of these
+clearly FOSS project in our test data show up as commercial.
+
+    >>> comm_proj_vocab = vocabulary_registry.get(None, "CommercialProjects")
+    >>> print comm_proj_vocab.displayname
+    Select a commercial project
+
+    >>> len(comm_proj_vocab)
+    21
+
+    >>> for term in list(comm_proj_vocab)[:5]:
+    ...     print term.value.displayname
+    APTonCD
+    Arch mirrors
+    Bazaar
+    Bazaar
+    Evolution
+
+
+== OwnedCommercialProjectsVocabulary ==
+
+The owned commercial project vocabulary is a list of project the
+user either owns or manages.
+
+    >>> bac = person_set.getByEmail('bac@canonical.com')
+    >>> owned_comm_proj_vocab = vocabulary_registry.get(bac, "OwnedCommercialProjects")
+    >>> print owned_comm_proj_vocab.displayname
+    Select one of the commercial projects administered by Brad Crittenden
+
+    >>> len(owned_comm_proj_vocab)
+    1
+
+    >>> for term in owned_comm_proj_vocab:
+    ...     print term.value.displayname
+    Mega Money Maker

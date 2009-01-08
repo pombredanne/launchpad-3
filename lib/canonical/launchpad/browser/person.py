@@ -104,7 +104,8 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm, SimpleVocabulary, getVocabularyRegistry)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -2141,7 +2142,7 @@ class PersonVouchersView(LaunchpadFormView):
         self.form_fields = []
         # Make the less expensive test for commercial projects first
         # to avoid the more costly fetching of unredeemed vouchers.
-        if (len(self.owned_commercial_projects) > 0 and
+        if (len(self.managed_commercial_projects_vocabulary) > 0 and
             len(self.unredeemed_vouchers) > 0):
             self.form_fields = (self.createProjectField() +
                                 self.createVoucherField())
@@ -2155,7 +2156,7 @@ class PersonVouchersView(LaunchpadFormView):
             Choice(__name__='project',
                    title=_('Select the project you wish to subscribe'),
                    description=_('Commercial projects you administer'),
-                   vocabulary='CommercialProjects',
+                   vocabulary=self._vocabulary_name,
                    required=True),
             render_context=self.render_context)
         return field
@@ -2188,13 +2189,28 @@ class PersonVouchersView(LaunchpadFormView):
         return unredeemed
 
     @cachedproperty
-    def owned_commercial_projects(self):
-        """Get the commercial projects owned by the user."""
-        commercial_projects = []
-        for project in self.context.getOwnedProjects():
-            if not project.qualifies_for_free_hosting:
-                commercial_projects.append(project)
-        return commercial_projects
+    def _vocabulary_name(self):
+        """Get the name of the project vocabulary to use.
+
+        Regular users get a vocabulary listing commercial projects they own.
+        Commercial admins get all commercial projects.
+        """
+        if check_permission('launchpad.Commercial', self.context):
+            return 'CommercialProjects'
+        else:
+            return 'OwnedCommercialProjects'
+
+    @cachedproperty
+    def managed_commercial_projects_vocabulary(self):
+        """Get the commercial projects managed by the user.
+
+        For users with launchpad.Commercial permission, the set of projects
+        will be all projects with a proprietary license.
+        """
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context,
+                                             self._vocabulary_name)
+        return vocabulary
 
     @action(_("Cancel"), name="cancel",
             validator='validate_cancel')
