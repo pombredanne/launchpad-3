@@ -988,6 +988,63 @@ Searching can be limited to a single product ID.
     USB 0x07b3 0x0017 OpticPro UT16
     USB 0x07b3 0x0017 Some other scanner
 
+HWDevice.getSubmissions() returns submissions which contain this device.
+
+We'll switch the DB user from hwdb-submission-processor to the ordinary
+Launchpad user, because the former has no access to the table
+distribution, which we want to access in this test.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> sata_controller = device_set.getByDeviceID(
+    ...     bus=HWBus.PCI, vendor_id = '0x10de', product_id='0x045d')
+    >>> for submission in sata_controller.getSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+We can limit the results to a specific driver. (See below fo details about
+HWDriver.)
+
+    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> ahci_driver = getUtility(IHWDriverSet).getByPackageAndName(
+    ...     'linux-image-2.6.24-19-generic', 'ahci')
+    >>> for submission in sata_controller.getSubmissions(
+    ...     driver=ahci_driver):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> usb_storage_driver = getUtility(IHWDriverSet).getByPackageAndName(
+    ...     'linux-image-2.6.24-19-generic', 'usb-storage')
+    >>> print sata_controller.getSubmissions(
+    ...     driver=usb_storage_driver).count()
+    0
+
+We can limit the results to a specific distribution.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> distribution_set = getUtility(IDistributionSet)
+    >>> ubuntu = distribution_set.getByName('ubuntu')
+    >>> for submission in sata_controller.getSubmissions(
+    ...     distribution=ubuntu):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> debian = distribution_set.getByName('debian')
+    >>> sata_controller.getSubmissions(distribution=debian).count()
+    0
+
+We can limit the results to a specific architecture.
+
+    >>> for submission in sata_controller.getSubmissions(
+    ...     architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> sata_controller.getSubmissions(architecture='amd64').count()
+    0
+
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
 
 == HWDeviceNameVariant ==
 

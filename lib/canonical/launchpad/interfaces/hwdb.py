@@ -44,7 +44,9 @@ from zope.schema import (
     ASCIILine, Bool, Bytes, Choice, Datetime, Int, Object, TextLine)
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
@@ -52,10 +54,12 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_collection_of)
 
 
 def validate_new_submission_key(submission_key):
@@ -116,31 +120,39 @@ class IHWSubmission(Interface):
 
     See doc/hwdb.txt for details about the attributes.
     """
+    export_as_webservice_entry()
 
-    date_created = Datetime(
-        title=_(u'Date Created'), required=True)
-    date_submitted = Datetime(
-        title=_(u'Date Submitted'), required=True)
-    format = Choice(
-        title=_(u'Format Version'), required=True,
-        vocabulary=HWSubmissionFormat)
-    status = Choice(
-        title=_(u'Submission Status'), required=True,
-        vocabulary=HWSubmissionProcessingStatus)
-    private = Bool(
-        title=_(u'Private Submission'), required=True)
-    contactable = Bool(
-        title=_(u'Contactable'), required=True)
-    submission_key = ASCIILine(
-        title=_(u'Unique Submission ID'), required=True)
-    owner = Attribute(
-        _(u"The owner's IPerson"))
+    date_created = exported(
+        Datetime(
+            title=_(u'Date Created'), required=True, readonly=True))
+    date_submitted = exported(
+        Datetime(
+            title=_(u'Date Submitted'), required=True, readonly=True))
+    format = exported(
+        Choice(
+            title=_(u'Format Version'), required=True,
+            vocabulary=HWSubmissionFormat, readonly=True))
+    status = exported(
+        Choice(
+            title=_(u'Submission Status'), required=True,
+            vocabulary=HWSubmissionProcessingStatus, readonly=True))
+    private = exported(
+        Bool(
+            title=_(u'Private Submission'), required=True))
+    contactable = exported(
+        Bool(
+            title=_(u'Contactable'), required=True))
+    submission_key = exported(
+        TextLine(
+            title=_(u'Unique Submission ID'), required=True, readonly=True))
+    owner = exported(
+        Reference(
+            IPerson, title=_(u"The owner's IPerson"), readonly=True))
     distroarchseries = Attribute(
         _(u'The DistroArchSeries'))
-    raw_submission = Object(
-        schema=ILibraryFileAlias,
-        title=_(u'The raw submission data'),
-        required=True)
+    raw_submission = exported(
+        Bytes(title=_(u'The raw submission data'), required=True,
+              readonly=True))
     system_fingerprint = Attribute(
         _(u'The system this submmission was made on'))
     raw_emailaddress = TextLine(
@@ -588,6 +600,44 @@ class IHWDevice(Interface):
 
     vendor_name = exported(
         TextLine(title=u'The vendor name.', readonly=True))
+
+    @operation_parameters(
+        driver=Reference(
+            IHWDriver,
+            title=u'A driver used for this device in a submission',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution, distroseries or '
+                'distroarchseries.',
+            required=False),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution.',
+            required=False),
+        architecture = TextLine(
+            title=u'A processor architecture',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given architecture.',
+            required=False))
+    @operation_returns_collection_of(IHWSubmission)
+    @export_read_operation()
+    def getSubmissions(driver=None, distribution=None, architecture=None):
+        """List all submissions which mention this device.
+
+        :param user: The `IPerson` running the query.
+        :param driver: Limit results to devices that use the given
+            `IHWDriver`.
+        :param distribution: Limit results to submissions for this
+            `IDistribution`.
+        :param architecture: Limit results to submissions for this
+            architecture.
+
+        Only submissions matching all given criteria are returned.
+        """
 
 
 class IHWDeviceSet(Interface):
