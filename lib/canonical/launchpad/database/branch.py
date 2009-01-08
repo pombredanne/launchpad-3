@@ -1599,12 +1599,20 @@ class BranchJob(SQLBase):
         return simplejson.loads(self._json_data)
 
     def __init__(self, branch, job_type, metadata):
+        """Constructor.
+
+        :param branch: The database branch this job relates to.
+        :param job_type: The BranchJobType of this job.
+        :param metadata: The type-specific variables, as a JSON-compatible
+            dict.
+        """
         json_data = simplejson.dumps(metadata)
         SQLBase.__init__(
             self, job=Job(), branch=branch, job_type=job_type,
             _json_data=json_data)
 
     def destroySelf(self):
+        """See `IBranchJob`."""
         SQLBase.destroySelf(self)
         self.job.destroySelf()
 
@@ -1613,23 +1621,23 @@ class BranchDiffJob(object):
     """A Job that calculates the a diff related to a Branch."""
 
     implements(IBranchDiffJob)
+
     classProvides(IBranchDiffJobSource)
+
     delegates(IBranchJob)
 
-
-    def __init__(self, branch, from_revision_spec, to_revision_spec):
-        metadata = {
-            'from_revision_spec': from_revision_spec,
-            'to_revision_spec': to_revision_spec,
-        }
-        self.context = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
+    def __init__(self, branch_job):
+        self.context = branch_job
 
     @classmethod
     def create(klass, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
-        return klass(
-            branch=branch, from_revision_spec=from_revision_spec,
-            to_revision_spec=to_revision_spec)
+        metadata = {
+            'from_revision_spec': from_revision_spec,
+            'to_revision_spec': to_revision_spec,
+        }
+        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
+        return klass(branch_job)
 
     @property
     def from_revision_spec(self):

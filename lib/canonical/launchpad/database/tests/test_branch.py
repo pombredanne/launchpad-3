@@ -1452,13 +1452,13 @@ class TestBranchJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        """Ensure that BranchJob implements IBranchJob."""
         branch = self.factory.makeBranch()
         verifyObject(
             IBranchJob, BranchJob(branch, BranchJobType.STATIC_DIFF, {}))
 
     def test_destroySelf_destroys_job(self):
-        """Ensure that BranchDiffJob.destroySelf destroys the Job as well."""
+        """Ensure that BranchJob.destroySelf destroys the Job as well."""
         branch = self.factory.makeBranch()
         branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
         job_id = branch_job.job.id
@@ -1473,16 +1473,15 @@ class TestBranchDiffJob(TestCaseWithFactory):
 
     def test_providesInterface(self):
         """Ensure that BranchDiffJob implements IBranchDiffJob."""
-        verifyObject(IBranchDiffJob, BranchDiffJob(
-            1, from_revision_spec='0', to_revision_spec='1'))
+        verifyObject(
+            IBranchDiffJob, BranchDiffJob.create(1, '0', '1'))
 
     def test_run_revision_ids(self):
         """Ensure that run calculates revision ids."""
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit', rev_id='rev1')
-        job = BranchDiffJob(branch=branch, from_revision_spec='0',
-                            to_revision_spec='1')
+        job = BranchDiffJob.create(branch, '0', '1')
         static_diff = job.run()
         self.assertEqual('null:', static_diff.from_revision_id)
         self.assertEqual('rev1', static_diff.to_revision_id)
@@ -1496,8 +1495,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         tree.commit('First commit')
         open('file', 'wb').write('bar\n')
         tree.commit('Next commit')
-        job = BranchDiffJob(branch=branch, from_revision_spec='1',
-                            to_revision_spec='2')
+        job = BranchDiffJob.create(branch, '1', '2')
         static_diff = job.run()
         transaction.commit()
         content_lines = static_diff.diff.text.splitlines()
@@ -1511,11 +1509,9 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit')
-        job1 = BranchDiffJob(branch=branch, from_revision_spec='0',
-                             to_revision_spec='1')
+        job1 = BranchDiffJob.create(branch, '0', '1')
         static_diff1 = job1.run()
-        job2 = BranchDiffJob(branch=branch, from_revision_spec='0',
-                             to_revision_spec='1')
+        job2 = BranchDiffJob.create(branch, '0', '1')
         static_diff2 = job2.run()
         self.assertTrue(static_diff1 is static_diff2)
 
@@ -1524,8 +1520,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit')
-        job = BranchDiffJob(branch=branch, from_revision_spec='0',
-                            to_revision_spec='1')
+        job = BranchDiffJob.create(branch, '0', '1')
         job.run()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
 
