@@ -17,15 +17,6 @@ team, he still does not get access to the membership list.
 
 == Membership Page ==
 
-Users who are not team members should not be able to view the +members
-page.
-
-    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> nopriv_browser.open('http://launchpad.dev/~myteam/+members')
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
-
 A team member should be able to view the +members page.
 
     >>> browser = setupBrowser(auth='Basic member@canonical.com:test')
@@ -38,15 +29,6 @@ A team member should be able to view the +members page.
 
 
 == Team Page ==
-
-Users who are not team members cannot see the recently approved members,
-recently applied members, or the membership summary on the ~myteam page.
-
-    >>> nopriv_browser.open('http://launchpad.dev/~myteam')
-    >>> find_tag_by_id(nopriv_browser.contents, 'recently-approved')
-    >>> find_tag_by_id(nopriv_browser.contents, 'recently-applied')
-    >>> find_tag_by_id(nopriv_browser.contents, 'membership-summary')
-    <...You are not allowed to view this team's membership...
 
 A team member will be able to see these parts of the team page.
 
@@ -70,23 +52,23 @@ entire team membership by viewing all the members' person pages, we don't
 want to leak this information, so MyTeam won't show up on the person
 overview page or the +assignedbugs page because it has a private membership.
 
-    >>> nopriv_browser.open('http://launchpad.dev/~owner')
-    >>> div = find_tag_by_id(nopriv_browser.contents, 'participation')
+    >>> user_browser.open('http://launchpad.dev/~owner')
+    >>> div = find_tag_by_id(user_browser.contents, 'participation')
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
     [u'Other Team']
 
-    >>> nopriv_browser.open('http://launchpad.dev/~owner/+assignedbugs')
-    >>> div = find_tag_by_id(nopriv_browser.contents,
+    >>> user_browser.open('http://launchpad.dev/~owner/+assignedbugs')
+    >>> div = find_tag_by_id(user_browser.contents,
     ...                      'portlet-team-assigned-bugs')
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
     [u'Other Team']
 
-    >>> nopriv_browser.open('http://launchpad.dev/~owner/+teamhierarchy')
-    >>> div = find_tag_by_id(nopriv_browser.contents, 'superteams')
+    >>> user_browser.open('http://launchpad.dev/~owner/+teamhierarchy')
+    >>> div = find_tag_by_id(user_browser.contents, 'superteams')
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print extract_text(a_tag)
@@ -141,8 +123,8 @@ First, we will add a custom icon to two teams.
 
 The user which is not on myteam will only see otherteam listed.
 
-    >>> nopriv_browser.open('http://launchpad.dev/~owner')
-    >>> div = find_tag_by_id(nopriv_browser.contents, 'teams_with_icons')
+    >>> user_browser.open('http://launchpad.dev/~owner')
+    >>> div = find_tag_by_id(user_browser.contents, 'teams_with_icons')
     >>> for a_tag in div.findAll('a'):
     ...     print a_tag['href']
     /~otherteam
@@ -193,7 +175,7 @@ MyTeam as an option in the +mentor form.
     otherteam
 
 
-== Restrict Private Membership Team as SubTeam ==
+== Preventing Private Team Information Leakage ==
 
 To prevent leaking information about a team's private membership,
 no user can add that team as a member of a public team.
@@ -206,7 +188,21 @@ no user can add that team as a member of a public team.
     >>> get_feedback_messages(admin_browser.contents)
     [...Constraint not satisfied...
 
+Anonymous users cannot even know that the private membership team even
+exists.
 
+    >>> anon_browser.open('http://launchpad.dev/~myteam')
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...>, name: u'~myteam'
+
+Similarly, non-team members cannot even know that the private team exists.
+
+    >>> user_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> user_browser.open('http://launchpad.dev/~myteam/+members')
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...>, name: u'~myteam'
 
 
 == Restrict Subscribing to Bugs ==
