@@ -124,25 +124,22 @@ class IMilestone(IHasBugs):
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
-    release = Reference(
+    code_name = Attribute("An alternative to the name attribute.")
+
+    product_release = Reference(
         schema=IProductRelease,
         title=_("The release for this milestone."),
         required=False,
         readonly=True)
 
     @call_with(owner=REQUEST_USER)
-    @rename_parameters_as(codename='code_name')
     @export_factory_operation(
         IProductRelease,
-        ['codename', 'summary', 'changelog'])
-    def addRelease(owner, codename=None, summary=None, changelog=None):
+        ['changelog'])
+    def createProductRelease(owner, changelog=None):
         """Create a new ProductRelease.
 
-        :param version: Name of the version.
         :param owner: `IPerson` object who manages the release.
-        :param codename: Alternative name of the version.
-        :param shortdesc: Summary information.
-        :param description: Detailed information.
         :param changelog: Highlighted changes in each version.
         :returns: `IProductRelease` object.
         """

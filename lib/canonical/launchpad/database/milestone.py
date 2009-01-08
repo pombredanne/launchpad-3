@@ -46,7 +46,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
     description = StringCol(notNull=False, default=None)
-    codename = StringCol(notNull=False, default=None)
+    code_name = StringCol(dbName='codename', notNull=False, default=None)
 
     # joins
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
@@ -55,7 +55,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         prejoins=['assignee'])
 
     @property
-    def release(self):
+    def product_release(self):
         store = Store.of(self)
         result = store.find(ProductRelease,
                             ProductRelease.milestone == self.id)
@@ -96,16 +96,12 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
 
-    def addRelease(self, owner, codename=None, summary=None, changelog=None):
+    def createProductRelease(self, owner, changelog=None):
         """See `IMilestone`."""
         # XXX
+        assert self.product_release is None
         return ProductRelease(
-            _deprecated_version='SEE-MILESTONE-NAME',
-            _deprecated_productseries=self.productseries,
             owner=owner,
-            codename=codename,
-            summary=summary,
-            _deprecated_description='SEE-MILESTONE-DESCRIPTION',
             changelog=changelog,
             milestone=self)
 

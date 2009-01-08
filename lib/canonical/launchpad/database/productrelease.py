@@ -50,8 +50,8 @@ class ProductRelease(SQLBase):
 
     # properties
     @property
-    def version(self):
-        return self.milestone.codename
+    def codename(self):
+        return self.milestone.code_name
 
     @property
     def version(self):

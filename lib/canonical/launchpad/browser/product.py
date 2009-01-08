@@ -722,11 +722,11 @@ class SeriesWithReleases:
         self.releases.append(release)
 
     @cachedproperty
-    def release_files(self):
-        files = set()
+    def has_release_files(self):
         for release in self.releases:
-            files = files.union(release.files)
-        return files
+            if len(release.files) > 0:
+                return True
+        return False
 
 
 class ReleaseWithFiles:

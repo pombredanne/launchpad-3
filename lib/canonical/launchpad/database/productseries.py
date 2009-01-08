@@ -412,11 +412,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 history.append(pkging)
         return history
 
-    def newMilestone(self, name, dateexpected=None, description=None):
+    def newMilestone(self, name, dateexpected=None, description=None,
+                     code_name=None):
         """See IProductSeries."""
         return Milestone(
             name=name, dateexpected=dateexpected, description=description,
-            product=self.product, productseries=self)
+            product=self.product, productseries=self, code_name=code_name)
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
