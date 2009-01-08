@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.mailout.branchmergeproposal import RecipientReason
+from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -187,7 +187,7 @@ class BranchMergeProposal(SQLBase):
     @property
     def title(self):
         """See `IBranchMergeProposal`."""
-        return "Proposed merge of %(source)s into %(target)s" % {
+        return "[Merge] %(source)s into %(target)s" % {
             'source': self.source_branch.bzr_identity,
             'target': self.target_branch.bzr_identity}
 
@@ -222,7 +222,7 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
-                    subscription, recipient, self, rationale)
+                    subscription, recipient, rationale, self)
         # Add in all the individuals that have been asked for a review,
         # or who have reviewed.  These people get added to the recipients
         # with the rationale of "Reviewer".
@@ -547,7 +547,7 @@ class BranchMergeProposal(SQLBase):
             review_type=review_type)
 
     def createCommentFromMessage(self, message, vote, review_type,
-                                 _notify_listeners=True):
+                                 original_email=None, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         # Lower case the review type.
         if review_type is not None:
@@ -568,7 +568,8 @@ class BranchMergeProposal(SQLBase):
             vote_reference.review_type = review_type
             vote_reference.comment = code_review_message
         if _notify_listeners:
-            notify(NewCodeReviewCommentEvent(code_review_message))
+            notify(NewCodeReviewCommentEvent(
+                    code_review_message, original_email))
         return code_review_message
 
 

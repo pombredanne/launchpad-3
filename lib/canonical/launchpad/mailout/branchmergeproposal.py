@@ -8,9 +8,9 @@ __metaclass__ = type
 
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.mail import format_address, get_msgid
-from canonical.launchpad.mailout.basemailer import BaseMailer
+from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
+from canonical.launchpad.mailout.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -47,66 +47,14 @@ def send_review_requested_notifications(vote_reference, event):
         mailer.sendAll()
 
 
-class RecipientReason:
-    """Reason for sending mail to a recipient."""
-
-    def __init__(self, subscriber, recipient, branch, merge_proposal,
-                 mail_header, reason_template):
-        self.subscriber = subscriber
-        self.recipient = recipient
-        self.branch = branch
-        self.mail_header = mail_header
-        self.reason_template = reason_template
-        self.merge_proposal = merge_proposal
-
-    @classmethod
-    def forBranchSubscriber(
-        klass, subscription, recipient, merge_proposal, rationale):
-        """Construct RecipientReason for a branch subscriber."""
-        return klass(
-            subscription.person, recipient, subscription.branch,
-            merge_proposal, rationale,
-            '%(entity_is)s subscribed to branch %(branch_name)s.')
-
-    @classmethod
-    def forReviewer(klass, vote_reference, recipient):
-        """Construct RecipientReason for a reviewer.
-
-        The reviewer will be the sole recipient.
-        """
-        merge_proposal = vote_reference.branch_merge_proposal
-        branch = merge_proposal.source_branch
-        return klass(vote_reference.reviewer, recipient, branch,
-                     merge_proposal, 'Reviewer',
-                     '%(entity_is)s requested to review %(merge_proposal)s.')
-
-    def getReason(self):
-        """Return a string explaining why the recipient is a recipient."""
-        source = self.merge_proposal.source_branch.bzr_identity
-        target = self.merge_proposal.target_branch.bzr_identity
-        template_values = {
-            'branch_name': self.branch.bzr_identity,
-            'entity_is': 'You are',
-            'merge_proposal': (
-                'the proposed merge of %s into %s' % (source, target))
-            }
-        if self.recipient != self.subscriber:
-            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
-                '%s does not participate in team %s.' %
-                (self.recipient.displayname, self.subscriber.displayname))
-            template_values['entity_is'] = (
-                'Your team %s is' % self.subscriber.displayname)
-        return (self.reason_template % template_values)
-
-
-class BMPMailer(BaseMailer):
+class BMPMailer(BranchMailer):
     """Send mailings related to BranchMergeProposal events."""
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None,
                  requested_reviews=None, comment=None, review_diff=None):
-        BaseMailer.__init__(self, subject, template_name, recipients,
-                            from_address, delta, message_id)
+        BranchMailer.__init__(self, subject, template_name, recipients,
+            from_address, delta, message_id)
         self.merge_proposal = merge_proposal
         if requested_reviews is None:
             requested_reviews = []
@@ -115,13 +63,9 @@ class BMPMailer(BaseMailer):
         self.review_diff = review_diff
 
     def sendAll(self):
-        BaseMailer.sendAll(self)
+        BranchMailer.sendAll(self)
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
-
-    @staticmethod
-    def _format_user_address(user):
-        return format_address(user.displayname, user.preferredemail.email)
 
     @classmethod
     def forCreation(klass, merge_proposal, from_user):
@@ -184,7 +128,7 @@ class BMPMailer(BaseMailer):
 
     def _getHeaders(self, email):
         """Return the mail headers to use."""
-        headers = BaseMailer._getHeaders(self, email)
+        headers = BranchMailer._getHeaders(self, email)
         reason, rationale = self._recipients.getReason(email)
         headers['X-Launchpad-Branch'] = reason.branch.unique_name
         if reason.branch.product is not None:
@@ -202,7 +146,7 @@ class BMPMailer(BaseMailer):
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
         # Expand the requested reviews.
-        params = BaseMailer._getTemplateParams(self, email)
+        params = BranchMailer._getTemplateParams(self, email)
         params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.bzr_identity,

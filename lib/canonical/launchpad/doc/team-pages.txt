@@ -122,14 +122,15 @@ user' feature (see person-pages.txt).  Similarly, a logged in user can contact
 a team through a 'Contact this team' link.
 
 The team's overview page tells us that we're contacting a team instead of a
-user.
+user. The title of the link states that the team owner will be contacted
+because bart is not a member of the team.
 
     >>> guadamen = person_set.getByName('guadamen')
     >>> bart = factory.makePerson(email='bart@example.com', name='bart')
     >>> login_person(bart)
 
     >>> view = create_initialized_view(guadamen, '+index')
-    >>> print view.contactuser_link_title
-    Send an email to this team through Launchpad
+    >>> print view.contact_link_title
+    Send an email to this team's owner through Launchpad
     >>> print view.specific_contact_text
     Contact this team

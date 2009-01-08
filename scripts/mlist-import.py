@@ -21,6 +21,7 @@ import textwrap
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.mlistimport import Importer
 
@@ -47,6 +48,10 @@ class MailingListImport(LaunchpadScript):
             'The file name containing the addresses to import, one '
             "per line.  If '-' is used or this option is not given, "
             'then addresses are read from standard input.'))
+        self.parser.add_option('--notifications',
+                               default=False, action='store_true',
+                               help=(
+            'Enable team-join notification sending to team admins.'))
 
     def main(self):
         """See `LaunchpadScript`."""
@@ -59,6 +64,15 @@ class MailingListImport(LaunchpadScript):
             team_name = self.args[0]
 
         importer = Importer(team_name, self.logger)
+
+        # Suppress sending emails based on the (absence) of the --notification
+        # switch.  Notifications are disabled by default because they can
+        # cause huge amounts to be sent to the team owner.
+        send_email_config = """
+            [zopeless]
+            send_email: %s
+            """ % self.options.notifications
+        config.push('send_email_config', send_email_config)
 
         if self.options.filename == '-':
             # Read all the addresses from standard input, parse them

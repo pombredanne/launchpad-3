@@ -6,15 +6,18 @@ __metaclass__ = type
 
 import gc
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib import errors
 from bzrlib.tests import (
-    adapt_tests, default_transport, TestLoader, TestNotApplicable)
+    adapt_tests, default_transport, TestCaseWithTransport, TestLoader,
+    TestNotApplicable)
 from bzrlib.tests.bzrdir_implementations import (
     BzrDirTestProviderAdapter, TestCaseWithBzrDir)
 from bzrlib.transport.memory import MemoryServer
 
-from canonical.codehosting.bzrutils import get_branch_stacked_on_url
+from canonical.codehosting.bzrutils import (
+    DenyingServer, get_branch_stacked_on_url)
 from canonical.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -93,6 +96,24 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
             errors.NotBranchError, get_branch_stacked_on_url, a_bzrdir)
 
 
+class TestDenyingServer(TestCaseWithTransport):
+    """Tests for `DenyingServer`."""
+
+    def test_denyingServer(self):
+        # DenyingServer prevents creations of transports for the given URL
+        # schemes between setUp() and tearDown().
+        branch = self.make_branch('branch')
+        self.assertTrue(
+            branch.base.startswith('file://'),
+            "make_branch() didn't make branch with file:// URL")
+        file_denier = DenyingServer(['file://'])
+        file_denier.setUp()
+        self.assertRaises(AssertionError, Branch.open, branch.base)
+        file_denier.tearDown()
+        # This is just "assertNotRaises":
+        Branch.open(branch.base)
+
+
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests by BzrDir.
 
@@ -110,6 +131,9 @@ def load_tests(basic_tests, module, loader):
     stacking_format.repository_format = RepositoryFormatKnitPack5()
     BzrDirFormat.register_format(stacking_format)
 
+    get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
+        TestGetBranchStackedOnURL)
+
     formats = BzrDirFormat.known_formats()
     adapter = BzrDirTestProviderAdapter(
         default_transport,
@@ -119,7 +143,7 @@ def load_tests(basic_tests, module, loader):
         None,
         formats)
     # add the tests for the sub modules
-    adapt_tests(basic_tests, adapter, result)
+    adapt_tests(get_branch_stacked_on_url_tests, adapter, result)
 
     # This will always add the tests for smart server transport, regardless of
     # the --transport option the user specified to 'bzr selftest'.
@@ -139,15 +163,20 @@ def load_tests(basic_tests, module, loader):
         ReadonlySmartTCPServer_for_testing,
         [(RemoteBzrDirFormat())],
         name_suffix='-default')
-    adapt_tests(basic_tests, adapt_to_smart_server, smart_server_suite)
+    adapt_tests(
+        get_branch_stacked_on_url_tests, adapt_to_smart_server,
+        smart_server_suite)
     adapt_to_smart_server = BzrDirTestProviderAdapter(
         MemoryServer,
         SmartTCPServer_for_testing_v2_only,
         ReadonlySmartTCPServer_for_testing_v2_only,
         [(RemoteBzrDirFormat())],
         name_suffix='-v2')
-    adapt_tests(basic_tests, adapt_to_smart_server, smart_server_suite)
+    adapt_tests(
+        get_branch_stacked_on_url_tests,
+        adapt_to_smart_server, smart_server_suite)
     result.addTests(smart_server_suite)
+    result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
     return result
 
 

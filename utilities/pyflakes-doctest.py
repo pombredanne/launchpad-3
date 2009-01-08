@@ -47,6 +47,7 @@ GLOBAL_NAMES = set([
     'http',
     'mailinglist_api',
     'parse_relationship_section',
+    'pretty',
     'print_action_links',
     'print_batch_header',
     'print_comments',

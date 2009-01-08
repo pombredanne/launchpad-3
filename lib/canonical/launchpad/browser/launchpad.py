@@ -60,10 +60,11 @@ from canonical.launchpad.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.karma import IKarmaActionSet
+from canonical.launchpad.interfaces.hwdb import IHWDBApplication
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm, IBazaarApplication, IHWDBApplication,
-    ILaunchpadCelebrities, IRosettaApplication, IStructuralHeaderPresentation,
+    IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
+    IRosettaApplication, IStructuralHeaderPresentation,
     IStructuralObjectPresentation)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
@@ -752,6 +753,8 @@ class ObjectForTemplate:
 
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
+
+    export_subdirectories = True
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')

@@ -311,7 +311,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> proposal.source_branch.title = 'baz'
     >>> proposal.target_branch.title = 'qux'
     >>> test_tales("proposal/fmt:link", proposal=proposal)
-    u'<a href="...">Proposed merge of
+    u'<a href="...">[Merge]
     lp://dev/~person-name38/product-name30/branch40 into
     lp://dev/~person-name24/product-name30/branch26</a>'
 
@@ -676,6 +676,7 @@ personal information may be in the content, and it will be shown to
 unauthenticated users, the email address can be hidden. The address
 is replaced with the message '<email address hidden>'.
 
+    >>> logout() # Pretend we're unauthenticated.
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
@@ -735,6 +736,12 @@ is replaced with the message '<email address hidden>'.
     ...     "...........................................................not")
     >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
     'medicalwei@sara:~$ ...'
+
+However, if the user is authenticated, the email address is not obfuscated.
+
+    >>> login('no-priv@canonical.com')
+    >>> test_tales('foo/fmt:obfuscate-email', foo='user@site.net')
+    'user@site.net'
 
 
 == Linkification of email addresses ==

@@ -13,8 +13,7 @@ import transaction
 
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.ftests import (
-    login, login_person, logout, ANONYMOUS, syncUpdate)
+from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
@@ -83,28 +82,6 @@ class TestBranchSet(TestCase):
         latest_branches = list(
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
         self.assertEqual(original_branches[1:], latest_branches)
-
-    def test_getHostedBranchesForPerson(self):
-        """The hosted branches for a person are all of the branches without
-        urls that are owned by that person, or a team that the person is in.
-        """
-        branch_owner = getUtility(IPersonSet).get(12)
-        login_person(branch_owner)
-        try:
-            branch_set = getUtility(IBranchSet)
-            branches = sorted(
-                branch.unique_name for branch in
-                branch_set.getHostedBranchesForPerson(branch_owner))
-            expected = [
-                u'~landscape-developers/landscape/trunk',
-                u'~name12/gnome-terminal/mirrored',
-                u'~name12/gnome-terminal/pushed',
-                u'~name12/gnome-terminal/scanned',
-                u'~name12/landscape/feature-x',
-                ]
-            self.assertEqual(expected, branches)
-        finally:
-            logout()
 
 
 class TestBranchSetNew(TestCaseWithFactory):
@@ -1048,100 +1025,6 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         """One user can't create +junk branches owned by another."""
         self.assertPolicyCheckRaises(
             BranchCreatorNotOwner, self.albert, self.doug)
-
-
-class TestBranchSetGetBranches(TestCase):
-    """Make sure that the branch set gets the correct branches."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
-
-    def test_get_branch(self):
-        factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch()
-        self.assertEqual(
-            branch,
-            BranchSet().getBranch(branch.owner, branch.product, branch.name))
-
-    def test_get_junk_branch(self):
-        factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch(product=None)
-        self.assertTrue(branch.product is None)
-        self.assertEqual(
-            branch,
-            BranchSet().getBranch(branch.owner, None, branch.name))
-
-
-class TestBranchSetIsBranchNameAvailable(TestCase):
-    """Make sure that isBranchNameAvailable enforces uniqueness."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
-
-    def test_different_owners_same_product_same_name_ok(self):
-        factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
-        bob = factory.makePerson(name="bob")
-        mary = factory.makePerson(name="mary")
-        b1 = factory.makeBranch(
-            owner=bob, product=product, name="sample-branch")
-        self.assertTrue(
-            BranchSet().isBranchNameAvailable(
-                owner=mary, product=product, branch_name="sample-branch"))
-
-    def test_different_owners_junk_same_name_ok(self):
-        factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
-        name = "sample-branch"
-        bob = factory.makePerson(name="bob")
-        mary = factory.makePerson(name="mary")
-        b1 = factory.makeBranch(owner=bob, product=None, name=name)
-        self.assertTrue(b1.product is None)
-        self.assertEqual(name, b1.name)
-
-        self.assertTrue(
-            BranchSet().isBranchNameAvailable(
-                owner=mary, product=None, branch_name=name))
-
-    def test_same_owner_junk_same_name_not_available(self):
-        factory = LaunchpadObjectFactory()
-        owner = factory.makePerson()
-        name = "sample-branch"
-        b1 = factory.makeBranch(owner=owner, product=None, name=name)
-        self.assertTrue(b1.product is None)
-        self.assertEqual(name, b1.name)
-
-        self.assertFalse(
-            BranchSet().isBranchNameAvailable(
-                owner=owner, product=None, branch_name=name))
-
-    def test_same_owner_same_project_same_name_not_available(self):
-        factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
-        owner = factory.makePerson()
-        name = "sample-branch"
-        b1 = factory.makeBranch(owner=owner, product=product, name=name)
-        self.assertEqual(product, b1.product)
-        self.assertEqual(name, b1.name)
-        self.assertEqual(owner, b1.owner)
-
-        self.assertFalse(
-            BranchSet().isBranchNameAvailable(
-                owner=owner, product=product, branch_name=name))
 
 
 def test_suite():

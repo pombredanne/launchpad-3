@@ -21,10 +21,10 @@ from bzrlib.urlutils import escape, local_path_to_url
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
-    AsyncLaunchpadTransport, LaunchpadInternalServer, LaunchpadServer,
-    BranchTransportDispatch, TransportDispatch, UnknownTransportType)
+    AsyncLaunchpadTransport, branch_id_to_path, LaunchpadInternalServer,
+    LaunchpadServer, BranchTransportDispatch, TransportDispatch,
+    UnknownTransportType)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
@@ -226,7 +226,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
     def test_translateControlPath(self):
         branch = self.factory.makeBranch(owner=self.requester)
-        branch.product.development_focus.user_branch = branch
+        self.factory.enableDefaultStackingForProduct(branch.product, branch)
         deferred = self.server.translateVirtualPath(
             '~%s/%s/.bzr/control.conf'
             % (branch.owner.name, branch.product.name))
@@ -511,7 +511,7 @@ class LaunchpadTransportTests:
         transport = self.getTransport()
         branch = self.factory.makeBranch(
             BranchType.HOSTED, owner=self.requester)
-        branch.product.development_focus.user_branch = branch
+        self.factory.enableDefaultStackingForProduct(branch.product, branch)
         return self.assertFiresFailure(
             errors.TransportNotPossible,
             transport.put_bytes,
