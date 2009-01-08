@@ -570,7 +570,7 @@ really deleted.
 
     >>> jblack_browser.getLink('Personal Package Archive').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl('Search', index=0).click()
+    >>> jblack_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status

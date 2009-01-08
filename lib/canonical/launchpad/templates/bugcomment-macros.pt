@@ -56,13 +56,6 @@
     </ul>
 
     <div class="bug-comment"
-      tal:condition="view/user"
-      tal:content="structure comment/text_for_display/fmt:email-to-html">
-      Comment text.
-    </div>
-
-    <div class="bug-comment"
-      tal:condition="not:view/user"
       tal:content="structure
         comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
       Comment text.

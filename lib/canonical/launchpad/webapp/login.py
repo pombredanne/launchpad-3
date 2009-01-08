@@ -219,7 +219,7 @@ class LoginOrRegister:
             return
 
         # XXX matsubara 2006-05-08 bug=43675: This class should inherit from
-        # GeneralFormView, that way we could take advantage of Zope's widget
+        # LaunchpadFormView, that way we could take advantage of Zope's widget
         # validation, instead of checking manually for password validity.
         if not valid_password(password):
             self.login_error = _(
