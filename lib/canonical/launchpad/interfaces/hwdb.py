@@ -147,7 +147,6 @@ class IHWSubmission(Interface):
         title=_('Email address'), required=True)
 
 
-
 class IHWSubmissionForm(Interface):
     """The schema used to build the HW submission form."""
 
@@ -273,6 +272,87 @@ class IHWSystemFingerprintSet(Interface):
         """Create an entry in the fingerprint list.
 
         Return the new entry."""
+
+class IHWDriver(Interface):
+    """Information about a device driver."""
+    export_as_webservice_entry()
+
+    id = exported(
+        Int(title=u'Driver ID', required=True, readonly=True))
+
+    package_name = exported(
+        TextLine(
+            title=u'Package Name', required=False,
+            description=_("The name of the package written without spaces in "
+                          "lowercase letters and numbers."),
+            default=u''))
+
+    name = exported(
+        TextLine(
+            title=u'Driver Name', required=True,
+            description=_("The name of the driver written without spaces in "
+                          "lowercase letters and numbers.")))
+
+    license = exported(
+        Choice(
+            title=u'License of the Driver', required=False,
+            vocabulary=License))
+
+
+class IHWDriverSet(Interface):
+    """The set of device drivers."""
+
+    def create(package_name, name, license):
+        """Create a new IHWDriver instance.
+
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :param license: The license of the driver.
+        :return: The new IHWDriver instance.
+        """
+
+    def getByPackageAndName(package_name, name):
+        """Return an IHWDriver instance for the given parameters.
+
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
+        """
+
+    def getOrCreate(package_name, name, license=None):
+        """Return an IHWDriver instance or create one.
+
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :param license: The license of the driver.
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
+        """
+
+    def search(package_name=None, name=None):
+        """Return the drivers matching the given parameters.
+
+        :param package_name: The name of the packages containing the driver.
+            If package_name is not given or None, the result set is
+            not limited to a specific package name.
+            If package_name == '', those records are returned where
+            record.package_name == '' or record.package_name is None.
+            Otherwise only records matching the given name are returned.
+        :param name: The name of the driver.
+            If name is not given or None, the result set is not limited to
+            a specific driver name.
+            Otherwise only records matching the given name are returned.
+        :return: A sequence of IHWDriver instances.
+        """
+
+    def getByID(self, id):
+        """Return an IHWDriver record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWDriver instance.
+        """
+
 
 # Identification of a hardware device.
 #
@@ -621,87 +701,6 @@ class IHWDeviceNameVariantSet(Interface):
         :param vendor_name: The alternative vendor name for the device.
         :param product_name: The alternative product name for the device.
         :return: The new IHWDeviceNameVariant.
-        """
-
-
-class IHWDriver(Interface):
-    """Information about a device driver."""
-    export_as_webservice_entry()
-
-    id = exported(
-        Int(title=u'Driver ID', required=True, readonly=True))
-
-    package_name = exported(
-        TextLine(
-            title=u'Package Name', required=False,
-            description=_("The name of the package written without spaces in "
-                          "lowercase letters and numbers."),
-            default=u''))
-
-    name = exported(
-        TextLine(
-            title=u'Driver Name', required=True,
-            description=_("The name of the driver written without spaces in "
-                          "lowercase letters and numbers.")))
-
-    license = exported(
-        Choice(
-            title=u'License of the Driver', required=False,
-            vocabulary=License))
-
-
-class IHWDriverSet(Interface):
-    """The set of device drivers."""
-
-    def create(package_name, name, license):
-        """Create a new IHWDriver instance.
-
-        :param package_name: The name of the packages containing the driver.
-        :param name: The name of the driver.
-        :param license: The license of the driver.
-        :return: The new IHWDriver instance.
-        """
-
-    def getByPackageAndName(package_name, name):
-        """Return an IHWDriver instance for the given parameters.
-
-        :param package_name: The name of the packages containing the driver.
-        :param name: The name of the driver.
-        :return: An IHWDriver instance or None, if no record exists for
-            the given parameters.
-        """
-
-    def getOrCreate(package_name, name, license=None):
-        """Return an IHWDriver instance or create one.
-
-        :param package_name: The name of the packages containing the driver.
-        :param name: The name of the driver.
-        :param license: The license of the driver.
-        :return: An IHWDriver instance or None, if no record exists for
-            the given parameters.
-        """
-
-    def search(package_name=None, name=None):
-        """Return the drivers matching the given parameters.
-
-        :param package_name: The name of the packages containing the driver.
-            If package_name is not given or None, the result set is
-            not limited to a specific package name.
-            If package_name == '', those records are returned where
-            record.package_name == '' or record.package_name is None.
-            Otherwise only records matching the given name are returned.
-        :param name: The name of the driver.
-            If name is not given or None, the result set is not limited to
-            a specific driver name.
-            Otherwise only records matching the given name are returned.
-        :return: A sequence of IHWDriver instances.
-        """
-
-    def getByID(self, id):
-        """Return an IHWDriver record with the given database ID.
-
-        :param id: The database ID.
-        :return: An IHWDriver instance.
         """
 
 
