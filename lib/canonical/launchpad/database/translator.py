@@ -11,7 +11,7 @@ from sqlobject import ForeignKey, StringCol
 from canonical.launchpad.interfaces.translator import (
     ITranslator, ITranslatorSet)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.validators.person import validate_public_person
@@ -46,4 +46,22 @@ class TranslatorSet:
             language=language,
             translator=translator,
             documentation_url=documentation_url)
+
+    def getByTranslator(self, translator):
+        """See ITranslatorSet."""
+        direct = Translator.select("""
+            Translator.translationgroup = TranslationGroup.id AND
+            Translator.translator = %s""" % sqlvalues(translator),
+            clauseTables=["TranslationGroup"],
+            orderBy="TranslationGroup.title")
+
+        indirect = Translator.select("""
+            Translator.translationgroup = TranslationGroup.id AND
+            Translator.translator = TeamParticipation.team AND
+            TeamParticipation.person = %s
+            """ % sqlvalues(translator),
+            clauseTables=["TeamParticipation", "TranslationGroup"],
+            orderBy="TranslationGroup.title")
+
+        return direct.union(indirect)
 

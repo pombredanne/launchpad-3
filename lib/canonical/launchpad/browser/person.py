@@ -3133,6 +3133,11 @@ class PersonTranslationView(LaunchpadView):
         return list(self.context.translation_groups)
 
     @cachedproperty
+    def translators(self):
+        """Return translators a person is a member of."""
+        return list(self.context.translators)
+
+    @cachedproperty
     def person_filter_querystring(self):
         """Return person's name appropriate for including in links."""
         return urllib.urlencode({'person': self.context.name})
