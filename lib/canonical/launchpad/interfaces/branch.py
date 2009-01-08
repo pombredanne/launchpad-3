@@ -34,6 +34,7 @@ __all__ = [
     'IBranchDiffJob',
     'IBranchDiffJobSource',
     'IBranchBatchNavigator',
+    'IBranchJob',
     'IBranchListingFilter',
     'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
@@ -1426,21 +1427,27 @@ class BranchPersonSearchContext:
         self.restriction = restriction
 
 
-class IBranchDiffJob(Interface):
-    """A job to create a static diff from a branch."""
-
-    job = Object(schema=IJob, required=True)
+class IBranchJob(Interface):
+    """A job related to a branch."""
 
     branch = Object(
         title=_('Branch to use for this diff'), required=True,
-        schema=ILibraryFileAlias)
+        schema=IBranch)
+
+    job = Object(schema=IJob, required=True)
+
+    metadata = Attribute('A dict of data about the job.')
+
+    def destroySelf():
+        """Destroy this object."""
+
+
+class IBranchDiffJob(Interface):
+    """A job to create a static diff from a branch."""
 
     from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
 
     to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
-
-    def destroySelf():
-        """Destroy this object."""
 
     def run():
         """Acquire the static diff this job requires.

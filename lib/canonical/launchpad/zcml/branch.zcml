@@ -341,6 +341,7 @@
   </class>
   <class class="canonical.launchpad.database.branch.BranchDiffJob">
     <allow interface="canonical.launchpad.interfaces.branch.IBranchDiffJob" />
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
   </class>
   <securedutility
       component="canonical.launchpad.database.branch.BranchDiffJob"
