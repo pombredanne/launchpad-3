@@ -1841,11 +1841,11 @@ class ViewSourcePackageRelease(AuthorizationBase):
     a private archive.
     """
     permission = 'launchpad.View'
-    userfor = ISourcePackageRelease
+    usedfor = ISourcePackageRelease
 
     # XXX Julian 2008-09-10
     # Calls to _cached_published_archives can be changed to just
-    # "published_archives" when security adpater caching is implemented.
+    # "published_archives" when security adapter caching is implemented.
     # See bug 268612.
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
