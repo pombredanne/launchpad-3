@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Logging for the SSH server."""
 
@@ -29,6 +29,38 @@ from canonical.launchpad.scripts import WatchedFileHandler
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
+class LoggingManager:
+    """Class for managing codehosting logging."""
+
+    def setUp(self, configure_oops_reporting=False):
+        """Set up logging for the smart server.
+
+        This sets up a debugging handler on the 'codehosting' logger, makes sure
+        that things logged there won't go to stderr (necessary because of
+        bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
+
+        In addition, if configure_oops_reporting is True, install a Twisted log
+        observer that ensures unhandled exceptions get reported as OOPSes.
+        """
+        # XXX: JonathanLange 2008-12-23 bug=314950: Why isn't
+        # configure_oops_reporting True all the time? Part of the answer is that
+        # when I set it to True, the test_logging tests don't restore stderr
+        # properly, resulting in broken testrunner output.
+        log = get_codehosting_logger()
+        log.setLevel(logging.INFO)
+        log.addHandler(_NullHandler())
+        access_log = get_access_logger()
+        handler = WatchedFileHandler(config.codehosting.access_log)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        access_log.addHandler(handler)
+        if configure_oops_reporting:
+            set_up_oops_reporting('codehosting')
+        # Make sure that our logging event handler is there, ready to receive
+        # logging events.
+        zope.component.provideHandler(_log_event)
+
+
 def get_codehosting_logger():
     """Return the codehosting logger."""
     # This is its own function to avoid spreading the string 'codehosting'
@@ -39,35 +71,6 @@ def get_codehosting_logger():
 
 def get_access_logger():
     return logging.getLogger('codehosting.access')
-
-
-def set_up_logging(configure_oops_reporting=False):
-    """Set up logging for the smart server.
-
-    This sets up a debugging handler on the 'codehosting' logger, makes sure
-    that things logged there won't go to stderr (necessary because of
-    bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
-
-    In addition, if configure_oops_reporting is True, install a Twisted log
-    observer that ensures unhandled exceptions get reported as OOPSes.
-    """
-    # XXX: JonathanLange 2008-12-23 bug=314950: Why isn't
-    # configure_oops_reporting True all the time? Part of the answer is that
-    # when I set it to True, the test_logging tests don't restore stderr
-    # properly, resulting in broken testrunner output.
-    log = get_codehosting_logger()
-    log.setLevel(logging.INFO)
-    log.addHandler(_NullHandler())
-    access_log = get_access_logger()
-    handler = WatchedFileHandler(config.codehosting.access_log)
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-    access_log.addHandler(handler)
-    if configure_oops_reporting:
-        set_up_oops_reporting('codehosting')
-    # Make sure that our logging event handler is there, ready to receive
-    # logging events.
-    zope.component.provideHandler(_log_event)
 
 
 class _NullHandler(logging.Handler):

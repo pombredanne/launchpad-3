@@ -17,7 +17,7 @@ from zope.event import notify
 
 from canonical.codehosting.sshserver.accesslog import (
     _log_event, get_access_logger, get_codehosting_logger, LoggingEvent,
-    set_up_logging)
+    LoggingManager)
 from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
 from canonical.launchpad.testing import TestCase
@@ -48,20 +48,20 @@ class TestLoggingBazaarInteraction(BzrTestCase):
         BzrTestCase.tearDown(self)
 
     def test_leaves_bzr_handlers_unchanged(self):
-        # Bazaar's log handling is untouched by set_up_logging.
+        # Bazaar's log handling is untouched by logging setup.
         root_handlers = logging.getLogger('').handlers
         bzr_handlers = logging.getLogger('bzr').handlers
 
-        set_up_logging()
+        LoggingManager().setUp()
 
         self.assertEqual(root_handlers, logging.getLogger('').handlers)
         self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
 
     def test_codehosting_log_doesnt_go_to_stderr(self):
-        # Once set_up_logging is called, any messages logged to the
+        # Once logging setup is called, any messages logged to the
         # codehosting logger should *not* be logged to stderr. If they are,
         # they will appear on the user's terminal.
-        set_up_logging()
+        LoggingManager().setUp()
 
         # Make sure that a logged message does not go to stderr.
         get_codehosting_logger().info('Hello hello')
@@ -85,14 +85,14 @@ class TestLoggingSetup(TestCase):
     def test_codehosting_handlers(self):
         # There needs to be at least one handler for the codehosting root
         # logger.
-        set_up_logging()
+        LoggingManager().setUp()
         handlers = get_codehosting_logger().handlers
         self.assertNotEqual([], handlers)
 
     def test_access_handlers(self):
-        # set_up_logging installs a rotatable log handler that logs output to
-        # config.codehosting.access_log.
-        set_up_logging()
+        # The logging setup installs a rotatable log handler that logs output
+        # to config.codehosting.access_log.
+        LoggingManager().setUp()
         [handler] = get_access_logger().handlers
         self.assertIsInstance(handler, WatchedFileHandler)
         self.assertEqual(config.codehosting.access_log, handler.baseFilename)
