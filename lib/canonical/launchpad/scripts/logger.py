@@ -12,8 +12,13 @@ to be used for non-script stuff.
 __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
-__all__ = ['log', 'logger', 'logger_options', 'FakeLogger',
-           'QuietFakeLogger']
+__all__ = [
+    'log',
+    'logger',
+    'logger_options',
+    'FakeLogger',
+    'QuietFakeLogger',
+    ]
 
 import logging
 import re
@@ -29,8 +34,8 @@ from pytz import utc
 from zope.component import getUtility
 
 from canonical.base import base
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 from canonical.config import config
+from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 
 
 class FakeLogger:

@@ -581,7 +581,7 @@ class POParser(object):
                 # It may contain a header though.
                 if not self._message.translations:
                     raise TranslationFormatSyntaxError(
-                        "File contains no messages.")
+                        message="File contains no messages.")
                 self._parseHeader(
                     self._message.translations[
                         TranslationConstants.SINGULAR_FORM],

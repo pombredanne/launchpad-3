@@ -424,9 +424,10 @@
       </iframe>
     </tal:datepicker>
 
-    <tal:cache define="cache request/webservicerequest:cache;
+    <tal:cache condition="view/user|nothing"
+               define="cache request/webservicerequest:cache;
                        links cache/links;
-                       objects cache/objects">
+                       objects cache/objects;">
       <script tal:repeat="key links"
         tal:content="structure string:LP.client.links['${key}'] =
                         '${links/?key/fmt:api_url}';">

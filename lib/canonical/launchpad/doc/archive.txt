@@ -596,6 +596,44 @@ An option argument can be used to exclude any builds that have the status
     superseded 3
     total 17
 
+The getBuildCounters method is not publically available, but only to users
+who have permission to view the archive:
+
+First, we turn cprov's archive into a private one:
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = 'really secret'
+    >>> cprov_archive.private = True
+
+Then verify that an admin can see the counters:
+
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    ...
+    total      4
+
+Next veryify that cprov can still access the build counters:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    ...
+    total      4
+
+But the public cannot:
+
+    >>> login('no-priv@canonical.com')
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'getBuildCounters', 'launchpad.View')
+
+Make the archive public again before continuing:
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+
 
 == Package Counters ==
 
