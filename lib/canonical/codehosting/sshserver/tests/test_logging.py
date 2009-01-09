@@ -12,7 +12,7 @@ import sys
 
 from bzrlib.tests import TestCase as BzrTestCase
 
-from zope import component
+import zope.component.event
 from zope.event import notify
 
 from canonical.codehosting.sshserver.accesslog import (
@@ -52,7 +52,9 @@ class TestLoggingBazaarInteraction(BzrTestCase):
         root_handlers = logging.getLogger('').handlers
         bzr_handlers = logging.getLogger('bzr').handlers
 
-        LoggingManager().setUp()
+        manager = LoggingManager()
+        manager.setUp()
+        self.addCleanup(manager.tearDown)
 
         self.assertEqual(root_handlers, logging.getLogger('').handlers)
         self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
@@ -61,14 +63,16 @@ class TestLoggingBazaarInteraction(BzrTestCase):
         # Once logging setup is called, any messages logged to the
         # codehosting logger should *not* be logged to stderr. If they are,
         # they will appear on the user's terminal.
-        LoggingManager().setUp()
+        manager = LoggingManager()
+        manager.setUp()
+        self.addCleanup(manager.tearDown)
 
         # Make sure that a logged message does not go to stderr.
         get_codehosting_logger().info('Hello hello')
         self.assertEqual(sys.stderr.getvalue(), '')
 
 
-class TestLoggingSetup(TestCase):
+class TestLoggingManager(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
@@ -85,17 +89,68 @@ class TestLoggingSetup(TestCase):
     def test_codehosting_handlers(self):
         # There needs to be at least one handler for the codehosting root
         # logger.
-        LoggingManager().setUp()
+        manager = LoggingManager()
+        manager.setUp()
+        self.addCleanup(manager.tearDown)
         handlers = get_codehosting_logger().handlers
         self.assertNotEqual([], handlers)
+
+    def _get_handlers(self):
+        registrations = (
+            zope.component.getGlobalSiteManager().registeredHandlers())
+        return [
+            registration.factory
+            for registration in registrations]
+
+    def test_log_event_handler_not_registered(self):
+        self.assertNotIn(_log_event, self._get_handlers())
+
+    def test_set_up_registers_event_handler(self):
+        manager = LoggingManager()
+        manager.setUp()
+        self.addCleanup(manager.tearDown)
+        self.assertIn(_log_event, self._get_handlers())
+
+    def test_teardown_restores_event_handlers(self):
+        handlers = self._get_handlers()
+        manager = LoggingManager()
+        manager.setUp()
+        manager.tearDown()
+        self.assertEqual(handlers, self._get_handlers())
+
+    def test_teardown_restores_level(self):
+        log = get_codehosting_logger()
+        old_level = log.level
+        manager = LoggingManager()
+        manager.setUp()
+        manager.tearDown()
+        self.assertEqual(old_level, log.level)
+
+    def test_teardown_restores_handlers(self):
+        log = get_codehosting_logger()
+        handlers = list(log.handlers)
+        manager = LoggingManager()
+        manager.setUp()
+        manager.tearDown()
+        self.assertEqual(handlers, log.handlers)
 
     def test_access_handlers(self):
         # The logging setup installs a rotatable log handler that logs output
         # to config.codehosting.access_log.
-        LoggingManager().setUp()
+        manager = LoggingManager()
+        manager.setUp()
+        self.addCleanup(manager.tearDown)
         [handler] = get_access_logger().handlers
         self.assertIsInstance(handler, WatchedFileHandler)
         self.assertEqual(config.codehosting.access_log, handler.baseFilename)
+
+    def test_teardown_restores_access_handlers(self):
+        log = get_access_logger()
+        handlers = list(log.handlers)
+        manager = LoggingManager()
+        manager.setUp()
+        manager.tearDown()
+        self.assertEqual(handlers, log.handlers)
 
 
 class ListHandler(logging.Handler):
@@ -139,9 +194,10 @@ class TestLoggingEvent(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
-        component.provideHandler(_log_event)
+        zope.component.provideHandler(_log_event)
         self.addCleanup(
-            component.getGlobalSiteManager().unregisterHandler, _log_event)
+            zope.component.getGlobalSiteManager().unregisterHandler,
+            _log_event)
         self.logger = get_codehosting_logger()
         self.logger.setLevel(logging.DEBUG)
 

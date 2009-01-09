@@ -29,6 +29,21 @@ from canonical.launchpad.scripts import WatchedFileHandler
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
+def synchronize(source, target, add, remove):
+    """Update 'source' to match 'target' using 'add' and 'remove'.
+
+    Changes the container 'source' so that it equals 'target', calling 'add'
+    with any object in 'target' not in 'source' and 'remove' with any object
+    not in 'target' but in 'source'.
+    """
+    need_to_add = [obj for obj in target if obj not in source]
+    need_to_remove = [obj for obj in source if obj not in target]
+    for obj in need_to_add:
+        add(obj)
+    for obj in need_to_remove:
+        remove(obj)
+
+
 class LoggingManager:
     """Class for managing codehosting logging."""
 
@@ -47,6 +62,8 @@ class LoggingManager:
         # when I set it to True, the test_logging tests don't restore stderr
         # properly, resulting in broken testrunner output.
         log = get_codehosting_logger()
+        self._orig_level = log.level
+        self._orig_handlers = list(log.handlers)
         log.setLevel(logging.INFO)
         log.addHandler(_NullHandler())
         access_log = get_access_logger()
@@ -59,6 +76,18 @@ class LoggingManager:
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
         zope.component.provideHandler(_log_event)
+
+    def tearDown(self):
+        log = get_codehosting_logger()
+        log.level = self._orig_level
+        synchronize(
+            log.handlers, self._orig_handlers, log.addHandler,
+            log.removeHandler)
+        access_log = get_access_logger()
+        synchronize(
+            access_log.handlers, self._orig_handlers, access_log.addHandler,
+            access_log.removeHandler)
+        zope.component.getGlobalSiteManager().unregisterHandler(_log_event)
 
 
 def get_codehosting_logger():
