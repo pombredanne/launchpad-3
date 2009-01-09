@@ -846,7 +846,7 @@ Or changed:
 There are cases where teams have deactivated or suspended users as members.
 This is a data error that needs fixing, but should not interfere with
 any notification processes. An OOPS is reported in such cases and the
-method returns raising an exception.
+method ignores the user.
 
 Bad user joins a team, and he is approved. An admin later suspends him.
 
@@ -888,7 +888,6 @@ is reported.
     ...     text, index = error_utility.getLastOopsReport().id.split('T')
     ...     return int(index)
 
-    >>> login('foo.bar@canonical.com')
     >>> bad_membership = membershipset.getByPersonAndTeam(bad_user, t3)
     >>> bad_membership.setExpirationDate(utc_now + timedelta(days=9), foobar)
     >>> bad_membership.sendExpirationWarningEmail()

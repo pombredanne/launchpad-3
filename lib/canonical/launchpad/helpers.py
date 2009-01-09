@@ -232,10 +232,6 @@ def get_contact_email_addresses(person):
     If the user does not have a preferred email address, an OOPS is
     reported and an empty set is returned.
     """
-    # XXX: Guilherme Salgado 2006-04-20:
-    # This str() call can be removed as soon as Andrew lands his
-    # unicode-simple-sendmail branch, because that will make
-    # simple_sendmail handle unicode email addresses.
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
