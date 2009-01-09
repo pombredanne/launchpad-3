@@ -59,7 +59,7 @@ from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
@@ -838,6 +838,13 @@ class Archive(SQLBase):
                     build_counts[count_type] += count
 
         return build_counts
+
+    def getBuildSummariesForSourceIds(self, source_ids):
+        """See `IArchive`."""
+        publishing_set = getUtility(IPublishingSet)
+        return publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
+            source_ids,
+            archive=self)
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""

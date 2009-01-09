@@ -596,6 +596,50 @@ An option argument can be used to exclude any builds that have the status
     superseded 3
     total 17
 
+== getBuildSummariesForSourceIds() ==
+
+IArchive.getBuildSummariesForSourceIds() allows callsites to get an update
+on the build statuses for a set of source publishing record ids. This
+is useful for dynamically updating a page which displays a small batch of
+source packages, such as the PPA/Archive pages.
+
+Create a small function for displaying the results:
+
+    >>> def print_build_summary(summary):
+    ...     print "%s\n%s\nRelevant builds:\n%s" % (
+    ...         summary['status'].title,
+    ...         summary['status'].description,
+    ...         "\n".join(
+    ...             " - %s" % build.title for build in summary['builds'])
+    ...     )
+
+    >>> def print_build_summaries(summaries):
+    ...     for source_id, summary in sorted(summaries.items()):
+    ...         print "Source ID: %s" % source_id
+    ...         print_build_summary(summary)
+
+Now print the build summaries for firefox and foo_bar:
+
+    >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_source_pub = firefox_source.publishing_history[0]
+    >>> foobar = ubuntu.getSourcePackage('foobar')
+    >>> foo_pub = foobar.publishing_history[0]
+
+    >>> build_summaries = \
+    ...     ubuntu.main_archive.getBuildSummariesForSourceIds(
+    ...         [firefox_source_pub.id, foo_pub.id])
+    >>> print_build_summaries(build_summaries)
+    Source ID: 18
+    Successfully built
+    All builds were built successfully.
+    Relevant builds:
+     - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+     - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    Source ID: 22
+    Failed to build
+    There were build failures.
+    Relevant builds:
+     - i386 build of foobar 1.0 in ubuntu warty RELEASE
 
 == Package Counters ==
 
