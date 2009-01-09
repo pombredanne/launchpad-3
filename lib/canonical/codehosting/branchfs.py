@@ -325,7 +325,9 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
         def path_not_translated(failure):
-            trap_fault(failure, faults.PathTranslationError.error_code)
+            trap_fault(
+                failure, faults.PathTranslationError.error_code,
+                PERMISSION_DENIED_FAULT_CODE)
             raise NoSuchFile(virtual_url_fragment)
 
         def unknown_transport_type(failure):
