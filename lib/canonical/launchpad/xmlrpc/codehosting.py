@@ -308,7 +308,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         try:
             branch_id = branch.id
         except Unauthorized:
-            return None
+            return Fault(
+                PERMISSION_DENIED_FAULT_CODE, "Permission denied.")
         if branch.branch_type == BranchType.REMOTE:
             return None
         return (
@@ -353,7 +354,9 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     unescape(first).encode('utf-8'))
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)
-                    if branch is None:
+                    if isinstance(branch, Fault):
+                        return branch
+                    elif branch is None:
                         break
                     return branch
                 # Is it a product control directory?

@@ -920,7 +920,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.translatePath(requester, path)
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE,
-            "Could not translate '%s'." % path, fault)
+            "Permission denied.", fault)
 
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path. When

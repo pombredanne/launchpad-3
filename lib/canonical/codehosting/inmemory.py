@@ -565,7 +565,8 @@ class FakeBranchFilesystem:
 
     def _serializeBranch(self, requester_id, branch, trailing_path):
         if not self._canRead(requester_id, branch):
-            return None
+            return Fault(
+                PERMISSION_DENIED_FAULT_CODE, 'Permission denied.')
         elif branch.branch_type == BranchType.REMOTE:
             return None
         else:
@@ -585,7 +586,9 @@ class FakeBranchFilesystem:
             branch = self._branch_set._find(unique_name=first)
             if branch is not None:
                 branch = self._serializeBranch(requester_id, branch, second)
-                if branch is None:
+                if isinstance(branch, Fault):
+                    return branch
+                elif branch is None:
                     break
                 return branch
 
