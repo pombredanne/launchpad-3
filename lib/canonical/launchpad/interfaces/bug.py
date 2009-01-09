@@ -166,7 +166,7 @@ class IBug(ICanBeMentored):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Reference(IPerson, title=_("The owner's IPerson")))
+        Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
     duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')

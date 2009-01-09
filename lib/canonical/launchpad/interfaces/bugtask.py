@@ -446,7 +446,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                  "length of time between the creation date "
                                  "and now."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson))
+        Reference(title=_("The owner"), schema=IPerson, readonly=True))
     target = Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
         description=_("The software in which this bug should be fixed."))
