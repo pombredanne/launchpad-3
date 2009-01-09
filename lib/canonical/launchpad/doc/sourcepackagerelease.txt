@@ -374,9 +374,9 @@ We will use SoyuzTestPublisher to create new publications.
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
 
-For instance, if a SourcePackageRelease is only published in a private
-PPA, only users with access (launchpad.View) to that archive will be
-able to get the same permission on it.
+If a SourcePackageRelease is only published in a private PPA, only
+users with access (launchpad.View) to that archive will be able to get
+the same permission on it.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
@@ -396,9 +396,8 @@ able to get the same permission on it.
     ...     print archive.title
     Private PPA for Celso Providelo
 
-As mentioned, 'foo - 666' sourcepackagerelease is only published in
-Celso's Private PPA. So, Only Celso and administrators can get
-'launchpad.View' on it.
+'foo - 666' sourcepackagerelease is only published in Celso's Private
+PPA. So, Only Celso and administrators can get 'launchpad.View' on it.
 
     >>> from canonical.launchpad.webapp.authorization import (
     ...     check_permission)
@@ -415,8 +414,9 @@ Celso's Private PPA. So, Only Celso and administrators can get
     >>> check_permission('launchpad.View', test_sourcepackagerelease)
     True
 
-Once a SourcePackageRelease gets copied to a public archives, let's
-say Ubuntu primary archive, it becomes publicly available.
+Once the SourcePackageRelease in question gets copied to a public
+archive, let's say Ubuntu primary archive, it will become publicly
+available.
 
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingPocket)
@@ -424,8 +424,8 @@ say Ubuntu primary archive, it becomes publicly available.
     >>> public_publication = private_publication.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, ubuntu.main_archive)
 
-That done, we can see that 'foo - 666' is now published in Celso's
-private PPA and the Ubuntu primary archive, which is public.
+'foo - 666' is now published in Celso's private PPA and the Ubuntu
+primary archive, which is public.
 
     >>> published_archives = test_sourcepackagerelease.published_archives
     >>> for archive in published_archives:
@@ -433,7 +433,7 @@ private PPA and the Ubuntu primary archive, which is public.
     Primary Archive for Ubuntu Linux
     Private PPA for Celso Providelo
 
-Now, 'foo - 666' has become public, as expected.
+And we can see it's publicly available now, as expected.
 
     >>> login(ANONYMOUS)
     >>> check_permission('launchpad.View', test_sourcepackagerelease)
