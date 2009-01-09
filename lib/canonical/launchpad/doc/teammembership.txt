@@ -840,3 +840,89 @@ Or changed:
     >>> no_priv.inTeam(admins)
     False
 
+
+== Email to invalid users ==
+
+There are cases where teams have deactivated or suspended users as members.
+This is a data error that needs fixing, but should not interfere with
+any notification processes. An OOPS is reported in such cases and the
+method returns raising an exception.
+
+Bad user joins a team, and he is approved. An admin later suspends him.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+
+    >>> bad_user =  factory.makePerson(
+    ...     email='bad-user@canonical.com',
+    ...     name='bad-user',
+    ...     password='invalid')
+
+    >>> login('bad-user@canonical.com')
+    >>> bad_user.join(t3)
+
+    >>> login_person(t3.teamowner)
+    >>> t3.setMembershipData(
+    ...     bad_user, TeamMembershipStatus.APPROVED, reviewer)
+
+    >>> login('foo.bar@canonical.com')
+    >>> bad_user.account.status = AccountStatus.SUSPENDED
+    >>> bad_user.preferredemail.status = EmailAddressStatus.OLD
+    >>> removeSecurityProxy(bad_user)._preferredemail_cached = None
+
+    >>> [m.displayname for m in t3.allmembers]
+    [u'Bad-user', u'Foo Bar']
+    >>> bad_user.is_valid_person
+    False
+    >>> print bad_user.preferredemail
+    None
+
+The member_contact_address function is used to get a member's preferred
+address as a set.
+
+    >>> from canonical.launchpad.database.teammembership import (
+    ...     member_contact_address)
+
+    >>> login(ANONYMOUS)
+    >>> member_contact_address(no_priv)
+    set(['no-priv@canonical.com'])
+
+It reports an oops when the member does not have a preferred email address,
+but still returns an empty set. The call site must decide what to do when
+there are no email addresses.
+
+    >>> from zope.error.interfaces import IErrorReportingUtility
+    >>> error_utility = getUtility(IErrorReportingUtility)
+
+    >>> def next_oops_id_to_index():
+    ...     text, index = error_utility.getLastOopsReport().id.split('T')
+    ...     return int(index)
+
+    >>> member_contact_address(bad_user)
+    set([])
+    >>> oops = error_utility.getLastOopsReport()
+    >>> oops_zero = next_oops_id_to_index()
+    >>> oops.value
+    'Team member is invalid: <Person at ... bad-user (Bad-user)>'
+
+The teams's notifications do not fail when they process bad user, but an oops
+is reported.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bad_membership = membershipset.getByPersonAndTeam(bad_user, t3)
+    >>> bad_membership.setExpirationDate(utc_now + timedelta(days=9), foobar)
+    >>> bad_membership.sendExpirationWarningEmail()
+    >>> next_oops_id_to_index() - oops_zero
+    1
+
+    >>> t3.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+    >>> t3.defaultrenewalperiod = 1
+    >>> removeSecurityProxy(bad_membership).dateexpires = utc_now
+    >>> bad_membership.sendAutoRenewalNotification()
+    >>> next_oops_id_to_index() - oops_zero
+    2
+
+    >>> bad_membership.setStatus(TeamMembershipStatus.EXPIRED, bad_user)
+    >>> next_oops_id_to_index() - oops_zero
+    3
