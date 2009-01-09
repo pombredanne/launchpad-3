@@ -320,14 +320,6 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive):
-        """Copy this publication to another location.
-
-        :return: The publishing in the targeted location, either:
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
-        """
-
 
 class IFilePublishing(Interface):
     """Base interface for *FilePublishing classes"""
@@ -541,8 +533,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         """Return all unique binary publications built by this source.
 
         Follow the build record and return every unique binary publishing
-        record for any `DistroArchSeries` in this `DistroSeries` and in
-        the same `IArchive` and Pocket.
+        record in the context `DistroSeries` and in the same `IArchive`
+        and Pocket.
+
+        There will be only one entry for architecture independent binary
+        publications.
 
         :return: a list containing all unique
             `IBinaryPackagePublishingHistory`.
@@ -593,6 +588,14 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
+
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        :return: a `ISourcePackagePublishingHistory` record representing the
+            source in the destination location.
+        """
+
 
 #
 # Binary package publishing
@@ -716,6 +719,16 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
         Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
+
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        Architecture independent binary publications are copied to all
+        supported architectures in the destination distroseries.
+
+        :return: a list of `IBinaryPackagePublishingHistory` records
+            representing the binaries copied to the destination location.
         """
 
 
