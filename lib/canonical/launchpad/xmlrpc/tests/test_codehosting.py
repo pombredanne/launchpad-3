@@ -913,6 +913,15 @@ class BranchFileSystemTest(TestCaseWithFactory):
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
 
+    def assertPermissionDenied(self, requester, path):
+        """Assert that looking at the given path gives permission denied."""
+        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+            requester = requester.id
+        fault = self.branchfs.translatePath(requester, path)
+        self.assertFaultEqual(
+            PERMISSION_DENIED_FAULT_CODE,
+            "Could not translate '%s'." % path, fault)
+
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path. When
         # this happens, it returns a Fault saying so, including the path it
@@ -1014,11 +1023,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
             translation)
 
-    def test_translatePath_invisible_branch(self):
+    def test_translatePath_cant_see_private_branch(self):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        self.assertNotFound(requester, path)
+        self.assertPermissionDenied(requester, path)
 
     def test_translatePath_remote_branch(self):
         requester = self.factory.makePerson()
@@ -1038,7 +1047,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_translatePath_anonymous_cant_see_private_branch(self):
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        self.assertNotFound(ANONYMOUS, path)
+        self.assertPermissionDenied(ANONYMOUS, path)
 
     def test_translatePath_anonymous_public_branch(self):
         branch = self.factory.makeBranch()
