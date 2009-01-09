@@ -731,6 +731,17 @@ setting the tags_combinator parameter to 'All'.
     total_size: 0
     ---
 
+It is possible to search for bugs targeted to a milestone within a
+project group.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/mozilla', 'searchTasks',
+    ...     milestone=webservice.getAbsoluteUrl(
+    ...         '/mozilla/+milestone/1.0')).jsonBody())
+    start: None
+    total_size: 0
+    ---
+
 Search results can be ordered using the same string values used by
 the advanced search interface.
 
