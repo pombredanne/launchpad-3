@@ -141,7 +141,7 @@ class BranchMailer(BaseMailer):
                             from_address, delta, message_id)
         self.contents = contents
         self.diff = diff
-        self.revno=revno
+        self.revno = revno
 
     @classmethod
     def forBranchModified(klass, branch, recipients, from_address, delta):
