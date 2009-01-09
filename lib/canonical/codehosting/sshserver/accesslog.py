@@ -62,10 +62,6 @@ class LoggingManager:
             redirect standard error and standard output to the OOPS logging
             observer.
         """
-        # XXX: JonathanLange 2008-12-23 bug=314950: Why isn't
-        # configure_oops_reporting True all the time? Part of the answer is
-        # that when I set it to True, the test_logging tests don't restore
-        # stderr properly, resulting in broken testrunner output.
         log = get_codehosting_logger()
         self._orig_level = log.level
         self._orig_handlers = list(log.handlers)
