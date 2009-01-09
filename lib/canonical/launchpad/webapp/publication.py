@@ -43,7 +43,8 @@ import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
+    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -430,6 +431,18 @@ class LaunchpadBrowserPublication(
             # The exception wasn't raised in the middle of the traversal nor
             # the publication, so there's nothing we need to do here.
             pass
+
+        # If we get a LookupError and the default database being used is
+        # a replica, raise a Retry exception instead of returning
+        # the 404 error page. We do this in case the LookupError is
+        # caused by replication lag. Our database policy forces the
+        # use of the master database for retries.
+        if retry_allowed and isinstance(exc_info[1], LookupError):
+            store_selector = getUtility(IStoreSelector)
+            default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
+            master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+            if default_store is not master_store:
+                raise Retry(exc_info)
 
         # Reraise Retry exceptions rather than log.
         if retry_allowed and isinstance(

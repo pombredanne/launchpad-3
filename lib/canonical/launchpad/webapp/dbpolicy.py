@@ -70,13 +70,17 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']
 
+        # If this is a Retry attempt, force use of the master database.
+        if getattr(self.request, '_retry_count', 0) > 0:
+            da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+
         # Select if the DEFAULT_FLAVOR Store will be the master or a
         # slave. We select slave if this is a readonly request, and
         # only readonly requests have been made by this user recently.
         # This ensures that a user will see any changes they just made
         # on the master, despite the fact it might take a while for
         # those changes to propagate to the slave databases.
-        if self.read_only:
+        elif self.read_only:
             lag = self.getReplicationLag(MAIN_STORE)
             if (lag is not None
                 and lag > timedelta(seconds=config.database.max_usable_lag)):
