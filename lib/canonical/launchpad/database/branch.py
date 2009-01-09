@@ -331,7 +331,10 @@ class Branch(SQLBase):
         return 'lp-mirrored:///%s' % self.unique_name
 
     def getBzrBranch(self):
-        """Return the BzrBranch for this database Branch."""
+        """Return the BzrBranch for this database Branch.
+
+        This provides the mirrored copy of the branch.
+        """
         return BzrBranch.open(self.warehouse_url)
 
     def _getContainerName(self):
