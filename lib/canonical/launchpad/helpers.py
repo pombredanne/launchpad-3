@@ -222,7 +222,7 @@ def emailPeople(person):
     return people
 
 
-def contactEmailAddresses(person):
+def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
     In general, it is better to use emailPeople instead.

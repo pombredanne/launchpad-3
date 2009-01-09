@@ -30,7 +30,7 @@ from canonical.config import config
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+    get_contact_email_addresses, get_email_template)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
     CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
@@ -136,11 +136,11 @@ class TeamMembership(SQLBase):
         subject = '%s renewed automatically' % member.name
 
         if member.isTeam():
-            member_addrs = contactEmailAddresses(member.teamowner)
+            member_addrs = get_contact_email_addresses(member.teamowner)
             template_name = 'membership-auto-renewed-bulk.txt'
         else:
             template_name = 'membership-auto-renewed-personal.txt'
-            member_addrs = contactEmailAddresses(member)
+            member_addrs = get_contact_email_addresses(member)
         template = get_email_template(template_name)
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
@@ -243,7 +243,7 @@ class TeamMembership(SQLBase):
                 "membership at\n<%s/+member/%s>"
                 % (canonical_url(team), member.name))
 
-        to_addrs = contactEmailAddresses(recipient)
+        to_addrs = get_contact_email_addresses(recipient)
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
         replacements = {
@@ -365,7 +365,7 @@ class TeamMembership(SQLBase):
         new_status = self.status
         admins_emails = team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
-        member_email = contactEmailAddresses(member)
+        member_email = get_contact_email_addresses(member)
         # Make sure we don't send the same notification twice to anybody.
         for email in member_email:
             if email in admins_emails:

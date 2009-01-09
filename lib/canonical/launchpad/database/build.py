@@ -34,7 +34,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
-     contactEmailAddresses, filenameToContentType, get_email_template)
+     get_contact_email_addresses, filenameToContentType, get_email_template)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
     BuildStatus, BuildSetStatus, IBuild, IBuildSet)
@@ -542,7 +542,7 @@ class Build(SQLBase):
         # notify_owner will be disabled to avoid *spamming* Debian people.
         creator = self.sourcepackagerelease.creator
         extra_headers['X-Creator-Recipient'] = ",".join(
-            contactEmailAddresses(creator))
+            get_contact_email_addresses(creator))
 
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
@@ -558,11 +558,12 @@ class Build(SQLBase):
             self.archive == self.sourcepackagerelease.upload_archive)
 
         if package_was_not_copied and config.builddmaster.notify_owner:
-            recipients = recipients.union(contactEmailAddresses(creator))
+            recipients = recipients.union(
+                get_contact_email_addresses(creator))
             dsc_key = self.sourcepackagerelease.dscsigningkey
             if dsc_key:
                 recipients = recipients.union(
-                    contactEmailAddresses(dsc_key.owner))
+                    get_contact_email_addresses(dsc_key.owner))
 
         # Modify notification contents according the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
@@ -573,13 +574,13 @@ class Build(SQLBase):
         if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
-                contactEmailAddresses(buildd_admins))
+                get_contact_email_addresses(buildd_admins))
             archive_tag = '%s primary archive' % self.distribution.name
             subject = "[Build #%d] %s" % (self.id, self.title)
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
             recipients = recipients.union(
-                contactEmailAddresses(self.archive.owner))
+                get_contact_email_addresses(self.archive.owner))
             # For PPAs we run the risk of having no available contact_address,
             # for instance, when both, SPR.creator and Archive.owner have
             # not enabled it.
