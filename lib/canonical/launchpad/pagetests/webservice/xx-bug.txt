@@ -117,6 +117,22 @@ distribution in which the bug exists.
     ...
     target: Required input is missing.
 
+To mark a bug as private, we patch the `private` attribute of the bug.
+
+  >>> from simplejson import dumps
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> bug_twelve['private']
+  False
+  >>> print webservice.patch(
+  ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=True)))
+  HTTP/1.1 200 Ok...
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> bug_twelve['private']
+  True
+  >>> print webservice.patch(
+  ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=False)))
+  HTTP/1.1 200 Ok...
+
 
 == Bugs as message targets ==
 
@@ -241,7 +257,6 @@ The task's importance can be modified directly...
   >>> body['importance']
   u'Low'
 
-  >>> from simplejson import dumps
   >>> patch = {u'importance': u'High'}
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
   HTTP/1.1 200 Ok...
