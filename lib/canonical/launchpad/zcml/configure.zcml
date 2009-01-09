@@ -84,7 +84,6 @@
     <include file="hwdb.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
-    <include file="job.zcml" />
     <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="languagepack.zcml" />
