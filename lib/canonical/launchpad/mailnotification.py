@@ -1885,13 +1885,14 @@ def encode(value):
     return Header(value.encode(charset), charset)
 
 
-def send_direct_contact_email(sender_email, recipients_email, subject, body):
+def send_direct_contact_email(
+    sender_email, recipients_set, subject, body):
     """Send a direct user-to-user email.
 
     :param sender_email: The email address of the sender.
     :type sender_email: string
-    :param recipients_email: The email address of the recipients.
-    :type recipients_email:' list of strings
+    :param recipients_set: The recipients.
+    :type recipients_set:' A ContactViaWebNotificationSet
     :param subject: The Subject header.
     :type subject: unicode
     :param body: The message body.
@@ -1926,25 +1927,26 @@ def send_direct_contact_email(sender_email, recipients_email, subject, body):
     additions = [
         u'',
         u'-- ',
-        u'This message was sent by Launchpad via the Contact user/team',
-        u'link on your profile page.  For more information see',
+        u'This message was sent from Launchpad by the user',
+        u'%s (%s)' % (sender_name , canonical_url(sender)),
+        u'using %s.',
+        u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ]
     body += u'\n'.join(additions)
     encoded_body = body.encode(charset)
     # Craft and send one message per recipient.
     message = None
-    for recipient_email in recipients_email:
-        recipient = person_set.getByEmail(recipient_email)
-        assert recipient is not None, (
-            'No person for recipient %s' % recipient_email)
+    for recipient_email, recipient in recipients_set.getRecipientPersons():
         recipient_name = str(encode(recipient.displayname))
-        message = MIMEText(encoded_body, _charset=charset)
+        reason, rational_header = recipients_set.getReason(recipient_email)
+        reason = str(encode(reason))
+        message = MIMEText(encoded_body % reason, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
         message['To'] = formataddr((recipient_name, recipient_email))
         message['Subject'] = subject_header
         message['Message-ID'] = make_msgid('launchpad')
-        message['X-Launchpad-Message-Rationale'] = 'ContactViaWeb'
+        message['X-Launchpad-Message-Rationale'] = rational_header
         # Send the message.
         sendmail(message)
     # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
