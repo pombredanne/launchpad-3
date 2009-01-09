@@ -5084,7 +5084,7 @@ class IEmailToPerson(Interface):
         title=_('Message'), required=True, readonly=False)
 
     @invariant
-    def check_content(data):
+    def subject_and_message_are_not_empty(data):
         """Raise an Invalid error if the message or subject is empty."""
         if '' in (data.message.strip(), data.subject.strip()):
             raise Invalid('You must provide a subject and a message.')

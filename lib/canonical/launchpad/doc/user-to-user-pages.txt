@@ -487,7 +487,7 @@ Bart has sent 1 message, he may send more messages.
 == Identifying information ==
 
 Every contact message has a special Launchpad header so that people can tell
-that the message came to them through Launchpad.   It also has a footer that
+that the message came to them through Launchpad. It also has a footer that
 contains an explanation as well.
 
     >>> cris = factory.makePerson(email='cris@example.com', name='cris')
