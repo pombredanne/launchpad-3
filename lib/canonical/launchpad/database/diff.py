@@ -9,7 +9,6 @@ from cStringIO import StringIO
 
 from bzrlib.diff import show_diff_trees
 from sqlobject import ForeignKey, IntCol, StringCol
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 

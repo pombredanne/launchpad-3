@@ -155,12 +155,23 @@ class BranchMailer(BaseMailer):
         :return: a BranchMailer.
         """
         subject = klass._branchSubject(branch)
-        return BranchMailer(subject, 'branch-modified.txt', recipients,
-                            from_address, delta=delta)
+        return klass(
+            subject, 'branch-modified.txt', recipients, from_address,
+            delta=delta)
 
     @classmethod
     def forRevision(klass, db_branch, revno, from_address, contents, diff,
                     subject):
+        """Construct a BranchMailer for mail about branch revisions.
+
+        :param branch: The db_branch that was modified.
+        :param revno: The revno of the revision this message is about.
+        :param from_address: The email address this message should come from.
+        :param contents: The contents of the message.
+        :param subject: The subject of the message
+        :param diff: The diff of this revision versus its parent, as text.
+        :return: a BranchMailer.
+        """
         recipients = db_branch.getNotificationRecipients()
         interested_levels = (
             BranchSubscriptionNotificationLevel.DIFFSONLY,
@@ -178,6 +189,11 @@ class BranchMailer(BaseMailer):
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
+        """Determine a subject to use for this email.
+
+        :param db_branch: The db branch to use.
+        :param subject: Any subject supplied as a parameter.
+        """
         if subject is not None:
             return subject
         branch_title = db_branch.title
@@ -186,6 +202,11 @@ class BranchMailer(BaseMailer):
         return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
 
     def _diffText(self, max_diff):
+        """Determine the text to use for the diff.
+
+        If the diff's length exceeds the user preferences, a message
+        about this is returned.  Otherwise, the diff is returned.
+        """
         if self.diff is None:
             return self.contents or ''
         diff_size = self.diff.count('\n') + 1
