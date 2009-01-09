@@ -31,7 +31,7 @@ class CodeImportWorker(LaunchpadScript):
 
     def __init__(self, name, dbuser=None, test_args=None):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
-        set_up_oops_reporting(name)
+        set_up_oops_reporting(name, mangle_stdout=True)
 
     def main(self):
         # XXX: MichaelHudson 2008-05-07 bug=227586: Setting up the component

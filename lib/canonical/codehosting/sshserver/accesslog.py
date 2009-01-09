@@ -20,6 +20,8 @@ __all__ = [
 
 import logging
 
+from twisted.python import log as tplog
+
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 from zope.interface import Attribute, implements, Interface
@@ -47,23 +49,27 @@ def synchronize(source, target, add, remove):
 class LoggingManager:
     """Class for managing codehosting logging."""
 
-    def setUp(self, configure_oops_reporting=False):
+    def setUp(self, configure_oops_reporting=False, mangle_stdout=False):
         """Set up logging for the smart server.
 
-        This sets up a debugging handler on the 'codehosting' logger, makes sure
-        that things logged there won't go to stderr (necessary because of
+        This sets up a debugging handler on the 'codehosting' logger, makes
+        sure that things logged there won't go to stderr (necessary because of
         bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
 
-        In addition, if configure_oops_reporting is True, install a Twisted log
-        observer that ensures unhandled exceptions get reported as OOPSes.
+        :param configure_oops_reporting: If True, install a Twisted log
+            observer that ensures unhandled exceptions get reported as OOPSes.
+        :param mangle_stdout: If True and if configure_oops_reporting is True,
+            redirect standard error and standard output to the OOPS logging
+            observer.
         """
         # XXX: JonathanLange 2008-12-23 bug=314950: Why isn't
-        # configure_oops_reporting True all the time? Part of the answer is that
-        # when I set it to True, the test_logging tests don't restore stderr
-        # properly, resulting in broken testrunner output.
+        # configure_oops_reporting True all the time? Part of the answer is
+        # that when I set it to True, the test_logging tests don't restore
+        # stderr properly, resulting in broken testrunner output.
         log = get_codehosting_logger()
         self._orig_level = log.level
         self._orig_handlers = list(log.handlers)
+        self._orig_observers = list(tplog.theLogPublisher.observers)
         log.setLevel(logging.INFO)
         log.addHandler(_NullHandler())
         access_log = get_access_logger()
@@ -87,6 +93,9 @@ class LoggingManager:
         synchronize(
             access_log.handlers, self._orig_handlers, access_log.addHandler,
             access_log.removeHandler)
+        synchronize(
+            tplog.theLogPublisher.observers, self._orig_observers,
+            tplog.addObserver, tplog.removeObserver)
         zope.component.getGlobalSiteManager().unregisterHandler(_log_event)
 
 

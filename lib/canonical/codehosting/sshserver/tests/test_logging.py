@@ -12,6 +12,8 @@ import sys
 
 from bzrlib.tests import TestCase as BzrTestCase
 
+from twisted.python import log as tplog
+
 import zope.component.event
 from zope.event import notify
 
@@ -133,6 +135,13 @@ class TestLoggingManager(TestCase):
         manager.setUp()
         manager.tearDown()
         self.assertEqual(handlers, log.handlers)
+
+    def test_teardown_restores_twisted_observers(self):
+        observers = list(tplog.theLogPublisher.observers)
+        manager = LoggingManager()
+        manager.setUp(True)
+        manager.tearDown()
+        self.assertEqual(observers, list(tplog.theLogPublisher.observers))
 
     def test_access_handlers(self):
         # The logging setup installs a rotatable log handler that logs output
