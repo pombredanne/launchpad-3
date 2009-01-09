@@ -208,21 +208,21 @@ class BranchMailer(BaseMailer):
         about this is returned.  Otherwise, the diff is returned.
         """
         if self.diff is None:
-            return ''
+            return self.contents or ''
         diff_size = self.diff.count('\n') + 1
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
                 contents = self.contents
             elif diff_size > max_diff.value:
                 diff_msg = (
-                    '\nThe size of the diff (%d lines) is larger than your '
+                    'The size of the diff (%d lines) is larger than your '
                     'specified limit of %d lines' % (
                     diff_size, max_diff.value))
-                contents = diff_msg
+                contents = "%s\n%s" % (self.contents, diff_msg)
             else:
-                contents = '\n' + self.diff
+                contents = "%s\n%s" % (self.contents, self.diff)
         else:
-            contents = '\n' + self.diff
+            contents = "%s\n%s" % (self.contents, self.diff)
         return contents
 
     def _getHeaders(self, email):
@@ -250,7 +250,6 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params['contents'] = self.contents
         params['diff'] = self._diffText(reason.max_diff_lines)
         params.setdefault('delta', '')
         return params

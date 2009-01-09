@@ -1,4 +1,4 @@
-%(contents)s%(diff)s%(delta)s
+%(diff)s%(delta)s
 
 --
 %(branch_title)s
