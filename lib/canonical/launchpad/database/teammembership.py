@@ -244,6 +244,10 @@ class TeamMembership(SQLBase):
                 % (canonical_url(team), member.name))
 
         to_addrs = get_contact_email_addresses(recipient)
+        if len(to_addrs) == 0:
+            # The user does not have a preferred email address, he was
+            # probably suspended.
+            return
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
         replacements = {

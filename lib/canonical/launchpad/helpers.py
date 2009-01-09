@@ -13,6 +13,7 @@ import gettextpo
 import os
 import random
 import re
+import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -20,6 +21,7 @@ from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 
 import canonical
 from canonical.launchpad.interfaces import (
@@ -226,6 +228,9 @@ def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
     In general, it is better to use emailPeople instead.
+
+    If the user does not have a preferred email address, an OOPS is
+    reported and an empty set is returned.
     """
     # XXX: Guilherme Salgado 2006-04-20:
     # This str() call can be removed as soon as Andrew lands his
@@ -234,8 +239,18 @@ def get_contact_email_addresses(person):
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
-    return set(str(removeSecurityProxy(mail_person.preferredemail).email)
+    addresses = set(
+        str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in emailPeople(person))
+    try:
+        assert len(addresses) > 0, (
+            "~%s does not have a preferred email address." % person.name)
+    except AssertionError:
+        # The user was probably suspended or deactivated, but is still a
+        # member of the team.
+        error_utility = getUtility(IErrorReportingUtility)
+        error_utility.raising(sys.exc_info())
+    return addresses
 
 
 replacements = {0: {'.': ' |dot| ',
