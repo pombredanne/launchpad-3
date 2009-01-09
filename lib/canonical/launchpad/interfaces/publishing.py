@@ -878,7 +878,7 @@ class IPublishingSet(Interface):
         :param archive: The archive which will be used to filter the source
                         ids.
         :type archive: `IArchive`
-        :returns A dict consisting of the overall status summaries for the
+        :return: A dict consisting of the overall status summaries for the
             given ids that belong in the archive. For example:
                 {
                     18: {'status': 'succeeded'},

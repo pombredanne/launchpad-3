@@ -1250,11 +1250,11 @@ agree regarding the changesfile existence.
 
 == IPublishingSet.getBuildStatusSummariesForSourceIdsAndArchive() ==
 
-This extra method on IPublishingSet is exported in the API and allows
-a summary of the build status for a set of sources to be presented.
-The corresponding archive is a required parameter for security reasons
-and ensures that this method returns information about builds from
-the given archive only.
+This extra method on IPublishingSet allows a summary of the build status
+for a set of sources to be presented. The corresponding archive is a
+required parameter that ensures that this method only
+returns information about builds from the specified archive (as this method
+is used via the API via IArchive.getBuildSummariesForSourceIds).
 
 First we'll grab two source publishing history records:
 
@@ -1286,7 +1286,7 @@ And then grab the build summaries for firefox and foo:
     >>> build_summaries = \
     ...     publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
     ...         [firefox_source_pub.id, foo_pub.id],
-    ...         archive=ubuntu.main_archive)
+    ...         ubuntu.main_archive)
     >>> print_build_summaries(build_summaries)
     Source ID: 18
     Successfully built
@@ -1302,7 +1302,7 @@ And then grab the build summaries for firefox and foo:
 
 Any of the source ids passed into 
 getBuildStatusSummariesForSourceIdsAndArchive that do not belong to the
-specified archive will be ignored:
+required archive parameter will be ignored:
 
     >>> from canonical.launchpad.interfaces.archive import IArchiveSet
     >>> ubuntu_partner = getUtility(IArchiveSet).getArchivesForDistribution(

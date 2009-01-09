@@ -320,7 +320,7 @@ class IArchivePublic(IHasOwner):
 
         :param source_ids: A list of source publishing history record ids.
         :type source_ids: ``list``
-        :returns A dict consisting of the overall status summaries for the
+        :return: A dict consisting of the overall status summaries for the
             given ids that belong in the archive.
         """
 
