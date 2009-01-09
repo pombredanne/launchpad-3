@@ -652,6 +652,25 @@ class IArchiveView(Interface):
         :rtype: ``dict``.
         """
 
+    @operation_parameters(
+        source_ids=List(
+            title=_("A list of source publishing history record ids."),
+            value_type=TextLine()))
+    @export_read_operation()
+    def getBuildSummariesForSourceIds(source_ids):
+        """Return a dictionary containing a summary of the build statuses.
+
+        Only information for sources belonging to the current archive will
+        be returned. See 
+        `IPublishingSet`.getBuildStatusSummariesForSourceIdsAndArchive() for
+        details.
+
+        :param source_ids: A list of source publishing history record ids.
+        :type source_ids: ``list``
+        :return: A dict consisting of the overall status summaries for the
+            given ids that belong in the archive.
+        """
+
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
