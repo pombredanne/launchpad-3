@@ -123,7 +123,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SSH service."""
-        accesslog.LogManager().setUp(
+        accesslog.LoggingManager().setUp(
             configure_oops_reporting=True, mangle_stdout=True)
         notify(accesslog.ServerStarting())
         # By default, only the owner of files should be able to write to them.
