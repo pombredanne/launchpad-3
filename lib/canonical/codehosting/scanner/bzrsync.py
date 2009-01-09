@@ -81,7 +81,8 @@ def set_bug_branch_status(bug, branch, status):
 def get_diff(db_branch, bzr_revision):
     """Return the diff for `bzr_revision` on `bzr_branch`.
 
-    :param db_branch: A `canonical.launchpad.database.Branch` object.
+    This operation is not expected to take a long time.
+    :param db_branch: A `canonical.launchpad.interface.IBranch` object.
     :param bzr_revision: A Bazaar `Revision` object.
     :return: A byte string that is the diff of the changes introduced by
         `bzr_revision` on `db_branch`.

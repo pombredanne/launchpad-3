@@ -128,6 +128,7 @@ from canonical.launchpad.webapp.vocabulary import vocab_factory
 from canonical.lazr import EnumeratedType, Item
 from lazr.delegates import delegates
 from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.lazr.interfaces.rest import IJSONRequestCache
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -450,6 +451,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
+        IJSONRequestCache(self.request).objects['bug'] = bug
+
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
