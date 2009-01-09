@@ -65,7 +65,7 @@ from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database.diff import StaticDiffJob
+from canonical.launchpad.database.branch import BranchDiffJob
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
 SPACE = ' '
@@ -1092,11 +1092,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
-    def makeStaticDiffJob(self):
+    def makeBranchDiffJob(self):
         branch = self.makeBranch()
-        return StaticDiffJob(
-            branch=branch, from_revision_spec='0',
-            to_revision_spec='1')
+        return BranchDiffJob.create(
+            branch=branch, from_revision_spec='0', to_revision_spec='1')
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, reviewer=None,

@@ -56,6 +56,7 @@ from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -487,17 +488,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             prejoins=preJoins)
         binary_publications = list(results)
 
-        unique_binary_locations = set(
-            [(pub.binarypackagerelease.id, pub.distroarchseries.id)
-             for pub in binary_publications])
+        unique_binary_ids = set(
+            [pub.binarypackagerelease.id for pub in binary_publications])
 
         unique_binary_publications = []
         for pub in binary_publications:
-            location = (pub.binarypackagerelease.id, pub.distroarchseries.id)
-            if location in unique_binary_locations:
+            if pub.binarypackagerelease.id in unique_binary_ids:
                 unique_binary_publications.append(pub)
-                unique_binary_locations.remove(location)
-                if len(unique_binary_locations) == 0:
+                unique_binary_ids.remove(pub.binarypackagerelease.id)
+                if len(unique_binary_ids) == 0:
                     break
 
         return unique_binary_publications
@@ -909,23 +908,35 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-        # Both lookups may raise NotFoundError; it should be handled in
-        # the caller.
         current = self.secure_record
-        target_das = distroseries[current.distroarchseries.architecturetag]
 
-        secure_copy = SecureBinaryPackagePublishingHistory(
-            archive=archive,
-            binarypackagerelease=self.binarypackagerelease,
-            distroarchseries=target_das,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False)
-        return BinaryPackagePublishingHistory.get(secure_copy.id)
+        if current.binarypackagerelease.architecturespecific:
+            try:
+                target_architecture = distroseries[
+                    current.distroarchseries.architecturetag]
+            except NotFoundError:
+                return []
+            destination_architectures = [target_architecture]
+        else:
+            destination_architectures = distroseries.architectures
+
+        copies = []
+        for architecture in destination_architectures:
+            copy = SecureBinaryPackagePublishingHistory(
+                archive=archive,
+                binarypackagerelease=self.binarypackagerelease,
+                distroarchseries=architecture,
+                component=current.component,
+                section=current.section,
+                priority=current.priority,
+                status=PackagePublishingStatus.PENDING,
+                datecreated=UTC_NOW,
+                pocket=pocket,
+                embargo=False)
+            copies.append(copy)
+
+        return [
+            BinaryPackagePublishingHistory.get(copy.id) for copy in copies]
 
 
 class PublishingSet:

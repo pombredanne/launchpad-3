@@ -1449,7 +1449,7 @@ class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
 class TestBranchJob(TestCaseWithFactory):
     """Tests for BranchJob."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def test_providesInterface(self):
         """Ensure that BranchJob implements IBranchJob."""
