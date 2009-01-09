@@ -596,6 +596,7 @@ An option argument can be used to exclude any builds that have the status
     superseded 3
     total 17
 
+
 == getBuildSummariesForSourceIds() ==
 
 IArchive.getBuildSummariesForSourceIds() allows callsites to get an update
@@ -640,6 +641,67 @@ Now print the build summaries for firefox and foo_bar:
     There were build failures.
     Relevant builds:
      - i386 build of foobar 1.0 in ubuntu warty RELEASE
+
+
+== No public access to IArchiveView methods ==
+
+Both the getBuildCounters() and getBuildSummariesForSourceIds() methods are
+not publically available, but available only to users who have permission to
+view the archive:
+
+First, we turn cprov's archive into a private one:
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = 'really secret'
+    >>> cprov_archive.private = True
+
+And grab some source IDs from the archive:
+
+    >>> sources = cprov_archive.getPublishedSources()
+    >>> source_ids = [sources[0].id, sources[1].id]
+
+Then verify that an admin can see the counters and build summaries:
+
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    ...
+    total      4
+    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    ...     source_ids))
+    Source ID: 27
+    ...
+
+Next veryify that cprov can still access the build counters:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    ...
+    total      4
+    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    ...     source_ids))
+    Source ID: 27
+    ...
+
+But the public cannot:
+
+    >>> login('no-priv@canonical.com')
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'getBuildCounters', 'launchpad.View')
+    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    ...     source_ids))
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'getBuildSummariesForSourceIds', 'launchpad.View')
+
+Make the archive public again before continuing:
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+
 
 == Package Counters ==
 
