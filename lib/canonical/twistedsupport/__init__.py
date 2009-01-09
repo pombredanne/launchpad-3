@@ -3,7 +3,11 @@
 """Useful tools for interacting with Twisted."""
 
 __metaclass__ = type
-__all__ = ['defer_to_thread', 'gatherResults', 'suppress_stderr']
+__all__ = [
+    'defer_to_thread',
+    'gatherResults',
+    'suppress_stderr',
+    ]
 
 
 import StringIO
