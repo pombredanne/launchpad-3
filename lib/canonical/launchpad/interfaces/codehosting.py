@@ -216,6 +216,8 @@ class IBranchFileSystem(Interface):
 
         :raise `PathTranslationError`: if 'path' cannot be translated.
         :raise `InvalidPath`: if 'path' is known to be invalid.
+        :raise `Fault`: with code of PERMISSION_DENIED_FAULT_CODE if the
+            requester cannot see the branch.
 
         :returns: (transport_type, transport_parameters, path_in_transport)
             where 'transport_type' is one of BRANCH_TRANSPORT or
