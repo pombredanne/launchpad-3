@@ -622,7 +622,7 @@ Next veryify that cprov can still access the build counters:
 
 But the public cannot:
 
-    >>> login(ANONYMOUS)
+    >>> login('no-priv@canonical.com')
     >>> print_build_counters(cprov_archive.getBuildCounters())
     Traceback (most recent call last):
     ...
