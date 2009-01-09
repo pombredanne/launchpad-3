@@ -26,6 +26,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
@@ -1056,26 +1058,15 @@ class Archive(SQLBase):
             copy.sourcepackagerelease.sourcepackagename.name
             for copy in copies]
 
-    def _generateTokenString(self):
-        """Private method to generate a random token string."""
-        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        token_length = 20
-        token = ''.join(
-            random.choice(characters) for count in range(token_length))
-
-        # Make sure the token's not already used.
-        token_set = getUtility(IArchiveAuthTokenSet)
-        while token_set.getByToken(token) is not None:
-            token = ''.join(
-                random.choice(characters) for count in range(token_length))
-
-        return token
-
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
         if token is None:
-            token = self._generateTokenString()
+            token = create_unique_token_for_table(
+                20, ArchiveAuthToken, "token")
         if not isinstance(token, unicode):
+            # Storm barfs if the string is not unicode so see if it
+            # converts.  If it doesn't, never mind, it would have blown
+            # up anyway.
             token = unicode(token)
         archive_auth_token = ArchiveAuthToken()
         archive_auth_token.archive = self

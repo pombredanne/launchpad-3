@@ -11,6 +11,12 @@ __all__ = [
 
 import random
 
+from zope.component import getUtility
+
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+
 def create_token(token_length):
     """Create a random token string.
 
@@ -35,9 +41,10 @@ def create_unique_token_for_table(token_length, table, column):
     :return: A new token string
     """
     token = create_token(token_length)
-    new_row = table.selectOneBy(**{column:token})
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    new_row = store.find(table, "%s='%s'" % (column, token)).one()
     while new_row is not None:
         token = create_token(token_length)
-        new_row = table.selectOneBy(**{column:token})
+        new_row = store.find(table, "%s='%s'" % (column, token)).one()
     return token
 

@@ -1848,11 +1848,8 @@ class ViewArchiveAuthToken(AuthorizationBase):
     def checkAuthenticated(self, user):
         if user == self.obj.person:
             return True
-        auth_append = AppendArchive(self.obj.archive)
-        if auth_append.checkAuthenticated(user):
-            return True
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
+        auth_edit = EditArchiveAuthToken(self.obj)
+        return auth_edit.checkAuthenticated(user)
 
 
 class EditArchiveAuthToken(AuthorizationBase):

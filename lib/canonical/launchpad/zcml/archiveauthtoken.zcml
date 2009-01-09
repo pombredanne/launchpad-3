@@ -16,12 +16,6 @@
   </class>
 
   <!-- ArchiveAuthTokenSet -->
-  <class
-    class="canonical.launchpad.database.archiveauthtoken.ArchiveAuthTokenSet">
-    <implements
-      interface="canonical.launchpad.interfaces.archiveauthtoken.IArchiveAuthTokenSet"/>
-  </class>
-
   <securedutility
     class="canonical.launchpad.database.archiveauthtoken.ArchiveAuthTokenSet"
     provides="canonical.launchpad.interfaces.archiveauthtoken.IArchiveAuthTokenSet">

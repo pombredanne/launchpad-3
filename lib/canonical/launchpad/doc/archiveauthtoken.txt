@@ -42,6 +42,15 @@ Users cannot create their own access tokens either.  Log in as name12:
 If we log in as cprov it will work:
 
     >>> login("celso.providelo@canonical.com")
+    >>> token_with_random_string = cprov.archive.newAuthToken(name12)
+
+By default the tokens are 20 characters long.
+
+    >>> print len(token_with_random_string.token)
+    20
+
+We can also specify our own token for testing purposes:
+
     >>> new_token = cprov.archive.newAuthToken(name12, "testtoken")
 
 The new token is returned and reflects the data:

@@ -36,10 +36,10 @@ class ArchiveAuthToken(Storm):
     person = Reference(person_id, 'Person.id')
 
     date_created = DateTime(
-        name='date_created', allow_none=False, tzinfo=pytz.timezone('UTC'))
+        name='date_created', allow_none=False, tzinfo=pytz.UTC)
 
     date_deactivated = DateTime(
-        name='date_deactivated', allow_none=True, tzinfo=pytz.timezone('UTC'))
+        name='date_deactivated', allow_none=True, tzinfo=pytz.UTC)
 
     token = Unicode(name='token', allow_none=False)
 

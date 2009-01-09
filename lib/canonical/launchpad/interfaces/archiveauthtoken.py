@@ -24,15 +24,15 @@ class IArchiveAuthTokenView(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
 
     archive = Reference(
-        IArchive, title=_("Archive"), required=True,
+        IArchive, title=_("Archive"), required=True, readonly=True,
         description=_("The archive for this authorisation token."))
 
     person = Reference(
-        IPerson, title=_("Person"), required=True,
+        IPerson, title=_("Person"), required=True, readonly=True,
         description=_("The person for this authorisation token."))
 
     date_created = Datetime(
-        title=_("Date Created"), required=True,
+        title=_("Date Created"), required=True, readonly=True,
         description=_("The timestamp when the token was created."))
 
     date_deactivated = Datetime(
@@ -40,14 +40,14 @@ class IArchiveAuthTokenView(Interface):
         description=_("The timestamp when the token was de-activated."))
 
     token = TextLine(
-        title=_("Token"), required=True,
+        title=_("Token"), required=True, readonly=True,
         description=_("The access token to the archive for this person."))
 
 
 class IArchiveAuthTokenEdit(Interface):
     """Interface for Archive Auth Tokens requiring launchpad.Edit."""
     def deactivate(self):
-        """Deactivate the token by setting date_deactivated."""
+        """Deactivate the token by setting date_deactivated to UTC_NOW."""
 
 
 class IArchiveAuthToken(IArchiveAuthTokenView, IArchiveAuthTokenEdit):
