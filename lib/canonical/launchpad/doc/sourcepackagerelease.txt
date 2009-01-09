@@ -424,13 +424,6 @@ say Ubuntu primary archive, it becomes publicly available.
     >>> public_publication = private_publication.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, ubuntu.main_archive)
 
-The SourcePackageRelease security adapter uses a cached value of the
-'published_archives' property ('_cached_published_archives') for
-performance reasons. Since it was modified, we have to invalidate the
-cached value in order to see the up-to-date results.
-
-    >>> del test_sourcepackagerelease.__cached_published_archives_cached_value
-
 That done, we can see that 'foo - 666' is now published in Celso's
 private PPA and the Ubuntu primary archive, which is public.
 
