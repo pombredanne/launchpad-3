@@ -15,6 +15,7 @@ __all__ = [
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
+    'IJSONRequestCache',
     'IResourceOperation',
     'IResourceGETOperation',
     'IResourcePOSTOperation',
@@ -189,6 +190,14 @@ class ITopLevelEntryLink(Interface):
 
 class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
+
+
+class IJSONRequestCache(Interface):
+    """A cache of objects exposed as URLs or JSON representations."""
+
+    links = Attribute("Objects whose links need to be exposed.");
+    objects = Attribute("Objects whose JSON representations need "
+                        "to be exposed.");
 
 
 class IByteStorage(Interface):
