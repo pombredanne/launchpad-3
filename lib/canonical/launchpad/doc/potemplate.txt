@@ -112,13 +112,54 @@ by their modification date.
 This method gives us the IPOTemplate that belongs to this subset and its
 translation domain is the given one.
 
-    >>> productseries = ProductSeries.get(5)
+    >>> productseries = ProductSeries.get(8)
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=productseries)
+
+=== Filtering for iscurrent ===
+
+IPOTemplate specifies an "iscurrent" flag that indicates if this template
+should be available for translations or not.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> disabled_template = potemplatesubset.new(
+    ...     'disabled-template', 'alsa-utils', 'po/disabled.pot', user)
+    >>> removeSecurityProxy(disabled_template).iscurrent = False
+
+The subset can be configured to filter templates on the iscurrent flag. This
+filter is effective for all get* methods but it will only be demonstrated
+here. The filter is applied during creation by specifying the filter value
+as an extra parameter. The default value is "None" which disables the filter
+and both current and disabled templates are returned.
+
+For getPOTemplateByTranslationDomain, this case is an error because only one
+template per translation domain is allowed.
+
     >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
-    ...     'NetApplet')
+    ...     'alsa-utils')
+    WARNING:canonical.launchpad.database.potemplate:Found...
+    multiple templates with translation domain 'alsa-utils'...
+    There should be only one.
+    >>> potemplate is None
+    True
+
+Setting the filter to "True" will only return current (enabled) templates.
+
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries, iscurrent=True)
+    >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
+    ...     'alsa-utils')
     >>> print potemplate.title
-    Template "netapplet" in NetApplet trunk
+    Template "alsa-utils" in alsa-utils trunk
+
+Setting the filter to "False" will only return disabled templates.
+
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries, iscurrent=False)
+    >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
+    ...     'alsa-utils')
+    >>> print potemplate.title
+    Template "disabled-template" in alsa-utils trunk
 
 == getClosestPOTemplate ==
 
