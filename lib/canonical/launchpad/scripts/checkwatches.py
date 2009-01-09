@@ -323,32 +323,31 @@ class BugWatchUpdater(object):
         bug_watches_to_update = (
             bug_tracker.getBugWatchesNeedingUpdate(23))
 
-        try:
-            trackers_and_watches = self._getExternalBugTrackersAndWatches(
-                bug_tracker, bug_watches_to_update)
-        except externalbugtracker.UnknownBugTrackerTypeError, error:
-            # We update all the bug watches to reflect the fact that
-            # this error occurred. We also update their last checked
-            # date to ensure that they don't get checked for another
-            # 24 hours (see above).
-            error_type = (
-                get_bugwatcherrortype_for_error(error))
-            for bug_watch in bug_watches_to_update:
-                bug_watch.last_error_type = error_type
-                bug_watch.lastchecked = UTC_NOW
+        if bug_watches_to_update.count() > 0:
+            try:
+                trackers_and_watches = self._getExternalBugTrackersAndWatches(
+                    bug_tracker, bug_watches_to_update)
+            except externalbugtracker.UnknownBugTrackerTypeError, error:
+                # We update all the bug watches to reflect the fact that
+                # this error occurred. We also update their last checked
+                # date to ensure that they don't get checked for another
+                # 24 hours (see above).
+                error_type = (
+                    get_bugwatcherrortype_for_error(error))
+                for bug_watch in bug_watches_to_update:
+                    bug_watch.last_error_type = error_type
+                    bug_watch.lastchecked = UTC_NOW
 
-            message = (
-                "ExternalBugtracker for BugTrackerType '%s' is not known." % (
-                    error.bugtrackertypename))
-            self.warning(message)
-        else:
-            if bug_watches_to_update.count() > 0:
-                for remotesystem, bug_watch_batch in trackers_and_watches:
-                    self.updateBugWatches(
-                        remotesystem, bug_watch_batch)
+                message = (
+                    "ExternalBugtracker for BugTrackerType '%s' is not "
+                    "known." % (error.bugtrackertypename))
+                self.warning(message)
             else:
-                self.log.debug(
-                    "No watches to update on %s" % bug_tracker.baseurl)
+                for remotesystem, bug_watch_batch in trackers_and_watches:
+                    self.updateBugWatches(remotesystem, bug_watch_batch)
+        else:
+            self.log.debug(
+                "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
         """Convert a remote bug status to a Launchpad status and return it.
