@@ -57,8 +57,7 @@
       permission="launchpad.Commercial"
       interface="canonical.launchpad.interfaces.product.IProductViewRestricted"
       set_schema="canonical.launchpad.interfaces.product.IProductViewRestricted"
-      set_attributes="active license_reviewed
-                      license_approved"
+      set_attributes="active"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->

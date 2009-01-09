@@ -42,6 +42,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.commercialsubscription import (
+    ICommercialSubscription)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
@@ -125,10 +127,36 @@ class IProductViewRestricted(Interface):
                 "Notes on the project's license, editable only by reviewers "
                 "(Admins & Commercial Admins).")))
 
-    private_bugs = Bool(title=_('Private bugs'),
-                        description=_(
-                            "Whether or not bugs reported into this project "
-                            "are private by default"))
+    license_reviewed = exported(
+        Bool(
+            title=_('License reviewed'),
+            description=_("Whether or not this project's license has been"
+                          "reviewed. Editable only by reviewers (Admins & "
+                          "Commercial Admins).")))
+
+    qualifies_for_free_hosting = exported(
+            Bool(
+                title=_("Qualifies for free hosting"),
+                readonly=True,
+                description=_(
+                    "Whether the project's licensing qualifies it for free "
+                    "use of launchpad.")))
+
+    is_permitted = exported(
+            Bool(
+                title=_("Is Permitted"),
+                readonly=True,
+                description=_(
+                    "Whether the project's licensing qualifies for free "
+                    "hosting or the project has an up-to-date subscription.")))
+
+    license_approved = exported(
+            Bool(
+                title=_("License approved"),
+                description=_(
+                    "Whether a license is manually approved for free "
+                    "hosting after automatic approval fails.  May only "
+                    "be applied to licenses of 'Other/Open Source'.")))
 
 
 class IProductPublic(
@@ -334,13 +362,10 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are"
                       "updated automatically."))
 
-    license_reviewed = exported(
-        Bool(
-            title=_('License reviewed'),
-            description=_("Whether or not this project's license has been"
-                          "reviewed. Editable only by reviewers (Admins & "
-                          "Commercial Admins).")))
-
+    private_bugs = Bool(title=_('Private bugs'),
+                        description=_(
+                            "Whether or not bugs reported into this project "
+                            "are private by default"))
     licenses = exported(
         Set(title=_('Licenses'),
             value_type=Choice(vocabulary=License)))
@@ -422,28 +447,21 @@ class IProductPublic(
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
-    commercial_subscription = Attribute("""
-        An object which contains the timeframe and the voucher
-        code of a subscription.""")
+    commercial_subscription = exported(
+        Reference(
+            ICommercialSubscription,
+            title=_("Commercial subscriptions"),
+            description=_(
+                "An object which contains the timeframe and the voucher "
+                "code of a subscription.")))
 
-    qualifies_for_free_hosting = Attribute("""
-        Whether the project's licensing qualifies it for free
-        use of launchpad.""")
-
-    commercial_subscription_is_due = Attribute("""
-        Whether the project's licensing requires a new commercial
-        subscription to use launchpad.""")
-
-    is_permitted = Attribute("""
-        Whether the project's licensing qualifies for free
-        hosting or the project has an up-to-date subscription.""")
-
-    license_approved = Bool(
-        title=_("License approved"),
-        description=_(
-            "Whether a license is manually approved for free "
-            "hosting after automatic approval fails.  May only "
-            "be applied to licenses of 'Other/Open Source'."))
+    commercial_subscription_is_due = exported(
+            Bool(
+                title=_("Commercial subscription is due"),
+                readonly=True,
+                description=_(
+                    "Whether the project's licensing requires a new commercial "
+                    "subscription to use launchpad.")))
 
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
@@ -588,7 +606,39 @@ class IProductSet(Interface):
         See `IProduct` for a description of the parameters.
         """
 
-    def forReview():
+    @operation_parameters(
+        search_text=TextLine(title=_("Search text")),
+        active=Bool(title=_("Is the project active")),
+        license_reviewed=Bool(title=_("Is the project license reviewed")),
+        licenses = Set(title=_('Licenses'), value_type=Choice(vocabulary=License)),
+        license_info_is_empty=Bool(title=_("License info is empty")),
+        has_zero_licenses=Bool(title=_("Has zero licenses")),
+        created_after=Date(title=_("Created after date")),
+        created_before=Date(title=_("Created before date")),
+        subscription_expires_after=Date(
+            title=_("Subscription expires after")),
+        subscription_expires_before=Date(
+            title=_("Subscription expired before")),
+        subscription_modified_after=Date(
+            title=_("Subscription modified after")),
+        subscription_modified_before=Date(
+            title=_("Subscription modified before"))
+        )
+    @operation_returns_collection_of(IProduct)
+    @export_read_operation()
+    @export_operation_as('licensing_search')
+    def forReview(search_text=None,
+                  active=None,
+                  license_reviewed=None,
+                  licenses=None,
+                  license_info_is_empty=None,
+                  has_zero_licenses=None,
+                  created_after=None,
+                  created_before=None,
+                  subscription_expires_after=None,
+                  subscription_expires_before=None,
+                  subscription_modified_after=None,
+                  subscription_modified_before=None):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()

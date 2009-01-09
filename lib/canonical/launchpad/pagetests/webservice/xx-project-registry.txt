@@ -108,6 +108,8 @@ Projects are available at their canonical URL on the API virtual host.
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
     bug_tracker_link: None
+    commercial_subscription_is_due: True
+    commercial_subscription_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
     development_focus_link: u'http://.../firefox/trunk'
@@ -117,6 +119,8 @@ Projects are available at their canonical URL on the API virtual host.
     freshmeat_project: None
     homepage_url: None
     icon_link: u'http://.../firefox/icon'
+    is_permitted: False
+    license_approved: False
     license_info: None
     license_reviewed: False
     licenses: []
@@ -125,10 +129,58 @@ Projects are available at their canonical URL on the API virtual host.
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
+    qualifies_for_free_hosting: False
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard: None
+    screenshots_url: None
+    self_link: u'http://.../firefox'
+    series_collection_link: u'http://.../firefox/series'
+    sourceforge_project: None
+    summary: u'The Mozilla Firefox web browser'
+    title: u'Mozilla Firefox'
+    wiki_url: None
+
+Some entries for projects are only available to admins.  Here we see
+several that are not available to non-privileged users marked as
+'redacted'.
+
+    >>> firefox = user_webservice.get('/firefox').jsonBody()
+    >>> pprint_entry(firefox)
+    active: True
+    active_milestones_collection_link: u'http://.../firefox/active_milestones'
+    all_milestones_collection_link: u'http://.../firefox/all_milestones'
+    branches_collection_link: u'http://.../firefox/branches'
+    brand_link: u'http://.../firefox/brand'
+    bug_reporting_guidelines: None
+    bug_tracker_link: None
+    commercial_subscription_is_due: True
+    commercial_subscription_link: None
+    date_created: u'2004-09-24T20:58:02.185708+00:00'
+    description: u'The Mozilla Firefox web browser'
+    development_focus_link: u'http://.../firefox/trunk'
+    display_name: u'Mozilla Firefox'
+    download_url: None
+    driver_link: None
+    freshmeat_project: None
+    homepage_url: None
+    icon_link: u'http://.../firefox/icon'
+    is_permitted: ...redacted...
+    license_approved: ...redacted...
+    license_info: None
+    license_reviewed:...redacted...
+    licenses: []
+    logo_link: u'http://.../firefox/logo'
+    name: u'firefox'
+    owner_link: u'http://.../~name12'
+    programming_language: None
+    project_group_link: u'http://.../mozilla'
+    qualifies_for_free_hosting: ...redacted...
+    registrant_link: u'http://.../~name12'
+    releases_collection_link: u'http://.../firefox/releases'
+    resource_type_link: u'http://.../#project'
+    reviewer_whiteboard:...redacted...
     screenshots_url: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
@@ -317,6 +369,99 @@ The latest projects registered can be retrieved.
     Launchpad Translations
     Mega Money Maker
     Redfish
+
+There is a method for doing a query about attributes related to
+project licensing.  We can find all projects with unreviewed
+licenses.
+
+    >>> unreviewed = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     license_reviewed=False).jsonBody()
+
+    >>> entries = sorted(
+    ...    unreviewed['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    APTonCD
+    Arch mirrors
+    Bazaar
+    Bazaar
+    Derby
+
+Or those that are reviewed.
+
+    >>> reviewed = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     license_reviewed=True).jsonBody()
+
+    >>> entries = sorted(
+    ...    reviewed['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    Launchpad Translations
+    alsa-utils
+    python gnome2 dev
+    unassigned syncs
+
+We can also find all projects with no licensing information.
+
+    >>> no_licenses = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     has_zero_license=True).jsonBody()
+
+    >>> entries = sorted(
+    ...    no_licenses['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    APTonCD
+    Arch mirrors
+    Bazaar
+    Bazaar
+    Derby
+
+We can find projects based on creation date.
+
+    >>> old = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     created_before="2006-01-01").jsonBody()
+
+    >>> entries = sorted(
+    ...    old['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    Arch mirrors
+    Bazaar
+    Evolution
+    GNOME Terminal
+    Gnome Applets
+
+Similarly we can find new projects.
+
+    >>> new = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     created_after="2006-01-01").jsonBody()
+
+    >>> entries = sorted(
+    ...    new['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    APTonCD
+    Bazaar
+    Derby
+    Jokosher
+    Launchpad
+
+All of the projects of a given license can be found.
+
+    >>> proprietary = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     licenses=["Other/Proprietary"]).jsonBody()
+
+    >>> entries = sorted(
+    ...    proprietary['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    Mega Money Maker
 
 The project collection has a method for creating a new project.
 

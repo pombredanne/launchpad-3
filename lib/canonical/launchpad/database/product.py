@@ -1084,9 +1084,6 @@ class ProductSet:
                               % sqlvalues(created_before))
 
         needs_join = False
-        if has_subscription is True:
-
-
         if subscription_expires_after is not None:
             conditions.append('CommercialSubscription.date_expires >= %s'
                               % sqlvalues(subscription_expires_after))
