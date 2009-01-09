@@ -17,6 +17,7 @@ from zope.interface import Interface
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
+
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
