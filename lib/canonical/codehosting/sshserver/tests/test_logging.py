@@ -82,10 +82,6 @@ class TestLoggingSetup(TestCase):
         self.assertIs(
             logging.getLogger('codehosting'), get_codehosting_logger())
 
-    def test_set_up_returns_codehosting_logger(self):
-        # set_up_logging returns the codehosting logger.
-        self.assertIs(get_codehosting_logger(), set_up_logging())
-
     def test_codehosting_handlers(self):
         # There needs to be at least one handler for the codehosting root
         # logger.
@@ -156,10 +152,6 @@ class TestLoggingEvent(TestCase):
     def test_formatting(self):
         event = LoggingEvent(logging.DEBUG, "foo: %(name)s", name="bar")
         self.assertEventLogs((logging.DEBUG, 'foo: bar'), event)
-
-    def test_attributes(self):
-        event = LoggingEvent(logging.DEBUG, "foo: %(name)s", name="bar")
-        self.assertEqual('bar', event.name)
 
     def test_subclass(self):
         class SomeEvent(LoggingEvent):
