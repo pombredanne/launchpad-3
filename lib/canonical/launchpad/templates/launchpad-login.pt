@@ -162,6 +162,7 @@
               <!-- Preserve extra query parameters as hidden fields. -->
               <tal:replacement tal:replace="structure view/preserve_query" />
             </form>
+            <p><strong>Note:</strong> You must enable cookies in your browser to log into or register for Launchpad.</p>
             <!-- 5a. didn't try to register last time: -->
             <h1 tal:condition="not: view/registration_error">
               Not registered yet? 
@@ -182,7 +183,7 @@
                  <li>Follow the confirmation URL in the e-mail and you're done!</li>
              </ol>
              
-              
+
 
             <form name="join" method="POST">
               <input type="hidden" name="redirection_url"
