@@ -350,6 +350,12 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         this delegates to `IDistroSeries.checkTranslationsViewable`,
         which raises `TranslationUnavailable` if the translations are
         set to be hidden.
+
+        :return: Returns normally if this series' translations are
+            viewable to the current user.
+        :raise TranslationUnavailable: if this series' translations are
+            hidden and the user is not one of the limited caste that is
+            allowed to access them.
         """
         if check_permission('launchpad.Admin', self.context):
             # Anyone with admin rights on this series passes.  This
