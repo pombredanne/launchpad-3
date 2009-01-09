@@ -14,6 +14,8 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthToken, IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -1819,6 +1821,10 @@ class AppendArchive(ViewArchive):
         Anyone with valid membership in the public PPA (owner) can append.
         Only team members can append to private PPAs.
         """
+        # XXX 2009-01-08 Julian
+        # This should be sharing code with the encapsulated method
+        # IArchive.canUpload().  That would mean it would also work for
+        # main archives in addition to not repeating the same code here.
         can_view = ViewArchive.checkAuthenticated(self, user)
         if can_view and user.inTeam(self.obj.owner):
             return True
@@ -1828,6 +1834,42 @@ class AppendArchive(ViewArchive):
     def checkUnauthenticated(self):
         """Unauthenticated users cannot append PPAs."""
         return False
+
+
+class ViewArchiveAuthToken(AuthorizationBase):
+    """Restrict editing of archive tokens.
+    
+    The user just needs to be mentioned in the token, have append privilege
+    to the archive or be an admin.
+    """
+    permission = "launchpad.View"
+    usedfor = IArchiveAuthToken
+
+    def checkAuthenticated(self, user):
+        if user == self.obj.person:
+            return True
+        auth_append = AppendArchive(self.obj.archive)
+        if auth_append.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class EditArchiveAuthToken(AuthorizationBase):
+    """Restrict editing of archive tokens.
+
+    The user should have append privileges to the context archive, or be an
+    admin.
+    """
+    permission = "launchpad.Edit"
+    usedfor = IArchiveAuthToken
+
+    def checkAuthenticated(self, user):
+        auth_append = AppendArchive(self.obj.archive)
+        if auth_append.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
 
 
 class ViewSourcePackageRelease(AuthorizationBase):

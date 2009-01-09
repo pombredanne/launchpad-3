@@ -10,12 +10,16 @@ __all__ = [
 
 import pytz
 
-from storm.locals import DateTime, Int, RawStr, Reference, Storm
+from storm.locals import DateTime, Int, RawStr, Reference, Storm, Unicode
 
+from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.archiveauthtoken import (
-    IArchiveAuthToken)
+    IArchiveAuthToken, IArchiveAuthTokenSet)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class ArchiveAuthToken(Storm):
@@ -37,5 +41,26 @@ class ArchiveAuthToken(Storm):
     date_deactivated = DateTime(
         name='date_deactivated', allow_none=True, tzinfo=pytz.timezone('UTC'))
 
-    token = RawStr(name='token', allow_none=False)
+    token = Unicode(name='token', allow_none=False)
 
+    def deactivate(self):
+        """See `IArchiveAuthTokenSet`."""
+        self.date_deactivated = UTC_NOW
+
+
+class ArchiveAuthTokenSet:
+    """See `IArchiveAuthTokenSet`."""
+    implements(IArchiveAuthTokenSet)
+    title = "Archive Tokens in Launchpad"
+
+    def get(self, token_id):
+        """See `IArchiveAuthTokenSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.get(ArchiveAuthToken, token_id)
+
+    def getByToken(self, token):
+        """See `IArchiveAuthTokenSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.token == token).one()

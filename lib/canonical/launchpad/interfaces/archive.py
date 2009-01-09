@@ -733,6 +733,16 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional token string, one will be generated if not set
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveView):
     """Main Archive interface."""

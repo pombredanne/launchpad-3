@@ -28,6 +28,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
+from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -1054,6 +1055,37 @@ class Archive(SQLBase):
         return [
             copy.sourcepackagerelease.sourcepackagename.name
             for copy in copies]
+
+    def _generateTokenString(self):
+        """Private method to generate a random token string."""
+        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
+        token_length = 20
+        token = ''.join(
+            random.choice(characters) for count in range(token_length))
+
+        # Make sure the token's not already used.
+        token_set = getUtility(IArchiveAuthTokenSet)
+        while token_set.getByToken(token) is not None:
+            token = ''.join(
+                random.choice(characters) for count in range(token_length))
+
+        return token
+
+    def newAuthToken(self, person, token=None, date_created=None):
+        """See `IArchive`."""
+        if token is None:
+            token = self._generateTokenString()
+        if not isinstance(token, unicode):
+            token = unicode(token)
+        archive_auth_token = ArchiveAuthToken()
+        archive_auth_token.archive = self
+        archive_auth_token.person = person
+        archive_auth_token.token = token
+        if date_created is not None:
+            archive_auth_token.date_created = date_created
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.add(archive_auth_token)
+        return archive_auth_token
 
 
 class ArchiveSet:

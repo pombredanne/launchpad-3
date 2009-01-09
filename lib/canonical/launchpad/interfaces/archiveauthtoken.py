@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IArchiveAuthToken',
+    'IArchiveAuthTokenSet',
     ]
 
 from zope.interface import Interface
@@ -18,9 +19,8 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr.fields import Reference
 
 
-class IArchiveAuthToken(Interface):
-    """An interface for Archive Authorisation Tokens."""
-
+class IArchiveAuthTokenView(Interface):
+    """Interface for Archive Authorisation Tokens requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
     archive = Reference(
@@ -42,3 +42,31 @@ class IArchiveAuthToken(Interface):
     token = TextLine(
         title=_("Token"), required=True,
         description=_("The access token to the archive for this person."))
+
+
+class IArchiveAuthTokenEdit(Interface):
+    """Interface for Archive Auth Tokens requiring launchpad.Edit."""
+    def deactivate(self):
+        """Deactivate the token by setting date_deactivated."""
+
+
+class IArchiveAuthToken(IArchiveAuthTokenView, IArchiveAuthTokenEdit):
+    """An interface for Archive Auth Tokens."""
+
+
+class IArchiveAuthTokenSet(Interface):
+    """An interface for `ArchiveAuthTokenSet`."""
+
+    def get(token_id):
+        """Retrieve a token by its database ID.
+
+        :param token_id: The database ID
+        :return: An object conforming to IArchiveAuthToken
+        """
+
+    def getByToken(token):
+        """Retrieve a token by its token text.
+
+        :param token: The token text for the token.
+        :return An object conforming to IArchiveAuthToken
+        """
