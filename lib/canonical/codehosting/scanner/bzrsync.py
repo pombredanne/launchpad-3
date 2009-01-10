@@ -345,10 +345,10 @@ class BranchMailer:
             mailer.sendAll()
         else:
             for message, diff, subject, revno in self.pending_emails:
-                mailer = MailoutMailer.forRevision(
+                job = getUtililty(IRevisionMailJobSource).create(
                     self.db_branch, revno, self.email_from, message, diff,
                     subject)
-                mailer.sendAll()
+                job.run()
         self.trans_manager.commit()
 
 

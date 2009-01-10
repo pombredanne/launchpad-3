@@ -22,7 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
     BranchDiffJob, BranchJob, BranchJobType, BranchSet, BranchSubscription,
     ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
-    DeletionCallable, DeletionOperation)
+    DeletionCallable, DeletionOperation, RevisionMailJob)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.bugbranch import BugBranch
@@ -40,15 +40,18 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchDiffJob,
-    IBranchJob, NoSuchBranch)
+    IBranchJob, NoSuchBranch, IRevisionMailJob)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
@@ -1523,6 +1526,43 @@ class TestBranchDiffJob(TestCaseWithFactory):
         job = BranchDiffJob.create(branch, '0', '1')
         job.run()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
+
+
+class TestRevisionMailJob(TestCaseWithFactory):
+    """Tests for BranchDiffJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', 'diff', 'subject')
+        verifyObject(IRevisionMailJob, job)
+
+    def test_run_sends_mail(self):
+        branch = self.factory.makeBranch()
+        branch.subscribe(branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', 'diff', 'subject')
+        job.run()
+        (mail,) = pop_notifications()
+        self.assertEqual('0', mail['X-Launchpad-Branch-Revision-Number'])
+        self.assertEqual('from@example.com', mail['from'])
+        self.assertEqual('subject', mail['subject'])
+        self.assertEqual(
+            'hello\n'
+            'diff\n\n--\n\n'
+            'http://code.launchpad.dev/~person-name2/product-name8/branch4\n'
+            '\nYou are subscribed to branch '
+            'lp://dev/~person-name2/product-name8/branch4.\n'
+            'To unsubscribe from this branch go to'
+            ' http://code.launchpad.dev/~person-name2/product-name8/branch4/'
+            '+edit-subscription.\n',
+            mail.get_payload(decode=True))
 
 
 def test_suite():
