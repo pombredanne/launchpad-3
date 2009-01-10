@@ -477,6 +477,7 @@ Following the redirect, we can see the new bug watch:
   base_url_aliases: []
   bug_tracker_type: u'Bugzilla'
   contact_details: u'Carrier pigeon only'
+  has_lp_plugin: None
   name: u'mozilla.org'
   registrant_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_tracker'
@@ -531,6 +532,7 @@ renamed bug tracker.
   base_url_aliases: [u'http://bugs.example.com/bugs/', u'http://www.example.com/bugtracker/']
   bug_tracker_type: u'Bugzilla'
   contact_details: u'bob@example.com'
+  has_lp_plugin: None
   name: u'bob'
   registrant_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_tracker'
