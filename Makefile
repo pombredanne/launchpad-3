@@ -176,6 +176,7 @@ run_all: inplace stop
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
+
 run_codebrowse:
 	BZR_PLUGIN_PATH=bzrplugins PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
 
@@ -184,7 +185,6 @@ start_codebrowse:
 
 stop_codebrowse:
 	PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/stop-loggerhead.py
-
 
 pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the
