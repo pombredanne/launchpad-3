@@ -1000,8 +1000,10 @@ class BugTaskSearchParams:
         Otherwise, return value as is, or None if it's a zero-length sequence.
         """
         if zope_isinstance(value, (list, tuple)):
-            if len(value) > 0:
+            if len(value) > 1:
                 return any(*value)
+            elif len(value) == 1:
+                return value[0]
             else:
                 return None
         else:

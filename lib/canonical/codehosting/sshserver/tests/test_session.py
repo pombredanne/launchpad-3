@@ -73,6 +73,9 @@ class TestExecOnlySession(AvatarTestCase):
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        # The logging system will try to get the id of avatar.transport, so
+        # let's give it something to take the id of.
+        self.avatar.transport = object()
         self.reactor = MockReactor()
         self.session = ExecOnlySession(self.avatar, self.reactor)
 

@@ -61,22 +61,240 @@ original instance is to return itself.
     >>> chosen_bugtracker is external_bugtracker
     True
 
-BugWatchUpdater.updateBugWatches will call this method and replace the
-ExternalBugTracker used, before calling getCurrentDBTime(), and all the
-other methods.
+BugWatchUpdater calls externalbugtracker.get_external_bugtracker(),
+follwed by ExternalBugTracker.getExternalBugTrackerToUse() to get the
+correct ExternalBugTracker for a given BugTracker. It does this via the
+private _getExternalBugTrackersAndWatches() method, which returns a set of
+(ExternalBugTracker, bug_watches) tuples.
 
-    >>> class MoreSpecificExternalBugTracker(TestExternalBugTracker):
-    ...     def getCurrentDBTime(self):
-    ...         print "Using more specific ExternalBugTracker implementation."
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     Bugzilla, BugzillaLPPlugin, BUG_TRACKER_CLASSES)
+    >>> from canonical.launchpad.interfaces.bugtracker import (
+    ...     BugTrackerType)
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
 
-    >>> class GeneralExternalBugTracker:
+    >>> factory = LaunchpadObjectFactory()
+    >>> standard_bugzilla = factory.makeBugTracker()
+
+    >>> class NonConnectingBugzilla(Bugzilla):
+    ...     bug_tracker_to_use = Bugzilla
+    ...
     ...     def getExternalBugTrackerToUse(self):
-    ...         return MoreSpecificExternalBugTracker('http://example.com')
+    ...         print "Getting external bugtracker to use..."
+    ...         return self.bug_tracker_to_use(self.baseurl)
 
-    >>> bug_watch_updater.updateBugWatches(GeneralExternalBugTracker(), [])
-    COMMIT
-    Using more specific ExternalBugTracker implementation.
-    BEGIN
+We'll create a helper method to allow us to avoid having to connect to a
+remote server.
+
+    >>> def get_trackers_and_watches(bugtracker, watches):
+    ...     try:
+    ...         BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = (
+    ...             NonConnectingBugzilla)
+    ...         trackers_and_watches = (
+    ...             bug_watch_updater._getExternalBugTrackersAndWatches(
+    ...                 bugtracker, watches))
+    ...     finally:
+    ...         BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = Bugzilla
+    ...
+    ...     return trackers_and_watches
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     standard_bugzilla, [])
+    Getting external bugtracker to use...
+
+    >>> len(trackers_and_watches)
+    1
+
+    >>> chosen_bugtracker, watches = trackers_and_watches[0]
+    >>> isinstance(chosen_bugtracker, Bugzilla)
+    True
+
+_getExternalBugTrackersAndWatches() also takes a list of bug watches as a
+parameter. For most calls, this remains unaltered and only one
+(ExternalBugTracker, bug_watches) tuple will be returned.
+
+    >>> bug_watches = [
+    ...     factory.makeBugWatch(bugtracker=standard_bugzilla)
+    ...         for useless_int in range(10)]
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     standard_bugzilla, bug_watches)
+    Getting external bugtracker to use...
+
+    >>> len(trackers_and_watches)
+    1
+
+    >>> chosen_bugtracker, watches = trackers_and_watches[0]
+    >>> isinstance(chosen_bugtracker, Bugzilla)
+    True
+
+    >>> watches == bug_watches
+    True
+
+The only bug tracker for which _getExternalBugTrackersAndWatches() will
+return more than one (ExternalBugTracker, bug_watches) tuple: the Gnome
+Bugzilla. This is because the Gnome Bugzilla is a special case.
+
+Bugzilla allows users to track bugs in more than one product. Launchpad
+supports this functionality through the BugzillaLPPlugin
+ExternalBugTracker subclass. Since the Gnome Bugzilla contains a very
+large number of bugs we only want to synchronise comments and bugs for
+some products. For the others, we want to use the standard
+ExternalBugTracker functionality, without tapping into the functionality
+offered by the Bugzilla Launchpad plugin.
+
+The Gnome Bugzilla is a celebrity in Launchpad.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+
+If the gnome_bugzilla doesn't have the Launchpad plugin installed, it
+will behave exactly the same as any other bug tracker. Our
+NonConnectingBugzilla class will behave as though the remote server
+doesn't have the Launchpad plugin installed.
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     gnome_bugzilla, bug_watches)
+    Getting external bugtracker to use...
+
+    >>> len(trackers_and_watches)
+    1
+
+    >>> chosen_bugtracker, watches = trackers_and_watches[0]
+    >>> isinstance(chosen_bugtracker, Bugzilla)
+    True
+
+    >>> watches == bug_watches
+    True
+
+However, if the Gnome Bugtracker does have the plugin installed,
+_getExternalBugTrackersAndWatches() behaves slightly differently.
+Firstly, we'll subclass BugzillaLPPlugin so that we don't have to
+connect to any servers.
+
+    >>> class ProductQueryingBugzillLPPlugin(BugzillaLPPlugin):
+    ...
+    ...     remote_bug_products = {
+    ...         1: 'HeartOfGold',
+    ...         2: 'InfiniteImprobabilityDrive',
+    ...         3: 'HeartOfGold',
+    ...         4: 'GPP',
+    ...         5: 'InfiniteImprobabilityDrive',
+    ...         }
+    ...
+    ...     def getProductsForRemoteBugs(self, bug_ids):
+    ...         mappings = {}
+    ...         for bug_id in bug_ids:
+    ...             if int(bug_id) in self.remote_bug_products:
+    ...                 mappings[bug_id] = (
+    ...                     self.remote_bug_products[int(bug_id)])
+    ...         return mappings
+
+Next we'll update our NonConnectingBugzilla class so that its
+getExternalBugTrackerToUse() method will return an instance of our
+BugzillaLPPlugin subclass.
+
+    >>> NonConnectingBugzilla.bug_tracker_to_use = (
+    ...     ProductQueryingBugzillLPPlugin)
+
+For those bug watches whose remote bugs are on products that we want to
+sync comments with, _getExternalBugTrackersAndWatches() will return
+(BugzillaLPPlugin, watches).
+
+The checkwatches module contains a variable, SYNCABLE_GNOME_PRODUCTS,
+which defines the products that we want to sync comments for.
+BugWatchUpdater keeps a local copy of this variable, which we can
+override by passing a list of products to the BugWatchUpdater
+constructor.
+
+    >>> from canonical.launchpad.scripts import checkwatches
+    >>> (bug_watch_updater._syncable_gnome_products ==
+    ...     checkwatches.SYNCABLE_GNOME_PRODUCTS)
+    True
+
+    >>> syncable_products = ['HeartOfGold']
+    >>> bug_watch_updater = BugWatchUpdater(
+    ...     FakeTransaction(), syncable_gnome_products=syncable_products)
+
+    >>> bug_watches = [
+    ...     factory.makeBugWatch(
+    ...         remote_bug=remote_bug_id, bugtracker=standard_bugzilla)
+    ...     for remote_bug_id in range(1, 6)]
+
+We only want to sync comments and bugs for the HeartOfGold product. Bug
+watches against that product will be returned as a batch from
+_getExternalBugTrackersAndWatches() along with a BugzillaLPPlugin
+instance. All the other bug watches will be returned as a batch with
+Bugzilla instance.
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     gnome_bugzilla, bug_watches)
+    Getting external bugtracker to use...
+
+    >>> len(trackers_and_watches)
+    2
+
+    >>> bugzilla_lp_plugin, lp_plugin_watches = trackers_and_watches[0]
+    >>> isinstance(bugzilla_lp_plugin, BugzillaLPPlugin)
+    True
+
+    >>> from operator import attrgetter
+    >>> for watch in sorted(lp_plugin_watches, key=attrgetter('remotebug')):
+    ...     print watch.remotebug
+    1
+    3
+
+    >>> normal_bugzilla, normal_watches = trackers_and_watches[1]
+    >>> isinstance(normal_bugzilla, Bugzilla)
+    True
+
+    >>> isinstance(normal_bugzilla, BugzillaLPPlugin)
+    False
+
+    >>> for watch in sorted(normal_watches, key=attrgetter('remotebug')):
+    ...     print watch.remotebug
+    2
+    4
+    5
+
+If we alter the SYNCABLE_GNOME_PRODUCTS list, different batches of bug
+watches will be returned for the different Bugzilla ExternalBugTrackers.
+
+    >>> syncable_products = [
+    ...     'HeartOfGold',
+    ...     'InfiniteImprobabilityDrive',
+    ...     ]
+    >>> bug_watch_updater = BugWatchUpdater(
+    ...     FakeTransaction(), syncable_gnome_products=syncable_products)
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     gnome_bugzilla, bug_watches)
+    Getting external bugtracker to use...
+
+    >>> len(trackers_and_watches)
+    2
+
+    >>> bugzilla_lp_plugin, lp_plugin_watches = trackers_and_watches[0]
+    >>> normal_bugzilla, normal_watches = trackers_and_watches[1]
+    >>> isinstance(bugzilla_lp_plugin, BugzillaLPPlugin)
+    True
+
+    >>> isinstance(normal_bugzilla, Bugzilla)
+    True
+
+    >>> isinstance(normal_bugzilla, BugzillaLPPlugin)
+    False
+
+    >>> for watch in sorted(lp_plugin_watches, key=attrgetter('remotebug')):
+    ...     print watch.remotebug
+    1
+    2
+    3
+    5
+
+    >>> for watch in sorted(normal_watches, key=attrgetter('remotebug')):
+    ...     print watch.remotebug
+    4
 
 
 === Checking the server DB time ===
@@ -211,7 +429,7 @@ watches, the getModifiedRemoteBugs() method won't be called.
 
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IBugSet, IBugWatchSet, IPersonSet)
+    ...     IBugSet, IBugWatchSet, IPersonSet)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
@@ -384,7 +602,8 @@ possible.
     []
 
     >>> comment_message = factory.makeMessage(
-    ...     "A test message", "That hasn't been pushed")
+    ...     "A test message", "That hasn't been pushed",
+    ...     owner=sample_person)
     >>> bug_message = bug_watches[-1].addComment(None, comment_message)
 
     >>> bug_watch_updater._getRemoteIdsToCheck(

@@ -267,7 +267,7 @@ class MenuBase(UserAttributeCache):
             # self.links.
             raise AssertionError(
                 "Links in 'enable_only' not found in 'links': %s" %
-                (', '.join([name for name in unknown_links])))
+                ', '.join(sorted(unknown_links)))
 
         for idx, linkname in enumerate(self.links):
             link = self._get_link(linkname)

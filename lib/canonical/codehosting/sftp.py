@@ -11,8 +11,12 @@ The Bazaar Transport is special in two ways:
 We call such a transport a "Twisted Transport".
 """
 
-__all__ = ['AvatarToSFTPAdapter', 'TransportSFTPServer']
 __metaclass__ = type
+__all__ = [
+    'AvatarToSFTPAdapter',
+    'FileTransferServer',
+    'TransportSFTPServer',
+    ]
 
 
 import errno
@@ -27,10 +31,13 @@ from twisted.conch.ls import lsLine
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.internet import defer
 from twisted.python import util
+
+from zope.event import notify
 from zope.interface import implements
 
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, LaunchpadServer)
+from canonical.codehosting.sshserver import accesslog
 from canonical.config import config
 from canonical.twistedsupport import gatherResults
 
@@ -245,7 +252,26 @@ def avatar_to_sftp_server(avatar):
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.setUp()
     transport = AsyncLaunchpadTransport(server, server.get_url())
+    notify(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
+
+
+class FileTransferServer(filetransfer.FileTransferServer):
+
+    def __init__(self, data=None, avatar=None):
+        filetransfer.FileTransferServer.__init__(self, data, avatar)
+        self.avatar = avatar
+
+    def connectionLost(self, reason):
+        # This method gets called twice: once from `SSHChannel.closeReceived`
+        # when the client closes the channel and once from `SSHSession.closed`
+        # when the server closes the session. We change the avatar attribute
+        # to avoid logging the `SFTPClosed` event twice.
+        filetransfer.FileTransferServer.connectionLost(self, reason)
+        if self.avatar is not None:
+            avatar = self.avatar
+            self.avatar = None
+            notify(accesslog.SFTPClosed(avatar))
 
 
 class TransportSFTPServer:
