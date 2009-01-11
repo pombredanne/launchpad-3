@@ -6,7 +6,7 @@ import xmlrpclib
 
 from bzrlib import urlutils
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.codehosting.branchfsclient import BranchFileSystemClient
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS
@@ -15,6 +15,7 @@ from canonical.launchpad.xmlrpc import faults
 from canonical.twistedsupport import extract_result
 
 __all__ = ['BranchRewriter']
+
 
 class BranchRewriter:
 
