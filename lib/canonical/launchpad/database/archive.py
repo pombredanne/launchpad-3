@@ -1094,14 +1094,17 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
 
-    def getPPAByDistributionAndOwnerName(self, distribution, name):
+    def getPPAByDistributionAndOwnerName(self, distribution, person_name,
+                                         ppa_name):
         """See `IArchiveSet`"""
         query = """
             Archive.purpose = %s AND
             Archive.distribution = %s AND
             Person.id = Archive.owner AND
+            Archive.name = %s AND
             Person.name = %s
-        """ % sqlvalues(ArchivePurpose.PPA, distribution, name)
+        """ % sqlvalues(
+                ArchivePurpose.PPA, distribution, ppa_name, person_name)
 
         return Archive.selectOne(query, clauseTables=['Person'])
 
@@ -1112,7 +1115,7 @@ class ArchiveSet:
 
          * PRIMARY: 'primary';
          * PARTNER: 'partner';
-         * PPA: 'default'.
+         * PPA: 'ppa'.
 
         :param purpose: queried `ArchivePurpose`.
 
@@ -1123,7 +1126,7 @@ class ArchiveSet:
         """
         name_by_purpose = {
             ArchivePurpose.PRIMARY: 'primary',
-            ArchivePurpose.PPA: 'default',
+            ArchivePurpose.PPA: 'ppa',
             ArchivePurpose.PARTNER: 'partner',
             }
 

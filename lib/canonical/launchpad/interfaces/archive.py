@@ -855,8 +855,13 @@ class IArchiveSet(Interface):
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
-    def getPPAByDistributionAndOwnerName(distribution, person_name):
-        """Return a single PPA the given (distribution, name) pair."""
+    def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
+        """Return a single PPA.
+        
+        :param distribution: The context IDistribution.
+        :param person_name: The context IPerson.
+        :param ppa_name: The name of the archive (PPA)
+        """
 
     def getByDistroPurpose(distribution, purpose, name=None):
         """Return the IArchive with the given distribution and purpose.

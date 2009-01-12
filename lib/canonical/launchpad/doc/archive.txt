@@ -17,7 +17,7 @@ records to disk, including configuration and indexes.
     >>> print cprov_archive.distribution.name
     ubuntu
     >>> print cprov_archive.name
-    default
+    ppa
     >>> print cprov_archive.purpose.name
     PPA
     >>> cprov_archive.enabled
@@ -1334,10 +1334,10 @@ A new Archive can be created by passing a name and an owner
     >>> sandbox_archive.owner == name16
     True
 
-PPAs are created with the name attribute set to 'default'.
+PPAs are created with the name attribute set to 'ppa' by default.
 
     >>> print sandbox_archive.name
-    default
+    ppa
 
 We can take the opportunity to check if the default 'authorized_size'
 corresponds to what we state in our policy, 1024 MiB:
@@ -1447,17 +1447,17 @@ to publish to the RELEASE pocket no matter what state the distroseries is in.
     False
 
 getPPAByDistributionAndOwnerName method allow PPA lookups based on a
-distribution and a person name. This method is used in
+distribution, person name and the PPA name. This method is used in
 `PackageLocation` to provide a homogeneous way to refer to a Location
 (archive, distribution, distroseries, pocket).
 
     >>> cprov_archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'cprov')
+    ...     ubuntu, 'cprov', 'ppa')
     True
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'sabdfl')
+    ...     ubuntu, 'sabdfl', 'ppa')
     True
 
 Iteration over the own utility is performed against all archives,

@@ -93,20 +93,21 @@ def build_package_location(distribution_name, suite=None, purpose=None,
             "Could not find distribution %s" % err)
 
     if purpose == ArchivePurpose.PPA:
-        assert person_name is not None, (
-            "person_name should be passed for PPA archives.")
+        assert person_name is not None and archive_name is not None, (
+            "person_name and archive_name should be passed for PPA archives.")
         archive = getUtility(IArchiveSet).getPPAByDistributionAndOwnerName(
-            distribution, person_name)
+            distribution, person_name, archive_name)
         if archive is None:
             raise PackageLocationError(
-                "Could not find a PPA for %s" % person_name)
+                "Could not find a PPA for %s/%s" % (person_name, archive_name))
         if distribution != archive.distribution:
             raise PackageLocationError(
                 "The specified archive is not for distribution %s"
                 % distribution_name)
     elif purpose == ArchivePurpose.PARTNER:
-        assert person_name is None, (
-            "person_name shoudn't be passed for PARTNER archive.")
+        assert person_name is None and archive_name is None, (
+            "person_name and archive_name shoudn't be passed for "
+            "PARTNER archive.")
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution, purpose)
         if archive is None:
@@ -124,8 +125,9 @@ def build_package_location(distribution_name, suite=None, purpose=None,
                     purpose.title, archive_name, distribution.name))
         archive = archives[0]
     else:
-        assert person_name is None, (
-            "person_name shoudn't be passed when purpose is omitted.")
+        assert person_name is None and archive_name is None, (
+            "person_name and archive_name shoudn't be passed when purpose "
+            "is omitted.")
         archive = distribution.main_archive
 
     if suite is not None:
