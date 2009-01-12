@@ -10,8 +10,7 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import BranchFileSystemClient
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS
-from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, PERMISSION_DENIED_FAULT_CODE)
+from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 from canonical.launchpad.xmlrpc import faults
 from canonical.twistedsupport import extract_result
 
@@ -64,7 +63,7 @@ class BranchRewriter:
             transport_type, info, trailing = extract_result(deferred)
         except xmlrpclib.Fault, f:
             if (f.faultCode == faults.PathTranslationError.error_code or
-                f.faults == PERMISSION_DENIED_FAULT_CODE):
+                f.faults == faults.PermissionDenied.error_code):
                 return "NULL"
             else:
                 raise

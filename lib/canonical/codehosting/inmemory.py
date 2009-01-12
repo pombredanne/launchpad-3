@@ -18,8 +18,7 @@ from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
@@ -417,8 +416,7 @@ class FakeBranchFilesystem:
         try:
             namespace_path, branch_name = escaped_path.rsplit('/', 1)
         except ValueError:
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE,
+            return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         data = BranchNamespaceSet().parse(namespace_path)
         owner = self._person_set.getByName(data['person'])
@@ -433,15 +431,13 @@ class FakeBranchFilesystem:
         # creation policy, the observed behaviour will be failure to raise
         # exceptions.
         if not registrant.inTeam(owner):
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE,
+            return faults.PermissionDenied(
                 ('%s cannot create branches owned by %s'
                  % (registrant.displayname, owner.displayname)))
         product = distroseries = sourcepackagename = None
         if data['product'] == '+junk':
             if owner.isTeam():
-                return Fault(
-                    PERMISSION_DENIED_FAULT_CODE,
+                return faults.PermissionDenied(
                     BranchCreationNoTeamOwnedJunkBranches.error_message)
             product = None
         elif data['product'] is not None:
@@ -471,8 +467,7 @@ class FakeBranchFilesystem:
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
         else:
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE,
+            return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         try:
             return self._factory.makeBranch(
@@ -481,7 +476,7 @@ class FakeBranchFilesystem:
                 sourcepackagename=sourcepackagename,
                 registrant=registrant, branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
-            return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
+            return faults.PermissionDenied(str(e))
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
@@ -565,8 +560,7 @@ class FakeBranchFilesystem:
 
     def _serializeBranch(self, requester_id, branch, trailing_path):
         if not self._canRead(requester_id, branch):
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE, 'Permission denied.')
+            return faults.PermissionDenied()
         elif branch.branch_type == BranchType.REMOTE:
             return None
         else:

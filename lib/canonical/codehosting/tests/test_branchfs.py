@@ -729,9 +729,8 @@ class LaunchpadTransportTests:
             '~%s/no-such-product/some-name' % self.requester.name)
 
     def test_createBranch_permission_denied_error(self):
-        # When createBranch raises an exception with faultCode
-        # PERMISSION_DENIED_FAULT_CODE, the transport should translate
-        # this to a PermissionDenied exception.
+        # When createBranch raises faults.PermissionDenied, the transport
+        # should translate this to a PermissionDenied exception.
         transport = self.getTransport()
         person = self.factory.makePerson()
         product = self.factory.makeProduct()

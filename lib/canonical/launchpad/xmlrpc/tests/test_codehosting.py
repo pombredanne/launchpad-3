@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -541,7 +541,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
         self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE,
+            faults.PermissionDenied.error_code,
             BranchCreationNoTeamOwnedJunkBranches.error_message, fault)
 
     def test_createBranch_bad_product(self):
@@ -566,7 +566,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             creator.id,
             escape('/~%s/%s/%s' % (other_person.name, product.name, name)))
         self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+            faults.PermissionDenied.error_code, message, fault)
 
     def test_createBranch_bad_name(self):
         # Creating a branch with an invalid name fails.
@@ -579,7 +579,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
         self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+            faults.PermissionDenied.error_code, message, fault)
 
     def test_createBranch_bad_user(self):
         # Creating a branch under a non-existent user fails.
@@ -612,7 +612,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(owner.id, path)
         message = "Cannot create branch at '%s'" % path
         self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+            faults.PermissionDenied.error_code, message, fault)
 
     def test_createBranch_source_package(self):
         # createBranch can take the path to a source package branch and create
@@ -919,7 +919,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             requester = requester.id
         fault = self.branchfs.translatePath(requester, path)
         self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE,
+            faults.PermissionDenied.error_code,
             "Permission denied.", fault)
 
     def test_translatePath_cannot_translate(self):

@@ -31,8 +31,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
-    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY, WRITABLE)
+    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -215,14 +214,12 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             try:
                 namespace_name, branch_name = escaped_path.rsplit('/', 1)
             except ValueError:
-                return Fault(
-                    PERMISSION_DENIED_FAULT_CODE,
+                return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
             try:
                 namespace = lookup_branch_namespace(namespace_name)
             except InvalidNamespace:
-                return Fault(
-                    PERMISSION_DENIED_FAULT_CODE,
+                return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
             except NoSuchPerson, e:
                 return Fault(
@@ -238,7 +235,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
             except (BranchCreationException, LaunchpadValidationError), e:
-                return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
+                return faults.PermissionDenied(str(e))
             else:
                 return branch.id
         return run_with_login(login_id, create_branch)
@@ -308,8 +305,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         try:
             branch_id = branch.id
         except Unauthorized:
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE, "Permission denied.")
+            return faults.PermissionDenied()
         if branch.branch_type == BranchType.REMOTE:
             return None
         return (

@@ -76,7 +76,7 @@ from canonical.codehosting.transport import (
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    NOT_FOUND_FAULT_CODE)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -327,7 +327,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         def path_not_translated(failure):
             trap_fault(
                 failure, faults.PathTranslationError.error_code,
-                PERMISSION_DENIED_FAULT_CODE)
+                faults.PermissionDenied.error_code)
             raise NoSuchFile(virtual_url_fragment)
 
         def unknown_transport_type(failure):
@@ -497,7 +497,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # exist. You may supply --create-prefix to create all leading
             # parent directories", which is just misleading.
             fault = trap_fault(
-                failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+                failure, NOT_FOUND_FAULT_CODE, faults.PermissionDenied.error_code)
             raise PermissionDenied(virtual_url_fragment, fault.faultString)
 
         return deferred.addErrback(translate_fault)
