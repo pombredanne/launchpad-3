@@ -86,6 +86,7 @@ __all__ = [
     ]
 
 import copy
+import itertools
 import pytz
 import subprocess
 import urllib
@@ -143,7 +144,7 @@ from canonical.launchpad.interfaces import (
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespaceSet)
+    IBranchNamespaceSet)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
@@ -276,50 +277,43 @@ class BranchTraversalMixin:
 
     """
 
-    def _getBranch(self, product_name, branch_name):
-        return getUtility(IBranchNamespaceSet).interpret(
-            self.context.name, product_name).getByName(branch_name)
+    def _getSegments(self, pillar_name=None):
+        base = ['~' + self.context.name]
+        if pillar_name is not None:
+            base.append(pillar_name)
+        return itertools.chain(iter(base), iter(self.request.stepstogo))
 
     @stepto('+branch')
     def redirect_branch(self):
         """Redirect to canonical_url, which is ~user/product/name."""
-        # XXX: JonathanLange 2009-01-12 spec=package-branches: This duplicates
-        # logic in traverse!
-        stepstogo = self.request.stepstogo
-        product_name = stepstogo.consume()
-        branch_name = stepstogo.consume()
-        branch = self._getBranch(product_name, branch_name)
+        branch = getUtility(IBranchNamespaceSet).traverse(self._getSegments())
         if branch:
             return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
-    @stepthrough('+junk')
-    def traverse_junk(self, name):
-        return get_branch_namespace(self.context).getByName(name)
-
     def traverse(self, product_name):
-        # XXX: JonathanLange 2008-12-10 spec=package-branches: This is a big
-        # thing that needs to be changed for package branches.
-        branch_name = self.request.stepstogo.consume()
-        if branch_name is not None:
-            branch = self._getBranch(product_name, branch_name)
-            if branch is not None and branch.product is not None:
-                # The launch bag contains "stuff of interest" related to where
-                # the user is traversing to.  When a user traverses over a
-                # product, the product gets added to the launch bag by the
-                # traversal machinery, however when traversing to a branch, we
-                # short circuit it somewhat by looking for a two part key (in
-                # addition to the user) to identify the branch, and as such
-                # the product isnt't being added to the bag by the internals.
-                getUtility(IOpenLaunchBag).add(branch.product)
-
-                if branch.product.name != product_name:
-                    # This branch was accessed through one of its product's
-                    # aliases, so we must redirect to its canonical URL.
-                    return self.redirectSubTree(canonical_url(branch))
-            return branch
-        else:
+        branch = getUtility(IBranchNamespaceSet).traverse(
+            self._getSegments(product_name))
+        if branch is None:
             return super(BranchTraversalMixin, self).traverse(product_name)
+        if branch.product is not None:
+            # The launch bag contains "stuff of interest" related to where
+            # the user is traversing to.  When a user traverses over a
+            # product, the product gets added to the launch bag by the
+            # traversal machinery, however when traversing to a branch, we
+            # short circuit it somewhat by looking for a two part key (in
+            # addition to the user) to identify the branch, and as such
+            # the product isnt't being added to the bag by the internals.
+
+            # XXX: JonathanLange 2008-12-10 spec=package-branches: The branch
+            # should know how to add its interesting bits to the launch bag.
+            getUtility(IOpenLaunchBag).add(branch.product)
+
+            if branch.product.name != product_name:
+                # This branch was accessed through one of its product's
+                # aliases, so we must redirect to its canonical URL.
+                return self.redirectSubTree(canonical_url(branch))
+        return branch
 
 
 class PersonNavigation(BranchTraversalMixin, Navigation):
