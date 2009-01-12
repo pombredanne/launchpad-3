@@ -14,6 +14,8 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthToken, IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -1819,6 +1821,10 @@ class AppendArchive(ViewArchive):
         Anyone with valid membership in the public PPA (owner) can append.
         Only team members can append to private PPAs.
         """
+        # XXX 2009-01-08 Julian
+        # This should be sharing code with the encapsulated method
+        # IArchive.canUpload().  That would mean it would also work for
+        # main archives in addition to not repeating the same code here.
         can_view = ViewArchive.checkAuthenticated(self, user)
         if can_view and user.inTeam(self.obj.owner):
             return True
@@ -1828,6 +1834,39 @@ class AppendArchive(ViewArchive):
     def checkUnauthenticated(self):
         """Unauthenticated users cannot append PPAs."""
         return False
+
+
+class ViewArchiveAuthToken(AuthorizationBase):
+    """Restrict editing of archive tokens.
+    
+    The user just needs to be mentioned in the token, have append privilege
+    to the archive or be an admin.
+    """
+    permission = "launchpad.View"
+    usedfor = IArchiveAuthToken
+
+    def checkAuthenticated(self, user):
+        if user == self.obj.person:
+            return True
+        auth_edit = EditArchiveAuthToken(self.obj)
+        return auth_edit.checkAuthenticated(user)
+
+
+class EditArchiveAuthToken(AuthorizationBase):
+    """Restrict editing of archive tokens.
+
+    The user should have append privileges to the context archive, or be an
+    admin.
+    """
+    permission = "launchpad.Edit"
+    usedfor = IArchiveAuthToken
+
+    def checkAuthenticated(self, user):
+        auth_append = AppendArchive(self.obj.archive)
+        if auth_append.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
@@ -1841,15 +1880,11 @@ class ViewSourcePackageRelease(AuthorizationBase):
     a private archive.
     """
     permission = 'launchpad.View'
-    userfor = ISourcePackageRelease
+    usedfor = ISourcePackageRelease
 
-    # XXX Julian 2008-09-10
-    # Calls to _cached_published_archives can be changed to just
-    # "published_archives" when security adpater caching is implemented.
-    # See bug 268612.
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
-        for archive in self.obj._cached_published_archives:
+        for archive in self.obj.published_archives:
             auth_archive = ViewArchive(archive)
             if auth_archive.checkAuthenticated(user):
                 return True
@@ -1861,7 +1896,7 @@ class ViewSourcePackageRelease(AuthorizationBase):
         Unauthenticated users can see the package as long as it's published
         in a non-private archive.
         """
-        for archive in self.obj._cached_published_archives:
+        for archive in self.obj.published_archives:
             if not archive.private:
                 return True
         return False

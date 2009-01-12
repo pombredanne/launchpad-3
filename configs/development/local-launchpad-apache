@@ -1,5 +1,7 @@
 NameVirtualHost 127.0.0.88:80
 
+RewriteLock /var/tmp/rewrite-lock
+
 <VirtualHost 127.0.0.88:80>
   ServerName xmlrpc-private.launchpad.dev
   ServerName xmlrpc.launchpad.dev
@@ -28,46 +30,39 @@ NameVirtualHost 127.0.0.88:80
   </Proxy>
   ProxyTimeout 20
 
-  # The ACLs here are... complex:
-
-  # (1) People hitting the frontpage (i.e. /) are redirected to the Launchpad frontpage
-  # (2) Anything mapped in the launchpad-lookup.txt file is public, so we proxy it
-  # (3) Anything of the form /+branches/nnnnnnnn/ is only allowed from the branch scanner and proxied
-  # (4) Anything of the form /nn/nn/nn/nn/ is only allowed from ourselves (i.e. via a proxy from the above 2 rules)
-  # (5) The /robots.txt file is served normally.
-  # (6) Everything else is proxied to the local loggerhead instance.
-
   RewriteEngine On
-  RewriteMap branch-list txt:/var/tmp/bazaar.launchpad.dev/config/launchpad-lookup.txt
+  RewriteMap branch-rewrite prg:%BRANCH_REWRITE%
 
-  # (1) / -> Launchpad frontpage
+  # Requests to the root are redirected to the Launchpad homepage.
   RewriteRule ^/$ http://launchpad.dev [L]
 
-  # (2) This turns things like ~mdz/branches/branchname/.bzr into the actual dir
-  RewriteRule ^/(~[^/]+/[^/]+/[^/]+)/.bzr(|/.*)$ /${branch-list:$1|notfound}/.bzr$2 [L,P]
+  RewriteRule ^(/~.*)$ ${branch-rewrite:$1} [L,P]
 
-  # (3) This is for e.g. http://bazaar.launchpad.net/+branches/0000f22a from the branch scanner
-  RewriteRule ^/\+branches/([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})/(.*) /$1/$2/$3/$4/$5 [L,P]
-
-  # (4) Proxied access to the directory structure (4 levels of 2 digit hex directories)
-  RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
-
-  # (5) The /robots.txt file is served normally.
-  RewriteRule ^/robots.txt$ - [L]
-
-  # (6) Everything else is proxied to the local loggerhead instance.
-  RewriteRule ^/(.*)$ http://localhost:8080/$1 [L,P]
-
-  DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
-  <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
+  DocumentRoot /var/tmp/bazaar.launchpad.dev/static/
+  <Directory /var/tmp/bazaar.launchpad.dev/static/>
     Options SymLinksIfOwnerMatch
     AllowOverride None
     Options Indexes
   </Directory>
 
   <Location />
-	  ProxyPassReverse http://localhost:8080/
+    ProxyPassReverse http://localhost:8080/
   </Location>
+</VirtualHost>
+
+<VirtualHost 127.0.0.88:80>
+  ServerName bazaar-internal.launchpad.dev
+  LogLevel debug
+
+  DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
+  <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
+    Order Deny,Allow
+    Deny from all
+    Allow from 127.0.0.0/255.0.0.0
+    Options SymLinksIfOwnerMatch
+    AllowOverride None
+    Options Indexes
+  </Directory>
 </VirtualHost>
 
 <VirtualHost 127.0.0.88:443>

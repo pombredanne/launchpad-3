@@ -518,6 +518,13 @@ class HWDevice(SQLBase):
                              % (repr(bus_product_id), bus_vendor.bus.title))
         SQLBase._create(self, id, **kw)
 
+    def getSubmissions(self, driver=None, distribution=None,
+                       architecture=None):
+        """See `IHWDevice.`"""
+        return HWSubmissionSet().search(
+            device=self, distribution=distribution, driver=driver,
+            architecture=architecture)
+
 
 class HWDeviceSet:
     """See `IHWDeviceSet`."""

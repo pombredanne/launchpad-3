@@ -304,8 +304,9 @@ copy-certificates:
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
 copy-apache-config:
-	cp configs/development/local-launchpad-apache \
-	    /etc/apache2/sites-available/local-launchpad
+	# We insert the absolute path to the branch-rewrite script
+	# into the Apache config as we copy the file into position.
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad

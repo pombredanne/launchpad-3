@@ -193,6 +193,13 @@
         factory="canonical.lazr.rest.marshallers.BytesFieldMarshaller"
         />
 
+     <adapter
+        for="zope.schema.interfaces.IASCII
+             zope.publisher.interfaces.http.IHTTPRequest"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.TextFieldMarshaller"
+        />
+
     <adapter
         for="zope.schema.interfaces.IText
              zope.publisher.interfaces.http.IHTTPRequest"

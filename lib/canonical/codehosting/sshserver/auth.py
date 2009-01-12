@@ -11,15 +11,11 @@ case of failed authentication (see `SSHUserAuthServer`).
 
 __metaclass__ = type
 __all__ = [
-    'LaunchpadAvatar',
-    'PublicKeyFromLaunchpadChecker',
-    'Realm',
+    'get_portal',
     'SSHUserAuthServer',
-    'UserDisplayedUnauthorizedLogin',
     ]
 
 import binascii
-import logging
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
@@ -30,16 +26,18 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
-from twisted.cred.portal import IRealm
+from twisted.cred.portal import IRealm, Portal
 
 from twisted.python import components, failure
 
+from zope.event import notify
+from zope.interface import implements
+
 from canonical.codehosting import sftp
+from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.session import (
     launch_smart_server, PatchedSSHSession)
 from canonical.config import config
-
-from zope.interface import implements
 
 
 class LaunchpadAvatar(avatar.ConchUser):
@@ -58,14 +56,15 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.branchfs_proxy = branchfs_proxy
         self.user_id = userDict['id']
         self.username = userDict['name']
-        logging.getLogger('codehosting.ssh').info(
-            '%r logged in', self.username)
 
         # Set the only channel as a standard SSH session (with a couple of bug
         # fixes).
         self.channelLookup = {'session': PatchedSSHSession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
+        self.subsystemLookup = {'sftp': sftp.FileTransferServer}
+
+    def logout(self):
+        notify(accesslog.UserLoggedOut(self))
 
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
@@ -81,8 +80,6 @@ class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
 class Realm:
     implements(IRealm)
 
-    avatarFactory = LaunchpadAvatar
-
     def __init__(self, authentication_proxy, branchfs_proxy):
         self.authentication_proxy = authentication_proxy
         self.branchfs_proxy = branchfs_proxy
@@ -93,8 +90,8 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = self.avatarFactory(userDict, self.branchfs_proxy)
-            return interfaces[0], avatar, lambda: None
+            avatar = LaunchpadAvatar(userDict, self.branchfs_proxy)
+            return interfaces[0], avatar, avatar.logout
         return deferred.addCallback(gotUserDict)
 
 
@@ -137,6 +134,15 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
         return d
+
+    def _cbFinishedAuth(self, result):
+        ret = userauth.SSHUserAuthServer._cbFinishedAuth(self, result)
+        # Tell the avatar about the transport, so we can tie it to the
+        # connection in the logs.
+        avatar = self.transport.avatar
+        avatar.transport = self.transport
+        notify(accesslog.UserLoggedIn(avatar))
+        return ret
 
     def _ebLogToBanner(self, reason):
         reason.trap(UserDisplayedUnauthorizedLogin)
@@ -196,3 +202,11 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UnauthorizedLogin(
             "Your SSH key does not match any key registered for Launchpad "
             "user %s" % credentials.username)
+
+
+def get_portal(authentication_proxy, branchfs_proxy):
+    """Get a portal for connecting to Launchpad codehosting."""
+    portal = Portal(Realm(authentication_proxy, branchfs_proxy))
+    portal.registerChecker(
+        PublicKeyFromLaunchpadChecker(authentication_proxy))
+    return portal

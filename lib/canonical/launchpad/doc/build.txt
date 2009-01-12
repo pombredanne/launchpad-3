@@ -50,6 +50,9 @@ Let's check the complex properties of a build object.
     >>> firefox_build.is_virtualized
     False
 
+    >>> firefox_build.arch_tag
+    u'i386'
+
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
