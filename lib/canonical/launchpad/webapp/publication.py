@@ -45,6 +45,7 @@ from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -441,7 +442,8 @@ class LaunchpadBrowserPublication(
             # returning the 404 error page. We do this in case the
             # LookupError is caused by replication lag. Our database
             # policy forces the use of the master database for retries.
-            if isinstance(exc_info[1], LookupError):
+            if (isinstance(exc_info[1], LookupError) and isinstance(
+                self.thread_locals.db_policy, LaunchpadDatabasePolicy)):
                 store_selector = getUtility(IStoreSelector)
                 default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
                 master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
