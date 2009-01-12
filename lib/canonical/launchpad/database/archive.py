@@ -237,14 +237,16 @@ class Archive(SQLBase):
             else:
                 url = config.personalpackagearchive.base_url
             return urlappend(
-                url, self.owner.name + '/' + self.distribution.name)
+                url, "/".join(
+                    (self.owner.name, self.name, self.distribution.name)))
 
         try:
             postfix = archive_postfixes[self.purpose]
         except KeyError:
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
-        return urlappend(config.archivepublisher.base_url,
+        return urlappend(
+            config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
     def getPubConfig(self):
@@ -260,7 +262,8 @@ class Archive(SQLBase):
             else:
                 pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
-                pubconf.distroroot, self.owner.name, self.distribution.name)
+                pubconf.distroroot, self.owner.name, self.name,
+                self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
