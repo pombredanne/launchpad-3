@@ -213,8 +213,8 @@ returned.
 
     >>> drivers = webservice.get(
     ...     '/+hwdb?ws.op=drivers&package_name=xorg').jsonBody()
-    >>> for entry in drivers['entries']:
-    ...     pprint_entry(entry)
+    >>> [nv_xorg_driver] = drivers['entries']
+    >>> pprint_entry(nv_xorg_driver)
     id: 8
     license: None
     name: u'nv'
@@ -268,8 +268,8 @@ match both values.
     >>> drivers = webservice.get(
     ...     '/+hwdb?ws.op=drivers&name=usb'
     ...     '&package_name=linux-image-2.6.24-19-generic').jsonBody()
-    >>> for entry in drivers['entries']:
-    ...     pprint_entry(entry)
+    >>> [usb_driver] = drivers['entries']
+    >>> pprint_entry(usb_driver)
     id: 2
     license: None
     name: u'usb'
@@ -302,3 +302,131 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     ...
     NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
+
+
+=== HWDB submissions and submission queries ===
+
+A single submission can be accessed via its submission key.
+
+    >>> submission = webservice.get(
+    ...     '/+hwdb/+submission/sample-submission').jsonBody()
+    >>> pprint_entry(submission)
+    contactable: False
+    date_created: u'2008-09-26T17:19:18+00:00'
+    date_submitted: u'2008-09-30T08:19:00.222131+00:00'
+    format: u'Version 1'
+    owner_link: u'http://api.launchpad.dev/beta/~name12'
+    private: False
+    raw_submission_link:
+        u'.../+hwdb/+submission/sample-submission/raw_submission'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_submission'
+    self_link: u'.../+hwdb/+submission/sample-submission'
+    status: u'Processed'
+    submission_key: u'sample-submission'
+
+Accessing the raw submission data yields a redirect to a Librarian URL.
+
+    >>> print webservice.get(submission['raw_submission_link'])
+    HTTP/1.1 303 See Other
+    Content-Length: 0
+    Content-Type: text/plain
+    Location: http://localhost:58000/92/sample-submission-2.xml
+    <BLANKLINE>
+
+A 404 error is returned when a client tries to access a non-existent
+submission.
+
+    >>> print webservice.get('/+hwdb/+submission/nonsense')
+    HTTP/1.1 404 Not Found
+    ...
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...systemhomes.HWDBApplication object at ...>,
+    name: u'nonsense'
+    <BLANKLINE>
+
+Submissions which mention a specific device can be retrieved by
+using the getSubmissions operation.
+
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?ws.op=getSubmissions').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+We can limit the result set to submissions where the device is accessed
+by a specific driver. Device 2 is a USB controller, so will get the sample
+submission when we set the parameter driver to the usb driver...
+
+    >>> from urllib import urlencode
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'driver': usb_driver['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+...but when we set it to nv_xorg_driver, we get an empty result set.
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'driver': nv_xorg_driver['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can also limit the result set to submissions made for a specific
+distribution...
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> ubuntu = distros['entries'][0]
+    >>> ubuntu['name']
+    u'ubuntu'
+    >>> debian = distros['entries'][3]
+    >>> debian['name']
+    u'debian'
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'distribution': ubuntu['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'distribution': debian['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and for a specific processor architecture.
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'architecture': 'i386',
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'architecture': 'amd64',
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> print submissions['total_size']
+    0
