@@ -396,12 +396,14 @@ class TestPopulateArchiveScript(TestCase):
             for archivearch in rset:
                 family_names.append(
                     removeSecurityProxy(archivearch).processorfamily.name)
+
+            family_names.sort()
             return family_names
 
         # Make sure that the processor family names specified for the copy
         # archive at hand were stored in the database.
         rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
-        self.assertEqual(get_family_names(rset), [u'x86', u'hppa'])
+        self.assertEqual(get_family_names(rset), [u'hppa', u'x86'])
 
 
     def _verifyClonedSourcePackages(

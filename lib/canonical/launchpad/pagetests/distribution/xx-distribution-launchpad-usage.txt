@@ -21,8 +21,7 @@ details.
       ...
     Unauthorized...
 
-The distribution's registrant can access the page, but even he/she can't
-change the usage.
+The distribution's registrant can access the page and change the usage.
 
     >>> registrant = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
@@ -31,33 +30,30 @@ change the usage.
     http://launchpad.dev/ubuntu/+edit
 
     >>> print registrant.getControl(name='field.official_rosetta').value
-    Traceback (most recent call last):
-    ...
-    LookupError: name...
-
+    True
     >>> print registrant.getControl(name='field.official_malone').value
-    Traceback (most recent call last):
-    ...
-    LookupError: name...
-
+    True
     >>> print registrant.getControl(name='field.enable_bug_expiration').value
-    Traceback (most recent call last):
-    ...
-    LookupError: name...
-
+    True
+    >>> print registrant.getControl(name='field.official_blueprints').value
+    True
     >>> print registrant.getControl(name='field.official_answers').value
-    Traceback (most recent call last):
-    ...
-    LookupError: name...
+    True
 
-A Launchpad administrator, however, can see the controls.
+    >>> registrant.getControl(name='field.official_rosetta').value = False
+    >>> registrant.getControl('Change', index=3).click()
+
+    >>> print extract_text(find_tag_by_id(registrant.contents, 'uses'))
+    Ubuntu Linux uses Launchpad for Answers, Blueprints, and Bug Tracking.
+
+Just like Launchpad administrators can.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu')
     >>> admin_browser.getLink('Change distribution details').click()
     >>> print admin_browser.title
     Change distribution details
     >>> print admin_browser.getControl(name='field.official_rosetta').value
-    True
+    False
     >>> print admin_browser.getControl(name='field.official_malone').value
     True
     >>> print admin_browser.getControl(
@@ -68,10 +64,6 @@ A Launchpad administrator, however, can see the controls.
     >>> print admin_browser.getControl(name='field.official_answers').value
     True
 
-And if the admin changes the settings, the changes show up on the
-distribution Overview page.
-
-    >>> admin_browser.getControl(name='field.official_rosetta').value = False
     >>> admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
@@ -82,9 +74,6 @@ distribution Overview page.
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
-
-Say "nothing" when the distribution uses nothing:
-
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
     Ubuntu Linux does not use Launchpad for development.
 

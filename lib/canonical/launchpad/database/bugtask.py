@@ -1100,7 +1100,8 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed",
         "number_of_duplicates": "Bug.number_of_duplicates",
-        "message_count": "Bug.message_count"
+        "message_count": "Bug.message_count",
+        "users_affected_count": "Bug.users_affected_count",
         }
 
     _open_resolved_upstream = """

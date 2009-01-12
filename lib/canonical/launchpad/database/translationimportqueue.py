@@ -259,7 +259,8 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate_subset = potemplateset.getSubset(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
-            productseries=self.productseries)
+            productseries=self.productseries,
+            iscurrent=True)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
@@ -270,7 +271,7 @@ class TranslationImportQueueEntry(SQLBase):
             # it in a different source package as a second try. To do it, we
             # need to get a subset of all packages in current distro series.
             potemplate_subset = potemplateset.getSubset(
-                distroseries=self.distroseries)
+                distroseries=self.distroseries, iscurrent=True)
             potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
                 translation_domain)
 
