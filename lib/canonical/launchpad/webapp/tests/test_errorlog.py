@@ -432,8 +432,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[15], 'xmlrpc args=(1, 2)\n')
 
     def test_raising_with_webservice_request(self):
-        # Test ErrorReportingUtility.raising() with a WebServiceRequest request.
-        # Only some exceptions result in OOPSes.
+        # Test ErrorReportingUtility.raising() with a WebServiceRequest
+        # request. Only some exceptions result in OOPSes.
         request = TestRequest()
         directlyProvides(request, WebServiceLayer)
         utility = ErrorReportingUtility()

@@ -420,6 +420,7 @@ class ErrorReportingUtility:
                         info[0], '__lazr_webservice_error__', 500)
                     if webservice_error / 100 != 5:
                         request.oopsid = None
+                        # Return so the OOPS is not generated.
                         return
 
                 missing = object()
