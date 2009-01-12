@@ -198,11 +198,51 @@ exists.
 
 Similarly, non-team members cannot even know that the private team exists.
 
-    >>> user_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> user_browser.open('http://launchpad.dev/~myteam/+members')
     Traceback (most recent call last):
     ...
     NotFound: Object: <...>, name: u'~myteam'
+
+A public team can be made a member of a private team (but not vice versa).
+When this connection is made and members of the private team view the public
+team's home page, they see the private team show up in the "Subteam of"
+section.
+
+    >>> admin_browser.open('http://launchpad.dev/~myteam/+addmember')
+    >>> admin_browser.getControl('New member').value = 'guadamen'
+    >>> admin_browser.getControl('Add Member').click()
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+invitation/myteam')
+    >>> admin_browser.getControl('Accept').click()
+
+    >>> browser.open('http://launchpad.dev/~guadamen')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'subteam-of'))
+    Subteam of
+    &#8220;GuadaMen&#8221; is a member of these teams: My Team
+
+However, to anonymous or non-members, the team name is redacted and there is
+no clickable link.
+
+    >>> user_browser.open('http://launchpad.dev/~guadamen')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'subteam-of'))
+    Subteam of
+    &#8220;GuadaMen&#8221; is a member of these teams: <redacted>
+    >>> user_browser.getLink('<redacted>')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open('http://launchpad.dev/~guadamen')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'subteam-of'))
+    Subteam of
+    &#8220;GuadaMen&#8221; is a member of these teams: <redacted>
+    >>> anon_browser.getLink('<redacted>')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 
 == Restrict Subscribing to Bugs ==
