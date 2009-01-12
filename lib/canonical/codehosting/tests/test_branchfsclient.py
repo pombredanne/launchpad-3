@@ -9,7 +9,6 @@ import unittest
 
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
-from twisted.web.xmlrpc import Fault
 
 from canonical.codehosting.branchfsclient import (
     BranchFileSystemClient, NotInCache, trap_fault)
