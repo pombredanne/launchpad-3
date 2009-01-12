@@ -257,8 +257,8 @@ Let's see his sources.list entries:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu breezy-autotest main
 
 and the select control that lets you update them:
 
@@ -500,7 +500,7 @@ link to a repository that doesn't exist yet.
     ...
     This archive is public
     PPA for No Privileges Person
-    URL: http://ppa.launchpad.dev/no-priv/ubuntu
+    URL: http://ppa.launchpad.dev/no-priv/ppa/ubuntu
     I am not allowed to say, I have no privs.
     This PPA does not contain any packages yet.
     ...
@@ -532,14 +532,14 @@ published source.
     >>> sources_list = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
     >>> print extract_text(sources_list)
-    deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
-    deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
+    deb http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
+    deb-src http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
 
 Also the repository URL is an actual link.
 
     >>> print anon_browser.getLink(
-    ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
-    http://ppa.launchpad.dev/no-priv/ubuntu
+    ...     "http://ppa.launchpad.dev/no-priv/ppa/ubuntu").url
+    http://ppa.launchpad.dev/no-priv/ppa/ubuntu
 
 
 == PPA signing key ==
@@ -641,8 +641,8 @@ And the sources.list entries point to the right distribution release:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
 
 
 == Other Distribution PPAs ==
