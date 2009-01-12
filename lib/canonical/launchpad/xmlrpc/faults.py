@@ -409,7 +409,7 @@ class InvalidPath(LaunchpadFault):
 
 
 class PermissionDenied(LaunchpadFault):
-    """Raised to indicate XXX."""
+    """Raised when a user is denied access to some resource."""
 
     error_code = 310
     msg_template = (
@@ -420,7 +420,7 @@ class PermissionDenied(LaunchpadFault):
 
 
 class NotFound(LaunchpadFault):
-    """Raised to indicate XXX."""
+    """Raised when a resource is not found."""
 
     error_code = 320
     msg_template = (

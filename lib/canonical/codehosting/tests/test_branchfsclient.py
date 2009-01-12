@@ -15,7 +15,8 @@ from canonical.codehosting.branchfsclient import (
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 from canonical.launchpad.testing import FakeTime
-from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.xmlrpc.tests.test_faults import (
+    TestFaultOne, TestFaultTwo)
 
 
 class TestBranchFileSystemClient(TestCase):
@@ -209,20 +210,6 @@ class TestBranchFileSystemClient(TestCase):
                 NotInCache, client._getFromCache, '/foo/bar/baz')
         return deferred.addCallbacks(
             translated_successfully, failed_translation)
-
-
-class TestFaultOne(faults.LaunchpadFault):
-    """XXX."""
-
-    error_code = 1001
-    message = "Fault one."
-
-
-class TestFaultTwo(faults.LaunchpadFault):
-    """XXX."""
-
-    error_code = 1002
-    message = "Fault two."
 
 
 class TestTrapFault(TestCase):
