@@ -127,6 +127,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
@@ -330,7 +331,13 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
-        return self.context.archive
+        if self.request.stepstogo:
+            # If the URL has a PPA name in it, use that.
+            ppa_name = self.request.stepstogo.consume()
+            return traverse_named_ppa(self.context.name, ppa_name)
+        else:
+            # Otherwise get the default PPA and redirect to the new-style URL.
+            return self.redirectSubTree(canonical_url(self.context.archive))
 
     @stepthrough('+email')
     def traverse_email(self, email):
@@ -945,6 +952,8 @@ class CommonMenuLinks:
         archive = self.context.archive
         enable_link = (archive is not None and
                        check_permission('launchpad.View', archive))
+        if enable_link:
+            target = canonical_url(self.context.archive)
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
@@ -1087,7 +1096,7 @@ class PersonPPANavigationMenuMixin:
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
         if has_archive:
-            target = '+archive'
+            target = canonical_url(archive)
             enable_link = check_permission('launchpad.View', archive)
         elif user_can_edit_archive:
             summary = 'Activate Personal Package Archive'
