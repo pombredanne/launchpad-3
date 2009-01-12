@@ -12,7 +12,6 @@ __all__ = [
     'IBranchFileSystem',
     'IBranchFileSystemApplication',
     'LAUNCHPAD_SERVICES',
-    'NOT_FOUND_FAULT_CODE',
     'READ_ONLY',
     'WRITABLE',
     ]
@@ -128,19 +127,6 @@ class IBranchPuller(Interface):
 
 class IBranchFileSystemApplication(ILaunchpadApplication):
     """Branch File System end point root."""
-
-
-# Values for the faultCode of Faults returned by methods of IBranchFileSystem.
-#
-# We borrow the numbers from HTTP for familiarity, there's nothing deep in it.
-#
-# Currently, Faults are only returned by createBranch().  If more methods get
-# converted to return Faults, they should use these values if appropriate or
-# define more codes here if not.
-#
-# XXX the above is rubbish now.
-
-NOT_FOUND_FAULT_CODE = 404
 
 
 class IBranchFileSystem(Interface):

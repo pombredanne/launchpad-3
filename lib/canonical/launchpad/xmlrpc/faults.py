@@ -415,3 +415,14 @@ class PermissionDenied(LaunchpadFault):
 
     def __init__(self, message="Permission denied."):
         LaunchpadFault.__init__(self, message=message)
+
+
+class NotFound(LaunchpadFault):
+    """Raised to indicate XXX."""
+
+    error_code = 320
+    msg_template = (
+        "%s")
+
+    def __init__(self, message="Not found."):
+        LaunchpadFault.__init__(self, message=message)

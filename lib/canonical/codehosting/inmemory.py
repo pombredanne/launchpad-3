@@ -18,7 +18,7 @@ from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
@@ -421,8 +421,7 @@ class FakeBranchFilesystem:
         data = BranchNamespaceSet().parse(namespace_path)
         owner = self._person_set.getByName(data['person'])
         if owner is None:
-            return Fault(
-                NOT_FOUND_FAULT_CODE,
+            return faults.NotFound(
                 "User/team %r does not exist." % (data['person'],))
         registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
@@ -443,27 +442,23 @@ class FakeBranchFilesystem:
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
             if product is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFault(
                     "Project %r does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
             if distro is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "No such distribution: '%s'." % (data['distribution'],))
             distroseries = self._distroseries_set.getByName(
                 data['distroseries'])
             if distroseries is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "No such distribution series: '%s'."
                     % (data['distroseries'],))
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
             if sourcepackagename is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
         else:
@@ -526,8 +521,7 @@ class FakeBranchFilesystem:
             return ''
         product = self._product_set.getByName(product_name)
         if product is None:
-            return Fault(
-                NOT_FOUND_FAULT_CODE,
+            return faults.NotFound(
                 'Project %r does not exist.' % (product_name,))
         branch = product.development_focus.user_branch
         if branch is None:

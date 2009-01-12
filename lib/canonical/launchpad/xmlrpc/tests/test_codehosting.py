@@ -24,8 +24,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
-    READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -552,7 +551,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             owner.id, escape('/~%s/no-such-product/%s' % (owner.name, name)))
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+            faults.NotFound.error_code, message, fault)
 
     def test_createBranch_other_user(self):
         # Creating a branch under another user's directory fails.
@@ -590,7 +589,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/%s/%s' % (product.name, name)))
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+            faults.NotFound.error_code, message, fault)
 
     def test_createBranch_bad_user_bad_product(self):
         # If both the user and the product are not found, then the missing
@@ -602,7 +601,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/no-product/%s' % (name,)))
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+            faults.NotFound.error_code, message, fault)
 
     def test_createBranch_not_branch(self):
         # Trying to create a branch at a path that's not valid for branches
@@ -650,7 +649,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+            faults.NotFound.error_code, message, fault)
 
     def test_createBranch_invalid_distroseries(self):
         # If createBranch is called with the path to a non-existent
@@ -665,7 +664,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution series: 'ningnangnong'."
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+            faults.NotFound.error_code, message, fault)
 
     def test_createBranch_invalid_sourcepackagename(self):
         # If createBranch is called with the path to an invalid source
@@ -679,7 +678,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+            faults.NotFound.error_code, message, fault)
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
@@ -860,7 +859,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = 'no-such-product'
         fault = self.branchfs.getDefaultStackedOnBranch(requester.id, product)
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, 'Project %r does not exist.' % (product,),
+            faults.NotFound.error_code, 'Project %r does not exist.' % (product,),
             fault)
 
     def test_getDefaultStackedOnBranch(self):

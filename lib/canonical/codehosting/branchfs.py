@@ -75,8 +75,7 @@ from canonical.codehosting.transport import (
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -489,7 +488,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = self._authserver.createBranch(virtual_url_fragment)
 
         def translate_fault(failure):
-            # We turn NOT_FOUND_FAULT_CODE into a PermissionDenied, even
+            # We turn faults.NotFound into a PermissionDenied, even
             # though one might think that it would make sense to raise
             # NoSuchFile. Sadly, raising that makes the client do "clever"
             # things like say "Parent directory of
@@ -497,7 +496,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # exist. You may supply --create-prefix to create all leading
             # parent directories", which is just misleading.
             fault = trap_fault(
-                failure, NOT_FOUND_FAULT_CODE, faults.PermissionDenied.error_code)
+                failure, faults.NotFound.error_code, faults.PermissionDenied.error_code)
             raise PermissionDenied(virtual_url_fragment, fault.faultString)
 
         return deferred.addErrback(translate_fault)

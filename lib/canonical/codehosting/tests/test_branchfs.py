@@ -719,10 +719,10 @@ class LaunchpadTransportTests:
         self.assertTrue(transport.has(orange))
 
     def test_createBranch_not_found_error(self):
-        # When createBranch raises an exception with faultCode
-        # NOT_FOUND_FAULT_CODE, the transport should translate this to a
-        # TransportNotPossible exception (see the comment in transport.py for
-        # why we translate to TransportNotPossible and not NoSuchFile).
+        # When createBranch raises faults.NotFound the transport should
+        # translate this to a PermissionDenied exception (see the comment in
+        # transport.py for why we translate to TransportNotPossible and not
+        # NoSuchFile).
         transport = self.getTransport()
         return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, "does not exist", transport.mkdir,

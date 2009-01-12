@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
-    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, READ_ONLY, WRITABLE)
+    LAUNCHPAD_SERVICES, READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -222,15 +222,13 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
             except NoSuchPerson, e:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "User/team '%s' does not exist." % e.name)
             except NoSuchProduct, e:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
             except NameLookupFailed, e:
-                return Fault(NOT_FOUND_FAULT_CODE, str(e))
+                return faults.NotFound(str(e))
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
@@ -277,8 +275,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return ''
             product = getUtility(IProductSet).getByName(project_name)
             if product is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "Project %r does not exist." % project_name)
             branch = product.default_stacked_on_branch
             if branch is None:
