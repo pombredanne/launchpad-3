@@ -348,7 +348,7 @@ submission.
     <BLANKLINE>
 
 Submissions which mention a specific device can be retrieved by
-calling HWDevice.submissions().
+using the getSubmissions operation.
 
     >>> submissions = webservice.get(
     ...     '/+hwdb/+device/2?ws.op=getSubmissions').jsonBody()

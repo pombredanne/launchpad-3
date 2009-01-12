@@ -145,7 +145,7 @@ class IHWSubmission(Interface):
             title=_(u'Unique Submission ID'), required=True, readonly=True))
     owner = exported(
         Reference(
-            IPerson, title=_(u"The owner's IPerson"), readonly=True))
+            IPerson, title=_(u"The owner of this submission"), readonly=True))
     distroarchseries = Attribute(
         _(u'The DistroArchSeries'))
     raw_submission = exported(
@@ -632,7 +632,6 @@ class IHWDevice(Interface):
     def getSubmissions(driver=None, distribution=None, architecture=None):
         """List all submissions which mention this device.
 
-        :param user: The `IPerson` running the query.
         :param driver: Limit results to devices that use the given
             `IHWDriver`.
         :param distribution: Limit results to submissions for this

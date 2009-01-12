@@ -1146,6 +1146,7 @@ class Person(
         """See `IPerson`."""
         # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
+
         clauses = ["""
             SELECT DISTINCT Product.id
             FROM Product, TeamParticipation

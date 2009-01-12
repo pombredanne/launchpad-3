@@ -405,6 +405,9 @@ Note that the marshaller accepts character values where bit 7 is set.
 
     >>> marshaller.marshall_from_json_data(u'int\xe9ressant')
     u'int\xe9ressant'
+
+Non-string alues like floats are rejected.
+
     >>> marshaller.marshall_from_json_data(1.0)
     Traceback (most recent call last):
       ...
@@ -431,12 +434,12 @@ string:
     >>> marshaller.marshall_from_request('1.0')
     u'1.0'
 
-But again, None is returned as is.
+But again, 'null' is returned as None.
 
     >>> print marshaller.marshall_from_request('null')
     None
 
-Other than a Bytes field, an ASCIILine field used in an entry is stored
+Unlike a Bytes field, an ASCIILine field used in an entry is stored
 as an ordinary attribute, hence its representation name is the attribute
 name itself.
 

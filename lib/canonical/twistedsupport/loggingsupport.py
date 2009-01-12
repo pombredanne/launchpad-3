@@ -21,6 +21,10 @@ from canonical.launchpad.webapp import errorlog
 class OOPSLoggingObserver(log.PythonLoggingObserver):
     """A version of `PythonLoggingObserver` that logs OOPSes for errors."""
 
+    # XXX: JonathanLange 2008-12-23 bug=314959: As best as I can tell, this
+    # ought to be a log *handler*, not a feature of the bridge from
+    # Twisted->Python logging. Ask Michael about this.
+
     def emit(self, eventDict):
         """See `PythonLoggingObserver.emit`."""
         if eventDict.get('isError', False) and 'failure' in eventDict:
@@ -51,11 +55,19 @@ def set_up_logging_for_script(options, name):
     This also configures oops reporting to use the section named
     'name'."""
     logger_object = logger(options, name)
-    set_up_oops_reporting(name)
+    set_up_oops_reporting(name, mangle_stdout=True)
     return logger_object
 
 
-def set_up_oops_reporting(name):
+def set_up_oops_reporting(name, mangle_stdout=False):
+    """Set up OOPS reporting by starting the Twisted logger with an observer.
+
+    :param name: The name of the logger and config section to use for oops
+        reporting.
+    :param mangle_stdout: If True, send stdout and stderr to the logger.
+        Defaults to False.
+    """
     errorlog.globalErrorUtility.configure(name)
-    log.startLoggingWithObserver(OOPSLoggingObserver(loggerName=name).emit)
+    log.startLoggingWithObserver(
+        OOPSLoggingObserver(loggerName=name).emit, mangle_stdout)
 

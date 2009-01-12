@@ -996,12 +996,12 @@ distribution, which we want to access in this test.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> sata_controller = device_set.getByDeviceID(
-    ...     bus=HWBus.PCI, vendor_id = '0x10de', product_id='0x045d')
+    ...     bus=HWBus.PCI, vendor_id='0x10de', product_id='0x045d')
     >>> for submission in sata_controller.getSubmissions():
     ...     print submission.submission_key
     sample-submission
 
-We can limit the results to a specific driver. (See below fo details about
+We can limit the results to a specific driver. (See below for details about
 HWDriver.)
 
     >>> from canonical.launchpad.interfaces import IHWDriverSet
@@ -1014,9 +1014,9 @@ HWDriver.)
 
     >>> usb_storage_driver = getUtility(IHWDriverSet).getByPackageAndName(
     ...     'linux-image-2.6.24-19-generic', 'usb-storage')
-    >>> print sata_controller.getSubmissions(
-    ...     driver=usb_storage_driver).count()
-    0
+    >>> print list(sata_controller.getSubmissions(
+    ...     driver=usb_storage_driver))
+    []
 
 We can limit the results to a specific distribution.
 
