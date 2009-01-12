@@ -531,6 +531,13 @@ above will give this effect.
     CannotCopy: Packages already copied.
     <BLANKLINE>
 
+Within the web application, the CannotCopy exception means that there
+was an oversight in the code that called syncSources()--that method
+shouldn't have been called in the first place. The CannotCopy
+exception therefore results in an OOPS. But within the web service,
+syncSources is invoked directly by the client, and any problems are
+the client's fault. Therefore, there's no need to record an OOPS.
+
     >>> 'X-Lazr-Oopsid' in already_copied.getOutput()
     False
 
