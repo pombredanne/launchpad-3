@@ -251,7 +251,7 @@ class TestTrapFault(TestCase):
         failure = self.makeFailure(TestFaultOne)
         fault = trap_fault(failure, TestFaultOne)
         self.assertEqual(TestFaultOne.error_code, fault.faultCode)
-        self.assertEqual(TestFaultOne.message, fault.faultString)
+        self.assertEqual(TestFaultOne.msg_template, fault.faultString)
 
     def test_returns_fault_if_code_matches_one_of_set(self):
         # trap_fault returns the Fault inside the Failure if the fault code
@@ -259,7 +259,7 @@ class TestTrapFault(TestCase):
         failure = self.makeFailure(TestFaultOne)
         fault = trap_fault(failure, TestFaultOne, TestFaultTwo)
         self.assertEqual(TestFaultOne.error_code, fault.faultCode)
-        self.assertEqual(TestFaultOne.message, fault.faultString)
+        self.assertEqual(TestFaultOne.msg_template, fault.faultString)
 
 
 def test_suite():
