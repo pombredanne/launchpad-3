@@ -795,7 +795,7 @@ class HWSubmissionDeviceSet:
             submission=submission,
             orderBy=['parent', 'device_driver_link', 'hal_device_id'])
 
-    def getByID(self, id):
+    def get(self, id):
         """See `IHWSubmissionDeviceSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(

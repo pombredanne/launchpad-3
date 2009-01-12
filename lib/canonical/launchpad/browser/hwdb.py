@@ -206,7 +206,7 @@ class HWDBApplicationNavigation(Navigation):
             id = int(id)
         except ValueError:
             raise NotFoundError('invalid value for ID: %r' % id)
-        return getUtility(IHWSubmissionDeviceSet).getByID(id)
+        return getUtility(IHWSubmissionDeviceSet).get(id)
 
 
 class HWDBFingerprintSetView(LaunchpadView):

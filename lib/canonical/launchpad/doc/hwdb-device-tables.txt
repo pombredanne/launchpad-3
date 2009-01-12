@@ -1601,14 +1601,14 @@ IHWSubmissionDeviceSet.getDevices().
     ----> Plustek OpticPro UT12 usb
     -----> Plustek OpticPro UT12 plustek
 
-A single IHWSubmissionDevice reocrd is retrieved by
-IHWSubmissionDeviceSet.getByID().
+A single IHWSubmissionDevice record is retrieved by
+IHWSubmissionDeviceSet.get().
 
-    >>> submitted_device = submission_device_set.getByID(1)
+    >>> submitted_device = submission_device_set.get(1)
     >>> print_device(submitted_device)
     MSI MS-7369 (no driver)
 
-This method returns None if a non existent ID is passed.
+This method returns None if a nonexistent ID is passed.
 
-    >>> print submission_device_set.getByID(1000000)
+    >>> print submission_device_set.get(1000000)
     None

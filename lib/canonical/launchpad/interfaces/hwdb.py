@@ -812,7 +812,9 @@ class IHWSubmissionDevice(Interface):
                             'mentioned in.')
 
     parent = exported(
-        Reference(Interface, required=True)) # Really IHWSubmissionDevice
+        # This is a reference to IHWSubmissionDevice itself, but we can
+        # access the class only when the class has been defined.
+        Reference(Interface, required=True))
 
     hal_device_id = exported(
         Int(
@@ -857,7 +859,7 @@ class IHWSubmissionDeviceSet(Interface):
         :param submission: An IHWSubmission instance.
         """
 
-    def getByID(id):
+    def get(id):
         """Return an IHWSubmissionDevice record with the given database ID.
 
         :param id: The database ID.
