@@ -147,6 +147,11 @@ class Build(SQLBase):
                                        BuildStatus.SUPERSEDED]
 
     @property
+    def arch_tag(self):
+        """See `IBuild`."""
+        return self.distroarchseries.architecturetag
+
+    @property
     def distributionsourcepackagerelease(self):
         """See `IBuild`."""
         from canonical.launchpad.database.distributionsourcepackagerelease \

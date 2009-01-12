@@ -112,13 +112,59 @@ by their modification date.
 This method gives us the IPOTemplate that belongs to this subset and its
 translation domain is the given one.
 
-    >>> productseries = ProductSeries.get(5)
+=== Filtering for iscurrent ===
+
+IPOTemplate specifies an "iscurrent" flag that indicates if this template
+should be available for translations or not.
+
+    >>> fooproduct=factory.makeProduct(name="fooproduct")
+    >>> productseries = factory.makeProductSeries(
+    ...     product=fooproduct, name="fooseries")
+    >>> current_template = factory.makePOTemplate(
+    ...     productseries=productseries, name="current-template",
+    ...     translation_domain="foodomain")
+    >>> disabled_template = factory.makePOTemplate(
+    ...     productseries=productseries, name="disabled-template",
+    ...     translation_domain="foodomain")
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(disabled_template).iscurrent = False
+
+The subset can be configured to filter templates on the iscurrent flag. This
+filter is effective for all get* methods but it will only be demonstrated
+here. The filter is applied during creation by specifying the filter value
+as an extra parameter. The default value is "None" which disables the filter
+and both current and disabled templates are returned.
+
+For getPOTemplateByTranslationDomain, this case is an error because only one
+template per translation domain is allowed.
+
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=productseries)
     >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
-    ...     'NetApplet')
+    ...     'foodomain')
+    WARNING:canonical.launchpad.database.potemplate:Found...
+    multiple templates with translation domain 'foodomain'...
+    There should be only one.
+    >>> potemplate is None
+    True
+
+Setting the filter to "True" will only return current (enabled) templates.
+
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries, iscurrent=True)
+    >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
+    ...     'foodomain')
     >>> print potemplate.title
-    Template "netapplet" in NetApplet trunk
+    Template "current-template" in Fooproduct fooseries
+
+Setting the filter to "False" will only return disabled templates.
+
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries, iscurrent=False)
+    >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
+    ...     'foodomain')
+    >>> print potemplate.title
+    Template "disabled-template" in Fooproduct fooseries
 
 == getClosestPOTemplate ==
 

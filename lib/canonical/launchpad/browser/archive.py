@@ -65,6 +65,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.scripts.packagecopier import (
     check_copy, do_copy)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -1245,7 +1246,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                                "This dependency is already registered.")
             return
 
-        from canonical.launchpad.webapp.authorization import check_permission
         if not check_permission('launchpad.View', dependency_candidate):
             self.setFieldError(
                 'dependency_candidate',
