@@ -11,32 +11,28 @@
 >
   <body>
 
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-lifecycle" />
-
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-
-  <div tal:replace="structure context/@@+portlet-bugs" />
-
-  <div tal:replace="structure context/@@+portlet-branches" />
-    </metal:portlets>
 
 
-<div metal:fill-slot="main">
 
+<div metal:fill-slot="main" tal:define="context_menu context/menu:context">
   <div style="float: right;">
     <img id="mentoring-available-icon"
-	 src="/@@/mentoring-large" title="Mentoring available"
+         src="/@@/mentoring-large" title="Mentoring available"
          tal:condition="context/mentoring_offers/count" />
     <img id="branch-available-icon"
-	 src="/@@/branch-large" title="Branch available"
+         src="/@@/branch-large" title="Branch available"
          tal:condition="context/branch_links/count" />
     <img id="informational-icon"
-	 src="/@@/info-large"
+         src="/@@/info-large"
          title="Informational blueprint, no implementation necessary"
          tal:condition="context/informational" />
   </div>
-  <h1 tal:content="context/title" />
+  <h1><tal:block content="context/title"/>
+    <a tal:define="link context_menu/edit"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+    ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+  </h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
@@ -55,7 +51,12 @@
       <tbody>
         <tr>
           <th>Priority:</th>
-          <td tal:content="context/priority/title">High</td>
+          <td><tal:block content="context/priority/title"/>
+            <a tal:define="link context_menu/people"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+          </td>
         </tr>
         <tr>
           <th>Definition:</th>
@@ -63,6 +64,10 @@
             <tal:definition replace="context/definition_status/title" />
             <tal:guidance condition="not: context/direction_approved"
             >(Needs guidance)</tal:guidance>
+            <a tal:define="link context_menu/status"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
         <tr>
@@ -73,6 +78,10 @@
                  title="Informational blueprint, no implementation necessary"
                  />
             <tal:impl content="context/implementation_status/title">Unknown</tal:impl>
+            <a tal:define="link context_menu/status"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
         <tr tal:condition="context/goal">
@@ -102,6 +111,10 @@
             <a tal:condition="context/assignee"
                tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/assignee">None</tal:none>
+            <a tal:define="link context_menu/people"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
         <tr>
@@ -110,6 +123,10 @@
             <a tal:condition="context/drafter"
                tal:replace="structure context/drafter/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/drafter">None</tal:none>
+            <a tal:define="link context_menu/people"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
         <tr>
@@ -118,6 +135,10 @@
             <a tal:condition="context/approver"
                tal:replace="structure context/approver/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/approver">None</tal:none>
+            <a tal:define="link context_menu/people"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
         <tr
@@ -180,11 +201,14 @@
     this blueprint</a>
   </p>
 
-  <tal:whiteboard condition="context/whiteboard">
-    <h2>Whiteboard</h2>
+    <h2>Whiteboard
+            <a tal:define="link context_menu/whiteboard"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a></h2>
     <div tal:content="structure context/whiteboard/fmt:text-to-html"
+         tal:condition="context/whiteboard"
     >Whiteboard text goes here.</div>
-  </tal:whiteboard>
 
   <tal:deptree condition="view/has_dep_tree">
 
@@ -209,6 +233,12 @@
           </a>
         </li>
       </ul>
+  <div id="portlets">
+    <div tal:replace="structure context/@@+portlet-lifecycle" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-bugs" />
+    <div tal:replace="structure context/@@+portlet-branches" />
+  </div>
 
       </div>
     </div>
