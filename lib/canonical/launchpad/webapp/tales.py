@@ -408,7 +408,7 @@ class ObjectFormatterAPI:
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {'name': 'name'}
+    final_traversable_names = {}
 
     def __init__(self, context):
         self._context = context
@@ -456,13 +456,6 @@ class ObjectFormatterAPI:
             that name on this object.
         """
         raise NotImplemented
-
-    def name(self, view_name=None):
-        """Return the object's visible name.
-
-        :param view_name: ignored.
-        """
-        return self._context.browsername
 
 
 class ObjectImageDisplayAPI:
@@ -880,7 +873,7 @@ class BadgeDisplayAPI:
 class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
-    final_traversable_names = {'local-time': 'local_time', 'name': 'name'}
+    final_traversable_names = {'local-time': 'local_time'}
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
@@ -960,15 +953,8 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """See `ObjectFormatterAPI`."""
         if self._team_is_hidden:
             # This person has no permission to view the team details.
-            return None
+            return '&lt;redacted&gt;'
         return super(TeamFormatterAPI, self).link(view_name)
-
-    def name(self, view_name=None):
-        """See `ObjectFormatterAPI`."""
-        if self._team_is_hidden:
-            # This person has no permission to view the team details.
-            return '<redacted>'
-        return super(TeamFormatterAPI, self).name(view_name)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -1077,7 +1063,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink', 'name': 'name'}
+        'title-link': 'titleLink'}
 
     def traverse(self, name, furtherPath):
         """Special case traversal to support multiple link formats."""
@@ -1306,7 +1292,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {
         'aliases': 'aliases',
         'external-link': 'external_link',
-        'external-title-link': 'external_title_link', 'name': 'name'}
+        'external-title-link': 'external_title_link'}
 
     def link(self, view_name):
         """Return an HTML link to the bugtracker page.
@@ -1370,8 +1356,7 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
 
     final_traversable_names = {
         'external-link': 'external_link',
-        'external-link-short': 'external_link_short',
-        'name': 'name'}
+        'external-link-short': 'external_link_short'}
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.

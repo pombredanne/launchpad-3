@@ -202,8 +202,7 @@
           </p>
           <ul>
             <li tal:repeat="team context/super_teams">
-              <a tal:attributes="href team/fmt:url"
-                 tal:content="team/fmt:name">name</a>
+              <tal:block replace="structure team/fmt:link" />
             </li>
           </ul>
         </tal:block>
