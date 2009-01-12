@@ -512,6 +512,17 @@ class TestNamespaceSet(TestCaseWithFactory):
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
+    def test_traverse_package_branch(self):
+        # IBranchNamespaceSet.traverse returns a branch based on an iterable
+        # of path segments, including package branches.
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        segments = iter(branch.unique_name.split('/'))
+        found_branch = self.namespace_set.traverse(segments)
+        self.assertEqual(branch, found_branch)
+
     def test_traverse_leaves_trailing_segments(self):
         # traverse doesn't consume all the elements of the iterable. It only
         # consumes those it needs to find a branch.
