@@ -551,7 +551,7 @@ person or team's contact page.
 == Messages and subjects cannot be empty ==
 
 Messages or subjects that contain only whitespace are treated as an error
-that user must fix.
+that the user must fix.
 
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(
