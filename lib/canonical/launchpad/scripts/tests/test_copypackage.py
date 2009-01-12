@@ -958,6 +958,7 @@ class TestCopyPackage(TestCase):
         # Now we can invoke the unembargo script and check its results.
         test_args = [
             "--ppa", "cprov",
+            "--ppa-name", "ppa",
             "-s", "%s" % ppa_source.distroseries.name + "-security",
             "foo"
             ]
