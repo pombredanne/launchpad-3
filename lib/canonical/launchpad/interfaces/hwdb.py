@@ -53,7 +53,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
@@ -139,7 +139,7 @@ class IHWSubmission(Interface):
             title=_(u'Private Submission'), required=True))
     contactable = exported(
         Bool(
-            title=_(u'Contactable'), required=True))
+            title=_(u'Contactable'), required=True, readonly=True))
     submission_key = exported(
         TextLine(
             title=_(u'Unique Submission ID'), required=True, readonly=True))
@@ -155,6 +155,12 @@ class IHWSubmission(Interface):
         _(u'The system this submmission was made on'))
     raw_emailaddress = TextLine(
         title=_('Email address'), required=True)
+
+    devices = exported(
+        CollectionField(
+            title=_(u"The HWSubmissionDevice records for this submission."),
+            value_type=Reference(schema=Interface)))
+
 
 
 class IHWSubmissionForm(Interface):
@@ -791,8 +797,13 @@ class IHWDeviceDriverLinkSet(Interface):
         matches.
         """
 
+
 class IHWSubmissionDevice(Interface):
     """Link a submission to a IHWDeviceDriver row."""
+    export_as_webservice_entry()
+
+    id = exported(
+        Int(title=u'HWSubmissionDevice ID', required=True, readonly=True))
 
     device_driver_link = Attribute(u'A device and driver appearing in a '
                                     'submission.')
@@ -800,12 +811,29 @@ class IHWSubmissionDevice(Interface):
     submission = Attribute(u'The submission the device and driver are '
                             'mentioned in.')
 
-    parent = Attribute(u'The parent IHWSubmissionDevice entry of this '
-                        ' device.')
+    parent = exported(
+        Reference(Interface, required=True)) # Really IHWSubmissionDevice
 
-    hal_device_id = Int(
-        title=u'The ID of the HAL node of this device in the submitted data',
-        required=True)
+    hal_device_id = exported(
+        Int(
+            title=u'The ID of the HAL node of this device in the submitted '
+                'data',
+            required=True))
+
+    device = exported(
+        Reference(
+            IHWDevice,
+            title=u'The device'))
+
+    driver = exported(
+        Reference(
+            IHWDriver,
+            title=u'The driver used for this device in this submission'))
+
+
+# Fix cyclic references.
+IHWSubmissionDevice['parent'].schema = IHWSubmissionDevice
+IHWSubmission['devices'].value_type.schema = IHWSubmissionDevice
 
 
 class IHWSubmissionDeviceSet(Interface):
@@ -827,6 +855,13 @@ class IHWSubmissionDeviceSet(Interface):
 
         :return: A sequence of IHWSubmissionDevice records.
         :param submission: An IHWSubmission instance.
+        """
+
+    def getByID(id):
+        """Return an IHWSubmissionDevice record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWSubmissionDevice instance.
         """
 
 
@@ -889,3 +924,5 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     @export_read_operation()
     def drivers(package_name=None, name=None):
         """Return the set of drivers."""
+
+
