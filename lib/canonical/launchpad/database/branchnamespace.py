@@ -238,6 +238,14 @@ class BranchNamespaceSet:
         data = self._realize(names)
         return self.get(**data)
 
+    def traverse(self, segments):
+        """See `IBranchNamespaceSet`."""
+        person_name = segments.next()[1:]
+        product_name = segments.next()
+        branch_name = segments.next()
+        return self.interpret(
+            person_name, product_name).getByName(branch_name)
+
     def _findOrRaise(self, error, name, finder, *args):
         if name is None:
             return None

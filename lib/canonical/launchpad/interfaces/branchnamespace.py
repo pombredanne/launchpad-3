@@ -151,6 +151,13 @@ class IBranchNamespaceSet(Interface):
             trailing_path)' for all valid parses of 'branch_path'.
         """
 
+    def traverse(segments):
+        """Look up the branch at the path given by 'segments'.
+
+        :param segments: An iterable of names of Launchpad components.
+        :return: `IBranch`.
+        """
+
 
 class InvalidNamespace(Exception):
     """Raised when someone tries to lookup a namespace with a bad name.
