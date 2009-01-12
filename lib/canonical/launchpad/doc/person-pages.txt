@@ -547,3 +547,20 @@ person or team's contact page.
     >>> print view.request.response.getHeader('Location')
     http://launchpad.dev/~landscape-developers
 
+
+== Messages and subjects cannot be empty ==
+
+Messages or subjects that contain only whitespace are treated as an error
+that the user must fix.
+
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(
+    ...     landscape_developers, '+contactuser', form={
+    ...         'field.field.from_': 'test@canonical.com',
+    ...         'field.subject': ' ',
+    ...         'field.message': ' ',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> view.errors
+    [u'You must provide a subject and a message.']
+

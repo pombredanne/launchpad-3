@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
+    BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
 from storm.expr import Or, SQL
@@ -157,6 +157,7 @@ class BugTracker(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     contactdetails = StringCol(notNull=False)
+    has_lp_plugin = BoolCol(notNull=False, default=False)
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')
     products = SQLMultipleJoin(
