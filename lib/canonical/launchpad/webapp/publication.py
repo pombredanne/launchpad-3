@@ -431,23 +431,48 @@ class LaunchpadBrowserPublication(
             # The exception wasn't raised in the middle of the traversal nor
             # the publication, so there's nothing we need to do here.
             pass
+    
+        def should_retry(exc_info):
+            if not retry_allowed:
+                return False
 
-        # If we get a LookupError and the default database being used is
-        # a replica, raise a Retry exception instead of returning
-        # the 404 error page. We do this in case the LookupError is
-        # caused by replication lag. Our database policy forces the
-        # use of the master database for retries.
-        if retry_allowed and isinstance(exc_info[1], LookupError):
-            store_selector = getUtility(IStoreSelector)
-            default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
-            master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
-            if default_store is not master_store:
-                raise Retry(exc_info)
+            # If we get a LookupError and the default database being
+            # used is a replica, raise a Retry exception instead of
+            # returning the 404 error page. We do this in case the
+            # LookupError is caused by replication lag. Our database
+            # policy forces the use of the master database for retries.
+            if isinstance(exc_info[1], LookupError):
+                store_selector = getUtility(IStoreSelector)
+                default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
+                master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+                if default_store is master_store:
+                    return False
+                else:
+                    return True
 
-        # Reraise Retry exceptions rather than log.
-        if retry_allowed and isinstance(
-            exc_info[1], (Retry, DisconnectionError, IntegrityError,
-                          TransactionRollbackError)):
+            # Retry exceptions need to be propagated so they are
+            # retried. Retry exceptions occur when an optimistic
+            # transaction failed, such as we detected two transactions
+            # attempting to modify the same resource.
+            # DisconnectionError and TransactionRollbackError indicate
+            # a database transaction failure, and should be retried
+            # The appserver detects the error state, and a new database
+            # connection is opened allowing the appserver to cope with
+            # database or network outages.
+            # An IntegrityError may be caused when we insert a row
+            # into the database that already exists, such as two requests
+            # doing an insert-or-update. It may succeed if we try again.
+            if isinstance(exc_info[1], (Retry, DisconnectionError,
+                IntegrityError, TransactionRollbackError)):
+                return True
+
+            return False
+
+        # Reraise Retry exceptions ourselves rather than invoke
+        # our superclass handleException method, as it will log OOPS
+        # reports etc. This would be incorrect, as transaction retry
+        # is a normal part of operation.
+        if should_retry(exc_info):
             if request.supportsRetry():
                 # Remove variables used for counting ticks as this request is
                 # going to be retried.
@@ -456,9 +481,11 @@ class LaunchpadBrowserPublication(
             if isinstance(exc_info[1], Retry):
                 raise
             raise Retry(exc_info)
+
         superclass = zope.app.publication.browser.BrowserPublication
-        superclass.handleException(self, object, request, exc_info,
-                                   retry_allowed)
+        superclass.handleException(
+            self, object, request, exc_info, retry_allowed)
+
         # If it's a HEAD request, we don't care about the body, regardless of
         # exception.
         # UPSTREAM: Should this be part of zope,
