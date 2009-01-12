@@ -16,6 +16,7 @@ from canonical.codehosting.branchfsclient import (
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 from canonical.launchpad.testing import FakeTime
+from canonical.launchpad.xmlrpc import faults
 
 
 class TestBranchFileSystemClient(TestCase):
@@ -211,6 +212,20 @@ class TestBranchFileSystemClient(TestCase):
             translated_successfully, failed_translation)
 
 
+class TestFaultOne(faults.LaunchpadFault):
+    """XXX."""
+
+    error_code = 1001
+    message = "Fault one."
+
+
+class TestFaultTwo(faults.LaunchpadFault):
+    """XXX."""
+
+    error_code = 1002
+    message = "Fault two."
+
+
 class TestTrapFault(TestCase):
     """Tests for `trap_fault`."""
 
@@ -230,35 +245,35 @@ class TestTrapFault(TestCase):
     def test_raises_non_faults(self):
         # trap_fault re-raises any failures it gets that aren't faults.
         failure = self.makeFailure(RuntimeError, 'example failure')
-        self.assertRaisesFailure(failure, trap_fault, failure, 235)
+        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultOne)
 
     def test_raises_faults_with_wrong_code(self):
         # trap_fault re-raises any failures it gets that are faults but have
         # the wrong fault code.
-        failure = self.makeFailure(Fault, 123, 'example failure')
-        self.assertRaisesFailure(failure, trap_fault, failure, 235)
+        failure = self.makeFailure(TestFaultOne)
+        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultTwo)
 
     def test_raises_faults_if_no_codes_given(self):
         # If trap_fault is not given any fault codes, it re-raises the fault
         # failure.
-        failure = self.makeFailure(Fault, 123, 'example failure')
+        failure = self.makeFailure(TestFaultOne)
         self.assertRaisesFailure(failure, trap_fault, failure)
 
     def test_returns_fault_if_code_matches(self):
         # trap_fault returns the Fault inside the Failure if the fault code
         # matches what's given.
-        failure = self.makeFailure(Fault, 123, 'example failure')
-        fault = trap_fault(failure, 123)
-        self.assertEqual(123, fault.faultCode)
-        self.assertEqual('example failure', fault.faultString)
+        failure = self.makeFailure(TestFaultOne)
+        fault = trap_fault(failure, TestFaultOne)
+        self.assertEqual(TestFaultOne.error_code, fault.faultCode)
+        self.assertEqual(TestFaultOne.message, fault.faultString)
 
     def test_returns_fault_if_code_matches_one_of_set(self):
         # trap_fault returns the Fault inside the Failure if the fault code
         # matches even one of the given fault codes.
-        failure = self.makeFailure(Fault, 123, 'example failure')
-        fault = trap_fault(failure, 235, 432, 123, 999)
-        self.assertEqual(123, fault.faultCode)
-        self.assertEqual('example failure', fault.faultString)
+        failure = self.makeFailure(TestFaultOne)
+        fault = trap_fault(failure, TestFaultOne, TestFaultTwo)
+        self.assertEqual(TestFaultOne.error_code, fault.faultCode)
+        self.assertEqual(TestFaultOne.message, fault.faultString)
 
 
 def test_suite():

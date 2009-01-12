@@ -325,8 +325,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
 
         def path_not_translated(failure):
             trap_fault(
-                failure, faults.PathTranslationError.error_code,
-                faults.PermissionDenied.error_code)
+                failure, faults.PathTranslationError, faults.PermissionDenied)
             raise NoSuchFile(virtual_url_fragment)
 
         def unknown_transport_type(failure):
@@ -496,7 +495,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # exist. You may supply --create-prefix to create all leading
             # parent directories", which is just misleading.
             fault = trap_fault(
-                failure, faults.NotFound.error_code, faults.PermissionDenied.error_code)
+                failure, faults.NotFound, faults.PermissionDenied)
             raise PermissionDenied(virtual_url_fragment, fault.faultString)
 
         return deferred.addErrback(translate_fault)
