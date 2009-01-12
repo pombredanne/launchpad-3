@@ -417,8 +417,9 @@ class ErrorReportingUtility:
 
                 if WebServiceLayer.providedBy(request):
                     webservice_error = getattr(
-                        info[0], '__lazr_webservice_error__', 0)
+                        info[0], '__lazr_webservice_error__', 500)
                     if webservice_error / 100 != 5:
+                        request.oopsid = None
                         return
 
                 missing = object()
