@@ -4,18 +4,13 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-  <metal:admin  tal:condition="context/required:launchpad.Admin">
-    <p tal:condition="context/hide_all_translations" class="visibility-notice">
-      <strong>Translations for this series are currently hidden.</strong>
-    </p>
-  </metal:admin>
-  <metal:not-admin tal:condition="not:context/required:launchpad.Admin">
-    <!--
-      If translations are hidden, trigger exception that takes us straight
-      to the "translations for this series are not available" page.
-    -->
-    <metal:check-available tal:omit-tag="context/checkTranslationsViewable" />
-  </metal:not-admin>
+  <p tal:condition="context/hide_all_translations" class="visibility-notice">
+    <strong>Translations for this series are currently hidden.</strong>
+
+    <!-- Bounce regular users to "translations unavailable" page. -->
+    <metal:check-available tal:omit-tag="view/checkTranslationsViewable" />
+  </p>
+
 
   <table class="sortable listing" width="100%" id="languagestats">
     <thead>

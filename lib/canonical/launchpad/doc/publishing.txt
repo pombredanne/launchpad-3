@@ -1335,10 +1335,13 @@ agree regarding the changesfile existence.
     foo.changes
 
 
-== IPublishingSet.getBuildStatusSummariesForSourcePubHistoryIds() ==
+== IPublishingSet.getBuildStatusSummariesForSourceIdsAndArchive() ==
 
-This extra method on IPublishingSet is exported in the API and allows
-a summary of the build status for a set of sources to be presented.
+This extra method on IPublishingSet allows a summary of the build status
+for a set of sources to be presented. The corresponding archive is a
+required parameter that ensures that this method only
+returns information about builds from the specified archive (as this method
+is used via the API via IArchive.getBuildSummariesForSourceIds).
 
 First we'll grab two source publishing history records:
 
@@ -1365,8 +1368,12 @@ Create a small function for displaying the results:
     ...         print "Source ID: %s" % source_id
     ...         print_build_summary(summary)
 
-    >>> build_summaries = publishing_set.getBuildStatusSummariesForSourceIds(
-    ...     [firefox_source_pub.id, foo_pub.id])
+And then grab the build summaries for firefox and foo:
+
+    >>> build_summaries = \
+    ...     publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
+    ...         [firefox_source_pub.id, foo_pub.id],
+    ...         ubuntu.main_archive)
     >>> print_build_summaries(build_summaries)
     Source ID: 18
     Successfully built
@@ -1379,4 +1386,19 @@ Create a small function for displaying the results:
     There were build failures.
     Relevant builds:
      - i386 build of foobar 1.0 in ubuntu warty RELEASE
+
+Any of the source ids passed into 
+getBuildStatusSummariesForSourceIdsAndArchive that do not belong to the
+required archive parameter will be ignored:
+
+    >>> from canonical.launchpad.interfaces.archive import IArchiveSet
+    >>> ubuntu_partner = getUtility(IArchiveSet).getArchivesForDistribution(
+    ...     ubuntu,
+    ...     name="partner")[0]
+    >>> build_summaries = \
+    ...     publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
+    ...         [firefox_source_pub.id, foo_pub.id],
+    ...         archive=ubuntu_partner)
+    >>> print_build_summaries(build_summaries)
+
 

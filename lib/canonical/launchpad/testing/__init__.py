@@ -16,6 +16,25 @@ from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.testing.factory import *
 
 
+class FakeTime:
+    """Provides a controllable implementation of time.time()."""
+
+    def __init__(self, start):
+        """Set up the instance.
+
+        :param start: The value that will initially be returned by `now()`.
+        """
+        self._now = start
+
+    def advance(self, amount):
+        """Advance the value that will be returned by `now()` by 'amount'."""
+        self._now += amount
+
+    def now(self):
+        """Use this bound method instead of time.time in tests."""
+        return self._now
+
+
 class TestCase(unittest.TestCase):
     """Provide Launchpad-specific test facilities."""
 
