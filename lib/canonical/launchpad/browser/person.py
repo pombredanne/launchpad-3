@@ -274,7 +274,6 @@ class BranchTraversalMixin:
     name is 'junkcode'.
 
     * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
-
     """
 
     def _getSegments(self, pillar_name=None):
