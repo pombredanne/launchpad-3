@@ -40,6 +40,18 @@ __all__ = [
 import xmlrpclib
 
 
+def check_fault(fault, *fault_classes):
+    """Check if 'fault's faultCode matches any of 'fault_classes'.
+
+    :param fault: An instance of `xmlrpclib.Fault`.
+    :param fault_classes: Any number of `LaunchpadFault` subclasses.
+    """
+    for cls in fault_classes:
+        if fault.faultCode == cls.error_code:
+            return True
+    return False
+
+
 class LaunchpadFault(xmlrpclib.Fault):
     """Base class for a Launchpad XMLRPC fault.
 
@@ -392,3 +404,14 @@ class InvalidPath(LaunchpadFault):
 
     def __init__(self, path):
         LaunchpadFault.__init__(self, path=path)
+
+
+class PermissionDenied(LaunchpadFault):
+    """Raised to indicate XXX."""
+
+    error_code = 310
+    msg_template = (
+        "%s")
+
+    def __init__(self, message="Permission denied."):
+        LaunchpadFault.__init__(self, message=message)
