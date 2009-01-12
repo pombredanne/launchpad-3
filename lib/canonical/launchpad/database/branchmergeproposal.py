@@ -592,6 +592,20 @@ class BranchMergeProposalGetter:
                 builder.query, visible_by_user))
 
     @staticmethod
+    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+        store = Store.of(context)
+        result = store.find(
+            BranchMergeProposal,
+            And(
+                CodeReviewVoteReference.branch_merge_proposal == \
+                    BranchMergeProposal.id,
+                CodeReviewVoteReference.comment == None,
+                BranchMergeProposal.queue_status in status,
+                CodeReviewVoteReference.reviewer == context)
+            )
+        return result
+
+    @staticmethod
     def _generateVisibilityClause(query, visible_by_user):
         # BranchMergeProposals are only visible is the user is able to
         # see both the source and target branches.  Here we need to use
