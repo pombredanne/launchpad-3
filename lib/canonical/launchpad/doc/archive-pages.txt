@@ -349,7 +349,7 @@ dependency. Each element has:
     sabdfl
 
     >>> print dependency.title
-    <a href="http://launchpad.dev/~sabdfl/+archive">PPA for Mark Shuttleworth</a>
+    <a href="http://launchpad.dev/~sabdfl/+archive/ppa">PPA for Mark Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
 first listed dependency.
