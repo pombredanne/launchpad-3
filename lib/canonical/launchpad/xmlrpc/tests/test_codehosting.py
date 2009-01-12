@@ -906,7 +906,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
-        fault = self.branchfs.translatePath(requester.id, path)
+        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+            requester = requester.id
+        fault = self.branchfs.translatePath(requester, path)
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
@@ -1029,6 +1031,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/%s' % branch.unique_name)
         translation = self.branchfs.translatePath(LAUNCHPAD_SERVICES, path)
         login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_anonymous_cant_see_private_branch(self):
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
+        path = escape(u'/%s' % branch.unique_name)
+        self.assertNotFound(ANONYMOUS, path)
+
+    def test_translatePath_anonymous_public_branch(self):
+        branch = self.factory.makeBranch()
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(ANONYMOUS, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)

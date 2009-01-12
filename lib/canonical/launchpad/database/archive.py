@@ -26,8 +26,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
+from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -59,7 +62,7 @@ from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
@@ -839,6 +842,13 @@ class Archive(SQLBase):
 
         return build_counts
 
+    def getBuildSummariesForSourceIds(self, source_ids):
+        """See `IArchive`."""
+        publishing_set = getUtility(IPublishingSet)
+        return publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
+            source_ids,
+            archive=self)
+
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
@@ -1054,6 +1064,26 @@ class Archive(SQLBase):
         return [
             copy.sourcepackagerelease.sourcepackagename.name
             for copy in copies]
+
+    def newAuthToken(self, person, token=None, date_created=None):
+        """See `IArchive`."""
+        if token is None:
+            token = create_unique_token_for_table(
+                20, ArchiveAuthToken, "token")
+        if not isinstance(token, unicode):
+            # Storm barfs if the string is not unicode so see if it
+            # converts.  If it doesn't, never mind, it would have blown
+            # up anyway.
+            token = unicode(token)
+        archive_auth_token = ArchiveAuthToken()
+        archive_auth_token.archive = self
+        archive_auth_token.person = person
+        archive_auth_token.token = token
+        if date_created is not None:
+            archive_auth_token.date_created = date_created
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.add(archive_auth_token)
+        return archive_auth_token
 
 
 class ArchiveSet:
