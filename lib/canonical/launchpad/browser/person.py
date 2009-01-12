@@ -283,6 +283,8 @@ class BranchTraversalMixin:
     @stepto('+branch')
     def redirect_branch(self):
         """Redirect to canonical_url, which is ~user/product/name."""
+        # XXX: JonathanLange 2009-01-12 spec=package-branches: This duplicates
+        # logic in traverse!
         stepstogo = self.request.stepstogo
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
