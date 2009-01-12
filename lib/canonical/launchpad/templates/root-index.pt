@@ -43,6 +43,7 @@
         style="text-align: center"
       >
         <img src="/@@/launchpad-logo-and-name.png" 
+             alt="Launchpad Logo"
              style="margin: 0 9em 1em 0"/>
         <br />
 
