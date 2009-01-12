@@ -1601,7 +1601,7 @@ IHWSubmissionDeviceSet.getDevices().
     ----> Plustek OpticPro UT12 usb
     -----> Plustek OpticPro UT12 plustek
 
-A single IHWSubmissionDevice reocrd is retrieved by
+A single IHWSubmissionDevice record is retrieved by
 IHWSubmissionDeviceSet.getByID().
 
     >>> submitted_device = submission_device_set.getByID(1)
