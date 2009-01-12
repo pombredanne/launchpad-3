@@ -17,6 +17,24 @@ request is querying the master or slave database.
     ...     """)
     >>> config.push('empty_slave', config_overlay)
 
+We should confirm that the empty database is as empty as we hope it is.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    >>> from canonical.launchpad.database.person import Person
+    >>> slave_store = getUtility(IStoreSelector).get(
+    ...     MAIN_STORE, SLAVE_FLAVOR)
+    >>> master_store = getUtility(IStoreSelector).get(
+    ...     MAIN_STORE, MASTER_FLAVOR)
+    >>> slave_store.find(Person).count()
+    0
+    >>> master_store.find(Person).count() > 0
+    True
+
+This helper parses the output of the +whichdb view (which unfortunately
+needs to be created externally to this pagetest).
+
     >>> def whichdb(browser):
     ...     dbname = extract_text(find_tag_by_id(browser.contents, 'dbname'))
     ...     if dbname == 'launchpad_ftest':
