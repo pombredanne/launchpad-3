@@ -33,6 +33,7 @@ def get_bzr_plugins_path():
     """Find the path to the Bazaar plugins for this rocketfuel instance"""
     return get_rocketfuel_root() + '/bzrplugins'
 
+
 os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
 
 # We want to have full access to Launchpad's Bazaar plugins throughout the
