@@ -442,7 +442,7 @@ class FakeBranchFilesystem:
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
             if product is None:
-                return faults.NotFault(
+                return faults.NotFound(
                     "Project %r does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])

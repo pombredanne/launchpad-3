@@ -13,6 +13,7 @@ __all__ = [
     'BranchCreationForbidden',
     'BranchNameInUse',
     'BranchUniqueNameConflict',
+    'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
@@ -36,6 +37,7 @@ __all__ = [
     'RequiredParameterMissing',
     'UnexpectedStatusReport',
     ]
+
 
 import xmlrpclib
 
@@ -411,7 +413,7 @@ class PermissionDenied(LaunchpadFault):
 
     error_code = 310
     msg_template = (
-        "%s")
+        "%(message)s")
 
     def __init__(self, message="Permission denied."):
         LaunchpadFault.__init__(self, message=message)
@@ -422,7 +424,7 @@ class NotFound(LaunchpadFault):
 
     error_code = 320
     msg_template = (
-        "%s")
+        "%(message)s")
 
     def __init__(self, message="Not found."):
         LaunchpadFault.__init__(self, message=message)
