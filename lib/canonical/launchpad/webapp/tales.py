@@ -31,9 +31,12 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IHasIcon, IHasLogo,
-    IHasMugshot, IPerson, IPersonSet, IProduct, IProject, ISprint,
-    LicenseStatus, NotFoundError)
+    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
+    ISprint, LicenseStatus, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -405,7 +408,7 @@ class ObjectFormatterAPI:
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {}
+    final_traversable_names = {'name': 'name'}
 
     def __init__(self, context):
         self._context = context
@@ -453,6 +456,13 @@ class ObjectFormatterAPI:
             that name on this object.
         """
         raise NotImplemented
+
+    def name(self, view_name=None):
+        """Return the object's visible name.
+
+        :param view_name: ignored.
+        """
+        return self._context.browsername
 
 
 class ObjectImageDisplayAPI:
@@ -870,7 +880,7 @@ class BadgeDisplayAPI:
 class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
-    final_traversable_names = {'local-time': 'local_time'}
+    final_traversable_names = {'local-time': 'local_time', 'name': 'name'}
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
@@ -902,6 +912,63 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, cgi.escape(person.browsername))
+
+
+class TeamFormatterAPI(PersonFormatterAPI):
+    """Adapter for `ITeam` objects to a formatted string."""
+
+    @property
+    def _team_is_hidden(self):
+        """True if the team should be hidden from the user."""
+        # The tests in this property are implemented individually so that it's
+        # easier to change or augment them.
+        team = self._context
+        assert team.is_team, 'Non-team'
+        user = getUtility(ILaunchBag).user
+        if team.visibility == PersonVisibility.PUBLIC:
+            # Public teams should never be hidden from anyone.
+            return False
+        elif user is None:
+            # Anonymous users may not see private membership teams.
+            return True
+        elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            # Launchpad admins can see everything.
+            return False
+        elif user.inTeam(team):
+            # Members may see private membership teams.
+            return False
+        else:
+            # To be safe, anyone not explicitly named above may not see
+            # private membership teams.
+            return True
+
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        if self._team_is_hidden:
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).url(view_name)
+
+    def api_url(self, context):
+        """See `ObjectFormatterAPI`."""
+        if self._team_is_hidden:
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).api_url(view_name)
+
+    def link(self, view_name):
+        """See `ObjectFormatterAPI`."""
+        if self._team_is_hidden:
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).link(view_name)
+
+    def name(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        if self._team_is_hidden:
+            # This person has no permission to view the team details.
+            return '<redacted>'
+        return super(TeamFormatterAPI, self).name(view_name)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -1010,7 +1077,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink'}
+        'title-link': 'titleLink', 'name': 'name'}
 
     def traverse(self, name, furtherPath):
         """Special case traversal to support multiple link formats."""
@@ -1239,7 +1306,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {
         'aliases': 'aliases',
         'external-link': 'external_link',
-        'external-title-link': 'external_title_link'}
+        'external-title-link': 'external_title_link', 'name': 'name'}
 
     def link(self, view_name):
         """Return an HTML link to the bugtracker page.
@@ -1303,7 +1370,8 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
 
     final_traversable_names = {
         'external-link': 'external_link',
-        'external-link-short': 'external_link_short'}
+        'external-link-short': 'external_link_short',
+        'name': 'name'}
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
@@ -1707,8 +1775,9 @@ class PageTemplateContextsAPI:
         underscores, and use this to look up a string, unicode or
         function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles, emit a
-        warning that this page has no title, and return the default page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit
+        a warning that this page has no title, and return the default page
+        title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)

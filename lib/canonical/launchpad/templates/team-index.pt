@@ -203,7 +203,7 @@
           <ul>
             <li tal:repeat="team context/super_teams">
               <a tal:attributes="href team/fmt:url"
-                 tal:content="team/browsername">name</a>
+                 tal:content="team/fmt:name">name</a>
             </li>
           </ul>
         </tal:block>
