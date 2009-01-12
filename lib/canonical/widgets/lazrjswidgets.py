@@ -53,13 +53,12 @@ class InlineTextLineEditorWidget:
             params['activation_script'] = dedent(u"""\
                 <script>
                     YUI().use('lazr.editor', function (Y) {
-
                     });
                 </script>
                 """)
         return dedent(u"""\
-            <h1 id="%(id)s"><span class="editable-text">%(value)s</span>
-                <a href="%(edit_url)s" class="edit-button"
+            <h1 id="%(id)s"><span class="yui-editable_text-text">%(value)s</span>
+                <a href="%(edit_url)s" class="yui-editable_text-trigger"
                 ><img src="/@@/edit" alt="[edit]" title="%(title)s" /></a>
             </h1>
             %(activation_script)s
