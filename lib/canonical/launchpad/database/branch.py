@@ -6,6 +6,7 @@ __all__ = [
     'Branch',
     'BranchSet',
     'DEFAULT_BRANCH_LISTING_SORT',
+    'RevisionMailJob',
     ]
 
 from datetime import datetime
@@ -56,8 +57,8 @@ from canonical.launchpad.interfaces import (
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchDiffJob, IBranchDiffJobSource,
-    IBranchJob, IBranchNavigationMenu, NoSuchBranch,
-    user_has_special_branch_access)
+    IBranchJob, IBranchNavigationMenu, IRevisionMailJob,
+    IRevisionMailJobSource, NoSuchBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -68,6 +69,7 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import (
     validate_public_person)
 from canonical.launchpad.database.diff import StaticDiff
@@ -1666,3 +1668,55 @@ class BranchDiffJob(object):
             from_revision_id, to_revision_id, bzr_branch.repository)
         self.job.complete()
         return static_diff
+
+
+class RevisionMailJob(object):
+    """A Job that calculates the a diff related to a Branch."""
+
+    implements(IRevisionMailJob)
+
+    classProvides(IRevisionMailJobSource)
+
+    delegates(IBranchJob)
+
+    def __init__(self, branch_job):
+        self.context = branch_job
+
+    @classmethod
+    def create(klass, branch, revno, from_address, body, diff, subject):
+        """See `IRevisionMailJobSource`."""
+        metadata = {
+            'revno': revno,
+            'from_address': from_address,
+            'body': body,
+            'diff': diff,
+            'subject': subject,
+        }
+        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
+        return klass(branch_job)
+
+    @property
+    def revno(self):
+        return long(self.metadata['revno'])
+
+    @property
+    def from_address(self):
+        return str(self.metadata['from_address'])
+
+    @property
+    def diff(self):
+        return self.metadata['diff']
+
+    @property
+    def body(self):
+        return self.metadata['body']
+
+    @property
+    def subject(self):
+        return self.metadata['subject']
+
+    def run(self):
+        mailer = BranchMailer.forRevision(
+            self.branch, self.revno, self.from_address, self.body,
+            self.diff, self.subject)
+        mailer.sendAll()
