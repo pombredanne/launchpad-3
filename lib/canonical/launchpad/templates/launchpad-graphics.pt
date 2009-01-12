@@ -167,27 +167,37 @@
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
+        <td>cancel</td>
+        <td><img alt="cancel" src="/@@/cancel" /></td>
+        <td rowspan="2">Cancel an action.</td>
+      </tr>
+      <tr>
+        <td>confirm</td>
+        <td><img alt="confirm" src="/@@/confir," /></td>
+        <td rowspan="2">Confirm an action.</td>
+      </tr>
+      <tr>
         <td>crowd</td>
-        <td><img alt="" src="/@@/crowd" /></td>
+        <td><img alt="crowd" src="/@@/crowd" /></td>
         <td rowspan="2">Many people are subscribed to this thing.</td>
       </tr>
       <tr>
         <td>crowd-large</td>
-        <td><img alt="" src="/@@/crowd-large" /></td>
+        <td><img alt="large crowd" src="/@@/crowd-large" /></td>
       </tr>
       <tr>
         <td>delete-icon</td>
-        <td><img alt="" src="/@@/trash-icon" /></td>
+        <td><img alt="delete" src="/@@/trash-icon" /></td>
         <td>Icon to delete objects permanently from the system.</td>
       </tr>
       <tr>
         <td>delete-large</td>
-        <td><img alt="" src="/@@/trash-large" /></td>
+        <td><img alt="delete" src="/@@/trash-large" /></td>
         <td>Icon to delete objects permanently from the system.</td>
       </tr>
       <tr>
         <td>delete-logo</td>
-        <td><img alt="" src="/@@/trash-logo" /></td>
+        <td><img alt="delete" src="/@@/trash-logo" /></td>
         <td>Icon to delete objects permanently from the system.</td>
       </tr>
       <tr>
@@ -197,15 +207,15 @@
       </tr>
       <tr>
         <td>distribution</td>
-        <td><img alt="" src="/@@/distribution" /></td>
+        <td colspan="2"><img alt="" src="/@@/distribution" /></td>
       </tr>
       <tr>
         <td>distribution-logo</td>
-        <td><img alt="" src="/@@/distribution-logo" /></td>
+        <td colspan="2"><img alt="" src="/@@/distribution-logo" /></td>
       </tr>
       <tr>
         <td>distribution-mugshot</td>
-        <td><img alt="" src="/@@/distribution-mugshot" /></td>
+        <td colspan="2"><img alt="" src="/@@/distribution-mugshot" /></td>
       </tr>
       <tr>
         <td>download</td>
@@ -244,11 +254,11 @@
       </tr>
       <tr>
         <td>flame-large</td>
-        <td><img alt="" src="/@@/flame-large" /></td>
+        <td colspan="2"><img alt="" src="/@@/flame-large" /></td>
       </tr>
       <tr>
         <td>flame-logo</td>
-        <td><img alt="" src="/@@/flame-logo" /></td>
+        <td colspan="2"><img alt="" src="/@@/flame-logo" /></td>
       </tr>
       <tr>
         <td>info</td>
@@ -272,7 +282,7 @@
       <tr>
         <td>launchpad-large</td>
         <td><img alt="" src="/@@/launchpad-large" /></td>
-        <td rowspan="2">
+        <td colspan="2">
           The Launchpad icon,
           used for pages that don't belong to a pillar with its own icon.
         </td>
@@ -317,34 +327,32 @@
       </tr>
       <tr>
         <td>person</td>
-        <td><img alt="" src="/@@/person" /></td>
+        <td colspan="2"><img alt="person icon" src="/@@/person" /></td>
       </tr>
       <tr>
         <td>person-logo</td>
-        <td><img alt="" src="/@@/person-logo" /></td>
+        <td colspan="2"><img alt="" src="/@@/person-logo" /></td>
       </tr>
       <tr>
         <td>person-mugshot</td>
-        <td><img alt="" src="/@@/person-mugshot" /></td>
+        <td colspan="2"><img alt="" src="/@@/person-mugshot" /></td>
       </tr>
       <tr>
         <td>person-inactive-badge</td>
         <td><img alt="" src="/@@/person-inactive-badge" /></td>
-        <td rowspan="4">
-          A person who does not use Launchpad.
-        </td>
+        <td>A person who does not use Launchpad.</td>
       </tr>
       <tr>
         <td>person-inactive</td>
-        <td><img alt="" src="/@@/person-inactive" /></td>
+        <td colspan="2"><img alt="" src="/@@/person-inactive" /></td>
       </tr>
       <tr>
         <td>person-inactive-logo</td>
-        <td><img alt="" src="/@@/person-inactive-logo" /></td>
+        <td colspan="2"><img alt="" src="/@@/person-inactive-logo" /></td>
       </tr>
       <tr>
         <td>person-inactive-mugshot</td>
-        <td><img alt="" src="/@@/person-inactive-mugshot" /></td>
+        <td colspan="2"><img alt="" src="/@@/person-inactive-mugshot" /></td>
       </tr>
       <tr>
         <td>private</td>
@@ -485,7 +493,7 @@
       <tr>
         <td>team-badge</td>
         <td><img alt="" src="/@@/team-badge" /></td>
-        <td rowspan="4">
+        <td colspan="4">
           An anonymous icon for a team.
           The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the team has not uploaded their own custom picture.
@@ -493,18 +501,15 @@
       </tr>
       <tr>
         <td>team</td>
-        <td><img alt="" src="/@@/team" /></td>
-        <td></td>
+        <td colspan="2"><img alt="" src="/@@/team" /></td>
       </tr>
       <tr>
         <td>team-logo</td>
-        <td><img alt="" src="/@@/team-logo" /></td>
-        <td></td>
+        <td colspan="2"><img alt="" src="/@@/team-logo" /></td>
       </tr>
       <tr>
         <td>team-mugshot</td>
-        <td><img alt="" src="/@@/team-mugshot" /></td>
-        <td></td>
+        <td colspan="2"><img alt="" src="/@@/team-mugshot" /></td>
       </tr>
       <tr>
         <td>treeCollapsed</td>
@@ -611,6 +616,11 @@
         <td>bug-dupe</td>
         <td><img src="/@@/bug-dupe-icon" /></td>
         <td>A bug which is a duplicate of another</td>
+      </tr>
+      <tr>
+        <td>bug tracker</td>
+        <td><img src="/@@/bugtracker-icon" /></td>
+        <td>A bug tracker</td>
       </tr>
       <tr>
         <td>cve</td>
@@ -876,12 +886,6 @@
         <td>ubuntu-icon</td>
         <td><img src="/@@/ubuntu-icon" /></td>
         <td>Ubuntu icon</td>
-      </tr>
-      <!-- convenience blank row for copying -->
-      <tr>
-        <td></td>
-        <td><img src="/@@/" /></td>
-        <td></td>
       </tr>
     </tbody>
   </table>

@@ -19,7 +19,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
-from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
@@ -167,8 +166,7 @@ class CodeImportWorkerMonitor:
     """
 
     path_to_script = os.path.join(
-        get_rocketfuel_root(),
-        'scripts', 'code-import-worker.py')
+        config.root, 'scripts', 'code-import-worker.py')
 
     def __init__(self, job_id, logger):
         """Construct an instance.

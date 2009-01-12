@@ -47,15 +47,17 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IPersonSet, IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
+    IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
+    bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
+    user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace)
+    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchcontainer import (
     PackageContainer, PersonContainer, ProductContainer)
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -70,9 +72,7 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.xmlrpc.faults import (
-    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
+from canonical.launchpad.xmlrpc import faults
 
 
 class Branch(SQLBase):
@@ -1053,7 +1053,7 @@ class BranchSet:
         else:
             return branch
 
-    def getByUniqueName(self, unique_name, default=None):
+    def getByUniqueName(self, unique_name):
         """Find a branch by its unique name.
 
         For product branches, the unique name is ~user/product/branch; for
@@ -1063,21 +1063,63 @@ class BranchSet:
         """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
         # +dev alias, nor official source package branches.
-        path_segments = unique_name.split('/')
-        if len(path_segments) == 5:
-            return self._getSourcePackageBranch(path_segments, default)
-        if len(path_segments) != 3:
-            return default
-        owner_name, product_name, branch_name = path_segments
-        owner_name = owner_name[1:]
-        branch = self._getByUniqueNameElements(
-            owner_name, product_name, branch_name)
-        if branch is None:
-            return default
-        else:
-            return branch
+        try:
+            namespace_name, branch_name = unique_name.rsplit('/', 1)
+        except ValueError:
+            return None
+        try:
+            namespace_data = getUtility(IBranchNamespaceSet).parse(
+                namespace_name)
+        except InvalidNamespace:
+            return None
+        return self._getBranchInNamespace(namespace_data, branch_name)
 
-    def _getSourcePackageBranch(self, path_segments, default):
+    def _getBranchInNamespace(self, namespace_data, branch_name):
+        if namespace_data['product'] == '+junk':
+            return self._getPersonalBranch(
+                namespace_data['person'], branch_name)
+        elif namespace_data['product'] is None:
+            return self._getPackageBranch(
+                namespace_data['person'], namespace_data['distribution'],
+                namespace_data['distroseries'],
+                namespace_data['sourcepackagename'], branch_name)
+        else:
+            return self._getProductBranch(
+                namespace_data['person'], namespace_data['product'],
+                branch_name)
+
+    def _getPersonalBranch(self, person, branch_name):
+        """Find a personal branch given its path segments."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [Branch, Join(Person, Branch.owner == Person.id)]
+        result = store.using(*origin).find(
+            Branch, Person.name == person,
+            Branch.distroseries == None,
+            Branch.product == None,
+            Branch.sourcepackagename == None,
+            Branch.name == branch_name)
+        branch = result.one()
+        return branch
+
+    def _getProductBranch(self, person, product, branch_name):
+        """Find a product branch given its path segments."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person, Product
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [
+            Branch,
+            Join(Person, Branch.owner == Person.id),
+            Join(Product, Branch.product == Product.id)]
+        result = store.using(*origin).find(
+            Branch, Person.name == person, Product.name == product,
+            Branch.name == branch_name)
+        branch = result.one()
+        return branch
+
+    def _getPackageBranch(self, owner, distribution, distroseries,
+                          sourcepackagename, branch):
         """Find a source package branch given its path segments.
 
         Only gets unofficial source package branches, that is, branches with
@@ -1096,69 +1138,51 @@ class BranchSet:
                  Branch.distroseries == DistroSeries.id),
             Join(Distribution,
                  DistroSeries.distribution == Distribution.id)]
-        owner, distribution, distroseries, sourcepackagename, branch = (
-            path_segments)
-        owner = owner[1:]
         result = store.using(*origin).find(
             Branch, Person.name == owner, Distribution.name == distribution,
             DistroSeries.name == distroseries,
             SourcePackageName.name == sourcepackagename,
             Branch.name == branch)
         branch = result.one()
-        if branch is None:
-            return default
         return branch
 
-    @staticmethod
-    def _getByUniqueNameElements(owner_name, product_name, branch_name):
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: Not sure why
-        # this is using direct SQL instead of Storm. Also not sure whether
-        # this method makes sense in source package branch land.
-        if product_name == '+junk':
-            query = ("Branch.owner = Person.id"
-                     + " AND Branch.product IS NULL"
-                     + " AND Person.name = " + quote(owner_name)
-                     + " AND Branch.name = " + quote(branch_name))
-            tables = ['Person']
-        else:
-            query = ("Branch.owner = Person.id"
-                     + " AND Branch.product = Product.id"
-                     + " AND Person.name = " + quote(owner_name)
-                     + " AND Product.name = " + quote(product_name)
-                     + " AND Branch.name = " + quote(branch_name))
-            tables = ['Person', 'Product']
-        return Branch.selectOne(query, clauseTables=tables)
+    def _getByPath(self, path):
+        """Given a path within a branch, return the branch and the path."""
+        namespace_set = getUtility(IBranchNamespaceSet)
+        parsed = namespace_set.parseBranchPath(path)
+        for parsed_path, branch_name, suffix in parsed:
+            branch = self._getBranchInNamespace(parsed_path, branch_name)
+            if branch is not None:
+                return branch, suffix
+        # This will raise an interesting error if any of the given objects
+        # don't exist.
+        namespace_set.interpret(
+            person=parsed_path['person'],
+            product=parsed_path['product'],
+            distribution=parsed_path['distribution'],
+            distroseries=parsed_path['distroseries'],
+            sourcepackagename=parsed_path['sourcepackagename'])
+        raise NoSuchBranch(path)
 
-    @classmethod
-    def getByLPPath(klass, path):
+    def getByLPPath(self, path):
         """See `IBranchSet`."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This
-        # implementation needs to be updated to handle five-part source
-        # package branches and three-part source package branches. Might also
-        # be a good idea to support the +dev alias (or whatever the spec
-        # suggests).
-        path_segments = path.split('/', 3)
-        series_name = None
-        if len(path_segments) > 3:
-            suffix = path_segments[3]
+        try:
+            branch, suffix = self._getByPath(path)
+        except InvalidNamespace:
+            pass
         else:
-            suffix = None
-        if len(path_segments) < 3:
-            branch, series = klass._getProductBranch(*path_segments)
-        else:
-            series = None
-            owner, product, name = path_segments[:3]
-            if owner[0] != '~':
-                raise InvalidBranchIdentifier(path)
-            owner = owner[1:]
-            branch = klass._getByUniqueNameElements(owner, product, name)
-            if branch is None:
-                klass._checkOwnerProduct(owner, product)
-                raise NoSuchBranch(path)
-        return branch, suffix, series
+            if suffix == '':
+                suffix = None
+            return branch, suffix, None
 
-    @staticmethod
-    def _getProductBranch(product_name, series_name=None):
+        path_segments = path.split('/')
+        if len(path_segments) < 3:
+            branch, series = self._getDefaultProductBranch(*path_segments)
+        else:
+            raise faults.InvalidBranchIdentifier(path)
+        return branch, None, series
+
+    def _getDefaultProductBranch(self, product_name, series_name=None):
         """Return the branch for a product.
 
         :param product_name: The name of the branch's product.
@@ -1168,7 +1192,7 @@ class BranchSet:
         :raise: A subclass of LaunchpadFault.
         """
         if not valid_name(product_name):
-            raise InvalidProductIdentifier(product_name)
+            raise faults.InvalidProductIdentifier(product_name)
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             raise NoSuchProduct(product_name)
@@ -1177,27 +1201,11 @@ class BranchSet:
         else:
             series = product.getSeries(series_name)
             if series is None:
-                raise NoSuchSeries(series_name, product)
+                raise faults.NoSuchSeries(series_name, product)
         branch = series.series_branch
         if branch is None:
-            raise NoBranchForSeries(series)
+            raise faults.NoBranchForSeries(series)
         return branch, series
-
-    @classmethod
-    def _checkOwnerProduct(klass, owner_name, product_name):
-        """Return an appropriate response for a non-existent branch.
-
-        :param unique_name: A string of the form "~user/project/branch".
-        :raise: A _NonexistentBranch object or a Fault if the user or project
-            do not exist.
-        """
-        owner = getUtility(IPersonSet).getByName(owner_name)
-        if owner is None:
-            raise NoSuchPersonWithName(owner_name)
-        if product_name != '+junk':
-            project = getUtility(IProductSet).getByName(product_name)
-            if project is None:
-                raise NoSuchProduct(product_name)
 
     def getRewriteMap(self):
         """See `IBranchSet`."""

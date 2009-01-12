@@ -336,4 +336,7 @@
            canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
       handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications" />
 
+  <class class="canonical.launchpad.mailout.branch.RecipientReason">
+      <allow attributes="getReason branch mail_header recipient" />
+  </class>
 </configure>

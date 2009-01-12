@@ -26,6 +26,7 @@ __all__ = [
     'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
+    'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -81,6 +82,7 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -1237,6 +1239,15 @@ class IPersonViewRestricted(Interface):
         title=_("List of participants with no coordinates recorded."),
         value_type=Reference(schema=Interface))
 
+    def getMembersWithPreferredEmails(include_teams=False):
+        """Returns a result set of persons with precached addresses.
+
+        Persons or teams without preferred email addresses are not included.
+        """
+
+    def getMembersWithPreferredEmailsCount(include_teams=False):
+        """Returns the count of persons/teams with preferred emails."""
+
     def getDirectAdministrators():
         """Return this team's administrators.
 
@@ -1976,6 +1987,12 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class NoSuchPerson(NameLookupFailed):
+    """Raised when we try to look up an IPerson that doesn't exist."""
+
+    _message_prefix = "No such person"
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

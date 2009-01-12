@@ -10,9 +10,22 @@
   i18n:domain="launchpad"
   >
 <body>
+    <tal:devmode condition="devmode">
+      <metal:block fill-slot="head_epilogue">
+        <tal:archive_js define="lp_js string:${icingroot}/build">
+          <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js">
+          </script>
+          <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/update_archive_build_statuses.js">
+          </script>
+        </tal:archive_js>
+      </metal:block>
+    </tal:devmode>
 
     <div metal:fill-slot="main"
-         tal:define="archive_active view/is_active;archive_label view/archive_label">
+         tal:define="archive_active view/is_active;
+                     archive_label view/archive_label">
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
@@ -33,7 +46,7 @@
           replace="structure link/render" />
       </div>
 
-      <h2 style="margin-top: 0" tal:condition="not: context/is_copy"> 
+      <h2 style="margin-top: 0" tal:condition="not: context/is_copy">
         URL:
         <a tal:condition="archive_active"
            tal:attributes="href view/archive_url"
@@ -53,7 +66,7 @@
       </tal:whiteboard>
 
       <div tal:define="archive context"
-           tal:condition="view/is_active"
+           tal:condition="archive_active"
            id="build-status-summary">
         <h2>
           <tal:archive_label replace="archive_label" /> build status
@@ -73,26 +86,25 @@
         </tal:package-copy-request-list>
       </div>
 
-      <div tal:condition="view/archive_url"> 
+      <div tal:condition="archive_active">
 
         <h2>apt sources.list entries</h2>
-
         <tal:entries replace="structure view/sources_list_entries" />
 
-        <p id="signing-key"
-	   tal:define="signing_key context/signing_key"
+      </div>
+
+      <div id="signing-key"
+           tal:define="signing_key context/signing_key"
 	   tal:condition="signing_key">
-          This repository is signed with
+        <p>This repository is signed with
           <a tal:attributes="href signing_key/keyserverURL">
             <code tal:content="signing_key/fingerprint">
               0123456789012345678901234567890123456789
-            </code>
-          </a> OpenPGP key.
-          Follow <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories">these instructions</a> if you want to
-	  install packages from this PPA.
-        </p>
-
-      </div>
+            </code></a> OpenPGP key.
+          <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories"
+          >Follow these instructions</a>
+          for installing packages from this PPA.</p>
+      </div> <!-- signing-key -->
 
       <div id="archive-dependencies" tal:condition="context/dependencies">
 

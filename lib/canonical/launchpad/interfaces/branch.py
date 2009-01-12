@@ -37,6 +37,7 @@ __all__ = [
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
+    'NoSuchBranch',
     'RepositoryFormat',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
@@ -422,6 +423,14 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
+
+
+class NoSuchBranch(Exception):
+    """Raised when we try to load a branch that does not exist."""
+
+    def __init__(self, unique_name):
+        self.unique_name = unique_name
+        Exception.__init__(self, "No such branch: %s" % (unique_name,))
 
 
 class BadBranchSearchContext(Exception):
@@ -1052,10 +1061,10 @@ class IBranchSet(Interface):
         special case of the ~vcs-imports celebrity.
         """
 
-    def getByUniqueName(unique_name, default=None):
+    def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
-        Return the default value if no match was found.
+        Return None if no match was found.
         """
 
     def getRewriteMap():
