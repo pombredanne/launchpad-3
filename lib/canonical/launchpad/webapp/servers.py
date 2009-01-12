@@ -133,6 +133,9 @@ class StepsToGo:
     def __init__(self, request):
         self.request = request
 
+    def __iter__(self):
+        return self
+
     def consume(self):
         """Remove the next path step and return it.
 
@@ -146,6 +149,8 @@ class StepsToGo:
         self.request._traversed_names.append(nextstep)
         self.request.setTraversalStack(stack)
         return nextstep
+
+    next = consume
 
     def startswith(self, *args):
         """Return whether the steps to go start with the names given."""
