@@ -19,6 +19,8 @@ import pytz
 
 from bzrlib.urlutils import escape, unescape
 
+from twisted.python.util import mergeFunctionMetadata
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -200,6 +202,18 @@ def run_with_login(login_id, function, *args, **kwargs):
         logout()
 
 
+def return_fault(function):
+    """Catch any Faults raised by 'function' and return them instead."""
+
+    def decorated(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except Fault, fault:
+            return fault
+
+    return mergeFunctionMetadata(function, decorated)
+
+
 class BranchFileSystem(LaunchpadXMLRPCView):
     """See `IBranchFileSystem`."""
 
@@ -302,7 +316,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         try:
             branch_id = branch.id
         except Unauthorized:
-            return faults.PermissionDenied()
+            raise faults.PermissionDenied()
         if branch.branch_type == BranchType.REMOTE:
             return None
         return (
@@ -337,6 +351,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
+        @return_fault
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
@@ -347,9 +362,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     unescape(first).encode('utf-8'))
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)
-                    if isinstance(branch, Fault):
-                        return branch
-                    elif branch is None:
+                    if branch is None:
                         break
                     return branch
                 # Is it a product control directory?
@@ -357,7 +370,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     requester, first, second)
                 if product is not None:
                     return product
-            return faults.PathTranslationError(path)
+            raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
 
 
