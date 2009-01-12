@@ -104,7 +104,8 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm, SimpleVocabulary, getVocabularyRegistry)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -181,7 +182,6 @@ from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 
-from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
@@ -2144,7 +2144,7 @@ class PersonVouchersView(LaunchpadFormView):
         self.form_fields = []
         # Make the less expensive test for commercial projects first
         # to avoid the more costly fetching of unredeemed vouchers.
-        if (len(self.owned_commercial_projects) > 0 and
+        if (self.has_commercial_projects and
             len(self.unredeemed_vouchers) > 0):
             self.form_fields = (self.createProjectField() +
                                 self.createVoucherField())
@@ -2158,7 +2158,7 @@ class PersonVouchersView(LaunchpadFormView):
             Choice(__name__='project',
                    title=_('Select the project you wish to subscribe'),
                    description=_('Commercial projects you administer'),
-                   vocabulary='CommercialProjects',
+                   vocabulary="CommercialProjects",
                    required=True),
             render_context=self.render_context)
         return field
@@ -2191,13 +2191,19 @@ class PersonVouchersView(LaunchpadFormView):
         return unredeemed
 
     @cachedproperty
-    def owned_commercial_projects(self):
-        """Get the commercial projects owned by the user."""
-        commercial_projects = []
-        for project in self.context.getOwnedProjects():
-            if not project.qualifies_for_free_hosting:
-                commercial_projects.append(project)
-        return commercial_projects
+    def has_commercial_projects(self):
+        """Does the user manage one or more commercial project?
+
+        Users with launchpad.Commercial permission can manage vouchers for any
+        project so the property is True always.  Otherwise it is true if the
+        vocabulary is not empty.
+        """
+        if check_permission('launchpad.Commercial', self.context):
+            return True
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context,
+                                             "CommercialProjects")
+        return len(vocabulary) > 0
 
     @action(_("Cancel"), name="cancel",
             validator='validate_cancel')
@@ -2612,12 +2618,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return self.userIsActiveMember()
 
-    def obfuscatedEmail(self):
-        if self.context.preferredemail is not None:
-            return obfuscateEmail(self.context.preferredemail.email)
-        else:
-            return None
-
     @cachedproperty
     def email_address_visibility(self):
         """The EmailAddressVisibleState of this person or team.
@@ -2663,22 +2663,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             return 'This email address is not disclosed to others.'
         else:
             return None
-
-    def htmlEmail(self):
-        if self.context.preferredemail is not None:
-            return convertToHtmlCode(self.context.preferredemail.email)
-        else:
-            return None
-
-    def htmlJabberIDs(self):
-        """Return the person's Jabber IDs somewhat obfuscated.
-
-        The IDs are encoded using HTML hexadecimal entities to hinder
-        email harvesting. (Jabber IDs are sometime valid email accounts,
-        gmail for example.)
-        """
-        return [convertToHtmlCode(jabber.jabberid)
-                for jabber in self.context.jabberids]
 
     def showSSHKeys(self):
         """Return a data structure used for display of raw SSH keys"""
@@ -3501,16 +3485,6 @@ class PersonEditView(BasePersonEditView):
     def cancel_url(self):
         """The URL that the 'Cancel' link should return to."""
         return canonical_url(self.context)
-
-    def htmlJabberIDs(self):
-        """Return the person's Jabber IDs somewhat obfuscated.
-
-        The IDs are encoded using HTML hexadecimal entities to hinder
-        email harvesting. (Jabber IDs are sometime valid email accounts,
-        gmail for example.)
-        """
-        return [convertToHtmlCode(jabber.jabberid)
-                for jabber in self.context.jabberids]
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""

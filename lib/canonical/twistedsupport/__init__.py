@@ -7,7 +7,7 @@ __all__ = [
     'defer_to_thread',
     'extract_result',
     'gatherResults',
-    'suppress_stderr'
+    'suppress_stderr',
     ]
 
 
