@@ -29,6 +29,11 @@ class BranchRewriter:
         self.logger = logger
         self.client = BranchFileSystemClient(proxy, ANONYMOUS, 1.0)
 
+    def _codebrowse_url(self, path):
+        return urlutils.join(
+            config.codehosting.internal_codebrowse_root,
+            path)
+
     def rewriteLine(self, resource_location):
         """Rewrite 'resource_location' to a more concrete location.
 
@@ -63,9 +68,10 @@ class BranchRewriter:
         try:
             transport_type, info, trailing = extract_result(deferred)
         except xmlrpclib.Fault, f:
-            if faults.check_fault(f, faults.PathTranslationError,
-                                  faults.PermissionDenied):
+            if faults.check_fault(f, faults.PathTranslationError):
                 return "NULL"
+            elif faults.check_fault(f, faults.PermissionDenied):
+                return self._codebrowse_url(resource_location)
             else:
                 raise
         if transport_type == BRANCH_TRANSPORT:
@@ -76,9 +82,7 @@ class BranchRewriter:
                 if trailingSlash:
                     r += '/'
             else:
-                r = urlutils.join(
-                    config.codehosting.internal_codebrowse_root,
-                    resource_location)
+                r = self._codebrowse_url(resource_location)
             self.logger.info(
                 "%r -> %r (%fs)", resource_location, r, time.time() - T)
             return r

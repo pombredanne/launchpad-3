@@ -50,6 +50,20 @@ class TestBranchRewriter(TestCase):
             'http://localhost:8080/%s/changes' % branch.unique_name,
             output)
 
+    def test_translateLine_private(self):
+        # All requests for /$branch_name/... for private branches are
+        # redirected to codebrowse.
+        rewriter = self.makeRewriter()
+        branch = self.factory.makeBranch(private=True)
+        output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
+        self.assertEqual(
+            'http://localhost:8080/%s/changes' % branch.unique_name,
+            output)
+        output = rewriter.rewriteLine("/%s/.bzr" % branch.unique_name)
+        self.assertEqual(
+            'http://localhost:8080/%s/.bzr' % branch.unique_name,
+            output)
+
     def test_translateLine_not_found(self):
         # If the branch behind a request is not foudn, rewriteLine returns
         # "NULL", the way of saying "I don't know how to rewrite this" to
