@@ -143,7 +143,8 @@ class PackageCloner:
         # Finally set the publishing status for the packages obsoleted in the
         # target archive accordingly (i.e make them superseded).
         store.execute("""
-            UPDATE securesourcepackagepublishinghistory secsrc SET
+            UPDATE securesourcepackagepublishinghistory secsrc
+            SET
                 status = %s,
                 datesuperseded = %s,
                 supersededby = mcd.s_sourcepackagerelease
@@ -154,6 +155,7 @@ class PackageCloner:
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
+        # This is diagnostic output and will be removed in the final branch.
         rset = store.execute("""
             SELECT sourcepackagename, s_version, t_version
             FROM tmp_merge_copy_data
@@ -174,7 +176,6 @@ class PackageCloner:
         """)
         print('all packages:\n%s' % '\n'.join(str(r) for r in rset))
         self._cleanup()
-
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.
