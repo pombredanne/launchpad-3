@@ -413,7 +413,10 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
-        text = 'Link to branch'
+        if self.context.branch_links.count() > 0:
+            text = 'Link to another branch'
+        else:
+            text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
 class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):

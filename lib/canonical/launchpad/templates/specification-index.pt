@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
@@ -27,17 +27,18 @@
          title="Informational blueprint, no implementation necessary"
          tal:condition="context/informational" />
   </div>
+
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="informational message">
+    notice goes here
+  </p>
+
   <h1><tal:block content="context/title"/>
     <a tal:define="link context_menu/edit"
                  tal:condition="link/enabled"
                  tal:attributes="href link/url"
     ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
   </h1>
-
-  <p tal:repeat="notice view/notices" tal:content="notice"
-     class="informational message">
-    notice goes here
-  </p>
 
   <p tal:condition="context/superseded_by" class="warning message">
     This blueprint has been superseded. See the newer blueprint
@@ -46,13 +47,14 @@
     title</a></b>" for updated plans.
   </p>
 
-
+<div id="maincontentsub">
+<div id="nonportlets">
     <table class="summary" style="float: right; margin-left: 1em;">
       <tbody>
         <tr>
           <th>Priority:</th>
           <td><tal:block content="context/priority/title"/>
-            <a tal:define="link context_menu/people"
+            <a tal:define="link context_menu/priority"
                  tal:condition="link/enabled"
                  tal:attributes="href link/url"
             ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
@@ -210,6 +212,26 @@
          tal:condition="context/whiteboard"
     >Whiteboard text goes here.</div>
 
+      <tal:branches condition="view/branch_links">
+
+        <h2>Related branches</h2>
+
+        <tal:branch repeat="branchlink view/branch_links">
+        <dt>
+          <tal:branchlink
+              replace="structure branchlink/branch/fmt:link"/>
+          <a tal:condition="branchlink/required:launchpad.AnyPerson"
+             tal:attributes="href branchlink/fmt:url"
+             ><img src="/@@/edit" title="Change this branch link" /></a>
+        </dt>
+        </tal:branch>
+      </tal:branches>
+      <div tal:define="link context_menu/linkbranch"
+           tal:condition="link/enabled"
+           tal:content="structure link/render"
+           style="padding-top:0.5em;" />
+
+
   <tal:deptree condition="view/has_dep_tree">
 
       <h2>Dependency tree</h2>
@@ -233,13 +255,13 @@
           </a>
         </li>
       </ul>
-  <div id="portlets">
-    <div tal:replace="structure context/@@+portlet-lifecycle" />
-    <div tal:replace="structure context/@@+portlet-subscribers" />
-    <div tal:replace="structure context/@@+portlet-bugs" />
-    <div tal:replace="structure context/@@+portlet-branches" />
-  </div>
-
+      </div>
+</div>
+</div>
+      <div id="portlets">
+        <div tal:replace="structure context/@@+portlet-lifecycle" />
+        <div tal:replace="structure context/@@+portlet-subscribers" />
+        <div tal:replace="structure context/@@+portlet-bugs" />
       </div>
     </div>
   </body>
