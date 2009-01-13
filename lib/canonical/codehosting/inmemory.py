@@ -99,6 +99,14 @@ class ObjectSet:
         return self._find(name=name)
 
 
+class FakeSourcePackage:
+    """Fake ISourcePackage."""
+
+    def __init__(self, sourcepackagename, distroseries):
+        self.sourcepackagename = sourcepackagename
+        self.distroseries = distroseries
+
+
 class FakeBranch(FakeDatabaseObject):
     """Fake branch object."""
 
@@ -271,6 +279,13 @@ class FakeObjectFactory(ObjectFactory):
         self._branch_set._add(branch)
         return branch
 
+    def makeAnyBranch(self, **kwargs):
+        return self.makeBranch(**kwargs)
+
+    def makePersonalBranch(self, **kwargs):
+        owner = self.makePerson()
+        return self.makeBranch(owner=owner, product=None)
+
     def makeDistribution(self):
         distro = FakeDistribution(self.getUniqueString())
         self._distribution_set._add(distro)
@@ -287,6 +302,13 @@ class FakeObjectFactory(ObjectFactory):
         sourcepackagename = FakeSourcePackageName(self.getUniqueString())
         self._sourcepackagename_set._add(sourcepackagename)
         return sourcepackagename
+
+    def makeSourcePackage(self, distroseries=None, sourcepackagename=None):
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        return FakeSourcePackage(sourcepackagename, distroseries)
 
     def makeTeam(self, owner):
         team = FakeTeam(name=self.getUniqueString(), members=[owner])
