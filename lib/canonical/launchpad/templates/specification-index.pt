@@ -35,7 +35,7 @@
   </p>
 
 <div id="maincontentsub">
-<div id="nonportlets">
+  <div id="nonportlets">
     <table class="summary" style="float: right; margin-left: 1em;">
       <tbody>
         <tr>
@@ -73,9 +73,10 @@
             ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
-        <tr tal:condition="context/goal">
+        <tr>
           <th>Series goal:</th>
           <td>
+            <tal:block condition="context/goal">
             <a
               tal:condition="context/goal/required:launchpad.Driver"
               tal:attributes="href string:${context/fmt:url}/+decide"
@@ -92,6 +93,26 @@
             <a  tal:condition="context/distroseries"
                 tal:attributes="href context/distroseries/fmt:url"
                 tal:content="context/distroseries/name">hoary</a>
+            </tal:block>
+            <tal:none condition="not: context/goal">None</tal:none>
+            <a tal:define="link context_menu/proposegoal"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
+          </td>
+        </tr>
+        <tr>
+          <th>Milestone target:</th>
+          <td>
+          <a tal:attributes="href context/milestone/fmt:url"
+             tal:condition="context/milestone">
+            <img alt="milestone icon" src="/@@/milestone" />
+            <span tal:replace="context/milestone/name">1.0</span></a>
+            <tal:none condition="not: context/milestone">None</tal:none>
+            <a tal:define="link context_menu/milestone"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url"
+            ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
         <tr>
@@ -160,12 +181,6 @@
         >Set the URL for this specification</a>
       </li>
     </ul>
-    <tal:has_milestone condition="context/milestone">
-      Milestone target:
-      <img alt="" src="/@@/milestone" />
-      <a tal:attributes="href context/milestone/fmt:url">
-        <span tal:replace="context/milestone/name">1.0</span>.</a>
-    </tal:has_milestone>
 
   <tal:mentors define="mentoring_offers context/mentoring_offers"
                condition="mentoring_offers">
@@ -259,11 +274,11 @@
         </li>
       </ul>
       </div>
+  </div>
 </div>
-</div>
-      <div id="portlets">
-        <div tal:replace="structure context/@@+portlet-subscribers" />
-      </div>
+  <div id="portlets">
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+  </div>
     </div>
   </body>
 </html>

@@ -319,6 +319,7 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Request feedback'
         return Link('+requestfeedback', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def proposegoal(self):
         text = 'Propose as goal'
         if self.context.goal is not None:
