@@ -53,7 +53,6 @@ from canonical.launchpad import _
 
 from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.specification import (
     INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
