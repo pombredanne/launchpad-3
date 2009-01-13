@@ -10,6 +10,18 @@
   i18n:domain="launchpad"
   >
 <body>
+    <tal:devmode condition="devmode">
+      <metal:block fill-slot="head_epilogue">
+        <tal:archive_js define="lp_js string:${icingroot}/build">
+          <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js">
+          </script>
+          <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/update_archive_build_statuses.js">
+          </script>
+        </tal:archive_js>
+      </metal:block>
+    </tal:devmode>
 
     <div metal:fill-slot="main"
          tal:define="archive_active view/is_active;

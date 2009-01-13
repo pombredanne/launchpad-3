@@ -1936,12 +1936,15 @@ def send_direct_contact_email(
     body += u'\n'.join(additions)
     encoded_body = body.encode(charset)
     # Craft and send one message per recipient.
+    mailwrapper = MailWrapper(width=72)
     message = None
     for recipient_email, recipient in recipients_set.getRecipientPersons():
         recipient_name = str(encode(recipient.displayname))
         reason, rational_header = recipients_set.getReason(recipient_email)
         reason = str(encode(reason))
-        message = MIMEText(encoded_body % reason, _charset=charset)
+        formatted_body = mailwrapper.format(
+            encoded_body % reason, force_wrap=True)
+        message = MIMEText(formatted_body, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
         message['To'] = formataddr((recipient_name, recipient_email))
         message['Subject'] = subject_header

@@ -22,6 +22,8 @@ from canonical.launchpad.components.externalbugtracker import (
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
+from canonical.launchpad.components.externalbugtracker.bugzilla import (
+    BugzillaLPPlugin)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
@@ -41,6 +43,9 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
+
+
+SYNCABLE_GNOME_PRODUCTS = []
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -153,9 +158,15 @@ class BugWatchUpdater(object):
 
     ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
-    def __init__(self, txn, log=default_log):
+    def __init__(self, txn, log=default_log, syncable_gnome_products=None):
         self.txn = txn
         self.log = log
+
+        # Override SYNCABLE_GNOME_PRODUCTS if necessary.
+        if syncable_gnome_products is not None:
+            self._syncable_gnome_products = syncable_gnome_products
+        else:
+            self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
@@ -261,9 +272,43 @@ class BugWatchUpdater(object):
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
         return bug_watches_by_remote_bug
 
-    def _getExternalBugTracker(self, bug_tracker):
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        return externalbugtracker.get_external_bugtracker(bug_tracker)
+        remotesystem = externalbugtracker.get_external_bugtracker(
+            bug_tracker)
+        remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
+
+        # We special-case the Gnome Bugzilla.
+        gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+        if (bug_tracker == gnome_bugzilla and
+            isinstance(remotesystem_to_use, BugzillaLPPlugin)):
+
+            lp_plugin_watches = []
+            normal_watches = []
+
+            bug_ids = [bug_watch.remotebug for bug_watch in bug_watches]
+            remote_products = remotesystem_to_use.getProductsForRemoteBugs(
+                bug_ids)
+
+            # For bug watches on remote bugs that are against products
+            # in the _syncable_gnome_products list - i.e. ones with which
+            # we want to sync comments - we return a BugzillaLPPlugin
+            # instance. Otherwise we return a normal Bugzilla instance.
+            for bug_watch in bug_watches:
+                if (remote_products[bug_watch.remotebug] in
+                    self._syncable_gnome_products):
+                    lp_plugin_watches.append(bug_watch)
+                else:
+                    normal_watches.append(bug_watch)
+
+            trackers_and_watches = [
+                (remotesystem_to_use, lp_plugin_watches),
+                (remotesystem, normal_watches),
+                ]
+        else:
+            trackers_and_watches = [(remotesystem_to_use, bug_watches)]
+
+        return trackers_and_watches
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
@@ -278,29 +323,31 @@ class BugWatchUpdater(object):
         bug_watches_to_update = (
             bug_tracker.getBugWatchesNeedingUpdate(23))
 
-        try:
-            remotesystem = self._getExternalBugTracker(bug_tracker)
-        except externalbugtracker.UnknownBugTrackerTypeError, error:
-            # We update all the bug watches to reflect the fact that
-            # this error occurred. We also update their last checked
-            # date to ensure that they don't get checked for another
-            # 24 hours (see above).
-            error_type = (
-                get_bugwatcherrortype_for_error(error))
-            for bug_watch in bug_watches_to_update:
-                bug_watch.last_error_type = error_type
-                bug_watch.lastchecked = UTC_NOW
+        if bug_watches_to_update.count() > 0:
+            try:
+                trackers_and_watches = self._getExternalBugTrackersAndWatches(
+                    bug_tracker, bug_watches_to_update)
+            except externalbugtracker.UnknownBugTrackerTypeError, error:
+                # We update all the bug watches to reflect the fact that
+                # this error occurred. We also update their last checked
+                # date to ensure that they don't get checked for another
+                # 24 hours (see above).
+                error_type = (
+                    get_bugwatcherrortype_for_error(error))
+                for bug_watch in bug_watches_to_update:
+                    bug_watch.last_error_type = error_type
+                    bug_watch.lastchecked = UTC_NOW
 
-            message = (
-                "ExternalBugtracker for BugTrackerType '%s' is not known." % (
-                    error.bugtrackertypename))
-            self.warning(message)
-        else:
-            if bug_watches_to_update.count() > 0:
-                self.updateBugWatches(remotesystem, bug_watches_to_update)
+                message = (
+                    "ExternalBugtracker for BugTrackerType '%s' is not "
+                    "known." % (error.bugtrackertypename))
+                self.warning(message)
             else:
-                self.log.debug(
-                    "No watches to update on %s" % bug_tracker.baseurl)
+                for remotesystem, bug_watch_batch in trackers_and_watches:
+                    self.updateBugWatches(remotesystem, bug_watch_batch)
+        else:
+            self.log.debug(
+                "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
         """Convert a remote bug status to a Launchpad status and return it.
@@ -402,7 +449,6 @@ class BugWatchUpdater(object):
     #     This method is 186 lines long. It needs to be shorter.
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
-        remotesystem = remotesystem.getExternalBugTrackerToUse()
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_url = remotesystem.baseurl
