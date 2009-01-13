@@ -62,7 +62,8 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         # Registering a branch merge proposal creates a karma event for the
         # registrant.
         source_branch = self.factory.makeProductBranch()
-        target_branch = self.factory.makeBranch(product=source_branch.product)
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product)
         registrant = self.factory.makePerson()
         # We need to clear the karma event list before we add the landing
         # target as there would be other karma events for the branch

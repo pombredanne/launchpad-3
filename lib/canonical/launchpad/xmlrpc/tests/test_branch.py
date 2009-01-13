@@ -41,7 +41,8 @@ class TestExpandURL(TestCaseWithFactory):
         trunk_series = removeSecurityProxy(self.product).development_focus
         # BranchType is only signficiant insofar as it is not a REMOTE branch.
         trunk_series.user_branch = (
-            self.factory.makeBranch(BranchType.HOSTED, product=self.product))
+            self.factory.makeProductBranch(
+                branch_type=BranchType.HOSTED, product=self.product))
 
     def makePrivateBranch(self, **kwargs):
         """Create an arbitrary private branch using `makeBranch`."""
@@ -90,8 +91,8 @@ class TestExpandURL(TestCaseWithFactory):
         trunk = self.product.development_focus.user_branch
         self.assertResolves(self.product.name, trunk.unique_name)
         trunk_series = removeSecurityProxy(self.product).development_focus
-        trunk_series.user_branch = self.factory.makeBranch(
-            BranchType.HOSTED, product=self.product)
+        trunk_series.user_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.HOSTED, product=self.product)
         self.assertResolves(
             self.product.name, trunk_series.user_branch.unique_name)
 
@@ -133,7 +134,7 @@ class TestExpandURL(TestCaseWithFactory):
         # series 'series' on 'product'.
         series = self.factory.makeSeries(
             product=self.product,
-            user_branch=self.factory.makeBranch(product=self.product))
+            user_branch=self.factory.makeProductBranch(product=self.product))
         self.assertResolves(
             '%s/%s' % (self.product.name, series.name),
             series.user_branch.unique_name)

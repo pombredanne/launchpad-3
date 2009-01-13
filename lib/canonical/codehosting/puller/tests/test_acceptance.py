@@ -279,7 +279,7 @@ class TestBranchPuller(PullerBranchTestCase):
         """
         # Make the branch.
         product = self.factory.makeProduct()
-        default_branch = self.factory.makeBranch(
+        default_branch = self.factory.makeProductBranch(
             product=product, private=private, name='trunk',
             branch_type=branch_type)
         # Make it the default stacked-on branch.
@@ -311,7 +311,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # Pulling a mirrored branch stacks that branch on the default stacked
         # branch of the product if such a thing exists.
         default_branch = self._makeDefaultStackedOnBranch()
-        db_branch = self.factory.makeBranch(
+        db_branch = self.factory.makeProductBranch(
             BranchType.MIRRORED, product=default_branch.product)
         tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
@@ -330,7 +330,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # version of the branch in the hosted area.
         default_branch = self._makeDefaultStackedOnBranch(
             branch_type=BranchType.MIRRORED)
-        db_branch = self.factory.makeBranch(
+        db_branch = self.factory.makeProductBranch(
             BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
@@ -353,7 +353,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # again so that assertMirrored can work.  The test is still valid
         # though, as the paths are as they should be when the puller is run.
         default_branch = self._makeDefaultStackedOnBranch()
-        db_branch = self.factory.makeBranch(
+        db_branch = self.factory.makeProductBranch(
             BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
@@ -378,7 +378,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # If the default stacked-on branch is private then mirrored branches
         # aren't stacked when they are mirrored.
         default_branch = self._makeDefaultStackedOnBranch(private=True)
-        db_branch = self.factory.makeBranch(
+        db_branch = self.factory.makeProductBranch(
             BranchType.MIRRORED, product=default_branch.product)
 
         tree = self.setUpMirroredBranch(db_branch, format='1.6')

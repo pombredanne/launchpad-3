@@ -260,7 +260,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def _createMergeProposal(self, needs_review):
         # Create and return a merge proposal.
         source_branch = self.factory.makeProductBranch()
-        target_branch = self.factory.makeBranch(
+        target_branch = self.factory.makeProductBranch(
             product=source_branch.product)
         login_person(target_branch.owner)
         return source_branch.addLandingTarget(
@@ -306,7 +306,7 @@ class TestBranchMergeProposalCanReview(TestCase):
 
         factory = LaunchpadObjectFactory()
         self.source_branch = factory.makeProductBranch()
-        self.target_branch = factory.makeBranch(
+        self.target_branch = factory.makeProductBranch(
             product=self.source_branch.product)
         registrant = factory.makePerson()
         self.proposal = self.source_branch.addLandingTarget(
@@ -525,7 +525,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
     def test_notifyOnCreate(self):
         """Ensure that a notification is emitted on creation"""
         source_branch = self.factory.makeProductBranch()
-        target_branch = self.factory.makeBranch(product=source_branch.product)
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product)
         registrant = self.factory.makePerson()
         result, event = self.assertNotifies(
             NewBranchMergeProposalEvent,
@@ -686,14 +687,14 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             product = self.factory.makeProduct(name=product_name)
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeProductBranch(
             product=product, owner=owner, registrant=registrant,
             name=branch_name)
         if registrant is None:
             registrant = owner
         bmp = branch.addLandingTarget(
             registrant=registrant,
-            target_branch=self.factory.makeBranch(product=product))
+            target_branch=self.factory.makeProductBranch(product=product))
         if needs_review:
             bmp.requestReview()
         return bmp

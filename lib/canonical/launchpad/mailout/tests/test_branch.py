@@ -27,8 +27,8 @@ class TestRecipientReason(TestCaseWithFactory):
         if subscriber is None:
             subscriber = self.factory.makePerson()
         source_branch = self.factory.makeProductBranch(title='foo')
-        target_branch = self.factory.makeBranch(product=source_branch.product,
-            title='bar')
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product, title='bar')
         merge_proposal = source_branch.addLandingTarget(
             source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(

@@ -260,7 +260,7 @@ class GetPublicRevisionsTestCase(TestCaseWithFactory):
             # If the test defines a product, use that, otherwise
             # have the factory generate one.
             product = getattr(self, 'product', None)
-        return self.factory.makeBranch(product=product)
+        return self.factory.makeProductBranch(product=product)
 
     def _makeRevisionInBranch(self, product=None):
         # Make a revision, and associate it with a branch.  The branch is made

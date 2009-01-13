@@ -412,10 +412,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description,
             owner=owner)
 
-    def makeBranch(self, branch_type=None, container=None, owner=None,
+    def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, stacked_on=None, distroseries=None,
-                   sourcepackagename=None, **optional_branch_args):
+                   private=False, stacked_on=None, sourcepackage=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -427,34 +427,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('branch')
-        if IProduct.providedBy(container):
-            product = container
-            distroseries = None
+
+        if sourcepackage is None:
+            if product is _DEFAULT:
+                product = self.makeProduct()
             sourcepackagename = None
-        elif IPerson.providedBy(container):
-            owner = container
-            product = None
             distroseries = None
-            sourcepackagename = None
-        elif ISourcePackage.providedBy(container):
-            product = None
-            distroseries = container.distroseries
-            sourcepackagename = container.sourcepackagename
-        elif container is None:
-            if distroseries is None and sourcepackagename is None:
-                if product is _DEFAULT:
-                    product = self.makeProduct()
-            elif distroseries is not None and sourcepackagename is not None:
-                assert product is _DEFAULT, (
-                    "Passed source package AND product details")
-                product = None
-            else:
-                raise AssertionError(
-                    "Must pass both sourcepackagename and distroseries.")
         else:
-            raise ValueError(
-                "container must be one of IProduct, IPerson, ISourcePackage "
-                "or None, got: %r" % (container,))
+            assert product is _DEFAULT, (
+                "Passed source package AND product details")
+            product = None
+            sourcepackagename = sourcepackage.sourcepackagename
+            distroseries = sourcepackage.distroseries
 
         if registrant is None:
             registrant = owner
@@ -477,12 +461,15 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
-    def makePackageBranch(self, **kwargs):
+    def makePackageBranch(self, sourcepackage=None, **kwargs):
         """Make a package branch on an arbitrary package.
 
         See `makeBranch` for more information on arguments.
         """
-        return self.makeBranch(container=self.makeSourcePackage(), **kwargs)
+        if sourcepackage is None:
+            sourcepackage = self.makeSourcePackage()
+        return self.makeBranch(
+            sourcepackage=sourcepackage, product=None, **kwargs)
 
     def makePersonalBranch(self, owner=None, **kwargs):
         """Make a personal branch on an arbitrary person.
@@ -492,8 +479,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         return self.makeBranch(
-            owner=owner, product=None, distroseries=None,
-            sourcepackagename=None, **kwargs)
+            owner=owner, product=None, sourcepackage=None, **kwargs)
 
     def makeProductBranch(self, product=None, **kwargs):
         """Make a product branch on an arbitrary product.
@@ -502,9 +488,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if product is None:
             product = self.makeProduct()
-        return self.makeBranch(
-            product=product, distroseries=None, sourcepackagename=None,
-            **kwargs)
+        return self.makeBranch(product=product, sourcepackage=None, **kwargs)
 
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.

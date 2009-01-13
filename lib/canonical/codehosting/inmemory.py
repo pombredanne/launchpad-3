@@ -256,8 +256,7 @@ class FakeObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
-                   registrant=None, distroseries=None,
-                   sourcepackagename=None):
+                   registrant=None, sourcepackage=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -270,6 +269,12 @@ class FakeObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if registrant is None:
             registrant = self.makePerson()
+        if sourcepackage is None:
+            sourcepackagename = None
+            distroseries = None
+        else:
+            sourcepackagename = sourcepackage.sourcepackagename
+            distroseries = sourcepackage.distroseries
         IBranch['name'].validate(unicode(name))
         branch = FakeBranch(
             branch_type, name=name, owner=owner, url=url,
@@ -280,15 +285,18 @@ class FakeObjectFactory(ObjectFactory):
         return branch
 
     def makeAnyBranch(self, **kwargs):
-        return self.makeBranch(**kwargs)
+        return self.makeProductBranch(**kwargs)
 
-    def makePersonalBranch(self, **kwargs):
-        owner = self.makePerson()
-        return self.makeBranch(owner=owner, product=None)
+    def makePersonalBranch(self, owner=None, **kwargs):
+        if owner is None:
+            owner = self.makePerson()
+        return self.makeBranch(
+            owner=owner, product=None, sourcepackage=None, **kwargs)
 
-    def makeProductBranch(self, **kwargs):
-        product = self.makeProduct()
-        return self.makeBranch(product=product)
+    def makeProductBranch(self, product=None, **kwargs):
+        if product is None:
+            product = self.makeProduct()
+        return self.makeBranch(product=product, sourcepackage=None, **kwargs)
 
     def makeDistribution(self):
         distro = FakeDistribution(self.getUniqueString())
@@ -463,7 +471,7 @@ class FakeBranchFilesystem:
                 PERMISSION_DENIED_FAULT_CODE,
                 ('%s cannot create branches owned by %s'
                  % (registrant.displayname, owner.displayname)))
-        product = distroseries = sourcepackagename = None
+        product = sourcepackage = None
         if data['product'] == '+junk':
             if owner.isTeam():
                 return Fault(
@@ -496,6 +504,7 @@ class FakeBranchFilesystem:
                     NOT_FOUND_FAULT_CODE,
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
+            sourcepackage = FakeSourcePackage(sourcepackagename, distroseries)
         else:
             return Fault(
                 PERMISSION_DENIED_FAULT_CODE,
@@ -503,9 +512,8 @@ class FakeBranchFilesystem:
         try:
             return self._factory.makeBranch(
                 owner=owner, name=branch_name, product=product,
-                distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                registrant=registrant, branch_type=BranchType.HOSTED).id
+                sourcepackage=sourcepackage, registrant=registrant,
+                branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
             return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
 

@@ -438,7 +438,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # default_branch_unique_name).
         product = self.factory.makeProduct()
         default_branch = self.factory.enableDefaultStackingForProduct(product)
-        branch = self.factory.makeBranch(product=product)
+        branch = self.factory.makeProductBranch(product=product)
         info = self.storage._getBranchPullInfo(branch)
         self.assertEqual(
             (branch.id, branch.getPullURL(), branch.unique_name,
@@ -453,7 +453,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
         default_branch = self.factory.makeAnyBranch(private=True)
         product = removeSecurityProxy(default_branch).product
         product.development_focus.user_branch = default_branch
-        mirrored_branch = self.factory.makeBranch(
+        mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         info = self.storage._getBranchPullInfo(mirrored_branch)
         self.assertEqual(
@@ -622,21 +622,21 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # createBranch can take the path to a source package branch and create
         # it with all the right attributes.
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage()
         branch_name = self.factory.getUniqueString()
         unique_name = '/~%s/%s/%s/%s/%s' % (
             owner.name,
-            distroseries.distribution.name,
-            distroseries.name,
-            sourcepackagename.name,
+            sourcepackage.distroseries.distribution.name,
+            sourcepackage.distroseries.name,
+            sourcepackage.sourcepackagename.name,
             branch_name)
         branch_id = self.branchfs.createBranch(owner.id, escape(unique_name))
         login(ANONYMOUS)
         branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
-        self.assertEqual(distroseries, branch.distroseries)
-        self.assertEqual(sourcepackagename, branch.sourcepackagename)
+        self.assertEqual(sourcepackage.distroseries, branch.distroseries)
+        self.assertEqual(
+            sourcepackage.sourcepackagename, branch.sourcepackagename)
         self.assertEqual(branch_name, branch.name)
         self.assertEqual(owner, branch.registrant)
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
@@ -820,7 +820,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         :return: The new Product and the new Branch.
         """
         product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(product=product, private=private)
+        branch = self.factory.makeProductBranch(
+            product=product, private=private)
         self.factory.enableDefaultStackingForProduct(product, branch)
         self.assertEqual(product.default_stacked_on_branch, branch)
         return product, branch

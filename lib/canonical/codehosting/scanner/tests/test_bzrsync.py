@@ -1160,7 +1160,7 @@ class TestMergeDetection(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.product = self.factory.makeProduct()
-        self.db_branch = self.factory.makeBranch(product=self.product)
+        self.db_branch = self.factory.makeProductBranch(product=self.product)
         self.bzrsync = BzrSync(transaction, self.db_branch)
         # Monkey patch the _merge_handler of the sync object to be the test.
         self.bzrsync._merge_handler = self
@@ -1181,14 +1181,14 @@ class TestMergeDetection(TestCaseWithFactory):
     def test_branch_tip_in_ancestry(self):
         # If there is another branch with their tip revision id in the
         # ancestry passed in, the merge detection is emitted.
-        source = self.factory.makeBranch(product=self.product)
+        source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
         self.bzrsync.autoMergeBranches(['revid'])
         self.assertEqual([(source, self.db_branch)], self.merges)
 
     def test_branch_tip_in_ancestry_status_merged(self):
         # Branches that are already merged do emit events.
-        source = self.factory.makeBranch(
+        source = self.factory.makeProductBranch(
             product=self.product,
             lifecycle_status=BranchLifecycleStatus.MERGED)
         source.last_scanned_id = 'revid'
@@ -1199,7 +1199,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # Other branches for the product are checked, but if the tip revision
         # of the branch is not yet been set no merge event is emitted for that
         # branch.
-        source = self.factory.makeBranch(product=self.product)
+        source = self.factory.makeProductBranch(product=self.product)
         self.bzrsync.autoMergeBranches(['revid'])
         self.assertEqual([], self.merges)
 
@@ -1207,7 +1207,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # Other branches for the product are checked, but if the tip revision
         # of the branch is the NULL_REVISION no merge event is emitted for
         # that branch.
-        source = self.factory.makeBranch(product=self.product)
+        source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = NULL_REVISION
         self.bzrsync.autoMergeBranches(['revid'])
         self.assertEqual([], self.merges)
@@ -1215,7 +1215,7 @@ class TestMergeDetection(TestCaseWithFactory):
     def test_other_branch_same_tip_revision_not_emitted(self):
         # If two different branches have the same tip revision, then they are
         # conceptually the same branch, not one merged into the other.
-        source = self.factory.makeBranch(product=self.product)
+        source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
         self.db_branch.last_scanned_id = 'revid'
         self.bzrsync.autoMergeBranches(['revid'])
@@ -1279,8 +1279,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         # If the target branch is the development focus branch of the product,
         # then the source branch gets its lifecycle status set to merged.
         product = self.factory.makeProduct()
-        source = self.factory.makeBranch(product=product)
-        target = self.factory.makeBranch(product=product)
+        source = self.factory.makeProductBranch(product=product)
+        target = self.factory.makeProductBranch(product=product)
         product.development_focus.user_branch = target
         self.handler.mergeOfTwoBranches(source, target)
         self.assertEqual(
@@ -1290,8 +1290,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         # If the source branch is associated with a series, its lifecycle
         # status is not updated.
         product = self.factory.makeProduct()
-        source = self.factory.makeBranch(product=product)
-        target = self.factory.makeBranch(product=product)
+        source = self.factory.makeProductBranch(product=product)
+        target = self.factory.makeProductBranch(product=product)
         product.development_focus.user_branch = target
         series = product.newSeries(product.owner, 'new', '')
         series.user_branch = source

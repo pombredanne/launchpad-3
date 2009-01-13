@@ -549,8 +549,9 @@ class TestBranchDeletionConsequences(TestCase):
 
     def makeMergeProposals(self):
         """Produce a merge proposal for testing purposes."""
-        target_branch = self.factory.makeBranch(product=self.branch.product)
-        dependent_branch = self.factory.makeBranch(
+        target_branch = self.factory.makeProductBranch(
+            product=self.branch.product)
+        dependent_branch = self.factory.makeProductBranch(
             product=self.branch.product)
         # Remove the implicit subscriptions.
         target_branch.unsubscribe(target_branch.owner)
@@ -821,7 +822,7 @@ class StackedBranches(TestCaseWithFactory):
         # some_branch.getStackedBranches returns a collection of branches
         # stacked on some_branch.
         branch = self.factory.makeAnyBranch()
-        stacked_branch = self.factory.makeBranch(stacked_on=branch)
+        stacked_branch = self.factory.makeAnyBranch(stacked_on=branch)
         self.assertEqual(
             set([stacked_branch]), set(branch.getStackedBranches()))
 
@@ -1275,26 +1276,26 @@ class TestGetByUrl(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeBranch(self):
+    def makeProductBranch(self):
         """Create a branch with aa/b/c as its unique name."""
         # XXX: JonathanLange 2009-01-13 spec=package-branches: This test is
         # bad because it assumes that the interesting branches for testing are
         # product branches.
         owner = self.factory.makePerson(name='aa')
         product = self.factory.makeProduct('b')
-        return self.factory.makeBranch(
+        return self.factory.makeProductBranch(
             owner=owner, product=product, name='c')
 
     def test_getByUrl_with_http(self):
         """getByUrl recognizes LP branches for http URLs."""
-        branch = self.makeBranch()
+        branch = self.makeProductBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrl_with_ssh(self):
         """getByUrl recognizes LP branches for bzr+ssh URLs."""
-        branch = self.makeBranch()
+        branch = self.makeProductBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl(
             'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
@@ -1302,7 +1303,7 @@ class TestGetByUrl(TestCaseWithFactory):
 
     def test_getByUrl_with_sftp(self):
         """getByUrl recognizes LP branches for sftp URLs."""
-        branch = self.makeBranch()
+        branch = self.makeProductBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
@@ -1312,7 +1313,7 @@ class TestGetByUrl(TestCaseWithFactory):
 
         This is because Launchpad doesn't currently support ftp.
         """
-        branch = self.makeBranch()
+        branch = self.makeProductBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
@@ -1326,7 +1327,7 @@ class TestGetByUrl(TestCaseWithFactory):
         product = self.factory.makeProduct('b')
         branch2 = branch_set.getByUrl(url)
         self.assertIs(None, branch2)
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeProductBranch(
             owner=owner, product=product, name='c')
         branch2 = branch_set.getByUrl(url)
         self.assertEqual(branch, branch2)
@@ -1334,7 +1335,7 @@ class TestGetByUrl(TestCaseWithFactory):
     def test_getByURL_for_production(self):
         """test_getByURL works with production values."""
         branch_set = getUtility(IBranchSet)
-        branch = self.makeBranch()
+        branch = self.makeProductBranch()
         self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
         branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
         self.assertIs(None, branch2)
@@ -1369,7 +1370,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
         product = self.factory.makeProduct('bb')
         self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeProductBranch(
             owner=owner, product=product, name='c')
         self.assertEqual(
             (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
@@ -1379,7 +1380,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         owner = self.factory.makePerson(name='aa')
         branch_set = getUtility(IBranchSet)
         self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
-        branch = self.factory.makeBranch(owner=owner, product=None, name='c')
+        branch = self.factory.makePersonalBranch(owner=owner, name='c')
         self.assertEqual(
             (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
 
@@ -1420,11 +1421,12 @@ class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
         # Use an admin user to set branch privacy easily.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         self.product = self.factory.makeProduct()
-        self.public_branch = self.factory.makeBranch(product=self.product)
-        self.private_branch_1 = self.factory.makeBranch(
+        self.public_branch = self.factory.makeProductBranch(
+            product=self.product)
+        self.private_branch_1 = self.factory.makeProductBranch(
             product=self.product, private=True)
         # Need a second private branch by another owner.
-        self.private_branch_2 = self.factory.makeBranch(
+        self.private_branch_2 = self.factory.makeProductBranch(
             product=self.product, private=True)
         self.public_only = set([self.public_branch])
         self.all_branches = set(
