@@ -178,10 +178,11 @@ class ArchivePopulator(SoyuzScript):
             pkg_cloner.mergeCopy(the_origin, the_destination)
         else:
             pkg_cloner.clonePackages(the_origin, the_destination)
-            # Create builds for the cloned packages.
-            self._createMissingBuilds(
-                the_destination.distroseries, the_destination.archive,
-                proc_families)
+
+        # Create builds for the cloned packages.
+        self._createMissingBuilds(
+            the_destination.distroseries, the_destination.archive,
+            proc_families)
 
     def mainTask(self):
         """Main function entry point."""
