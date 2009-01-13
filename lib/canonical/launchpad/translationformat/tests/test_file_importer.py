@@ -276,8 +276,10 @@ class FileImporterTestCase(unittest.TestCase):
             self.failUnlessEqual(len(errors), 0,
                 "POFileImporter.importFile returned errors where there "
                 "should be none.")
-            message = po_importer.pofile.getCurrentTranslationMessage(
+            potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
                                                         unicode(TEST_MSGID))
+            message = potmsgset.getCurrentTranslationMessage(
+                po_importer.pofile.language, po_importer.pofile.variant)
             self.failUnless(message is not None,
                 "POFileImporter.importFile did not create an "
                 "ITranslationMessage object in the database.")
@@ -327,18 +329,22 @@ class FileImporterTestCase(unittest.TestCase):
             "POTFileImporter.importFile returned errors where there should "
             "be none.")
         errors = po_importer.importFile()
+        from canonical.database.sqlbase import flush_database_caches
+        flush_database_caches()
         self.failUnlessEqual(len(errors), 1,
             "No error detected when importing a pofile with mismatched "
             "format specifiers.")
-        self.failUnless( errors[0]['error-message'].find(
+        self.failUnless(errors[0]['error-message'].find(
                 u"format specifications in 'msgid' and 'msgstr' "
                 u"for argument 1 are not the same") != -1,
             "importFile() failed to detect mismatched format specifiers "
             "when importing a pofile.")
         # Although the message has an error, it should still be stored
-        # in the database!
-        message = po_importer.pofile.getCurrentTranslationMessage(
-                                                   unicode(TEST_MSGID_ERROR))
+        # in the database, though only as a suggestion.
+        potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
+            unicode(TEST_MSGID_ERROR))
+        message = potmsgset.getLocalTranslationMessages(
+            po_importer.pofile.language)[0]
         self.failUnless(message is not None,
             "POFileImporter.importFile did not create an "
             "ITranslationMessage object with format errors in the database.")
