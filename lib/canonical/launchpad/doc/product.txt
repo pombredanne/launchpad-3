@@ -634,7 +634,7 @@ If a product has a development focus branch, it must have a non-NULL
 last_mirrored time to be suitable for use as a default stacked-on
 branch.
 
-    >>> branch = factory.makeBranch(name='trunk')
+    >>> branch = factory.makeProductBranch(name='trunk')
     >>> print branch.last_mirrored
     None
     >>> product.development_focus.user_branch = branch
