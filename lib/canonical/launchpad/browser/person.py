@@ -4950,8 +4950,9 @@ class PersonActiveReviewsView(BranchMergeProposalListingView):
 class PersonRequestedReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for the person that are needing review."""
 
-    extra_columns = ['date_review_requested', 'vote_summary']
-    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+    extra_columns = ['date_review_requested', 'vote_summary', 'review']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
+                     BranchMergeProposalStatus.NEEDS_REVIEW]
 
     @property
     def heading(self):

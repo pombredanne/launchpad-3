@@ -593,15 +593,15 @@ class BranchMergeProposalGetter:
 
     @staticmethod
     def getProposalsForReviewer(context, status=None, visible_by_user=None):
+        """See `IBranchMergeProposalGetter`."""
         store = Store.of(context)
         result = store.find(
             BranchMergeProposal,
             And(
                 CodeReviewVoteReference.branch_merge_proposal == \
                     BranchMergeProposal.id,
-                CodeReviewVoteReference.comment == None,
                 BranchMergeProposal.queue_status in status,
-                CodeReviewVoteReference.reviewer == context)
+                CodeReviewVoteReference.reviewer == context),
             )
         return result
 
