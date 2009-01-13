@@ -6,3 +6,4 @@
 * pass private branch urls on to codebrowse
 * pass /static/, /+login/ urls on to codebrowse
 * add config value for location of cookie-signing secret
+* translatePath needs to handle usernames too
