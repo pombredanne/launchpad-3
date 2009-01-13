@@ -206,7 +206,7 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_hosted_branch(self):
         # Run the puller on a populated hosted branch pull queue.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         transaction.commit()
         self.pushBranch(db_branch)
         command, retcode, output, error = self.runPuller('upload')
@@ -216,7 +216,7 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_remirror_hosted_branch(self):
         # When the format of a branch changes, we completely remirror it.
         # First we push up and mirror the branch in one format.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         transaction.commit()
         pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
         self.pushBranch(db_branch, tree=pack_tree)
@@ -235,7 +235,7 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_hosted_loom_branch(self):
         # Run the puller over a branch with looms enabled.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         transaction.commit()
         loom_tree = self.makeLoomBranchAndTree('loom')
         self.pushBranch(db_branch, tree=loom_tree)
@@ -245,7 +245,8 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_private_branch(self):
         # Run the puller with a private branch in the queue.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED, private=True)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, private=True)
         accessing_user = self.factory.makePerson()
         self.factory.makeBranchSubscription(
             branch=db_branch, person=accessing_user)
@@ -257,7 +258,8 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_mirrored_branch(self):
         # Run the puller on a populated mirrored branch pull queue.
-        db_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
         tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
@@ -403,7 +405,8 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_mirror_imported_branch(self):
         # Run the puller on a populated imported branch pull queue.
         # Create the branch in the database.
-        db_branch = self.factory.makeBranch(BranchType.IMPORTED)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.IMPORTED)
         db_branch.requestMirror()
         transaction.commit()
 
