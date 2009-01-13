@@ -24,8 +24,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -487,10 +486,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.factory = frontend.getLaunchpadObjectFactory()
         self.branch_set = frontend.getBranchSet()
 
-    def assertFaultEqual(self, faultCode, faultString, fault):
-        """Assert that `fault` has the passed-in attributes."""
-        self.assertEqual(fault.faultCode, faultCode)
-        self.assertEqual(fault.faultString, faultString)
+    def assertFaultEqual(self, expected_fault, observed_fault):
+        """Assert that `expected_fault` equals `observed_fault`."""
+        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
+        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
+        self.assertEqual(
+            expected_fault.faultString, observed_fault.faultString)
 
     def test_createBranch(self):
         # createBranch creates a branch with the supplied details and the
@@ -513,10 +514,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'invalid')
         fault = self.branchfs.createBranch(requester.id, path)
         login(ANONYMOUS)
-        self.assertFaultEqual(
-            faults.InvalidPath.error_code,
-            "Could not translate '%s'. Can only translate absolute paths."
-            % path, fault)
+        self.assertFaultEqual(faults.InvalidPath(path), fault)
 
     def test_createBranch_junk(self):
         # createBranch can create +junk branches.
@@ -540,9 +538,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         fault = self.branchfs.createBranch(
             owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE,
-            BranchCreationNoTeamOwnedJunkBranches.error_message, fault)
+        expected_fault = faults.PermissionDenied(
+            BranchCreationNoTeamOwnedJunkBranches.error_message)
+        self.assertFaultEqual(expected_fault, fault)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -551,8 +549,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "Project 'no-such-product' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~%s/no-such-product/%s' % (owner.name, name)))
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_other_user(self):
         # Creating a branch under another user's directory fails.
@@ -565,8 +562,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             creator.id,
             escape('/~%s/%s/%s' % (other_person.name, product.name, name)))
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_bad_name(self):
         # Creating a branch with an invalid name fails.
@@ -578,8 +574,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_bad_user(self):
         # Creating a branch under a non-existent user fails.
@@ -589,8 +584,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/%s/%s' % (product.name, name)))
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_bad_user_bad_product(self):
         # If both the user and the product are not found, then the missing
@@ -601,8 +595,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/no-product/%s' % (name,)))
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_not_branch(self):
         # Trying to create a branch at a path that's not valid for branches
@@ -611,8 +604,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape('/~%s' % owner.name)
         fault = self.branchfs.createBranch(owner.id, path)
         message = "Cannot create branch at '%s'" % path
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_source_package(self):
         # createBranch can take the path to a source package branch and create
@@ -649,8 +641,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_invalid_distroseries(self):
         # If createBranch is called with the path to a non-existent
@@ -664,8 +655,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution series: 'ningnangnong'."
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_invalid_sourcepackagename(self):
         # If createBranch is called with the path to an invalid source
@@ -678,8 +668,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
@@ -860,7 +849,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = 'no-such-product'
         fault = self.branchfs.getDefaultStackedOnBranch(requester.id, product)
         self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, 'Project %r does not exist.' % (product,),
+            faults.NotFound('Project %r does not exist.' % (product,)),
             fault)
 
     def test_getDefaultStackedOnBranch(self):
@@ -900,18 +889,21 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""
         fault = self.branchfs.translatePath(requester.id, path)
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        self.assertFaultEqual(faults.PathTranslationError(path), fault)
 
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
         fault = self.branchfs.translatePath(requester, path)
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        self.assertFaultEqual(faults.PathTranslationError(path), fault)
+
+    def assertPermissionDenied(self, requester, path):
+        """Assert that looking at the given path gives permission denied."""
+        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+            requester = requester.id
+        fault = self.branchfs.translatePath(requester, path)
+        self.assertFaultEqual(faults.PermissionDenied(), fault)
 
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path. When
@@ -925,10 +917,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
         fault = self.branchfs.translatePath(requester.id, path)
-        self.assertFaultEqual(
-            faults.InvalidPath.error_code,
-            "Could not translate '%s'. Can only translate absolute paths."
-            % path, fault)
+        self.assertFaultEqual(faults.InvalidPath(path), fault)
 
     def test_translatePath_branch(self):
         requester = self.factory.makePerson()
@@ -1014,11 +1003,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
             translation)
 
-    def test_translatePath_invisible_branch(self):
+    def test_translatePath_cant_see_private_branch(self):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        self.assertNotFound(requester, path)
+        self.assertPermissionDenied(requester, path)
 
     def test_translatePath_remote_branch(self):
         requester = self.factory.makePerson()
@@ -1038,7 +1027,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_translatePath_anonymous_cant_see_private_branch(self):
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        self.assertNotFound(ANONYMOUS, path)
+        self.assertPermissionDenied(ANONYMOUS, path)
 
     def test_translatePath_anonymous_public_branch(self):
         branch = self.factory.makeBranch()

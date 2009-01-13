@@ -231,8 +231,9 @@ class BranchMailer(BaseMailer):
         :param branch: The branch that was modified.
         :param recipients: A dict of {Person: RecipientReason} for all people
             who should be notified.
-        :from_address: The email address this message should come from.
-        :delta: an IBranchDelta representing the modification.
+        :param from_address: The email address this message should come from.
+        :param delta: an IBranchDelta representing the modification.
+        :return: a BranchMailer.
         """
         branch_title = branch.title
         if branch_title is None:
