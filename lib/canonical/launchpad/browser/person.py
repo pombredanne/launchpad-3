@@ -284,7 +284,7 @@ class BranchTraversalMixin:
 
     @stepto('+branch')
     def redirect_branch(self):
-        """Redirect to canonical_url, which is ~user/product/name."""
+        """Redirect to canonical_url."""
         branch = getUtility(IBranchNamespaceSet).traverse(self._getSegments())
         if branch:
             return self.redirectSubTree(canonical_url(branch))
@@ -295,19 +295,13 @@ class BranchTraversalMixin:
             self._getSegments(product_name))
         if branch is None:
             return super(BranchTraversalMixin, self).traverse(product_name)
+        # Normally, populating the launch bag is done by the traversal
+        # mechanism. However, here we short-circuit that mechanism by
+        # processing multiple segments at once. Thus, we populate the launch
+        # bag with information about the containers of a branch.
+        branch.addToLaunchBag(getUtility(IOpenLaunchBag))
+
         if branch.product is not None:
-            # The launch bag contains "stuff of interest" related to where
-            # the user is traversing to.  When a user traverses over a
-            # product, the product gets added to the launch bag by the
-            # traversal machinery, however when traversing to a branch, we
-            # short circuit it somewhat by looking for a two part key (in
-            # addition to the user) to identify the branch, and as such
-            # the product isnt't being added to the bag by the internals.
-
-            # XXX: JonathanLange 2008-12-10 spec=package-branches: The branch
-            # should know how to add its interesting bits to the launch bag.
-            getUtility(IOpenLaunchBag).add(branch.product)
-
             if branch.product.name != product_name:
                 # This branch was accessed through one of its product's
                 # aliases, so we must redirect to its canonical URL.
