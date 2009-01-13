@@ -231,6 +231,22 @@
            tal:content="structure link/render"
            style="padding-top:0.5em;" />
 
+      <tal:bugs condition="view/bug_links">
+        <h2>Related bugs</h2>
+        <div class="actions">
+          <tal:block repeat="link view/bug_links">
+            <tal:link replace="structure link/bug/fmt:link"/><br/>
+          </tal:block>
+        </div>
+      </tal:bugs>
+      <div class="actions">
+        <div tal:define="link context_menu/linkbug"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        >Link to a bug
+        </div>
+      </div>
+
 
   <tal:deptree condition="view/has_dep_tree">
 
@@ -261,7 +277,6 @@
       <div id="portlets">
         <div tal:replace="structure context/@@+portlet-lifecycle" />
         <div tal:replace="structure context/@@+portlet-subscribers" />
-        <div tal:replace="structure context/@@+portlet-bugs" />
       </div>
     </div>
   </body>

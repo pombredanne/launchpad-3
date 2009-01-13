@@ -459,6 +459,11 @@ class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
         return [branch_link for branch_link in self.context.branch_links
                 if check_permission('launchpad.View', branch_link.branch)]
 
+    @cachedproperty
+    def bug_links(self):
+        return [bug_link for bug_link in self.context.bug_links
+                if check_permission('launchpad.View', bug_link.bug)]
+
 
 class SpecificationView(SpecificationSimpleView):
     """Used to render the main view of a specification."""
