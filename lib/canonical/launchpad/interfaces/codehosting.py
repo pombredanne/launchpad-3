@@ -12,8 +12,6 @@ __all__ = [
     'IBranchFileSystem',
     'IBranchFileSystemApplication',
     'LAUNCHPAD_SERVICES',
-    'NOT_FOUND_FAULT_CODE',
-    'PERMISSION_DENIED_FAULT_CODE',
     'READ_ONLY',
     'WRITABLE',
     ]
@@ -131,18 +129,6 @@ class IBranchFileSystemApplication(ILaunchpadApplication):
     """Branch File System end point root."""
 
 
-# Values for the faultCode of Faults returned by methods of IBranchFileSystem.
-#
-# We borrow the numbers from HTTP for familiarity, there's nothing deep in it.
-#
-# Currently, Faults are only returned by createBranch().  If more methods get
-# converted to return Faults, they should use these values if appropriate or
-# define more codes here if not.
-
-PERMISSION_DENIED_FAULT_CODE = 403
-NOT_FOUND_FAULT_CODE = 404
-
-
 class IBranchFileSystem(Interface):
     """An interface for dealing with hosted branches in Launchpad.
 
@@ -163,10 +149,7 @@ class IBranchFileSystem(Interface):
         :param branch_path: the path of the branch to be created. This should
             be a URL-escaped string representing an absolute path.
         :returns: the ID for the new branch or a Fault if the branch cannot be
-            created. The faultCode will be PERMISSION_DENIED_FAULT_CODE or
-            NOT_FOUND_FAULT_CODE and the faultString will be a description
-            suitable to display to the user. The Fault InvalidPath is returned
-            if the caller tries to create a branch at a non-absolute path.
+            created.
         """
 
     def requestMirror(loginID, branchID):
@@ -186,6 +169,7 @@ class IBranchFileSystem(Interface):
 
         :raise `PathTranslationError`: if 'path' cannot be translated.
         :raise `InvalidPath`: if 'path' is known to be invalid.
+        :raise `PermissionDenied`: if the requester cannot see the branch.
 
         :returns: (transport_type, transport_parameters, path_in_transport)
             where 'transport_type' is one of BRANCH_TRANSPORT or
