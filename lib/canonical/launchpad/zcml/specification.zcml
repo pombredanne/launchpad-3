@@ -84,9 +84,6 @@
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />
     <browser:page
-      name="+portlet-lifecycle"
-      template="../templates/specification-portlet-lifecycle.pt" />
-    <browser:page
       name="+portlet-subscribers"
       template="../templates/specification-portlet-subscribers.pt" />
     <browser:page
