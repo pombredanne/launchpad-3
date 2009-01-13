@@ -483,7 +483,7 @@ class POTemplate(SQLBase, RosettaStats):
         clauses = self._getPOTMsgSetSelectionClauses()
         clauses.append(
             'POTMsgSet.msgid_plural IS NOT NULL')
-        return bool(POTMsgSet.selectOne(
+        return bool(POTMsgSet.select(
                 ' AND '.join(clauses),
                 clauseTables=['TranslationTemplateItem']))
 
