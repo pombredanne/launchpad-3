@@ -329,8 +329,6 @@ class FileImporterTestCase(unittest.TestCase):
             "POTFileImporter.importFile returned errors where there should "
             "be none.")
         errors = po_importer.importFile()
-        from canonical.database.sqlbase import flush_database_caches
-        flush_database_caches()
         self.failUnlessEqual(len(errors), 1,
             "No error detected when importing a pofile with mismatched "
             "format specifiers.")
