@@ -21,7 +21,6 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
-import transaction
 
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
@@ -30,15 +29,13 @@ from canonical.launchpad.interfaces import (
     IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchDiffJobSource,
-    IBranchSet, IRevisionMailJobSource)
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
+    IRevisionMailJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.mailout.branch import (
-    BranchMailer as MailoutMailer)
 from canonical.launchpad.webapp.uri import URI
 
 
