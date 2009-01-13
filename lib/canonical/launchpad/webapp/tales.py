@@ -910,48 +910,23 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
 
-    @property
-    def _team_is_hidden(self):
-        """True if the team should be hidden from the user."""
-        # The tests in this property are implemented individually so that it's
-        # easier to change or augment them.
-        team = self._context
-        assert team.is_team, 'Non-team'
-        user = getUtility(ILaunchBag).user
-        if team.visibility == PersonVisibility.PUBLIC:
-            # Public teams should never be hidden from anyone.
-            return False
-        elif user is None:
-            # Anonymous users may not see private membership teams.
-            return True
-        elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-            # Launchpad admins can see everything.
-            return False
-        elif user.inTeam(team):
-            # Members may see private membership teams.
-            return False
-        else:
-            # To be safe, anyone not explicitly named above may not see
-            # private membership teams.
-            return True
-
     def url(self, view_name=None):
         """See `ObjectFormatterAPI`."""
-        if self._team_is_hidden:
+        if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return None
         return super(TeamFormatterAPI, self).url(view_name)
 
     def api_url(self, context):
         """See `ObjectFormatterAPI`."""
-        if self._team_is_hidden:
+        if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
     def link(self, view_name):
         """See `ObjectFormatterAPI`."""
-        if self._team_is_hidden:
+        if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return '&lt;redacted&gt;'
         return super(TeamFormatterAPI, self).link(view_name)
