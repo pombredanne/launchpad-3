@@ -55,8 +55,8 @@
 
     <require
       permission="launchpad.Commercial"
-      interface="canonical.launchpad.interfaces.product.IProductViewRestricted"
-      set_schema="canonical.launchpad.interfaces.product.IProductViewRestricted"
+      interface="canonical.launchpad.interfaces.product.IProductCommercialRestricted"
+      set_schema="canonical.launchpad.interfaces.product.IProductCommercialRestricted"
       set_attributes="active"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
@@ -544,15 +544,25 @@
     />
 
   <!-- ProductSet-->
-  <class class="canonical.launchpad.database.ProductSet">
-    <allow interface="canonical.launchpad.interfaces.IProductSet" />
-  </class>
-
   <securedutility
     class="canonical.launchpad.database.ProductSet"
     provides="canonical.launchpad.interfaces.IProductSet">
     <allow interface="canonical.launchpad.interfaces.IProductSet" />
   </securedutility>
+
+  <class class="canonical.launchpad.database.ProductSet">
+    <allow
+      attributes="title people all_active get getByName getProductsWithBranches
+                  getProductsWithUserDevelopmentBranches createProduct search latest
+                  getTranslatables featuredTranslatables count_all count_translatables
+                  count_bounties count_buggy count_featureful count_reviewed count_answered
+                  count_codified"
+      />
+    <require
+      permission="launchpad.Admin"
+      attributes="forReview"
+      />
+  </class>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProductSet"

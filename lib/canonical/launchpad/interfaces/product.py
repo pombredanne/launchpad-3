@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductEditRestricted',
-    'IProductViewRestricted',
+    'IProductCommercialRestricted',
     'IProductPublic',
     'IProductReviewSearch',
     'IProductSet',
@@ -120,10 +120,20 @@ class License(DBEnumeratedType):
 class IProductEditRestricted(Interface):
     """`IProduct` properties which require launchpad.Edit permission."""
 
+    qualifies_for_free_hosting = exported(
+            Bool(
+                title=_("Qualifies for free hosting"),
+                readonly=True,
+                description=_(
+                    "Whether the project's licensing qualifies it for free "
+                    "use of launchpad.")))
+
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
-class IProductViewRestricted(Interface):
+
+
+class IProductCommercialRestricted(Interface):
     """`IProduct` properties which require launchpad.Commercial permission."""
 
     reviewer_whiteboard = exported(
@@ -134,21 +144,6 @@ class IProductViewRestricted(Interface):
                 "Notes on the project's license, editable only by reviewers "
                 "(Admins & Commercial Admins).")))
 
-    license_reviewed = exported(
-        Bool(
-            title=_('License reviewed'),
-            description=_("Whether or not this project's license has been"
-                          "reviewed. Editable only by reviewers (Admins & "
-                          "Commercial Admins).")))
-
-    qualifies_for_free_hosting = exported(
-            Bool(
-                title=_("Qualifies for free hosting"),
-                readonly=True,
-                description=_(
-                    "Whether the project's licensing qualifies it for free "
-                    "use of launchpad.")))
-
     is_permitted = exported(
             Bool(
                 title=_("Is Permitted"),
@@ -156,6 +151,13 @@ class IProductViewRestricted(Interface):
                 description=_(
                     "Whether the project's licensing qualifies for free "
                     "hosting or the project has an up-to-date subscription.")))
+
+    license_reviewed = exported(
+        Bool(
+            title=_('License reviewed'),
+            description=_("Whether or not this project's license has been"
+                          "reviewed. Editable only by reviewers (Admins & "
+                          "Commercial Admins).")))
 
     license_approved = exported(
             Bool(
@@ -520,7 +522,8 @@ class IProductPublic(
     def userCanEdit(user):
         """Can the user edit this product?"""
 
-class IProduct(IProductEditRestricted, IProductViewRestricted, IProductPublic):
+class IProduct(IProductEditRestricted, IProductCommercialRestricted,
+               IProductPublic):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -732,6 +735,7 @@ class IProductSet(Interface):
 
 emptiness_vocabulary = SimpleVocabulary.fromItems(
         [('Empty', True), ('Not Empty', False)])
+
 
 class IProductReviewSearch(Interface):
     """A search form for products being reviewed."""

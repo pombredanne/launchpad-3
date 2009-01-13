@@ -477,3 +477,30 @@ The license_info_is_empty parameter only accepts True, False, or None.
     Traceback (most recent call last):
     ...
     AssertionError...
+
+The use of 'forReview' is limited to users with launchpad.Commercial permission.
+
+Anonymous users cannot access 'forReview'.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.Commercial', product_set)
+    False
+    >>> gnome = product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized
+
+The no-priv user cannot access 'forReview'.
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    False
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized
+
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> from zope.component import getAdapter
+    >>> getAdapter(product_set, IAuthorization, 'launchpad.Commercial')

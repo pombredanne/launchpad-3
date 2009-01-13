@@ -167,9 +167,9 @@ several that are not available to non-privileged users marked as
     homepage_url: None
     icon_link: u'http://.../firefox/icon'
     is_permitted: ...redacted...
-    license_approved: ...redacted...
+    license_approved: False
     license_info: None
-    license_reviewed:...redacted...
+    license_reviewed: False
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
@@ -462,6 +462,19 @@ All of the projects of a given license can be found.
     >>> for project in entries:
     ...     print project['display_name']
     Mega Money Maker
+
+The use of "licensing_search" is restricted to commercial admins.
+Attempting to access it as a normal users results in an exception.
+
+    >>> proprietary = user_webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     licenses=["Other/Proprietary"]).jsonBody()
+    >>> entries = sorted(
+    ...    proprietary['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    Mega Money Maker
+
 
 The project collection has a method for creating a new project.
 
