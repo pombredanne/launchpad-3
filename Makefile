@@ -171,11 +171,20 @@ start-gdb: inplace stop support_files
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
+run_all: inplace stop
 	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
+
+run_codebrowse:
+	BZR_PLUGIN_PATH=bzrplugins PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+
+start_codebrowse:
+	BZR_PLUGIN_PATH=bzrplugins PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/start-loggerhead.py
+
+stop_codebrowse:
+	PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
 pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the
@@ -286,9 +295,6 @@ launchpad.pot:
 	$(PYTHON) sourcecode/zope/utilities/i18nextract.py \
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
-
-sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
-	ln -s ../../loggerhead sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 
 install: reload-apache
 
