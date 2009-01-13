@@ -109,12 +109,13 @@ class ProductReleaseFinder:
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
-            series = product.getSeries(series_name)
-            release = series.getRelease(release_name)
+            milestone = product.getMilestone(release_name)
+            if milestone is None:
+                series = product.getSeries(series_name)
+                milestone = series.newMilestone(release_name)
+            release = milestone.product_release
             if release is None:
-                release = series.addRelease(
-                    owner=product.owner,
-                    version=release_name)
+                release = milestone.createProductRelease(owner=product.owner)
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
 
