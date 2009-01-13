@@ -14,15 +14,15 @@ from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
-from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
-    datetime_from_tuple, LAUNCHPAD_SERVICES, iter_split)
+    datetime_from_tuple, iter_split)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -484,7 +484,7 @@ class FakeBranchFilesystem:
         # behaviour should generate explicit errors.)
         if person_id == LAUNCHPAD_SERVICES:
             return True
-        if person_id == ANONYMOUS:
+        if person_id == LAUNCHPAD_ANONYMOUS:
             return not branch.private
         if not branch.private:
             return True
@@ -493,7 +493,7 @@ class FakeBranchFilesystem:
 
     def _canWrite(self, person_id, branch):
         """Can the person 'person_id' write to 'branch'?"""
-        if person_id in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+        if person_id in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             return False
         if branch.branch_type != BranchType.HOSTED:
             return False

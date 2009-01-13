@@ -29,8 +29,8 @@ from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
-    BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, iter_split,
-    run_with_login)
+    BranchFileSystem, BranchPuller, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES,
+    iter_split, run_with_login)
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
@@ -893,14 +893,14 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
-        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+        if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
         fault = self.branchfs.translatePath(requester, path)
         self.assertFaultEqual(faults.PathTranslationError(path), fault)
 
     def assertPermissionDenied(self, requester, path):
         """Assert that looking at the given path gives permission denied."""
-        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+        if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
         fault = self.branchfs.translatePath(requester, path)
         self.assertFaultEqual(faults.PermissionDenied(), fault)
@@ -1027,12 +1027,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_translatePath_anonymous_cant_see_private_branch(self):
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        self.assertPermissionDenied(ANONYMOUS, path)
+        self.assertPermissionDenied(LAUNCHPAD_ANONYMOUS, path)
 
     def test_translatePath_anonymous_public_branch(self):
         branch = self.factory.makeBranch()
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(ANONYMOUS, path)
+        translation = self.branchfs.translatePath(LAUNCHPAD_ANONYMOUS, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)

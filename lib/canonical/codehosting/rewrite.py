@@ -9,8 +9,8 @@ from bzrlib import urlutils
 from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.codehosting.branchfsclient import BranchFileSystemClient
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS
-from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
+from canonical.launchpad.interfaces.codehosting import (
+    BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
 from canonical.launchpad.xmlrpc import faults
 from canonical.twistedsupport import extract_result
 
@@ -30,7 +30,7 @@ class BranchRewriter:
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
         self.logger = logger
-        self.client = BranchFileSystemClient(proxy, ANONYMOUS, 1.0)
+        self.client = BranchFileSystemClient(proxy, LAUNCHPAD_ANONYMOUS, 1.0)
 
     def _codebrowse_url(self, path):
         return urlutils.join(
