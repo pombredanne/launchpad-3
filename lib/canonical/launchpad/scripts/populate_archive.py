@@ -106,8 +106,9 @@ class ArchivePopulator(SoyuzScript):
         archive_set = getUtility(IArchiveSet)
         # Build the origin package location.
         the_origin = build_location(from_distribution, from_suite, component)
-        # Use an origin archive if specified and existent.
-        if from_archive is not None:
+
+        # Use a non-PPA(!) origin archive if specified and existent.
+        if from_archive is not None and from_user is None:
             origin_archive = archive_set.getByDistroAndName(
                 the_origin.distribution, from_archive)
             if origin_archive is not None:
@@ -191,46 +192,48 @@ class ArchivePopulator(SoyuzScript):
         def specified(option):
             return not (option is None or option == '')
 
-        options = self.options
+        opts = self.options
 
-        if not_specified(options.proc_families):
+        if not_specified(opts.proc_families):
             raise SoyuzScriptError(
                 "error: processor families not specified.")
 
-        if not_specified(options.from_distribution):
+        if not_specified(opts.from_distribution):
             raise SoyuzScriptError(
                 "error: origin distribution not specified.")
 
-        if not_specified(options.to_distribution):
+        if not_specified(opts.to_distribution):
             raise SoyuzScriptError(
                 "error: destination distribution not specified.")
 
-        if not_specified(options.to_user):
+        if not_specified(opts.to_user):
             raise SoyuzScriptError("error: copy archive owner not specified.")
-        if not_specified(options.to_archive):
+        if not_specified(opts.to_archive):
             raise SoyuzScriptError(
                 "error: destination copy archive not specified.")
-        if not valid_name(options.to_archive):
+        if not valid_name(opts.to_archive):
             raise SoyuzScriptError(
-                "Invalid archive name: '%s'" % options.to_archive)
-        if not_specified(options.reason):
+                "Invalid destination archive name: '%s'" % opts.to_archive)
+        if not_specified(opts.reason):
             raise SoyuzScriptError(
                 "error: reason for copy operation not specified.")
 
-        if options.include_binaries == True:
+        if opts.include_binaries == True:
             raise SoyuzScriptError(
                 "error: copying of binary packages is not supported yet.")
 
-        if specified(options.from_user) and specified(options.from_archive):
+        if (specified(opts.from_user) and not_specified(opts.from_archive)):
+            opts.from_archive = 'ppa'
+
+        if specified(opts.from_archive) and not valid_name(opts.from_archive):
             raise SoyuzScriptError(
-                "error: cannot specify both the origin PPA owner and name")
+                "Invalid origin archive name: '%s'" % opts.from_archive)
 
         self.populateArchive(
-            options.from_archive, options.from_distribution,
-            options.from_suite, options.from_user, options.component,
-            options.to_distribution, options.to_suite, options.to_archive,
-            options.to_user, options.reason, options.include_binaries,
-            options.proc_families)
+            opts.from_archive, opts.from_distribution, opts.from_suite,
+            opts.from_user, opts.component, opts.to_distribution,
+            opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
+            opts.include_binaries, opts.proc_families)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.

@@ -227,15 +227,15 @@ class TestPopulateArchiveScript(TestCase):
         """
         now = int(time.time())
         # The colons in the name make it invalid.
-        invalid_archive_name = "ra//%s" % now
+        invalid_name = "ra//%s" % now
 
         extra_args = ['-a', 'x86']
         self.runScript(
             extra_args=extra_args,
-            archive_name=invalid_archive_name,
+            archive_name=invalid_name,
             exception_type=SoyuzScriptError,
             exception_text=(
-                "Invalid archive name: '%s'" % invalid_archive_name))
+                "Invalid destination archive name: '%s'" % invalid_name))
 
     def testInvalidSuite(self):
         """Try copy archive creation/population with a non-existent suite.
@@ -418,21 +418,17 @@ class TestPopulateArchiveScript(TestCase):
             exception_type=SoyuzScriptError,
             exception_text="No PPA for user: 'king-kong'")
 
-    def testInvalidPPAOwnerNameCombination(self):
-        """Try copy archive population with both a PPA owner and name.
-
-        For the time being the user may not specify both the PPA owner and the
-        name on the command line.
+    def testInvalidOriginArchiveName(self):
+        """Try copy archive population with an invalid origin archive name.
 
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = [
-            '-a', 'hppa', '--from-user', 'king-kong', '--from-archive', 'xxx']
+            '-a', 'hppa', '--from-archive', '//']
         copy_archive = self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
-            exception_text=(
-                "error: cannot specify both the origin PPA owner and name"))
+            exception_text="Invalid origin archive name: '//'")
 
     def testInvalidProcessorFamilyName(self):
         """Try copy archive population with an invalid processor family name.
