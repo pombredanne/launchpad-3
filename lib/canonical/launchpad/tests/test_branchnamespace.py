@@ -527,6 +527,24 @@ class TestNamespaceSet(TestCaseWithFactory):
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
+    def test_traverse_package_branch_aliases(self):
+        # Distributions can have aliases. IBranchNamespaceSet.traverse will
+        # find a branch where its distro is given as an alias.
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        pillar_alias = self.factory.getUniqueString()
+        distro = branch.distroseries.distribution
+        removeSecurityProxy(distro).setAliases([pillar_alias])
+        segments = iter([
+            branch.owner.name, pillar_alias, branch.distroseries.name,
+            branch.sourcepackagename.name, branch.name,
+            ])
+        found_branch = self.namespace_set.traverse(segments)
+        self.assertEqual(branch, found_branch)
+
     def test_traverse_leaves_trailing_segments(self):
         # traverse doesn't consume all the elements of the iterable. It only
         # consumes those it needs to find a branch.

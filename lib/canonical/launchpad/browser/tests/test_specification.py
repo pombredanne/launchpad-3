@@ -1,11 +1,10 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 import unittest
 
 from zope.publisher.interfaces import NotFound
-from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.browser import specification
@@ -27,11 +26,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertEqual(url, redirection.target)
 
     def linkBranch(self, branch):
-        # XXX: JonathanLange 2008-12-19: Remove the security proxy since
-        # linkBranch sets date_last_modified on branch directly. Is this a bug
-        # in linkBranch?
-        self.specification.linkBranch(
-            removeSecurityProxy(branch), self.factory.makePerson())
+        self.specification.linkBranch(branch, self.factory.makePerson())
 
     def traverse(self, segments):
         stack = list(reversed(['+branch'] + segments))

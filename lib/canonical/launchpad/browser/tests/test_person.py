@@ -8,6 +8,7 @@ __metaclass__ = type
 from textwrap import dedent
 import unittest
 
+from zope.security.proxy import removeSecurityProxy
 from zope.publisher.interfaces import NotFound
 
 from canonical.config import config
@@ -90,8 +91,18 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertRaises(
             NotFound, self.traverse, ['+branch', 'no-product', 'no-branch'])
 
-    # XXX: JonathanLange 2008-12-19: Do we need to test traversed objects or
-    # consumed path elements?
+    def test_redirect_on_package_branch_aliases(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            owner=self.person, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        distro = removeSecurityProxy(branch.distroseries.distribution)
+        distro.setAliases(['foo'])
+        self.assertRedirects(
+            ['foo', branch.distroseries.name, branch.sourcepackagename.name,
+             branch.name],
+            canonical_url(branch))
 
     def test_junk_branch(self):
         branch = self.factory.makePersonalBranch(owner=self.person)
