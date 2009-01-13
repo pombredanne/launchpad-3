@@ -21,7 +21,6 @@ from time import strftime
 import tickcount
 import transaction
 
-from lazr.delegates import delegates
 from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError, IntegrityError
 from storm.zope.interfaces import IZStorm
@@ -34,7 +33,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
-from zope.publisher.interfaces import IPublishTraverse, NotFound, Retry
+from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
