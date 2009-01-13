@@ -27,18 +27,17 @@ __metaclass__ = type
 
 __all__ = [
     'component_dependencies',
+    'default_component_dependency_name',
+    'default_pocket_dependency',
     'get_components_for_building',
-    'get_default_pocket_and_component_dependency',
     'get_primary_current_component',
     'get_sources_list_for_building',
     'pocket_dependencies',
     ]
 
-from zope.component import getUtility
 
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, ALLOW_RELEASE_BUILDS)
-from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
@@ -78,6 +77,10 @@ pocket_dependencies = {
         PackagePublishingPocket.PROPOSED,
         ),
     }
+
+default_pocket_dependency = PackagePublishingPocket.UPDATES
+
+default_component_dependency_name = 'multiverse'
 
 
 def get_components_for_building(build):
@@ -212,35 +215,6 @@ def _get_sources_list_for_dependencies(dependencies, distroarchseries):
     return sources_list_lines
 
 
-def get_default_pocket_and_component_dependency(archive):
-    """Return a (pocket, component) tuple for given non-primary archive.
-
-    All public archives (PPAs, Partner and Copies), by default used the
-    primary archive as:
-
-      * UPDATES pocket dependencies and
-      * Multiverse component dependencies.
-
-    Private archives, on the other hand, use:
-
-      * SECURITY pocket dependencies and
-      * Exactly the same components used in the primary archives.
-
-    :param archive: target IArchive.
-
-    :return: a tuple containing a PackagePublishingPocket value as the first
-        element and an IComponent or None (for private archives).
-    """
-    assert archive.purpose in ALLOW_RELEASE_BUILDS, (
-        'Primary archives do not have default dependencies.')
-
-    if archive.private:
-        return (PackagePublishingPocket.SECURITY, None)
-
-    multiverse = getUtility(IComponentSet)['multiverse']
-    return (PackagePublishingPocket.UPDATES, multiverse)
-
-
 def _get_default_primary_dependencies(build):
     """Return the default primary dependencies for a given build.
 
@@ -250,14 +224,10 @@ def _get_default_primary_dependencies(build):
         archive.
     """
     if build.archive.purpose in ALLOW_RELEASE_BUILDS:
-        pocket, component = get_default_pocket_and_component_dependency(
-            build.archive)
-        primary_pockets = pocket_dependencies[pocket]
-        if component is None:
-            primary_components = component_dependencies[
-                get_primary_current_component(build)]
-        else:
-            primary_components = component_dependencies[component.name]
+        primary_pockets = pocket_dependencies[
+            default_pocket_dependency]
+        primary_components = component_dependencies[
+            default_component_dependency_name]
     else:
         primary_pockets = pocket_dependencies[build.pocket]
         primary_components = get_components_for_building(build)

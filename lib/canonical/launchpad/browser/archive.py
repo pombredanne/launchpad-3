@@ -38,7 +38,7 @@ from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.archivedependencies import (
-    get_default_pocket_and_component_dependency)
+    default_component_dependency_name, default_pocket_dependency)
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
@@ -1069,9 +1069,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
         if primary_dependency is None:
-            pocket, component = get_default_pocket_and_component_dependency(
-                self.context)
-            default_value = pocket
+            default_value = default_pocket_dependency
         else:
             default_value = primary_dependency.pocket
 
@@ -1121,9 +1119,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
         if primary_dependency is None:
-            pocket, component = get_default_pocket_and_component_dependency(
-                self.context)
-            default_value = component
+            default_value = getUtility(IComponentSet)[
+                default_component_dependency_name]
         else:
             default_value = primary_dependency.component
 
@@ -1193,12 +1190,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Check if the given values correspond to the default scenario
         # for the context archive.
-        (default_pocket,
-         default_component) = get_default_pocket_and_component_dependency(
-            self.context)
+        default_component_dependency = getUtility(IComponentSet)[
+            default_component_dependency_name]
         is_default_dependency = (
-            dependency_pocket == default_pocket and
-            dependency_component == default_component)
+            dependency_pocket == default_pocket_dependency and
+            dependency_component == default_component_dependency)
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)

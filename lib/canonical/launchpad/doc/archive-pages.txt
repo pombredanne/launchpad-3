@@ -606,57 +606,6 @@ to set PPA for Pirulito Team as dependency of his PPA.
     ...     print dependency.value.title
     Private PPA for Pirulito Team
 
-While in a private PPA dependencies form we can also check that the
-default primary archive dependency for private PPAs is SECURITY and
-it's configure to follow primary archive components.
-
-Let's remove all dependencies for Celso's PPA.
-
-    >>> login('foo.bar@canonical.com')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> for dependency in cprov.archive.dependencies:
-    ...     cprov.archive.removeArchiveDependency(dependency.dependency)
-    >>> login('celso.providelo@canonical.com')
-
-When accessed, the form display the correct default values for a
-Private PPA.
-
-    >>> view = create_initialized_view(
-    ...     cprov.archive, name="+edit-dependencies")
-
-    >>> view.widgets.get('primary_dependencies')._getCurrentValue()
-    <DBItem PackagePublishingPocket.SECURITY, (10) Security>
-
-    >>> print view.widgets.get(
-    ...     'primary_components')._getCurrentValue()
-    None
-
-Using the same form the private PPA dependencies can be modified in a
-way it will behave exaclty like a public one, using the UPDATES pocket
-and all available components.
-
-    >>> add_updates_form = {
-    ...     'field.selected_dependencies': [],
-    ...     'field.dependency_candidate': '',
-    ...     'field.primary_dependencies': 'UPDATES',
-    ...     'field.primary_components': 'ALL_COMPONENTS',
-    ...     'field.actions.save': 'Save',
-    ...     }
-
-    >>> view = create_initialized_view(
-    ...     cprov.archive, name="+edit-dependencies",
-    ...     form=add_updates_form)
-
-    >>> len(view.errors)
-    0
-
-    >>> view.widgets.get('primary_dependencies')._getCurrentValue()
-    <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
-
-    >>> print view.widgets.get(
-    ...     'primary_components')._getCurrentValue().name
-    multiverse
-
 Remove Celso's membership on the new team and made his PPA public
 again to not affect subsequent tests.
 
