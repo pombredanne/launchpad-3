@@ -25,6 +25,7 @@ from zope.exceptions.exceptionformatter import format_exception
 from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_statements, get_request_duration,
     soft_timeout_expired)
@@ -413,6 +414,14 @@ class ErrorReportingUtility:
                 #      undo. URL is just too HTTPRequest-specific.
                 if safe_hasattr(request, 'URL'):
                     url = request.URL
+
+                if WebServiceLayer.providedBy(request):
+                    webservice_error = getattr(
+                        info[0], '__lazr_webservice_error__', 500)
+                    if webservice_error / 100 != 5:
+                        request.oopsid = None
+                        # Return so the OOPS is not generated.
+                        return
 
                 missing = object()
                 principal = getattr(request, 'principal', missing)
