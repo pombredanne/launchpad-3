@@ -137,7 +137,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def makeDatabaseBranch(self, *args, **kwargs):
         """Make an arbitrary branch in the database."""
         LaunchpadZopelessLayer.txn.begin()
-        new_branch = self.factory.makeBranch(*args, **kwargs)
+        new_branch = self.factory.makeAnyBranch(*args, **kwargs)
         # Unsubscribe the implicit owner subscription.
         new_branch.unsubscribe(new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
@@ -552,10 +552,10 @@ class TestScanStackedBranches(BzrSyncTestCase):
     def testStackedBranch(self):
         # We can scan a stacked branch that's stacked on a branch that has an
         # lp-mirrored:// URL.
-        db_stacked_on_branch = self.factory.makeBranch()
+        db_stacked_on_branch = self.factory.makeAnyBranch()
         stacked_on_tree = self.makeBzrBranchAndTree(
             db_stacked_on_branch, format='1.6')
-        db_stacked_branch = self.factory.makeBranch()
+        db_stacked_branch = self.factory.makeAnyBranch()
         stacked_tree = self.makeBzrBranchAndTree(
             db_stacked_branch, format='1.6')
         stacked_tree.branch.set_stacked_on_url(
@@ -1269,8 +1269,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
     def test_mergeOfTwoBranches_target_not_dev_focus(self):
         # The target branch must be the development focus in order for the
         # lifecycle status of the source branch to be updated to merged.
-        source = self.factory.makeBranch()
-        target = self.factory.makeBranch()
+        source = self.factory.makeProductBranch()
+        target = self.factory.makeProductBranch()
         self.handler.mergeOfTwoBranches(source, target)
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
