@@ -164,7 +164,8 @@ class TestBranchPopupWidget(unittest.TestCase):
 
     def test_toFieldValueFetchesTheExistingBranch(self):
         """_toFieldValue returns the existing branch that has that URL."""
-        expected_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        expected_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
         branch = self.popup._toFieldValue(expected_branch.url)
         self.assertEqual(expected_branch, branch)
 
@@ -204,7 +205,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         popup = self.makeBranchPopup(vocab)
 
         # Make a branch on a different product.
-        branch = self.factory.makeBranch(BranchType.MIRRORED)
+        branch = self.factory.makeProductBranch(BranchType.MIRRORED)
         self.assertNotEqual(self.launch_bag.product, branch.product)
 
         # Trying to make a branch with that URL will fail.
