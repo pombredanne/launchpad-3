@@ -459,7 +459,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
     def test_getBranchPullInfo_junk(self):
         # _getBranchPullInfo returns (id, url, unique_name, '') for junk
         # branches.
-        branch = self.factory.makeBranch(product=None)
+        branch = self.factory.makePersonalBranch()
         info = self.storage._getBranchPullInfo(branch)
         self.assertEqual(
             (branch.id, branch.getPullURL(), branch.unique_name, ''), info)

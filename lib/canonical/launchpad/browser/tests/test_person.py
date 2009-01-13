@@ -77,12 +77,12 @@ class TestBranchTraversal(TestCaseWithFactory):
         return traverser.publishTraverse(request, name)
 
     def test_redirect_product_branch(self):
-        branch = self.factory.makeBranch(owner=self.person)
+        branch = self.factory.makeProductBranch(owner=self.person)
         segments = ['+branch', branch.product.name, branch.name]
         self.assertRedirects(segments, canonical_url(branch))
 
     def test_redirect_junk_branch(self):
-        branch = self.factory.makeBranch(owner=self.person, product=None)
+        branch = self.factory.makeBranch(container=self.person)
         segments = ['+branch', '+junk', branch.name]
         self.assertRedirects(segments, canonical_url(branch))
 
@@ -94,7 +94,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     # consumed path elements?
 
     def test_junk_branch(self):
-        branch = self.factory.makeBranch(owner=self.person, product=None)
+        branch = self.factory.makeBranch(container=self.person)
         segments = ['+junk', branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
@@ -103,7 +103,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertRaises(NotFound, self.traverse, ['+junk', branch_name])
 
     def test_product_branch(self):
-        branch = self.factory.makeBranch(owner=self.person)
+        branch = self.factory.makeProductBranch(owner=self.person)
         segments = [branch.product.name, branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
@@ -120,11 +120,7 @@ class TestBranchTraversal(TestCaseWithFactory):
             NotFound, self.traverse, [product.name, branch_name])
 
     def test_package_branch(self):
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        branch = self.factory.makeBranch(
-            owner=self.person, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+        branch = self.factory.makePackageBranch(owner=self.person)
         segments = [
             branch.distroseries.distribution.name,
             branch.distroseries.name,

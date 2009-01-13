@@ -425,8 +425,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
-        if registrant is None:
-            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
         if IProduct.providedBy(container):
@@ -457,6 +455,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             raise ValueError(
                 "container must be one of IProduct, IPerson, ISourcePackage "
                 "or None, got: %r" % (container,))
+
+        if registrant is None:
+            registrant = owner
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
