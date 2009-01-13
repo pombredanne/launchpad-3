@@ -51,7 +51,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.target_branch = self.factory.makeBranch()
+        self.target_branch = self.factory.makeProductBranch()
         login_person(self.target_branch.owner)
 
     def assertProposalState(self, proposal, state):
@@ -259,7 +259,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
 
     def _createMergeProposal(self, needs_review):
         # Create and return a merge proposal.
-        source_branch = self.factory.makeBranch()
+        source_branch = self.factory.makeProductBranch()
         target_branch = self.factory.makeBranch(
             product=source_branch.product)
         login_person(target_branch.owner)
@@ -305,7 +305,7 @@ class TestBranchMergeProposalCanReview(TestCase):
         login('test@canonical.com')
 
         factory = LaunchpadObjectFactory()
-        self.source_branch = factory.makeBranch()
+        self.source_branch = factory.makeProductBranch()
         self.target_branch = factory.makeBranch(
             product=self.source_branch.product)
         registrant = factory.makePerson()
@@ -336,7 +336,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         login(ANONYMOUS)
         factory = LaunchpadObjectFactory()
         owner = factory.makePerson()
-        self.target_branch = factory.makeBranch(owner=owner)
+        self.target_branch = factory.makeProductBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
         self.proposals = [
             factory.makeBranchMergeProposal(self.target_branch)
@@ -524,7 +524,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_notifyOnCreate(self):
         """Ensure that a notification is emitted on creation"""
-        source_branch = self.factory.makeBranch()
+        source_branch = self.factory.makeProductBranch()
         target_branch = self.factory.makeBranch(product=source_branch.product)
         registrant = self.factory.makePerson()
         result, event = self.assertNotifies(
@@ -586,7 +586,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
                          set(recipients.keys()))
 
     def test_getNotificationRecipientsAnyBranch(self):
-        dependent_branch = self.factory.makeBranch()
+        dependent_branch = self.factory.makeProductBranch()
         bmp = self.factory.makeBranchMergeProposal(
             dependent_branch=dependent_branch)
         recipients = bmp.getNotificationRecipients(

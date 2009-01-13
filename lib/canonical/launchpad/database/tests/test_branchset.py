@@ -172,7 +172,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         return datetime.now(pytz.timezone('UTC'))
 
     def makeBranch(self):
-        return self.factory.makeBranch(self.branch_type)
+        return self.factory.makeAnyBranch(branch_type=self.branch_type)
 
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""

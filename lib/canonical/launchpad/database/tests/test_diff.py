@@ -10,7 +10,6 @@ from unittest import TestLoader
 from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
 from canonical.testing import LaunchpadZopelessLayer, DatabaseFunctionalLayer
-from sqlobject import SQLObjectNotFound
 import transaction
 
 from canonical.codehosting.scanner.tests.test_bzrsync import (
@@ -35,11 +34,11 @@ class BzrTestCase(TestCaseWithFactory):
     """Test case providing access to a fake branch location."""
 
     def create_branch_and_tree(self, tree_location='.'):
-        """Create a database branch, bzr branch and bzr checkout."
+        """Create a database branch, bzr branch and bzr checkout.
 
         :return: a `Branch` and a workingtree.
         """
-        db_branch = self.factory.makeBranch()
+        db_branch = self.factory.makeAnyBranch()
         transport = get_transport(db_branch.warehouse_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()

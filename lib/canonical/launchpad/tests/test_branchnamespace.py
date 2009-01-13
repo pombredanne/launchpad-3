@@ -530,7 +530,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_traverse_leaves_trailing_segments(self):
         # traverse doesn't consume all the elements of the iterable. It only
         # consumes those it needs to find a branch.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         trailing_segments = ['+foo', 'bar']
         segments = iter(branch.unique_name[1:].split('/') + trailing_segments)
         found_branch = self.namespace_set.traverse(segments)
