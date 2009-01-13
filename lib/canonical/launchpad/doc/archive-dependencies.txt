@@ -162,7 +162,7 @@ We will use Celso's PPA for testing these mechanisms.
     PPA for Celso Providelo
 
 Non-primary archives by default use primary Release, Security and Updates
-pockets and all it's available components.
+pockets and all its available components.
 
     >>> from canonical.launchpad.components.archivedependencies import (
     ...     default_component_dependency_name,  default_pocket_dependency)
