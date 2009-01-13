@@ -64,6 +64,18 @@ class TestBranchRewriter(TestCase):
             'http://localhost:8080/%s/.bzr' % branch.unique_name,
             output)
 
+    def test_translateLine_special_cases(self):
+        # Requests to /static and /+login are redirected to codebrowse.
+        rewriter = self.makeRewriter()
+        output = rewriter.rewriteLine("/static/foo")
+        self.assertEqual(
+            'http://localhost:8080/static/foo',
+            output)
+        output = rewriter.rewriteLine("/+login/bar")
+        self.assertEqual(
+            'http://localhost:8080/+login/bar',
+            output)
+
     def test_translateLine_not_found(self):
         # If the branch behind a request is not foudn, rewriteLine returns
         # "NULL", the way of saying "I don't know how to rewrite this" to

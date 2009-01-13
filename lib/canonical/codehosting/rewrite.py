@@ -17,6 +17,9 @@ from canonical.twistedsupport import extract_result
 __all__ = ['BranchRewriter']
 
 
+FORWARD_TO_CODEBROWSE_PREFIXES = ['/static', '/+login']
+
+
 class BranchRewriter:
 
     def __init__(self, logger, proxy):
@@ -63,6 +66,9 @@ class BranchRewriter:
         caller will catch and log them.
         """
         T = time.time()
+        for prefix in FORWARD_TO_CODEBROWSE_PREFIXES:
+            if resource_location.startswith(prefix):
+                return self._codebrowse_url(resource_location)
         trailingSlash = resource_location.endswith('/')
         deferred = self.client.translatePath(resource_location)
         try:
