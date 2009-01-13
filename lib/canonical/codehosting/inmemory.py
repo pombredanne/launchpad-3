@@ -286,6 +286,10 @@ class FakeObjectFactory(ObjectFactory):
         owner = self.makePerson()
         return self.makeBranch(owner=owner, product=None)
 
+    def makeProductBranch(self, **kwargs):
+        product = self.makeProduct()
+        return self.makeBranch(product=product)
+
     def makeDistribution(self):
         distro = FakeDistribution(self.getUniqueString())
         self._distribution_set._add(distro)
