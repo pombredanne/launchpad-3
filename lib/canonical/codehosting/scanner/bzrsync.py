@@ -272,7 +272,10 @@ class BranchMailer:
                 contents = ('%d revisions were removed from the branch.'
                             % number_removed)
             # No diff is associated with the removed email.
-            self.pending_emails.append((contents, '', None, 'removed'))
+            job = getUtility(IRevisionMailJobSource).create(
+                self.db_branch, revno='removed', from_address=self.email_from,
+                body=contents, diff='', subject=None)
+            self.pending_emails.append(job)
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
         """Generate an email for a revision for later sending.
@@ -305,8 +308,10 @@ class BranchMailer:
                     first_line = first_line[:offset] + '...'
             subject = '[Branch %s] Rev %s: %s' % (
                 self.db_branch.unique_name, sequence, first_line)
-            self.pending_emails.append(
-                (message, revision_diff, subject, sequence))
+            job = getUtility(IRevisionMailJobSource).create(
+                self.db_branch, revno=sequence, from_address=self.email_from,
+                    body=message, diff=revision_diff, subject=subject)
+            self.pending_emails.append(job)
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
@@ -345,10 +350,7 @@ class BranchMailer:
                 None)
             job.run()
         else:
-            for message, diff, subject, revno in self.pending_emails:
-                job = getUtility(IRevisionMailJobSource).create(
-                    self.db_branch, revno, self.email_from, message, diff,
-                    subject)
+            for job in self.pending_emails:
                 job.run()
         self.trans_manager.commit()
 
