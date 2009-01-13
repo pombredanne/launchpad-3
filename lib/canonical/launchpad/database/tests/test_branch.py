@@ -1527,6 +1527,40 @@ class TestBranchDiffJob(TestCaseWithFactory):
         job.run()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
 
+    def create_rev1_diff(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        first_revision = 'rev-1'
+        tree_transport = tree.bzrdir.root_transport
+        tree_transport.put_bytes("hello.txt", "Hello World\n")
+        tree.add('hello.txt')
+        tree.commit('rev1', timestamp=1000000000.0, timezone=0)
+        job = BranchDiffJob.create(branch, '0', '1')
+        diff = job.run()
+        transaction.commit()
+        return diff
+
+    def test_diff(self):
+        diff = self.create_rev1_diff()
+        expected = (
+            "=== added file 'hello.txt'" '\n'
+            "--- hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "@@ -0,0 +1,1 @@" '\n'
+            "+Hello World" '\n'
+            '\n')
+        self.assertEqual(diff.diff.text, expected)
+
+    def test_diff_is_bytes(self):
+        """Diffs should be bytestrings.
+
+        Diffs have no single encoding, because they may encompass files in
+        multiple encodings.  Therefore, we consider them binary, to avoid
+        lossy decoding.
+        """
+        diff = self.create_rev1_diff()
+        self.assertIsInstance(diff.diff.text, str)
+
 
 class TestRevisionMailJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""

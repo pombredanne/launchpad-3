@@ -78,31 +78,6 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def get_diff(db_branch, bzr_revision):
-    """Return the diff for `bzr_revision` on `bzr_branch`.
-
-    This operation is not expected to take a long time.
-    :param db_branch: A `canonical.launchpad.interface.IBranch` object.
-    :param bzr_revision: A Bazaar `Revision` object.
-    :return: A byte string that is the diff of the changes introduced by
-        `bzr_revision` on `db_branch`.
-    """
-    if len(bzr_revision.parent_ids) > 0:
-        basis = bzr_revision.parent_ids[0]
-    else:
-        basis = NULL_REVISION
-    basis_spec = 'revid:%s' % basis
-    revision_spec = 'revid:%s' % bzr_revision.revision_id
-    diff_job = getUtility(IBranchDiffJobSource).create(
-        db_branch, basis_spec, revision_spec)
-    static_diff = diff_job.run()
-    diff_job.destroySelf()
-    transaction.commit()
-    revision_diff = static_diff.diff.text.decode('utf8', 'replace')
-    static_diff.destroySelf()
-    return revision_diff
-
-
 def get_revision_message(bzr_branch, bzr_revision):
     """Return the log message for `bzr_revision` on `bzr_branch`.
 
