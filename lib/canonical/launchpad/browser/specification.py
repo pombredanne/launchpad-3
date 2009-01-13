@@ -251,17 +251,8 @@ class SpecificationNavigation(Navigation):
 
     @stepto('+branch')
     def traverse_branch(self):
-        # XXX: JonathanLange 2008-12-15 spec=package-branches: This needs to
-        # change so that non-product branches can be linked to specifications.
-        person_name = self.request.stepstogo.consume()
-        product_name = self.request.stepstogo.consume()
-        branch_name = self.request.stepstogo.consume()
-        if person_name is None or product_name is None or branch_name is None:
-            raise NotFoundError
-
-        namespace = getUtility(IBranchNamespaceSet).interpret(
-            person=person_name, product=product_name)
-        branch = namespace.getByName(branch_name)
+        branch = getUtility(IBranchNamespaceSet).traverse(
+            iter(self.request.stepstogo))
 
         if not branch:
             raise NotFoundError
