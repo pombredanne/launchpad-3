@@ -947,7 +947,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         if self._team_is_hidden:
             # This person has no permission to view the team details.
             return None
-        return super(TeamFormatterAPI, self).api_url(view_name)
+        return super(TeamFormatterAPI, self).api_url(context)
 
     def link(self, view_name):
         """See `ObjectFormatterAPI`."""
