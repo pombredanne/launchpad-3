@@ -301,6 +301,8 @@ class BranchTraversalMixin:
         # bag with information about the containers of a branch.
         branch.addToLaunchBag(getUtility(IOpenLaunchBag))
 
+        # XXX: JonathanLange 2009-01-13 spec=package-branches: Do we need to
+        # do similar aliasing for source package information.
         if branch.product is not None:
             if branch.product.name != product_name:
                 # This branch was accessed through one of its product's
