@@ -339,10 +339,11 @@ class BranchMailer:
             message = ('First scan of the branch detected %s'
                        ' in the revision history of the branch.' %
                        revisions)
-            mailer = MailoutMailer.forRevision(
+
+            job = getUtility(IRevisionMailJobSource).create(
                 self.db_branch, 'initial', self.email_from, message, None,
                 None)
-            mailer.sendAll()
+            job.run()
         else:
             for message, diff, subject, revno in self.pending_emails:
                 job = getUtility(IRevisionMailJobSource).create(
