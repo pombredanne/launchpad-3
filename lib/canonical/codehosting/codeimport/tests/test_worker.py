@@ -19,7 +19,6 @@ from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
-from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
@@ -462,7 +461,7 @@ class TestActualImportMixin:
         clean_up_default_stores_for_import(self.source_details)
 
         script_path = os.path.join(
-            get_rocketfuel_root(), 'scripts', 'code-import-worker.py')
+            config.root, 'scripts', 'code-import-worker.py')
         retcode = subprocess.call(
             [script_path, '-qqq'] + self.source_details.asArguments())
         self.assertEqual(retcode, 0)

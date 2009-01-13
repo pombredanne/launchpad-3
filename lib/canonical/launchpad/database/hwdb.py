@@ -95,6 +95,10 @@ class HWSubmission(SQLBase):
                                     notNull=True)
     raw_emailaddress = StringCol()
 
+    @property
+    def devices(self):
+        return HWSubmissionDeviceSet().getDevices(submission=self)
+
 
 class HWSubmissionSet:
     """See `IHWSubmissionSet`."""
@@ -518,6 +522,13 @@ class HWDevice(SQLBase):
                              % (repr(bus_product_id), bus_vendor.bus.title))
         SQLBase._create(self, id, **kw)
 
+    def getSubmissions(self, driver=None, distribution=None,
+                       architecture=None):
+        """See `IHWDevice.`"""
+        return HWSubmissionSet().search(
+            device=self, distribution=distribution, driver=driver,
+            architecture=architecture)
+
 
 class HWDeviceSet:
     """See `IHWDeviceSet`."""
@@ -756,6 +767,16 @@ class HWSubmissionDevice(SQLBase):
 
     hal_device_id = IntCol(notNull=True)
 
+    @property
+    def device(self):
+        """See `IHWSubmissionDevice`."""
+        return self.device_driver_link.device
+
+    @property
+    def driver(self):
+        """See `IHWSubmissionDevice`."""
+        return self.device_driver_link.driver
+
 
 class HWSubmissionDeviceSet:
     """See `IHWSubmissionDeviceSet`."""
@@ -773,6 +794,12 @@ class HWSubmissionDeviceSet:
         return HWSubmissionDevice.selectBy(
             submission=submission,
             orderBy=['parent', 'device_driver_link', 'hal_device_id'])
+
+    def get(self, id):
+        """See `IHWSubmissionDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            HWSubmissionDevice, HWSubmissionDevice.id == id).one()
 
 
 class HWSubmissionBug(SQLBase):
