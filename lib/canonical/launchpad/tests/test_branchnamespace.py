@@ -488,7 +488,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_interpret_product_aliases(self):
         # Products can have aliases. IBranchNamespaceSet.interpret will find a
         # product given its alias.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         product_alias = self.factory.getUniqueString()
         removeSecurityProxy(branch.product).setAliases([product_alias])
         namespace = self.namespace_set.interpret(
@@ -506,7 +506,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_traverse_junk_branch(self):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable
         # of path segments, including junk branches.
-        branch = self.factory.makeBranch(product=None)
+        branch = self.factory.makePersonalBranch()
         segments = self._getSegments(branch)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
@@ -514,7 +514,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_traverse_product_branch(self):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable
         # of path segments, including product branches.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         segments = self._getSegments(branch)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
@@ -522,10 +522,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_traverse_package_branch(self):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable
         # of path segments, including package branches.
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        branch = self.factory.makeBranch(
-            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        branch = self.factory.makePackageBranch()
         segments = self._getSegments(branch)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
@@ -533,7 +530,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_traverse_leaves_trailing_segments(self):
         # traverse doesn't consume all the elements of the iterable. It only
         # consumes those it needs to find a branch.
-        branch = self.factory.makeBranch(product=None)
+        branch = self.factory.makeBranch()
         trailing_segments = ['+foo', 'bar']
         segments = iter(branch.unique_name[1:].split('/') + trailing_segments)
         found_branch = self.namespace_set.traverse(segments)
