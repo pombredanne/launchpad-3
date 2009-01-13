@@ -498,6 +498,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         return self.makeBranch(container=self.makeProduct(), **kwargs)
 
+    def makeAnyBranch(self, **kwargs):
+        """Make a branch without caring about its container.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeProductBranch(**kwargs)
+
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
 
