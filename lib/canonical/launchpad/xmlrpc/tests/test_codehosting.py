@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -674,205 +674,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "No such source package: 'ningnangnong'."
         self.assertFaultEqual(faults.NotFound(message), fault)
 
-    def test_getBranchInformation_owned(self):
-        # When we get the branch information for one of our own hosted
-        # branches, we get the database id of the branch, and a flag saying
-        # that we can write to that branch.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=requester)
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(WRITABLE, permissions)
-
-    def test_getBranchInformation_team_owned(self):
-        # When we get the branch information for a hosted branch owned by one
-        # of our teams, we get the database id of the branch, and a flag
-        # saying that we can write to that branch.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(requester)
-        branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=team)
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(WRITABLE, permissions)
-
-    def test_getBranchInformation_team_unowned(self):
-        # We only have read-only access to hosted branches owned by other
-        # teams.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(self.factory.makePerson())
-        branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=team)
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
-
-    def test_getBranchInformation_nonexistent(self):
-        # When we get the branch information for a non-existent branch, we get
-        # a tuple of two empty strings (the empty string being an
-        # approximation of 'None').
-        requester_id = self.factory.getUniqueInteger()
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'some-name', 'some-product', 'doesnt-exist')
-        login(ANONYMOUS)
-        self.assertEqual('', branch_id)
-        self.assertEqual('', permissions)
-
-    def test_getBranchInformation_unowned(self):
-        # When we get the branch information for a branch that we don't own,
-        # we get the database id and a flag saying that we can only read that
-        # branch.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch()
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
-
-    def test_getBranchInformation_mirrored(self):
-        # Mirrored branches cannot be written to by the smartserver or SFTP
-        # server.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.MIRRORED, owner=requester)
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def test_getBranchInformation_imported(self):
-        # Imported branches cannot be written to by the smartserver or SFTP
-        # server.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.IMPORTED, owner=requester)
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def test_getBranchInformation_remote(self):
-        # Remote branches are not accessible by the smartserver or SFTP
-        # server.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.REMOTE, owner=requester)
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(('', ''), branch_info)
-
-    def test_getBranchInformation_private(self):
-        # When we get the branch information for a private branch that is
-        # hidden to us, it is an if the branch doesn't exist at all.
-        requester = self.factory.makePerson()
-        branch = removeSecurityProxy(self.factory.makeAnyBranch(private=True))
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(('', ''), branch_info)
-
-    def test_getBranchInformationAsLaunchpadServices(self):
-        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
-        # branches.
-        branch = self.factory.makeAnyBranch()
-        branch_info = self.branchfs.getBranchInformation(
-            LAUNCHPAD_SERVICES, branch.owner.name, branch.product.name,
-            branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def test_getBranchInformationForPrivateAsLaunchpadServices(self):
-        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
-        # branches, even private ones.
-        requester = self.factory.makePerson()
-        branch = removeSecurityProxy(self.factory.makeAnyBranch(private=True))
-        branch_info = self.branchfs.getBranchInformation(
-            LAUNCHPAD_SERVICES, branch.owner.name, branch.product.name,
-            branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def _makeProductWithDevFocus(self, private=False):
-        """Make a stacking-enabled product with a development focus.
-
-        :param private: Whether the development focus branch should be
-            private.
-        :return: The new Product and the new Branch.
-        """
-        product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(
-            product=product, private=private)
-        self.factory.enableDefaultStackingForProduct(product, branch)
-        self.assertEqual(product.default_stacked_on_branch, branch)
-        return product, branch
-
-    def test_getDefaultStackedOnBranch_invisible(self):
-        # When the default stacked-on branch for a product is not visible to
-        # the requesting user, then we return the empty string.
-        requester = self.factory.makePerson()
-        product, branch = self._makeProductWithDevFocus(private=True)
-        stacked_on_url = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, product.name)
-        self.assertEqual('', stacked_on_url)
-
-    def test_getDefaultStackedOnBranch_private(self):
-        # When the default stacked-on branch for a product is private but
-        # visible to the requesting user, we return the URL to the branch
-        # relative to the host.
-        product, branch = self._makeProductWithDevFocus(private=True)
-        # We want to know who owns it and what its name is. We are a test and
-        # should be allowed to know such things.
-        branch = removeSecurityProxy(branch)
-        unique_name = branch.unique_name
-        stacked_on_url = self.branchfs.getDefaultStackedOnBranch(
-            branch.owner.id, product.name)
-        self.assertEqual('/' + unique_name, stacked_on_url)
-
-    def test_getDefaultStackedOnBranch_junk(self):
-        # getDefaultStackedOnBranch returns the empty string for '+junk'.
-        requester = self.factory.makePerson()
-        branch = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, '+junk')
-        self.assertEqual('', branch)
-
-    def test_getDefaultStackedOnBranch_none_set(self):
-        # getDefaultStackedOnBranch returns the empty string when there is no
-        # branch set.
-        requester = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        branch = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, product.name)
-        self.assertEqual('', branch)
-
-    def test_getDefaultStackedOnBranch_no_product(self):
-        # getDefaultStackedOnBranch raises a Fault if there is no such
-        # product.
-        requester = self.factory.makePerson()
-        product = 'no-such-product'
-        fault = self.branchfs.getDefaultStackedOnBranch(requester.id, product)
-        self.assertFaultEqual(
-            faults.NotFound('Project %r does not exist.' % (product,)),
-            fault)
-
-    def test_getDefaultStackedOnBranch(self):
-        # getDefaultStackedOnBranch returns the relative URL of the default
-        # stacked-on branch for the named product.
-        requester = self.factory.makePerson()
-        product, branch = self._makeProductWithDevFocus(private=False)
-        branch_location = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, product.name)
-        login(ANONYMOUS)
-        self.assertEqual('/' + branch.unique_name, branch_location)
-
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.
@@ -915,6 +716,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
             requester = requester.id
         fault = self.branchfs.translatePath(requester, path)
         self.assertFaultEqual(faults.PermissionDenied(), fault)
+
+    def _makeProductWithDevFocus(self, private=False):
+        """Make a stacking-enabled product with a development focus.
+
+        :param private: Whether the development focus branch should be
+            private.
+        :return: The new Product and the new Branch.
+        """
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product, private=private)
+        self.factory.enableDefaultStackingForProduct(product, branch)
+        self.assertEqual(product.default_stacked_on_branch, branch)
+        return product, branch
 
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path. When

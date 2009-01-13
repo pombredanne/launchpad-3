@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
-    LAUNCHPAD_SERVICES, READ_ONLY, WRITABLE)
+    LAUNCHPAD_SERVICES)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -258,48 +258,6 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return False
         return (branch.branch_type == BranchType.HOSTED
                 and check_permission('launchpad.Edit', branch))
-
-    def getBranchInformation(self, login_id, userName, productName,
-                             branchName):
-        """See `IBranchFileSystem`."""
-        def get_branch_information(requester):
-            branch = getUtility(IBranchSet).getByUniqueName(
-                '~%s/%s/%s' % (userName, productName, branchName))
-            if branch is None:
-                return '', ''
-            if requester == LAUNCHPAD_SERVICES:
-                branch = removeSecurityProxy(branch)
-            try:
-                branch_id = branch.id
-            except Unauthorized:
-                return '', ''
-            if branch.branch_type == BranchType.REMOTE:
-                # Can't even read remote branches.
-                return '', ''
-            if self._canWriteToBranch(requester, branch):
-                permissions = WRITABLE
-            else:
-                permissions = READ_ONLY
-            return branch_id, permissions
-        return run_with_login(login_id, get_branch_information)
-
-    def getDefaultStackedOnBranch(self, login_id, project_name):
-        def get_default_stacked_on_branch(requester):
-            if project_name == '+junk':
-                return ''
-            product = getUtility(IProductSet).getByName(project_name)
-            if product is None:
-                return faults.NotFound(
-                    "Project %r does not exist." % project_name)
-            branch = product.default_stacked_on_branch
-            if branch is None:
-                return ''
-            try:
-                unique_name = branch.unique_name
-            except Unauthorized:
-                return ''
-            return '/' + unique_name
-        return run_with_login(login_id, get_default_stacked_on_branch)
 
     def requestMirror(self, login_id, branchID):
         """See `IBranchFileSystem`."""
