@@ -196,8 +196,13 @@
     <class class="canonical.launchpad.database.HWSubmissionDevice">
         <allow
             interface="canonical.launchpad.interfaces.IHWSubmissionDevice" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWSubmissionDevice"
+        path_expression="string:+submissiondevice/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWSubmissionDeviceSet"
