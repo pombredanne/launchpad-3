@@ -37,6 +37,8 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.browser.librarian import FileNavigationMixin
+from canonical.launchpad.components.archivedependencies import (
+    get_default_pocket_and_component_dependency)
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
@@ -1067,10 +1069,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
         if primary_dependency is None:
-            if self.context.private:
-                default_value = PackagePublishingPocket.SECURITY
-            else:
-                default_value = PackagePublishingPocket.UPDATES
+            pocket, component = get_default_pocket_and_component_dependency(
+                self.context)
+            default_value = pocket
         else:
             default_value = primary_dependency.pocket
 
@@ -1119,16 +1120,12 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
-        if primary_dependency is not None:
-            if primary_dependency.component == multiverse:
-                default_value = multiverse
-            else:
-                default_value = None
+        if primary_dependency is None:
+            pocket, component = get_default_pocket_and_component_dependency(
+                self.context)
+            default_value = component
         else:
-            if self.context.private:
-                default_value = None
-            else:
-                default_value = multiverse
+            default_value = primary_dependency.component
 
         terms = [all_components, follow_primary]
         primary_components_vocabulary = SimpleVocabulary(terms)
@@ -1196,10 +1193,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Check if the given values correspond to the default scenario
         # for the context archive.
-        default_pocket = self.widgets.get(
-            'primary_dependencies')._getDefault()
-        default_component = self.widgets.get(
-            'primary_components')._getDefault()
+        (default_pocket,
+         default_component) = get_default_pocket_and_component_dependency(
+            self.context)
         is_default_dependency = (
             dependency_pocket == default_pocket and
             dependency_component == default_component)

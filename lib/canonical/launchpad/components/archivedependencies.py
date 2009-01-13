@@ -28,14 +28,17 @@ __metaclass__ = type
 __all__ = [
     'component_dependencies',
     'get_components_for_building',
+    'get_default_pocket_and_component_dependency',
     'get_primary_current_component',
     'get_sources_list_for_building',
     'pocket_dependencies',
     ]
 
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, ALLOW_RELEASE_BUILDS)
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
@@ -209,6 +212,35 @@ def _get_sources_list_for_dependencies(dependencies, distroarchseries):
     return sources_list_lines
 
 
+def get_default_pocket_and_component_dependency(archive):
+    """Return a (pocket, component) tuple for given non-primary archive.
+
+    All public archives (PPAs, Partner and Copies), by default used the
+    primary archive as:
+
+      * UPDATES pocket dependencies and
+      * Multiverse component dependencies.
+
+    Private archives, on the other hand, use:
+
+      * SECURITY pocket dependencies and
+      * Exactly the same components used in the primary archives.
+
+    :param archive: target IArchive.
+
+    :return: a tuple containing a PackagePublishingPocket value as the first
+        element and an IComponent or None (for private archives).
+    """
+    assert archive.purpose in ALLOW_RELEASE_BUILDS, (
+        'Primary archives do not have default dependencies.')
+
+    if archive.private:
+        return (PackagePublishingPocket.SECURITY, None)
+
+    multiverse = getUtility(IComponentSet)['multiverse']
+    return (PackagePublishingPocket.UPDATES, multiverse)
+
+
 def _get_default_primary_dependencies(build):
     """Return the default primary dependencies for a given build.
 
@@ -218,24 +250,14 @@ def _get_default_primary_dependencies(build):
         archive.
     """
     if build.archive.purpose in ALLOW_RELEASE_BUILDS:
-        # Although partner and PPA builds are always in the release
-        # pocket, they depend on the same pockets as though they
-        # were in the updates pocket.
-        #
-        # XXX Julian 2008-03-20
-        # Private PPAs, however, behave as though they are in the
-        # security pocket.  This is a hack to get the security
-        # PPA working as required until cprov lands his changes for
-        # configurable PPA pocket dependencies.
-        if build.archive.private:
-            primary_pockets = pocket_dependencies[
-                PackagePublishingPocket.SECURITY]
+        pocket, component = get_default_pocket_and_component_dependency(
+            build.archive)
+        primary_pockets = pocket_dependencies[pocket]
+        if component is None:
             primary_components = component_dependencies[
                 get_primary_current_component(build)]
         else:
-            primary_pockets = pocket_dependencies[
-                PackagePublishingPocket.UPDATES]
-            primary_components = component_dependencies['multiverse']
+            primary_components = component_dependencies[component.name]
     else:
         primary_pockets = pocket_dependencies[build.pocket]
         primary_components = get_components_for_building(build)

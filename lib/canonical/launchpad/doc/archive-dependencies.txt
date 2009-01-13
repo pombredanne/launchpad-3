@@ -161,6 +161,42 @@ We will use Celso's PPA for testing these mechanisms.
     >>> print cprov.archive.title
     PPA for Celso Providelo
 
+Public PPAs by default use primary Release, Security and Updates
+pocket and all it's available components.
+
+    >>> from canonical.launchpad.components.archivedependencies import (
+    ...     get_default_pocket_and_component_dependency)
+
+    >>> (default_pocket,
+    ...  default_component) = get_default_pocket_and_component_dependency(
+    ...     cprov.archive)
+
+    >>> print default_pocket
+    Updates
+
+    >>> print default_component.name
+    multiverse
+
+The default values get applied to their corresponding dependency maps
+and then will expand to distinct values that will be used to produce
+the building 'sources_list' contents.
+
+    >>> for pocket in pocket_dependencies[default_pocket]:
+    ...     print pocket
+    Release
+    Security
+    Updates
+
+    >>> for component_name in component_dependencies[default_component.name]:
+    ...     print component_name
+    main
+    restricted
+    universe
+    multiverse
+
+We will create a testing source publication and probe its build
+environment.
+
     >>> pub_source = test_publisher.getPubSource(
     ...     version='1.1', archive=cprov.archive)
     >>> [a_build] = pub_source.createMissingBuilds()
@@ -270,7 +306,30 @@ Additionally to the existing public PPA dependencies, only the RELEASE and
 SECURITY ubuntu pockets will be considered, respecting the
 corresponding ubuntu component override if available.
 
-The default component override value is 'universe' and it's used when
+    >>> (default_pocket,
+    ...  default_component) = get_default_pocket_and_component_dependency(
+    ...     cprov.archive)
+
+The default pocket value gets applied in the 'pocket_dependencies'
+map resulting in a sequence of pockets that should be considered when
+building sources.
+
+    >>> print default_pocket
+    Security
+
+    >>> for pocket in pocket_dependencies[default_pocket]:
+    ...     print pocket
+    Release
+    Security
+
+The default component value, if present, gets applied to the
+'component_dependencies' map. It's abscence means that it should be
+looked up in the corresponding primary archive.
+
+    >>> print default_component
+    None
+
+The component override value found is 'universe' and it's used when
 we can't find any suitable ancestry in the primary archive.
 
     >>> from canonical.launchpad.components.archivedependencies import (
@@ -278,6 +337,9 @@ we can't find any suitable ancestry in the primary archive.
 
     >>> print get_primary_current_component(a_build)
     universe
+
+Here we can see the 'sources_list' contents that will be used to build
+the testing source.
 
     >>> print_building_sources_list(a_build)
     deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
