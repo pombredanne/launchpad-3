@@ -30,6 +30,7 @@ from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
@@ -46,6 +47,7 @@ from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -199,6 +201,38 @@ class TestBranch(TestCaseWithFactory):
                 distroseries.distribution.name, distroseries.name,
                 sourcepackagename.name),
             branch.container.name)
+
+    def makeLaunchBag(self):
+        return getUtility(IOpenLaunchBag)
+
+    def test_addToLaunchBag_product(self):
+        # Branches are not added directly to the launchbag. Instead,
+        # information about their container is added.
+        branch = self.factory.makeBranch()
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertEqual(branch.product, launchbag.product)
+
+    def test_addToLaunchBag_personal(self):
+        # Junk branches may also be added to the launchbag.
+        branch = self.factory.makeBranch(product=None)
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertIs(None, launchbag.product)
+
+    def test_addToLaunchBag_package(self):
+        # Package branches can be added to the launchbag.
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertEqual(distroseries, launchbag.distroseries)
+        self.assertEqual(distroseries.distribution, launchbag.distribution)
+        sourcepackage = SourcePackage(sourcepackagename, distroseries)
+        self.assertEqual(sourcepackage, launchbag.sourcepackage)
+        self.assertIs(None, branch.product)
 
 
 class TestGetByUniqueName(TestCaseWithFactory):

@@ -871,6 +871,12 @@ class IBranch(IHasOwner):
         "the branch is related to a series, then lp:product/series. "
         "Otherwise the result is lp:~user/product/branch-name.")
 
+    def addToLaunchBag(launchbag):
+        """Add information about this branch to `launchbag'.
+
+        :param launchbag: `ILaunchBag`.
+        """
+
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 

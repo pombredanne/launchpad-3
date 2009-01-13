@@ -270,6 +270,17 @@ class Branch(SQLBase):
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
+    def addToLaunchBag(self, launchbag):
+        """See `IBranch`."""
+        launchbag.add(self.product)
+        if self.distroseries is not None:
+            from canonical.launchpad.database.sourcepackage import (
+                SourcePackage)
+            launchbag.add(self.distroseries)
+            launchbag.add(self.distroseries.distribution)
+            launchbag.add(
+                SourcePackage(self.sourcepackagename, self.distroseries))
+
     def getStackedBranches(self):
         """See `IBranch`."""
         store = Store.of(self)
