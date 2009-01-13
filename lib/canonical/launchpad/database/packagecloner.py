@@ -144,14 +144,15 @@ class PackageCloner:
         # target archive accordingly (i.e make them superseded).
         store.execute("""
             UPDATE securesourcepackagepublishinghistory secsrc SET
-                status = %s, datesuperseded = %s, supersededby = %s
+                status = %s,
+                datesuperseded = %s,
+                supersededby = mcd.s_sourcepackagerelease
             FROM
                 tmp_merge_copy_data mcd
             WHERE
                 secsrc.id = mcd.t_sspph AND mcd.obsoleted = True
             """ % sqlvalues(
-                PackagePublishingStatus.SUPERSEDED, UTC_NOW,
-                destination.archive.owner))
+                PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
         rset = store.execute("""
             SELECT sourcepackagename, s_version, t_version
@@ -187,7 +188,7 @@ class PackageCloner:
         find_newer_packages = """
             UPDATE tmp_merge_copy_data mcd SET
                 s_sspph = secsrc.id,
-                s_sourcepackagerelease = secsrc.sourcepackagerelease,
+                s_sourcepackagerelease = spr.id,
                 s_version = spr.version,
                 obsoleted = True,
                 s_status = secsrc.status,
