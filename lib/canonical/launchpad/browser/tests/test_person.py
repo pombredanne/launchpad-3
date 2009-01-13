@@ -82,7 +82,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertRedirects(segments, canonical_url(branch))
 
     def test_redirect_junk_branch(self):
-        branch = self.factory.makeBranch(container=self.person)
+        branch = self.factory.makePersonalBranch(owner=self.person)
         segments = ['+branch', '+junk', branch.name]
         self.assertRedirects(segments, canonical_url(branch))
 
@@ -94,7 +94,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     # consumed path elements?
 
     def test_junk_branch(self):
-        branch = self.factory.makeBranch(container=self.person)
+        branch = self.factory.makePersonalBranch(owner=self.person)
         segments = ['+junk', branch.name]
         self.assertEqual(branch, self.traverse(segments))
 

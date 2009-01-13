@@ -484,19 +484,27 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         return self.makeBranch(container=self.makeSourcePackage(), **kwargs)
 
-    def makePersonalBranch(self, **kwargs):
+    def makePersonalBranch(self, owner=None, **kwargs):
         """Make a personal branch on an arbitrary person.
 
         See `makeBranch` for more information on arguments.
         """
-        return self.makeBranch(container=self.makePerson(), **kwargs)
+        if owner is None:
+            owner = self.makePerson()
+        return self.makeBranch(
+            owner=owner, product=None, distroseries=None,
+            sourcepackagename=None, **kwargs)
 
-    def makeProductBranch(self, **kwargs):
+    def makeProductBranch(self, product=None, **kwargs):
         """Make a product branch on an arbitrary product.
 
         See `makeBranch` for more information on arguments.
         """
-        return self.makeBranch(container=self.makeProduct(), **kwargs)
+        if product is None:
+            product = self.makeProduct()
+        return self.makeBranch(
+            product=product, distroseries=None, sourcepackagename=None,
+            **kwargs)
 
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
