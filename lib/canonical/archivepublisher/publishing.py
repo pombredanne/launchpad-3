@@ -517,7 +517,7 @@ class Publisher(object):
 
         # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
         # from a copy archive then modify the origin to indicate so.
-        if self.archive.purpose == ArchivePurpose.PPA:
+        if self.archive.is_ppa:
             origin = "LP-PPA-%s" % self.archive.owner.name
         else:
             origin = self.distro.displayname
@@ -605,11 +605,19 @@ class Publisher(object):
 
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
+
+        # XXX cprov, 2009-01-06, bug=299981. If this file is released
+        # from a copy archive then modify the origin to indicate so.
+        if self.archive.is_ppa:
+            origin = "LP-PPA-%s" % self.archive.owner.name
+        else:
+            origin = self.distro.displayname
+
         stanza = DISTROARCHRELEASE_STANZA % (
                 full_name,
                 distroseries.version,
                 component,
-                self.distro.displayname,
+                origin,
                 self.distro.displayname,
                 clean_architecture)
         f.write(stanza)

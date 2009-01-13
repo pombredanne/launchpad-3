@@ -17,14 +17,9 @@
       set_attributes="displayname title summary description
                       translation_focus translationgroup translationpermission
                       driver members owner security_contact mirror_admin
-                      homepage_content icon logo mugshot
-                      bug_reporting_guidelines"
-      />
-    <require
-      permission="launchpad.Admin"
-      set_attributes="official_blueprints
-                      official_malone official_rosetta official_answers
-                      enable_bug_expiration"
+                      homepage_content icon logo mugshot enable_bug_expiration
+                      bug_reporting_guidelines official_blueprints
+                      official_malone official_rosetta official_answers"
       />
     <require
       permission="launchpad.TranslationsAdmin"

@@ -16,7 +16,6 @@ import os
 import socket
 import subprocess
 
-from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
 
 
@@ -30,7 +29,7 @@ class CodeImportDispatcher:
     """
 
     worker_script = os.path.join(
-        get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
+        config.root, 'scripts', 'code-import-worker-db.py')
 
     def __init__(self, logger):
         """Initialize an instance.
