@@ -315,6 +315,7 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def requestfeedback(self):
         text = 'Request feedback'
         return Link('+requestfeedback', text, icon='add')
