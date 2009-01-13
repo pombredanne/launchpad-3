@@ -332,18 +332,22 @@ class BuildSetStatus(EnumeratedType):
     'needs build' and 'dependency wait'. We sometimes provide a summary
     status of a set of builds.
     """
-
+    # Until access to the name, title and description of exported types
+    # is available through the API, set the title of these statuses
+    # to match the name. This enables the result of API calls (which is
+    # currently the title) to be used programatically (for example, as a
+    # css class name).
     NEEDSBUILD = Item(
-        title='NEEDSBUILD',# TODO 'Need building',
+        title='NEEDSBUILD',# "Need building",
         description='There are some builds waiting to be built.')
 
-    FULLYBUILT = Item(title='FULLYBUILT', # TODO: "Successfully built",
+    FULLYBUILT = Item(title='FULLYBUILT', # "Successfully built",
                       description="All builds were built successfully.")
 
-    FAILEDTOBUILD = Item(title='FAILEDTOBUILD', #TODO:"Failed to build",
+    FAILEDTOBUILD = Item(title='FAILEDTOBUILD', # "Failed to build",
                          description="There were build failures.")
 
-    BUILDING = Item(title='BUILDING', #TODO: "Currently building",
+    BUILDING = Item(title='BUILDING', # "Currently building",
                     description="There are some builds currently building.")
 
 
