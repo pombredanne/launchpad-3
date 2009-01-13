@@ -306,7 +306,8 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
 
 === HWDB submissions and submission queries ===
 
-A single submission can be accessed via its submission key.
+A single submission can be accessed via its submission key. (See below
+for the contents of devices_collection_link.)
 
     >>> submission = webservice.get(
     ...     '/+hwdb/+submission/sample-submission').jsonBody()
@@ -314,6 +315,7 @@ A single submission can be accessed via its submission key.
     contactable: False
     date_created: u'2008-09-26T17:19:18+00:00'
     date_submitted: u'2008-09-30T08:19:00.222131+00:00'
+    devices_collection_link: u'.../+hwdb/+submission/sample-submission/devices'
     format: u'Version 1'
     owner_link: u'http://api.launchpad.dev/beta/~name12'
     private: False
@@ -430,3 +432,50 @@ distribution...
     ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
     >>> print submissions['total_size']
     0
+
+=== Submission Devices ===
+
+The table HWSubmissionDevice associates devices with submissions.
+(See hwdb-device-tables.txt for details.)
+
+A single HWSubmissionDevice record can be accessed via its database ID.
+
+    >>> submission_device = webservice.get(
+    ...     '/+hwdb/+submissiondevice/3').jsonBody()
+    >>> pprint_entry(submission_device)
+    device_link: u'http://api.launchpad.dev/beta/+hwdb/+device/2'
+    driver_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
+    hal_device_id: 121
+    id: 3
+    parent_link: u'http://api.launchpad.dev/beta/+hwdb/+submissiondevice/2'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_submission_device'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+submissiondevice/3'
+
+The HWSubmissionDevice records belonging to a given submission can
+are stored in HWSubmission.devices.
+
+    >>> url = '/+hwdb/+submission/sample-submission/devices?ws.size=3'
+    >>> submission_devices = webservice.get(url).jsonBody()
+    >>> for submission_device in submission_devices['entries']:
+    ...     pprint_entry(submission_device)
+    device_link: u'http://api.launchpad.dev/beta/+hwdb/+device/2'
+    driver_link: None
+    hal_device_id: 121
+    id: 2
+    parent_link: u'.../+hwdb/+submissiondevice/1'
+    resource_type_link: u'.../#h_w_submission_device'
+    self_link: u'.../+hwdb/+submissiondevice/2'
+    device_link: u'.../+hwdb/+device/5'
+    driver_link: None
+    hal_device_id: 65
+    id: 16
+    parent_link: u'.../+hwdb/+submissiondevice/1'
+    resource_type_link: u'.../#h_w_submission_device'
+    self_link: u'.../+hwdb/+submissiondevice/16'
+    device_link: u'.../+hwdb/+device/2'
+    driver_link: u'.../+hwdb/+driver/1'
+    hal_device_id: 121
+    id: 3
+    parent_link: u'.../+hwdb/+submissiondevice/2'
+    resource_type_link: u'.../#h_w_submission_device'
+    self_link: u'.../+hwdb/+submissiondevice/3'
