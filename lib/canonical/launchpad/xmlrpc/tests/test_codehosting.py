@@ -721,6 +721,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
 
+    def _makeProductWithDevFocus(self, private=False):
+        """Make a stacking-enabled product with a development focus.
+
+        :param private: Whether the development focus branch should be
+            private.
+        :return: The new Product and the new Branch.
+        """
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product, private=private)
+        self.factory.enableDefaultStackingForProduct(product, branch)
+        self.assertEqual(product.default_stacked_on_branch, branch)
+        return product, branch
+
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path. When
         # this happens, it returns a Fault saying so, including the path it
