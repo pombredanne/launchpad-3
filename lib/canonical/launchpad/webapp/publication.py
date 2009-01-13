@@ -480,6 +480,8 @@ class LaunchpadBrowserPublication(
                 # going to be retried.
                 orig_env.pop('launchpad.traversalticks', None)
                 orig_env.pop('launchpad.publicationticks', None)
+            # Our endRequest needs to know if a retry is pending or not.
+            request._wants_retry = True
             if isinstance(exc_info[1], Retry):
                 raise
             raise Retry(exc_info)
@@ -529,25 +531,28 @@ class LaunchpadBrowserPublication(
             self.debugReferencesLeak(request)
 
         # Maintain operational statistics.
-        OpStats.stats['requests'] += 1
+        if getattr(request, '_wants_retry', False):
+            OpStats.stats['retries'] += 1
+        else:
+            OpStats.stats['requests'] += 1
 
-        # Increment counters for HTTP status codes we track individually
-        # NB. We use IBrowserRequest, as other request types such as
-        # IXMLRPCRequest use IHTTPRequest as a superclass.
-        # This should be fine as Launchpad only deals with browser
-        # and XML-RPC requests.
-        if IBrowserRequest.providedBy(request):
-            OpStats.stats['http requests'] += 1
-            status = request.response.getStatus()
-            if status == 404: # Not Found
-                OpStats.stats['404s'] += 1
-            elif status == 500: # Unhandled exceptions
-                OpStats.stats['500s'] += 1
-            elif status == 503: # Timeouts
-                OpStats.stats['503s'] += 1
+            # Increment counters for HTTP status codes we track individually
+            # NB. We use IBrowserRequest, as other request types such as
+            # IXMLRPCRequest use IHTTPRequest as a superclass.
+            # This should be fine as Launchpad only deals with browser
+            # and XML-RPC requests.
+            if IBrowserRequest.providedBy(request):
+                OpStats.stats['http requests'] += 1
+                status = request.response.getStatus()
+                if status == 404: # Not Found
+                    OpStats.stats['404s'] += 1
+                elif status == 500: # Unhandled exceptions
+                    OpStats.stats['500s'] += 1
+                elif status == 503: # Timeouts
+                    OpStats.stats['503s'] += 1
 
-            # Increment counters for status code groups.
-            OpStats.stats[str(status)[0] + 'XXs'] += 1
+                # Increment counters for status code groups.
+                OpStats.stats[str(status)[0] + 'XXs'] += 1
 
         # Reset all Storm stores when not running the test suite. We could
         # reset them when running the test suite but that'd make writing tests
