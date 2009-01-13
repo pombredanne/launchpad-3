@@ -242,7 +242,7 @@ class BranchNamespaceSet:
 
     def traverse(self, segments):
         """See `IBranchNamespaceSet`."""
-        person_name = segments.next()[1:]
+        person_name = segments.next()
         person = self._findPerson(person_name)
         pillar_name = segments.next()
         pillar = self._findPillar(pillar_name)

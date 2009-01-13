@@ -496,11 +496,18 @@ class TestNamespaceSet(TestCaseWithFactory):
         self.assertEqual(
             branch.product, removeSecurityProxy(namespace).product)
 
+    def _getSegments(self, branch):
+        """Return an iterable of the branch name segments.
+
+        Note that the person element is *not* proceeded by a tilde.
+        """
+        return iter(branch.unique_name[1:].split('/'))
+
     def test_traverse_junk_branch(self):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable
         # of path segments, including junk branches.
         branch = self.factory.makeBranch(product=None)
-        segments = iter(branch.unique_name.split('/'))
+        segments = self._getSegments(branch)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
@@ -508,7 +515,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable
         # of path segments, including product branches.
         branch = self.factory.makeBranch()
-        segments = iter(branch.unique_name.split('/'))
+        segments = self._getSegments(branch)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
@@ -519,7 +526,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName()
         branch = self.factory.makeBranch(
             distroseries=distroseries, sourcepackagename=sourcepackagename)
-        segments = iter(branch.unique_name.split('/'))
+        segments = self._getSegments(branch)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
@@ -528,7 +535,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         # consumes those it needs to find a branch.
         branch = self.factory.makeBranch(product=None)
         trailing_segments = ['+foo', 'bar']
-        segments = iter(branch.unique_name.split('/') + trailing_segments)
+        segments = iter(branch.unique_name[1:].split('/') + trailing_segments)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
         self.assertEqual(trailing_segments, list(segments))

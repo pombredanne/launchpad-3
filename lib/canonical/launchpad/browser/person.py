@@ -277,7 +277,7 @@ class BranchTraversalMixin:
     """
 
     def _getSegments(self, pillar_name=None):
-        base = ['~' + self.context.name]
+        base = [self.context.name]
         if pillar_name is not None:
             base.append(pillar_name)
         return itertools.chain(iter(base), iter(self.request.stepstogo))

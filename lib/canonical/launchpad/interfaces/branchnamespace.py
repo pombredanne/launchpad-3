@@ -155,6 +155,7 @@ class IBranchNamespaceSet(Interface):
         """Look up the branch at the path given by 'segments'.
 
         :param segments: An iterable of names of Launchpad components.
+            The first segment is the username, *not* preceded by a '~`.
         :return: `IBranch`.
         """
 
