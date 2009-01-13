@@ -476,6 +476,27 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
+    def makePackageBranch(self, **kwargs):
+        """Make a package branch on an arbitrary package.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeBranch(container=self.makeSourcePackage(), **kwargs)
+
+    def makePersonalBranch(self, **kwargs):
+        """Make a personal branch on an arbitrary person.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeBranch(container=self.makePerson(), **kwargs)
+
+    def makeProductBranch(self, **kwargs):
+        """Make a product branch on an arbitrary product.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeBranch(container=self.makeProduct(), **kwargs)
+
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
 
