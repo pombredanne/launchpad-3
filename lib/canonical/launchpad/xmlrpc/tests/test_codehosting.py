@@ -64,6 +64,11 @@ class TestRunWithLogin(TestCaseWithFactory):
         username = run_with_login(self.person.id, get_logged_in_username)
         self.assertEqual(self.person.name, username)
 
+    def test_loginAsRequesterName(self):
+        # run_with_login can take a username as well as user id.
+        username = run_with_login(self.person.name, get_logged_in_username)
+        self.assertEqual(self.person.name, username)
+
     def test_logoutAtEnd(self):
         # run_with_login logs out once the decorated method is
         # finished.
