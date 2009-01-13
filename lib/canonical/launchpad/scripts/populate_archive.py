@@ -47,16 +47,18 @@ class ArchivePopulator(SoyuzScript):
         'records.')
 
     def populateArchive(
-        self, from_distribution, from_suite, component, to_distribution,
-        to_suite, to_archive, to_user, reason, include_binaries,
-        proc_families):
+        self, from_archive, from_distribution, from_suite, from_user,
+        component, to_distribution, to_suite, to_archive, to_user, reason,
+        include_binaries, proc_families):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
         same component must be used for the destination.
 
+        :param from_archive: the (optional) origin archive name.
         :param from_distribution: the origin's distribution.
         :param from_suite: the origin's suite.
+        :param from_user: the name of the origin PPA's owner.
         :param component: the origin's component.
 
         :param to_distribution: destination distribution.
@@ -91,10 +93,7 @@ class ArchivePopulator(SoyuzScript):
 
         def build_location(distro, suite, component):
             """Build and return package location."""
-            if suite is not None:
-                location = build_package_location(distro, suite)
-            else:
-                location = build_package_location(distro)
+            location = build_package_location(distro, suite=suite)
             if component is not None:
                 try:
                     the_component = getUtility(IComponentSet)[component]
@@ -104,8 +103,27 @@ class ArchivePopulator(SoyuzScript):
                 location.component = the_component
             return location
 
+        archive_set = getUtility(IArchiveSet)
         # Build the origin package location.
         the_origin = build_location(from_distribution, from_suite, component)
+        # Use an origin archive if specified and existent.
+        if from_archive is not None:
+            origin_archive = archive_set.getByDistroAndName(
+                the_origin.distribution, from_archive)
+            if origin_archive is not None:
+                the_origin.archive = origin_archive
+            else:
+                raise SoyuzScriptError(
+                    "Origin archive does not exist: '%s'" % from_archive)
+        # Use a PPA if specified and existent.
+        if from_user is not None:
+            origin_archive = archive_set.getPPAByDistributionAndOwnerName(
+                the_origin.distribution, from_user)
+            if origin_archive is not None:
+                the_origin.archive = origin_archive
+            else:
+                raise SoyuzScriptError(
+                    "No PPA for user: '%s'" % from_user)
 
         # Build the destination package location.
         the_destination = build_location(to_distribution, to_suite, component)
@@ -169,41 +187,49 @@ class ArchivePopulator(SoyuzScript):
         """Main function entry point."""
         def not_specified(option):
             return (option is None or option == '')
+        def specified(option):
+            return not (option is None or option == '')
 
-        if not_specified(self.options.proc_families):
+        options = self.options
+
+        if not_specified(options.proc_families):
             raise SoyuzScriptError(
                 "error: processor families not specified.")
 
-        if not_specified(self.options.from_distribution):
+        if not_specified(options.from_distribution):
             raise SoyuzScriptError(
                 "error: origin distribution not specified.")
 
-        if not_specified(self.options.to_distribution):
+        if not_specified(options.to_distribution):
             raise SoyuzScriptError(
                 "error: destination distribution not specified.")
 
-        if not_specified(self.options.to_user):
+        if not_specified(options.to_user):
             raise SoyuzScriptError("error: copy archive owner not specified.")
-        if not_specified(self.options.to_archive):
+        if not_specified(options.to_archive):
             raise SoyuzScriptError(
                 "error: destination copy archive not specified.")
-        if not valid_name(self.options.to_archive):
+        if not valid_name(options.to_archive):
             raise SoyuzScriptError(
-                "Invalid archive name: '%s'" % self.options.to_archive)
-        if not_specified(self.options.reason):
+                "Invalid archive name: '%s'" % options.to_archive)
+        if not_specified(options.reason):
             raise SoyuzScriptError(
                 "error: reason for copy operation not specified.")
 
-        if self.options.include_binaries == True:
+        if options.include_binaries == True:
             raise SoyuzScriptError(
                 "error: copying of binary packages is not supported yet.")
 
+        if specified(options.from_user) and specified(options.from_archive):
+            raise SoyuzScriptError(
+                "error: cannot specify both the origin PPA owner and name")
+
         self.populateArchive(
-            self.options.from_distribution, self.options.from_suite,
-            self.options.component, self.options.to_distribution,
-            self.options.to_suite, self.options.to_archive,
-            self.options.to_user, self.options.reason,
-            self.options.include_binaries, self.options.proc_families)
+            options.from_archive, options.from_distribution,
+            options.from_suite, options.from_user, options.component,
+            options.to_distribution, options.to_suite, options.to_archive,
+            options.to_user, options.reason, options.include_binaries,
+            options.proc_families)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -222,12 +248,18 @@ class ArchivePopulator(SoyuzScript):
             help='Whether to copy related binaries or not.')
 
         self.parser.add_option(
+            '--from-archive', dest='from_archive', default=None,
+            action='store', help='Origin archive name.')
+        self.parser.add_option(
             '--from-distribution', dest='from_distribution',
             default='ubuntu', action='store',
             help='Origin distribution name.')
         self.parser.add_option(
             '--from-suite', dest='from_suite', default=None,
             action='store', help='Origin suite name.')
+        self.parser.add_option(
+            '--from-user', dest='from_user', default=None,
+            action='store', help='Origin PPA owner name.')
 
         self.parser.add_option(
             '--to-distribution', dest='to_distribution',

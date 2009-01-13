@@ -158,7 +158,7 @@ class PackageCloner:
             FROM tmp_merge_copy_data
             WHERE obsoleted = True;
         """)
-        print('fresher packages: %s' % '\n'.join(str(r) for r in rset))
+        print('\nfresher packages: %s' % '\n'.join(str(r) for r in rset))
         rset = store.execute("""
             SELECT sourcepackagename, s_version, t_version
             FROM tmp_merge_copy_data
@@ -172,6 +172,7 @@ class PackageCloner:
             FROM tmp_merge_copy_data
         """)
         print('all packages:\n%s' % '\n'.join(str(r) for r in rset))
+        self._cleanup()
 
 
     def _compute_packageset_delta(self, origin):
@@ -246,6 +247,14 @@ class PackageCloner:
                 " AND secsrc.component = %s" % quote(origin.component))
         store.execute(find_origin_only_packages)
 
+    def _cleanup(self):
+        """Tidy up after a package set delta operation.
+
+        Drop the table with package set delta data.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute("DROP TABLE tmp_merge_copy_data CASCADE")
+
     def _init_packageset_delta(self, destination):
         """Set up a temp table with data about target archive packages.
 
@@ -263,7 +272,7 @@ class PackageCloner:
         # Create the temporary table that will hold the data required to
         # perform the merge copy.
         store.execute("""
-            CREATE TEMP TABLE tmp_merge_copy_data (
+            CREATE TABLE tmp_merge_copy_data (
                 -- Source archive package data, only set for packages that
                 -- will be copied.
                 s_sspph integer,
