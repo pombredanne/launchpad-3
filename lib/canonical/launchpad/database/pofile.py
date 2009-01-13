@@ -260,7 +260,9 @@ class POFileMixIn(RosettaStats):
                  WHERE id IN (
                    SELECT DISTINCT(msgid_singular)
                      FROM POTMsgSet
-                     WHERE POTMsgSet.potemplate=%s
+                     JOIN TranslationTemplateItem
+                       ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+                     WHERE TranslationTemplateItem.potemplate=%s
                  ) AND
                  msgid ILIKE '%%' || %s || '%%')) OR
         -- Step 1b: like above, just on msgid_plural.
@@ -270,7 +272,9 @@ class POFileMixIn(RosettaStats):
                  WHERE id IN (
                    SELECT DISTINCT(msgid_plural)
                      FROM POTMsgSet
-                     WHERE POTMsgSet.potemplate=%s
+                     JOIN TranslationTemplateItem
+                       ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+                     WHERE TranslationTemplateItem.potemplate=%s
                  ) AND
                  msgid ILIKE '%%' || %s || '%%'))
            )""" % (quote(self.potemplate), quote_like(text),
@@ -280,9 +284,10 @@ class POFileMixIn(RosettaStats):
     def findPOTMsgSetsContaining(self, text):
         """See `IPOFile`."""
         clauses = [
-            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
-            # Only count the number of POTMsgSet that are current.
-            'POTMsgSet.sequence > 0',
+            'TranslationTemplateItem.potemplate = %s' % sqlvalues(
+                self.potemplate),
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            'TranslationTemplateItem.sequence > 0',
             ]
 
         if text is not None:
@@ -311,6 +316,7 @@ class POFileMixIn(RosettaStats):
                 clauses.append(english_match)
 
         return POTMsgSet.select(" AND ".join(clauses),
+                                clauseTables=['TranslationTemplateItem'],
                                 orderBy='sequence')
 
 
