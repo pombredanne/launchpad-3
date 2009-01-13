@@ -78,4 +78,30 @@ foobar's list of unconfirmed emails anymore.
     >>> foobar.unvalidatedemails
     []
 
+Consuming a token will only consume that token and other unconsumed
+tokens for that email address and token type. Tokens which have already
+been consumed will not be updated.
 
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> token.date_consumed = datetime(
+    ...     2009, 1, 1, 16, 56, 59, tzinfo=pytz.timezone('UTC'))
+
+    >>> token3 = LoginTokenSet().new(
+    ...     foobar, 'foo.bar@canonical.com', 'foo.bar2@canonical.com',
+    ...     LoginTokenType.VALIDATEEMAIL)
+    >>> flush_database_updates()
+    >>> foobar.unvalidatedemails
+    [u'foo.bar2@canonical.com']
+
+    >>> token3.consume()
+    >>> token3.date_consumed is not None
+    True
+
+The original date_consumed of the first token will not have changed.
+
+    >>> flush_database_updates()
+
+    >>> token = LoginTokenSet().get(token.id)
+    >>> print token.date_consumed
+    2009-01-01 16:56:59+00:00

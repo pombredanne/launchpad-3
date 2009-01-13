@@ -10,6 +10,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
+from storm.expr import And, Not
+from storm.store import Store
 
 from canonical.config import config
 
@@ -25,6 +27,8 @@ from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 class LoginToken(SQLBase):
@@ -55,7 +59,7 @@ class LoginToken(SQLBase):
                 self.fingerprint, self.requester, self.tokentype)
         else:
             tokens = LoginTokenSet().searchByEmailRequesterAndType(
-                self.email, self.requester, self.tokentype)
+                self.email, self.requester, self.tokentype, False)
 
         for token in tokens:
             token.date_consumed = UTC_NOW
@@ -261,14 +265,21 @@ class LoginTokenSet:
         except SQLObjectNotFound:
             return default
 
-    def searchByEmailRequesterAndType(self, email, requester, type):
+    def searchByEmailRequesterAndType(self, email, requester, type,
+                                      consumed=None):
         """See ILoginTokenSet."""
-        requester_id = None
-        if requester is not None:
-            requester_id = requester.id
-        return LoginToken.select(AND(LoginToken.q.email==email,
-                                     LoginToken.q.requesterID==requester_id,
-                                     LoginToken.q.tokentype==type))
+        query = And(
+            LoginToken.email == email,
+            LoginToken.requester == requester,
+            LoginToken.tokentype == type)
+
+        if consumed:
+            query = And(query, Not(LoginToken.date_consumed == None))
+        elif not consumed:
+            query = And(query, LoginToken.date_consumed == None)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        return store.find(LoginToken, query)
 
     def deleteByEmailRequesterAndType(self, email, requester, type):
         """See ILoginTokenSet."""
