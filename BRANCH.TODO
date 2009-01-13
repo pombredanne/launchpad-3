@@ -7,3 +7,4 @@
 * pass /static/, /+login/ urls on to codebrowse
 * add config value for location of cookie-signing secret
 * translatePath needs to handle usernames too
+* adjust apache config
