@@ -151,19 +151,23 @@
             ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
           </td>
         </tr>
-        <tr
-          tal:define="sprint_links context/sprint_links"
-          tal:condition="sprint_links"
-        >
+        <tr>
           <th>Sprints:</th>
           <td>
-            <tal:per_sprint tal:repeat="sprint_link sprint_links">
+            <tal:per_sprint tal:condition="context/sprint_links"
+                            tal:repeat="sprint_link context/sprint_links">
                 <tal:approval replace="structure sprint_link/@@+icon-status" />
                 <a
                   tal:attributes="href sprint_link/sprint/fmt:url"
                   tal:content="sprint_link/sprint/name"
                 /><br />
             </tal:per_sprint>
+            <tal:none condition="not: context/sprint_links">None</tal:none>
+            <div tal:define="link context_menu/linksprint"
+                 tal:condition="link/enabled"
+                 tal:content="structure link/render"
+            >Link to a bug
+            </div>
           </td>
         </tr>
       </tbody>
@@ -249,18 +253,27 @@
         </div>
       </div>
 
-
-  <tal:deptree condition="view/has_dep_tree">
-
-      <h2>Dependency tree</h2>
-
-    <tal:block tal:replace="structure context/@@+deptreeimgtag" />
-
-    <p class="discreet">
-      * Blueprints in grey have been implemented.
-    </p>
-
-  </tal:deptree>
+      <tal:deptree condition="view/has_dep_tree">
+          <h2>Dependency tree</h2>
+        <tal:block tal:replace="structure context/@@+deptreeimgtag" />
+      <div class="actions">
+        <div tal:define="link context_menu/removedependency"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        >Remove Dependency
+        </div>
+      </div>
+        <p class="discreet">
+          * Blueprints in grey have been implemented.
+        </p>
+      </tal:deptree>
+      <div class="actions">
+        <div tal:define="link context_menu/adddependency"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        >Add Dependency
+        </div>
+      </div>
 
       <div tal:replace="structure context/@@+portlet-feedbackqueue" />
       <div class="actions">

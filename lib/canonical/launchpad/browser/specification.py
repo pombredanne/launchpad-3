@@ -413,8 +413,9 @@ class SpecificationContextMenu(ContextMenu):
                    bool(self.context.blocked_specs))
         return Link('+deptree', text, icon='info', enabled=enabled)
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def linksprint(self):
-        text = 'Propose for meeting agenda'
+        text = 'Propose for Sprint'
         return Link('+linksprint', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
