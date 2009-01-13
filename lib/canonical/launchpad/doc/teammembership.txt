@@ -878,30 +878,16 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     >>> print bad_user.preferredemail
     None
 
-The teams's notifications do not fail when they process bad user, but an oops
-is reported.
-
-    >>> from zope.error.interfaces import IErrorReportingUtility
-    >>> error_utility = getUtility(IErrorReportingUtility)
-
-    >>> def next_oops_id_to_index():
-    ...     text, index = error_utility.getLastOopsReport().id.split('T')
-    ...     return int(index)
+The teams's notifications do not fail when they process bad user.
 
     >>> bad_membership = membershipset.getByPersonAndTeam(bad_user, t3)
     >>> bad_membership.setExpirationDate(utc_now + timedelta(days=9), foobar)
     >>> bad_membership.sendExpirationWarningEmail()
-    >>> oops_zero = next_oops_id_to_index()
-    >>> error_utility.getLastOopsReport().value
-    '~bad-user does not have a preferred email address.'
 
     >>> t3.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
     >>> t3.defaultrenewalperiod = 1
     >>> removeSecurityProxy(bad_membership).dateexpires = utc_now
     >>> bad_membership.sendAutoRenewalNotification()
-    >>> next_oops_id_to_index() - oops_zero
-    1
 
     >>> bad_membership.setStatus(TeamMembershipStatus.EXPIRED, bad_user)
-    >>> next_oops_id_to_index() - oops_zero
-    2
+

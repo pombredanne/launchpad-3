@@ -89,36 +89,3 @@ address as a set for function that require the a set of email addresses.
     >>> get_contact_email_addresses(user)
     set(['user@canonical.com'])
 
-It reports an oops when the user does not have a preferred email address,
-but still returns an empty set. The call site must decide what to do when
-there are no email addresses.
-
-    >>> from zope.error.interfaces import IErrorReportingUtility
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     EmailAddressStatus)
-
-    >>> error_utility = getUtility(IErrorReportingUtility)
-    >>> bad_user = factory.makePerson(
-    ...     email='bad-user@canonical.com',
-    ...     name='bad-user',)
-
-    # Admins disable a user's preferred email address when an account
-    # is suspended.
-    >>> login('foo.bar@canonical.com')
-    >>> bad_user.preferredemail.status = EmailAddressStatus.OLD
-    >>> removeSecurityProxy(bad_user)._preferredemail_cached = None
-
-    >>> get_contact_email_addresses(bad_user)
-    set([])
-    >>> oops = error_utility.getLastOopsReport()
-    >>> original_opps = oops.id
-    >>> oops.value
-    '~bad-user does not have a preferred email address.'
-
-A user with a preferred email address does not report an oops.
-
-    >>> address_set = get_contact_email_addresses(user)
-    >>> original_opps == error_utility.getLastOopsReport().id
-    True
-
