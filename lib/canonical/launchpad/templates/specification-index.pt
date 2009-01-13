@@ -41,6 +41,8 @@
         <tr>
           <th>Priority:</th>
           <td><tal:block content="context/priority/title"/>
+            <tal:guidance condition="not: context/direction_approved"
+            >(Needs guidance)</tal:guidance>
             <a tal:define="link context_menu/priority"
                  tal:condition="link/enabled"
                  tal:attributes="href link/url"
@@ -51,8 +53,6 @@
           <th>Definition:</th>
           <td>
             <tal:definition replace="context/definition_status/title" />
-            <tal:guidance condition="not: context/direction_approved"
-            >(Needs guidance)</tal:guidance>
             <a tal:define="link context_menu/status"
                  tal:condition="link/enabled"
                  tal:attributes="href link/url"
