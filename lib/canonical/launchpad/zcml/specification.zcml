@@ -106,9 +106,6 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.SpecificationSimpleView">
     <browser:page
-      name="+portlet-branches"
-      template="../templates/specification-portlet-branches.pt" />
-    <browser:page
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
     <browser:page
