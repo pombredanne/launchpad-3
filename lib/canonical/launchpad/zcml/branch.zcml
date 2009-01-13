@@ -353,4 +353,16 @@
     <allow
      interface="canonical.launchpad.interfaces.branch.IBranchDiffJobSource" />
   </securedutility>
+  <class class="canonical.launchpad.database.branch.RevisionMailJob">
+    <allow interface="canonical.launchpad.interfaces.branch.IRevisionMailJob"
+    />
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
+  </class>
+  <securedutility
+      component="canonical.launchpad.database.branch.RevisionMailJob"
+      provides="canonical.launchpad.interfaces.branch.IRevisionMailJobSource" >
+    <allow
+     interface="canonical.launchpad.interfaces.branch.IRevisionMailJobSource"
+    />
+  </securedutility>
 </configure>

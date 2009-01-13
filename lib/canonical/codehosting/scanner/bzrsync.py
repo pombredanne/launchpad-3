@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchDiffJobSource,
-    IBranchSet,)
+    IBranchSet, IRevisionMailJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -345,7 +345,7 @@ class BranchMailer:
             mailer.sendAll()
         else:
             for message, diff, subject, revno in self.pending_emails:
-                job = getUtililty(IRevisionMailJobSource).create(
+                job = getUtility(IRevisionMailJobSource).create(
                     self.db_branch, revno, self.email_from, message, diff,
                     subject)
                 job.run()

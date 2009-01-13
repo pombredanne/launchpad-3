@@ -1487,7 +1487,6 @@ class IRevisionMailJob(Interface):
 
 
 class IRevisionMailJobSource(Interface):
-
     """A utility to create and retrieve RevisionMailJobs."""
 
     def create(db_branch, revno, email_from, message, diff, subject):

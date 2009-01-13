@@ -1697,7 +1697,10 @@ class RevisionMailJob(object):
 
     @property
     def revno(self):
-        return long(self.metadata['revno'])
+        revno = self.metadata['revno']
+        if isinstance(revno, int):
+            revno = long(revno)
+        return revno
 
     @property
     def from_address(self):

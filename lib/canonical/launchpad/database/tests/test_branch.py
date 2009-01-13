@@ -1564,6 +1564,18 @@ class TestRevisionMailJob(TestCaseWithFactory):
             '+edit-subscription.\n',
             mail.get_payload(decode=True))
 
+    def test_revno_string(self):
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 'removed', 'from@example.com', 'hello', 'diff', 'subject')
+        self.assertEqual('removed', job.revno)
+
+    def test_revno_long(self):
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.com', 'hello', 'diff', 'subject')
+        self.assertIsInstance(job.revno, long)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
