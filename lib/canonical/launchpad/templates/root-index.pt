@@ -61,6 +61,10 @@
         </p>
 
         <h2>Start here:</h2>
+        <p>
+          Are you looking for something, or do you want to register a
+          new project, distribution, person, or team?
+        </p>
         <ul style="font-size: larger">
           <li><a href="/projects">Open Source Projects</a></li>
           <li><a href="/distros">Distributions</a></li>
@@ -71,37 +75,37 @@
 
       <div class="three column middle">
         <h2>What&#8217;s new?</h2>
-        <ul>
+        <ul> 
 		<li class="news">
-            <a href="http://news.launchpad.net/?p=242">
-              <strong>OpenID with Launchpad</strong><br />          
-              Log into hundreds of other websites using your
-              Launchpad identity!
+            <a href="http://news.launchpad.net/cool-new-stuff/announcing-the-launchpad-plugin-api-spec">
+              <strong>New bug plugin API</strong><br />          
+              Create your own plugin for direct communication between Launchpad
+              and your favourite bug tracker.
             </a>
-         </li>
-         <li class="news">
-            <a href="http://news.launchpad.net/?p=214">
-              <strong>Contact any Launchpad user</strong><br />
-              Get in touch with other Launchpad users without knowing
-              their email address.
+         </li>  
+		<li class="news">
+            <a href="http://news.launchpad.net/cool-new-stuff/new-launchpad-plugins-for-drupal">
+              <strong>Drupal integration</strong><br />          
+              Authenticate visitors to your Drupal site using Launchpad
+              and assign roles based on their team memberships.
             </a>
-         </li>
+         </li>      
+		<li class="news">
+            <a href="http://news.launchpad.net/general/launchpad-now-on-twitter-and-identica">
+              <strong>We're on Twitter and identi.ca</strong><br />          
+              Follow Launchpad news and bug reports. Also, microblog your project using Launchpad feeds!
+            </a>
+         </li>                          
          <li class="news">
             <a href="http://news.launchpad.net/?p=106">
               <strong>Help test Launchpad's new API!</strong><br />
               Join the beta of our web services API and Python library.
             </a>
          </li>
-          <li class="news">
-            <a href="http://news.launchpad.net/?p=115">
-              <strong>Bugzilla and Trac plugins now in beta</strong><br />
-              Run Bugzilla or Trac? Help beta test our new
-              plugins to start sharing bug comments with Launchpad.
-            </a>
-         </li>
+
         </ul>
         <div class="discreet" style="text-align: right">
-          Updated 2008-11-19.
+          Updated 2008-12-17.
           <a href="http://news.launchpad.net">More...</a>
         </div>
       </div>
@@ -142,22 +146,5 @@
         </p>
       </div>
     </div><!--main-->
-    <div metal:fill-slot="help">
-      <p>
-      This panel provides help on individual Launchpad pages.
-      Open it on any page that you don&rsquo;t understand.
-      </p>
-      <p>
-      You can browse our dedicated help site, <a
-      href="https://help.launchpad.net/">help.launchpad.net</a>, for a
-      complete set of documents about Launchpad
-      </p>
-      <p>
-      You can also find help on the <a
-      href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
-      users mailing list</a> or online via IRC, on <a
-      href="http://freenode.net/">Freenode</a>, channel #launchpad.
-      </p>
-    </div>
   </body>
 </html>

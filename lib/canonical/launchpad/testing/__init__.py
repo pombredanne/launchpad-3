@@ -17,6 +17,25 @@ from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.testing.factory import *
 
 
+class FakeTime:
+    """Provides a controllable implementation of time.time()."""
+
+    def __init__(self, start):
+        """Set up the instance.
+
+        :param start: The value that will initially be returned by `now()`.
+        """
+        self._now = start
+
+    def advance(self, amount):
+        """Advance the value that will be returned by `now()` by 'amount'."""
+        self._now += amount
+
+    def now(self):
+        """Use this bound method instead of time.time in tests."""
+        return self._now
+
+
 class TestCase(unittest.TestCase):
     """Provide Launchpad-specific test facilities."""
 
@@ -164,6 +183,28 @@ class TestCase(unittest.TestCase):
         """Assert that 'needle' is not in 'haystack'."""
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
+
+    def assertRaises(self, excClass, callableObj, *args, **kwargs):
+        """Assert that a callable raises a particular exception.
+
+        :param excClass: As for the except statement, this may be either an
+            exception class, or a tuple of classes.
+        :param callableObj: A callable, will be passed ``*args`` and
+            ``**kwargs``.
+
+        Returns the exception so that you can examine it.
+        """
+        try:
+            callableObj(*args, **kwargs)
+        except excClass, e:
+            return e
+        else:
+            if getattr(excClass,'__name__', None) is not None:
+                excName = excClass.__name__
+            else:
+                # probably a tuple
+                excName = str(excClass)
+            raise self.failureException, "%s not raised" % excName
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):

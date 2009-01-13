@@ -37,7 +37,7 @@ Salgado receives the email message from No Priv.
     To: Guilherme Salgado <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
     Message-ID: ...
-    X-Launchpad-Message-Rationale: ContactViaWeb
+    X-Launchpad-Message-Rationale: ContactViaWeb user
     Date: ...
     Reply-To: No Privileges Person <no-priv@canonical.com>
     Sender: bounces@canonical.com
@@ -49,9 +49,11 @@ Salgado receives the email message from No Priv.
     X-Launchpad-Hash: ...
     <BLANKLINE>
     Just saying hello
-    -- 
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    --
+    This message was sent from Launchpad by the user
+    No Privileges Person (http://launchpad.dev/~no-priv)
+    using the "Contact this user" link on your profile page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 No Priv starts to send another message to Salgado, but then changes her mind.
@@ -94,7 +96,7 @@ alternative addresses.
     To: Guilherme Salgado <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
     Message-ID: ...
-    X-Launchpad-Message-Rationale: ContactViaWeb
+    X-Launchpad-Message-Rationale: ContactViaWeb user
     Date: ...
     Reply-To: Sample Person <testing@canonical.com>
     Sender: bounces@canonical.com
@@ -106,9 +108,11 @@ alternative addresses.
     X-Launchpad-Hash: ...
     <BLANKLINE>
     Hello again
-    -- 
-    This message was sent by Launchpad via the Contact user/team
-    link on your profile page.  For more information see
+    --
+    This message was sent from Launchpad by the user
+    Sample Person (http://launchpad.dev/~name12)
+    using the "Contact this user" link on your profile page.
+    For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 
@@ -186,19 +190,18 @@ This holds true even for Sample Person, who is hiding her email addresses.
 
 == Teams ==
 
-Teams can also be contacted directly, regardless of whether they have no
-official contact address, use a Launchpad mailing list, or have the contact
-address set to an explicit address.
+Teams can also be contacted directly by team members, regardless of whether
+the team has set a contact address or uses a Launchpad mailing list.
 
 Guadamen have no contact address, so contacting them contacts all users
 directly.
 
-    >>> user_browser.open('http://launchpad.dev/~guadamen')
-    >>> user_browser.getLink('Contact this team').click()
-    >>> print user_browser.title
-    Contact this team
+    >>> admin_browser.open('http://launchpad.dev/~guadamen')
+    >>> admin_browser.getLink('Contact this team').click()
+    >>> print admin_browser.title
+    Contact your team
 
-Guadamen register an explicit contact address...
+Foo Bar registers an explicit contact address for Guadamen...
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen/+contactaddress')
     >>> admin_browser.getControl('Another e-mail address').selected = True
@@ -219,12 +222,12 @@ Guadamen register an explicit contact address...
 
 ...which can also be contacted directly.
 
-    >>> user_browser.open('http://launchpad.dev/~guadamen')
-    >>> user_browser.getLink('Contact this team').click()
-    >>> print user_browser.title
-    Contact this team
+    >>> admin_browser.open('http://launchpad.dev/~guadamen')
+    >>> admin_browser.getLink('Contact this team').click()
+    >>> print admin_browser.title
+    Contact your team
 
-Guadamen later register a Launchpad mailing list...
+Foo Bar later registers a Launchpad mailing list for Guadamen...
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen/+mailinglist')
     >>> admin_browser.getControl('Apply for Mailing List').click()
@@ -234,7 +237,7 @@ Guadamen later register a Launchpad mailing list...
 
 ...which too can be contacted directly.
 
-    >>> user_browser.open('http://launchpad.dev/~guadamen')
-    >>> user_browser.getLink('Contact this team').click()
-    >>> print user_browser.title
-    Contact this team
+    >>> admin_browser.open('http://launchpad.dev/~guadamen')
+    >>> admin_browser.getLink('Contact this team').click()
+    >>> print admin_browser.title
+    Contact your team

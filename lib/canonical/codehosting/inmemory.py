@@ -13,7 +13,10 @@ from xmlrpclib import Fault
 from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.branch import BranchType, IBranch
+from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
+from canonical.launchpad.ftests import ANONYMOUS
+from canonical.launchpad.interfaces.branch import (
+    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
     PERMISSION_DENIED_FAULT_CODE)
@@ -100,7 +103,8 @@ class FakeBranch(FakeDatabaseObject):
     """Fake branch object."""
 
     def __init__(self, branch_type, name, owner, url=None, product=None,
-                 stacked_on=None, private=False, registrant=None):
+                 stacked_on=None, private=False, registrant=None,
+                 distroseries=None, sourcepackagename=None):
         self.branch_type = branch_type
         self.last_mirror_attempt = None
         self.last_mirrored = None
@@ -116,11 +120,20 @@ class FakeBranch(FakeDatabaseObject):
         self.private = private
         self.product = product
         self.registrant = registrant
+        self._mirrored = False
+        self.distroseries = distroseries
+        self.sourcepackagename = sourcepackagename
 
     @property
     def unique_name(self):
         if self.product is None:
-            product = '+junk'
+            if self.distroseries is None:
+                product = '+junk'
+            else:
+                product = '%s/%s/%s' % (
+                    self.distroseries.distribution.name,
+                    self.distroseries.name,
+                    self.sourcepackagename.name)
         else:
             product = self.product.name
         return '~%s/%s/%s' % (self.owner.name, product, self.name)
@@ -172,7 +185,13 @@ class FakeProduct(FakeDatabaseObject):
 
     @property
     def default_stacked_on_branch(self):
-        return self.development_focus.user_branch
+        b = self.development_focus.user_branch
+        if b is None:
+            return None
+        elif b._mirrored:
+            return b
+        else:
+            return None
 
 
 class FakeProductSeries(FakeDatabaseObject):
@@ -191,20 +210,46 @@ class FakeScriptActivity(FakeDatabaseObject):
         self.date_completed = datetime_from_tuple(date_completed)
 
 
+class FakeDistribution(FakeDatabaseObject):
+
+    def __init__(self, name):
+        self.name = name
+
+
+class FakeDistroSeries(FakeDatabaseObject):
+    """Fake distroseries."""
+
+    def __init__(self, name, distribution):
+        self.name = name
+        self.distribution = distribution
+
+
+class FakeSourcePackageName(FakeDatabaseObject):
+    """Fake SourcePackageName."""
+
+    def __init__(self, name):
+        self.name = name
+
+
 DEFAULT_PRODUCT = object()
 
 
 class FakeObjectFactory(ObjectFactory):
 
-    def __init__(self, branch_set, person_set, product_set):
+    def __init__(self, branch_set, person_set, product_set, distribution_set,
+                 distroseries_set, sourcepackagename_set):
         super(FakeObjectFactory, self).__init__()
         self._branch_set = branch_set
         self._person_set = person_set
         self._product_set = product_set
+        self._distribution_set = distribution_set
+        self._distroseries_set = distroseries_set
+        self._sourcepackagename_set = sourcepackagename_set
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
-                   registrant=None):
+                   registrant=None, distroseries=None,
+                   sourcepackagename=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -221,9 +266,27 @@ class FakeObjectFactory(ObjectFactory):
         branch = FakeBranch(
             branch_type, name=name, owner=owner, url=url,
             stacked_on=stacked_on, product=product, private=private,
-            registrant=registrant)
+            registrant=registrant, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
         self._branch_set._add(branch)
         return branch
+
+    def makeDistribution(self):
+        distro = FakeDistribution(self.getUniqueString())
+        self._distribution_set._add(distro)
+        return distro
+
+    def makeDistroRelease(self):
+        distro = self.makeDistribution()
+        distroseries_name = self.getUniqueString()
+        distroseries = FakeDistroSeries(distroseries_name, distro)
+        self._distroseries_set._add(distroseries)
+        return distroseries
+
+    def makeSourcePackageName(self):
+        sourcepackagename = FakeSourcePackageName(self.getUniqueString())
+        self._sourcepackagename_set._add(sourcepackagename)
+        return sourcepackagename
 
     def makeTeam(self, owner):
         team = FakeTeam(name=self.getUniqueString(), members=[owner])
@@ -240,6 +303,18 @@ class FakeObjectFactory(ObjectFactory):
         self._product_set._add(product)
         return product
 
+    def enableDefaultStackingForProduct(self, product, branch=None):
+        """Give 'product' a default stacked-on branch.
+
+        :param product: The product to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.  If not supplied, a fresh branch will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch(product=product)
+        branch._mirrored = True
+        product.development_focus.user_branch = branch
+        return branch
 
 class FakeBranchPuller:
 
@@ -325,29 +400,32 @@ class FakeBranchPuller:
 
 class FakeBranchFilesystem:
 
-    def __init__(self, branch_set, person_set, product_set, factory):
+    def __init__(self, branch_set, person_set, product_set, distribution_set,
+                 distroseries_set, sourcepackagename_set, factory):
         self._branch_set = branch_set
         self._person_set = person_set
         self._product_set = product_set
+        self._distribution_set = distribution_set
+        self._distroseries_set = distroseries_set
+        self._sourcepackagename_set = sourcepackagename_set
         self._factory = factory
 
     def createBranch(self, requester_id, branch_path):
         if not branch_path.startswith('/'):
             return faults.InvalidPath(branch_path)
+        escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
         try:
-            escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
-            branch_tokens = escaped_path.split('/')
-            owner_name, product_name, branch_name = branch_tokens
+            namespace_path, branch_name = escaped_path.rsplit('/', 1)
         except ValueError:
             return Fault(
                 PERMISSION_DENIED_FAULT_CODE,
                 "Cannot create branch at '%s'" % branch_path)
-        owner_name = owner_name[1:]
-        owner = self._person_set.getByName(owner_name)
+        data = BranchNamespaceSet().parse(namespace_path)
+        owner = self._person_set.getByName(data['person'])
         if owner is None:
             return Fault(
                 NOT_FOUND_FAULT_CODE,
-                "User/team %r does not exist." % (owner_name,))
+                "User/team %r does not exist." % (data['person'],))
         registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
         # don't need to do so here, since the tests above this layer never
@@ -359,21 +437,48 @@ class FakeBranchFilesystem:
                 PERMISSION_DENIED_FAULT_CODE,
                 ('%s cannot create branches owned by %s'
                  % (registrant.displayname, owner.displayname)))
-        if product_name == '+junk':
+        product = distroseries = sourcepackagename = None
+        if data['product'] == '+junk':
             if owner.isTeam():
                 return Fault(
                     PERMISSION_DENIED_FAULT_CODE,
-                    'Cannot create team-owned junk branches.')
+                    BranchCreationNoTeamOwnedJunkBranches.error_message)
             product = None
-        else:
-            product = self._product_set.getByName(product_name)
+        elif data['product'] is not None:
+            product = self._product_set.getByName(data['product'])
             if product is None:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "Project %r does not exist." % (product_name,))
+                    "Project %r does not exist." % (data['product'],))
+        elif data['distribution'] is not None:
+            distro = self._distribution_set.getByName(data['distribution'])
+            if distro is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "No such distribution: '%s'." % (data['distribution'],))
+            distroseries = self._distroseries_set.getByName(
+                data['distroseries'])
+            if distroseries is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "No such distribution series: '%s'."
+                    % (data['distroseries'],))
+            sourcepackagename = self._sourcepackagename_set.getByName(
+                data['sourcepackagename'])
+            if sourcepackagename is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "No such source package: '%s'."
+                    % (data['sourcepackagename'],))
+        else:
+            return Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                "Cannot create branch at '%s'" % branch_path)
         try:
             return self._factory.makeBranch(
                 owner=owner, name=branch_name, product=product,
+                distroseries=distroseries,
+                sourcepackagename=sourcepackagename,
                 registrant=registrant, branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
             return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
@@ -389,6 +494,8 @@ class FakeBranchFilesystem:
         # behaviour should generate explicit errors.)
         if person_id == LAUNCHPAD_SERVICES:
             return True
+        if person_id == ANONYMOUS:
+            return not branch.private
         if not branch.private:
             return True
         person = self._person_set.get(person_id)
@@ -396,7 +503,7 @@ class FakeBranchFilesystem:
 
     def _canWrite(self, person_id, branch):
         """Can the person 'person_id' write to 'branch'?"""
-        if person_id == LAUNCHPAD_SERVICES:
+        if person_id in [ANONYMOUS, LAUNCHPAD_SERVICES]:
             return False
         if branch.branch_type != BranchType.HOSTED:
             return False
@@ -501,13 +608,19 @@ class InMemoryFrontend:
         self._script_activity_set = ObjectSet()
         self._person_set = ObjectSet()
         self._product_set = ObjectSet()
+        self._distribution_set = ObjectSet()
+        self._distroseries_set = ObjectSet()
+        self._sourcepackagename_set = ObjectSet()
         self._factory = FakeObjectFactory(
-            self._branch_set, self._person_set, self._product_set)
+            self._branch_set, self._person_set, self._product_set,
+            self._distribution_set, self._distroseries_set,
+            self._sourcepackagename_set)
         self._puller = FakeBranchPuller(
             self._branch_set, self._script_activity_set)
         self._branchfs = FakeBranchFilesystem(
             self._branch_set, self._person_set, self._product_set,
-            self._factory)
+            self._distribution_set, self._distroseries_set,
+            self._sourcepackagename_set, self._factory)
 
     def getFilesystemEndpoint(self):
         """See `LaunchpadDatabaseFrontend`.

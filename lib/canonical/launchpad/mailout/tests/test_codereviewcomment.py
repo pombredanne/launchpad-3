@@ -6,11 +6,14 @@
 
 from unittest import TestLoader
 
+from zope.component import getUtility
+
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     CodeReviewVote)
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.codereviewcomment import (
     CodeReviewCommentMailer)
@@ -139,7 +142,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
                     'Reply-To': mailer._getReplyToAddress(),
                     'In-Reply-To': message.parent.rfc822msgid}
         for header, value in expected.items():
-            self.assertEqual(ctrl.headers[header], value)
+            self.assertEqual(ctrl.headers[header], value, header)
         self.assertEqual(expected, ctrl.headers)
 
     def test_useRootMessageId(self):
@@ -193,6 +196,23 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Review: Approve dbtag', ctrl.body.splitlines()[0])
         self.assertEqual(ctrl.body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
+
+    def test_mailer_attachments(self):
+        # Ensure that the attachments are attached.
+        # Only attachments that we would show in the web ui are attached,
+        # so the diff should be attached, and the jpeg image not.
+        msg = self.factory.makeEmailMessage(
+            body='This is the body of the email.',
+            attachments=[
+                ('inc.diff', 'text/x-diff', 'This is a diff.'),
+                ('pic.jpg', 'image/jpeg', 'Binary data')])
+        message = getUtility(IMessageSet).fromEmail(msg.as_string())
+        bmp = self.factory.makeBranchMergeProposal()
+        comment = bmp.createCommentFromMessage(message, None, None, msg)
+        mailer = CodeReviewCommentMailer.forCreation(comment, msg)
+        # The attachments of the mailer should have only the diff.
+        first, diff, image = msg.get_payload()
+        self.assertEqual([diff], mailer.attachments)
 
 
 def test_suite():

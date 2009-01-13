@@ -112,7 +112,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        """See `GeneralFormView`."""
+        """See `LaunchpadFormView`."""
         teams = set(self.user_teams)
         subscribed_teams = set(team
                                for team in teams

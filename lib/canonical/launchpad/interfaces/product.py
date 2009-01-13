@@ -13,6 +13,7 @@ __all__ = [
     'IProductSet',
     'License',
     'LicenseStatus',
+    'NoSuchProduct',
     ]
 
 import sets
@@ -40,6 +41,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -50,8 +52,7 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -81,8 +82,15 @@ class LicenseStatus(DBEnumeratedType):
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
+    sort_order = (
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC', 'ECLIPSE',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
+        'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
+        'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
+        'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
+
     ACADEMIC = DBItem(10, "Academic Free License")
-    AFFERO = DBItem(20, "Affero GPL")
+    AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
@@ -212,6 +220,7 @@ class IProductPublic(
     datecreated = exported(
         Datetime(
             title=_('Date Created'),
+            required=True, readonly=True,
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
 
@@ -714,3 +723,9 @@ class IProductReviewSearch(Interface):
 
     subscription_modified_before = Date(
         title=_("and"), required=False)
+
+
+class NoSuchProduct(NameLookupFailed):
+    """Raised when we try to find a product that doesn't exist."""
+
+    _message_prefix = "No such product"

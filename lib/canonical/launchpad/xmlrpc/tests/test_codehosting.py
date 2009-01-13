@@ -19,7 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranchSet,
+    BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
@@ -432,10 +433,8 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # on, then _getBranchPullInfo returns (id, url, unique_name,
         # default_branch_unique_name).
         product = self.factory.makeProduct()
+        default_branch = self.factory.enableDefaultStackingForProduct(product)
         branch = self.factory.makeBranch(product=product)
-        series = removeSecurityProxy(product.development_focus)
-        default_branch = self.factory.makeBranch(product=product)
-        series.user_branch = default_branch
         info = self.storage._getBranchPullInfo(branch)
         self.assertEqual(
             (branch.id, branch.getPullURL(), branch.unique_name,
@@ -543,7 +542,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE,
-            'Cannot create team-owned junk branches.', fault)
+            BranchCreationNoTeamOwnedJunkBranches.error_message, fault)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -614,6 +613,73 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "Cannot create branch at '%s'" % path
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE, message, fault)
+
+    def test_createBranch_source_package(self):
+        # createBranch can take the path to a source package branch and create
+        # it with all the right attributes.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/%s/%s/%s' % (
+            owner.name,
+            distroseries.distribution.name,
+            distroseries.name,
+            sourcepackagename.name,
+            branch_name)
+        branch_id = self.branchfs.createBranch(owner.id, escape(unique_name))
+        login(ANONYMOUS)
+        branch = self.branch_set.get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual(distroseries, branch.distroseries)
+        self.assertEqual(sourcepackagename, branch.sourcepackagename)
+        self.assertEqual(branch_name, branch.name)
+        self.assertEqual(owner, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
+
+    def test_createBranch_invalid_distro(self):
+        # If createBranch is called with the path to a non-existent distro, it
+        # will return a Fault saying so in plain English.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
+            owner.name, distroseries.name, sourcepackagename.name,
+            branch_name)
+        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        message = "No such distribution: 'ningnangnong'."
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
+    def test_createBranch_invalid_distroseries(self):
+        # If createBranch is called with the path to a non-existent
+        # distroseries, it will return a Fault saying so.
+        owner = self.factory.makePerson()
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/ningnangnong/%s/%s' % (
+            owner.name, distribution.name, sourcepackagename.name,
+            branch_name)
+        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        message = "No such distribution series: 'ningnangnong'."
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
+    def test_createBranch_invalid_sourcepackagename(self):
+        # If createBranch is called with the path to an invalid source
+        # package, it will return a Fault saying so.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
+            owner.name, distroseries.distribution.name, distroseries.name,
+            branch_name)
+        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        message = "No such source package: 'ningnangnong'."
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
@@ -745,8 +811,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         """
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
-        series = removeSecurityProxy(product.development_focus)
-        series.user_branch = branch
+        self.factory.enableDefaultStackingForProduct(product, branch)
+        self.assertEqual(product.default_stacked_on_branch, branch)
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):
@@ -840,7 +906,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
-        fault = self.branchfs.translatePath(requester.id, path)
+        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+            requester = requester.id
+        fault = self.branchfs.translatePath(requester, path)
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
@@ -963,6 +1031,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/%s' % branch.unique_name)
         translation = self.branchfs.translatePath(LAUNCHPAD_SERVICES, path)
         login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_anonymous_cant_see_private_branch(self):
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
+        path = escape(u'/%s' % branch.unique_name)
+        self.assertNotFound(ANONYMOUS, path)
+
+    def test_translatePath_anonymous_public_branch(self):
+        branch = self.factory.makeBranch()
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(ANONYMOUS, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)

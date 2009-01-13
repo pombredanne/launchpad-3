@@ -13,7 +13,8 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Join
+from storm.locals import Count, Join
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
@@ -24,8 +25,13 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
+from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
@@ -53,8 +59,10 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
@@ -420,6 +428,11 @@ class Archive(SQLBase):
     @property
     def number_of_sources(self):
         """See `IArchive`."""
+        return self.getPublishedSources().count()
+
+    @property
+    def number_of_sources_published(self):
+        """See `IArchive`."""
         return self.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED).count()
 
@@ -609,7 +622,8 @@ class Archive(SQLBase):
         # 'cruft' represents the increase in the size of the archive
         # indexes related to each publication. We assume it is around 1K
         # but that's over-estimated.
-        cruft = (self.number_of_sources + self.number_of_binaries) * 1024
+        cruft = (
+            self.number_of_sources_published + self.number_of_binaries) * 1024
         return size + cruft
 
     def allowUpdatesToReleasePocket(self):
@@ -754,6 +768,87 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
 
+    def getBuildCounters(self, include_needsbuild=True):
+        """See `IArchiveSet`."""
+
+        # First grab a count of each build state for all the builds in
+        # this archive:
+        store = Store.of(self)
+        extra_exprs = []
+        if not include_needsbuild:
+            extra_exprs.append(Build.buildstate != BuildStatus.NEEDSBUILD)
+
+        find_spec = (
+            Build.buildstate,
+            Count(Build.id)
+            )
+        result = store.using(Build).find(
+            find_spec,
+            Build.archive == self,
+            *extra_exprs
+            ).group_by(Build.buildstate).order_by(Build.buildstate)
+
+        # Create a map for each count summary to a number of buildstates:
+        count_map = {
+            'failed': (
+                BuildStatus.CHROOTWAIT,
+                BuildStatus.FAILEDTOBUILD,
+                BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.MANUALDEPWAIT,
+                ),
+             # The 'pending' count is a list because we may append to it
+             # later.
+            'pending': [
+                BuildStatus.BUILDING,
+                ],
+            'succeeded': (
+                BuildStatus.FULLYBUILT,
+                ),
+            'superseded': (
+                BuildStatus.SUPERSEDED,
+                ),
+             # The 'total' count is a list because we may append to it
+             # later.
+            'total': [
+                BuildStatus.CHROOTWAIT,
+                BuildStatus.FAILEDTOBUILD,
+                BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.MANUALDEPWAIT,
+                BuildStatus.BUILDING,
+                BuildStatus.FULLYBUILT,
+                BuildStatus.SUPERSEDED,
+                ]
+            }
+
+        # If we were asked to include builds with the state NEEDSBUILD,
+        # then include those builds in the 'pending' and total counts.
+        if include_needsbuild:
+            count_map['pending'].append(BuildStatus.NEEDSBUILD)
+            count_map['total'].append(BuildStatus.NEEDSBUILD)
+
+        # Initialize all the counts in the map to zero:
+        build_counts = dict((count_type, 0) for count_type in count_map)
+
+        # For each count type that we want to return ('failed', 'total'),
+        # there may be a number of corresponding buildstate counts.
+        # So for each buildstate count in the result set...
+        for buildstate, count in result:
+            # ...go through the count map checking which counts this 
+            # buildstate belongs to and add it to the aggregated
+            # count.
+            for count_type, build_states in count_map.items():
+                if buildstate in build_states:
+                    build_counts[count_type] += count
+
+        return build_counts
+
+    def getBuildSummariesForSourceIds(self, source_ids):
+        """See `IArchive`."""
+        publishing_set = getUtility(IPublishingSet)
+        return publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
+            source_ids,
+            archive=self)
+
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
@@ -868,6 +963,24 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def requestPackageCopy(self, target_location, requestor, suite=None,
+        copy_binaries=False, reason=None):
+        """See `IArchive`."""
+        if suite is None:
+            distroseries = self.distribution.currentseries
+            pocket = PackagePublishingPocket.RELEASE
+        else:
+            # Note: a NotFoundError will be raised if it is not found.
+            distroseries, pocket = self.distribution.getDistroSeriesAndPocket(
+                suite)
+
+        source_location = PackageLocation(self, self.distribution,
+                                          distroseries, pocket)
+
+        return getUtility(IPackageCopyRequestSet).new(
+            source_location, target_location, requestor, copy_binaries,
+            reason)
+
     def syncSources(self, source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
@@ -951,6 +1064,26 @@ class Archive(SQLBase):
         return [
             copy.sourcepackagerelease.sourcepackagename.name
             for copy in copies]
+
+    def newAuthToken(self, person, token=None, date_created=None):
+        """See `IArchive`."""
+        if token is None:
+            token = create_unique_token_for_table(
+                20, ArchiveAuthToken, "token")
+        if not isinstance(token, unicode):
+            # Storm barfs if the string is not unicode so see if it
+            # converts.  If it doesn't, never mind, it would have blown
+            # up anyway.
+            token = unicode(token)
+        archive_auth_token = ArchiveAuthToken()
+        archive_auth_token.archive = self
+        archive_auth_token.person = person
+        archive_auth_token.token = token
+        if date_created is not None:
+            archive_auth_token.date_created = date_created
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.add(archive_auth_token)
+        return archive_auth_token
 
 
 class ArchiveSet:
@@ -1186,3 +1319,26 @@ class ArchiveSet:
                     status_and_counters[key] += status_counter
 
         return status_and_counters
+
+    def getArchivesForDistribution(self, distribution, name=None,
+                                   purposes=None):
+        """See `IArchiveSet`."""
+        extra_exprs = []
+
+        # If a single purpose is passed in, convert it into a tuple,
+        # otherwise assume a list was passed in.
+        if purposes in ArchivePurpose:
+            purposes = (purposes,)
+
+        if purposes:
+            extra_exprs.append(Archive.purpose.is_in(purposes))
+
+        if name is not None:
+            extra_exprs.append(Archive.name == name)
+
+        query = Store.of(distribution).find(
+            Archive,
+            Archive.distribution == distribution,
+            *extra_exprs)
+
+        return query

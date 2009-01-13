@@ -734,16 +734,18 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
-                 distroseries=None, productseries=None):
+                 distroseries=None, productseries=None, iscurrent=None):
         """Create a new `POTemplateSubset` object.
 
         The set of POTemplate depends on the arguments you pass to this
         constructor. The sourcepackagename, from_sourcepackagename,
         distroseries and productseries are just filters for that set.
+        In addition, iscurrent sets the filter for the iscurrent flag.
         """
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
         self.productseries = productseries
+        self.iscurrent = iscurrent
         self.clausetables = []
         self.orderby = ['id']
 
@@ -772,6 +774,11 @@ class POTemplateSubset:
                 ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
             self.orderby.append('DistroSeries.name')
             self.clausetables.append('DistroSeries')
+
+        # Add the filter for the iscurrent flag if requested.
+        if iscurrent is not None:
+            self.query += " AND POTemplate.iscurrent=%s" % (
+                            sqlvalues(iscurrent))
 
         # Finally, we sort the query by its path in all cases.
         self.orderby.append('POTemplate.path')
@@ -932,15 +939,16 @@ class POTemplateSet:
         return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distroseries=None, sourcepackagename=None,
-                  productseries=None):
+                  productseries=None, iscurrent=None):
         """See `IPOTemplateSet`."""
         return POTemplateSubset(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
-            productseries=productseries)
+            productseries=productseries,
+            iscurrent=iscurrent)
 
     def getSubsetFromImporterSourcePackageName(self, distroseries,
-        sourcepackagename):
+        sourcepackagename, iscurrent=None):
         """See `IPOTemplateSet`."""
         if distroseries is None or sourcepackagename is None:
             raise AssertionError(
@@ -948,7 +956,8 @@ class POTemplateSet:
 
         return POTemplateSubset(
             distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename,
+            iscurrent=iscurrent)
 
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):

@@ -22,10 +22,12 @@ from canonical.launchpad.components.externalbugtracker import (
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
+from canonical.launchpad.components.externalbugtracker.bugzilla import (
+    BugzillaLPPlugin)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
+    BugTaskStatus, BugWatchErrorType, CreateBugParams,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
@@ -41,6 +43,9 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
+
+
+SYNCABLE_GNOME_PRODUCTS = []
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -153,9 +158,15 @@ class BugWatchUpdater(object):
 
     ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
-    def __init__(self, txn, log=default_log):
+    def __init__(self, txn, log=default_log, syncable_gnome_products=None):
         self.txn = txn
         self.log = log
+
+        # Override SYNCABLE_GNOME_PRODUCTS if necessary.
+        if syncable_gnome_products is not None:
+            self._syncable_gnome_products = syncable_gnome_products
+        else:
+            self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
@@ -261,9 +272,43 @@ class BugWatchUpdater(object):
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
         return bug_watches_by_remote_bug
 
-    def _getExternalBugTracker(self, bug_tracker):
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        return externalbugtracker.get_external_bugtracker(bug_tracker)
+        remotesystem = externalbugtracker.get_external_bugtracker(
+            bug_tracker)
+        remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
+
+        # We special-case the Gnome Bugzilla.
+        gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+        if (bug_tracker == gnome_bugzilla and
+            isinstance(remotesystem_to_use, BugzillaLPPlugin)):
+
+            lp_plugin_watches = []
+            normal_watches = []
+
+            bug_ids = [bug_watch.remotebug for bug_watch in bug_watches]
+            remote_products = remotesystem_to_use.getProductsForRemoteBugs(
+                bug_ids)
+
+            # For bug watches on remote bugs that are against products
+            # in the _syncable_gnome_products list - i.e. ones with which
+            # we want to sync comments - we return a BugzillaLPPlugin
+            # instance. Otherwise we return a normal Bugzilla instance.
+            for bug_watch in bug_watches:
+                if (remote_products[bug_watch.remotebug] in
+                    self._syncable_gnome_products):
+                    lp_plugin_watches.append(bug_watch)
+                else:
+                    normal_watches.append(bug_watch)
+
+            trackers_and_watches = [
+                (remotesystem_to_use, lp_plugin_watches),
+                (remotesystem, normal_watches),
+                ]
+        else:
+            trackers_and_watches = [(remotesystem_to_use, bug_watches)]
+
+        return trackers_and_watches
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
@@ -278,29 +323,31 @@ class BugWatchUpdater(object):
         bug_watches_to_update = (
             bug_tracker.getBugWatchesNeedingUpdate(23))
 
-        try:
-            remotesystem = self._getExternalBugTracker(bug_tracker)
-        except externalbugtracker.UnknownBugTrackerTypeError, error:
-            # We update all the bug watches to reflect the fact that
-            # this error occurred. We also update their last checked
-            # date to ensure that they don't get checked for another
-            # 24 hours (see above).
-            error_type = (
-                get_bugwatcherrortype_for_error(error))
-            for bug_watch in bug_watches_to_update:
-                bug_watch.last_error_type = error_type
-                bug_watch.lastchecked = UTC_NOW
+        if bug_watches_to_update.count() > 0:
+            try:
+                trackers_and_watches = self._getExternalBugTrackersAndWatches(
+                    bug_tracker, bug_watches_to_update)
+            except externalbugtracker.UnknownBugTrackerTypeError, error:
+                # We update all the bug watches to reflect the fact that
+                # this error occurred. We also update their last checked
+                # date to ensure that they don't get checked for another
+                # 24 hours (see above).
+                error_type = (
+                    get_bugwatcherrortype_for_error(error))
+                for bug_watch in bug_watches_to_update:
+                    bug_watch.last_error_type = error_type
+                    bug_watch.lastchecked = UTC_NOW
 
-            message = (
-                "ExternalBugtracker for BugTrackerType '%s' is not known." % (
-                    error.bugtrackertypename))
-            self.warning(message)
-        else:
-            if bug_watches_to_update.count() > 0:
-                self.updateBugWatches(remotesystem, bug_watches_to_update)
+                message = (
+                    "ExternalBugtracker for BugTrackerType '%s' is not "
+                    "known." % (error.bugtrackertypename))
+                self.warning(message)
             else:
-                self.log.debug(
-                    "No watches to update on %s" % bug_tracker.baseurl)
+                for remotesystem, bug_watch_batch in trackers_and_watches:
+                    self.updateBugWatches(remotesystem, bug_watch_batch)
+        else:
+            self.log.debug(
+                "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
         """Convert a remote bug status to a Launchpad status and return it.
@@ -340,9 +387,68 @@ class BugWatchUpdater(object):
             for bug_watch in bug_watches)
         return bug_watch_lastchecked_times[0]
 
+    def _getRemoteIdsToCheck(self, remotesystem, bug_watches,
+                             server_time=None, now=None):
+        """Return the remote bug IDs to check for a set of bug watches.
+
+        The remote bug tracker is queried to find out which of the
+        remote bugs in `bug_watches` have changed since they were last
+        checked. Those which haven't changed are excluded.
+
+        :param bug_watches: A set of `BugWatch`es to be checked.
+        :param remotesystem: The `ExternalBugtracker` on which
+            `getModifiedRemoteBugs`() should be called
+        :param server_time: The time according to the remote server.
+            This may be None when the server doesn't specify a remote time.
+        :param now: The current time (used for testing)
+        :return: A list of remote bug IDs to be updated.
+        """
+        old_bug_watches = [
+            bug_watch for bug_watch in bug_watches
+            if bug_watch.lastchecked is not None]
+        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
+        if oldest_lastchecked is not None:
+            # Adjust for possible time skew, and some more, just to be safe.
+            oldest_lastchecked -= (
+                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
+
+        remote_old_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in old_bug_watches))
+        remote_new_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch not in old_bug_watches))
+
+        if now is None:
+            now = datetime.now(pytz.timezone('UTC'))
+
+        if (server_time is not None and
+            abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
+            raise TooMuchTimeSkew(abs(server_time - now))
+
+        # We only make the call to getModifiedRemoteBugs() if there
+        # are actually some bugs that we're interested in so as to
+        # avoid unnecessary network traffic.
+        elif server_time is not None and len(remote_old_ids) > 0:
+            old_ids_to_check = remotesystem.getModifiedRemoteBugs(
+                remote_old_ids, oldest_lastchecked)
+        else:
+            old_ids_to_check = list(remote_old_ids)
+
+        # We bypass the has-it-been-checked tests for bug watches with
+        # unpushed comments.
+        remote_ids_with_comments = sorted(
+            set(bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch.unpushed_comments.any() is not None))
+
+        remote_ids_to_check = sorted(
+            set(remote_new_ids + old_ids_to_check + remote_ids_with_comments))
+
+        return remote_ids_to_check
+
+    # XXX gmb 2008-11-07 [bug=295319]
+    #     This method is 186 lines long. It needs to be shorter.
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
-        remotesystem = remotesystem.getExternalBugTrackerToUse()
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_url = remotesystem.baseurl
@@ -370,41 +476,17 @@ class BugWatchUpdater(object):
         self.log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
-        old_bug_watches = [
-            bug_watch for bug_watch in bug_watches
-            if bug_watch.lastchecked is not None]
-        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
-        if oldest_lastchecked is not None:
-            # Adjust for possible time skew, and some more, just to be safe.
-            oldest_lastchecked -= (
-                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
-
-        remote_old_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in old_bug_watches))
-        remote_new_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch not in old_bug_watches))
-
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
+        # Fetch the time on the server. We'll use this in
+        # _getRemoteIdsToCheck() and when determining whether we can
+        # sync comments or not.
         self.txn.commit()
-        server_time = None
-        if now is None:
-            now = datetime.now(pytz.timezone('UTC'))
+        server_time = remotesystem.getCurrentDBTime()
+
         try:
-            server_time = remotesystem.getCurrentDBTime()
-            if (server_time is not None and
-                abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
-                raise TooMuchTimeSkew(abs(server_time - now))
-
-            if len(remote_old_ids) > 0 and server_time is not None:
-                old_ids_to_check = remotesystem.getModifiedRemoteBugs(
-                    remote_old_ids, oldest_lastchecked)
-            else:
-                old_ids_to_check = list(remote_old_ids)
-
-            remote_ids_to_check = sorted(
-                set(remote_new_ids + old_ids_to_check))
+            remote_ids_to_check = self._getRemoteIdsToCheck(
+                remotesystem, bug_watches, server_time, now)
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
         except Exception, error:
             # We record the error against all the bugwatches that should
@@ -709,33 +791,28 @@ class BugWatchUpdater(object):
         """
         pushed_comments = 0
 
-        # Loop over the local bug's messages. We ignore the first
-        # message since that's the bug's description and doesn't need to
-        # be pushed.
-        for message in bug_watch.bug.messages[1:]:
-            bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-                bug_watch.bug, message)
+        # Loop over the unpushed comments for the bug watch.
+        # We only push those comments that haven't been pushed
+        # already. We don't push any comments not associated with
+        # the bug watch.
+        for unpushed_comment in bug_watch.unpushed_comments:
+            message = unpushed_comment.message
 
-            # We only push those comments that haven't been pushed
-            # already. We don't push any comments not associated with
-            # the bug watch.
-            if (bug_message.remote_comment_id is None and
-                bug_message.bugwatch == bug_watch):
-                # Format the comment so that it includes information
-                # about the Launchpad bug.
-                formatted_comment = self._formatRemoteComment(
-                    external_bugtracker, bug_watch, message)
+            # Format the comment so that it includes information
+            # about the Launchpad bug.
+            formatted_comment = self._formatRemoteComment(
+                external_bugtracker, bug_watch, message)
 
-                remote_comment_id = (
-                    external_bugtracker.addRemoteComment(
-                        bug_watch.remotebug, formatted_comment,
-                        message.rfc822msgid))
+            remote_comment_id = (
+                external_bugtracker.addRemoteComment(
+                    bug_watch.remotebug, formatted_comment,
+                    message.rfc822msgid))
 
-                assert remote_comment_id is not None, (
-                    "A remote_comment_id must be specified.")
-                bug_message.remote_comment_id = remote_comment_id
+            assert remote_comment_id is not None, (
+                "A remote_comment_id must be specified.")
+            unpushed_comment.remote_comment_id = remote_comment_id
 
-                pushed_comments += 1
+            pushed_comments += 1
 
         if pushed_comments > 0:
             self.log.info("Pushed %(count)i comments to remote bug "

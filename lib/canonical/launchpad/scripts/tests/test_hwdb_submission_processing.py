@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
     IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
     IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.librarian.ftests.harness import fillLibrarianFile
 from canonical.launchpad.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
@@ -825,6 +826,23 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             parser.submission_key,
             "Unknown bus 'nonsense' for device " + self.UDI_PCCARD_DEVICE)
 
+    def renameInfoBusToInfoSubsystem(self, devices):
+        """Rename the property info.bus in a device list to info.subsystem.
+
+        Older HAL version store the device bus in the property info.bus;
+        newer versions store the bus in info.subsystem.
+
+        The parameter devices is a list of dictionaries as used in the
+        methods below. This method replaces all dictionary entries with
+        the key info.bus by entries with the key info.subsystem in order
+        to allow easy testing of both variants.
+        """
+        for device in devices:
+            if 'info.bus' in device['properties']:
+                bus = device['properties']['info.bus']
+                device['properties']['info.subsystem'] = bus
+                del device['properties']['info.bus']
+
     def testHALDeviceRealDeviceRegularBus(self):
         """Test of HALDevice.is_real_device: regular info.bus property.
 
@@ -858,7 +876,13 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
         self.failUnless(device.is_real_device,
                         'Device with info.bus property not treated as a '
-                        'real device')
+                        'real device.')
+        self.renameInfoBusToInfoSubsystem(devices)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
+        self.failUnless(device.is_real_device,
+                        'Device with info.subsystem property not treated as '
+                        'a real device.')
 
     def testHALDeviceRealDeviceNoBus(self):
         """Test of HALDevice.is_real_device: No info.bus property."""
@@ -927,6 +951,54 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.failIf(device.is_real_device,
                     'Device with info.bus=ssb treated as a real device')
 
+        self.renameInfoBusToInfoSubsystem(devices)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_USB_HUB_IF0]
+        self.failIf(device.is_real_device,
+                    'Device with info.subsystem=usb treated as a real device')
+        device = parser.hal_devices[UDI_SSB]
+        self.failIf(device.is_real_device,
+                    'Device with info.subsystem=ssb treated as a real device')
+
+    def runTestHALDeviceRealDeviceScsiDevicesPciController(
+        self, devices, bus_property_name):
+        """Test of HALDevice.is_real_device: info.bus == 'scsi'.
+
+        The (fake or real) SCSI device is connected to a PCI controller.
+        Though the real bus may not be SCSI, all devices for the busses
+        SCSI, IDE, ATA, SATA, SAS are treated as real devices.
+        """
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        pci_subclass_bus = (
+            (0, True), # a real SCSI controller
+            (1, True), # an IDE device
+            (4, False), # subclass RAID is ignored.
+            (5, True), # an ATA device
+            (6, True), # a SATA device
+            (7, True), # a SAS device
+            )
+
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+
+        for device_subclass, expected_is_real in pci_subclass_bus:
+            devices[0]['properties']['pci.device_subclass'] = (
+                device_subclass, 'int')
+            scsi_device = parser.hal_devices[self.UDI_SATA_DISK]
+            found_is_real = scsi_device.is_real_device
+            self.assertEqual(found_is_real, expected_is_real,
+                'Unexpected result of HWDevice.is_real_device for a HAL SCSI '
+                'connected to PCI controller, subclass %i: %r; testing '
+                'property %s'
+                % (device_subclass, found_is_real, bus_property_name))
+
     def testHALDeviceRealDeviceScsiDevicesPciController(self):
         """Test of HALDevice.is_real_device: info.bus == 'scsi'.
 
@@ -964,35 +1036,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                     },
                 },
             ]
-        parsed_data = {
-            'hardware': {
-                'hal': {
-                    'devices': devices,
-                    },
-                },
-            }
 
-        pci_subclass_bus = (
-            (0, True), # a real SCSI controller
-            (1, True), # an IDE device
-            (4, False), # subclass RAID is ignored.
-            (5, True), # an ATA device
-            (6, True), # a SATA device
-            (7, True), # a SAS device
-            )
-
-        parser = SubmissionParser(self.log)
-        parser.buildDeviceList(parsed_data)
-
-        for device_subclass, expected_is_real in pci_subclass_bus:
-            devices[0]['properties']['pci.device_subclass'] = (
-                device_subclass, 'int')
-            scsi_device = parser.hal_devices[self.UDI_SATA_DISK]
-            found_is_real = scsi_device.is_real_device
-            self.assertEqual(found_is_real, expected_is_real,
-                'Unexpected result of HWDevice.is_real_device for a HAL SCSI '
-                'connected to PCI controller, subclass %i: %r'
-                % (device_subclass, found_is_real))
+        self.runTestHALDeviceRealDeviceScsiDevicesPciController(
+            devices, 'info.bus')
+        self.renameInfoBusToInfoSubsystem(devices)
+        self.runTestHALDeviceRealDeviceScsiDevicesPciController(
+            devices, 'info.subsystem')
 
     def testHALDeviceRealDeviceScsiDeviceUsbStorage(self):
         """Test of HALDevice.is_real_device: info.bus == 'scsi'.
@@ -1048,6 +1097,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
 
+        scsi_device = parser.hal_devices[self.UDI_USB_STORAGE_SCSI_DEVICE]
+        self.failIf(scsi_device.is_real_device,
+            'Unexpected result of HWDevice.is_real_device for a HAL SCSI '
+            'device as a subdevice of a USB storage device.')
+
+        self.renameInfoBusToInfoSubsystem(devices)
         scsi_device = parser.hal_devices[self.UDI_USB_STORAGE_SCSI_DEVICE]
         self.failIf(scsi_device.is_real_device,
             'Unexpected result of HWDevice.is_real_device for a HAL SCSI '
@@ -2224,13 +2279,29 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
                 },
             }
 
+    def renameInfoBusToInfoSubsystem(self):
+        for device in self.parsed_data['hardware']['hal']['devices']:
+            properties = device['properties']
+            properties['info.subsystem'] = properties['info.bus']
+            del properties['info.bus']
+
     def testUSBDeviceRegularCase(self):
         """Test of HALDevice.is_real_device: info.bus == 'usb_device'."""
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(self.parsed_data)
         device = parser.hal_devices[self.UDI_USB_STORAGE]
-        self.failUnless(device.is_real_device,
-                        'Regular USB Device not treated as a real device.')
+        self.failUnless(
+            device.is_real_device,
+            'Testing info.bus property: Regular USB Device not treated '
+            'as a real device.')
+
+        self.renameInfoBusToInfoSubsystem()
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_STORAGE]
+        self.failUnless(
+            device.is_real_device,
+            'Testing info.subsystem property: Regular USB Device not treated '
+            'as a real device.')
 
     def testUSBHostController(self):
         """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
@@ -2242,9 +2313,19 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(self.parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.failIf(device.is_real_device,
-                    'USB Device with vendor/product ID 0:0 property '
-                    'treated as a real device.')
+        self.failIf(
+            device.is_real_device,
+            'Testing info.bus property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
+
+        self.renameInfoBusToInfoSubsystem()
+        parser.buildDeviceList(self.parsed_data)
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(
+            device.is_real_device,
+            'Testing info.subsystem property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
 
     def testUSBHostControllerInvalidParentClass(self):
         """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
@@ -2259,9 +2340,23 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         parser.submission_key = 'USB device test 1'
         parser.buildDeviceList(self.parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.failIf(device.is_real_device,
-                    'USB Device with vendor/product ID 0:0 property '
-                    'treated as a real device.')
+        self.failIf(
+            device.is_real_device,
+            'Testing info.bus property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, where the '
+            'parent device does not look like a USB host controller: '
+            + self.UDI_USB_CONTROLLER_USB_SIDE)
+
+        self.renameInfoBusToInfoSubsystem()
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(
+            device.is_real_device,
+            'Testing info.subsystem property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
         self.assertWarningMessage(
             parser.submission_key,
             'USB device found with vendor ID==0, product ID==0, where the '
@@ -2281,9 +2376,23 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         parser.submission_key = 'USB device test 2'
         parser.buildDeviceList(self.parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.failIf(device.is_real_device,
-                    'USB Device with vendor/product ID 0:0 property '
-                    'treated as a real device.')
+        self.failIf(
+            device.is_real_device,
+            'Testing info.bus property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, where the '
+            'parent device does not look like a USB host controller: '
+            +  self.UDI_USB_CONTROLLER_USB_SIDE)
+
+        self.renameInfoBusToInfoSubsystem()
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(
+            device.is_real_device,
+            'Testing info.subsystem property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
         self.assertWarningMessage(
             parser.submission_key,
             'USB device found with vendor ID==0, product ID==0, where the '
@@ -2303,9 +2412,10 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         parser.submission_key = 'USB device test 3'
         parser.buildDeviceList(self.parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.failIf(device.is_real_device,
-                    'USB Device with vendor/product ID 0:0 property '
-                    'treated as a real device.')
+        self.failIf(
+            device.is_real_device,
+            'Testing info.bus property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
         self.assertWarningMessage(
             parser.submission_key,
             'USB device found with vendor ID==0, product ID==0, where the '
@@ -2316,9 +2426,29 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         # for HALDevice.is_real_device. The USB host controller in the
         # test data is an example.
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
-        self.failUnless(device.is_real_device,
-                        'Device with existing info.bus property not treated '
-                        'as a real device.')
+        self.failUnless(
+            device.is_real_device,
+            'Testing info.bus property: Device with existing info.bus '
+            'property not treated as a real device.')
+
+        self.renameInfoBusToInfoSubsystem()
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(
+            device.is_real_device,
+            'Testing info.subsystem property: USB Device with vendor/product '
+            'ID 0:0 property treated as a real device.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, where the '
+            'parent device does not look like a USB host controller: '
+            + self.UDI_USB_CONTROLLER_USB_SIDE)
+
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
+        self.failUnless(
+            device.is_real_device,
+            'Testing info.subsystem property: Device with existing info.bus '
+            'property not treated as a real device.')
 
 
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
@@ -2921,7 +3051,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             'Unexpected value for '
             'submitted_usb_controller_usb.hal_device_id')
 
-    def createSubmissionData(self, data, compress, submission_key):
+    def createSubmissionData(self, data, compress, submission_key,
+                             private=False):
         """Create a submission."""
         if compress:
             data = bz2.compress(data)
@@ -2929,7 +3060,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         submission = getUtility(IHWSubmissionSet).createSubmission(
             date_created=datetime(2007, 9, 9, tzinfo=pytz.timezone('UTC')),
             format=HWSubmissionFormat.VERSION_1,
-            private=False,
+            private=private,
             contactable=False,
             submission_key=submission_key,
             emailaddress=u'test@canonical.com',
@@ -3135,6 +3266,10 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         submission_key = 'submission-6'
         self.createSubmissionData(submission_data, False, submission_key)
 
+        submission_key = 'private-submission'
+        self.createSubmissionData(submission_data, False, submission_key,
+                                  private=True)
+
         submission_key = 'submission-7'
         submission_data = """<?xml version="1.0" ?>
         <foo>
@@ -3144,17 +3279,19 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.createSubmissionData(submission_data, False, submission_key)
         process_pending_submissions(self.layer.txn, self.log)
 
+        janitor = getUtility(ILaunchpadCelebrities).janitor
         valid_submissions = submission_set.getByStatus(
-            HWSubmissionProcessingStatus.PROCESSED)
+            HWSubmissionProcessingStatus.PROCESSED, user=janitor)
         valid_submission_keys = [
             submission.submission_key for submission in valid_submissions]
         self.assertEqual(
             valid_submission_keys,
-            [u'test_submission_id_1', u'sample-submission', u'submission-6'],
+            [u'test_submission_id_1', u'sample-submission', u'submission-6',
+             u'private-submission'],
             'Unexpected set of valid submissions: %r' % valid_submission_keys)
 
         invalid_submissions = submission_set.getByStatus(
-            HWSubmissionProcessingStatus.INVALID)
+            HWSubmissionProcessingStatus.INVALID, user=janitor)
         invalid_submission_keys = [
             submission.submission_key for submission in invalid_submissions]
         self.assertEqual(
@@ -3163,7 +3300,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             % invalid_submission_keys)
 
         new_submissions = submission_set.getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED)
+            HWSubmissionProcessingStatus.SUBMITTED, user=janitor)
         new_submission_keys = [
             submission.submission_key for submission in new_submissions]
         self.assertEqual(
@@ -3175,7 +3312,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.assertEqual(
             messages,
             "Parsing submission submission-7: root node is not '<system>'\n"
-            "Processed 2 valid and 1 invalid HWDB submissions",
+            "Processed 3 valid and 1 invalid HWDB submissions",
             'Unexpected log messages: %r' % messages)
 
     def testOopsLogging(self):
