@@ -356,16 +356,29 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
+        """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):
-        user = self.user
-        if user is not None and self.context.subscription(user) is not None:
-            text = 'Modify subscription'
+        """Return the 'Subscribe/Unsubscribe' Link."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            text = 'Subscribe/Unsubscribe'
+            icon = 'edit'
+        elif user is not None and self.context.isSubscribed(user):
+            text = 'Unsubscribe'
+            icon = 'remove'
         else:
-            text = 'Subscribe yourself'
-        return Link('+subscribe', text, icon='edit')
+            for team in user.teams_participated_in:
+                if self.context.isSubscribed(team):
+                    text = 'Subscribe/Unsubscribe'
+                    icon = 'edit'
+                    break
+            else:
+                text = 'Subscribe'
+                icon = 'add'
+        return Link('+subscribe', text, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
     def supersede(self):

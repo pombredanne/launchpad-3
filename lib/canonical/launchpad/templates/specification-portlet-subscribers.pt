@@ -4,8 +4,14 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:subs define="subscriptions context/subscriptions">
+<tal:subs define="subscriptions context/subscriptions"
+          metal:define-macro="custom">
   <div class="portlet" id="portlet-subscribers" tal:condition="subscriptions">
+  <div class="section" tal:define="context_menu context/menu:context"
+       metal:define-slot="heading">
+    <div tal:content="structure context_menu/subscription/render" />
+    <div tal:content="structure context_menu/subscribeanother/render" />
+  </div>
     <h2>Subscribers</h2>
     <div class="portletBody">
       <tal:comment replace="nothing">
