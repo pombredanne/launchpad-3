@@ -30,6 +30,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -38,7 +39,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
     ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
     ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
-    ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
+    ILibraryFileAliasSet, IPOTemplateSet, IPerson, IPersonSet, IProductSet,
     IProjectSet, IRevisionSet, IShippingRequestSet, ISourcePackageNameSet,
     ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
     License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
@@ -411,8 +412,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description,
             owner=owner)
 
-    def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=_DEFAULT, url=_DEFAULT, registrant=None,
+    def makeBranch(self, branch_type=None, container=None, owner=None,
+                   name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, distroseries=None,
                    sourcepackagename=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
@@ -428,16 +429,34 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if distroseries is None and sourcepackagename is None:
-            if product is _DEFAULT:
-                product = self.makeProduct()
-        elif distroseries is not None and sourcepackagename is not None:
-            assert product is _DEFAULT, (
-                "Passed source package AND product details")
+        if IProduct.providedBy(container):
+            product = container
+            distroseries = None
+            sourcepackagename = None
+        elif IPerson.providedBy(container):
+            owner = container
             product = None
+            distroseries = None
+            sourcepackagename = None
+        elif ISourcePackage.providedBy(container):
+            product = None
+            distroseries = container.distroseries
+            sourcepackagename = container.sourcepackagename
+        elif container is None:
+            if distroseries is None and sourcepackagename is None:
+                if product is _DEFAULT:
+                    product = self.makeProduct()
+            elif distroseries is not None and sourcepackagename is not None:
+                assert product is _DEFAULT, (
+                    "Passed source package AND product details")
+                product = None
+            else:
+                raise AssertionError(
+                    "Must pass both sourcepackagename and distroseries.")
         else:
-            raise AssertionError(
-                "Must pass both sourcepackagename and distroseries.")
+            raise ValueError(
+                "container must be one of IProduct, IPerson, ISourcePackage "
+                "or None, got: %r" % (container,))
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
@@ -1151,6 +1170,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
+
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
+        """Make an `ISourcePackage`."""
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        return SourcePackage(sourcepackagename, distroseries)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):
