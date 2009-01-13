@@ -15,19 +15,6 @@
 
 
 <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-  <div style="float: right;">
-    <img id="mentoring-available-icon"
-         src="/@@/mentoring-large" title="Mentoring available"
-         tal:condition="context/mentoring_offers/count" />
-    <img id="branch-available-icon"
-         src="/@@/branch-large" title="Branch available"
-         tal:condition="context/branch_links/count" />
-    <img id="informational-icon"
-         src="/@@/info-large"
-         title="Informational blueprint, no implementation necessary"
-         tal:condition="context/informational" />
-  </div>
-
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
     notice goes here
