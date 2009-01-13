@@ -292,24 +292,30 @@ class BranchTraversalMixin:
             return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
-    def traverse(self, product_name):
+    def traverse(self, pillar_name):
         branch = getUtility(IBranchNamespaceSet).traverse(
-            self._getSegments(product_name))
+            self._getSegments(pillar_name))
         if branch is None:
-            return super(BranchTraversalMixin, self).traverse(product_name)
+            return super(BranchTraversalMixin, self).traverse(pillar_name)
         # Normally, populating the launch bag is done by the traversal
         # mechanism. However, here we short-circuit that mechanism by
         # processing multiple segments at once. Thus, we populate the launch
         # bag with information about the containers of a branch.
         branch.addToLaunchBag(getUtility(IOpenLaunchBag))
 
-        # XXX: JonathanLange 2009-01-13 spec=package-branches: Do we need to
-        # do similar aliasing for source package information.
         if branch.product is not None:
-            if branch.product.name != product_name:
+            if branch.product.name != pillar_name:
                 # This branch was accessed through one of its product's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
+
+        if branch.distroseries is not None:
+            distro = branch.distroseries.distribution
+            if distro.name != pillar_name:
+                # This branch was accessed through one of its product's
+                # aliases, so we must redirect to its canonical URL.
+                return self.redirectSubTree(canonical_url(branch))
+
         return branch
 
 
