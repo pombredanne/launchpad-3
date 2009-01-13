@@ -1735,6 +1735,7 @@ class RevisionMailJob(BranchDiffJob):
         return self.metadata['subject']
 
     def get_mailer(self):
+        """Return a BranchMailer for this job."""
         if self.perform_diff and self.to_revision_spec is not None:
             diff = BranchDiffJob.run(self)
             transaction.commit()
@@ -1746,4 +1747,5 @@ class RevisionMailJob(BranchDiffJob):
             diff, self.subject)
 
     def run(self):
+        """See `IRevisionMailJob`."""
         self.get_mailer().sendAll()
