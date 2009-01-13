@@ -129,17 +129,17 @@ class BranchFileSystemClient:
             return deferred
 
 
-def trap_fault(failure, *fault_codes):
+def trap_fault(failure, *fault_classes):
     """Trap a fault, based on fault code.
 
     :param failure: A Twisted L{Failure}.
-    :param *fault_codes: XML-RPC fault codes.
+    :param *fault_codes: `LaunchpadFault` subclasses.
     :raise Failure: if 'failure' is not a Fault failure, or if the fault code
         does not match the given codes.
     :return: The Fault if it matches one of the codes.
     """
     failure.trap(Fault)
     fault = failure.value
-    if fault.faultCode in fault_codes:
+    if fault.faultCode in [cls.error_code for cls in fault_classes]:
         return fault
     raise failure

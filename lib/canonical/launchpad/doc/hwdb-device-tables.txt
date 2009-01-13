@@ -1500,10 +1500,16 @@ A HWSubmissionDevice record for a system does not have any parent...
     ...     submission=sample_submission, parent=None, hal_device_id=1)
     >>> print submitted_tuffbook_2600.device_driver_link.device.name
     Tuffbook 2600
+    >>> print submitted_tuffbook_2600.device.name
+    Tuffbook 2600
+    >>> print submitted_tuffbook_2600.driver
+    None
     >>> print submitted_tuffbook_2600.submission.submission_key
     test_submission_id_1
     >>> print submitted_tuffbook_2600.parent
     None
+    >>> print submitted_tuffbook_2600.hal_device_id
+    1
 
 ...while ordinary device entries have the attribute parent set. The
 parent/child relationship may extend to several "generations". For
@@ -1525,6 +1531,16 @@ that we just have created.
     ...      submission=sample_submission,
     ...      parent=submitted_usb_ehci_hcd_controller,
     ...      hal_device_id=3)
+    >>> print submitted_usb_controller.device_driver_link.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print submitted_usb_controller.device_driver_link.driver.name
+    usb
+    >>> print submitted_usb_controller.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print submitted_usb_controller.driver.name
+    usb
+    >>> print submitted_usb_controller.hal_device_id
+    3
 
 The USB controller is connected to an (often internal) USB hub. We don't
 yet have HWDevice and HWDeviceDriverLink records for this hub, so we must
@@ -1540,7 +1556,7 @@ create them first.
     ...     device_driver_link=usb_hub_driver_link,
     ...     submission=sample_submission,
     ...     parent=submitted_usb_controller,
-    ...      hal_device_id=4)
+    ...     hal_device_id=4)
 
 Finally, a scanner may be connected to the USB hub.
 
@@ -1548,13 +1564,13 @@ Finally, a scanner may be connected to the USB hub.
     ...     device_driver_link=scanner_usb_driver_link,
     ...     submission=sample_submission,
     ...     parent=submitted_usb_hub,
-    ...      hal_device_id=5)
+    ...     hal_device_id=5)
 
     >>> submitted_scanner_sane = submission_device_set.create(
     ...     device_driver_link=scanner_sane_plustek_link,
     ...     submission=sample_submission,
     ...     parent=submitted_scanner_usb,
-    ...      hal_device_id=6)
+    ...     hal_device_id=6)
 
 IHWSubmissionDevice records belonging to a submission are retrieved by
 IHWSubmissionDeviceSet.getDevices().
@@ -1584,3 +1600,15 @@ IHWSubmissionDeviceSet.getDevices().
     ---> Unknown Intel USB hub usb
     ----> Plustek OpticPro UT12 usb
     -----> Plustek OpticPro UT12 plustek
+
+A single IHWSubmissionDevice record is retrieved by
+IHWSubmissionDeviceSet.get().
+
+    >>> submitted_device = submission_device_set.get(1)
+    >>> print_device(submitted_device)
+    MSI MS-7369 (no driver)
+
+This method returns None if a nonexistent ID is passed.
+
+    >>> print submission_device_set.get(1000000)
+    None

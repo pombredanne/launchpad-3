@@ -18,8 +18,7 @@ from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
@@ -417,14 +416,12 @@ class FakeBranchFilesystem:
         try:
             namespace_path, branch_name = escaped_path.rsplit('/', 1)
         except ValueError:
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE,
+            return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         data = BranchNamespaceSet().parse(namespace_path)
         owner = self._person_set.getByName(data['person'])
         if owner is None:
-            return Fault(
-                NOT_FOUND_FAULT_CODE,
+            return faults.NotFound(
                 "User/team %r does not exist." % (data['person'],))
         registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
@@ -433,46 +430,39 @@ class FakeBranchFilesystem:
         # creation policy, the observed behaviour will be failure to raise
         # exceptions.
         if not registrant.inTeam(owner):
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE,
+            return faults.PermissionDenied(
                 ('%s cannot create branches owned by %s'
                  % (registrant.displayname, owner.displayname)))
         product = distroseries = sourcepackagename = None
         if data['product'] == '+junk':
             if owner.isTeam():
-                return Fault(
-                    PERMISSION_DENIED_FAULT_CODE,
+                return faults.PermissionDenied(
                     BranchCreationNoTeamOwnedJunkBranches.error_message)
             product = None
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
             if product is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "Project %r does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
             if distro is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "No such distribution: '%s'." % (data['distribution'],))
             distroseries = self._distroseries_set.getByName(
                 data['distroseries'])
             if distroseries is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "No such distribution series: '%s'."
                     % (data['distroseries'],))
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
             if sourcepackagename is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
         else:
-            return Fault(
-                PERMISSION_DENIED_FAULT_CODE,
+            return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         try:
             return self._factory.makeBranch(
@@ -481,7 +471,7 @@ class FakeBranchFilesystem:
                 sourcepackagename=sourcepackagename,
                 registrant=registrant, branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
-            return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
+            return faults.PermissionDenied(str(e))
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
@@ -531,8 +521,7 @@ class FakeBranchFilesystem:
             return ''
         product = self._product_set.getByName(product_name)
         if product is None:
-            return Fault(
-                NOT_FOUND_FAULT_CODE,
+            return faults.NotFound(
                 'Project %r does not exist.' % (product_name,))
         branch = product.development_focus.user_branch
         if branch is None:
@@ -565,7 +554,7 @@ class FakeBranchFilesystem:
 
     def _serializeBranch(self, requester_id, branch, trailing_path):
         if not self._canRead(requester_id, branch):
-            return None
+            return faults.PermissionDenied()
         elif branch.branch_type == BranchType.REMOTE:
             return None
         else:
@@ -585,7 +574,9 @@ class FakeBranchFilesystem:
             branch = self._branch_set._find(unique_name=first)
             if branch is not None:
                 branch = self._serializeBranch(requester_id, branch, second)
-                if branch is None:
+                if isinstance(branch, Fault):
+                    return branch
+                elif branch is None:
                     break
                 return branch
 
