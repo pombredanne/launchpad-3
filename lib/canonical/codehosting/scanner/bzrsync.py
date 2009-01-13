@@ -274,7 +274,7 @@ class BranchMailer:
             # No diff is associated with the removed email.
             job = getUtility(IRevisionMailJobSource).create(
                 self.db_branch, revno='removed', from_address=self.email_from,
-                body=contents, diff='', subject=None)
+                body=contents, perform_diff=False, subject=None)
             self.pending_emails.append(job)
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
@@ -289,10 +289,6 @@ class BranchMailer:
         if (not self.initial_scan
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
-            if self.generate_diffs:
-                revision_diff = get_diff(self.db_branch, bzr_revision)
-            else:
-                revision_diff = ''
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.
@@ -310,7 +306,8 @@ class BranchMailer:
                 self.db_branch.unique_name, sequence, first_line)
             job = getUtility(IRevisionMailJobSource).create(
                 self.db_branch, revno=sequence, from_address=self.email_from,
-                    body=message, diff=revision_diff, subject=subject)
+                    body=message, perform_diff=self.generate_diffs,
+                    subject=subject)
             self.pending_emails.append(job)
 
     def sendRevisionNotificationEmails(self, bzr_history):
@@ -346,7 +343,7 @@ class BranchMailer:
                        revisions)
 
             job = getUtility(IRevisionMailJobSource).create(
-                self.db_branch, 'initial', self.email_from, message, None,
+                self.db_branch, 'initial', self.email_from, message, False,
                 None)
             job.run()
         else:
