@@ -1476,7 +1476,7 @@ class IRevisionMailJob(Interface):
 
     from_address = Bytes(title=u'The address to send mail from.')
 
-    diff = Text(title=u'The diff of the revision to send mail about.')
+    perform_diff = Text(title=u'Determine whether diff should be performed.')
 
     body = Text(title=u'The main text of the email to send.')
 
@@ -1487,10 +1487,9 @@ class IRevisionMailJob(Interface):
 
 
 class IRevisionMailJobSource(Interface):
-
     """A utility to create and retrieve RevisionMailJobs."""
 
-    def create(db_branch, revno, email_from, message, diff, subject):
+    def create(db_branch, revno, email_from, message, perform_diff, subject):
         """Create and return a new object that implements IRevisionMailJob."""
 
 

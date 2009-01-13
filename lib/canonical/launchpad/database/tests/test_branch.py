@@ -1527,6 +1527,46 @@ class TestBranchDiffJob(TestCaseWithFactory):
         job.run()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
 
+    def create_rev1_diff(self):
+        """Create a StaticDiff for use by test methods.
+
+        This diff contains an add of a file called hello.txt, with contents
+        "Hello World\n".
+        """
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        first_revision = 'rev-1'
+        tree_transport = tree.bzrdir.root_transport
+        tree_transport.put_bytes("hello.txt", "Hello World\n")
+        tree.add('hello.txt')
+        tree.commit('rev1', timestamp=1000000000.0, timezone=0)
+        job = BranchDiffJob.create(branch, '0', '1')
+        diff = job.run()
+        transaction.commit()
+        return diff
+
+    def test_diff_contents(self):
+        """Ensure the diff contents match expectations."""
+        diff = self.create_rev1_diff()
+        expected = (
+            "=== added file 'hello.txt'" '\n'
+            "--- hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "@@ -0,0 +1,1 @@" '\n'
+            "+Hello World" '\n'
+            '\n')
+        self.assertEqual(diff.diff.text, expected)
+
+    def test_diff_is_bytes(self):
+        """Diffs should be bytestrings.
+
+        Diffs have no single encoding, because they may encompass files in
+        multiple encodings.  Therefore, we consider them binary, to avoid
+        lossy decoding.
+        """
+        diff = self.create_rev1_diff()
+        self.assertIsInstance(diff.diff.text, str)
+
 
 class TestRevisionMailJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
@@ -1537,17 +1577,18 @@ class TestRevisionMailJob(TestCaseWithFactory):
         """Ensure that BranchDiffJob implements IBranchDiffJob."""
         branch = self.factory.makeBranch()
         job = RevisionMailJob.create(
-            branch, 0, 'from@example.com', 'hello', 'diff', 'subject')
+            branch, 0, 'from@example.com', 'hello', False, 'subject')
         verifyObject(IRevisionMailJob, job)
 
     def test_run_sends_mail(self):
+        """Ensure RevisionMailJob.run sends mail with correct values."""
         branch = self.factory.makeBranch()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
             CodeReviewNotificationLevel.FULL)
         job = RevisionMailJob.create(
-            branch, 0, 'from@example.com', 'hello', 'diff', 'subject')
+            branch, 0, 'from@example.com', 'hello', False, 'subject')
         job.run()
         (mail,) = pop_notifications()
         self.assertEqual('0', mail['X-Launchpad-Branch-Revision-Number'])
@@ -1555,7 +1596,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual('subject', mail['subject'])
         self.assertEqual(
             'hello\n'
-            'diff\n\n--\n\n'
+            '\n--\n\n'
             'http://code.launchpad.dev/~person-name2/product-name8/branch4\n'
             '\nYou are subscribed to branch '
             'lp://dev/~person-name2/product-name8/branch4.\n'
@@ -1563,6 +1604,43 @@ class TestRevisionMailJob(TestCaseWithFactory):
             ' http://code.launchpad.dev/~person-name2/product-name8/branch4/'
             '+edit-subscription.\n',
             mail.get_payload(decode=True))
+
+    def test_revno_string(self):
+        """Ensure that revnos can be strings."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 'removed', 'from@example.com', 'hello', False, 'subject')
+        self.assertEqual('removed', job.revno)
+
+    def test_revno_long(self):
+        "Ensure that the revno is a long, not an int."
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.com', 'hello', False, 'subject')
+        self.assertIsInstance(job.revno, long)
+
+    def test_perform_diff_performs_diff(self):
+        """Ensure that a diff is generated when perform_diff is True."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.bzrdir.root_transport.put_bytes('foo', 'bar\n')
+        tree.add('foo')
+        tree.commit('First commit')
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.com', 'hello', True, 'subject')
+        mailer = job.get_mailer()
+        self.assertIn('+bar\n', mailer.diff)
+
+    def test_perform_diff_ignored_for_revno_0(self):
+        """For the null revision, no diff is generated."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', True, 'subject')
+        self.assertIs(None, job.from_revision_spec)
+        self.assertIs(None, job.to_revision_spec)
+        mailer = job.get_mailer()
+        self.assertIs(None, mailer.diff)
 
 
 def test_suite():
