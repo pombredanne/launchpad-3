@@ -263,6 +263,14 @@
   </tal:deptree>
 
       <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+      <div class="actions">
+        <div tal:define="link context_menu/requestfeedback"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        >Request Feedback
+        </div>
+      </div>
+
       <div tal:condition="context/goal" class="related">
         <h2>Nearby</h2>
         <ul>
