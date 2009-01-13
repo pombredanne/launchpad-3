@@ -33,8 +33,6 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
     # so these columns are not needed.
-    product = ForeignKey(dbName='product',
-        foreignKey='Product', default=None)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', default=None)
 
@@ -53,6 +51,10 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         orderBy=['-priority', 'definition_status',
                  'implementation_status', 'title'],
         prejoins=['assignee'])
+
+    @property
+    def product(self):
+        return self.productseries.product
 
     @property
     def product_release(self):

@@ -19,7 +19,9 @@ import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from storm.locals import Store, Join
+from storm.store import Store
+from storm.expr import And, Join
+from storm.exceptions import NotOneError
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -627,10 +629,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        return Milestone.selectOne("""
-            product = %s AND
-            name = %s
-            """ % sqlvalues(self.id, name))
+        store = Store.of(self)
+        result = store.find(
+            Milestone,
+            And(Milestone.productseries == ProductSeries.id,
+                ProductSeries.product == self.id,
+                Milestone.name == name))
+        try:
+            return result.one()
+        except NotOneError:
+            return None
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""

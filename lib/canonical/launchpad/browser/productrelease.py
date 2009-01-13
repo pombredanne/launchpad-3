@@ -83,21 +83,25 @@ class ProductReleaseAddView(LaunchpadFormView):
     schema = IProductRelease
     label = "Register a release"
     field_names = [
-        'codename',
-        'summary',
         'changelog',
         ]
 
-    custom_widget('summary', TextAreaWidget, height=4, width=62)
     custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
-    @action(_('Register release'))
+    def initialize(self):
+        if self.context.product_release is not None:
+            self.request.response.addErrorNotification(
+                _("A product release already exists for this milestone"))
+            self.request.response.redirect(
+                canonical_url(self.context.product_release) + '/+edit')
+        else:
+            super(ProductReleaseAddView, self).initialize()
+
+    @action(_('Publish release'))
     def createAndAdd(self, action, data):
         user = getUtility(ILaunchBag).user
-        newrelease = self.context.addRelease(
-            user, codename=data['codename'],
-            summary=data['summary'],
-            changelog=data['changelog'])
+        newrelease = self.context.createProductRelease(
+            user, changelog=data['changelog'])
         self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
@@ -107,8 +111,7 @@ class ProductReleaseEditView(LaunchpadEditFormView):
 
     schema = IProductRelease
     label = "Edit project release details"
-    field_names = ["summary", "description", "changelog", "codename"]
-    custom_widget('summary', TextAreaWidget, width=62, height=5)
+    field_names = ["changelog"]
 
     @action('Change', name='change')
     def change_action(self, action, data):

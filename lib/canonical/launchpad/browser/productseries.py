@@ -101,8 +101,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'add_milestone', 'rdf', 'review',
-        'subscribe'
+        'add_package', 'add_milestone', 'rdf', 'subscribe'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -138,11 +137,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def rdf(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def review(self):
-        text = 'Review details'
-        return Link('+review', text, icon='edit')
 
     def subscribe(self):
         text = 'Subscribe to bug mail'

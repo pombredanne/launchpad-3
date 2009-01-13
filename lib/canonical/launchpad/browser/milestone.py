@@ -72,19 +72,19 @@ class MilestoneContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def publishRelease(self):
         text = 'Publish release'
-        # ProjectMilestones are virtual milestones and do not have
-        # any properties which can be edited.
-        enabled = not IProjectMilestone.providedBy(self.context)
+        # Releases only exist for products.
+        # A milestone can only have a single product release.
+        enabled = (not IProjectMilestone.providedBy(self.context)
+                   and self.context.product_release is None)
         return Link('+addrelease', text, icon='add', enabled=enabled)
 
     def viewRelease(self):
         text = 'View release'
-        # ProjectMilestones are virtual milestones and do not have
-        # any properties which can be edited.
+        # Releases only exist for products.
         if (not IProjectMilestone.providedBy(self.context)
-            and self.context.release is not None):
+            and self.context.product_release is not None):
             enabled = True
-            url = canonical_url(self.context.release)
+            url = canonical_url(self.context.product_release)
         else:
             enabled = False
             url = '.'

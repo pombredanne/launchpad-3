@@ -417,7 +417,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IProductSeries."""
         return Milestone(
             name=name, dateexpected=dateexpected, description=description,
-            product=self.product, productseries=self, code_name=code_name)
+            productseries=self, code_name=code_name)
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
