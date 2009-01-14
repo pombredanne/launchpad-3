@@ -258,7 +258,10 @@ class HWSubmissionSet:
         result_set = store.find(HWSubmission,
                                 HWSubmission.status == status,
                                 self._userHasAccessStormClause(user))
-        result_set.order_by(HWSubmission.date_submitted, HWSubmission.id)
+        # Provide a stable order. Sorting by id, to get the oldest
+        # submissions first. When date_submitted has an index, we could
+        # sort by that first.
+        result_set.order_by(HWSubmission.id)
         return result_set
 
     def search(self, user=None, device=None, driver=None, distribution=None,
