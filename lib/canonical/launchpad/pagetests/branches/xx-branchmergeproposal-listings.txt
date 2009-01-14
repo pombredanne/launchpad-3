@@ -92,7 +92,7 @@ and approved merges.
     >>> browser.open('http://code.launchpad.dev/~albert')
     >>> print_tag_with_id(browser.contents, 'page-summary')
     Related branches: 1 (1 registered, 1 owned, 1 subscribed)
-    1 active review, 0 approved merges
+    1 active proposal, 0 approved merges, 0 requested reviews
 
     >>> browser.getLink('approved merges').click()
     >>> print_tag_with_id(browser.contents, 'no-proposals')

@@ -722,13 +722,23 @@ class PersonBranchCountMixin:
             self.user)
         return query.count()
 
+    @cachedproperty
+    def requested_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
+            self.context, [
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user)
+        return query.count()
+
 
 class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     usedfor = IPerson
     facet = 'branches'
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'approved_merges']
+             'active_reviews', 'approved_merges', 'requested_reviews']
 
     def all_related(self):
         return Link(canonical_url(self.context, rootsite='code'),
@@ -745,10 +755,14 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'active proposal'
         else:
-            text = 'active reviews'
-        return Link('+activereviews', text)
+            text = 'active proposals'
+        if self.user == self.context:
+            summary = 'Proposals I have submitted'
+        else:
+            summary = 'Proposals %s has submitted' % self.context.displayname
+        return Link('+activereviews', text, summary=summary)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
@@ -764,6 +778,17 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
             enabled = self.user.inTeam(self.context)
         text = 'Register branch'
         return Link('+addbranch', text, icon='add', enabled=enabled)
+
+    def requested_reviews(self):
+        if self.approved_merge_count == 1:
+            text = 'requested review'
+        else:
+            text = 'requested reviews'
+        if self.user == self.context:
+            summary = 'Proposals I am reviewing'
+        else:
+            summary = 'Proposals %s is reviewing' % self.context.displayname
+        return Link('+approvedmerges', text, summary=summary)
 
 
 class PersonBugsMenu(ApplicationMenu):
