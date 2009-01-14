@@ -154,6 +154,11 @@ class IBranchNamespaceSet(Interface):
     def traverse(segments):
         """Look up the branch at the path given by 'segments'.
 
+        The iterable 'segments' will be consumed until a branch is found. As
+        soon as a branch is found, the branch will be returned and the
+        consumption of segments will stop. Thus, there will often be
+        unconsumed segments that can be used for further traversal.
+
         :param segments: An iterable of names of Launchpad components.
             The first segment is the username, *not* preceded by a '~`.
         :return: `IBranch`.
