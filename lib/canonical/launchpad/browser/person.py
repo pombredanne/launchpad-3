@@ -287,10 +287,12 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
-        branch = getUtility(IBranchNamespaceSet).traverse(
-            self._getSegments(pillar_name))
-        if branch is None:
+        try:
+            branch = getUtility(IBranchNamespaceSet).traverse(
+                self._getSegments(pillar_name))
+        except NotFoundError:
             return super(BranchTraversalMixin, self).traverse(pillar_name)
+
         # Normally, populating the launch bag is done by the traversal
         # mechanism. However, here we short-circuit that mechanism by
         # processing multiple segments at once. Thus, we populate the launch
