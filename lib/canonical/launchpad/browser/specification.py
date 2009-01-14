@@ -253,10 +253,6 @@ class SpecificationNavigation(Navigation):
     def traverse_branch(self):
         branch = getUtility(IBranchNamespaceSet).traverse(
             iter(self.request.stepstogo))
-
-        if not branch:
-            raise NotFoundError
-
         return self.context.getBranchLink(branch)
 
     def traverse(self, name):
