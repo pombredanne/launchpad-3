@@ -49,8 +49,7 @@ class WebServiceExceptionView:
 
         is_developer = getUtility(ILaunchBag).developer
         show_tracebacks = (is_developer or config.canonical.show_tracebacks)
-        if (not is_developer and not show_tracebacks
-            and self.status / 100 == 5):
+        if (not show_tracebacks and self.status / 100 == 5):
             # People who aren't developers shouldn't be shown the
             # exception message for an exception that caused an
             # internal server error--unless it's going to show up

@@ -143,6 +143,7 @@ exception class name instead of a message.
 
     >>> ignored = config.pop('traceback_off')
 
+
 == Default exceptions ==
 
 Standard exceptions have a view registered for them by default.
