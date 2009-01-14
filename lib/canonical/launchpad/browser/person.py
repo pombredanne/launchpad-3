@@ -262,7 +262,7 @@ class RestrictedMembershipsPersonView(LaunchpadView):
 
 
 class BranchTraversalMixin:
-    """Logic for traversing to branches below from IPersons.
+    """Logic for traversing to branches from `IPerson`s.
 
     Branches can be reached from
     code.launchpad.net/~person/+branch/other/path/info or from
