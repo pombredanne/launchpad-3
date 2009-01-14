@@ -209,7 +209,7 @@ def check_archive_conflicts(source, archive, pocket, include_binaries):
 def check_privacy_mismatch(source, archive):
     """Whether or not source files match the archive privacy.
 
-    Public source files can be copied to any archives, it does not
+    Public source files can be copied to any archive, it does not
     represent a 'privacy mismatch'.
 
     On the other hand, private source files can be copied to private
