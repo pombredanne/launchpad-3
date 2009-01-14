@@ -34,7 +34,7 @@ from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.server.http.commonaccesslogger import CommonAccessLogger
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

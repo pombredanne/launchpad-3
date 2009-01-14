@@ -126,7 +126,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
-from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
