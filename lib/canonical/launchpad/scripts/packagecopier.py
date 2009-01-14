@@ -212,9 +212,9 @@ def check_privacy_mismatch(source, archive):
     Public source files can be copied to private archives, it does not
     configure a 'privacy mismatch'.
 
-    On the other hand, private source files can only be copied to private
-    archives where builder will fetch it directly from the repository and
-    not from the restricted librarian.
+    On the other hand, private source files can be copied to private
+    archives where builders will fetch it directly from the repository
+    and not from the restricted librarian.
     """
     if archive.private:
         return False
