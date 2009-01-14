@@ -70,11 +70,12 @@ class IBugAttachment(IHasBug):
               description=_(
                 'A short and descriptive description of the attachment'),
               required=True))
-    libraryfile = exported(
+    libraryfile = Bytes(title=_("The attachment content."),
+              required=True)
+    data = exported(
         Bytes(title=_("The attachment content."),
               required=True,
-              readonly=True),
-        exported_as='data')
+              readonly=True))
     message = exported(
         Reference(IMessage, title=_("The message that was created when we "
                                     "added this attachment.")))
