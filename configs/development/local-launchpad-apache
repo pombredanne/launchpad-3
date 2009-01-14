@@ -40,11 +40,11 @@ RewriteLock /var/tmp/rewrite-lock
   RewriteLog /tmp/rlog
   RewriteLogLevel 9
 
+  RequestHeader add X-Forwarded-Scheme https
 
   # Requests to the root are redirected to the Launchpad homepage.
   RewriteRule ^/$ http://launchpad.dev [L]
-  RewriteRule ^(/.*)$ ${branch-rewrite:$1}
-  RewriteRule ^http://localhost:8080/(.*)$ http://localhost:9999/$1 [L,P]
+  RewriteRule ^(/.*)$ ${branch-rewrite:$1} [L,P]
   RewriteRule ^(/.*)$ http://launchpad.dev [L]
 
   <Location />
