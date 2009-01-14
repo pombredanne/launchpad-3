@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, BranchType)
+    BranchLifecycleStatus, BranchType, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespace, IBranchNamespaceSet,
     lookup_branch_namespace, InvalidNamespace)
@@ -510,6 +510,13 @@ class TestNamespaceSet(TestCaseWithFactory):
         segments = self._getSegments(branch)
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
+
+    def test_traverse_junk_branch_not_found(self):
+        person = self.factory.makePerson()
+        segments = iter([person.name, '+junk', 'no-such-branch'])
+        self.assertRaises(
+            NoSuchBranch, self.namespace_set.traverse, segments)
+        self.assertEqual([], list(segments))
 
     def test_traverse_product_branch(self):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable

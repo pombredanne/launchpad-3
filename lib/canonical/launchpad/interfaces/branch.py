@@ -429,6 +429,7 @@ class BranchTypeError(Exception):
     """
 
 
+# XXX: JonathanLange 2009-01-14: This should be a NotFoundError subclass.
 class NoSuchBranch(Exception):
     """Raised when we try to load a branch that does not exist."""
 

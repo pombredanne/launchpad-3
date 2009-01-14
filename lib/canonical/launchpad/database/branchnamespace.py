@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, IBranchSet)
+    BranchLifecycleStatus, IBranchSet, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespace, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import (
@@ -258,7 +258,8 @@ class BranchNamespaceSet:
                 person, distroseries=distroseries,
                 sourcepackagename=sourcepackagename)
         branch_name = segments.next()
-        return namespace.getByName(branch_name)
+        return self._findOrRaise(
+            NoSuchBranch, branch_name, namespace.getByName)
 
     def _findOrRaise(self, error, name, finder, *args):
         if name is None:
