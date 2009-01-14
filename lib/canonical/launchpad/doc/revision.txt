@@ -177,12 +177,13 @@ BranchRevision records are deleted using the `BranchRevisionSet.delete`
 method.
 
 
-First, get a branch via the IPersonSet utility:
+First, get a branch:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from canonical.launchpad.interfaces import IBranchSet, IPersonSet
   >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-  >>> branch = person.getBranch(None, 'junk.dev')
+  >>> branch = getUtility(IBranchSet).getByUniqueName(
+  ...     '~%s/+junk/+junk.dev' % person.name)
 
 The last commit on this branch has the revision number 6.
 
