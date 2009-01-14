@@ -161,6 +161,15 @@ class IBranchNamespaceSet(Interface):
 
         :param segments: An iterable of names of Launchpad components.
             The first segment is the username, *not* preceded by a '~`.
+        :raise NoSuchPerson: if the person referred to cannot be found.
+        :raise NoSuchProduct: if the product or distro referred to cannot be
+            found.
+        :raise NoSuchDistribution: if the distribution referred to cannot be
+            found.
+        :raise NoSuchDistroSeries: if the distroseries referred to cannot be-
+            found.
+        :raise NoSuchSourcePackageName: if the sourcepackagename referred to
+            cannot be found.
         :return: `IBranch`.
         """
 
