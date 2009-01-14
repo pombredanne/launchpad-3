@@ -79,10 +79,10 @@ three members of the vcs-imports team.
     >>> from canonical.launchpad.mail import stub
     >>> len(stub.test_emails)
     3
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> len(contactEmailAddresses(vcs_imports))
+    >>> len(get_contact_email_addresses(vcs_imports))
     3
     >>> import email
     >>> message = email.message_from_string(stub.test_emails[0][2])

@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet,
-    IHWSubmissionForm, IHWSubmissionSet, IHWSystemFingerprintSet)
+    IHWSubmissionForm, IHWSubmissionSet, IHWSystemFingerprintSet,
+    IHWVendorIDSet)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -207,6 +208,14 @@ class HWDBApplicationNavigation(Navigation):
         except ValueError:
             raise NotFoundError('invalid value for ID: %r' % id)
         return getUtility(IHWSubmissionDeviceSet).get(id)
+
+    @stepthrough('+hwvendorid')
+    def traverse_hw_vendor_id(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            raise NotFoundError('invalid value for ID: %r' % id)
+        return getUtility(IHWVendorIDSet).get(id)
 
 
 class HWDBFingerprintSetView(LaunchpadView):
