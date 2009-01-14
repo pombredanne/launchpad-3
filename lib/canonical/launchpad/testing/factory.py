@@ -468,8 +468,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if sourcepackage is None:
             sourcepackage = self.makeSourcePackage()
-        return self.makeBranch(
-            sourcepackage=sourcepackage, product=None, **kwargs)
+        return self.makeBranch(sourcepackage=sourcepackage, **kwargs)
 
     def makePersonalBranch(self, owner=None, **kwargs):
         """Make a personal branch on an arbitrary person.
