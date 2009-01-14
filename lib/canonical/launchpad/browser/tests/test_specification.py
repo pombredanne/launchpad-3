@@ -88,7 +88,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.linkBranch(branch)
         segments = [
             branch.owner.name,
-            branch.distroseries.distribution.name,
+            branch.distribution.name,
             branch.distroseries.name,
             branch.sourcepackagename.name,
             branch.name]

@@ -292,7 +292,7 @@ class Branch(SQLBase):
             from canonical.launchpad.database.sourcepackage import (
                 SourcePackage)
             launchbag.add(self.distroseries)
-            launchbag.add(self.distroseries.distribution)
+            launchbag.add(self.distribution)
             launchbag.add(
                 SourcePackage(self.sourcepackagename, self.distroseries))
 
@@ -361,7 +361,7 @@ class Branch(SQLBase):
         if (self.distroseries is not None
             and self.sourcepackagename is not None):
             return '%s/%s/%s' % (
-                self.distroseries.distribution.name,
+                self.distribution.name,
                 self.distroseries.name, self.sourcepackagename.name)
         return '+junk'
 

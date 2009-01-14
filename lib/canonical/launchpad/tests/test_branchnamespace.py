@@ -554,8 +554,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         # find a branch where its distro is given as an alias.
         branch = self.factory.makePackageBranch()
         pillar_alias = self.factory.getUniqueString()
-        distro = branch.distroseries.distribution
-        removeSecurityProxy(distro).setAliases([pillar_alias])
+        removeSecurityProxy(branch.distribution).setAliases([pillar_alias])
         segments = iter([
             branch.owner.name, pillar_alias, branch.distroseries.name,
             branch.sourcepackagename.name, branch.name,
