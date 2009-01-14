@@ -4933,7 +4933,7 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
 
 class PersonBMPListingView(BranchMergeProposalListingView):
     """Base class for the proposal listings that defines the user."""
-    
+
     def getUserFromContext(self):
         """Get the relevant user from the context."""
         return self.context
@@ -4958,7 +4958,7 @@ class PersonActiveReviewsView(PersonBMPListingView):
 class PersonRequestedReviewsView(PersonBMPListingView):
     """Branch merge proposals for the person that are needing review."""
 
-    extra_columns = ['date_review_requested', 'vote_summary', 'review']
+    extra_columns = ['date_review_requested', 'vote_summary',]
     _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
                      BranchMergeProposalStatus.NEEDS_REVIEW]
 
