@@ -114,6 +114,6 @@ class Job(SQLBase):
 
 
 Job.ready_jobs = Select(
-    Job.id, And(Job.status == JobStatus.WAITING,
+    Job.id, And(Job._status == JobStatus.WAITING,
     Or(Job.lease_expires == None, Job.lease_expires < UTC_NOW)
     ))

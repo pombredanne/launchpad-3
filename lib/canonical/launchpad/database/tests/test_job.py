@@ -158,7 +158,7 @@ class TestReadiness(TestCase):
             [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_started(self):
-        job = Job(status=JobStatus.RUNNING)
+        job = Job(_status=JobStatus.RUNNING)
         self.assertEqual(
             [], list(Store.of(job).execute(Job.ready_jobs)))
 
