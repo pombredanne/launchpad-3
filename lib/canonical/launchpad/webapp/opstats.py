@@ -23,6 +23,7 @@ class OpStats(LaunchpadXMLRPCView):
         OpStats.stats.update({
             # Global
             'requests': 0, # Requests, all protocols, all statuses
+            'retries': 0, # Optimistic transaction retries.
             'soft timeouts': 0, # Requests that generated a soft timeout OOPS
             'timeouts': 0, # Requests that generated a hard timeout OOPS
 

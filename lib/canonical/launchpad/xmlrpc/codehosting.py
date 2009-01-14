@@ -19,20 +19,21 @@ import pytz
 
 from bzrlib.urlutils import escape, unescape
 
+from twisted.python.util import mergeFunctionMetadata
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person, logout
+from canonical.launchpad.ftests import ANONYMOUS, login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
-    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY, WRITABLE)
+    LAUNCHPAD_SERVICES, READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -183,10 +184,10 @@ def run_with_login(login_id, function, *args, **kwargs):
     method will do whatever security proxy hackery is required to provide read
     privileges to the Launchpad services.
     """
-    if login_id == LAUNCHPAD_SERVICES:
+    if login_id == LAUNCHPAD_SERVICES or login_id == ANONYMOUS:
         # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
         # and expect `function` to use `removeSecurityProxy` or similar.
-        return function(LAUNCHPAD_SERVICES, *args, **kwargs)
+        return function(login_id, *args, **kwargs)
     requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
         raise NotFoundError("No person with id %s." % login_id)
@@ -199,6 +200,18 @@ def run_with_login(login_id, function, *args, **kwargs):
         return function(requester, *args, **kwargs)
     finally:
         logout()
+
+
+def return_fault(function):
+    """Catch any Faults raised by 'function' and return them instead."""
+
+    def decorated(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except Fault, fault:
+            return fault
+
+    return mergeFunctionMetadata(function, decorated)
 
 
 class BranchFileSystem(LaunchpadXMLRPCView):
@@ -215,30 +228,26 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             try:
                 namespace_name, branch_name = escaped_path.rsplit('/', 1)
             except ValueError:
-                return Fault(
-                    PERMISSION_DENIED_FAULT_CODE,
+                return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
             try:
                 namespace = lookup_branch_namespace(namespace_name)
             except InvalidNamespace:
-                return Fault(
-                    PERMISSION_DENIED_FAULT_CODE,
+                return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
             except NoSuchPerson, e:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "User/team '%s' does not exist." % e.name)
             except NoSuchProduct, e:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
             except NameLookupFailed, e:
-                return Fault(NOT_FOUND_FAULT_CODE, str(e))
+                return faults.NotFound(str(e))
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
             except (BranchCreationException, LaunchpadValidationError), e:
-                return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
+                return faults.PermissionDenied(str(e))
             else:
                 return branch.id
         return run_with_login(login_id, create_branch)
@@ -280,8 +289,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return ''
             product = getUtility(IProductSet).getByName(project_name)
             if product is None:
-                return Fault(
-                    NOT_FOUND_FAULT_CODE,
+                return faults.NotFound(
                     "Project %r does not exist." % project_name)
             branch = product.default_stacked_on_branch
             if branch is None:
@@ -308,7 +316,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         try:
             branch_id = branch.id
         except Unauthorized:
-            return None
+            raise faults.PermissionDenied()
         if branch.branch_type == BranchType.REMOTE:
             return None
         return (
@@ -343,6 +351,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
+        @return_fault
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
@@ -361,7 +370,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     requester, first, second)
                 if product is not None:
                     return product
-            return faults.PathTranslationError(path)
+            raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
 
 

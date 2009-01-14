@@ -22,7 +22,6 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
 from canonical.codehosting.codeimport.workermonitor import (
@@ -515,7 +514,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         This implementation does it in a child process.
         """
         script_path = os.path.join(
-            get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
+            config.root, 'scripts', 'code-import-worker-db.py')
         process_end_deferred = defer.Deferred()
         # The "childFDs={0:0, 1:1, 2:2}" means that any output from the script
         # goes to the test runner's console rather than to pipes that noone is
