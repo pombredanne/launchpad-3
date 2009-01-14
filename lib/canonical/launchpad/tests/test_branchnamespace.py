@@ -552,11 +552,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_traverse_package_branch_aliases(self):
         # Distributions can have aliases. IBranchNamespaceSet.traverse will
         # find a branch where its distro is given as an alias.
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        branch = self.factory.makeBranch(
-            distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+        branch = self.factory.makePackageBranch()
         pillar_alias = self.factory.getUniqueString()
         distro = branch.distroseries.distribution
         removeSecurityProxy(distro).setAliases([pillar_alias])

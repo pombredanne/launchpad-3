@@ -725,7 +725,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         :return: The new Product and the new Branch.
         """
         product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(product=product, private=private)
+        branch = self.factory.makeProductBranch(private=private)
         self.factory.enableDefaultStackingForProduct(product, branch)
         self.assertEqual(product.default_stacked_on_branch, branch)
         return product, branch

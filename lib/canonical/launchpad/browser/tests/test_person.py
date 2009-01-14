@@ -106,11 +106,7 @@ class TestBranchTraversal(TestCaseWithFactory):
             NotFound, self.traverse, ['+branch', 'no-product', 'no-branch'])
 
     def test_redirect_on_package_branch_aliases(self):
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        branch = self.factory.makeBranch(
-            owner=self.person, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+        branch = self.factory.makePackageBranch(owner=self.person)
         distro = removeSecurityProxy(branch.distroseries.distribution)
         distro.setAliases(['foo'])
         self.assertRedirects(

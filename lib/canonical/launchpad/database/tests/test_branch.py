@@ -1486,13 +1486,13 @@ class TestBranchJob(TestCaseWithFactory):
 
     def test_providesInterface(self):
         """Ensure that BranchJob implements IBranchJob."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         verifyObject(
             IBranchJob, BranchJob(branch, BranchJobType.STATIC_DIFF, {}))
 
     def test_destroySelf_destroys_job(self):
         """Ensure that BranchJob.destroySelf destroys the Job as well."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
         job_id = branch_job.job.id
         branch_job.destroySelf()
