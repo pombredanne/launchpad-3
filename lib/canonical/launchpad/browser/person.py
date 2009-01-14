@@ -1,5 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd
-# pylint: disable-msg=E0213
+# Copyright 2004-2009 Canonical Ltd
+# pylint: disable-msg=E0211,E0213
 
 """Person-related view classes."""
 
