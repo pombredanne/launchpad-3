@@ -361,21 +361,11 @@ class Branch(SQLBase):
         """
         return BzrBranch.open(self.warehouse_url)
 
-    def _getContainerName(self):
-        if self.product is not None:
-            return self.product.name
-        if (self.distroseries is not None
-            and self.sourcepackagename is not None):
-            return '%s/%s/%s' % (
-                self.distribution.name,
-                self.distroseries.name, self.sourcepackagename.name)
-        return '+junk'
-
     @property
     def unique_name(self):
         """See `IBranch`."""
         return u'~%s/%s/%s' % (
-            self.owner.name, self._getContainerName(), self.name)
+            self.owner.name, self.container.name, self.name)
 
     @property
     def displayname(self):
