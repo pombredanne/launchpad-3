@@ -1642,6 +1642,27 @@ class TestRevisionMailJob(TestCaseWithFactory):
         mailer = job.get_mailer()
         self.assertIs(None, mailer.diff)
 
+    def test_iterReady_ignores_BranchDiffJobs(self):
+        branch = self.factory.makeBranch()
+        BranchDiffJob.create(branch, 0, 1)
+        self.assertEqual([], list(RevisionMailJob.iterReady()))
+
+    def test_iterReady_includes_ready_jobs(self):
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.org', 'body', False, 'subject')
+        job.job.sync()
+        job.context.sync()
+        self.assertEqual([job], list(RevisionMailJob.iterReady()))
+
+    def test_iterReady_excludes_unready_jobs(self):
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.org', 'body', False, 'subject')
+        job.job.start()
+        job.job.complete()
+        self.assertEqual([], list(RevisionMailJob.iterReady()))
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -75,13 +75,13 @@ from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import (
     validate_public_person)
 from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.database.job import Job
+from canonical.launchpad.database.job import Job, JobStatus
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
@@ -1689,6 +1689,9 @@ class RevisionMailJob(BranchDiffJob):
 
     classProvides(IRevisionMailJobSource)
 
+    def __eq__(self, other):
+        return (self.context == other.context)
+
     @classmethod
     def create(
         klass, branch, revno, from_address, body, perform_diff, subject):
@@ -1710,6 +1713,16 @@ class RevisionMailJob(BranchDiffJob):
                         to_revision_spec))
         branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
         return klass(branch_job)
+
+    @staticmethod
+    def iterReady():
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.find(
+            (BranchJob),
+            And(BranchJob.job_type == BranchJobType.REVISION_MAIL,
+                BranchJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs)))
+        return (RevisionMailJob(job) for job in jobs)
 
     @property
     def revno(self):

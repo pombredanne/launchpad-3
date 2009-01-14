@@ -1,7 +1,7 @@
 #! /usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Test the sendcodemail script"""
+"""Test the sendbranchmail script"""
 
 import unittest
 from canonical.testing import DatabaseLayer
@@ -12,7 +12,8 @@ class TestSendcodemail(unittest.TestCase):
     layer = DatabaseLayer
 
     def test_sendcodemail(self):
-        retcode, stdout, stderr = run_script('cronscripts/sendcodemail.py', [])
+        retcode, stdout, stderr = run_script(
+            'cronscripts/sendbranchmail.py', [])
 
 
 def test_suite():
