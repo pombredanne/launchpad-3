@@ -883,7 +883,15 @@ class TestCopyPackage(TestCase):
             copy_helper.mainTask)
 
     def testCopyFromPrivateToPublicPPAs(self):
-        """Check if copying private sources into public archives is denied."""
+        """Check if copying private sources into public archives is denied.
+
+        Private source files can only be published in private archives,
+        because builders do not have access to the restricted librarian.
+
+        Builders only fetch the sources files from the repository itself
+        for private PPAs. If we copy a restricted file into a public PPA
+        builders will not be able to fetch it.
+        """
         # Set up a private PPA.
         cprov = getUtility(IPersonSet).getByName("cprov")
         cprov.archive.buildd_secret = "secret"
