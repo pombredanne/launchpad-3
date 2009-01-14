@@ -14,13 +14,6 @@
     />
 
   <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IPerson"
-    factory="canonical.launchpad.browser.PersonSOP"
-    permission="zope.Public"
-    />
-
-  <adapter
     provides="canonical.lazr.interfaces.IObjectPrivacy"
     for="canonical.launchpad.interfaces.ITeam"
     factory="canonical.launchpad.browser.TeamPrivacyAdapter"
@@ -34,7 +27,21 @@
     permission="zope.Public"
     />
 
-  <content class="canonical.launchpad.database.Person">
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IPerson"
+    factory="canonical.launchpad.browser.PersonBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <class class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -72,13 +79,13 @@
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
-  </content>
+  </class>
 
   <browser:menus
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
-        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
+        PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
         PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />
@@ -94,8 +101,8 @@
     name="+index" />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
-    name="+specs"
     layer="canonical.launchpad.layers.BlueprintLayer"
+    name="+specs"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
@@ -172,6 +179,22 @@
     class="canonical.launchpad.browser.PersonEditView"
     permission="launchpad.Edit"
     template="../templates/person-edit.pt"
+    />
+
+  <browser:page
+    name="+editlocation"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditLocationView"
+    permission="launchpad.EditLocation"
+    template="../templates/person-editlocation.pt"
+    />
+
+  <browser:page
+    name="+contactuser"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.EmailToPersonView"
+    permission="launchpad.View"
+    template="../templates/contact-user.pt"
     />
 
   <browser:page
@@ -330,6 +353,10 @@
       name="+xrds"
       attribute="xrds"
       />
+    <browser:page
+      name="+portlet-map"
+      template="../templates/person-portlet-map.pt"
+      />
   </browser:pages>
 
   <browser:page
@@ -411,17 +438,11 @@
     template="../templates/person-specworkload.pt"
     />
 
-  <!-- This portlet is a generalform because its view uses widgets to
-  calculate the current distribution source package. This information
-  is stored in the query, to avoid a complex URL scheme.
-  -->
-  <browser:generalform
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     name="+portlet-otherpackages"
     permission="zope.Public"
     class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
-    fields="distribution sourcepackagename"
     template="../templates/person-portlet-otherpackages.pt"
     />
 
@@ -477,10 +498,6 @@
     template="../templates/person-packagebugs-search.pt"
     />
 
-  <!-- This page is a generalform because it uses widget values to
-  figure out what the "current package" is. This information is stored
-  in the URL rather than the context, to avoid a complex URL scheme.
-  -->
   <browser:page
     name="+packagebugs"
     for="canonical.launchpad.interfaces.IPerson"
@@ -688,6 +705,36 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapView"
+    name="+map"
+    template="../templates/team-map.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    name="+mailing-list-subscribers"
+    template="../templates/team-mailinglist-subscribers.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapData"
+    template="../templates/team-map-data.pt"
+    name="+mapdata"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.TeamEditLocationView"
+    name="+editlocation"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
     name="+listing-simple"
     template="../templates/team-listing-simple.pt"
     />
@@ -702,6 +749,14 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.TeamMapView"
+    permission="zope.Public"
+    name="+portlet-map"
+    template="../templates/team-portlet-map.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
     class="canonical.launchpad.browser.TeamContactAddressView"
     name="+contactaddress"
@@ -710,7 +765,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Edit"
+    permission="launchpad.MailingListManager"
     class="canonical.launchpad.browser.TeamMailingListConfigurationView"
     name="+mailinglist"
     template="../templates/team-mailinglist.pt"
@@ -788,16 +843,10 @@
     template="../templates/team-polls.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+newpoll"
     for="canonical.launchpad.interfaces.ITeam"
     class="canonical.launchpad.browser.PollAddView"
-    schema="canonical.launchpad.interfaces.IPoll"
-    fields="name title proposition secrecy allowspoilt
-            dateopens datecloses"
-    keyword_arguments="name title proposition secrecy allowspoilt
-            dateopens datecloses"
-    label="Create a new poll"
     permission="launchpad.Edit"
     template="../templates/team-newpoll.pt"
     />
@@ -851,9 +900,9 @@
     />
 
   <!-- PersonSet -->
-  <content class="canonical.launchpad.database.PersonSet">
+  <class class="canonical.launchpad.database.PersonSet">
      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.PersonSet"
@@ -863,18 +912,11 @@
 
   <securedutility
     class="canonical.launchpad.rest.MeLink"
-    provides="canonical.lazr.interfaces.ITopLevelEntryLink">
+    provides="canonical.launchpad.rest.IMeLink">
     <allow interface="canonical.lazr.interfaces.ITopLevelEntryLink" />
     <allow
       interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IPersonSet"
-    factory="canonical.launchpad.browser.PersonSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPersonSet"

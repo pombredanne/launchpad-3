@@ -3,30 +3,32 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchSubscriptionSOP',
-    'BranchSubscriptionAddView',
-    'BranchSubscriptionEditView',
-    'BranchSubscriptionEditOwnView',
     'BranchSubscriptionAddOtherView',
+    'BranchSubscriptionAddView',
+    'BranchSubscriptionEditOwnView',
+    'BranchSubscriptionEditView',
+    'BranchSubscriptionPrimaryContext',
     ]
 
 from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, IBranchSubscription,
     ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
 
 
-class BranchSubscriptionSOP(StructuralObjectPresentation):
-    """Provides the structural heading for IBranchSubscription."""
+class BranchSubscriptionPrimaryContext:
+    """The primary context is the subscription is that of the branch."""
 
-    def getMainHeading(self):
-        """See IStructuralHeaderPresentation."""
-        return self.context.branch.owner.browsername
+    implements(IPrimaryContext)
+
+    def __init__(self, branch_subscription):
+        self.context = IPrimaryContext(branch_subscription.branch).context
 
 
 class _BranchSubscriptionView(LaunchpadFormView):
@@ -186,7 +188,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
                 review_level)
 
     def validate(self, data):
-        """Make sure that the if a team is subscribed, that the user is a member."""
+        """Ensure that when a team is subscribed, the user is a member."""
         celebs = getUtility(ILaunchpadCelebrities)
         # An admin or bzr expert can subscribe anyone.
         if self.user.inTeam(celebs.admin) or (

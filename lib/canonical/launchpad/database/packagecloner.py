@@ -14,15 +14,17 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 def clone_packages(origin, destination, distroarchseries_list=None):
     """Copies packages from origin to destination package location.
 
-    Binary packages are only copied for the DistroArchSeries pairs
+    Binary packages are only copied for the `DistroArchSeries` pairs
     specified.
 
     This function is meant to simplify the utilization of the package
@@ -50,7 +52,7 @@ class PackageCloner:
     def clonePackages(self, origin, destination, distroarchseries_list=None):
         """Copies packages from origin to destination package location.
 
-        Binary packages are only copied for the DistroArchSeries pairs
+        Binary packages are only copied for the `DistroArchSeries` pairs
         specified.
 
         @type origin: PackageLocation
@@ -90,8 +92,8 @@ class PackageCloner:
         @param destination_das: the DistroArchSeries to which to copy
             binary packages
         """
-        cur = cursor()
-        cur.execute('''
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
@@ -122,8 +124,8 @@ class PackageCloner:
         @param destination: the location to which the data is
             to be copied.
         """
-        cur = cursor()
-        cur.execute('''
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
                 section, archive, datecreated, datepublished, pocket,

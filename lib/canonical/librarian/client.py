@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import md5
+import re
 import sha
 import socket
 from socket import SOCK_STREAM, AF_INET
@@ -186,8 +187,10 @@ class FileUploadClient:
         self._connect()
         try:
             # Send command
+            database_name = re.search(
+                    r"dbname=(\S*)", config.database.main_master).group(1)
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendHeader('Database-Name', config.database.dbname)
+            self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())

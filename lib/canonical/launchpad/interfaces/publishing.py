@@ -26,12 +26,19 @@ __all__ = [
     'pocketsuffix'
     ]
 
-from zope.schema import Bool, Datetime, Int, TextLine, Text
+from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
 
 #
 # Exceptions
@@ -50,6 +57,159 @@ class PoolFileOverwriteError(Exception):
     file in pool and print a warning in the publisher log. It probably
     requires manual intervention in the archive.
     """
+
+
+class PackagePublishingStatus(DBEnumeratedType):
+    """Package Publishing Status
+
+     A package has various levels of being published within a DistroSeries.
+     This is important because of how new source uploads dominate binary
+     uploads bit-by-bit. Packages (source or binary) enter the publishing
+     tables as 'Pending', progress through to 'Published' eventually become
+     'Superseded' and then become 'PendingRemoval'. Once removed from the
+     DistroSeries the publishing record is also removed.
+     """
+
+    PENDING = DBItem(1, """
+        Pending
+
+        This [source] package has been accepted into the DistroSeries and
+        is now pending the addition of the files to the published disk area.
+        In due course, this source package will be published.
+        """)
+
+    PUBLISHED = DBItem(2, """
+        Published
+
+        This package is currently published as part of the archive for that
+        distroseries. In general there will only ever be one version of any
+        source/binary package published at any one time. Once a newer
+        version becomes published the older version is marked as superseded.
+        """)
+
+    SUPERSEDED = DBItem(3, """
+        Superseded
+
+        When a newer version of a [source] package is published the existing
+        one is marked as "superseded".  """)
+
+    DELETED = DBItem(4, """
+        Deleted
+
+        When a publication was "deleted" from the archive by user request.
+        Records in this state contain a reference to the Launchpad user
+        responsible for the deletion and a text comment with the removal
+        reason.
+        """)
+
+    OBSOLETE = DBItem(5, """
+        Obsolete
+
+        When a distroseries becomes obsolete, its published packages
+        are no longer required in the archive.  The publications for
+        those packages are marked as "obsolete" and are subsequently
+        removed during domination and death row processing.
+        """)
+
+
+class PackagePublishingPocket(DBEnumeratedType):
+    """Package Publishing Pocket
+
+    A single distroseries can at its heart be more than one logical
+    distroseries as the tools would see it. For example there may be a
+    distroseries called 'hoary' and a SECURITY pocket subset of that would
+    be referred to as 'hoary-security' by the publisher and the distro side
+    tools.
+    """
+
+    RELEASE = DBItem(0, """
+        Release
+
+        The package versions that were published
+        when the distribution release was made.
+        For releases that are still under development,
+        packages are published here only.
+        """)
+
+    SECURITY = DBItem(10, """
+        Security
+
+        Package versions containing security fixes for the released
+        distribution.
+        It is a good idea to have security updates turned on for your system.
+        """)
+
+    UPDATES = DBItem(20, """
+        Updates
+
+        Package versions including new features after the distribution
+        release has been made.
+        Updates are usually turned on by default after a fresh install.
+        """)
+
+    PROPOSED = DBItem(30, """
+        Proposed
+
+        Package versions including new functions that should be widely
+        tested, but that are not yet part of a default installation.
+        People who "live on the edge" will test these packages before they
+        are accepted for use in "Updates".
+        """)
+
+    BACKPORTS = DBItem(40, """
+        Backports
+
+        Backported packages.
+        """)
+
+
+class PackagePublishingPriority(DBEnumeratedType):
+    """Package Publishing Priority
+
+    Binary packages have a priority which is related to how important
+    it is to have that package installed in a system. Common priorities
+    range from required to optional and various others are available.
+    """
+
+    REQUIRED = DBItem(50, """
+        Required
+
+        This priority indicates that the package is required. This priority
+        is likely to be hard-coded into various package tools. Without all
+        the packages at this priority it may become impossible to use dpkg.
+        """)
+
+    IMPORTANT = DBItem(40, """
+        Important
+
+        If foo is in a package; and "What is going on?! Where on earth is
+        foo?!?!" would be the reaction of an experienced UNIX hacker were
+        the package not installed, then the package is important.
+        """)
+
+    STANDARD = DBItem(30, """
+        Standard
+
+        Packages at this priority are standard ones you can rely on to be in
+        a distribution. They will be installed by default and provide a
+        basic character-interface userland.
+        """)
+
+    OPTIONAL = DBItem(20, """
+        Optional
+
+        This is the software you might reasonably want to install if you did
+        not know what it was or what your requiredments were. Systems such
+        as X or TeX will live here.
+        """)
+
+    EXTRA = DBItem(10, """
+        Extra
+
+        This contains all the packages which conflict with those at the
+        other priority levels; or packages which are only useful to people
+        who have very specialised needs.
+        """)
 
 
 #
@@ -104,7 +264,10 @@ class IPublishing(Interface):
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
-    displayname = Attribute("Text representation of the current record.")
+    displayname = exported(
+        TextLine(
+            title=_("Display Name"),
+            description=_("Text representation of the current record.")))
     age = Attribute("Age of the publishing record.")
 
     def publish(diskpool, log):
@@ -153,14 +316,6 @@ class IPublishing(Interface):
         """Make this publication obsolete.
 
         :return: The obsoleted publishing record, either:
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
-        """
-
-    def copyTo(distroseries, pocket, archive):
-        """Copy this publication to another location.
-
-        :return: The publishing in the targeted location, either:
             `ISourcePackagePublishingHistory` or
             `IBinaryPackagePublishingHistory`.
         """
@@ -236,14 +391,19 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('The source package release being published'),
             required=False, readonly=False,
             )
-    status = Int(
-            title=_('The status of this publishing record'),
+    status = exported(
+        Choice(
+            title=_('Package Publishing Status'),
+            description=_('The status of this publishing record'),
+            vocabulary=PackagePublishingStatus,
             required=False, readonly=False,
-            )
-    distroseries = Int(
+            ))
+    distroseries = exported(
+        Reference(
+            IDistroSeries,
             title=_('The distroseries being published into'),
             required=False, readonly=False,
-            )
+            ))
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -252,44 +412,55 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('The section being published into'),
             required=False, readonly=False,
             )
-    datepublished = Datetime(
+    datepublished = exported(
+        Datetime(
             title=_('The date on which this record was published'),
             required=False, readonly=False,
-            )
-    scheduleddeletiondate = Datetime(
+            ))
+    scheduleddeletiondate = exported(
+        Datetime(
             title=_('The date on which this record is scheduled for '
                     'deletion'),
             required=False, readonly=False,
-            )
-    pocket = Int(
-            title=_('The pocket into which this entry is published'),
-            required=True, readonly=True,
-            )
-    archive = Int(
+            ))
+    pocket = exported(
+        Choice(
+            title=_('Pocket'),
+            description=_('The pocket into which this entry is published'),
+            vocabulary=PackagePublishingPocket,
+            required=True, readonly=True
+            ))
+    archive = exported(
+        Reference(
+            IArchive,
             title=_('Archive ID'), required=True, readonly=True,
-            )
+            ))
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,
             )
-    datesuperseded = Datetime(
+    datesuperseded = exported(
+        Datetime(
             title=_('The date on which this record was marked superseded'),
             required=False, readonly=False,
-            )
-    datecreated = Datetime(
+            ))
+    datecreated = exported(
+        Datetime(
             title=_('The date on which this record was created'),
             required=True, readonly=False,
-            )
-    datemadepending = Datetime(
+            ))
+    datemadepending = exported(
+        Datetime(
             title=_('The date on which this record was set as pending '
                     'removal'),
             required=False, readonly=False,
-            )
-    dateremoved = Datetime(
+            ))
+    dateremoved = exported(
+        Datetime(
             title=_('The date on which this record was removed from the '
                     'published set'),
             required=False, readonly=False,
-            )
+            ))
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -298,18 +469,23 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('The date on which this record had its embargo lifted'),
             required=False, readonly=False,
             )
-    removed_by = Int(
-        title=_('The IPerson responsible for the removal'),
-        required=False, readonly=False,
-        )
-    removal_comment = Text(
-        title=_('Reason why this publication is going to be removed.'),
-        required=False, readonly=False,
-        )
+    removed_by = exported(
+        Reference(
+            IPerson,
+            title=_('The IPerson responsible for the removal'),
+            required=False, readonly=False,
+            ))
+    removal_comment = exported(
+        Text(
+            title=_('Reason why this publication is going to be removed.'),
+            required=False, readonly=False,
+        ))
 
 
 class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
     """A source package publishing history record."""
+    export_as_webservice_entry()
+
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
@@ -324,6 +500,23 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an IDistroSeriesSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
+
+    source_package_name = exported(
+        TextLine(
+            title=_("Source Package Name"),
+            required=False, readonly=True))
+    source_package_version = exported(
+        TextLine(
+            title=_("Source Package Version"),
+            required=False, readonly=True))
+    component_name = exported(
+        TextLine(
+            title=_("Component Name"),
+            required=False, readonly=True))
+    section_name = exported(
+        TextLine(
+            title=_("Section Name"),
+            required=False, readonly=True))
 
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.
@@ -340,8 +533,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         """Return all unique binary publications built by this source.
 
         Follow the build record and return every unique binary publishing
-        record for any `DistroArchSeries` in this `DistroSeries` and in
-        the same `IArchive` and Pocket.
+        record in the context `DistroSeries` and in the same `IArchive`
+        and Pocket.
+
+        There will be only one entry for architecture independent binary
+        publications.
 
         :return: a list containing all unique
             `IBinaryPackagePublishingHistory`.
@@ -392,6 +588,14 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
+
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        :return: a `ISourcePackagePublishingHistory` record representing the
+            source in the destination location.
+        """
+
 
 #
 # Binary package publishing
@@ -517,11 +721,24 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        Architecture independent binary publications are copied to all
+        supported architectures in the destination distroseries.
+
+        :return: a list of `IBinaryPackagePublishingHistory` records
+            representing the binaries copied to the destination location.
+        """
+
 
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def getBuildsForSources(one_or_more_source_publications):
+    def getByIdAndArchive(id, archive):
+        """Return the source publication matching id AND archive."""
+
+    def getBuildsForSourceIds(source_ids, archive=None):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -530,16 +747,30 @@ class IPublishingSet(Interface):
         information will be cached and the callsites can group builds in
         any convenient form.
 
+        The optional archive parameter, if provided, will ensure that only
+        builds corresponding to the archive will be included in the results.
+
         The result is ordered by:
 
          1. Ascending `SourcePackagePublishingHistory.id`,
          2. Ascending `DistroArchSeries.architecturetag`.
 
-        :param one_or_more_source_publication: list of or a single
+        :param source_ids: list of or a single
             `SourcePackagePublishingHistory` object.
-
+        :type source_ids: ``list`` or `SourcePackagePublishingHistory`
+        :param archive: An optional archive with which to filter the source
+                        ids.
+        :type archive: `IArchive`
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+        :rtype: `storm.store.ResultSet`.
+        """
+
+    def getBuildsForSources(one_or_more_source_publications):
+        """Return all builds related with each given source publication.
+
+        Extracts the source ids from one_or_more_source_publications and
+        calls getBuildsForSourceIds.
         """
 
     def getFilesForSources(one_or_more_source_publication):
@@ -610,6 +841,25 @@ class IPublishingSet(Interface):
              `LibraryFileAlias`, `LibraryFileContent`)
         """
 
+    def getChangesFilesForSources(one_or_more_source_publications):
+        """Return all changesfiles for each given source publication.
+
+        The returned ResultSet contains entries with the wanted changesfiles
+        as `LibraryFileAlias`es associated with the corresponding source
+        publication and its corresponding `LibraryFileContent`,
+        `PackageUpload` and `SourcePackageRelease` in a 5-element tuple.
+        This way the extra information will be cached and the call sites can
+        group changesfiles in any convenient form.
+
+        The result is ordered by ascending `SourcePackagePublishingHistory.id`
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing tuples as
+            (`SourcePackagePublishingHistory`, `PackageUpload`,
+             `SourcePackageRelease`, `LibraryFileAlias`, `LibraryFileContent`)
+        """
 
     def requestDeletion(sources, removed_by, removal_comment=None):
         """Delete the source and binary publications specified.
@@ -626,159 +876,30 @@ class IPublishingSet(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
+    def getBuildStatusSummariesForSourceIdsAndArchive(source_ids, archive):
+        """Return a summary of the build statuses for source publishing ids.
 
-class PackagePublishingStatus(DBEnumeratedType):
-    """Package Publishing Status
+        This method collects all the builds for the provided source package
+        publishing history ids, and returns the build status summary for
+        the builds associated with each source package.
 
-     A package has various levels of being published within a DistroSeries.
-     This is important because of how new source uploads dominate binary
-     uploads bit-by-bit. Packages (source or binary) enter the publishing
-     tables as 'Pending', progress through to 'Published' eventually become
-     'Superseded' and then become 'PendingRemoval'. Once removed from the
-     DistroSeries the publishing record is also removed.
-     """
+        See the `getStatusSummaryForBuilds()` method of `IBuildSet`.for
+        details of the summary.
 
-    PENDING = DBItem(1, """
-        Pending
-
-        This [source] package has been accepted into the DistroSeries and
-        is now pending the addition of the files to the published disk area.
-        In due course, this source package will be published.
-        """)
-
-    PUBLISHED = DBItem(2, """
-        Published
-
-        This package is currently published as part of the archive for that
-        distroseries. In general there will only ever be one version of any
-        source/binary package published at any one time. Once a newer
-        version becomes published the older version is marked as superseded.
-        """)
-
-    SUPERSEDED = DBItem(3, """
-        Superseded
-
-        When a newer version of a [source] package is published the existing
-        one is marked as "superseded".  """)
-
-    DELETED = DBItem(4, """
-        Deleted
-
-        When a publication was "deleted" from the archive by user request.
-        Records in this state contain a reference to the Launchpad user
-        responsible for the deletion and a text comment with the removal
-        reason.
-        """)
-
-    OBSOLETE = DBItem(5, """
-        Obsolete
-
-        When a distroseries becomes obsolete, its published packages
-        are no longer required in the archive.  The publications for
-        those packages are marked as "obsolete" and are subsequently
-        removed during domination and death row processing.
-        """)
-
-
-class PackagePublishingPriority(DBEnumeratedType):
-    """Package Publishing Priority
-
-    Binary packages have a priority which is related to how important
-    it is to have that package installed in a system. Common priorities
-    range from required to optional and various others are available.
-    """
-
-    REQUIRED = DBItem(50, """
-        Required
-
-        This priority indicates that the package is required. This priority
-        is likely to be hard-coded into various package tools. Without all
-        the packages at this priority it may become impossible to use dpkg.
-        """)
-
-    IMPORTANT = DBItem(40, """
-        Important
-
-        If foo is in a package; and "What is going on?! Where on earth is
-        foo?!?!" would be the reaction of an experienced UNIX hacker were
-        the package not installed, then the package is important.
-        """)
-
-    STANDARD = DBItem(30, """
-        Standard
-
-        Packages at this priority are standard ones you can rely on to be in
-        a distribution. They will be installed by default and provide a
-        basic character-interface userland.
-        """)
-
-    OPTIONAL = DBItem(20, """
-        Optional
-
-        This is the software you might reasonably want to install if you did
-        not know what it was or what your requiredments were. Systems such
-        as X or TeX will live here.
-        """)
-
-    EXTRA = DBItem(10, """
-        Extra
-
-        This contains all the packages which conflict with those at the
-        other priority levels; or packages which are only useful to people
-        who have very specialised needs.
-        """)
-
-
-class PackagePublishingPocket(DBEnumeratedType):
-    """Package Publishing Pocket
-
-    A single distroseries can at its heart be more than one logical
-    distroseries as the tools would see it. For example there may be a
-    distroseries called 'hoary' and a SECURITY pocket subset of that would
-    be referred to as 'hoary-security' by the publisher and the distro side
-    tools.
-    """
-
-    RELEASE = DBItem(0, """
-        Release
-
-        The package versions that were published
-        when the distribution release was made.
-        For releases that are still under development,
-        packages are published here only.
-        """)
-
-    SECURITY = DBItem(10, """
-        Security
-
-        Package versions containing security fixes for the released
-        distribution.
-        It is a good idea to have security updates turned on for your system.
-        """)
-
-    UPDATES = DBItem(20, """
-        Updates
-
-        Package versions including new features after the distribution
-        release has been made.
-        Updates are usually turned on by default after a fresh install.
-        """)
-
-    PROPOSED = DBItem(30, """
-        Proposed
-
-        Package versions including new functions that should be widely
-        tested, but that are not yet part of a default installation.
-        People who "live on the edge" will test these packages before they
-        are accepted for use in "Updates".
-        """)
-
-    BACKPORTS = DBItem(40, """
-        Backports
-
-        Backported packages.
-        """)
-
+        :param source_ids: A list of source publishing history record ids.
+        :type source_ids: ``list``
+        :param archive: The archive which will be used to filter the source
+                        ids.
+        :type archive: `IArchive`
+        :return: A dict consisting of the overall status summaries for the
+            given ids that belong in the archive. For example:
+                {
+                    18: {'status': 'succeeded'},
+                    25: {'status': 'building', 'builds':[building_builds]},
+                    35: {'status': 'failed', 'builds': [failed_builds]}
+                }
+        :rtype: ``dict``.
+        """
 
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",

@@ -8,6 +8,7 @@ from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
 from canonical.librarian.db import read_transaction, write_transaction
+from canonical.librarian.utils import guess_librarian_encoding
 
 
 defaultResource = static.Data("""
@@ -102,23 +103,8 @@ class LibraryFileAliasResource(resource.Resource):
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
-
-            # This fix is in response to Bug 173096.  The Ubuntu team wants
-            # their log files to be automatically unzipped.  Previously this
-            # was done by having Apache add an encoding for all content that
-            # was .gz or .tgz.  Doing so violates the intent of the
-            # Content-Encoding header and caused other gzipped files served
-            # from the Librarian to be treated incorrectly by browsers.  The
-            # fix shown here is to still support the encoding of Ubuntu log
-            # files while allowing others to pass with no encoding.  Apache
-            # will be changed to remove the Content-Encoding header for gzip.
-            if filename.endswith(".txt.gz"):
-                encoding = "gzip"
-                mimetype = "text/plain"
-            else:
-                encoding = None
-            return File(mimetype.encode('ascii'),
-                        encoding,
+            encoding, mimetype = guess_librarian_encoding(filename, mimetype)
+            return File(mimetype, encoding,
                         self.storage._fileLocation(dbcontentID))
         else:
             return proxy.ReverseProxyResource(self.upstreamHost,

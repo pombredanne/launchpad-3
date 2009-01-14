@@ -4,7 +4,7 @@ IBuild instance implements the 'notify' method which sends a status
 report about the current record to the
 ISourcePackageRelease.creator.preferred email.
 
-We rely on contactEmailAddresses() to DTRT, either use the
+We rely on get_contact_email_addresses() to DTRT, either use the
 Team.contactaddress of the Launchpad Buildd Celebrity or the
 preferredemail of its members.
 
@@ -332,7 +332,11 @@ Check if the 'build_notification' configuration option really suppress
 notification as promised:
 
   >>> from canonical.config import config
-  >>> config.builddmaster.send_build_notification = False
+  >>> send_build_notification = """
+  ...     [builddmaster]
+  ...     send_build_notification: False
+  ...     """
+  >>> config.push('send_build_notification', send_build_notification)
   >>> superseeded_candidate = buildset.getByBuildID(15)
   >>> superseeded_candidate.notify()
 
@@ -340,11 +344,17 @@ notification as promised:
   >>> len(notifications)
   0
 
+  >>> config_data = config.pop('send_build_notification')
+
 Check if 'notify_owner' config option really suppress email to
 the SPR owner, but still sending it to the default recipient:
 
-  >>> config.builddmaster.send_build_notification = True
-  >>> config.builddmaster.notify_owner = False
+  >>> notify_owner = """
+  ...     [builddmaster]
+  ...     send_build_notification: True
+  ...     notify_owner: False
+  ...     """
+  >>> config.push('notify_owner', notify_owner)
   >>> superseded_candidate = buildset.getByBuildID(15)
 
   >>> superseded_candidate.notify()
@@ -375,8 +385,7 @@ Checking subject and extra headers:
 
 Just to keep the config sane, as it was before:
 
-  >>> config.builddmaster.notify_owner = True
-
+  >>> config_data = config.pop('notify_owner')
 
 == PPA build notifications ==
 

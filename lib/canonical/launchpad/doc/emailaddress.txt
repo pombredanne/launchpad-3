@@ -7,7 +7,7 @@ email addresses must be unique.
     ...     IEmailAddress, IEmailAddressSet)
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> person = LaunchpadObjectFactory().makePerson()
+    >>> person = factory.makePerson()
 
 We can get an email address through IEmailAddressSet.getByEmail().
 
@@ -62,8 +62,10 @@ addresses for a set of people:
     >>> guadamen = personset.getByName('guadamen')
     >>> [emailaddress.email for emailaddress in
     ...  emailset.getPreferredEmailForPeople(guadamen.allmembers)]
-    [u'colin.watson@ubuntulinux.com',
-     u'foo.bar@canonical.com',
+    [u'celso.providelo@canonical.com', u'colin.watson@ubuntulinux.com',
+     u'daniel.silverstone@canonical.com', u'edgar@monteparadiso.hr',
+     u'foo.bar@canonical.com', u'jeff.waugh@ubuntulinux.com',
+     u'limi@plone.org', u'mark@hbd.com', u'steve.alexander@ubuntulinux.com',
      u'support@ubuntu.com']
 
 

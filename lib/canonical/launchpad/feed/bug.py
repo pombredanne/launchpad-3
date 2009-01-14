@@ -22,7 +22,7 @@ from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
+    IBug, IBugSet, IBugTaskSet, IHasBugs, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
@@ -178,13 +178,13 @@ class BugFeed(BugsFeedBase):
 class BugTargetBugsFeed(BugsFeedBase):
     """Bug feeds for projects and products."""
 
-    usedfor = IBugTarget
+    usedfor = IHasBugs
     feedname = "latest-bugs"
 
     def setupColumns(self):
         """See `BugsFeedBase`.
 
-        Since this feed is for a specific IBugTarget it is redundant to
+        Since this feed is for a specific IHasBugs it is redundant to
         include the name in the output.
         """
         super(BugTargetBugsFeed, self).setupColumns()

@@ -25,16 +25,16 @@ import time
 from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
-from zope.app.datetimeutils import rfc1123_date
+from zope.datetime import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-# XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
-# canonical.launchpad, but we're doing it here as an expediency to get a
-# working prototype.  Bug 153795.
+# XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
+# from canonical.launchpad, but we're doing it here as an expediency to get a
+# working prototype.
 from canonical.launchpad.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
     LaunchpadView, canonical_url, urlappend, urlparse)

@@ -64,7 +64,7 @@ in xx-pofile-translate-alternative-language.txt).
 
 No Privileges Person chooses to see the untranslated messages in the
 evolution-2.2 sourcepackage. He sets the view filter to 'Untranslated'
-to filter the messages. He sees 13 messages are not translated.
+to filter the messages. He sees 15 messages are not translated.
 
     >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
@@ -79,9 +79,10 @@ to filter the messages. He sees 13 messages are not translated.
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
-    1 ... 10  of 13 results
+    1 ... 10  of 15 results
 
     >>> print_shown_messages(user_browser, contents)
+    132: '(no translation yet)'
     133: '(no translation yet)'
     135: '(no translation yet)'
     136: '(no translation yet)'
@@ -91,7 +92,6 @@ to filter the messages. He sees 13 messages are not translated.
     140: '(no translation yet)'
     141: '(no translation yet)'
     142: '(no translation yet)'
-    148: '(no translation yet)'
 
 Only the first 10 messages were shown. No Privileges Person views the
 next page of messages to confirm the three remaining messages show.
@@ -99,9 +99,11 @@ next page of messages to confirm the three remaining messages show.
     >>> user_browser.getLink('Next').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
-    11 ... 13  of 13 results
+    11 ... 15  of 15 results
 
     >>> print_shown_messages(user_browser, contents)
+    146: '(no translation yet)'
+    148: '(no translation yet)'
     149: '(no translation yet)'
     150: '(no translation yet)'
     151: '(no translation yet)'
@@ -231,57 +233,6 @@ the batch.
     134: '<samp> </samp>caratas'
 
 
-=== Messages needing review ===
-
-No Privileges Person can view just the entries that need to be
-reviewed by filtering on 'need review'. There are two messages in the
-batch.
-
-    >>> user_browser.getControl(name='show', index=1).displayValue = [
-    ...     'need review']
-    >>> user_browser.getControl('Change').click()
-
-    >>> contents = find_main_content(user_browser.contents)
-    >>> print_batch_header(contents)
-    1 ... 2  of 2 results
-
-    >>> print_shown_messages(user_browser)
-    132: 'tiene<samp> </samp>'
-    146: '<code>%d</code> foo'
-
-If the user deselects the 'Someone should review this translation'
-control, submitting a translation will take that message out of the
-'need review' set. When No Privileges Person reviews the Czech
-translations for pmount, The filter and paging are updated by his
-actions.
-
-    >>> user_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
-    ...     '+source/pmount/+pots/pmount/cs/+translate')
-    >>> contents = find_main_content(user_browser.contents)
-    >>> print_batch_header(contents)
-    1 ... 10  of 63 results
-
-    >>> user_browser.getControl(name='show', index=1).displayValue = [
-    ...     'need review']
-    >>> user_browser.getControl('Change').click()
-    >>> contents = find_main_content(user_browser.contents)
-    >>> print_batch_header(contents)
-    1 ... 10  of 28 results
-
-    >>> user_browser.getControl(name='msgset_84_cs_needsreview').value = []
-    >>> user_browser.getControl(name='msgset_85_cs_needsreview').value = []
-    >>> user_browser.getControl('Save & Continue').click()
-
-Two messages were removed from the batch of 'need review' messages. No
-Privileges Person can see that the next page of messages starts on 9,
-not 11, and that there are 34 messages that need review.
-
-    >>> contents = find_main_content(user_browser.contents)
-    >>> print_batch_header(contents)
-    9 ... 18  of 26 results
-
-
 === Messages changed in Launchpad ===
 
 No Privileges Person can see entries which have changed in Launchpad.
@@ -319,6 +270,22 @@ the browser is redirected to the first batch.
     134: '<samp> </samp>caratas'
 
 
+== Invalid show option values ==
+
+There was once a filter option called need_review.  It no longer exists,
+but is quietly accepted.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate'
+    ...     '?show=need_review')
+
+The page will actually show the "all" filter.
+
+    >>> user_browser.getControl(name='show', index=1).displayValue
+    ['all items']
+
+
 == Batch parameters when changing filters ==
 
 When the filter changes, the batch is reset to the start of the set of
@@ -338,7 +305,7 @@ message; he is seeing the first batch.
     >>> user_browser.getControl('Change').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
-    1 ... 10  of 13 results
+    1 ... 10  of 15 results
 
 
 == Filters and error display ==
@@ -373,9 +340,10 @@ The exact same batch of messages is shown again, but with the error.
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
-    1 ... 10  of 13 results
+    1 ... 10  of 15 results
 
     >>> print_shown_messages(user_browser, contents)
+    132: '(no translation yet)'
     133: '(no translation yet)'
     135: '(no translation yet)'
     136: '(no translation yet)'
@@ -385,7 +353,6 @@ The exact same batch of messages is shown again, but with the error.
     140: '(no translation yet)'
     141: '(no translation yet)'
     142: '(no translation yet)'
-    148: '(no translation yet)'
 
     >>> for tag in find_tags_by_class(user_browser.contents, 'error'):
     ...     print tag.renderContents()

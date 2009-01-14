@@ -6,7 +6,7 @@ from StringIO import StringIO
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser import FileWidget

@@ -20,8 +20,7 @@
     These can be custom versions of Ubuntu packages, or completely new
     packages, and can be built for any <a href="/ubuntu/">supported
     version of Ubuntu</a>. For more information, please see the
-    <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick Start
-    Guide</a>.
+    <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
   </p>
 
   <div metal:use-macro="context/@@launchpad_form/form">
@@ -56,14 +55,6 @@
   </div>
 
 </div>
-
-    <p metal:fill-slot="help">
-       Once you activate your PPA you will be able to upload source
-       packages to it and Launchpad will build and publish their
-       binaries for you. Check the procedure details in the
-       quick-start <a href="https://help.launchpad.net/PPAQuickStart"
-       >guide</a>.
-    </p>
 
 </body>
 </html>

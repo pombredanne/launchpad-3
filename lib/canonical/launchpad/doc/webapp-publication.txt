@@ -57,6 +57,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://feeds.launchpad.dev/
     althosts:
     ----
+    id @ id.launchpad.dev
+    rooturl: http://id.launchpad.dev/
+    althosts:
+    ----
     mainsite @ launchpad.dev
     rooturl: http://launchpad.dev/
     althosts: localhost
@@ -102,6 +106,7 @@ request is headed to one of the officialy-used Launchpad host names:
     bugs.launchpad.dev
     code.launchpad.dev
     feeds.launchpad.dev
+    id.launchpad.dev
     launchpad.dev
     localhost
     openid.launchpad.dev
@@ -353,12 +358,16 @@ the registered factories.)
     ...     publication = publication_factory(None)
     ...     return request, publication
 
-    >>> from canonical.launchpad.webapp.servers import ProtocolErrorPublication
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     ProtocolErrorPublication)
     >>> def print_request_and_publication(host='localhost', port=None,
-    ...                                   method='GET', mime_type='text/html'):
+    ...                                   method='GET',
+    ...                                   mime_type='text/html',
+    ...                                   extra_environment=None):
     ...     """Helper giving short names for the request and publication."""
     ...     request, publication = get_request_and_publication(
-    ...         host, port, method, mime_type)
+    ...         host, port, method, mime_type,
+    ...         extra_environment=extra_environment)
     ...     print type(request).__name__.split('.')[-1]
     ...     publication_classname = type(publication).__name__.split('.')[-1]
     ...     if isinstance(publication, ProtocolErrorPublication):
@@ -406,8 +415,8 @@ the registered factories.)
     FeedsPublication
 
     >>> print_request_and_publication('openid.launchpad.dev')
-    OpenIdBrowserRequest
-    OpenIdPublication
+    OpenIDBrowserRequest
+    OpenIDPublication
 
     >>> print_request_and_publication('translations.launchpad.dev')
     TranslationsBrowserRequest
@@ -448,6 +457,41 @@ application/json.
     WebServicePublication
     WebServiceClientRequest
     WebServicePublication
+
+When a request for '/api' is made to one of the application virtualhost,
+it is also handled by the web service request and publication:
+
+    >>> print_request_and_publication(
+    ...     'launchpad.dev', method='GET',
+    ...     extra_environment={'PATH_INFO': '/api'})
+    WebServiceClientRequest
+    WebServicePublication
+    >>> for subdomain in [
+    ...     'answers', 'blueprints', 'bugs', 'code', 'translations']:
+    ...     print_request_and_publication(
+    ...         '%s.launchpad.dev' % subdomain, method='GET',
+    ...         extra_environment={'PATH_INFO': '/api'})
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+
+Requests for '/api' on other hosts like feeds or xmlrpc are handled like
+other requests on these hosts:
+
+    >>> for host in ['feeds.launchpad.dev', 'shipit.ubuntu.dev']:
+    ...     print_request_and_publication(
+    ...         host, method='GET', extra_environment={'PATH_INFO': '/api'})
+    FeedsBrowserRequest
+    FeedsPublication
+    UbuntuShipItBrowserRequest
+    ShipItPublication
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
@@ -746,11 +790,15 @@ available as launchpad.publicationticks in the WSGI environment.
 
 If an exception is raised during traversal or object publication, we'll
 store the ticks up to the point in which the exception is raised.  This
-is done inside the handleException() hook.
+is done inside the handleException() hook.  (The hook also sets and resets
+the request timer from canonical.launchpad.webapp.adapter, so you'll notice
+some calls to prepare that code to what handleException expects.)
 
 If the exception is raised before we even start the traversal, then
 there's nothing to store.
 
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     clear_request_started, set_request_started)
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> import sys
@@ -758,12 +806,14 @@ there's nothing to store.
     ...     raise Exception()
     ... except:
     ...     exc_info = sys.exc_info()
+    >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
     >>> request._orig_env.has_key('launchpad.traversalticks')
     False
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
+    >>> clear_request_started()
 
 If we started the traversal, but haven't finished it, we'll only have
 the ticks for the traversal and not for the publication.
@@ -777,6 +827,7 @@ the ticks for the traversal and not for the publication.
     True
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
+    >>> clear_request_started()
 
 If we started the publication (which means the traversal has been
 completed), we'll have the ticks for the traversal and the ticks for
@@ -785,6 +836,7 @@ the publication, up to the point where it was forcefully stopped.
     >>> publication.afterTraversal(request, None)
     >>> publication.callObject(request, TestView(TestContext(), request))
     u'Result'
+    >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
     ERROR:SiteError:http://localhost
@@ -797,7 +849,7 @@ the publication, up to the point where it was forcefully stopped.
 
 When a Retry or DisconnectionError exception is raised and the request
 supports retry, it will be retried with a copy of the WSGI environment.
-If that happens, though, we'll remove the [publication,traversal]ticks 
+If that happens, though, we'll remove the [publication,traversal]ticks
 variables from there.
 
     >>> request, publication = get_request_and_publication()
@@ -807,14 +859,15 @@ variables from there.
     >>> request.supportsRetry()
     True
     >>> from zope.publisher.interfaces import Retry
+    >>> foo_exc_info = (Exception, 'foo', None)
     >>> try:
-    ...     raise Retry('foo')
+    ...     raise Retry(foo_exc_info)
     ... except:
     ...     publication.handleException(
     ...         None, request, sys.exc_info(), retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: 'foo'
+    Retry: foo
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
@@ -829,15 +882,14 @@ variables from there.
     True
     >>> from storm.exceptions import DisconnectionError
     >>> try:
-    ...     raise DisconnectionError()
+    ...     raise DisconnectionError('foo DisconnectionError')
     ... except:
     ...     exc_info = sys.exc_info()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: (<class storm.exceptions.DisconnectionError...
-    ...
+    Retry: foo DisconnectionError
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
@@ -857,13 +909,13 @@ WSGI env.
     False
     >>> from zope.publisher.interfaces import Retry
     >>> try:
-    ...     raise Retry('foo')
+    ...     raise Retry(foo_exc_info)
     ... except:
     ...     publication.handleException(
     ...         None, request, sys.exc_info(), retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: 'foo'
+    Retry: foo
 
     >>> request._orig_env['launchpad.publicationticks']
     500
@@ -988,6 +1040,10 @@ the OAuthNonce table.
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     DEFAULT_FLAVOR, IStoreSelector)
+    >>> getUtility(IStoreSelector).setDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1025,6 +1081,56 @@ the OAuthNonce table.
     Traceback (most recent call last):
     ...
     Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
+
+
+== Doomed transactions are aborted ==
+
+Doomed transactions are aborted.
+
+    >>> request, publication = get_request_and_publication(method='POST')
+    >>> txn = transaction.begin()
+
+    # This sets up an alert so we can easily see that the transaction has
+    # been aborted.
+    >>> bound_abort = txn.abort
+    >>> def faux_abort():
+    ...     bound_abort()
+    ...     print 'Aborted'
+    ...
+    >>> txn.abort = faux_abort
+
+    # Now we doom the transaction.
+    >>> txn.doom()
+    >>> txn.isDoomed()
+    True
+
+    # Our afterCall() implementation expects to find a
+    # _publicationticks_start in its request, which is set by
+    # callObject(). Since we don't want to callObject() here, we'll
+    # have to change the request manually.
+    >>> request._publicationticks_start = 1345
+
+    >>> publication.afterCall(request, None)
+    Aborted
+    >>> txn.isDoomed() # It is still doomed.
+    True
+    >>> del txn.abort # Clean up test fixture.
+
+
+== Requests on Python C Methods succeed ==
+
+Rarely but occasionally, it is possible to traverse to a Python C method.
+For instance, an XMLRPC proxy might allow a traversal to __repr__.
+`callObject` handles these methods itself, since Zope's
+`zope.publisher.publish.mapply` cannot.
+
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+    >>> publication.callObject(request, {}.__repr__)
+    '{}'
+    >>> import zope.security.checker
+    >>> publication.callObject(
+    ...     request, zope.security.checker.ProxyFactory({}).__repr__)
+    '{}'
 
 
 == HEAD requests have empty body ==
@@ -1121,6 +1227,7 @@ principal's access_level and scope will match what was specified in the
 token.
 
     >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> getUtility(IStoreSelector).setDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()

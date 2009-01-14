@@ -27,7 +27,7 @@ The zcml `browser:feeds` directive describes a feed view.
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
-    ...   <include file="lib/zope/app/meta.zcml" />
+    ...   <include file="lib/zope/app/zcmlfiles/meta.zcml" />
     ...   <browser:feeds
     ...       module="canonical.launchpad.ftests.feeds_helper"
     ...       classes="ThingFeedView"

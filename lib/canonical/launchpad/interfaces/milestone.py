@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ICanGetMilestonesDirectly',
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
@@ -13,20 +14,18 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int
+from zope.schema import Bool, Choice, Date, Int, TextLine
 
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description
     )
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-
 
 class MilestoneNameField(ContentNameField):
 
@@ -35,6 +34,11 @@ class MilestoneNameField(ContentNameField):
         return IMilestone
 
     def _getByName(self, name):
+        # IProductSeries and IDistroSeries are imported here to
+        # avoid an import loop.
+        from canonical.launchpad.interfaces.productseries import (
+            IProductSeries)
+        from canonical.launchpad.interfaces.distroseries import IDistroSeries
         if IMilestone.providedBy(self.context):
             milestone = self.context.target.getMilestone(name)
         elif IProductSeries.providedBy(self.context):
@@ -42,7 +46,9 @@ class MilestoneNameField(ContentNameField):
         elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
-            raise AssertionError, 'Editing a milestone from a weird place.'
+            raise AssertionError, (
+                'Editing a milestone in an unexpected context: %r'
+                % self.context)
         if milestone is not None:
             self.errormessage = _(
                 "The name %%s is already used by a milestone in %s."
@@ -50,7 +56,7 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(Interface):
+class IMilestone(IHasBugs):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
@@ -81,25 +87,38 @@ class IMilestone(Interface):
             "The distribution series for which this is a milestone."),
         vocabulary="FilteredDistroSeries",
         required=False) # for now
-    dateexpected = Date(title=_("Date Targeted"), required=False,
-        description=_("Example: 2005-11-24"))
-    visible = Bool(title=_("Active"), description=_("Whether or not this "
-        "milestone should be shown in web forms for bug targeting."))
-    description = Description(
-        title=_("Description"), required=False,
-        description=_(
-            "A detailed description of the features and status of this "
-            "milestone."))
+    dateexpected = exported(
+        Date(title=_("Date Targeted"), required=False,
+             description=_("Example: 2005-11-24")),
+        exported_as='date_targeted')
+    visible = exported(
+        Bool(
+            title=_("Active"),
+            description=_("Whether or not this milestone should be shown "
+                          "in web forms for bug targeting.")),
+        exported_as='is_visible')
+    description = exported(
+        Description(
+            title=_("Description"),
+            required=False,
+            description=_(
+                "A detailed description of the features and status of this "
+                "milestone.")))
     target = exported(
         Reference(
             schema=Interface, # IHasMilestones
             title=_("The product or distribution of this milestone."),
             required=False))
-    series_target = Attribute(
-        "The productseries or distroseries of this milestone.")
+    series_target = exported(
+        Reference(
+            schema=Interface, # IHasMilestones
+            title=_("The productseries or distroseries of this milestone."),
+            required=False))
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
-    title = Attribute("A milestone context title for pages.")
+    title = exported(
+        TextLine(title=_("A milestone context title for pages."),
+                 readonly=True))
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
@@ -136,13 +155,22 @@ class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
     export_as_webservice_entry()
 
-    milestones = Attribute(_(
-        "The visible and active milestones associated with this object, "
-        "ordered by date expected."))
+    milestones = exported(
+        CollectionField(
+            title=_("The visible and active milestones associated with this "
+                    "object, ordered by date expected."),
+            value_type=Reference(schema=IMilestone)),
+        exported_as='active_milestones')
 
-    all_milestones = Attribute(_(
-        "All milestones associated with this object, ordered by "
-        "date expected."))
+    all_milestones = exported(
+        CollectionField(
+            title=_("All milestones associated with this object, ordered by "
+                    "date expected."),
+            value_type=Reference(schema=IMilestone)))
+
+
+class ICanGetMilestonesDirectly(Interface):
+    """ An interface for classes providing getMilestone(name)."""
 
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
@@ -150,3 +178,4 @@ class IHasMilestones(Interface):
 
 # Fix cyclic references.
 IMilestone['target'].schema = IHasMilestones
+IMilestone['series_target'].schema = IHasMilestones

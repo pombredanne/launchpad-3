@@ -11,8 +11,12 @@ The Bazaar Transport is special in two ways:
 We call such a transport a "Twisted Transport".
 """
 
-__all__ = ['AvatarToSFTPAdapter', 'TransportSFTPServer']
 __metaclass__ = type
+__all__ = [
+    'AvatarToSFTPAdapter',
+    'FileTransferServer',
+    'TransportSFTPServer',
+    ]
 
 
 import errno
@@ -23,15 +27,19 @@ from bzrlib import errors as bzr_errors
 from bzrlib import osutils, urlutils
 from bzrlib.transport.local import LocalTransport
 from twisted.conch.ssh import filetransfer
+from twisted.conch.ls import lsLine
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.internet import defer
 from twisted.python import util
-from twisted.web.xmlrpc import Proxy
+
+from zope.event import notify
 from zope.interface import implements
 
-from canonical.codehosting.transport import (
+from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, LaunchpadServer)
+from canonical.codehosting.sshserver import accesslog
 from canonical.config import config
+from canonical.twistedsupport import gatherResults
 
 
 class FileIsADirectory(bzr_errors.PathError):
@@ -48,6 +56,13 @@ class FatLocalTransport(LocalTransport):
 
     We need these so that we can implement SFTP over a Bazaar transport.
     """
+
+    def clone(self, offset=None):
+        if offset is None:
+            abspath = self.base
+        else:
+            abspath = self.abspath(offset)
+        return FatLocalTransport(abspath)
 
     def writeChunk(self, name, offset, data):
         """Write a chunk of data to file `name` at `offset`."""
@@ -66,7 +81,7 @@ class FatLocalTransport(LocalTransport):
     def local_realPath(self, path):
         """Return the absolute path to `path`."""
         abspath = self._abspath(path)
-        return os.path.realpath(abspath)
+        return urlutils.escape(os.path.realpath(abspath))
 
 
 def with_sftp_error(func):
@@ -82,6 +97,28 @@ def with_sftp_error(func):
         return deferred.addErrback(TransportSFTPServer.translateError,
                                    func.__name__)
     return util.mergeFunctionMetadata(func, decorator)
+
+
+class DirectoryListing:
+    """Class to satisfy openDirectory return interface.
+
+    openDirectory returns an iterator -- with a `close` method.  Hence
+    this class.
+    """
+
+    def __init__(self, entries):
+        self.iter = iter(entries)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.iter.next()
+
+    def close(self):
+        # I can't believe we had to implement a whole class just to
+        # have this do-nothing method (abentley).
+        pass
 
 
 class TransportSFTPFile:
@@ -157,16 +194,19 @@ class TransportSFTPFile:
             self._escaped_path, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
-        deferred.addCallback(get_first_chunk)
-        return deferred.addErrback(self._check_for_eof)
+        def handle_short_read(failure):
+            """Handle short reads by reading what was available.
 
-    def _check_for_eof(self, failure):
-        failure.trap(bzr_errors.ShortReadvError)
-        # XXX: JonathanLange 2008-05-13: We might be discarding data here. But
-        # even if we weren't, current versions of Bazaar wouldn't actually use
-        # it. If Bazaar changes to include the returned data in a
-        # ShortReadvError, we should consider changing this method.
-        return ''
+            Doing things this way around, by trying to read all the data
+            requested and then handling the short read error, might be a bit
+            inefficient, but the bzrlib sftp transport doesn't read past the
+            end of files, so we don't need to worry too much about performance
+            here.
+            """
+            failure.trap(bzr_errors.ShortReadvError)
+            return self.readChunk(failure.value.offset, failure.value.actual)
+        deferred.addCallback(get_first_chunk)
+        return deferred.addErrback(handle_short_read)
 
     def setAttrs(self, attrs):
         """See `ISFTPFile`.
@@ -212,7 +252,26 @@ def avatar_to_sftp_server(avatar):
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.setUp()
     transport = AsyncLaunchpadTransport(server, server.get_url())
+    notify(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
+
+
+class FileTransferServer(filetransfer.FileTransferServer):
+
+    def __init__(self, data=None, avatar=None):
+        filetransfer.FileTransferServer.__init__(self, data, avatar)
+        self.avatar = avatar
+
+    def connectionLost(self, reason):
+        # This method gets called twice: once from `SSHChannel.closeReceived`
+        # when the client closes the channel and once from `SSHSession.closed`
+        # when the server closes the session. We change the avatar attribute
+        # to avoid logging the `SFTPClosed` event twice.
+        filetransfer.FileTransferServer.connectionLost(self, reason)
+        if self.avatar is not None:
+            avatar = self.avatar
+            self.avatar = None
+            notify(accesslog.SFTPClosed(avatar))
 
 
 class TransportSFTPServer:
@@ -234,37 +293,48 @@ class TransportSFTPServer:
         """See `ISFTPServer`."""
         raise NotImplementedError()
 
+    def _stat_files_in_list(self, file_list, escaped_dir_path):
+        """Stat the a list of files.
+
+        :param file_list: The list of escaped file names.
+        :param escaped_dir_path: The escaped path of the directory containing
+            the files.
+        :return: A Deferred which will be called back with the list of all the
+            stat results.
+        """
+        deferreds = []
+        for filename in file_list:
+            escaped_file_path = os.path.join(escaped_dir_path, filename)
+            deferreds.append(
+                self.transport.stat(escaped_file_path))
+        return gatherResults(deferreds)
+
+    def _format_directory_entries(self, stat_results, filenames):
+        """Produce entries suitable for returning from `openDirectory`.
+
+        :param stat_results: A list of the results of calling `stat` on each
+            file in filenames.
+        :param filenames: The list of filenames to produce entries for.
+        :return: An iterator of ``(shortname, longname, attributes)``.
+        """
+        for stat_result, filename in zip(stat_results, filenames):
+            shortname = urlutils.unescape(filename).encode('utf-8')
+            longname = lsLine(shortname, stat_result)
+            attr_dict = self._translate_stat(stat_result)
+            yield (shortname, longname, attr_dict)
+
     @with_sftp_error
     def openDirectory(self, path):
         """See `ISFTPServer`."""
-        class DirectoryListing:
-            """Class to satisfy openDirectory return interface.
-
-            openDirectory returns an iterator -- with a `close` method.  Hence
-            this class.
-            """
-
-            def __init__(self, files):
-                self.position = (
-                    self._getListingEntry(filename) for filename in files)
-
-            def _getListingEntry(self, filename):
-                unescaped = urlutils.unescape(filename).encode('utf-8')
-                return (unescaped, unescaped, {})
-
-            def __iter__(self):
-                return self
-
-            def next(self):
-                return self.position.next()
-
-            def close(self):
-                # I can't believe we had to implement a whole class just to
-                # have this do-nothing method (abentley).
-                pass
-
-        deferred = self.transport.list_dir(urlutils.escape(path))
-        return deferred.addCallback(DirectoryListing)
+        escaped_path = urlutils.escape(path)
+        deferred = self.transport.list_dir(escaped_path)
+        def produce_entries_from_file_list(file_list):
+            stats_deferred = self._stat_files_in_list(file_list, escaped_path)
+            stats_deferred.addCallback(
+                self._format_directory_entries, file_list)
+            return stats_deferred
+        return deferred.addCallback(
+            produce_entries_from_file_list).addCallback(DirectoryListing)
 
     @with_sftp_error
     def openFile(self, path, flags, attrs):
@@ -285,7 +355,11 @@ class TransportSFTPServer:
 
     def realPath(self, relpath):
         """See `ISFTPServer`."""
-        return self.transport.local_realPath(urlutils.escape(relpath))
+        deferred = self.transport.local_realPath(urlutils.escape(relpath))
+        def unescape_path(path):
+            unescaped_path = urlutils.unescape(path)
+            return unescaped_path.encode('utf-8')
+        return deferred.addCallback(unescape_path)
 
     def setAttrs(self, path, attrs):
         """See `ISFTPServer`.
@@ -294,6 +368,22 @@ class TransportSFTPServer:
         """
         return defer.succeed(None)
 
+    def _translate_stat(self, stat_val):
+        """Translate the stat result `stat_val` into an attributes dict.
+
+        This is very like conch.ssh.unix.SFTPServerForUnixConchUser._getAttrs,
+        but (a) that is private and (b) we use getattr() to access the
+        attributes as not all the Bazaar transports return full stat results.
+        """
+        return {
+            'size': getattr(stat_val, 'st_size', 0),
+            'uid': getattr(stat_val, 'st_uid', 0),
+            'gid': getattr(stat_val, 'st_gid', 0),
+            'permissions': getattr(stat_val, 'st_mode', 0),
+            'atime': getattr(stat_val, 'st_atime', 0),
+            'mtime': getattr(stat_val, 'st_mtime', 0),
+        }
+
     @with_sftp_error
     def getAttrs(self, path, followLinks):
         """See `ISFTPServer`.
@@ -301,16 +391,7 @@ class TransportSFTPServer:
         This just delegates to TransportSFTPFile's implementation.
         """
         deferred = self.transport.stat(urlutils.escape(path))
-        def translate_stat(stat_val):
-            return {
-                'size': getattr(stat_val, 'st_size', 0),
-                'uid': getattr(stat_val, 'st_uid', 0),
-                'gid': getattr(stat_val, 'st_gid', 0),
-                'permissions': getattr(stat_val, 'st_mode', 0),
-                'atime': getattr(stat_val, 'st_atime', 0),
-                'mtime': getattr(stat_val, 'st_mtime', 0),
-            }
-        return deferred.addCallback(translate_stat)
+        return deferred.addCallback(self._translate_stat)
 
     def gotVersion(self, otherVersion, extensionData):
         """See `ISFTPServer`."""

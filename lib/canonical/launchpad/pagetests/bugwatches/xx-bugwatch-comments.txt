@@ -22,10 +22,10 @@ The ordinary user can't see these comments:
 
     >>> print_comments(user_browser.contents)
 
-But members of the Launchpad development team can see them. The comments
+But members of the Launchpad Beta Testers team can see them. The comments
 that have been imported are displayed on the page in the same way as bug
 comments are displayed on bugs pages. We'll make Mark Shuttleworth a
-member of Launchpad Developers in order to demonstrate this.
+member of Launchpad Beta Testers in order to demonstrate this.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
@@ -33,9 +33,9 @@ member of Launchpad Developers in order to demonstrate this.
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> launchpad_developers = getUtility(
-    ...     ILaunchpadCelebrities).launchpad_developers
-    >>> sabdfl.inTeam(launchpad_developers)
+    >>> launchpad_beta_testers = getUtility(
+    ...     ILaunchpadCelebrities).launchpad_beta_testers
+    >>> sabdfl.inTeam(launchpad_beta_testers)
     False
 
     >>> logout()
@@ -51,9 +51,12 @@ After joining the launchpad developers team, sabdfl can now see the
 comments.
 
     >>> login('foo.bar@canonical.com')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> launchpad_developers.addMember(sabdfl, reviewer=foo_bar)
-    >>> sabdfl.inTeam(launchpad_developers)
+    >>> launchpad_beta_testers = getUtility(
+    ...     ILaunchpadCelebrities).launchpad_beta_testers
+    >>> launchpad_beta_testers.addMember(sabdfl, reviewer=foo_bar)
+    >>> sabdfl.inTeam(launchpad_beta_testers)
     True
 
     >>> logout()
@@ -77,7 +80,7 @@ comments.
     ----------------------------------------
 
 The comments are also visible on their own pages to members of the
-Launchpad Developers team such as sabdfl:
+Launchpad Beta Testers team such as sabdfl:
 
     >>> sabdfl_browser.open(
     ...     'http://launchpad.dev/redfish/+bug/15/comments/1')
@@ -109,12 +112,13 @@ Launchpad.
     josh: http://launchpad.dev/~jbuhl-nospam
     gnome-volume-manager... (permalink): /redfish/+bug/15/comments/1
 
-If sabdfl leaves the Launchpad Developers team the comment will no longer
+If sabdfl leaves the Launchpad Beta Testers team the comment will no longer
 be visible to him:
 
     >>> login('foo.bar@canonical.com')
-    >>> sabdfl.leave(launchpad_developers)
-    >>> sabdfl.inTeam(launchpad_developers)
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl.leave(launchpad_beta_testers)
+    >>> sabdfl.inTeam(launchpad_beta_testers)
     False
 
     >>> logout()
@@ -122,3 +126,9 @@ be visible to him:
     >>> sabdfl_browser.open(
     ...     'http://launchpad.dev/redfish/+bug/15/comments/1')
     >>> print_comments(sabdfl_browser.contents)
+
+Anonymous users can't see the comment either.
+
+    >>> anon_browser.open('http://launchpad.dev/redfish/+bug/15/comments/1')
+    >>> print_comments(anon_browser.contents)
+

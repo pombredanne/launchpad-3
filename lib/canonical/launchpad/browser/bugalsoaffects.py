@@ -172,6 +172,11 @@ class AlsoAffectsStep(LaunchpadFormView):
         self.actions = actions
         return super(AlsoAffectsStep, self).render()
 
+    @property
+    def cancel_url(self):
+        """Return the URL for the current context, i.e. bug."""
+        return canonical_url(self.context)
+
 
 class ChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
@@ -214,9 +219,9 @@ class ChooseProductStep(AlsoAffectsStep):
         upstream = self._getUpstream(bugtask.target)
         if upstream is not None:
             if not upstream.active:
-                # XXX: This is only possible because of bug 140526, which
-                # allows packages to be linked to inactive products.
-                # -- Guilherme Salgado, 2007-09-18
+                # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only
+                # possible because of bug 140526, which allows packages to
+                # be linked to inactive products.
                 series = bugtask.distribution.currentseries
                 assert series is not None, (
                     "This package is linked to a product series so this "
@@ -313,6 +318,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
 
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
 
+    initial_focus_widget = 'bug_url'
     step_name = 'specify_remote_bug_url'
     target_field_names = ()
 
@@ -332,7 +338,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             for field_name in self.field_names
             if field_name in self.target_field_names]
         self.bugwatch_widgets = [self.widgets['bug_url']]
-        self.compulsory_widgets = [self.widgets['visited_steps']]
 
     def getTarget(self, data=None):
         """Return the fix target.
@@ -590,6 +595,8 @@ class IAddBugTaskWithUpstreamLinkForm(IAddBugTaskForm):
     check is left to the view, in part so that better error messages
     can be provided.
     """
+    # link_upstream_how must have required=False, since
+    # ProductBugTaskCreationStep doesn't always display a form input for it.
     link_upstream_how = Choice(
         title=_('How'), required=False,
         vocabulary=LinkUpstreamHowOptions,
@@ -615,7 +622,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how', LaunchpadRadioWidget)
+    custom_widget('link_upstream_how', LaunchpadRadioWidget,
+                  _displayItemForMissingValue=False)
     custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
     custom_widget('upstream_email_address_done',
                   StrippedTextWidget, displayWidth=42)
@@ -695,13 +703,14 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         except MissingInputError:
             current_value = LinkUpstreamHowOptions.LINK_UPSTREAM
         items = widget.renderItems(current_value)
-        # XXX: GavinPanella 2008-02-13 bug=201793: EMAIL_UPSTREAM will
-        # be uncommented in a later branch.
-        return {
-            LinkUpstreamHowOptions.LINK_UPSTREAM.name      : items[1],
-            #LinkUpstreamHowOptions.EMAIL_UPSTREAM.name     : items[2],
-            LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE.name: items[2],
-            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name  : items[3]}
+
+        # The items list is returned in the same order as the
+        # widget.vocabulary enumerator. It is important that
+        # link_upstream_how has _displayItemForMissingValue=False
+        # so that renderItems() doesn't return an extra radio button which
+        # prevents it from matching widget.vocabulary's ordering.
+        return dict((entry.token, items[i])
+                    for i, entry in enumerate(widget.vocabulary))
 
     def main_action(self, data):
         link_upstream_how = data.get('link_upstream_how')
@@ -842,8 +851,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         existing_product = form.FormField(
             Choice(__name__='existing_product',
                    title=_("Existing project"), required=True,
-                   vocabulary=SimpleVocabulary(terms)),
-            custom_widget=self.custom_widgets['existing_product'])
+                   vocabulary=SimpleVocabulary(terms)))
         self.form_fields += form.Fields(existing_product)
         if 'field.existing_product' not in self.request.form:
             # This is the first time the form is being submitted, so the
@@ -905,10 +913,11 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         This method also sets self.next_url to the URL of the newly added
         bugtask.
         """
-        # XXX: This relies on the fact that these actions work using only the
-        # form data and the context. (They don't require any side-effects done
-        # during initialize().)  They should probably be extracted outside of
-        # the view to make that explicit. -- Guilherme Salgado, 2007-11-20
+        # XXX: Guilherme Salgado, 2007-11-20: This relies on the fact that
+        # these actions work using only the form data and the context.
+        # (They don't require any side-effects done  during initialize().)
+        # They should probably be extracted outside of the view to
+        # make that explicit.
         view = UpstreamBugTrackerCreationStep(self.context, self.request)
         view.main_action(data)
 
@@ -918,4 +927,3 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         if set_bugtracker:
             data['product'].bugtracker = view.task_added.bugwatch.bugtracker
         self.next_url = canonical_url(view.task_added)
-

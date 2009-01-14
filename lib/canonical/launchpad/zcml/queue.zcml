@@ -4,12 +4,12 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.PackageUploadQueue">
+    <class class="canonical.launchpad.database.PackageUploadQueue">
       <implements
           interface="canonical.launchpad.interfaces.IPackageUploadQueue" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.PackageUpload">
+    <class class="canonical.launchpad.database.PackageUpload">
       <implements
           interface="canonical.launchpad.interfaces.IPackageUpload" />
       <allow
@@ -33,19 +33,19 @@
                       rejectFromQueue overrideSource overrideBinaries"
           set_attributes="status distroseries pocket changesfile archive"
           />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.PackageUploadSource">
+    <class class="canonical.launchpad.database.PackageUploadSource">
         <allow interface="canonical.launchpad.interfaces.IPackageUploadSource" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.PackageUploadBuild">
+    <class class="canonical.launchpad.database.PackageUploadBuild">
         <allow interface="canonical.launchpad.interfaces.IPackageUploadBuild" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.PackageUploadCustom">
+    <class class="canonical.launchpad.database.PackageUploadCustom">
         <allow interface="canonical.launchpad.interfaces.IPackageUploadCustom" />
-    </content>
+    </class>
 
     <!-- PackageUploadSet -->
     <securedutility

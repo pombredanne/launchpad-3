@@ -38,6 +38,11 @@
         <link tal:attributes="resource_type param/resource/wadl:type_link" />
       </param>
     </tal:root_params>
+    <param style="plain" name="resource_type_link"
+           path="$['resource_type_link']">
+      <wadl:doc>The link to the WADL description of this resource.</wadl:doc>
+      <link />
+    </param>
   </representation>
 
   <!--In addition to the service root, this document describes all the
@@ -200,6 +205,11 @@
           The link to the WADL description of this resource.
         </wadl:doc>
         <link />
+      </param>
+      <param style="plain" name="http_etag" path="$['http_etag']">
+        <wadl:doc>
+          The value of the HTTP ETag for this resource.
+        </wadl:doc>
       </param>
       <param style="plain"
              tal:repeat="field context/wadl_entry:all_fields" required="true"

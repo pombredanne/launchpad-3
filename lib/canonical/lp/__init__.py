@@ -11,8 +11,9 @@ This module is deprecated.
 __metaclass__ = type
 
 import os
+import re
 
-from canonical.config import config
+from canonical.config import dbconfig
 from canonical.database.sqlbase import (
     ISOLATION_LEVEL_DEFAULT, ZopelessTransactionManager)
 
@@ -21,6 +22,8 @@ __all__ = [
     'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
     ]
 
+# SQLObject compatibility - dbname, dbhost and dbuser are DEPRECATED.
+#
 # Allow override by environment variables for backwards compatibility.
 # This was needed to allow tests to propagate settings to spawned processes.
 # However, now we just have a single environment variable (LAUNCHPAD_CONF)
@@ -30,9 +33,22 @@ __all__ = [
 # if the host is empty it can be overridden by the standard PostgreSQL
 # environment variables, this feature currently required by Async's
 # office environment.
-dbname = os.environ.get('LP_DBNAME', config.database.dbname)
-dbhost = os.environ.get('LP_DBHOST', config.database.dbhost or '')
-dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
+dbname = os.environ.get('LP_DBNAME', None)
+dbhost = os.environ.get('LP_DBHOST', None)
+dbuser = os.environ.get('LP_DBUSER', None)
+
+if dbname is None:
+    match = re.search(r'dbname=(\S*)', dbconfig.main_master)
+    assert match is not None, 'Invalid main_master connection string'
+    dbname = match.group(1)
+
+if dbhost is None:
+    match = re.search(r'host=(\S*)', dbconfig.main_master)
+    if match is not None:
+        dbhost = match.group(1)
+
+if dbuser is None:
+    dbuser = dbconfig.dbuser
 
 
 def isZopeless():

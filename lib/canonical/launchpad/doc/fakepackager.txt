@@ -82,7 +82,7 @@ Now we can build the source package using the generated tarball.
     >>> changesfile_path = packager.listAvailableUploads()[0]
     >>> changesfile = open(changesfile_path)
     >>> print changesfile.read()
-    Format: 1.7
+    Format: ...
     Date: ...
     Source: biscuit
     Binary: biscuit
@@ -98,7 +98,7 @@ Now we can build the source package using the generated tarball.
      biscuit (1.0-1) hoary; urgency=low
      .
        * Initial Upstream package
-    Files:
+    ...
      ... devel optional biscuit_1.0-1.dsc
      ... devel optional biscuit_1.0.orig.tar.gz
      ... devel optional biscuit_1.0-1.diff.gz

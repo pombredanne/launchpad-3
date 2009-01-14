@@ -15,6 +15,7 @@ __all__ = [
     'IBaseImageUpload',
     'IBugField',
     'IDescription',
+    'ILocationField',
     'IPasswordField',
     'IShipItAddressline1',
     'IShipItAddressline2',
@@ -37,7 +38,9 @@ __all__ = [
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
     'MugshotImageUpload',
+    'LocationField',
     'PasswordField',
+    'PillarAliases',
     'PillarNameField',
     'ProductBugTracker',
     'ProductNameField',
@@ -62,16 +65,17 @@ __all__ = [
     ]
 
 
+import re
 from StringIO import StringIO
 from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Password, Text, TextLine,
-    Tuple)
+    Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
+    TextLine, Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IInt, IObject, IPassword,
-    IText, ITextLine, Interface)
+    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IObject,
+    IPassword, IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -83,7 +87,6 @@ from canonical.launchpad.validators.name import valid_name, name_validator
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.interfaces.fields import IReferenceChoice
-from canonical.foaf import nickname
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -116,6 +119,7 @@ class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
 
+
 class IAnnouncementDate(IDatetime):
     """Marker interface for AnnouncementDate fields.
 
@@ -124,6 +128,15 @@ class IAnnouncementDate(IDatetime):
     publication in advance. Essentially this amounts to a Datetime that can
     be None.
     """
+
+
+class ILocationField(IField):
+    """A location, consisting of geographic coordinates and a time zone."""
+
+    latitude = Float(title=_('Latitude'))
+    longitude = Float(title=_('Longitude'))
+    time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
+
 
 class IShipItRecipientDisplayname(ITextLine):
     """A field used for the recipientdisplayname attribute on shipit forms.
@@ -407,9 +420,16 @@ class ContentNameField(UniqueField):
 
     attribute = 'name'
 
-    def _getByAttribute(self, name):
-        """Return the content object with the given name."""
-        return self._getByName(name)
+    def _getByAttribute(self, input):
+        """Return the content object with the given attribute."""
+        return self._getByName(input)
+
+    def _getByName(self, input):
+        """Return the content object with the given name.
+
+        Override this in subclasses.
+        """
+        raise NotImplementedError
 
     def _validate(self, name):
         """Check that the given name is valid (and by delegation, unique)."""
@@ -418,26 +438,72 @@ class ContentNameField(UniqueField):
 
 
 class BlacklistableContentNameField(ContentNameField):
-    """ContentNameField that also need to check against the NameBlacklist
-       table in case the name has been blacklisted.
-    """
+    """ContentNameField that also checks that a name is not blacklisted"""
+
     def _validate(self, input):
-        """As per UniqueField._validate, except a LaunchpadValidationError
-           is also raised if the name has been blacklisted.
-        """
+        """Check that the given name is valid, unique and not blacklisted."""
         super(BlacklistableContentNameField, self)._validate(input)
 
+        # Although this check is performed in UniqueField._validate(), we need
+        # to do it here again to avoid cheking whether or not the name is
+        # black listed when it hasn't been changed.
         _marker = object()
         if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
             # The attribute wasn't changed.
             return
 
-        if nickname.is_blacklisted(name=input):
+        # Need a local import because of circular dependencies.
+        from canonical.launchpad.interfaces.person import IPersonSet
+        if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
-                    "The name '%s' has been blocked by the "
-                    "Launchpad administrators" % input
-                    )
+                "The name '%s' has been blocked by the Launchpad "
+                "administrators" % input)
+
+
+class PillarAliases(TextLine):
+    """A field which takes a list of space-separated aliases for a pillar."""
+
+    def _split_input(self, input):
+        if input is None:
+            return []
+        return re.sub(r'\s+', ' ', input).split()
+
+    def _validate(self, input):
+        """Make sure all the aliases are valid for the field's pillar.
+
+        An alias is valid if it can be used as the name of a pillar and is
+        not identical to the pillar's existing name.
+        """
+        context = self.context
+        from canonical.launchpad.interfaces.product import IProduct
+        from canonical.launchpad.interfaces.project import IProject
+        from canonical.launchpad.interfaces.distribution import IDistribution
+        if IProduct.providedBy(context):
+            name_field = IProduct['name']
+        elif IProject.providedBy(context):
+            name_field = IProject['name']
+        elif IDistribution.providedBy(context):
+            name_field = IDistribution['name']
+        else:
+            raise AssertionError("Unexpected context type.")
+        name_field.bind(context)
+        existing_aliases = context.aliases
+        for name in self._split_input(input):
+            if name == context.name:
+                raise LaunchpadValidationError('This is your name: %s' % name)
+            elif name in existing_aliases:
+                # This is already an alias to this pillar, so there's no need
+                # to validate it.
+                pass
+            else:
+                name_field._validate(name)
+
+    def set(self, object, value):
+        object.setAliases(self._split_input(value))
+
+    def get(self, object):
+        return " ".join(object.aliases)
 
 
 class ShipItRecipientDisplayname(TextLine):
@@ -590,7 +656,14 @@ class BaseImageUpload(Bytes):
     dimensions = ()
     max_size = 0
 
-    def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
+    def __init__(self, default_image_resource=None, **kw):
+        # 'default_image_resource' is a keyword argument so that the
+        # class constructor can be used in the same way as other
+        # Interface attribute specifiers.
+        if default_image_resource is None:
+            raise AssertionError(
+                "You must specify a default image resource.")
+
         self.default_image_resource = default_image_resource
         Bytes.__init__(self, **kw)
 
@@ -656,21 +729,36 @@ class IconImageUpload(BaseImageUpload):
 
     dimensions = (14, 14)
     max_size = 5*1024
-    default_image_resource = '/@@/nyet-icon'
 
 
 class LogoImageUpload(BaseImageUpload):
 
     dimensions = (64, 64)
     max_size = 50*1024
-    default_image_resource = '/@@/nyet-logo'
 
 
 class MugshotImageUpload(BaseImageUpload):
 
     dimensions = (192, 192)
     max_size = 100*1024
-    default_image_resource = '/@@/nyet-mugshot'
+
+
+class LocationField(Field):
+    """A Location field."""
+
+    implements(ILocationField)
+
+    @property
+    def latitude(self):
+        return self.value.latitude
+
+    @property
+    def longitude(self):
+        return self.value.longitude
+
+    @property
+    def time_zone(self):
+        return self.value.time_zone
 
 
 class PillarNameField(BlacklistableContentNameField):

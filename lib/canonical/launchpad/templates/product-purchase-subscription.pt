@@ -29,28 +29,10 @@
       a subscription needs to be purchased to continue hosting this project on
       Launchpad.
     </p>
-    <div>
-      Here are the steps to obtain a commercial subscription:
-      <ol>
-        <li>Purchase a Launchpad subscription in the
-          <tal:XXX condition="nothing">
-            2008074 bac: When the bug in the Canonical shop that does not
-            redirect back to the original page after login is fixed the target
-            attribute should be removed so that the link is followed within
-            the same browser window (bug 248454).
-          </tal:XXX>
-          <a tal:define="config modules/canonical.config/config"
-             tal:attributes="href config/commercial/purchase_subscription_url;
-                             target string:_blank">
-          Canonical Shop</a>.
-        </li>
-        <li>You will receive an email that your order has been processed.</li>
-        <li>You can then apply the purchased subscription to this project
-            on your <a href="/people/+me/+vouchers">
-            voucher management page</a>.
-        </li>
-      </ol>
-    </div>
+
+    <tal:voucher-instructions
+       replace="structure context/@@+voucher-purchase-instructions"
+       />
 
     Please review our <a href="/legal">Terms of Use</a>.
   </div>

@@ -147,7 +147,7 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
             changes[field] = slf.groups()[1]
             first = 1
             continue
-        if line == " .":
+        if line.rstrip() == " .":
             changes[field] += '\n'
             continue
         mlf = re_multi_line_field.match(line)

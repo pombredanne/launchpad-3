@@ -271,7 +271,7 @@ no answer message is assigned to the answer.
     ...         "SVG features that will only be available in Firefox 2.0."})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Your question is solved. If a particular message helped you solve the 
+    Your question is solved. If a particular message helped you solve the
     problem, use the <em>'This solved my problem'</em> button.
     >>> print firefox_question.status.name
     SOLVED
@@ -567,7 +567,7 @@ same logic is used to find the languages:
 
     >>> login('test@canonical.com')
     >>> user = getUtility(ILaunchBag).user
-    >>> user.languages.count()
+    >>> len(user.languages)
     0
 
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
@@ -843,30 +843,6 @@ states on that target.
     ...     (firefox, LaunchpadTestRequest()), name='+open_questions_count')
     >>> view()
     u'3'
-
-
-== QuestionSOP ==
-
-There is an IStructuralObjectPresentation adapter available for
-IQuestion. This adapter is used to render the title appearing in
-in the structuralheader area.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IStructuralObjectPresentation)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from zope.security.proxy import removeSecurityProxy
-
-    >>> firefox_question_sop = IStructuralObjectPresentation(firefox_question)
-    >>> verifyObject(
-    ...     IStructuralObjectPresentation,
-    ...     removeSecurityProxy(firefox_question_sop))
-    True
-
-    # The returned string is an instance of zope.i18n.Message.
-    >>> import zope.i18n
-    >>> print zope.i18n.translate(
-    ...     firefox_question_sop.getMainHeading())
-    Question #2 in Mozilla Firefox
 
 
 == ManageAnswerContactView ==

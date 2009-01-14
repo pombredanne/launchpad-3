@@ -162,7 +162,7 @@ class LoginToken(SQLBase):
 
         fromaddress = format_address(
             "Launchpad", config.canonical.noreply_from_address)
-        subject = "Finish your Launchpad registration"
+        subject = "Launchpad: complete your registration"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
     def sendProfileCreatedEmail(self, profile, comment):

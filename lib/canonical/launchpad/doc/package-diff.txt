@@ -362,6 +362,27 @@ Now we can compare the package diff outcome to the debdiff output
        * Initial Upstream package
     <BLANKLINE>
 
+The Librarian serves package-diff files with 'gzip' content-encoding
+and 'text/plain' content-type. This combination instructs the browser
+to decompress the file and display it inline, which makes it easier
+for users to view it.
+
+    >>> from canonical.launchpad.webapp.url import urlparse
+    >>> parsed_url = urlparse(diff.diff_content.http_url)
+    >>> netloc, path = parsed_url[1:3]
+
+    >>> import httplib
+    >>> con = httplib.HTTPConnection(netloc)
+    >>> con.request("HEAD", path)
+    >>> resp = con.getresponse()
+    >>> headers = dict(resp.getheaders())
+
+    >>> print headers['content-encoding']
+    gzip
+
+    >>> print headers['content-type']
+    text/plain
+
 
 == Dealing with all PackageDiff objects ==
 

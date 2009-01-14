@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.testing.browser import Browser
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 
 # pylint: disable-msg=F0401
 from Mailman import mm_cfg
@@ -54,7 +55,7 @@ MAILMAN_PKGDIR = os.path.dirname(Mailman.__file__)
 MAILMAN_BINDIR = os.path.join(os.path.dirname(MAILMAN_PKGDIR), 'bin')
 
 SPACE = ' '
-MAILING_LIST_CHECK_INTERVAL = datetime.timedelta(seconds=5)
+MAILING_LIST_CHECK_INTERVAL = datetime.timedelta(seconds=10)
 SECONDS_TO_SNOOZE = 0.1
 
 
@@ -130,7 +131,7 @@ def subscribe(first_name, team_name, use_alt_address=False):
     person_set = getUtility(IPersonSet)
     person = person_set.getByName(first_name.lower())
     if person is None:
-        person = mailinglists_helper.new_person(first_name)
+        person = LaunchpadObjectFactory().makePersonByName(first_name)
     team = getUtility(IPersonSet).getByName(team_name)
     person.join(team)
     # Subscribe her to the list.

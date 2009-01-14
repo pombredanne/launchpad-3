@@ -27,7 +27,7 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 QUEUE_SIZE = 30
 
@@ -100,7 +100,7 @@ class QueueItemsView(LaunchpadView):
                      for binary_file in binary_files]
         upload_set = getUtility(IPackageUploadSet)
         package_upload_builds = upload_set.getBuildByBuildIDs(
-            build_ids) 
+            build_ids)
         package_upload_builds_dict = {}
         for package_upload_build in package_upload_builds:
             package_upload_builds_dict[
@@ -302,10 +302,10 @@ class QueueItemsView(LaunchpadView):
         queue_set = getUtility(IPackageUploadSet)
 
         if accept:
-            header = 'Accepting Results:<br>'
+            header = 'Accepting Results:\n'
             action = "accept"
         elif reject:
-            header = 'Rejecting Results:<br>'
+            header = 'Rejecting Results:\n'
             action = "reject"
 
         success = []
@@ -367,8 +367,16 @@ class QueueItemsView(LaunchpadView):
                 else:
                     success.append('OK: %s' % queue_item.displayname)
 
-        report = '%s<br>%s' % (header, ', '.join(success + failure))
-        return report
+        for message in success:
+            self.request.response.addInfoNotification(message)
+        for message in failure:
+            self.request.response.addErrorNotification(message)
+        # Greasy hack!  Is there a better way of setting GET data in the
+        # response?
+        # (This is needed to make the user see the same queue page
+        # after the redirection)
+        url = str(self.request.URL) + "?queue_state=%s" % self.state.value
+        self.request.response.redirect(url)
 
     def queue_action_accept(self, queue_item):
         """Reject the queue item passed."""
@@ -394,11 +402,11 @@ class QueueItemsView(LaunchpadView):
 
 class CompletePackageUpload:
     """A decorated `PackageUpload` including sources, builds and packages.
-    
+
     Some properties of PackageUpload are cached here to reduce the number
     of queries that the +queue template has to make.
     """
-    # These need to be predeclared to avoid decorates taking them over.
+    # These need to be predeclared to avoid delegates taking them over.
     # Would be nice if there was a way of allowing writes to just work
     # (i.e. no proxying of __set__).
     pocket = None
@@ -410,7 +418,7 @@ class CompletePackageUpload:
     contains_build = None
     sourcepackagerelease = None
 
-    decorates(IPackageUpload)
+    delegates(IPackageUpload)
 
     def __init__(self, packageupload, build_upload_files,
                  source_upload_files):

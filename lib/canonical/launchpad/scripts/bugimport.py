@@ -31,7 +31,7 @@ import pytz
 from storm.store import Store
 
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (

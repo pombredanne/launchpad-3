@@ -1,15 +1,16 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702
 
 __metaclass__ = type
-__all__ = ['BadMessage',
-           'BranchStatusClient',
-           'JobScheduler',
-           'LockError',
-           'PullerMaster',
-           'PullerMonitorProtocol',
-           'TimeoutError',
-           ]
+__all__ = [
+    'BadMessage',
+    'BranchStatusClient',
+    'JobScheduler',
+    'LockError',
+    'PullerMaster',
+    'PullerMonitorProtocol',
+    'TimeoutError',
+    ]
 
 
 import os
@@ -20,18 +21,18 @@ import sys
 from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
 from twisted.python import failure, log
-from twisted.web.xmlrpc import Proxy
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
 from canonical.cachedproperty import cachedproperty
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.xmlrpc import faults
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 
@@ -55,32 +56,6 @@ class UnexpectedStderr(Exception):
         Exception.__init__(
             self, "Unexpected standard error from subprocess: %s" % last_line)
         self.error = stderr
-
-
-class BranchStatusClient:
-    """Twisted client for the branch status methods on the authserver."""
-
-    def __init__(self):
-        self.proxy = Proxy(config.codehosting.branch_puller_endpoint)
-
-    def getBranchPullQueue(self, branch_type):
-        return self.proxy.callRemote('getBranchPullQueue', branch_type)
-
-    def startMirroring(self, branch_id):
-        return self.proxy.callRemote('startMirroring', branch_id)
-
-    def mirrorComplete(self, branch_id, last_revision_id):
-        return self.proxy.callRemote(
-            'mirrorComplete', branch_id, last_revision_id)
-
-    def mirrorFailed(self, branch_id, reason):
-        return self.proxy.callRemote('mirrorFailed', branch_id, reason)
-
-    def recordSuccess(self, name, hostname, date_started, date_completed):
-        started_tuple = tuple(date_started.utctimetuple())
-        completed_tuple = tuple(date_completed.utctimetuple())
-        return self.proxy.callRemote(
-            'recordSuccess', name, hostname, started_tuple, completed_tuple)
 
 
 class PullerWireProtocol(NetstringReceiver):
@@ -252,9 +227,15 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
     def errReceived(self, data):
         self._stderr.write(data)
 
+    def do_setStackedOn(self, stacked_on_location):
+        self.runNotification(self.listener.setStackedOn, stacked_on_location)
+
     def do_startMirroring(self):
         self.resetTimeout()
         self.runNotification(self.listener.startMirroring)
+
+    def do_mirrorDeferred(self):
+        self.reported_mirror_finished = True
 
     def do_mirrorSucceeded(self, latest_revision):
         def mirrorSucceeded():
@@ -276,6 +257,9 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         """Any progress resets the timout counter."""
         self.resetTimeout()
 
+    def do_log(self, message):
+        self.listener.log(message)
+
 
 class PullerMaster:
     """Controller for a single puller worker.
@@ -291,7 +275,8 @@ class PullerMaster:
     protocol_class = PullerMonitorProtocol
 
     def __init__(self, branch_id, source_url, unique_name, branch_type,
-                 logger, client, available_oops_prefixes):
+                 default_stacked_on_url, logger, client,
+                 available_oops_prefixes):
         """Construct a PullerMaster object.
 
         :param branch_id: The database ID of the branch to be mirrored.
@@ -300,6 +285,9 @@ class PullerMaster:
         :param unique_name: The unique name of the branch to be mirrored.
         :param branch_type: The BranchType of the branch to be mirrored (e.g.
             BranchType.HOSTED).
+        :param default_stacked_on_url: The default stacked-on URL for the
+            product that the branch is in. '' implies that there is no such
+            default.
         :param logger: A Python logging object.
         :param client: An asynchronous client for the branch status XML-RPC
             service.
@@ -314,8 +302,9 @@ class PullerMaster:
         self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type = branch_type
+        self.default_stacked_on_url = default_stacked_on_url
         self.logger = logger
-        self.branch_status_client = client
+        self.branch_puller_endpoint = client
         self._available_oops_prefixes = available_oops_prefixes
 
     @cachedproperty
@@ -343,7 +332,9 @@ class PullerMaster:
         command = [
             sys.executable, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
-            self.branch_type.name, self.oops_prefix]
+            self.branch_type.name, self.oops_prefix,
+            self.default_stacked_on_url]
+        self.logger.debug("executing %s", command)
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
         reactor.spawnProcess(protocol, sys.executable, command, env=env)
@@ -359,21 +350,36 @@ class PullerMaster:
         deferred.addBoth(self.releaseOopsPrefix)
         return deferred
 
+    def setStackedOn(self, stacked_on_location):
+        deferred = self.branch_puller_endpoint.callRemote(
+            'setStackedOn', self.branch_id, stacked_on_location)
+        def no_such_branch(failure):
+            # If there's no branch for stacked_on_location, then we just
+            # swallow the error. It's ok for branches to be stacked on
+            # branches that Launchpad doesn't know about.
+            failure.trap(faults.NoSuchBranch)
+        return deferred.addErrback(no_such_branch)
+
     def startMirroring(self):
         self.logger.info(
             'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,
             self.destination_url)
-        return self.branch_status_client.startMirroring(self.branch_id)
+        return self.branch_puller_endpoint.callRemote(
+            'startMirroring', self.branch_id)
 
     def mirrorFailed(self, reason, oops):
         self.logger.info('Recorded %s', oops)
         self.logger.info('Recorded failure: %s', str(reason))
-        return self.branch_status_client.mirrorFailed(self.branch_id, reason)
+        return self.branch_puller_endpoint.callRemote(
+            'mirrorFailed', self.branch_id, reason)
 
     def mirrorSucceeded(self, revision_id):
         self.logger.info('Successfully mirrored to rev %s', revision_id)
-        return self.branch_status_client.mirrorComplete(
-            self.branch_id, revision_id)
+        return self.branch_puller_endpoint.callRemote(
+            'mirrorComplete', self.branch_id, revision_id)
+
+    def log(self, message):
+        self.logger.info('From worker: %s', message)
 
     def unexpectedError(self, failure, now=None):
         request = errorlog.ScriptRequest([
@@ -403,8 +409,8 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_status_client, logger, branch_type):
-        self.branch_status_client = branch_status_client
+    def __init__(self, branch_puller_endpoint, logger, branch_type):
+        self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
         self.actualLock = None
         self.branch_type = branch_type
@@ -437,8 +443,8 @@ class JobScheduler:
         return deferred
 
     def run(self):
-        deferred = self.branch_status_client.getBranchPullQueue(
-            self.branch_type.name)
+        deferred = self.branch_puller_endpoint.callRemote(
+            'getBranchPullQueue', self.branch_type.name)
         deferred.addCallback(self.getPullerMasters)
         deferred.addCallback(self._run)
         return deferred
@@ -447,11 +453,13 @@ class JobScheduler:
         self.logger.info('Mirroring complete')
         return ignored
 
-    def getPullerMaster(self, branch_id, branch_src, unique_name):
+    def getPullerMaster(self, branch_id, branch_src, unique_name,
+                        default_stacked_on_url):
         branch_src = branch_src.strip()
         return PullerMaster(
-            branch_id, branch_src, unique_name, self.branch_type, self.logger,
-            self.branch_status_client, self.available_oops_prefixes)
+            branch_id, branch_src, unique_name, self.branch_type,
+            default_stacked_on_url, self.logger,
+            self.branch_puller_endpoint, self.available_oops_prefixes)
 
     def getPullerMasters(self, branches_to_pull):
         return [
@@ -469,8 +477,11 @@ class JobScheduler:
 
     def recordActivity(self, date_started, date_completed):
         """Record successful completion of the script."""
-        return self.branch_status_client.recordSuccess(
-            self.name, socket.gethostname(), date_started, date_completed)
+        started_tuple = tuple(date_started.utctimetuple())
+        completed_tuple = tuple(date_completed.utctimetuple())
+        return self.branch_puller_endpoint.callRemote(
+            'recordSuccess', self.name, socket.gethostname(), started_tuple,
+            completed_tuple)
 
 
 class LockError(StandardError):

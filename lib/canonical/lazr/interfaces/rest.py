@@ -15,6 +15,7 @@ __all__ = [
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
+    'IJSONRequestCache',
     'IResourceOperation',
     'IResourceGETOperation',
     'IResourcePOSTOperation',
@@ -48,6 +49,9 @@ class IHTTPResource(Interface):
 
     def __call__():
         """Publish the object."""
+
+    def getETag(media_type):
+        "An ETag for this resource's current state."
 
 
 class IJSONPublishable(Interface):
@@ -188,6 +192,14 @@ class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
 
 
+class IJSONRequestCache(Interface):
+    """A cache of objects exposed as URLs or JSON representations."""
+
+    links = Attribute("Objects whose links need to be exposed.");
+    objects = Attribute("Objects whose JSON representations need "
+                        "to be exposed.");
+
+
 class IByteStorage(Interface):
     """A sequence of bytes stored on the server.
 
@@ -200,8 +212,12 @@ class IByteStorage(Interface):
     is_stored = Attribute("Whether or not there's a previously created "
                           "external byte stream here.")
 
-    def createStored(mediaType, representation):
-        """Create a new stored bytestream."""
+    def createStored(mediaType, representation, filename=None):
+        """Create a new stored bytestream.
+
+        :param filename: The name of the file being stored. If None,
+        the name of the storage field is used instead.
+        """
 
     def deleteStored():
         """Delete an existing stored bytestream."""

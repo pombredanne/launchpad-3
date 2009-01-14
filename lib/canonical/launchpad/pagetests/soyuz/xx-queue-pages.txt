@@ -233,6 +233,14 @@ Swallow any email generated at the upload:
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> swallow = pop_notifications()
 
+Set up a second browser on the same page to simulate accidentally posting to the
+form twice.
+
+  >>> duplicate_submission_browser = setupBrowser(
+  ...       auth="Basic test@canonical.com:test")
+  >>> duplicate_submission_browser.open(
+  ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+
 Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
@@ -259,12 +267,17 @@ nascentupload-announcements.txt).
   >>> announcement['To']
   'autotest_changes@ubuntu.com'
 
-Forcing a duplicated submission on a queue item is recognised:
+Forcing a duplicated submission on a queue item is recognised.  Here we
+submit the same form again via a different browser instance, which simulates
+a double post.
 
-  >>> upload_manager_browser.reload()
-  >>> message = 'FAILED: bar (The source bar - 1.0-1 is already accepted'
-  >>> message in upload_manager_browser.contents
-  True
+  >>> duplicate_submission_browser.getControl(
+  ...     name="QUEUE_ID").value = [bar_queue_id]
+  >>> duplicate_submission_browser.getControl(name="Accept").click()
+  >>> for message in get_feedback_messages(
+  ...     duplicate_submission_browser.contents):
+  ...     print message
+  FAILED: bar (The source bar - 1.0-1 is already accepted...
 
 No emails are sent in this case:
 
@@ -281,7 +294,6 @@ Let's accept mozilla-firefox so we can see it in the accepted queue:
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
   ...     print message
-  Accepting Results:
   OK: mozilla-firefox
 
 The item is moved to the ACCEPTED queue:
@@ -320,7 +332,6 @@ Accept "cnews" source:
     >>> upload_manager_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(upload_manager_browser.contents):
     ...     print message
-    Accepting Results:
     OK: cnews
 
 And the page is still on the Unapproved list:
@@ -370,10 +381,11 @@ And now accepts the checked items:
 He sees the informational message that confirms the details of what was
 overridden:
 
-  >>> for message in get_feedback_messages(upload_manager_browser.contents):
+  >>> for message in sorted(get_feedback_messages(
+  ...     upload_manager_browser.contents)):
   ...     print message
-  Accepting Results:
-  OK: netapplet(restricted/admin), OK: pmount(restricted/admin/extra)
+  OK: netapplet(restricted/admin)
+  OK: pmount(restricted/admin/extra)
 
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
@@ -423,7 +435,6 @@ Rejecting 'alsa-utils' source:
   >>> upload_manager_browser.getControl(name="Reject").click()
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
   ...     print message
-  Rejecting Results:
   OK: alsa-utils
 
   >>> print_queue(upload_manager_browser.contents)
@@ -436,6 +447,22 @@ One rejection email is generated:
   >>> [rejection] = pop_notifications()
   >>> rejection['Subject']
   'netapplet-1.0.0.tar.gz rejected'
+
+Please note that in this case the rejection reason is not available
+and how that's stated in the notification email body.
+
+  >>> body = rejection.get_payload()[0]
+  >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
+  Content-Type: text/plain; charset="utf-8"
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
+  <BLANKLINE>
+  Rejected:
+  Rejected by archive administrator.
+  ...
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
 
 The override controls are now available for rejected packages.
 

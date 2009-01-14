@@ -22,7 +22,6 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
 from canonical.codehosting.codeimport.workermonitor import (
@@ -200,32 +199,6 @@ class TestWorkerMonitorUnit(TestCase):
         return self.worker_monitor.getSourceDetails().addCallback(
             check_source_details)
 
-    def associateCodeImportWithSeries(self, code_import_id):
-        """Pretend the given code import was created from some ProductSeries.
-        """
-        self.layer.switchDbUser('launchpad')
-        code_import = getUtility(ICodeImportSet).get(code_import_id)
-        series = self.factory.makeSeries()
-        from canonical.launchpad.database.codeimport import (
-            _ProductSeriesCodeImport)
-        _ProductSeriesCodeImport(
-            codeimport=code_import, productseries=series)
-        series_id = series.id
-        self.layer.txn.commit()
-        self.layer.switchDbUser('codeimportworker')
-        return series_id
-
-    def test_getSourceDetailsForImportWithSourceSeries(self):
-        # getSourceDetails extracts the details from the CodeImport database
-        # object.
-        series_id = self.associateCodeImportWithSeries(self.code_import_id)
-        @read_only_transaction
-        def check_source_productseries_id(details):
-            self.assertEquals(
-                details.source_product_series_id, series_id)
-        return self.worker_monitor.getSourceDetails().addCallback(
-            check_source_productseries_id)
-
     def test_updateHeartbeat(self):
         # The worker monitor's updateHeartbeat method calls the
         # updateHeartbeat job workflow method.
@@ -320,9 +293,11 @@ class TestWorkerMonitorUnit(TestCase):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
-        self.worker_monitor._log_file.seek(0)
-        log_text = self.worker_monitor._log_file.read()
-        self.assertIn('RuntimeError', log_text)
+        def check_log_file(ignored):
+            self.worker_monitor._log_file.seek(0)
+            log_text = self.worker_monitor._log_file.read()
+            self.assertIn('RuntimeError', log_text)
+        return ret.addCallback(check_log_file)
 
     def test_callFinishJobRespects_call_finish_job(self):
         # callFinishJob does not call finishJob if _call_finish_job is False.
@@ -460,7 +435,6 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.factory.makePerson())
-        getUtility(ICodeImportJobWorkflow).newJob(code_import)
         job = getUtility(ICodeImportJobSet).getJobForMachine('machine')
         self.assertEqual(code_import, job.code_import)
         return job
@@ -506,7 +480,9 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def test_import_subversion(self):
+    # XXX flacoste 2008/12/04 bug=305314
+    # spurious-test-failure
+    def disabled_test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
@@ -538,7 +514,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         This implementation does it in a child process.
         """
         script_path = os.path.join(
-            get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
+            config.root, 'scripts', 'code-import-worker-db.py')
         process_end_deferred = defer.Deferred()
         # The "childFDs={0:0, 1:1, 2:2}" means that any output from the script
         # goes to the test runner's console rather than to pipes that noone is

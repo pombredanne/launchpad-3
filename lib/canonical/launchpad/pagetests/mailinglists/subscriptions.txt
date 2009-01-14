@@ -33,9 +33,11 @@ contact address.
     ...     'approve']
     >>> admin_browser.getControl('Submit').click()
 
+    >>> import transaction
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.mailman.act()
+    >>> transaction.commit()
     >>> logout()
 
     >>> admin_browser.open('http://launchpad.dev/~admins')
@@ -392,6 +394,74 @@ does not show either link.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+
+== Team page subscribers link ==
+
+Team administrators can see a link to a page listing the team's
+mailing list subscribers, if there is an active mailing list.  The
+rosetta admins team has such a list and carlos is the owner.
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ...     find_portlet(browser.contents, 'Summary'))
+    Summary...
+    Mailing list archive
+    Mailing list subscribers
+
+    >>> browser.getLink('Mailing list subscribers').click()
+    >>> print browser.title
+    Mailing list subscribers for the Rosetta Administrators team
+
+Anonymous users don't see the link, can't click on it, and are
+forbidden to go to the URL directly.
+
+    >>> anon_browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ...     find_portlet(anon_browser.contents, 'Summary'))
+    Summary...
+    Mailing list archive
+
+    >>> anon_browser.getLink('Mailing list subscribers').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> url = 'http://launchpad.dev/~rosetta-admins/+mailing-list-subscribers'
+    >>> anon_browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+Likewise, unprivileged people cannot see the links or go to the page.
+
+    >>> user_browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ...     find_portlet(user_browser.contents, 'Summary'))
+    Summary...
+    Mailing list archive
+
+    >>> user_browser.getLink('Mailing list subscribers').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> url = 'http://launchpad.dev/~rosetta-admins/+mailing-list-subscribers'
+    >>> user_browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+If the team has no mailing list, then the archive and subscribers
+links are not present.
+
+    >>> admin_browser.open('http://launchpad.dev/~commercial-admins')
+    >>> summary_content = extract_text(
+    ...     find_portlet(admin_browser.contents, 'Summary'))
+    >>> 'Mailing list archive' in summary_content
+    False
+    >>> 'Mailing list subscribers' in summary_content
+    False
 
 
 == Mailing list auto-subscription settings ==

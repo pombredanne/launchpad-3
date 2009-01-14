@@ -15,7 +15,7 @@
       <script type="text/javascript">
         function disableSubmitButton() {
           var form = document.forms['shipit'];
-          form.FORM_SUBMIT.disabled = true;
+          form['field.actions.continue'].disabled = true;
         }
       //</script>
     </metal:head_epilogue>
@@ -26,13 +26,8 @@
 
 <tal:shipit-is-open condition="view/is_open" define="user view/user">
 
-  <p class="informational message"
-     tal:define="status view/process_status"
-     tal:condition="status"
-     tal:content="structure status" />
-
   <div class="error message"
-    tal:repeat="top_of_page_error view/top_of_page_errors"
+    tal:repeat="top_of_page_error view/form_wide_errors"
     tal:content="structure top_of_page_error">
     Schema validation errors.
   </div>
@@ -51,8 +46,7 @@
         <input type="hidden" name="order"
                tal:attributes="value view/current_order/id" />
 
-        <input type="submit" value="Cancel Request" name="cancel"
-               class="formControls"/>
+        <tal:cancel replace="structure view/actions/field.actions.cancel/render" />
       </form>
     </div>
   </tal:current_request>
@@ -101,32 +95,13 @@
     instead.
   </p>
 
-  <p tal:condition="view/is_edubuntu">
-    Edubuntu CDs are available only in the <strong>PC</strong> Edition.
-    This runs on x86-based systems like Intel Pentium and AMD Athlon.
-  </p>
-
-  <tal:not-edubuntu condition="not: view/is_edubuntu">
+  <tal:is-server condition="view/flavour/enumvalue:SERVER">
     <p>
       Different <span tal:replace="view/flavour/title" /> CDs are made
       for different types of computer:
     </p>
 
-    <ul tal:condition="not:view/flavour/enumvalue:SERVER">
-      <li>
-        <strong>Desktop</strong> Edition, for almost all PCs,
-        including x86-based systems like Intel Pentium and AMD
-        Athlon. Choose this if you are unsure.
-      </li>
-
-      <li>
-        <strong>64-bit Desktop</strong> Edition, for computers
-        based on the AMD64 or Intel64 architectures (e.g., AMD Athlon 64,
-        and Intel Core 2).
-      </li>
-    </ul>
-
-    <ul tal:condition="view/flavour/enumvalue:SERVER">
+    <ul>
       <li>
         <strong>Server</strong> Edition for x86 based servers (including
         Intel Pentium, Intel Xeon and AMD Athlon).
@@ -137,7 +112,7 @@
         servers (including AMD Opteron and Intel EM64T Xeon).
       </li>
     </ul>
-  </tal:not-edubuntu>
+  </tal:is-server>
 
   <tal:custom-request condition="view/should_show_custom_request">
 
@@ -166,13 +141,31 @@
 
   <table class="headers-right-aligned">
   <tbody>
-  <tr>
+  <tr tal:condition="not: view/should_show_custom_request" id="options">
+    <tal:single-option condition="not: view/has_multiple_options">
+    <td colspan="2">
+      <p>Just enter your address below and we will send you
+        <tal:option repeat="sole_option view/standard_options">
+          <strong tal:content="sole_option/description">1 Ubuntu CD</strong>
+          <input type="hidden" name="ordertype"
+                 tal:attributes="value sole_option/id" />
+        </tal:option> of the
+        <strong tal:content="view/series/title">Hardy</strong> release.
+      </p>
+      <p style="font-size: 85%;">You can make a
+        <a tal:attributes="href view/custom_order_page">special request</a>
+        for different quantities, but note this will take longer to process
+        and may not be approved at all.
+      </p>
+    </td>
+    </tal:single-option>
+
+    <tal:multiple-options condition="view/has_multiple_options">
     <th style="vertical-align: top;">I would like:</th>
     <td tal:define="selected_id view/selected_standardrequest">
 
-      <div id="standard-options"
-           tal:condition="not: view/should_show_custom_request">
-        <div tal:repeat="request_type view/standardShipItRequests">
+      <div id="standard-options">
+        <div tal:repeat="request_type view/standard_options">
           <label>
             <input type="radio" name="ordertype"
               tal:attributes="value request_type/id;
@@ -181,27 +174,58 @@
           </label>
         </div>
 
-        <p>You can make a <a tal:attributes="href view/custom_order_page">
-        special request</a>
-        for different quantities, but note this will take longer to process
-        and may not be approved at all.
+        <p style="font-size: 85%;">You can make a
+          <a tal:attributes="href view/custom_order_page">special request</a>
+          for different quantities, but note this will take longer to process
+          and may not be approved at all.
         </p>
       </div>
+    </td>
+    </tal:multiple-options>
+  </tr>
 
-      <tal:custom-request condition="view/should_show_custom_request">
-        <br />
-        <table style="width: auto; margin-left: 0">
-          <tr>
-            <td>&nbsp;</td>
-            <th style="text-align: left">Quantity</th>
-          </tr>
-          <tr tal:repeat="widget view/quantity_widgets">
-            <span metal:use-macro="context/@@+shipit-macros/display_widget" />
-          </tr>
-        </table>
+  <tal:special-request-fields condition="view/should_show_custom_request">
+    <tr>
+      <th><strong>I would like &nbsp;</strong></th>
+      <td tal:condition="not: view/flavour/enumvalue:SERVER">
+        <span tal:replace="structure view/widgets/ubuntu_quantityx86" />
+        CDs.
+        <div class="error"
+             tal:condition="view/widgets/ubuntu_quantityx86/error">
+          <div class="message"
+               tal:content="view/widgets/ubuntu_quantityx86/error">
+            Error message
+          </div>
+        </div>
+      </td>
 
+      <td tal:condition="view/flavour/enumvalue:SERVER">
+        <span tal:replace="structure view/widgets/ubuntu_quantityx86" />
+        <strong>32-bit CDs</strong> and
+        <span tal:replace="structure view/widgets/ubuntu_quantityamd64" />
+        <strong>64-bit CDs</strong>.
+        <div class="error"
+             tal:condition="view/widgets/ubuntu_quantityx86/error">
+          <div class="message"
+               tal:content="view/widgets/ubuntu_quantityx86/error">
+            Error message
+          </div>
+        </div>
+        <div class="error"
+             tal:condition="view/widgets/ubuntu_quantityamd64/error">
+          <div class="message"
+               tal:content="view/widgets/ubuntu_quantityamd64/error">
+            Error message
+          </div>
+        </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;</td>
+      <td>
         <br />
-        <div tal:define="widget nocall:view/reason_widget">
+        <div tal:define="widget nocall:view/widgets/reason">
           <label>Why are you requesting these CDs?</label>
           <div style="color: #999; font-size: smaller">
             (Your answer must be in English)
@@ -210,10 +234,10 @@
         </div>
 
         <input type="hidden" name="custom" value="1" />
-      </tal:custom-request>
 
-    </td>
-  </tr>
+      </td>
+    </tr>
+  </tal:special-request-fields>
 
   <metal:shipping_details use-macro="context/@@+shipit-macros/shipping_details" />
 
@@ -229,22 +253,7 @@
   <tr>
     <td></td>
     <td>
-
-      <tal:current_request condition="view/current_order">
-        <input tal:condition="view/currentOrderContainsCDsOfThisFlavour"
-               type="submit" value="Change Request" name="FORM_SUBMIT"
-               class="formControls"/>
-
-        <input tal:condition="not: view/currentOrderContainsCDsOfThisFlavour"
-               type="submit" value="Request More CDs" name="FORM_SUBMIT"
-               class="formControls"/>
-      </tal:current_request>
-
-      <tal:no_current_request condition="not: view/current_order">
-        <input type="submit" value="Submit Request" name="FORM_SUBMIT"
-               class="formControls"/>
-      </tal:no_current_request>
-
+      <input tal:replace="structure view/actions/field.actions.continue/render" />
     </td>
   </tr>
   </tbody>

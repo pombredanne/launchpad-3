@@ -7,6 +7,7 @@ a database and generate a report suitable for spamming developers with.
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 import csv, re, sys
@@ -140,11 +141,17 @@ def main(csvfile, log):
     else:
         # Override this setting - we are only here if email explicitly
         # requested on the command line.
-        config.zopeless.send_email = True
+        send_email_data = """
+            [zopeless]
+            send_email: True
+            """
+        config.push('send_email_data', send_email_data)
         simple_sendmail(
                 "noreply@canonical.com", [options.email], options.subject,
                 rep, {'Keywords': 'LinkChecker', 'X-Fnord': 'Fnord'}
                 )
+        config.pop('send_email_data')
+
 
 def report(title, links, total, brokensince=True):
 

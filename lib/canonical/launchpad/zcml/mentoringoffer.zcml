@@ -8,9 +8,9 @@
 <facet facet="overview">
 
   <!-- MentoringOffer -->
-  <content class="canonical.launchpad.database.MentoringOffer">
+  <class class="canonical.launchpad.database.MentoringOffer">
     <allow interface="canonical.launchpad.interfaces.IMentoringOffer" />
-  </content>
+  </class>
 
 
   <!-- IHasMentoringOffers -->
@@ -31,16 +31,13 @@
     permission="launchpad.AnyPerson"
     template="../templates/canbementored-retractmentoring.pt" />
 
-  <browser:generalform
+  <browser:page
     name="+mentor"
     for="canonical.launchpad.interfaces.ICanBeMentored"
-    schema="canonical.launchpad.interfaces.IMentoringOffer"
     class="canonical.launchpad.browser.MentoringOfferAddView"
-    fields="team"
-    arguments="team"
     permission="launchpad.AnyPerson"
     template="../templates/canbementored-mentoringoffer.pt">
-  </browser:generalform>
+  </browser:page>
 
   <!-- MentoringOfferSet -->
   <securedutility
@@ -48,13 +45,6 @@
     provides="canonical.launchpad.interfaces.IMentoringOfferSet">
     <allow interface="canonical.launchpad.interfaces.IMentoringOfferSet" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IMentoringOfferSet"
-    factory="canonical.launchpad.browser.MentoringOfferSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:url
     for="canonical.launchpad.interfaces.IMentoringOfferSet"

@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:tag condition="view/update"/>
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -19,22 +18,19 @@
 
   <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/product/@@+portlet-releases" />
-</metal:rightportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_editform/editform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
       The information you enter here for
       <span tal:replace="context/product/displayname">Apache</span>
-      will be displayed on the release home page, and used in RSS feeds.
+      will be displayed on the release home page.
       If you need to modify the actual version number
       (<span tal:replace="context/version">2.1.6</span>),
       <a href="/feedback">ask a Launchpad admin</a> to help you.

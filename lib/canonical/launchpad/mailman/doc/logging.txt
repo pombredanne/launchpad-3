@@ -51,7 +51,7 @@ exceptions. It reports the OOPS.
     >>> oops.value
     'There is an OOPS in progress.'
     >>> print oops.tb_text
-    Traceback (innermost last):
+    Traceback (most recent call last):
     ...
     AssertionError: There is an OOPS in progress.
 

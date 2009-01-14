@@ -9,20 +9,20 @@
     <!-- This is class BugPackageInfestation -->
 
     <!-- CONTENT CLASSES -->
-    <content class="canonical.launchpad.database.BugPackageInfestation">
+    <class class="canonical.launchpad.database.BugPackageInfestation">
         <allow interface="canonical.launchpad.interfaces.IBugPackageInfestation" />
         <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
         <require permission="zope.Public" set_schema="canonical.launchpad.interfaces.IBugPackageInfestation" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.BugPackageInfestationSet">
+    <class class="canonical.launchpad.database.BugPackageInfestationSet">
         <allow interface="canonical.launchpad.interfaces.IBugPackageInfestationSet" />
         <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
-    </content>
+    </class>
 
     <!-- UTILITY DECLARATION-->
 

@@ -13,7 +13,6 @@ __all__ = [
     'AnnouncementEditView',
     'AnnouncementContextMenu',
     'AnnouncementSetView',
-    'AnnouncementSHP',
     'HasAnnouncementsView',
     ]
 
@@ -36,8 +35,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
-from canonical.launchpad.browser.launchpad import (
-    StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 
@@ -63,15 +60,6 @@ class AnnouncementContextMenu(ContextMenu):
     def retract(self):
         text = 'Retract announcement'
         return Link('+retract', text, icon='edit')
-
-
-class AnnouncementSHP(StructuralHeaderPresentation):
-
-    def getIntroHeading(self):
-        return "Announcement for:"
-
-    def getMainHeading(self):
-        return self.context.target.displayname
 
 
 class AddAnnouncementForm(Interface):

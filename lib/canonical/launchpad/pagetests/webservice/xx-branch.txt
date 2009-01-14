@@ -49,7 +49,7 @@ At the moment, it's not scheduled to be mirrored.
 
 But we can ask for it to be mirrored using the webservice:
 
-    >>> branch_url = '/beta/' + branch.unique_name
+    >>> branch_url = '/' + branch.unique_name
     >>> start_time = datetime.now(pytz.UTC)
     >>> response = webservice.named_post(branch_url, 'requestMirror')
     >>> end_time = datetime.now(pytz.UTC)
@@ -62,3 +62,58 @@ request for a mirror:
 
     >>> print start_time < branch.next_mirror_time < end_time
     True
+
+
+== Basic branch attributes ==
+
+Not everything about a branch is exposed.  Hopefully most of what users
+really care about is exposed, and we will undoubtedly expand this as
+time goes on.
+
+    >>> login(ANONYMOUS)
+    >>> eric = factory.makePerson(name='eric')
+    >>> fooix = factory.makeProduct(name='fooix')
+    >>> branch = factory.makeBranch(
+    ...     BranchType.HOSTED, owner=eric, product=fooix, name='trunk',
+    ...     title='The Fooix Trunk')
+    >>> branch_url = '/' + branch.unique_name
+    >>> logout()
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> service = webservice_for_person(eric)
+    >>> details = webservice.get(branch_url).jsonBody()
+    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> pprint_entry(details)
+    branch_format: None
+    branch_type: u'Hosted'
+    control_format: None
+    date_created: ...
+    date_last_modified: ...
+    display_name: u'The Fooix Trunk'
+    lifecycle_status: u'New'
+    mirror_status_message: None
+    name: u'trunk'
+    owner_link: u'http://api.launchpad.dev/beta/~eric'
+    project_link: u'http://api.launchpad.dev/beta/fooix'
+    registrant_link: u'http://api.launchpad.dev/beta/~eric'
+    repository_format: None
+    resource_type_link: u'http://api.launchpad.dev/beta/#branch'
+    reviewer_link: None
+    self_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk'
+    summary: None
+    title: u'The Fooix Trunk'
+    unique_name: u'~eric/fooix/trunk'
+    url: None
+    whiteboard: None
+
+
+== Project branches ==
+
+The branches of a project are also available.
+
+    >>> project = webservice.get('/fooix').jsonBody()
+    >>> branches = webservice.get(
+    ...     project['branches_collection_link']).jsonBody()
+    >>> for branch in branches['entries']:
+    ...     print branch['unique_name']
+    ~eric/fooix/trunk

@@ -99,18 +99,9 @@ class LibrarianTestSetup:
             self.tearDownRoot()
             raise
 
-        try:
-            TacRestrictedLibrarianTestSetup().setUp()
-        except TacException:
-            # Tear-down the started librarian.
-            TacLibrarianTestSetup().tearDown()
-            self.tearDownRoot()
-            raise
-
     def tearDown(self):
         """Shut downs both librarian instances."""
         TacLibrarianTestSetup().tearDown()
-        TacRestrictedLibrarianTestSetup().tearDown()
         self.tearDownRoot()
 
     def clear(self):
@@ -175,25 +166,6 @@ class TacLibrarianTestSetup(TacTestSetup):
     @property
     def logfile(self):
         return os.path.join(self._log_directory, 'librarian.log')
-
-
-class TacRestrictedLibrarianTestSetup(TacLibrarianTestSetup):
-    """Fixture for the restricted librarian instance."""
-
-    def setUp(self, spew=False):
-        os.environ['RESTRICTED_LIBRARIAN'] = '1'
-        try:
-            super(TacRestrictedLibrarianTestSetup, self).setUp(spew)
-        finally:
-            del os.environ['RESTRICTED_LIBRARIAN']
-
-    @property
-    def pidfile(self):
-        return os.path.join(self.root, 'restricted-librarian.pid')
-
-    @property
-    def logfile(self):
-        return os.path.join(self._log_directory, 'restricted-librarian.log')
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):

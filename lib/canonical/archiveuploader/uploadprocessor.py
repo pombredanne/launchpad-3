@@ -189,11 +189,11 @@ class UploadProcessor:
         fsroot_lock = GlobalLock(lockfile_path)
         mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
 
-        # XXX cprov 20081024: The lockfile permission can only be changed
-        # by its owner. Since we can't predict which process will create
-        # it in production systems we simply ignore errors when trying to
-        # grant the right permission. At least, one of the process will
-        # be able to do so. See further information in bug #185731.
+        # XXX cprov 20081024 bug=185731: The lockfile permission can only be
+        # changed by its owner. Since we can't predict which process will
+        # create it in production systems we simply ignore errors when trying
+        # to grant the right permission. At least, one of the process will
+        # be able to do so.
         try:
             os.chmod(lockfile_path, mode | stat.S_IWGRP)
         except OSError, err:

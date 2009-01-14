@@ -12,15 +12,15 @@ from zope.component import getUtility
 
 from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IDistributionSet, NotFoundError)
-from canonical.launchpad.scripts import (
-    logger, logger_options)
+    clear_current_connection_cache, flush_database_updates)
+from canonical.launchpad.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.scripts import logger, logger_options
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
-# XXX 2008-02-07 Julian.
-# These functions should be in a LaunchpadScript. See bug 189866.
+# XXX Julian 2008-02-07 bug=189866:
+# These functions should be in a LaunchpadScript.
 
 def add_options(parser):
     logger_options(parser)
@@ -147,19 +147,17 @@ def run_publisher(options, txn, log=None):
     else:
         archives = [distribution.main_archive]
 
-    for archive in archives:
-        if archive.purpose != ArchivePurpose.PPA:
-            log.info("Processing %s %s" % (
-                distribution.name, archive.title))
-        else:
-            log.info("Processing %s" % archive.archive_url)
+    # Consider only archives that have their "to be published" flag turned on.
+    archives = [archive for archive in archives if archive.publish]
 
-        # Only let the primary/partner archives override the distsroot.
-        if archive.purpose in (ArchivePurpose.PRIMARY,
-                ArchivePurpose.PARTNER):
+    for archive in archives:
+        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
+            log.info("Processing %s %s" % (distribution.name, archive.title))
+            # Only let the primary/partner archives override the distsroot.
             publisher = getPublisher(
                 archive, allowed_suites, log, options.distsroot)
         else:
+            log.info("Processing %s" % archive.archive_url)
             publisher = getPublisher(archive, allowed_suites, log)
 
         try_and_commit("publishing", publisher.A_publish,
@@ -171,7 +169,7 @@ def run_publisher(options, txn, log=None):
 
         # The primary archive uses apt-ftparchive to generate the indexes,
         # everything else uses the newer internal LP code.
-        if archive.purpose != ArchivePurpose.PPA:
+        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                            options.careful or options.careful_apt)
         else:
@@ -182,5 +180,3 @@ def run_publisher(options, txn, log=None):
                        options.careful or options.careful_apt)
 
     log.debug("Ciao")
-
-

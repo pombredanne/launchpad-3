@@ -5,32 +5,30 @@
 __metaclass__ = type
 
 __all__ = [
-    'CveSetNavigation',
     'CveContextMenu',
-    'CveSetContextMenu',
     'CveLinkView',
-    'CveUnlinkView',
+    'CveSetContextMenu',
+    'CveSetNavigation',
     'CveSetView',
+    'CveUnlinkView',
     ]
 
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
+from canonical.launchpad.interfaces import ICve, ICveSet
 from canonical.launchpad.validators.cve import valid_cve
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
-from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 
 
 class CveSetNavigation(GetitemNavigation):
 
     usedfor = ICveSet
 
-    def breadcrumb(self):
-        return "CVE reports"
 
 class CveContextMenu(ContextMenu):
 
@@ -62,38 +60,41 @@ class CveSetContextMenu(ContextMenu):
         return Link('', text, summary)
 
 
-class CveLinkView(GeneralFormView):
+class CveLinkView(LaunchpadFormView):
     """This view will be used for objects that can be linked to a CVE,
     currently that is only IBug.
     """
+    schema = ICve
+    field_names = ['sequence']
 
-    def __init__(self, context, request):
-        self._nextURL = canonical_url(context)
-        GeneralFormView.__init__(self, context, request)
-
-    def process(self, sequence):
+    def validate(self, data):
+        sequence = data.get('sequence')
+        if sequence is None:
+            # Don't attempt to look up this CVE; its number is not valid.
+            return
         cve = getUtility(ICveSet)[sequence]
         if cve is None:
-            return '%s is not a known CVE sequence number.' % sequence
-        user = getUtility(ILaunchBag).user
-        self.context.bug.linkCVE(cve, user)
-        return 'CVE-%s added.' % sequence
+            self.addError('%s is not a known CVE sequence number.' % sequence)
+
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        cve = getUtility(ICveSet)[data['sequence']]
+        self.context.bug.linkCVE(cve, self.user)
+        self.request.response.addInfoNotification(
+            'CVE-%s added.' % data['sequence'])
+        self.next_url = canonical_url(self.context)
 
 
-class CveUnlinkView(GeneralFormView):
+class CveUnlinkView(CveLinkView):
     """This view is used to unlink a CVE from a bug."""
 
-    def __init__(self, context, request):
-        self._nextURL = canonical_url(context)
-        GeneralFormView.__init__(self, context, request)
-
-    def process(self, sequence):
-        cve = getUtility(ICveSet)[sequence]
-        if cve is None:
-            return '%s is not a known CVE sequence number.' % sequence
-        user = getUtility(ILaunchBag).user
-        self.context.bug.unlinkCVE(cve, user)
-        return 'CVE-%s removed.' % sequence
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        cve = getUtility(ICveSet)[data['sequence']]
+        self.context.bug.unlinkCVE(cve, self.user)
+        self.request.response.addInfoNotification(
+            'CVE-%s removed.' % data['sequence'])
+        self.next_url = canonical_url(self.context)
 
 
 class CveSetView:

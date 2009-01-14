@@ -99,17 +99,17 @@ class IBuilder(IHasOwner):
                       'details.'))
 
     virtualized = Bool(
-        title=_('Virtualised'), required=True,
+        title=_('Virtualized'), required=True, default=False,
         description=_('Whether or not the builder is a virtual Xen '
                       'instance.'))
 
     manual = Bool(
-        title=_('Manual Mode'), required=False,
+        title=_('Manual Mode'), required=False, default=False,
         description=_('The auto-build system does not dispatch '
                       'jobs automatically for slaves in manual mode.'))
 
     builderok = Bool(
-        title=_('Builder State OK'), required=False,
+        title=_('Builder State OK'), required=True, default=True,
         description=_('Whether or not the builder is ok'))
 
     failnotes = Text(
@@ -122,18 +122,15 @@ class IBuilder(IHasOwner):
                       'buildd-slave, e.g.: foobar-host.ppa'))
 
     active = Bool(
-        title=_('Active'), required=False,
+        title=_('Active'), required=True, default=True,
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
-    currentjob = Attribute("BuildQueue instance for job being processed.")
-    status = Attribute("Generated status information")
-    pocket_dependencies = Attribute("""
-        A dictionary of pocket to a tuple of pocket dependencies.
 
-        A dictionary that maps a pocket to pockets that it can
-        depend on for a build.
-        """)
+    currentjob = Attribute("BuildQueue instance for job being processed.")
+
+    status = Attribute("Generated status information")
+
     is_available = Bool(
         title=_("Whether or not a builder is available for building "
                 "new jobs. "),
@@ -272,6 +269,20 @@ class IBuilder(IHasOwner):
         it will actually issues the XMLRPC call to the buildd-slave.
         """
 
+    def handleTimeout(logger, error_message):
+        """Handle buildd slave communication timeout situations.
+
+        In case of a virtualized/PPA buildd slave an attempt will be made
+        to reset it first (using `resumeSlaveHost`). Only if that fails
+        will it be (marked as) failed (using `failbuilder`).
+
+        Conversely, a non-virtualized buildd slave will be (marked as)
+        failed straightaway.
+
+        :param logger: The logger object to be used for logging.
+        :param error_message: The error message to be used for logging.
+        """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.
@@ -291,8 +302,16 @@ class IBuilderSet(Interface):
         """Retrieve a builder by name"""
 
     def new(processor, url, name, title, description, owner,
-            virtualized=True):
-        """Create a new Builder entry."""
+            active=True, virtualized=False, vm_host=None):
+        """Create a new Builder entry.
+
+        Additionally to the given arguments, builder are created with
+        'builderok' and 'manual' set to True.
+
+        It means that, once created, they will be presented as 'functional'
+        in the UI but will not receive any job until an administrator move
+        it to the automatic mode.
+        """
 
     def count():
         """Return the number of builders in the system."""

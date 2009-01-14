@@ -1,4 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0404
+# (Disable warning about importing two different datetime modules)
 
 """View classes for ITranslationMessage interface."""
 
@@ -10,7 +12,6 @@ __all__ = [
     'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
     'CurrentTranslationMessagePageView',
-    'CurrentTranslationMessageSOP',
     'CurrentTranslationMessageView',
     'CurrentTranslationMessageZoomedView',
     'TranslationMessageSuggestions',
@@ -26,7 +27,7 @@ import urllib
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 
-from zope.app import datetimeutils
+from zope import datetime as zope_datetime
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -38,12 +39,12 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.potemplate import (
-    POTemplateFacets, POTemplateSOP)
+from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
     ITranslationMessageSet, ITranslationMessageSuggestions,
-    TranslationConflict, TranslationConstants, UnexpectedFormData)
+    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
+    UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
     Link, urlparse)
@@ -300,12 +301,6 @@ class CurrentTranslationMessageFacets(POTemplateFacets):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
 
 
-class CurrentTranslationMessageSOP(POTemplateSOP):
-
-    def __init__(self, context):
-        POTemplateSOP.__init__(self, context.pofile.potemplate)
-
-
 class CurrentTranslationMessageAppMenus(ApplicationMenu):
     usedfor = ITranslationMessage
     facet = 'translations'
@@ -441,15 +436,21 @@ class BaseTranslationView(LaunchpadView):
         if (self.request.method == 'POST'):
             if self.user is None:
                 raise UnexpectedFormData, (
-                    'Anonymous users cannot do POST submissions.')
+                    'Anonymous users or users who are not accepting our '
+                    'licensing terms cannot do POST submissions.')
+            if (self.user.translations_relicensing_agreement is not None and
+                not self.user.translations_relicensing_agreement):
+                raise UnexpectedFormData, (
+                    'Users who do not agree to licensing terms '
+                    'cannot do POST submissions.')
             try:
                 # Try to get the timestamp when the submitted form was
                 # created. We use it to detect whether someone else updated
                 # the translation we are working on in the elapsed time
                 # between the form loading and its later submission.
-                self.lock_timestamp = datetimeutils.parseDatetimetz(
+                self.lock_timestamp = zope_datetime.parseDatetimetz(
                     self.request.form.get('lock_timestamp', u''))
-            except datetimeutils.DateTimeError:
+            except zope_datetime.DateTimeError:
                 # invalid format. Either we don't have the timestamp in the
                 # submitted form or it has the wrong format.
                 raise UnexpectedFormData, (
@@ -547,12 +548,13 @@ class BaseTranslationView(LaunchpadView):
             # translation submitted, so we don't need to store anything.
             return None
 
-        is_fuzzy = self.form_posted_needsreview.get(potmsgset, False)
+        force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
 
         try:
             potmsgset.updateTranslation(
-                self.pofile, self.user, translations, is_fuzzy,
-                is_imported=False, lock_timestamp=self.lock_timestamp)
+                self.pofile, self.user, translations,
+                is_imported=False, lock_timestamp=self.lock_timestamp,
+                force_suggestion=force_suggestion)
         except TranslationConflict:
             return (
                 u'Somebody else changed this translation since you started.'
@@ -595,13 +597,13 @@ class BaseTranslationView(LaunchpadView):
         # so we prepare the new render with the same values.
         if current_translation_message.potmsgset in (
             self.form_posted_needsreview):
-            is_fuzzy = self.form_posted_needsreview[
+            force_suggestion = self.form_posted_needsreview[
                 current_translation_message.potmsgset]
         else:
-            is_fuzzy = current_translation_message.is_fuzzy
+            force_suggestion = False
 
         return view_class(current_translation_message, self.request,
-            plural_indices_to_store, translations, is_fuzzy, error,
+            plural_indices_to_store, translations, force_suggestion, error,
             self.second_lang_code, self.form_is_writeable)
 
     #
@@ -959,8 +961,8 @@ class CurrentTranslationMessageView(LaunchpadView):
     #   self.pluralform_indices
 
     def __init__(self, current_translation_message, request,
-                 plural_indices_to_store, translations, is_fuzzy, error,
-                 second_lang_code, form_is_writeable):
+                 plural_indices_to_store, translations, force_suggestion,
+                 error, second_lang_code, form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
         :param plural_indices_to_store: A dictionary that indicates whether
@@ -969,8 +971,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         :param translations: A dictionary indexed by plural form index;
             BaseTranslationView constructed it based on form-submitted
             translations.
-        :param is_fuzzy: A flag that notes current fuzzy flag overlaid with
-            the form-submitted.
+        :param force_suggestion: Should this be a suggestion even for editors.
         :param error: The error related to self.context submission or None.
         :param second_lang_code: The result of submiting
             field.alternative_value.
@@ -982,7 +983,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.plural_indices_to_store = plural_indices_to_store
         self.translations = translations
         self.error = error
-        self.is_fuzzy = is_fuzzy
+        self.force_suggestion = force_suggestion
         self.user_is_official_translator = (
             current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
@@ -1055,10 +1056,10 @@ class CurrentTranslationMessageView(LaunchpadView):
             translation_entry = {
                 'plural_index': index,
                 'current_translation': text_to_html(
-                    current_translation, self.context.potmsgset.flags()),
+                    current_translation, self.context.potmsgset.flags),
                 'submitted_translation': submitted_translation,
                 'imported_translation': text_to_html(
-                    imported_translation, self.context.potmsgset.flags()),
+                    imported_translation, self.context.potmsgset.flags),
                 'imported_translation_message': imported_translationmessage,
                 'suggestion_block': self.suggestion_blocks[index],
                 'suggestions_count': self.suggestions_count[index],
@@ -1182,10 +1183,11 @@ class CurrentTranslationMessageView(LaunchpadView):
                     'Suggestions', local, index))
             externally_used_suggestions = (
                 self._buildTranslationMessageSuggestions(
-                    'Used in', externally_used, index))
+                    'Used in', externally_used, index, legal_warning=True))
             externally_suggested_suggestions = (
                 self._buildTranslationMessageSuggestions(
-                    'Suggested in', externally_suggested, index))
+                    'Suggested in', externally_suggested, index,
+                    legal_warning=True))
             alternate_language_suggestions = (
                 self._buildTranslationMessageSuggestions(
                     alt_title, alt_submissions, index))
@@ -1200,7 +1202,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                 len(externally_suggested_suggestions.submissions) +
                 len(alternate_language_suggestions.submissions))
 
-    def _buildTranslationMessageSuggestions(self, title, suggestions, index):
+    def _buildTranslationMessageSuggestions(self, title, suggestions, index,
+                                            legal_warning=False):
         """Build filtered list of submissions to be shown in the view.
 
         `title` is the title for the suggestion type, `suggestions` is
@@ -1210,7 +1213,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             title, self.context,
             suggestions[:self.max_entries],
             self.user_is_official_translator, self.form_is_writeable,
-            index, self.seen_translations)
+            index, self.seen_translations, legal_warning=legal_warning)
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
@@ -1285,7 +1288,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         return text_to_html(
             self.context.pofile.prepareTranslationCredits(
                 self.context.potmsgset),
-            self.context.potmsgset.flags())
+            self.context.potmsgset.flags)
 
     @cachedproperty
     def sequence(self):
@@ -1298,7 +1301,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         """Return the singular form prepared to render in a web page."""
         return text_to_html(
             self.context.potmsgset.singular_text,
-            self.context.potmsgset.flags())
+            self.context.potmsgset.flags)
 
     @property
     def plural_text(self):
@@ -1308,7 +1311,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         """
         return text_to_html(
             self.context.potmsgset.plural_text,
-            self.context.potmsgset.flags())
+            self.context.potmsgset.flags)
 
     # XXX mpt 2006-09-15: Detecting tabs, newlines, and leading/trailing
     # spaces is being done one way here, and another way in the functions
@@ -1421,13 +1424,15 @@ class TranslationMessageSuggestions:
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form, seen_translations=set()):
+                 plural_form, seen_translations=None, legal_warning=False):
         self.title = title
         self.potmsgset = translation.potmsgset
         self.pofile = translation.pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
+        if seen_translations is None:
+            seen_translations = set()
 
         for submission in submissions:
             # XXX: JeroenVermeulen 2007-11-29 bug=165167: The second part of
@@ -1451,11 +1456,13 @@ class TranslationMessageSuggestions:
                 'plural_index': plural_form,
                 'suggestion_text': text_to_html(
                     submission.translations[plural_form],
-                    submission.potmsgset.flags()),
+                    submission.potmsgset.flags),
                 'potmsgset': submission.potmsgset,
                 'pofile': submission.pofile,
                 'person': submission.submitter,
                 'date_created': submission.date_created,
+                'legal_warning': legal_warning and (
+                    submission.origin == RosettaTranslationOrigin.SCM),
                 'suggestion_html_id':
                     self.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
                         submission.pofile.language.code, submission.id,

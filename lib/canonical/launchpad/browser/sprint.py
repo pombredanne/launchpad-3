@@ -7,15 +7,16 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
+    'SprintBreadcrumbBuilder',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
+    'SprintSetBreadcrumbBuilder',
     'SprintSetContextMenu',
     'SprintSetFacets',
     'SprintSetNavigation',
-    'SprintSetSOP',
     'SprintSetView',
     'SprintSpecificationsMenu',
     'SprintTopicSetView',
@@ -43,9 +44,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation)
 from canonical.widgets.date import DateTimeWidget
 
 
@@ -65,7 +65,11 @@ class SprintNavigation(Navigation):
 
     usedfor = ISprint
 
-    def breadcrumb(self):
+
+class SprintBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISprint`."""
+    @property
+    def text(self):
         return self.context.title
 
 
@@ -137,8 +141,10 @@ class SprintSetNavigation(GetitemNavigation):
 
     usedfor = ISprintSet
 
-    def breadcrumb(self):
-        return 'Meetings'
+
+class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISprintSet`."""
+    text = 'Meetings'
 
 
 class SprintSetFacets(StandardLaunchpadFacets):
@@ -146,21 +152,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
     usedfor = ISprintSet
     enable_only = ['overview', ]
-
-
-class SprintSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return 'Meetings and Sprints'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
 
 
 class SprintSetContextMenu(ContextMenu):
@@ -528,6 +519,10 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Arriving',
                  'Leaving')]
         for attendance in self.context.attendances:
+            time_zone = ''
+            location = attendance.attendee.location
+            if location is not None and location.visible:
+                time_zone = attendance.attendee.time_zone
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
                  in attendance.attendee.ircnicknames])))
@@ -544,7 +539,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  attendance.attendee.organization,
                  attendance.attendee.city,
                  country,
-                 attendance.attendee.time_zone,
+                 time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
         # CSV can't handle unicode, so we force encoding

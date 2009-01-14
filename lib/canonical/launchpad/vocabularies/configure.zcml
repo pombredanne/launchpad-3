@@ -1,303 +1,369 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <vocabulary
+  <utility
     name="Bounty"
-    factory="canonical.launchpad.vocabularies.BountyVocabulary"
+    component="canonical.launchpad.vocabularies.BountyVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Branch"
-    factory="canonical.launchpad.vocabularies.BranchVocabulary"
+    component="canonical.launchpad.vocabularies.BranchVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="BranchRestrictedOnProduct"
-    factory="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary"
+    component="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Bug"
-    factory="canonical.launchpad.vocabularies.BugVocabulary"
+    component="canonical.launchpad.vocabularies.BugVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="BugNominatableSerieses"
-    factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
+    component="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="BugTracker"
-    factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
+    component="canonical.launchpad.vocabularies.BugTrackerVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="BugWatch"
-    factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
+    component="canonical.launchpad.vocabularies.BugWatchVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
       name="Component"
-      factory="canonical.launchpad.vocabularies.ComponentVocabulary"
-      />
+      component="canonical.launchpad.vocabularies.ComponentVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+    />
 
-  <vocabulary
+  <utility
       name="CountryName"
-      factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
-      />
+      component="canonical.launchpad.vocabularies.CountryNameVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+    />
 
-  <vocabulary
+  <utility
     name="Distribution"
-    factory="canonical.launchpad.vocabularies.DistributionVocabulary"
+    component="canonical.launchpad.vocabularies.DistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="DistributionUsingMalone"
-    factory="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
+    component="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="DistroSeries"
-    factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
+    component="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FAQ"
-    factory="canonical.launchpad.vocabularies.FAQVocabulary"
+    component="canonical.launchpad.vocabularies.FAQVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FeaturedProject"
-    factory="canonical.launchpad.vocabularies.FeaturedProjectVocabulary"
+    component="canonical.launchpad.vocabularies.FeaturedProjectVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FilteredDeltaLanguagePack"
-    factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    component="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-   <vocabulary
+   <utility
     name="FilteredDistroArchSeries"
-    factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
+    component="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FilteredDistroSeries"
-    factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
+    component="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FilteredFullLanguagePack"
-    factory="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    component="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FilteredLanguagePack"
-    factory="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
+    component="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FilteredProductSeries"
-    factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
+    component="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="FutureSprint"
-    factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
+    component="canonical.launchpad.vocabularies.FutureSprintVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="KarmaCategory"
-    factory="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
+    component="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Language"
-    factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+    component="canonical.launchpad.vocabularies.LanguageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="TranslatableLanguage"
-    factory="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
+    component="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Milestone"
-    factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
+    component="canonical.launchpad.vocabularies.MilestoneVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="NonMergedPeopleAndTeams"
-    factory="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
+    component="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="PackageRelease"
-    factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
+    component="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="PersonAccountToMerge"
-    factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
+    component="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="PersonActiveMembership"
-    factory="canonical.launchpad.vocabularies.PersonActiveMembershipVocabulary"
+    component="canonical.launchpad.vocabularies.PersonActiveMembershipVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="PersonTeamParticipations"
-    factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
+    component="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="PPA"
-    factory="canonical.launchpad.vocabularies.PPAVocabulary"
+    component="canonical.launchpad.vocabularies.PPAVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Product"
-    factory="canonical.launchpad.vocabularies.ProductVocabulary"
+    component="canonical.launchpad.vocabularies.ProductVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ProductRelease"
-    factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
+    component="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ProductSeries"
-    factory="canonical.launchpad.vocabularies.ProductSeriesVocabulary"
+    component="canonical.launchpad.vocabularies.ProductSeriesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Project"
-    factory="canonical.launchpad.vocabularies.ProjectVocabulary"
+    component="canonical.launchpad.vocabularies.ProjectVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ProjectProducts"
-    factory="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    component="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ProjectProductsUsingMalone"
-    factory="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
+    component="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Specification"
-    factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
+    component="canonical.launchpad.vocabularies.SpecificationVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="SpecificationDependencies"
-    factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
+    component="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="SpecificationDepCandidates"
-    factory="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
+    component="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="CommercialProjects"
-    factory="canonical.launchpad.vocabularies.CommercialProjectsVocabulary"
+    component="canonical.launchpad.vocabularies.CommercialProjectsVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Sprint"
-    factory="canonical.launchpad.vocabularies.SprintVocabulary"
+    component="canonical.launchpad.vocabularies.SprintVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="TimezoneName"
-    factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+    component="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="TranslationGroup"
-    factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
+    component="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="TranslationMessage"
-    factory="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
+    component="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
+    name="TranslationTemplate"
+    component="canonical.launchpad.vocabularies.TranslationTemplateVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
+
+  <utility
     name="UserTeamsParticipation"
-    factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    component="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="UserTeamsParticipationPlusSelf"
-    factory="canonical.launchpad.vocabularies.user_public_team_participations_and_self_vocabulary_factory"
+    component="canonical.launchpad.vocabularies.UserTeamsParticipationPlusSelfVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ActiveMailingList"
-    factory="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
+    component="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidPersonOrTeam"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    component="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidAssignee"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    component="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidMaintainer"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    component="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidOwner"
-    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    component="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidTeam"
-    factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
+    component="canonical.launchpad.vocabularies.ValidTeamVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidPerson"
-    factory="canonical.launchpad.vocabularies.ValidPersonVocabulary"
+    component="canonical.launchpad.vocabularies.ValidPersonVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidTeamMember"
-    factory="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
+    component="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ValidTeamOwner"
-    factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
+    component="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="Processor"
-    factory="canonical.launchpad.vocabularies.ProcessorVocabulary"
+    component="canonical.launchpad.vocabularies.ProcessorVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="ProcessorFamily"
-    factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
+    component="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="DistributionOrProduct"
-    factory="canonical.launchpad.vocabularies.DistributionOrProductVocabulary"
+    component="canonical.launchpad.vocabularies.DistributionOrProductVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <vocabulary
+  <utility
     name="DistributionOrProductOrProject"
-    factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
+    component="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
 </configure>

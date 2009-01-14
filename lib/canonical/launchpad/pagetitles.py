@@ -193,7 +193,9 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
-branchmergeproposal_edit = 'Edit proposal to merge branch'
+branchmergeproposal_edit = ViewLabel()
+
+branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'
 
@@ -204,6 +206,8 @@ branchmergeproposal_request_review = ViewLabel()
 branchmergeproposal_resubmit = ViewLabel()
 
 branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_vote = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
 
@@ -250,6 +254,9 @@ def bug_extref_edit(context, view):
         context.bug.id, context.title)
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
+
+bug_mark_as_affecting_user = ContextBugId(
+    'Bug #%d - does this bug affect you?')
 
 bug_nominate_for_series = ViewLabel()
 
@@ -441,6 +448,9 @@ codereviewcomment_index = 'Code review comment'
 
 codereviewcomment_reply = 'Reply to code review comment'
 
+def contact_user(context, view):
+    return view.specific_contact_title_text
+
 cveset_all = 'All CVE entries registered in Launchpad'
 
 cveset_index = 'Launchpad CVE tracker'
@@ -468,6 +478,8 @@ distributionmirror_review = ContextTitle('Review mirror %s')
 distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
+
+distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
@@ -508,6 +520,8 @@ distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
+
+distributionsourcepackage_edit = ContextTitle("Edit details of %s")
 
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
@@ -663,11 +677,6 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 # launchpad_css is a css file
 
 # launchpad_js is standard javascript
-
-# XXX: kiko 2005-09-29:
-# The general form is a fallback form; I'm not sure why it is
-# needed, nor why it needs a pagetitle, but I can't debug this today.
-launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
 
 launchpad_invalidbatchsize = "Invalid Batch Size"
 
@@ -888,6 +897,8 @@ person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 person_editlanguages = ContextDisplayName(
     smartquote("%s's preferred languages"))
 
+person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
+
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
@@ -1052,6 +1063,8 @@ product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
+productrelease_delete = ContextTitle('Delete %s in Launchpad')
+
 productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
@@ -1072,6 +1085,8 @@ productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
+
+productseries_review = ContextTitle('Review %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -1213,6 +1228,8 @@ shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
 
+shipit_index_edubuntu = 'Getting Edubuntu'
+
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
@@ -1305,12 +1322,6 @@ specification_dependency = 'Create a blueprint dependency'
 
 specification_deptree = 'Complete dependency tree'
 
-specification_milestone = 'Target feature to milestone'
-
-specification_people = 'Change blueprint assignee, drafter, and reviewer'
-
-specification_priority = 'Change blueprint priority'
-
 specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
@@ -1324,8 +1335,6 @@ specification_requestfeedback = 'Request feedback on this blueprint'
 specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
-
-specification_status = 'Edit blueprint status'
 
 specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
 
@@ -1410,6 +1419,11 @@ team_leave = ContextBrowsername('Leave %s')
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
+
+team_mailinglist_subscribers = ContextBrowsername(
+    'Mailing list subscribers for the %s team')
+
+team_map = ContextBrowsername('Map of %s participants')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 

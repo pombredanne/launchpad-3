@@ -11,6 +11,7 @@ __all__ = [
     'SSHADigestEncryptor',
     ]
 
+
 import binascii
 import random
 import sha
@@ -23,7 +24,7 @@ from zope.event import notify
 
 from zope.security.proxy import removeSecurityProxy
 
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
@@ -97,7 +98,7 @@ class PlacelessAuthUtility:
                 return None
 
     def authenticate(self, request):
-        """See IAuthenticationService."""
+        """See IAuthenticationUtility."""
         # To avoid confusion (hopefully), basic auth trumps cookie auth
         # totally, and all the time.  If there is any basic auth at all,
         # then cookie auth won't even be considered.
@@ -119,22 +120,22 @@ class PlacelessAuthUtility:
                 return None
 
     def unauthenticatedPrincipal(self):
-        """See IAuthenticationService."""
+        """See IAuthenticationUtility."""
         return self.nobody
 
     def unauthorized(self, id, request):
-        """See IAuthenticationService."""
+        """See IAuthenticationUtility."""
         a = ILoginPassword(request)
         # TODO maybe configure the realm from zconfigure.
         a.needLogin(realm="launchpad")
 
     def getPrincipal(self, id):
-        """See IAuthenticationService."""
+        """See IAuthenticationUtility."""
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipal(id)
 
     def getPrincipals(self, name):
-        """See IAuthenticationService."""
+        """See IAuthenticationUtility."""
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipals(name)
 

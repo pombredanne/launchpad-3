@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0404
+# (Suppress warning about two datetimes being imported)
 #
 # Contains code from msgfmt.py (available from python source code),
 #     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
@@ -20,7 +22,7 @@ import logging
 import pytz
 from email.Utils import parseaddr
 from zope.interface import implements
-from zope.app import datetimeutils
+from zope import datetime as zope_datetime
 
 from canonical.launchpad.interfaces import (
     ITranslationHeaderData, TooManyPluralFormsError, TranslationConstants,
@@ -298,15 +300,15 @@ class POHeader:
             elif key == 'pot-creation-date':
                 try:
                     self.template_creation_date = (
-                        datetimeutils.parseDatetimetz(value))
-                except datetimeutils.DateTimeError:
+                        zope_datetime.parseDatetimetz(value))
+                except zope_datetime.DateTimeError:
                     # We couldn't parse it, leave current default value.
                     pass
             elif key == 'po-revision-date':
                 try:
                     self.translation_revision_date = (
-                        datetimeutils.parseDatetimetz(value))
-                except datetimeutils.DateTimeError:
+                        zope_datetime.parseDatetimetz(value))
+                except zope_datetime.DateTimeError:
                     # We couldn't parse it.
                     self.translation_revision_date = None
             elif key == 'last-translator':
@@ -319,8 +321,8 @@ class POHeader:
                 # too so old exports will still work.
                 try:
                     self.launchpad_export_date = (
-                        datetimeutils.parseDatetimetz(value))
-                except datetimeutils.DateTimeError:
+                        zope_datetime.parseDatetimetz(value))
+                except zope_datetime.DateTimeError:
                     self.launchpad_export_date = None
             else:
                 # We don't use the other keys.
@@ -573,10 +575,17 @@ class POParser(object):
         if line is None:
             if (self._translation_file.header is None and
                 not self._message.msgid_singular):
-                # Seems like the file has only the header without any message,
-                # we parse it.
+                # This file contains no actual messages.
                 self._dumpCurrentSection()
-                self._parseHeader()
+
+                # It may contain a header though.
+                if not self._message.translations:
+                    raise TranslationFormatSyntaxError(
+                        message="File contains no messages.")
+                self._parseHeader(
+                    self._message.translations[
+                        TranslationConstants.SINGULAR_FORM],
+                    self._message.comment)
 
             # There is nothing left to parse.
             return self._translation_file
@@ -633,12 +642,10 @@ class POParser(object):
             self._messageids.add(msgkey)
             self._message = None
 
-    def _parseHeader(self):
+    def _parseHeader(self, header_text, header_comment):
         try:
             self._translation_file.header = POHeader(
-                self._message.translations[
-                    TranslationConstants.SINGULAR_FORM],
-                self._message.comment)
+                header_text, header_comment)
         except TranslationFormatInvalidInputError, error:
             if error.line_number is None:
                 error.line_number = self._message_lineno
@@ -901,11 +908,15 @@ class POParser(object):
             to the line's section.  Otherwise, None.
         """
         is_obsolete = False
-        if line[:2] == '#~':
-            is_obsolete = True
-            line = line[2:].lstrip()
-            if len(line) == 0:
+        if line.startswith('#~'):
+            if line.startswith('#~|'):
+                # This is an old msgid for an obsolete message.
                 return None
+            else:
+                is_obsolete = True
+                line = line[2:].lstrip()
+                if len(line) == 0:
+                    return None
 
         # If we get a comment line after a msgstr or a line starting with
         # msgid or msgctxt, this is a new entry.
@@ -921,7 +932,10 @@ class POParser(object):
                 # When there is no msgid in the parsed message, it's the
                 # header for this file.
                 self._dumpCurrentSection()
-                self._parseHeader()
+                self._parseHeader(
+                    self._message.translations[
+                        TranslationConstants.SINGULAR_FORM],
+                    self._message.comment)
             else:
                 logging.warning(
                     POSyntaxWarning(self._lineno, 'We got a second header.'))

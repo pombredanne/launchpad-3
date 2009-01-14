@@ -7,29 +7,38 @@ data and for the community test submissions.
 """
 
 
-__all__ = ['SubmissionParser']
+__all__ = [
+           'SubmissionParser',
+           'process_pending_submissions',
+          ]
 
 
+import bz2
 from cStringIO import StringIO
 from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
-
-try:
-    import xml.elementtree.cElementTree as etree
-except ImportError:
-    try:
-        import cElementTree as etree
-    except ImportError:
-        import elementtree.ElementTree as etree
+import sys
+import cElementTree as etree
 
 import pytz
+
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.lazr.xml import RelaxNGValidator
 
 from canonical.config import config
-from canonical.launchpad.interfaces.hwdb import HWBus
+from canonical.launchpad.interfaces.hwdb import (
+    HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
+    IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
+    IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -73,7 +82,7 @@ DB_FORMAT_FOR_PRODUCT_ID = {
     'scsi': '%-16s',
     }
 
-class SubmissionParser:
+class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
 
     def __init__(self, logger=None):
@@ -536,6 +545,13 @@ class SubmissionParser:
             parser = self._parse_software_section[node.tag]
             result = parser(node)
             software_data[node.tag] = result
+        # The nodes <packages> and <xorg> are optional. Ensure that
+        # we have dummy entries in software_data for these nodes, if
+        # the nodes do not appear in a submission in order to avoid
+        # KeyErrors elsewhere in this module.
+        for node_name in ('packages', 'xorg'):
+            if node_name not in software_data:
+                software_data[node_name] = {}
         return software_data
 
     def _parseQuestions(self, questions_node):
@@ -924,19 +940,57 @@ class SubmissionParser:
                 WARNING_NO_HAL_KERNEL_VERSION)
             return None
         kernel_package_name = 'linux-image-' + kernel_version
-        if 'packages' not in self.parsed_data['software']:
-            # The RelaxNG schema does not require package data.
-            return None
         packages = self.parsed_data['software']['packages']
-        if kernel_package_name not in packages:
+        # The submission is not required to provide any package data...
+        if packages and kernel_package_name not in packages:
+            # ...but if we have it, we want it to be consistent with
+            # the HAL root node property.
             self._logWarning(
                 'Inconsistent kernel version data: According to HAL the '
                 'kernel is %s, but the submission does not know about a '
-                'kernel package %s' % (kernel_version, kernel_package_name),
+                'kernel package %s'
+                % (kernel_version, kernel_package_name),
                 WARNING_NO_HAL_KERNEL_VERSION)
             return None
         return kernel_package_name
 
+    def processSubmission(self, submission):
+        """Process a submisson.
+
+        :return: True, if the submission could be sucessfully processed,
+            otherwise False.
+        :param submission: An IHWSubmission instance.
+        """
+        raw_submission = submission.raw_submission
+        raw_submission.open()
+        submission_data = raw_submission.read()
+        raw_submission.close()
+        # We assume that the data has been sent bzip2-compressed,
+        # but this is not checked when the data is submitted.
+        expanded_data = None
+        try:
+            expanded_data = bz2.decompress(submission_data)
+        except IOError:
+            # An IOError is raised, if the data is not BZip2-compressed.
+            # We assume in this case that valid uncompressed data has been
+            # submitted. If this assumption is wrong, parseSubmission()
+            # or checkConsistency() will complain, hence we don't check
+            # anything else here.
+            pass
+        if expanded_data is not None:
+            submission_data = expanded_data
+
+        parsed_data = self.parseSubmission(
+            submission_data, submission.submission_key)
+        if parsed_data is None:
+            return False
+        self.parsed_data = parsed_data
+        if not self.checkConsistency(parsed_data):
+            return False
+        self.buildDeviceList(parsed_data)
+        root_device = self.hal_devices[ROOT_UDI]
+        root_device.createDBData(submission, None)
+        return True
 
 class HALDevice:
     """The representation of a HAL device node."""
@@ -982,7 +1036,8 @@ class HALDevice:
         """The UDI of the parent device."""
         return self.getProperty('info.parent')
 
-    # Translation of the HAL info.bus property to HWBus enumerated buses.
+    # Translation of the HAL info.bus/info.subsystem property to HWBus
+    # enumerated buses.
     hal_bus_hwbus = {
         'pcmcia': HWBus.PCMCIA,
         'usb_device': HWBus.USB,
@@ -1010,7 +1065,7 @@ class HALDevice:
         }
 
     def translateScsiBus(self):
-        """Return the real bus of a device where info.bus=='scsi'.
+        """Return the real bus of a device where raw_bus=='scsi'.
 
         The kernel uses the SCSI layer to access storage devices
         connected via the USB, IDE, SATA buses. See `is_real_device`
@@ -1031,7 +1086,7 @@ class HALDevice:
                 'Found SCSI device without a grandparent: %s.' % self.udi)
             return None
 
-        grandparent_bus = grandparent.getProperty('info.bus')
+        grandparent_bus = grandparent.raw_bus
         if grandparent_bus == 'pci':
             if (grandparent.getProperty('pci.device_class')
                 != PCI_CLASS_STORAGE):
@@ -1055,8 +1110,8 @@ class HALDevice:
             #   interface class 8, interface subclass 6
             #   (see http://www.usb.org/developers/devclass_docs
             #   /usb_msc_overview_1.2.pdf)
-            # - HAL node for the (fake) SCSI host. info.bus n/a
-            # - HAL node for the (fake) SCSI device. info.bus == 'scsi'
+            # - HAL node for the (fake) SCSI host. raw_bus is None
+            # - HAL node for the (fake) SCSI device. raw_bus == 'scsi'
             # - HAL node for the mass storage device
             #
             # Physically, the storage device can be:
@@ -1110,13 +1165,34 @@ class HALDevice:
         'scsi': translateScsiBus,
         }
 
-    def getBus(self):
+    @property
+    def raw_bus(self):
+        """Return the device bus as specified by HAL.
+
+        Older versions of HAL stored this value in the property
+        info.bus; newer versions store it in info.subsystem.
+        """
+        # Note that info.bus is gone for all devices except the
+        # USB bus. For USB devices, the property info.bus returns more
+        # detailed data: info.subsystem has the value 'usb' for all
+        # HAL nodes belonging to USB devices, while info.bus has the
+        # value 'usb_device' for the root node of a USB device, and the
+        # value 'usb' for sub-nodes of a USB device. We use these
+        # different value to to find the root USB device node, hence
+        # try to read info.bus first.
+        result = self.getProperty('info.bus')
+        if result is not None:
+            return result
+        return self.getProperty('info.subsystem')
+
+    @property
+    def real_bus(self):
         """Return the bus this device connects to on the host side.
 
         :return: A bus as enumerated in HWBus or None, if the bus
             cannot be determined.
         """
-        device_bus = self.getProperty('info.bus')
+        device_bus = self.raw_bus
         result = self.hal_bus_hwbus.get(device_bus)
         if result is not None:
             return result
@@ -1216,8 +1292,8 @@ class HALDevice:
           These sub-devices can be identified by the device class their
           parent and by their USB vendor/product IDs, which are 0:0.
         """
-        bus = self.getProperty('info.bus')
-        if bus in (None, 'usb'):
+        bus = self.raw_bus
+        if bus in (None, 'usb', 'ssb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
@@ -1232,6 +1308,10 @@ class HALDevice:
             # info.bus == 'usb' is used for end points of USB devices;
             # the root node of a USB device has info.bus == 'usb_device'.
             #
+            # info.bus == 'ssb' is used for "aspects" of Broadcom
+            # Ethernet and WLAN devices, but like 'usb', they do not
+            # represent separate devices.
+            #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
             return self.udi == ROOT_UDI
@@ -1241,10 +1321,10 @@ class HALDevice:
             if vendor_id == 0 and product_id == 0:
                 # double-check: The parent device should be a PCI host
                 # controller, identifiable by its device class and subclass.
-                # XXX Abel Deuring 20080428: This ignores other possible
-                # bridges, like ISA->USB. Bug 237039.
+                # XXX Abel Deuring 2008-04-28 Bug=237039: This ignores other
+                # possible bridges, like ISA->USB..
                 parent = self.parent
-                parent_bus = parent.getProperty('info.bus')
+                parent_bus = parent.raw_bus
                 parent_class = parent.getProperty('pci.device_class')
                 parent_subclass = parent.getProperty('pci.device_subclass')
                 if (parent_bus == 'pci'
@@ -1259,8 +1339,8 @@ class HALDevice:
                     return False
             return True
         elif bus == 'scsi':
-            # Ensure consistency with HALDevice.getBus()
-            return self.getBus() is not None
+            # Ensure consistency with HALDevice.real_bus
+            return self.real_bus is not None
         else:
             return True
 
@@ -1286,7 +1366,7 @@ class HALDevice:
                 # devices are at present simply dropped from the list of
                 # devices. Otherwise, we'd pollute the HWDB with
                 # unreliable data. Bug 237044.
-                if sub_device.getProperty('info.bus') != 'ieee1394':
+                if sub_device.raw_bus != 'ieee1394':
                     result.append(sub_device)
             else:
                 result.extend(sub_device.getRealChildren())
@@ -1299,7 +1379,7 @@ class HALDevice:
         Devices are identifed by (bus, vendor_id, product_id).
         At present we cannot generate reliable vendor and/or product
         IDs for devices where
-        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia').
+        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc').
 
         info.bus == 'platform' is used for devices like the i8042
         which controls keyboard and mouse; HAL has no vendor
@@ -1309,6 +1389,14 @@ class HALDevice:
         info.bus == 'pnp' is used for components like the ancient
         AT DMA controller or the keyboard. Like for the bus
         'platform', HAL does not provide any vendor data.
+
+        info.bus == 'mmc' is used for SD/MMC cards. We do not not
+        have at present enough background information to properly
+        extract a vendor and product ID from these cards.
+
+        info.bus == 'misc' and info.bus == 'unknown' are obviously
+        not very useful, except for the computer itself, which has
+        the bus 'unknown'.
 
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
@@ -1328,9 +1416,73 @@ class HALDevice:
         "O2Micro" or "ATMEL", but sometimes useless values like
         "IEEE 802.11b". See for example
         drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
+
+        Provided that a device is not excluded by the above criteria,
+        ensure that we have vendor ID, product ID and product name.
         """
-        bus = self.getProperty('info.bus')
-        return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
+        bus = self.raw_bus
+        if bus == 'unknown' and self.udi != ROOT_UDI:
+            # The root node is course a real device; storing data
+            # about other devices with the bus "unkown" is pointless.
+            return False
+        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc', 'misc'):
+            return False
+
+        # We identify devices by bus, vendor ID and product ID;
+        # additionally, we need a product name. If any of these
+        # are not available, we can't store information for this
+        # device.
+        if (self.real_bus is None or self.vendor_id is None
+            or self.product_id is None or self.product is None):
+            # Many IDE devices don't provide useful vendor and product
+            # data. We don't want to clutter the log with warnings
+            # about this problem -- there is nothing we can do to fix
+            # it.
+            if self.real_bus != HWBus.IDE:
+                self.parser._logWarning(
+                    'A HALDevice that is supposed to be a real device does '
+                    'not provide bus, vendor ID, product ID or product name: '
+                    '%r %r %r %r %s'
+                    % (self.real_bus, self.vendor_id, self.product_id,
+                       self.product, self.udi),
+                    self.parser.submission_key)
+            return False
+        return True
+
+    def getScsiVendorAndModelName(self):
+        """Separate vendor and model name of SCSI decvices.
+
+        SCSI devcies are identified by an 8 charcter vendor name
+        and an 16 character model name. The Linux kernel use the
+        the SCSI command set to access block devices connected
+        via USB, IEEE1394 and ATA buses too.
+
+        For ATA disks, the Linux kernel sets the vendor name to "ATA"
+        and prepends the model name with the real vendor name, but only
+        if the combined length if not larger than 16. Otherwise the
+        real vendor name is omitted.
+
+        This method provides a safe way to retrieve the  the SCSI vendor
+        and model name.
+
+        If the vendor name is 'ATA', and if the model name contains
+        at least one ' ' character, the string before the first ' ' is
+        returned as the vendor name, and the the string after the first
+        ' ' is returned as the model name.
+
+        In all other cases, vendor and model name are returned unmodified.
+        """
+        vendor = self.getProperty('scsi.vendor')
+        if vendor == 'ATA':
+            # The assumption below that the vendor name does not
+            # contain any spaces is not necessarily correct, but
+            # it is hard to find a better heuristic to separate
+            # the vendor name from the product name.
+            splitted_name = self.getProperty('scsi.model').split(' ', 1)
+            if len(splitted_name) < 2:
+                return 'ATA', splitted_name[0]
+            return splitted_name
+        return (vendor, self.getProperty('scsi.model'))
 
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
@@ -1343,35 +1495,18 @@ class HALDevice:
         assert type_ in ('vendor', 'product'), (
             'Unexpected value of type_: %r' % type_)
 
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         if self.udi == ROOT_UDI:
             # HAL sets info.product to "Computer", provides no property
-            # info.vendor and info.bus is "unknown", hence the logic
+            # info.vendor and raw_bus is "unknown", hence the logic
             # below does not work properly.
             return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
+            vendor, product = self.getScsiVendorAndModelName()
             if type_ == 'vendor':
-                result = self.getProperty('scsi.vendor').strip()
-                if result == 'ATA':
-                    # A weirdness of the kernel's SCSI emulation layer
-                    # for the IDE and SATA busses: The HAL property
-                    # scsi.vendor is always 'ATA', and the vendor name
-                    # is stored as the first part of the SCSI model
-                    # string.
-                    #
-                    # The assumption below that the vendor name does not
-                    # contain any spaces is not necessarily correct, but
-                    # it is hard to find a better heuristic to separate
-                    # the vendor name from the product name.
-                    return self.getProperty('scsi.model').split(' ', 1)[0]
-                return result
+                return vendor
             else:
-                # What is called elsewhere "product", is called "model"
-                # for the SCSI bus.
-                result = self.getProperty('scsi.model').strip()
-                if self.getProperty('scsi.vendor') == 'ATA':
-                    return result.split(' ', 1)[1]
-                return result
+                return product
         else:
             result = self.getProperty('info.' + type_)
             if result is None:
@@ -1402,7 +1537,7 @@ class HALDevice:
         """
         assert type_ in ('vendor', 'product'), (
             'Unexpected value of type_: %r' % type_)
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         if self.udi == ROOT_UDI:
             # HAL does not provide IDs for a system itself, we use the
             # vendor resp. product name instead.
@@ -1443,7 +1578,7 @@ class HALDevice:
 
         The SCSI vendor name is right-padded with spaces to 8 bytes.
         """
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         format = DB_FORMAT_FOR_VENDOR_ID.get(bus)
         if format is None:
             return self.vendor_id
@@ -1459,9 +1594,208 @@ class HALDevice:
 
         The SCSI product name is right-padded with spaces to 16 bytes.
         """
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         format = DB_FORMAT_FOR_PRODUCT_ID.get(bus)
         if format is None:
             return self.product_id
         else:
             return format % self.product_id
+
+    def getDriver(self):
+        """Return the HWDriver instance associated with this device.
+
+        Create a HWDriver record, if it does not already exist.
+        """
+        # HAL and the HWDB client know at present only about kernel
+        # drivers, so there is currently no need to search for
+        # for user space printer drivers, for example.
+        driver_name = self.getProperty('info.linux.driver')
+        if driver_name is not None:
+            kernel_package_name = self.parser.getKernelPackageName()
+            db_driver_set = getUtility(IHWDriverSet)
+            return db_driver_set.getOrCreate(kernel_package_name, driver_name)
+        else:
+            return None
+
+    def ensureVendorIDVendorNameExists(self):
+        """Ensure that a useful HWVendorID record for self.vendor_id exists.
+
+        A vendor ID is associated with a vendor name. For many devices
+        we rely on the information from the submission to create this
+        association in the HWVendorID table.
+
+        We do _not_ use the submitted vendor name for USB, PCI and
+        PCCard devices, because we can get them from independent
+        sources. See l/c/l/doc/hwdb-device-tables.txt.
+        """
+        bus = self.real_bus
+        if (self.vendor is not None and
+            bus not in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
+            hw_vendor_id_set = getUtility(IHWVendorIDSet)
+            hw_vendor_id = hw_vendor_id_set.getByBusAndVendorID(
+                bus, self.vendor_id_for_db)
+            if hw_vendor_id is None:
+                hw_vendor_name_set = getUtility(IHWVendorNameSet)
+                hw_vendor_name = hw_vendor_name_set.getByName(self.vendor)
+                if hw_vendor_name is None:
+                    hw_vendor_name = hw_vendor_name_set.create(self.vendor)
+                hw_vendor_id_set.create(
+                    self.real_bus, self.vendor_id_for_db, hw_vendor_name)
+
+    def createDBData(self, submission, parent_submission_device):
+        """Create HWDB records for this HAL device and its children.
+
+        A HWDevice record for (bus, vendor ID, product ID) of this
+        device and a HWDeviceDriverLink record (device, None) are
+        created, if they do not already exist.
+
+        A HWSubmissionDevice record is created for (HWDeviceDriverLink,
+        submission).
+
+        HWSubmissionDevice records and missing HWDeviceDriverLink
+        records for known drivers of this device are created.
+
+        createDBData is called recursively for all real child devices.
+
+        This method may only be called, if self.real_device == True.
+        """
+        assert self.is_real_device, ('HALDevice.createDBData must be called '
+                                     'for real devices only.')
+        if not self.has_reliable_data:
+            return
+        bus = self.real_bus
+        vendor_id = self.vendor_id_for_db
+        product_id = self.product_id_for_db
+        product_name = self.product
+
+        self.ensureVendorIDVendorNameExists()
+
+        db_device = getUtility(IHWDeviceSet).getOrCreate(
+            bus, vendor_id, product_id, product_name)
+        # Create a HWDeviceDriverLink record without an associated driver
+        # for each real device. This will allow us to relate tests and
+        # bugs to a device in general as well as to a specific
+        # combination of a device and a driver.
+        device_driver_link = getUtility(IHWDeviceDriverLinkSet).getOrCreate(
+            db_device, None)
+        submission_device = getUtility(IHWSubmissionDeviceSet).create(
+            device_driver_link, submission, parent_submission_device,
+            self.id)
+        self.createDBDriverData(submission, db_device, submission_device)
+
+    def createDBDriverData(self, submission, db_device, submission_device):
+        """Create HWDB records for drivers of this device and its children.
+
+        This method creates HWDeviceDriverLink and HWSubmissionDevice
+        records for this device and its children.
+        """
+        driver = self.getDriver()
+        if driver is not None:
+            device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+            device_driver_link = device_driver_link_set.getOrCreate(
+                db_device, driver)
+            submission_device = getUtility(IHWSubmissionDeviceSet).create(
+                device_driver_link, submission, submission_device, self.id)
+        for sub_device in self.children:
+            if sub_device.is_real_device:
+                sub_device.createDBData(submission, submission_device)
+            else:
+                sub_device.createDBDriverData(submission, db_device,
+                                              submission_device)
+
+
+class ProcessingLoop(object):
+    """An `ITunableLoop` for processing HWDB submissions."""
+
+    implements(ITunableLoop)
+
+    def __init__(self, transaction, logger, max_submissions):
+        self.transaction = transaction
+        self.logger = logger
+        self.max_submissions = max_submissions
+        self.valid_submissions = 0
+        self.invalid_submissions = 0
+        self.finished = False
+        self.janitor = getUtility(ILaunchpadCelebrities).janitor
+
+    def _validateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.PROCESSED
+        self.valid_submissions += 1
+
+    def _invalidateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.INVALID
+        self.invalid_submissions += 1
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        return self.finished
+
+    def __call__(self, chunk_size):
+        """Process a batch of yet unprocessed HWDB submissions."""
+        # chunk_size is a float; we compare it below with an int value,
+        # which can lead to unexpected results. Since it is also used as
+        # a limit for an SQL query, convert it into an integer.
+        chunk_size = int(chunk_size)
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.SUBMITTED,
+            user=self.janitor
+            )[:chunk_size]
+        # Listify the submissions, since we'll have to loop over each
+        # one anyway. This saves a COUNT query for getting the number of
+        # submissions
+        submissions = list(submissions)
+        if len(submissions) < chunk_size:
+            self.finished = True
+        for submission in submissions:
+            try:
+                parser = SubmissionParser(self.logger)
+                success = parser.processSubmission(submission)
+                if success:
+                    self._validateSubmission(submission)
+                else:
+                    self._invalidateSubmission(submission)
+            except (KeyboardInterrupt, SystemExit):
+                # We should never catch these exceptions.
+                raise
+            except Exception, error:
+                info = sys.exc_info()
+                message = (
+                    'Exception while processing HWDB submission %s'
+                    % submission.submission_key)
+                properties = [('error-explanation', message)]
+                request = ScriptRequest(properties)
+                error_utility = ErrorReportingUtility()
+                error_utility.raising(info, request)
+                self.logger.error('%s (%s)' % (message, request.oopsid))
+
+                self.transaction.abort()
+                self._invalidateSubmission(submission)
+                # Ensure that this submission is marked as bad, even if
+                # further submissions in this batch raise an exception.
+                self.transaction.commit()
+
+            if self.max_submissions is not None:
+                if self.max_submissions <= (
+                    self.valid_submissions + self.invalid_submissions):
+                    self.finished = True
+                    break
+        self.transaction.commit()
+
+def process_pending_submissions(transaction, logger, max_submissions=None):
+    """Process pending submissions.
+
+    Parse pending submissions, store extracted data in HWDB tables and
+    mark them as either PROCESSED or INVALID.
+    """
+    loop = ProcessingLoop(transaction, logger, max_submissions)
+    # It is hard to predict how long it will take to parse a submission.
+    # we don't want to last a DB transaction too long but we also
+    # don't want to commit more often than necessary. The LoopTuner
+    # handles this for us. The loop's run time will be approximated to
+    # 2 seconds, but will never handle more than 50 submissions.
+    loop_tuner = LoopTuner(
+                loop, 2, minimum_chunk_size=1, maximum_chunk_size=50)
+    loop_tuner.run()
+    logger.info(
+        'Processed %i valid and %i invalid HWDB submissions'
+        % (loop.valid_submissions, loop.invalid_submissions))

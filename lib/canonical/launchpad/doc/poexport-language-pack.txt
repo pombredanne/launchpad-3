@@ -69,8 +69,7 @@ set to None.
     ...     component='main',
     ...     force_utf8=True,
     ...     output_file=None,
-    ...     logger=logger,
-    ...     cache_clear_interval=5)
+    ...     logger=logger)
     >>> transaction.commit()
 
 Check that the log looks ok.
@@ -292,8 +291,8 @@ on 2000/01/01.
     >>> pofile_es = template.newPOFile('es')
     >>> translations = { 0: u'blah (es)' }
     >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_es, mark, translations, is_fuzzy=False,
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     pofile_es, mark, translations, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> new_translation_message.date_reviewed = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
@@ -302,8 +301,8 @@ Create a Welsh PO file, with an active translation submission created on
     >>> pofile_cy = template.newPOFile('cy')
     >>> translations = { 0: u'blah (cy)' }
     >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_cy, mark, translations, is_fuzzy=False,
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     pofile_cy, mark, translations, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> new_translation_message.date_reviewed = d2000_01_03
     >>> transaction.commit()
 
@@ -320,8 +319,7 @@ PO files.
     ...     component=None,
     ...     force_utf8=True,
     ...     output_file=None,
-    ...     logger=logger,
-    ...     cache_clear_interval=2)
+    ...     logger=logger)
     >>> transaction.commit()
 
 Check that the log looks ok.

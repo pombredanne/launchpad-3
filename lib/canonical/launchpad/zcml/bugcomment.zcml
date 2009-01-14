@@ -6,11 +6,11 @@
 
   <facet facet="bugs">
 
-    <content class="canonical.launchpad.browser.bugcomment.BugComment">
+    <class class="canonical.launchpad.browser.bugcomment.BugComment">
       <allow
           interface="canonical.launchpad.interfaces.IBugComment"
           />
-    </content>
+    </class>
 
     <browser:page
         for="*"

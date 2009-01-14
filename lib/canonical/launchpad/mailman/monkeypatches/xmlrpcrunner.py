@@ -21,6 +21,7 @@ from cStringIO import StringIO
 from Mailman import Errors
 from Mailman import Utils
 from Mailman import mm_cfg
+from Mailman.LockFile import TimeOutError
 from Mailman.Logging.Syslog import syslog
 from Mailman.MailList import MailList
 from Mailman.Queue.Runner import Runner
@@ -111,6 +112,7 @@ class XMLRPCRunner(Runner):
             self._check_list_actions()
             self._get_subscriptions()
             self._check_held_messages()
+        # pylint: disable-msg=W0702
         except:
             # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')
@@ -182,98 +184,129 @@ class XMLRPCRunner(Runner):
             except xmlrpclib.Fault, error:
                 log_exception('Launchpad exception: %s', error)
 
+    def _update_list_subscriptions(self, list_name, subscription_info):
+        """Update the subscription information for a single mailing list.
+
+        :param list_name: The name of the mailing list to update.
+        :type list_name: string
+        :param subscription_info: The mailing list's new subscription
+            information.
+        :type subscription_info: a list of 4-tuples containing the address,
+            real name, flags, and status of each person in the list's
+            subscribers.
+        """
+        # Start with an unlocked list.
+        mlist = MailList(list_name, lock=False)
+        # Create a mapping of email address to the member's real name,
+        # flags, and status.  Note that flags is currently unused.
+        member_map = dict((address, (realname, flags, status))
+                          for address, realname, flags, status
+                          in subscription_info)
+        # In Mailman parlance, the 'member key' is the lower-cased
+        # address.  We need a mapping from the member key to
+        # case-preserved address for all future members of the list.
+        key_to_case_preserved = dict((address.lower(), address)
+                                     for address in member_map)
+        # The following modifications to membership may be made:
+        # - Current members whose address is changing case
+        # - New members who need to be added to the mailing list
+        # - Old members who need to be removed from the mailing list
+        # - Current members whose settings are being changed
+        #
+        # Start by getting the case-folded membership sets of all current
+        # and future members.
+        current_members = set(mlist.getMembers())
+        future_members = set(key_to_case_preserved)
+        # Additions are all those addresses in future_members who are not
+        # in current_members.
+        additions = future_members - current_members
+        # Deletions are all those addresses in current_members who are not
+        # in future_members.
+        deletions = current_members - future_members
+        # Any address in both current and future members is either
+        # changing case, updating settings, or both.
+        updates = current_members & future_members
+        # If there's nothing to do, just skip this list.
+        if not additions and not deletions and not updates:
+            # Why did we get here?  This list should not have shown up in
+            # getMembershipInformation().
+            syslog('xmlrpc',
+                   'Strange subscription information for list: %s',
+                   list_name)
+            return
+        # Lock the list and make the modifications.  Don't worry if the list
+        # couldn't be locked, we'll just log that and try again the next time
+        # through the loop.  Eventually any existing lock will expire anyway.
+        try:
+            mlist.Lock(2)
+        except TimeOutError:
+            syslog('xmlrpc',
+                   'Could not lock the list to update subscriptions: %s',
+                   list_name)
+            return
+        try:
+            # Handle additions first.
+            for address in additions:
+                # When adding the new member, be sure to use the
+                # case-preserved email address.
+                original_address = key_to_case_preserved[address]
+                realname, flags, status = member_map[original_address]
+                mlist.addNewMember(original_address, realname=realname)
+                mlist.setDeliveryStatus(original_address, status)
+            # Handle deletions next.
+            for address in deletions:
+                mlist.removeMember(address)
+            # Updates can be either a settings update, a change in the
+            # case of the subscribed address, or both.
+            found_updates = False
+            for address in updates:
+                # See if the case is changing.
+                current_address = mlist.getMemberCPAddress(address)
+                future_address = key_to_case_preserved[address]
+                # pylint: disable-msg=W0331
+                if current_address <> future_address:
+                    mlist.changeMemberAddress(address, future_address)
+                    found_updates = True
+                # flags are ignored for now.
+                realname, flags, status = member_map[future_address]
+                # pylint: disable-msg=W0331
+                if realname <> mlist.getMemberName(address):
+                    mlist.setMemberName(address, realname)
+                    found_updates = True
+                # pylint: disable-msg=W0331
+                if status <> mlist.getDeliveryStatus(address):
+                    mlist.setDeliveryStatus(address, status)
+                    found_updates = True
+            if found_updates:
+                syslog('xmlrpc', 'Membership updates for: %s', list_name)
+            # We're done, so flush the changes for this mailing list.
+            mlist.Save()
+        finally:
+            mlist.Unlock()
+
     def _get_subscriptions(self):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
         # pylint: disable-msg=W0331
-        active_lists = [list_name for list_name in Utils.list_names()
-                        if list_name <> mm_cfg.MAILMAN_SITE_LIST]
-        try:
-            info = self._proxy.getMembershipInformation(active_lists)
-        except (xmlrpclib.ProtocolError, socket.error), error:
-            log_exception('Cannot talk to Launchpad: %s', error)
-            return
-        except xmlrpclib.Fault, error:
-            log_exception('Launchpad exception: %s', error)
-            return
-        for list_name in info:
-            # Start with an unlocked list.
-            mlist = MailList(list_name, lock=False)
-            # Create a mapping of email address to the member's real name,
-            # flags, and status.  Note that flags is currently unused.
-            member_map = dict((address, (realname, flags, status))
-                              for address, realname, flags, status
-                              in info[list_name])
-            # In Mailman parlance, the 'member key' is the lower-cased
-            # address.  We need a mapping from the member key to
-            # case-preserved address for all future members of the list.
-            key_to_case_preserved = dict((address.lower(), address)
-                                         for address in member_map)
-            # The following modifications to membership may be made:
-            # - Current members whose address is changing case
-            # - New members who need to be added to the mailing list
-            # - Old members who need to be removed from the mailing list
-            # - Current members whose settings are being changed
-            #
-            # Start by getting the case-folded membership sets of all current
-            # and future members.
-            current_members = set(mlist.getMembers())
-            future_members = set(key_to_case_preserved)
-            # Additions are all those addresses in future_members who are not
-            # in current_members.
-            additions = future_members - current_members
-            # Deletions are all those addresses in current_members who are not
-            # in future_members.
-            deletions = current_members - future_members
-            # Any address in both current and future members is either
-            # changing case, updating settings, or both.
-            updates = current_members & future_members
-            # If there's nothing to do, just skip this list.
-            if not additions and not deletions and not updates:
-                # Why did we get here?  This list should not have shown up in
-                # getMembershipInformation().
-                syslog('xmlrpc',
-                       'Strange subscription information for list: %s',
-                       list_name)
-                continue
-            # Lock the list and make the modifications.
-            mlist.Lock(2)
+        lists = [list_name
+                 for list_name in Utils.list_names()
+                 if list_name <> mm_cfg.MAILMAN_SITE_LIST]
+        # Batch the subscription requests in order to reduce the possibility
+        # of timeouts in the XMLRPC server.
+        while lists:
+            batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
+            lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
+            # Get the information for this batch of mailing lists.
             try:
-                # Handle additions first.
-                for address in additions:
-                    # When adding the new member, be sure to use the
-                    # case-preserved email address.
-                    original_address = key_to_case_preserved[address]
-                    realname, flags, status = member_map[original_address]
-                    mlist.addNewMember(original_address, realname=realname)
-                    mlist.setDeliveryStatus(original_address, status)
-                # Handle deletions next.
-                for address in deletions:
-                    mlist.removeMember(address)
-                # Updates can be either a settings update, a change in the
-                # case of the subscribed address, or both.
-                found_updates = False
-                for address in updates:
-                    # See if the case is changing.
-                    current_address = mlist.getMemberCPAddress(address)
-                    future_address = key_to_case_preserved[address]
-                    if current_address <> future_address:
-                        mlist.changeMemberAddress(address, future_address)
-                        found_updates = True
-                    # flags are ignored for now.
-                    realname, flags, status = member_map[future_address]
-                    if realname <> mlist.getMemberName(address):
-                        mlist.setMemberName(address, realname)
-                        found_updates = True
-                    if status <> mlist.getDeliveryStatus(address):
-                        mlist.setDeliveryStatus(address, status)
-                        found_updates = True
-                if found_updates:
-                    syslog('xmlrpc', 'Membership updates for: %s', list_name)
-                # We're done, so flush the changes for this mailing list.
-                mlist.Save()
-            finally:
-                mlist.Unlock()
+                info = self._proxy.getMembershipInformation(batch)
+            except (xmlrpclib.ProtocolError, socket.error), error:
+                log_exception('Cannot talk to Launchpad: %s', error)
+                return
+            except xmlrpclib.Fault, error:
+                log_exception('Launchpad exception: %s', error)
+                return
+            for list_name in info:
+                self._update_list_subscriptions(list_name, info[list_name])
 
     def _create_or_reactivate(self, actions, statuses):
         """Process mailing list creation and reactivation actions.
@@ -465,7 +498,7 @@ class XMLRPCRunner(Runner):
                 # To make reactivation easier, we temporarily cd to the
                 # $var/lists directory and make the tarball from there.
                 old_cwd = os.getcwd()
-                # XXX BarryWarsaw 02-Aug-2007 Should we watch out for
+                # XXX BarryWarsaw 2007-08-02: Should we watch out for
                 # collisions on the tar file name?  This can only happen if
                 # the team is resurrected but the old archived tarball backup
                 # wasn't removed.
@@ -607,7 +640,7 @@ class XMLRPCRunner(Runner):
 def extractall(tgz_file):
     """Extract all members of `tgz_file` to the current working directory."""
     path = '.'
-    # XXX BarryWarsaw 13-Nov-2007 TBD: This is nearly a straight ripoff of
+    # XXX BarryWarsaw 2007-11-13: This is nearly a straight ripoff of
     # Python 2.5's TarFile.extractall() method, though simplified for our
     # particular purpose.  When we upgrade Launchpad to Python 2.5, this
     # function can be removed.

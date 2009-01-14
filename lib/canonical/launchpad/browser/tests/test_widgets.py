@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 
 from zope.app.form.interfaces import ConversionError
-from zope.app.tests import ztapi
+from zope.app.testing import ztapi
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
@@ -99,38 +99,6 @@ class TestBranchPopupWidget(unittest.TestCase):
         name = self.popup.getBranchNameFromURL(url)
         self.assertEqual(URI(url).path.split('/')[-1], name)
 
-    def test_getBranchNameFromURLWhenAlreadyTaken(self):
-        """getBranchNameFromURL() returns a name that isn't already taken."""
-        # Make sure that the branch name for `url` is already taken.
-        url = self.factory.getUniqueURL()
-        branch = self.factory.makeBranch(
-            product=self.launch_bag.product,
-            name=self.popup.getBranchNameFromURL(url))
-
-        # Now that the name is taken for this product, getBranchNameFromURL
-        # returns the same name with '-1' at the end.
-        self.assertEqual(
-            branch.name + '-1', self.popup.getBranchNameFromURL(url))
-
-    def test_getBranchNameFromURLWhenAlreadyTakenProgressive(self):
-        """getBranchNameFromURL() returns a name that isn't already taken.
-
-        It does this by looping until it finds one that isn't.
-        """
-        # Make sure that the branch name for `url` is already taken.
-        url = self.factory.getUniqueURL()
-        branch = self.factory.makeBranch(
-            product=self.launch_bag.product,
-            name=self.popup.getBranchNameFromURL(url))
-        self.factory.makeBranch(
-            product=self.launch_bag.product,
-            name=self.popup.getBranchNameFromURL(url))
-
-        # Now that the name is taken for this product, getBranchNameFromURL
-        # returns the same name with '-2' at the end.
-        self.assertEqual(
-            branch.name + '-2', self.popup.getBranchNameFromURL(url))
-
     def test_makeBranch(self):
         """makeBranch(url) creates a mirrored branch at `url`.
 
@@ -146,6 +114,17 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(self.popup.getPerson(), branch.registrant)
         self.assertEqual(self.popup.getProduct(), branch.product)
         self.assertEqual(expected_name, branch.name)
+
+    def test_makeBranch_used(self):
+        # makeBranch makes up the branch name if the inferred one is already
+        # used.
+        url = self.factory.getUniqueURL()
+        expected_name = self.popup.getBranchNameFromURL(url)
+        self.factory.makeBranch(
+            name=expected_name, product=self.popup.getProduct(),
+            owner=self.popup.getPerson())
+        branch = self.popup.makeBranchFromURL(url)
+        self.assertEqual(expected_name + '-1', branch.name)
 
     def test_makeBranchRequestsMirror(self):
         """makeBranch requests a mirror on the branch it creates."""

@@ -54,7 +54,7 @@ def mailmanctl(command, quiet=False, config=None, *additional_arguments):
         if quiet:
             raise RuntimeError(
                 'mailmanctl %s failed: %d\n%s' % (
-                    command, code, mailmanctl.stdout.read()))
+                    command, code, process.stdout.read()))
         else:
             print >> sys.stderr, 'mailmanctl %s failed: %d' % (command, code)
 

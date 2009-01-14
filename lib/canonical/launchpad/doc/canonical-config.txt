@@ -14,8 +14,8 @@ is thread safe (not that this will be a problem if we stick with
 simple configuration).
 
     >>> from canonical.config import config
-    >>> print config.database.dbhost
-    localhost
+    >>> print config.database.main_master
+    dbname=launchpad_ftest
     >>> config.database.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
@@ -100,7 +100,7 @@ can be changed for a feature.
 And the test can remove the data when it is done to restore the config.
 
     >>> config.pop('test_data')
-    (<canonical.lazr.config.ConfigData ...>,)
+    (<lazr.config.ConfigData ...>,)
     >>> config.answertracker.email_domain
     'answers.launchpad.net'
 
@@ -192,8 +192,6 @@ argument to the constructor.
 
     >>> dev_config.devmode
     True
-    >>> dev_config.authserver.dbuser
-    'authserver'
 
 # XXX sinzui 2008-03-25 bug=78545: This cannot be tested until the
 # config can be restored when this test is torn down.
@@ -236,4 +234,3 @@ argument to the constructor.
 #    'launchpad_ftest'
 #    >>> config._cache.testrunner
 #    <SectionValue for canonical 'testrunner'>
-

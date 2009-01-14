@@ -28,11 +28,12 @@
         <th>Project</th>
         <th>Active</th>
         <th>Reviewed</th>
-        <th>License approved</th>
+        <th>License<br />approved</th>
         <th>Registered by</th>
         <th>Licenses</th>
         <th style="width: 40%">License info</th>
-        <th style="width: 40%">Reviewer whiteboard</th>
+        <th>Commercial<br />Subscription<br />expiration</th>
+        <th style="width: 40%">Reviewer<br />whiteboard</th>
       </thead>
       <tbody>
         <div tal:repeat="product batch/currentBatch"

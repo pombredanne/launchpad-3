@@ -13,7 +13,7 @@ so that we can avoid network traffic in tests.
     >>> test_transport = TestTracXMLRPCTransport('http://example.com/')
     >>> trac = TracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
-    >>> trac.xmlrpc_transport is test_transport
+    >>> trac._xmlrpc_transport is test_transport
     True
 
 
@@ -54,10 +54,15 @@ Trac to validate $token and return a Set-Cookie header.
     ...             raise AssertionError("Token has already been consumed.")
     ...         token.consume()
     ...         print "Successfully validated the token."
-    ...         response = FakeResponse()
-    ...         response.headers['Set-Cookie'] = (
+    ...
+    ...         cookie_string = (
     ...             'trac_auth=random_token-' + str(random.random()))
+    ...         self._xmlrpc_transport.setCookie(cookie_string)
+    ...
+    ...         response = FakeResponse()
+    ...         response.headers['Set-Cookie'] = cookie_string
     ...         LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    ...
     ...         return response
 
 To generate the token, the internal XML-RPC server is used. By using the
@@ -65,12 +70,16 @@ XML-RPC server rather than talking to the database directy means that we
 don't have to bother about commiting the transaction to make the token
 visible to Trac.
 
+    >>> from cookielib import CookieJar
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)
-    >>> test_transport = TestTracXMLRPCTransport('http://example.com/')
+    >>> cookie_jar = CookieJar()
+    >>> test_transport = TestTracXMLRPCTransport(
+    ...     'http://example.com/', cookie_jar)
     >>> trac = TestTracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport,
-    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport())
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport(),
+    ...     cookie_jar=cookie_jar)
 
 The method that authenticates with Trac is _authenticate().
 
@@ -84,27 +93,60 @@ auth_cookie attribute set.
     >>> test_transport.cookie_processor.cookiejar
     <cookielib.CookieJar[Cookie(version=0, name='trac_auth'...
 
-There's another method, _extractAuthCookie(), which gets the cookie from
-the Set-Cookie header.
+The XML-RPC transport's cookie_processor shares its cookiejar with the
+TracLPPlugin instance. This is so that the TracLPPlugin can use the
+cookiejar when authenticating with the remote Trac and then pass it to
+the XML-RPC transport for further use, meaning that there's no need to
+manually manipulate cookies.
 
-    >>> trac._extractAuthCookie(
-    ...     'trac_auth=some_token; expires=Some date; path=/some/path;'
-    ...     ' domain=some.name.example.com; secure')
-    'trac_auth=some_token'
+    >>> test_transport.cookie_processor.cookiejar == trac._cookie_jar
+    True
 
-    >>> print trac._extractAuthCookie(
-    ...     'other_cookie=some_token; expires=Some date; path=/some/path;'
-    ...     ' domain=some.name.example.com; secure')
-    None
+So if we look in the TracLPPlugin's CookieJar we'll see the same cookie:
 
-The XML-RPC transport will then take the auth_cookie and set the Cookie
-header in its requests.
+    >>> trac._cookie_jar
+    <cookielib.CookieJar[Cookie(version=0, name='trac_auth'...
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     FakeHTTPConnection)
-    >>> trac = TracLPPlugin('http://example.com/')
-    >>> transport = trac.xmlrpc_transport
-    >>> transport.auth_cookie = 'trac_auth=random_token'
+And altering the cookie in the TracLPPlugin's CookieJar will mean, of
+course, that it's altered in the XML-RPC transport's CookieJar, too.
+
+    >>> from cookielib import Cookie
+    >>> new_cookie = Cookie(
+    ...     name="trac_auth",
+    ...     value="Look ma, a new cookie!",
+    ...     version=0, port=None, port_specified=False,
+    ...     domain='http://example.com', domain_specified=True,
+    ...     domain_initial_dot=None, path='', path_specified=False,
+    ...     secure=False, expires=False, discard=None, comment=None,
+    ...     comment_url=None, rest=None)
+
+    >>> trac._cookie_jar.clear()
+    >>> trac._cookie_jar.set_cookie(new_cookie)
+
+    >>> trac._cookie_jar
+    <cookielib.CookieJar[Cookie(version=0, name='trac_auth',
+    value='Look ma, a new cookie!'...>
+
+    >>> test_transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[Cookie(version=0, name='trac_auth',
+    value='Look ma, a new cookie!'...>
+
+If authentication fails, a BugTrackerAuthenticationError will be raised.
+
+    >>> from urllib2 import HTTPError
+    >>> class TestFailingTracLPPlugin(TracLPPlugin):
+    ...     def urlopen(self, url):
+    ...         raise HTTPError(url, 401, "Denied!", {}, None)
+
+    >>> test_trac = TestFailingTracLPPlugin(
+    ...     'http://example.com', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport(),
+    ...     cookie_jar=cookie_jar)
+    >>> test_trac._authenticate()
+    Traceback (most recent call last):
+      ...
+    BugTrackerAuthenticationError: http://example.com:
+    401 "Denied!"...
 
 
 == Current time ==
@@ -414,6 +456,12 @@ the original comment.
     >>> print message_one.text_contents
     Hello, world!
 
+The owner of the comment is set to the Person passed to
+getMessageForComment().
+
+    >>> print message_one.owner.displayname
+    Sample Person
+
 
 == Pushing comments ==
 
@@ -474,3 +522,64 @@ been pushed to bug 3.
     time: ...
     type: comment
     user: launchpad
+
+
+== Linking remote bugs to Launchpad bugs ==
+
+The TracLPPlugin class implements the ISupportsBackLinking interface,
+which allows it to tell the remote bug tracker which Launchpad bug
+links to a given one of its bugs.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     ISupportsBackLinking)
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(ISupportsBackLinking, trac)
+    True
+
+The getLaunchpadBugId() method will return the Launchpad bug ID for a
+given remote bug. If no Launchpad bug has been linked to the remote bug,
+getLaunchpadBugId() will return None.
+
+getLaunchpadBugId() requires authentication.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> launchpad_bug_id = trac.getLaunchpadBugId('3')
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+    >>> print launchpad_bug_id
+    None
+
+We call setLaunchpadBugId() to set the Launchpad bug ID for a remote
+bug. setLaunchpadBugId() also requires authentication.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.setLaunchpadBugId('3', 15)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+Calling getLaunchpadBugId() for remote bug 3 will now return 10, since
+that's the Launchpad bug ID that we've just set.
+
+    >>> print trac.getLaunchpadBugId('3')
+    15
+
+Passing a Launchpad bug ID of None to setLaunchpadBugId() will unset the
+Launchpad bug ID for the remote bug.
+
+    >>> trac.setLaunchpadBugId('3', None)
+    >>> print trac.getLaunchpadBugId('3')
+    None
+
+If we try to call getLaunchpadBugId() or setLaunchpadBugId() for a
+remote bug that doesn't exist, a BugNotFound error will be raised.
+
+    >>> trac.getLaunchpadBugId('12345')
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 12345
+
+    >>> trac.setLaunchpadBugId('12345', 1)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 12345

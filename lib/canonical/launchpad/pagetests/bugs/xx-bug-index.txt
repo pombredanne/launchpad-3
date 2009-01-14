@@ -10,6 +10,11 @@ to be fixed, and so forth.
     >>> anon_browser.title
     '...Blackhole Trash folder...'
 
+The bug id in the upper left corner of the page is linked to the bug itself.
+
+    >>> anon_browser.getLink('Bug #2').click()
+    >>> print anon_browser.title
+    Bug #2 in Tomcat:...Blackhole Trash folder...
 
 The page features a table of places where people have asked for the bug
 to be fixed. The row for the current context (and not any other row) is
@@ -114,3 +119,9 @@ bugs.
     http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug
     >>> print user_browser.getLink('List open bugs').url
     http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bugs
+
+There's also a link on the page that will take the user to the "Add a
+comment/attachment" page, for use when JavaScript isn't available.
+
+    >>> print user_browser.getLink('Add a comment/attachment').url
+    http://launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment

@@ -33,6 +33,19 @@ Watson's account, he's one of the owners of Ubuntu.
     >>> print ubuntu_owner_browser.title
     Appoint Ubuntu Linux's translation group
 
+Other users cannot access this page, nor see the menu link to it.
+
+    >>> user_browser.open(anon_browser.url)
+    >>> user_browser.getLink('Change translators').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open(ubuntu_owner_browser.url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
 Let's post to the form, setting the translation group to polyglot and
 closed permissions.
 

@@ -1,7 +1,7 @@
 <li xmlns:tal="http://xml.zope.org/namespaces/tal">
   <div>
     <a tal:attributes="href context/fmt:url"
-        tal:content="context/displayname">Mozilla Thunderbird 0.9.1</a>
+        tal:content="context/bzr_identity">Mozilla Thunderbird 0.9.1</a>
     <tal:person-link condition="view/show_person_link">
       -
       <a tal:replace="structure context/owner/fmt:link/+ownedbranches" />

@@ -6,12 +6,14 @@ __metaclass__ = type
 
 import unittest
 from datetime import timedelta
-from zope.app.session.interfaces import ISessionDataContainer, ISessionData
+from zope.session.interfaces import ISessionDataContainer, ISessionData
+from zope.publisher.browser import TestRequest
+from zope.security.management import newInteraction, endInteraction
 
 from canonical.launchpad.webapp.pgsession import (
         PGSessionDataContainer, PGSessionData
         )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadLayer
 
 
 class PicklingTest:
@@ -29,8 +31,13 @@ class TestPgSession(unittest.TestCase):
 
     def setUp(self):
         self.sdc = PGSessionDataContainer()
+        LaunchpadLayer.resetSessionDb()
+        self.request = TestRequest()
+        newInteraction(self.request)
 
     def tearDown(self):
+        endInteraction()
+        del self.request
         del self.sdc
 
     def test_sdc_basics(self):
@@ -44,7 +51,7 @@ class TestPgSession(unittest.TestCase):
         # __getitem__ does not raise a keyerror for an unknown client id.
         # This is not correct, but needed to workaround a design flaw in
         # the session machinery.
-        self.sdc['Unknown client id']
+        ignored_result = self.sdc['Unknown client id']
 
         # __setitem__ calls are ignored.
         self.sdc[client_id] = 'ignored'
@@ -60,7 +67,6 @@ class TestPgSession(unittest.TestCase):
         client_id2 = 'Client Id #2'
 
         store = self.sdc.store
-        store.execute("DELETE FROM SessionData", noresult=True)
 
         # Create a session
         session1 = self.sdc[client_id1]
@@ -97,7 +103,7 @@ class TestPgSession(unittest.TestCase):
         self.sdc._last_sweep = self.sdc._last_sweep - timedelta(days=365)
 
         # Sweep happens automatically in __getitem__
-        self.sdc[client_id2][product_id]
+        ignored_result = self.sdc[client_id2][product_id]
 
         # So the client_id1 session should now have been removed.
         result = store.execute(
@@ -185,9 +191,15 @@ class TestPgSession(unittest.TestCase):
         pkgdata = session[product_id]
         self.assertRaises(KeyError, pkgdata.__getitem__, 'key')
 
+        # Test results depend on the session being empty. This is
+        # taken care of by setUp().
         store = self.sdc.store
         result = store.execute("SELECT COUNT(*) FROM SessionData")
         self.assertEqual(result.get_one()[0], 0)
+
+        # The session cookie is also not yet set in the response.
+        self.assertEqual(self.request.response.getCookie('launchpad_tests'),
+                         None)
 
         # Now try storing some data in the session, which will result
         # in it being stored in the database.
@@ -197,9 +209,14 @@ class TestPgSession(unittest.TestCase):
         client_ids = [row[0] for row in result]
         self.assertEquals(client_ids, [client_id])
 
+        # The session cookie also is now set, via the same "trigger".
+        self.assertNotEqual(
+            self.request.response.getCookie('launchpad_tests'), None)
+
+        # also see the page test xx-no-anonymous-session-cookies for tests of
+        # the cookie behavior.
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestPgSession))
     return suite
-

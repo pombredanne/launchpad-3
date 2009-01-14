@@ -10,11 +10,12 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+    get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.bugmessage import IBugMessageSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailnotification import (
-    generate_bug_add_email, MailWrapper, construct_bug_notification,
+    generate_bug_add_email, MailWrapper, BugNotificationBuilder,
     get_bugmail_from_address)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
@@ -38,7 +39,7 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for address in contactEmailAddresses(recipient.person):
+            for address in get_contact_email_addresses(recipient.person):
                 recipients[address] = recipient
 
     for notification in bug_notifications:
@@ -91,20 +92,27 @@ def construct_email_notifications(bug_notifications):
     from_address = get_bugmail_from_address(person, bug)
     # comment_syncing_team can be either None or '' to indicate unset.
     if comment is not None and config.malone.comment_syncing_team:
+        # The first time we import comments from a bug watch, a comment
+        # notification is added, originating from the Bug Watch Updater.
+        bug_watch_updater = getUtility(
+            ILaunchpadCelebrities).bug_watch_updater
+        is_initial_import_notification = (comment.owner == bug_watch_updater)
         bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
             bug, comment)
         comment_syncing_team = getUtility(IPersonSet).getByName(
             config.malone.comment_syncing_team)
         # Only members of the comment syncing team should get comment
-        # notifications related to bug watches.
-        if bug_message is not None and bug_message.bugwatch is not None:
+        # notifications related to bug watches or initial comment imports.
+        if (is_initial_import_notification or
+            (bug_message is not None and bug_message.bugwatch is not None)):
             recipients = dict(
                 (address, recipient)
                 for address, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
+    bug_notification_builder = BugNotificationBuilder(bug)
     for address, recipient in recipients.items():
         reason = recipient.reason_body
-        rationale_header = recipient.reason_header
+        rationale = recipient.reason_header
 
         body_data = {
             'content': mail_wrapper.format(content),
@@ -131,9 +139,9 @@ def construct_email_notifications(bug_notifications):
             email_template = 'bug-notification.txt'
 
         body = get_email_template(email_template) % body_data
-        msg = construct_bug_notification(
-            bug, from_address, address, body,
-            subject, email_date, rationale_header, references, msgid)
+        msg = bug_notification_builder.build(
+            from_address, address, body, subject, email_date,
+            rationale, references, msgid)
         messages.append(msg)
 
     return bug_notifications, messages

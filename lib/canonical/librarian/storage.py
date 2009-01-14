@@ -9,9 +9,10 @@ import sha
 import errno
 import tempfile
 
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian.db import write_transaction
 
 __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
@@ -114,7 +115,8 @@ class LibraryFileUpload(object):
             # If the client told us the name database of the database
             # its using, check that it matches
             if self.databaseName is not None:
-                store = getUtility(IZStorm).get("main")
+                store = getUtility(IStoreSelector).get(
+                        MAIN_STORE, DEFAULT_FLAVOR)
                 result = store.execute("SELECT current_database()")
                 databaseName = result.get_one()[0]
                 if self.databaseName != databaseName:

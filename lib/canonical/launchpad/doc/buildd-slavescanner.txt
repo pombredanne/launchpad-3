@@ -645,8 +645,12 @@ The buildlog was compressed and directly transferred to Librarian.
 
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
-    >>> logfile.filename, logfile.mimetype
-    (u'buildlog_ubuntu-warty-i386.foobar_1.0_FULLYBUILT.txt.gz', u'text/plain')
+
+    >>> print logfile.filename
+    buildlog_ubuntu-warty-i386.foobar_1.0_FULLYBUILT.txt.gz
+
+    >>> print logfile.mimetype
+    text/plain
 
 Needed so that the Librarian can serve the new file.
 
@@ -681,6 +685,27 @@ filesystem before decompress.
 Both access methods work as expected, remove the temporary file used here.
 
     >>> os.remove(fname)
+
+The Librarian serves buildlog files with 'gzip' content-encoding and
+'text/plain' content-type. This combination instructs the browser to
+decompress the file and display it inline, which makes it easier for
+users to view it.
+
+    >>> from canonical.launchpad.webapp.url import urlparse
+    >>> parsed_url = urlparse(logfile.http_url)
+    >>> netloc, path = parsed_url[1:3]
+
+    >>> import httplib
+    >>> con = httplib.HTTPConnection(netloc)
+    >>> con.request("HEAD", path)
+    >>> resp = con.getresponse()
+    >>> headers = dict(resp.getheaders())
+
+    >>> print headers['content-encoding']
+    gzip
+
+    >>> print headers['content-type']
+    text/plain
 
 Check the log from the uploader run has made it into the upload directory:
 
@@ -828,8 +853,9 @@ to demonstrate this, and also make the archive private:
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.PENDING
-    >>> secure_pub.archive.private = True
-    >>> secure_pub.archive.buildd_secret = "secret"
+    >>> test_archive = secure_pub.archive
+    >>> test_archive.private = True
+    >>> test_archive.buildd_secret = "secret"
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
@@ -854,14 +880,37 @@ If we publish the source, the build candidate will be found again:
     >>> another_candidate.id == new_candidate.id
     True
 
-We'll reset the archive back to non-private for further tests:
+If the source is subsequently deleted or superseded before the build
+starts it is also returned as a candidate so that the build can be
+superseded.  The current candidate's source is published twice, so
+we can supersede one and delete the other. This will have the effect of
+making the build be superseded and no candidate is returned.
 
-    >>> source = new_candidate.build.sourcepackagerelease
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub = removeSecurityProxy(
     ...     new_candidate).build.getCurrentPublication().secure_record
+    >>> secure_pub.status = PackagePublishingStatus.DELETED
+    >>> secure_pub = removeSecurityProxy(
+    ...     new_candidate).build.getCurrentPublication().secure_record
+    >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+
+    >>> print current_job.build.buildstate.name
+    NEEDSBUILD
+
+    >>> another_candidate = a_builder.findBuildCandidate()
+    >>> print another_candidate
+    None
+
+    >>> print current_job.build.buildstate.name
+    SUPERSEDED
+
+We'll reset the archive back to non-private for further tests:
+
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub.archive.private = False
+    >>> test_archive.private = False
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
@@ -985,31 +1034,48 @@ Let's try it again.
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
+    >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
+    >>> candidate.destroySelf()
+
 But this time We will create a valid publication on partner hoary/i386.
 
-    >>> create_binary_publication_for(
-    ...    partner_archive, hoary, PackagePublishingStatus.PUBLISHED)
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+    >>> pub_source = test_publisher.getPubSource(
+    ...    archive=partner_archive, distroseries=hoary,
+    ...    status=PackagePublishingStatus.PUBLISHED,
+    ...    component='partner')
+    >>> pub_binaries = test_publisher.getPubBinaries(
+    ...     archive=partner_archive, pub_source=pub_source,
+    ...     distroseries=hoary, status=PackagePublishingStatus.PUBLISHED)
+    >>> partner_build = pub_binaries[0].binarypackagerelease.build
+    >>> partner_candidate = partner_build.buildqueue_record
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
 Now when we dispatch the partner build, since it has one published
 binary in hoary/i386, the partner archive gets included in the builder
 sources_list.
 
-    >>> a_builder.dispatchBuildCandidate(candidate)
+    >>> a_builder.dispatchBuildCandidate(partner_candidate)
     ensurepresent called, url=...
-    ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+    ensurepresent called, url=http://localhost:58000/.../foo_666.dsc
     OkSlave BUILDING
     Archives:
-     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://launchpad.dev/ubuntu-partner hoary main
+     deb http://ftpmaster.internal/ubuntu hoary
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu-partner hoary partner
     Suite: hoary
     Archive Purpose: PARTNER
     Archive Private: False
 
-    >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
-    >>> candidate.destroySelf()
+    >>> partner_candidate.destroySelf()
 
 Similarly, PPA builds pass the 'archives' arguments:
 
@@ -1068,11 +1134,7 @@ password for the archive):
     >>> login(ANONYMOUS)
 
 Dispatch the build again. Celso's archive sources.list entry now has the
-buildd:secret@ part in the URL.  Also note that because it's a private
-PPA, it's missing the dependency on the updates pocket.  This is mainly
-to accommodate the security build private PPA which must not depend
-on the updates pocket.  This will be replaced in the future by a
-proper solution that allows configurable pocket dependencies.
+buildd:secret@ part in the URL.
 
 Also note that when ensurepresent() is called, it receives a URL that
 points to the private archive rather than the librarian for the private
@@ -1087,13 +1149,17 @@ that the mangling tools will run over the built packages.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://private.ppa.launchpad.dev/cprov/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
+        url=http://private-ppa.launchpad.dev/cprov/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
     URL authorisation with buildd/secret
     OkSlave BUILDING
     Archives:
-     deb http://buildd:secret@private.ppa.launchpad.dev/cprov/ubuntu hoary main
-     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
+     deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu hoary main
+     deb http://ftpmaster.internal/ubuntu hoary
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates
+         main restricted universe multiverse
     Suite: hoary
     Archive Purpose: PRIMARY
     Archive Private: True
@@ -1150,7 +1216,10 @@ Mark's PPA:
     >>> for build_file in candidate.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
-    >>> unused_dep = cprov_archive.addArchiveDependency(sabdfl_archive)
+
+    >>> unused_dep = cprov_archive.addArchiveDependency(
+    ...      sabdfl_archive, PackagePublishingPocket.RELEASE,
+    ...      getUtility(IComponentSet)['main'])
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
@@ -1246,28 +1315,6 @@ Make a build in the updates pocket:
     AssertionError: i386 build of evolution 1.0 in ubuntu hoary UPDATES (...) can not be built for pocket UPDATES: invalid pocket due to the series status of hoary.
 
 == Pocket dependencies ==
-
-When passing the archives property to a slave, the required pockets
-are dependent on the pocket that we are building in, such that:
-
-    >>> def show_pocket_deps():
-    ...     print "Pocket    |   Dependencies"
-    ...     print "----------+---------------"
-    ...     for (key, value) in a_builder.pocket_dependencies.items():
-    ...         print "%7s |" % (key.name,),
-    ...         for pocket in value:
-    ...             print pocket.name,
-    ...         print
-
-    >>> show_pocket_deps()
-    Pocket    |   Dependencies
-    ----------+---------------
-      RELEASE | RELEASE
-    BACKPORTS | RELEASE SECURITY UPDATES BACKPORTS
-     SECURITY | RELEASE SECURITY
-      UPDATES | RELEASE SECURITY UPDATES
-     PROPOSED | RELEASE SECURITY UPDATES PROPOSED
-
 
 Change the distroseries status for testing. FROZEN allows building in
 all pockets:

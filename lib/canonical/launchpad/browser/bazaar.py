@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'BazaarApplicationView',
-    'BazaarApplicationNavigation',
     'BazaarProductView',
     ]
 
@@ -23,13 +22,10 @@ from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from canonical.launchpad.interfaces.product import IProduct, IProductSet
-from canonical.launchpad.interfaces.productseries import IProductSeriesSet
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, LaunchpadView,
-    Link, Navigation, stepto)
-import canonical.launchpad.layers
+    ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
@@ -91,20 +87,9 @@ class BazaarApplicationView(LaunchpadView):
             num_products=config.launchpad.code_homepage_product_cloud_size)
 
 
-class BazaarApplicationNavigation(Navigation):
-
-    usedfor = IBazaarApplication
-
-    newlayer = canonical.launchpad.layers.CodeLayer
-
-    @stepto('series')
-    def series(self):
-        return getUtility(IProductSeriesSet)
-
-
 class ProductInfo:
 
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(
         self, product, num_branches, branch_size, elapsed, important):

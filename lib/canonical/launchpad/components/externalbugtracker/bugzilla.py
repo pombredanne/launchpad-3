@@ -23,16 +23,17 @@ from zope.interface import implements
 
 from canonical import encoding
 from canonical.config import config
-from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
-    LookupTree, UnknownRemoteStatusError, UnparseableBugData,
+from canonical.launchpad.components.externalbugtracker.base import (
+    BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
+    ExternalBugTracker, InvalidBugId, LookupTree,
+    UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.interfaces.externalbugtracker import (
-    ISupportsCommentImport, ISupportsCommentPushing)
+    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 
@@ -137,10 +138,15 @@ class Bugzilla(ExternalBugTracker):
             return None
 
         try:
+            # XXX 2008-09-15 gmb bug 270695:
+            #     We can clean this up by just stripping out anything
+            #     not in [0-9\.].
             # Get rid of trailing -rh, -debian, etc.
             version = version.split("-")[0]
             # Ignore plusses in the version.
             version = version.replace("+", "")
+            # Ignore the 'rc' string in release candidate versions.
+            version = version.replace("rc", "")
             # We need to convert the version to a tuple of integers if
             # we are to compare it correctly.
             version = tuple(int(x) for x in version.split("."))
@@ -348,7 +354,9 @@ def needs_authentication(func):
 class BugzillaLPPlugin(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
 
-    implements(ISupportsCommentImport, ISupportsCommentPushing)
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport,
+        ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -390,24 +398,19 @@ class BugzillaLPPlugin(Bugzilla):
 
         token_text = internal_xmlrpc_server.newBugTrackerToken()
 
-        user_id = self.xmlrpc_proxy.Launchpad.login({'token': token_text})
-
-        auth_cookies = self._extractAuthCookie(
-            self.xmlrpc_transport.last_response_headers['Set-Cookie'])
-        for cookie in auth_cookies.split(';'):
-            self.xmlrpc_transport.setCookie(cookie.strip())
-
-    def _extractAuthCookie(self, cookie_header):
-        """Extract the Bugzilla authentication cookies from the header."""
-        cookies = []
-        for cookie_header_part in cookie_header.split(','):
-            cookie = cookie_header_part.split(';')[0]
-            cookie = cookie.strip()
-
-            if cookie.startswith('Bugzilla_login'):
-                cookies.append(cookie)
-
-        return '; '.join(cookies)
+        try:
+            user_id = self.xmlrpc_proxy.Launchpad.login(
+                {'token': token_text})
+        except xmlrpclib.Fault, fault:
+            message = 'XML-RPC Fault: %s "%s"' % (
+                fault.faultCode, fault.faultString)
+            raise BugTrackerAuthenticationError(
+                self.baseurl, message)
+        except xmlrpclib.ProtocolError, error:
+            message = 'Protocol error: %s "%s"' % (
+                error.errcode, error.errmsg)
+            raise BugTrackerAuthenticationError(
+                self.baseurl, message)
 
     def _storeBugs(self, remote_bugs):
         """Store remote bugs in the local `bugs` dict."""
@@ -446,7 +449,32 @@ class BugzillaLPPlugin(Bugzilla):
 
         return bug_ids
 
-    def initializeRemoteBugDB(self, bug_ids):
+    def getProductsForRemoteBugs(self, bug_ids):
+        """Return the products to which a set of remote bugs belong.
+
+        :param bug_ids: A list of bug IDs or aliases.
+        :returns: A dict of (bug_id_or_alias, product) mappings. If a
+            bug ID specified in `bug_ids` is invalid, it will be ignored.
+        """
+        # Fetch from the server those bugs that we haven't already
+        # fetched.
+        self.initializeRemoteBugDB(bug_ids)
+
+        bug_products = {}
+        for bug_id in bug_ids:
+            # If one of the bugs we're trying to get the product for
+            # doesn't exist, just skip it.
+            try:
+                actual_bug_id = self._getActualBugId(bug_id)
+            except BugNotFound:
+                continue
+
+            bug_dict = self._bugs[actual_bug_id]
+            bug_products[bug_id] = bug_dict['product']
+
+        return bug_products
+
+    def initializeRemoteBugDB(self, bug_ids, products=None):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
         # data.
@@ -464,6 +492,10 @@ class BugzillaLPPlugin(Bugzilla):
             'ids': bug_ids_to_retrieve,
             'permissive': True,
             }
+
+        if products is not None:
+            request_args['products'] = products
+
         response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
@@ -637,3 +669,40 @@ class BugzillaLPPlugin(Bugzilla):
         # We cast the return value to string, since that's what
         # BugWatchUpdater will expect (see bug 248938).
         return str(return_dict['comment_id'])
+
+    def getLaunchpadBugId(self, remote_bug):
+        """Return the current Launchpad bug ID for a given remote bug.
+
+        See `ISupportsBackLinking`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        # Grab the internals dict from the bug, if there is one. If
+        # there isn't, return None, since there's no Launchpad bug ID to
+        # be had.
+        internals = self._bugs[actual_bug_id].get('internals', None)
+        if internals is None:
+            return None
+
+        # Extract the Launchpad bug ID and return it. Return None if
+        # there isn't one or it's set to an empty string.
+        launchpad_bug_id = internals.get('launchpad_id', None)
+        if launchpad_bug_id == '':
+            launchpad_bug_id = None
+
+        return launchpad_bug_id
+
+    @needs_authentication
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+        """Set the Launchpad bug for a given remote bug.
+
+        See `ISupportsBackLinking`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        request_params = {
+            'id': actual_bug_id,
+            'launchpad_id': launchpad_bug_id,
+            }
+
+        self.xmlrpc_proxy.Launchpad.set_link(request_params)

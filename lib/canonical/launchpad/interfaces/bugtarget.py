@@ -7,44 +7,89 @@ __metaclass__ = type
 
 
 __all__ = [
+    'BugDistroSeriesTargetDetails',
     'IBugTarget',
-    'BugDistroSeriesTargetDetails']
+    'IHasBugs',
+    ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Text
+from zope.schema import List, Text
 
-from canonical.lazr.rest.declarations import export_as_webservice_entry
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.bugtask import (
+    BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.lazr.fields import Reference
+from canonical.lazr.interface import copy_field
+from canonical.lazr.rest.declarations import (
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_collection_of)
 
 
-class IBugTarget(Interface):
-    """An entity on which a bug can be reported.
+class IHasBugs(Interface):
+    """An entity which has a collection of bug tasks."""
 
-    Examples include an IDistribution, an IDistroSeries and an
-    IProduct.
-    """
     export_as_webservice_entry()
 
-    # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
-    bugtargetdisplayname = Attribute("A display name for this bug target")
-    bugtargetname = Attribute("The target as shown in mail notifications.")
-
+    # XXX Tom Berger 2008-09-26, Bug #274735
+    # The following are attributes, rather than fields, and must remain
+    # so, to make sure that they are not being copied into snapshots.
+    # Eventually, we'd like to remove these attributes from the content
+    # class altogether.
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
-    inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
-    critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
+    inprogress_bugtasks = Attribute(
+        "A list of in-progress bugTasks for this target.")
+    critical_bugtasks = Attribute(
+        "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
-    unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
-    all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
+    unassigned_bugtasks = Attribute(
+        "A list of unassigned BugTasks for this target.")
+    all_bugtasks = Attribute(
+        "A list of all BugTasks ever reported for this target.")
 
-    bug_reporting_guidelines = Text(
-        title=(
-            u"If I\N{right single quotation mark}m reporting a bug, "
-            u"I should include, if possible"),
-        description=(
-            u"These guidelines will be shown to anyone reporting a bug."),
-        required=False, max_length=50000)
-
-    def searchTasks(search_params):
+    @call_with(search_params=None, user=REQUEST_USER)
+    @operation_parameters(
+        order_by=List(
+            title=_('List of fields by which the results are ordered.'),
+            value_type=Text(),
+            required=False),
+        search_text=copy_field(IBugTaskSearch['searchtext']),
+        status=copy_field(IBugTaskSearch['status']),
+        importance=copy_field(IBugTaskSearch['importance']),
+        assignee=Reference(schema=IPerson),
+        bug_reporter=Reference(schema=IPerson),
+        bug_supervisor=Reference(schema=IPerson),
+        bug_commenter=Reference(schema=IPerson),
+        bug_subscriber=Reference(schema=IPerson),
+        owner=Reference(schema=IPerson),
+        has_patch=copy_field(IBugTaskSearch['has_patch']),
+        has_cve=copy_field(IBugTaskSearch['has_cve']),
+        tags=copy_field(IBugTaskSearch['tag']),
+        tags_combinator=copy_field(IBugTaskSearch['tags_combinator']),
+        omit_duplicates=copy_field(IBugTaskSearch['omit_dupes']),
+        omit_targeted=copy_field(IBugTaskSearch['omit_targeted']),
+        status_upstream=copy_field(IBugTaskSearch['status_upstream']),
+        milestone_assignment=copy_field(
+            IBugTaskSearch['milestone_assignment']),
+        milestone=copy_field(IBugTaskSearch['milestone']),
+        component=copy_field(IBugTaskSearch['component']),
+        nominated_for=Reference(schema=Interface),
+        has_no_package=copy_field(IBugTaskSearch['has_no_package']))
+    @operation_returns_collection_of(IBugTask)
+    @export_read_operation()
+    def searchTasks(search_params, user=None,
+                    order_by=None, search_text=None,
+                    status=None, importance=None,
+                    assignee=None, bug_reporter=None, bug_supervisor=None,
+                    bug_commenter=None, bug_subscriber=None, owner=None,
+                    has_patch=None, has_cve=None, distribution=None,
+                    tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
+                    omit_duplicates=True, omit_targeted=None,
+                    status_upstream=None, milestone_assignment=None,
+                    milestone=None, component=None, nominated_for=None,
+                    sourcepackagename=None, has_no_package=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -53,20 +98,6 @@ class IBugTarget(Interface):
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
-        """
-
-    def getMostCommonBugs(user, limit=10):
-        """Return the list of most commonly-reported bugs.
-
-        This is the list of bugs that have the most dupes, ordered from
-        most to least duped.
-        """
-
-    def createBug(bug_params):
-        """Create a new bug on this target.
-
-        bug_params is an instance of
-        canonical.launchpad.interfaces.CreateBugParams.
         """
 
     def getUsedBugTags():
@@ -91,6 +122,49 @@ class IBugTarget(Interface):
         """
 
 
+class IBugTarget(IHasBugs):
+    """An entity on which a bug can be reported.
+
+    Examples include an IDistribution, an IDistroSeries and an
+    IProduct.
+    """
+
+    export_as_webservice_entry()
+
+    # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
+    bugtargetdisplayname = Attribute("A display name for this bug target")
+    bugtargetname = Attribute("The target as shown in mail notifications.")
+
+    bug_reporting_guidelines = exported(
+        Text(
+            title=(
+                u"If I\N{right single quotation mark}m reporting a bug, "
+                u"I should include, if possible"),
+            description=(
+                u"These guidelines will be shown to "
+                "anyone reporting a bug."),
+            required=False,
+            max_length=50000))
+
+    def getMostCommonBugs(user, limit=10):
+        """Return the list of most commonly-reported bugs.
+
+        This is the list of bugs that have the most dupes, ordered from
+        most to least duped.
+        """
+
+    def createBug(bug_params):
+        """Create a new bug on this target.
+
+        bug_params is an instance of
+        canonical.launchpad.interfaces.CreateBugParams.
+        """
+
+# We assign the schema for an `IBugTask` attribute here
+# in order to avoid circular dependencies.
+IBugTask['target'].schema = IBugTarget
+
+
 class BugDistroSeriesTargetDetails:
     """The details of a bug targeted to a specific IDistroSeries.
 
@@ -109,4 +183,3 @@ class BugDistroSeriesTargetDetails:
         self.sourcepackage = sourcepackage
         self.assignee = assignee
         self.status = status
-

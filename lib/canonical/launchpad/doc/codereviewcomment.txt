@@ -40,7 +40,7 @@ default.
     >>> comment2 = merge_proposal.createComment(
     ...     sender, 'No!', 'You are ugly and stupid',
     ...     CodeReviewVote.DISAPPROVE)
-    >>> comment2.message.parent == merge_proposal.root_comment.message
+    >>> comment2.message.parent is None
     True
 
 Comments can be marked as replies to particular comments.
@@ -57,28 +57,28 @@ a notification is produced when the comment is created.
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
-    >>> from canonical.launchpad.tests.mail_helpers import (
-    ...     pop_notifications, print_emails)
     >>> source_subscriber = factory.makePerson(email='subscriber@example.com',
     ...     password='baz', displayname='Subscriber Person')
     >>> _unused = merge_proposal.source_branch.subscribe(source_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
+    >>> from canonical.launchpad.tests.mail_helpers import (
+    ...     pop_notifications, print_emails)
     >>> _unused = pop_notifications()
     >>> comment = merge_proposal.createComment(
     ...     sender, 'Please merge', 'This patch is very nice.',
-    ...     vote=CodeReviewVote.APPROVE, vote_tag='DB')
+    ...     vote=CodeReviewVote.APPROVE, review_type='DB')
     >>> notifications = pop_notifications()
-    >>> print_emails(include_reply_to=True, notifications=notifications)
+    >>> print_emails(include_reply_to=True, notifications=notifications[:1])
     From: Sender Person <sender@example.com>
-    To: Subscriber Person <subscriber@example.com>
+    To: ...
     Reply-To: mp+1@code.launchpad.dev
     Subject: Please merge
-    Vote: Approve DB
+    Review: Approve db
     This patch is very nice.
     --...
-    You are subscribed to branch ~person-name.../product-name.../branch....
+    You are subscribed to branch lp://dev/~...
     ----------------------------------------
     >>> print notifications[0]['X-Launchpad-Branch']
     ~person-name.../product-name.../branch...
@@ -86,8 +86,7 @@ a notification is produced when the comment is created.
     Subscriber
     >>> notifications[0]['Message-Id'] == comment.message.rfc822msgid
     True
-    >>> (notifications[0]['In-Reply-To'] ==
-    ...  merge_proposal.root_comment.message.rfc822msgid)
+    >>> (notifications[0]['In-Reply-To'] == merge_proposal.root_message_id)
     True
 
 

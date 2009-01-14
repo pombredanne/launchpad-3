@@ -7,9 +7,10 @@
   <tr>
     <td style="white-space: nowrap"
         tal:content="structure context/fmt:link" />
-    <!-- XXX: Edwin Grubbs 2008-06-17 bug=240759
-         The @@/yes and @@/no img tags could be handled by a tales formatter.
-    -->
+    <tal:XXX condition="nothing">
+     # XXX: Edwin Grubbs 2008-06-17 bug=240759
+     # The @@/yes and @@/no img tags could be handled by a tales formatter.
+    </tal:XXX>
     <td style="text-align: center">
       <img src="/@@/yes" tal:condition="context/active"/>
       <img src="/@@/no" tal:condition="not: context/active"/>
@@ -39,6 +40,9 @@
     <td tal:content="structure context/license_info/fmt:shorten/80/fmt:text-to-html">
         License info goes here
     </td>
+    <td tal:condition="context/commercial_subscription"
+        tal:content="context/commercial_subscription/date_expires/fmt:date" />
+    <td tal:condition="not: context/commercial_subscription" />
     <td tal:content="context/reviewer_whiteboard/fmt:shorten/80" />
   </tr>
 </tal:root>

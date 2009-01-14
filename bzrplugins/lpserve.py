@@ -54,28 +54,6 @@ class cmd_launchpad_server(Command):
 
     takes_args = ['user_id']
 
-    def get_lp_server(self, branchfs_client, user_id, hosted_url, mirror_url):
-        """Create a Launchpad smart server.
-
-        :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
-            branch file system end-point.
-        :param user_id: A unique database ID of the user whose branches are
-            being served.
-        :param hosted_url: Where the branches are uploaded to.
-        :param mirror_url: Where all Launchpad branches are mirrored.
-        :return: A `LaunchpadTransport`.
-        """
-        # Importing here to avoid circular import when lpserve is loaded as a
-        # bzr plugin.
-        from canonical.codehosting import transport
-        # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
-        hosted_transport = transport.get_chrooted_transport(hosted_url)
-        mirror_transport = transport.get_chrooted_transport(mirror_url)
-        lp_server = transport.LaunchpadServer(
-            transport.BlockingProxy(branchfs_client), user_id, hosted_transport,
-            mirror_transport)
-        return lp_server
-
     def get_smart_server(self, transport, port, inet):
         """Construct a smart server."""
         if inet:
@@ -121,7 +99,8 @@ class cmd_launchpad_server(Command):
         mirror_url = urlutils.local_path_to_url(mirror_directory)
         branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
 
-        lp_server = self.get_lp_server(
+        from canonical.codehosting.branchfs import get_lp_server
+        lp_server = get_lp_server(
             branchfs_client, user_id, upload_url, mirror_url)
         lp_server.setUp()
 

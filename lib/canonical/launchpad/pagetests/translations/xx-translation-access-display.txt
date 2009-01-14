@@ -36,9 +36,7 @@ translation group of its own, that too is shown here.
     >>> from canonical.launchpad.database.product import Product
     >>> from canonical.launchpad.database.translationgroup import (
     ...     TranslationGroup)
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 
-    >>> factory = LaunchpadObjectFactory()
     >>> spanish = Language.selectOneBy(code='es')
     >>> evolution = Product.selectOneBy(name='evolution')
     >>> foobar = Person.selectOneBy(name='name16')

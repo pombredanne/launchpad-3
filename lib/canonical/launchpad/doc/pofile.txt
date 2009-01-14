@@ -38,8 +38,6 @@ except for untranslated messages.
 
     >>> dummy_pofile.getPOTMsgSetTranslated().count()
     0
-    >>> dummy_pofile.getPOTMsgSetFuzzy().count()
-    0
     >>> dummy_pofile.getPOTMsgSetChangedInLaunchpad().count()
     0
     >>> dummy_pofile.getPOTMsgSetWithNewSuggestions().count()
@@ -63,7 +61,7 @@ Get the set of POTMsgSets that are untranslated.
 
     >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
     >>> len(potmsgsets)
-    13
+    15
 
 We need a helper method to better display test results.
 
@@ -398,11 +396,10 @@ breakage.
 
     >>> translation_message = pofile_es.getCurrentTranslationMessage(
     ...     u'evolution addressbook')
-    >>> is_fuzzy = False
     >>> is_imported = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message.potmsgset.updateTranslation(
-    ...     pofile_es, no_priv, [u'foo'], is_fuzzy, is_imported, lock_timestamp)
+    ...     pofile_es, no_priv, [u'foo'], is_imported, lock_timestamp)
     Traceback (most recent call last):
     ...
     AssertionError: No Privileges Person cannot add translations nor can...
@@ -659,10 +656,10 @@ So for a concrete export, we have a message like:
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
-    #, fuzzy, c-format
+    #, c-format
     msgid "%d foo"
     msgid_plural "%d bars"
-    msgstr[0] "%d foo"
+    msgstr[0] ""
     ...
 
 When it changes...
@@ -687,31 +684,26 @@ When it changes...
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
-    #, fuzzy, c-format
+    #, c-format
     msgid "%d foo"
     msgid_plural "something else"
-    msgstr[0] "%d foo"
+    msgstr[0] ""
     ...
 
 
 == getPOTMsgSetUntranslated ==
 
-The POTMsgSet that are untranslated are the ones that are not complete and
-that aren't fuzzy.
-
-If a POTMsgSet doesn't have a POMsgSet for a concrete translation, we take
-that as not bein complete too.
+The POTMsgSet that are untranslated are the ones that are not complete.
 
     >>> untranslated_potmsgset = pofile_es.getPOTMsgSetUntranslated()
     >>> untranslated_potmsgset.count()
-    13
+    14
 
     >>> for potmsgset in untranslated_potmsgset:
     ...     pomsgset = potmsgset.getCurrentTranslationMessage(
     ...         pofile_es.language)
     ...     assert (pomsgset is None or
-    ...             (pomsgset.iscomplete == False and
-    ...              pomsgset.isfuzzy == False))
+    ...             (pomsgset.iscomplete == False))
 
 
 == createMessageSetFromText ==
@@ -738,11 +730,10 @@ Now, just to be sure that this entry doesn't exist yet:
 Is time to create it.
 
     >>> translations = {0: u''}
-    >>> is_fuzzy = False
     >>> is_imported = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message = potmsgset.updateTranslation(
-    ...     pofile_sr, rosetta_experts, translations, is_fuzzy, is_imported,
+    ...     pofile_sr, rosetta_experts, translations, is_imported,
     ...     lock_timestamp)
 
 As we can see, is the msgid we were looking for.
@@ -827,7 +818,7 @@ Lets get a single untranslated POTMsgSet.
 Now, lets provide a translation for it.
 
     >>> translation_message = untranslated.updateTranslation(pofile_changed,
-    ...     pofile_changed.owner, {0: u'sample translation'}, is_fuzzy=False,
+    ...     pofile_changed.owner, {0: u'sample translation'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
 
 And make sure that the count of changed in Launchpad hasn't changed.
@@ -856,8 +847,7 @@ Lets re-translate that:
 
     >>> translation_message = imported_potmsgset.updateTranslation(
     ...     pofile_changed, pofile_changed.owner, {0: u'new translation'},
-    ...     is_fuzzy=False, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
@@ -913,7 +903,7 @@ Non-editor can only submit a new suggestion on untranslated message.
     None
 
     >>> new_translation = potmsgset.updateTranslation(
-    ...     evolution_es, noneditor, {0: u'translation'}, is_fuzzy=False,
+    ...     evolution_es, noneditor, {0: u'translation'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
     >>> print new_translation.translations
@@ -934,7 +924,7 @@ A privileged translator can approve this same suggestion by submitting
 it himself.
 
     >>> new_translation = potmsgset.updateTranslation(
-    ...     evolution_es, editor, {0: u'translation'}, is_fuzzy=False,
+    ...     evolution_es, editor, {0: u'translation'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
     >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
@@ -950,7 +940,7 @@ Or, they can update it with entirely different translation, which won't be
 picked up as a new suggestion, but will be directly set as the translation.
 
     >>> new_translation = potmsgset.updateTranslation(
-    ...     evolution_es, editor, {0: u'boohoo'}, is_fuzzy=False,
+    ...     evolution_es, editor, {0: u'boohoo'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
     >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
@@ -973,7 +963,7 @@ new suggestions.
     [u'tiene ']
 
     >>> new_translation = potmsgset.updateTranslation(
-    ...     evolution_es, noneditor, {0: u'blahblah'}, is_fuzzy=False,
+    ...     evolution_es, noneditor, {0: u'blahblah'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
     >>> print current.translations
@@ -988,7 +978,7 @@ And if we've got two new suggestions for the same message, POTMsgSet
 will not be listed twice in the returned result.
 
     >>> new_translation = potmsgset.updateTranslation(
-    ...     evolution_es, noneditor, {0: u'another'}, is_fuzzy=False,
+    ...     evolution_es, noneditor, {0: u'another'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     3
@@ -1002,8 +992,8 @@ With this method we can get all POTMsgSet objects that are fully
 translated for a given POFile.
 
     >>> def print_message_status(potmsgsets, language):
-    ...     print "%-10s %-5s %-10s %-9s %-11s" % (
-    ...         "msgid", "form", "translat.", "fuzzy", "Has plurals")
+    ...     print "%-10s %-5s %-10s %-11s" % (
+    ...         "msgid", "form", "translat.", "Has plurals")
     ...     for potmsgset in potmsgsets:
     ...         translationmessage = potmsgset.getCurrentTranslationMessage(
     ...             language)
@@ -1017,53 +1007,26 @@ translated for a given POFile.
     ...                 translation = translationmessage.translations[index]
     ...                 if len(translation) > 10:
     ...                     translation = translation[:7] + '...'
-    ...             print "%-10s %-5s %-10s %-9s %-11s" % (
+    ...             print "%-10s %-5s %-10s %-11s" % (
     ...                 msgid, index, translation,
-    ...                 translationmessage.is_fuzzy,
     ...                 potmsgset.msgid_plural is not None)
 
     >>> potmsgsets_translated = evolution_es.getPOTMsgSetTranslated()
     >>> print_message_status(
     ...     potmsgsets_translated, evolution_es.language)
-    msgid      form  translat.  fuzzy     Has plurals
-    evoluti... 0     libreta... False     False
-    current... 0     carpeta... False     False
-    have       0     tiene      False     False
-     cards     0      tarjetas  False     False
-    evoluti... 0     boohoo     False     False
-    The loc... 0     La ubic... False     False
-    %d contact 0     %d cont... False     True
-    %d contact 1     %d cont... False     True
-    Opening... 0     Abrir %... False     True
-    Opening... 1     Abrir %... False     True
-    EncFS P... 0     Contras... False     False
+    msgid      form  translat.  Has plurals
+    evoluti... 0     libreta... False
+    current... 0     carpeta... False
+    have       0     tiene      False
+     cards     0      tarjetas  False
+    evoluti... 0     boohoo     False
+    The loc... 0     La ubic... False
+    %d contact 0     %d cont... True
+    %d contact 1     %d cont... True
+    Opening... 0     Abrir %... True
+    Opening... 1     Abrir %... True
+    EncFS P... 0     Contras... False
 
-
-== getPOTMsgSetFuzzy ==
-
-This method returns all POTMsgSet for a given POFile that have its
-current TranslationMessage with is_fuzzy flag set.
-
-    >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
-    >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
-    msgid      form  translat.  fuzzy     Has plurals
-    %d foo     0     %d foo     True      True
-    %d foo     1     None       True      True
-
-And when we submit another translation that is fuzzy...
-
-    >>> potmsgset_to_change = potmsgsets_fuzzy[0]
-    >>> new_translationmessage = potmsgset_to_change.updateTranslation(
-    ...     evolution_es, editor, {0: u'something'}, is_fuzzy=True,
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
-
-... we get only the new one, which is fuzzy
-
-    >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
-    >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
-    msgid      form  translat.  fuzzy     Has plurals
-    %d foo     0     something  True      True
-    %d foo     1     None       True      True
 
 == getTranslationsFilteredBy ==
 
@@ -1083,8 +1046,6 @@ created by a certain person.
     [u'La ubicaci\xf3n y jerarqu\xeda de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...']
     [u'%d contacto', u'%d contactos']
     [u'Abrir %d contacto abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar este contacto?', u'Abrir %d contactos abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar todos estos contactos?']
-    [u'something', None]
-    [u'%d foo', None]
     [u'Contrase\xf1a de EncFS: ']
     [u'_A\xf1adir grupo']
 
@@ -1122,8 +1083,7 @@ is updated.
 
     >>> new_credits = potmsgset.updateTranslation(
     ...     alsa_translation, alsa_translation.owner, {0: u'Happy translator'},
-    ...     is_fuzzy=False, is_imported=True,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     alsa_translation.language)
@@ -1134,7 +1094,7 @@ If we submit non-published translation, it's refused.
 
     >>> no_credits = potmsgset.updateTranslation(
     ...     alsa_translation, alsa_translation.owner,
-    ...     {0: u'Unhappy translator'}, is_fuzzy=False, is_imported=False,
+    ...     {0: u'Unhappy translator'}, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> print no_credits
     None
@@ -1186,7 +1146,7 @@ Contributions:" is used as a header for the added credits.
 
     >>> alsa_translation.prepareTranslationCredits(
     ...     names_of_translators)
-    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+    u' ,Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
 
 Lets add a newly supported KDE context message with credit strings
 split into two: context and message, instead of a single message with
@@ -1199,7 +1159,7 @@ embedded context.
 prepareTranslationCredits works on such messages as well:
 
     >>> alsa_translation.prepareTranslationCredits(new_kde_name_credits)
-    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+    u' ,Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
 
 Similar happens for email credits as with name credits.
 

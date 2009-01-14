@@ -19,7 +19,8 @@ __all__ = [
 
 import cgi
 from cStringIO import StringIO
-import email
+from email import message_from_string
+import tempfile
 import urllib
 
 from zope.app.form.browser import TextWidget
@@ -37,6 +38,7 @@ from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
@@ -57,6 +59,156 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
 
 
+class FileBugDataParser:
+    """Parser for a message containing extra bug information.
+
+    Applications like Apport upload such messages, before filing the
+    bug.
+    """
+
+    def __init__(self, blob_file):
+        self.blob_file = blob_file
+        self.headers = {}
+        self._buffer = ''
+        self.extra_description = None
+        self.comments = []
+        self.attachments = []
+        self.BUFFER_SIZE = 8192
+
+    def _consumeBytes(self, end_string):
+        """Read bytes from the message up to the end_string.
+
+        The end_string is included in the output.
+
+        If end-of-file is reached, '' is returned.
+        """
+        while end_string not in self._buffer:
+            data = self.blob_file.read(self.BUFFER_SIZE)
+            self._buffer += data
+            if len(data) < self.BUFFER_SIZE:
+                # End of file.
+                if end_string not in self._buffer:
+                    # If the end string isn't present, we return
+                    # everything.
+                    buffer = self._buffer
+                    self._buffer = ''
+                    return buffer
+                break
+        end_index = self._buffer.index(end_string)
+        bytes = self._buffer[:end_index+len(end_string)]
+        self._buffer = self._buffer[end_index+len(end_string):]
+        return bytes
+
+    def readHeaders(self):
+        """Read the next set of headers of the message."""
+        header_text = self._consumeBytes('\n\n')
+        # Use the email package to return a dict-like object of the
+        # headers, so we don't have to parse the text ourselves.
+        return message_from_string(header_text)
+
+    def readLine(self):
+        """Read a line of the message."""
+        data = self._consumeBytes('\n')
+        if data == '':
+            raise AssertionError('End of file reached.')
+        return data
+
+    def _setDataFromHeaders(self, data, headers):
+        """Set the data attributes from the message headers."""
+        if 'Subject' in headers:
+            data.initial_summary = unicode(headers['Subject'])
+        if 'Tags' in headers:
+            tags_string = unicode(headers['Tags'])
+            data.initial_tags = tags_string.lower().split()
+        if 'Private' in headers:
+            private = headers['Private']
+            if private.lower() == 'yes':
+                data.private = True
+            elif private.lower() == 'no':
+                data.private = False
+            else:
+                # If the value is anything other than yes or no we just
+                # ignore it as we cannot currently give the user an error
+                pass
+        if 'Subscribers' in headers:
+            subscribers_string = unicode(headers['Subscribers'])
+            data.subscribers = subscribers_string.lower().split()
+
+    def parse(self):
+        """Parse the message and  return a FileBugData instance.
+
+            * The Subject header is the initial bug summary.
+            * The Tags header specifies the initial bug tags.
+            * The Private header sets the visibility of the bug.
+            * The Subscribers header specifies additional initial subscribers
+            * The first inline part will be added to the description.
+            * All other inline parts will be added as separate comments.
+            * All attachment parts will be added as attachment.
+
+        When parsing each part of the message is stored in a temporary
+        file on the file system. After using the returned data,
+        removeTemporaryFiles() must be called.
+        """
+        headers = self.readHeaders()
+        data = FileBugData()
+        self._setDataFromHeaders(data, headers)
+
+        # The headers is a Message instance.
+        boundary = "--" + headers.get_param("boundary")
+        line = self.readLine()
+        while not line.startswith(boundary + '--'):
+            part_file = tempfile.TemporaryFile()
+            part_headers = self.readHeaders()
+            content_encoding = part_headers.get('Content-Transfer-Encoding')
+            if content_encoding is not None and content_encoding != 'base64':
+                raise AssertionError(
+                    "Unknown encoding: %r." % content_encoding)
+            line = self.readLine()
+            while not line.startswith(boundary):
+                # Decode the file.
+                if content_encoding is not None:
+                    line = line.decode(content_encoding)
+                part_file.write(line)
+                line = self.readLine()
+            # Prepare the file for reading.
+            part_file.seek(0)
+            disposition = part_headers['Content-Disposition']
+            disposition = disposition.split(';')[0]
+            disposition = disposition.strip()
+            if disposition == 'inline':
+                assert part_headers.get_content_type() == 'text/plain', (
+                    "Inline parts have to be plain text.")
+                charset = part_headers.get_content_charset()
+                assert charset, (
+                    "A charset has to be specified for text parts.")
+                inline_content = part_file.read().rstrip()
+                part_file.close()
+                inline_content = inline_content.decode(charset)
+
+                if data.extra_description is None:
+                    # The first inline part is extra description.
+                    data.extra_description = inline_content
+                else:
+                    data.comments.append(inline_content)
+            elif disposition == 'attachment':
+                attachment = dict(
+                    filename=unicode(part_headers.get_filename().strip("'")),
+                    content_type=unicode(part_headers['Content-type']),
+                    content=part_file)
+                if 'Content-Description' in part_headers:
+                    attachment['description'] = unicode(
+                        part_headers['Content-Description'])
+                else:
+                    attachment['description'] = attachment['filename']
+                data.attachments.append(attachment)
+            else:
+                # If the message include other disposition types,
+                # simply ignore them. We don't want to break just
+                # because some extra information is included.
+                continue
+        return data
+
+
 class FileBugData:
     """Extra data to be added to the bug."""
 
@@ -70,69 +222,6 @@ class FileBugData:
         self.comments = []
         self.attachments = []
 
-    def setFromRawMessage(self, raw_mime_msg):
-        """Set the extra file bug data from a MIME multipart message.
-
-            * The Subject header is the initial bug summary.
-            * The Tags header specifies the initial bug tags.
-            * The Private header sets the visibility of the bug.
-            * The Subscribers header specifies additional initial subscribers
-            * The first inline part will be added to the description.
-            * All other inline parts will be added as separate comments.
-            * All attachment parts will be added as attachment.
-        """
-        mime_msg = email.message_from_string(raw_mime_msg)
-        if mime_msg.is_multipart():
-            self.initial_summary = mime_msg.get('Subject')
-            tags = mime_msg.get('Tags', '')
-            self.initial_tags = tags.lower().split()
-            private = mime_msg.get('Private')
-            if private:
-                if private.lower() == 'yes':
-                    self.private = True
-                elif private.lower() == 'no':
-                    self.private = False
-                else:
-                    # If the value is anything other than yes or no we just
-                    # ignore it as we cannot currently give the user an error
-                    pass
-            subscribers = mime_msg.get('Subscribers', '')
-            self.subscribers = subscribers.split()
-            for part in mime_msg.get_payload():
-                disposition_header = part.get('Content-Disposition', 'inline')
-                # Get the type, excluding any parameters.
-                disposition_type = disposition_header.split(';')[0]
-                disposition_type = disposition_type.strip()
-                if disposition_type == 'inline':
-                    assert part.get_content_type() == 'text/plain', (
-                        "Inline parts have to be plain text.")
-                    charset = part.get_content_charset()
-                    assert charset, (
-                        "A charset has to be specified for text parts.")
-                    part_text = part.get_payload(decode=True).decode(charset)
-                    part_text = part_text.rstrip()
-                    if self.extra_description is None:
-                        self.extra_description = part_text
-                    else:
-                        self.comments.append(part_text)
-                elif disposition_type == 'attachment':
-                    attachment = dict(
-                        filename=part.get_filename().strip("'"),
-                        content_type=part['Content-type'],
-                        content=StringIO(part.get_payload(decode=True)))
-                    if part.get('Content-Description'):
-                        attachment['description'] = (
-                            part['Content-Description'])
-                    else:
-                        attachment['description'] = attachment['filename']
-                    self.attachments.append(attachment)
-                else:
-                    # If the message include other disposition types,
-                    # simply ignore them. We don't want to break just
-                    # because some extra information is included.
-                    continue
-
-
 
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
@@ -142,6 +231,7 @@ class FileBugViewBase(LaunchpadFormView):
     extra_data_token = None
     advanced_form = False
     frontpage_form = False
+    data_parser = None
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -522,7 +612,10 @@ class FileBugViewBase(LaunchpadFormView):
         extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
         if extra_bug_data is not None:
             self.extra_data_token = name
-            self.extra_data.setFromRawMessage(extra_bug_data.blob)
+            extra_bug_data.file_alias.open()
+            self.data_parser = FileBugDataParser(extra_bug_data.file_alias)
+            self.extra_data = self.data_parser.parse()
+            extra_bug_data.file_alias.close()
         else:
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
@@ -589,6 +682,54 @@ class FileBugViewBase(LaunchpadFormView):
             if bugtask.target in contexts or bugtask.pillar in contexts:
                 return bugtask
         return None
+
+    @property
+    def bugtarget(self):
+        """The bugtarget we're currently assuming.
+
+        The same as the context.
+        """
+        return self.context
+
+    @property
+    def bug_reporting_guidelines(self):
+        """Guidelines for filing bugs in the current context.
+
+        Returns a list of dicts, with each dict containing values for
+        "preamble" and "content".
+        """
+        def target_name(target):
+            # IProject can be considered the target of a bug during
+            # the bug filing process, but does not extend IBugTarget
+            # and ultimately cannot actually be the target of a
+            # bug. Hence this function to determine a suitable
+            # name/title to display. Hurrumph.
+            if IBugTarget.providedBy(target):
+                return target.bugtargetdisplayname
+            else:
+                return target.title
+
+        guidelines = []
+        context = self.bugtarget
+        if context is not None:
+            content = context.bug_reporting_guidelines
+            if content is not None and len(content) > 0:
+                guidelines.append({
+                        "source": target_name(context),
+                        "content": content,
+                        })
+            # Distribution source packages are shown with both their
+            # own reporting guidelines and those of their
+            # distribution.
+            if IDistributionSourcePackage.providedBy(context):
+                distribution = context.distribution
+                content = distribution.bug_reporting_guidelines
+                if content is not None and len(content) > 0:
+                    guidelines.append({
+                            "source": target_name(distribution),
+                            "content": content,
+                            })
+        return guidelines
 
 
 class FileBugAdvancedView(FileBugViewBase):
@@ -826,6 +967,19 @@ class FrontPageFileBugMixin:
         product_or_distro = self.getProductOrDistroFromContext()
         return IProduct.providedBy(product_or_distro)
 
+    @property
+    def bugtarget(self):
+        """The bugtarget we're currently assuming.
+
+        This needs to be obtained from form data because we're on the
+        front page, and not already within a product/distro/etc
+        context.
+        """
+        if self.widgets['bugtarget'].hasValidInput():
+            return self.widgets['bugtarget'].getInputValue()
+        else:
+            return None
+
     def getProductOrDistroFromContext(self):
         """Return the product or distribution relative to the context.
 
@@ -833,13 +987,10 @@ class FrontPageFileBugMixin:
         distribution related to it. This method will return None if the
         context is not related to a product or a distro.
         """
-        context = self.context
-
         # We need to find a product or distribution from what we've had
         # submitted to us.
-        if self.widgets['bugtarget'].hasValidInput():
-            context = self.widgets['bugtarget'].getInputValue()
-        else:
+        context = self.bugtarget
+        if context is None:
             return None
 
         if IProduct.providedBy(context) or IDistribution.providedBy(context):
@@ -1091,7 +1242,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         if self.uses_launchpad_bugtracker:
             return 'Launchpad'
         elif self.external_bugtracker:
-            return BugTrackerFormatterAPI(self.external_bugtracker).link()
+            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
         else:
             return 'None specified'
 
@@ -1109,5 +1260,5 @@ class BugTargetBugTagsView(LaunchpadView):
         bug_tag_counts = self.context.getUsedBugTagsWithOpenCounts(self.user)
         return [
             {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
-            for tag, count in bug_tag_counts if count > 0]
+            for tag, count in bug_tag_counts]
 

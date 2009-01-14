@@ -111,6 +111,40 @@ login_required() and will retry the method call.
 
     >>> test_transport.print_method_calls = False
 
+If authentication fails, a BugTrackerAuthenticationError will be raised.
+
+    >>> from xmlrpclib import Fault, ProtocolError
+    >>> class TestAuthFailingBugzillaXMLRPCTransport(
+    ...         ZopelessBugzillaXMLRPCTransport):
+    ...     error = Fault(100, "Sorry, you can't log in.")
+    ...
+    ...     def login(self, arguments):
+    ...         raise self.error
+
+    >>> fail_transport = TestAuthFailingBugzillaXMLRPCTransport(
+    ...     'http://example.com/')
+    >>> test_bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/',
+    ...     xmlrpc_transport=fail_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport(quiet=True)
+    ...     )
+
+    >>> test_bugzilla._authenticate()
+    Traceback (most recent call last):
+      ...
+    BugTrackerAuthenticationError: http://example.com:
+    XML-RPC Fault: 100 "Sorry, you can't log in."
+
+This is also true if an error occurs at the protocol level:
+
+    >>> fail_transport.error = ProtocolError(
+    ...     'http://example.com', 500, 'Internal server error', {})
+    >>> test_bugzilla._authenticate()
+    Traceback (most recent call last):
+       ...
+    BugTrackerAuthenticationError: http://example.com:
+    Protocol error: 500 "Internal server error"
+
 
 == Getting the current time ==
 
@@ -144,11 +178,14 @@ system.
 
 The bug data is stored as a list of dicts:
 
-    >>> for bug in sorted(bugzilla._bugs):
-    ...     print "Bug %s:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
-    ...     print "\n"
+    >>> def print_bugs(bugs):
+    ...     for bug in sorted(bugs):
+    ...         print "Bug %s:" % bug
+    ...         for key in sorted(bugzilla._bugs[bug]):
+    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         print "\n"
+
+    >>> print_bugs(bugzilla._bugs)
     Bug 1:
         alias: 
         assigned_to: test@canonical.com
@@ -159,7 +196,7 @@ The bug data is stored as a list of dicts:
         is_open: True
         last_change_time: 20080610T16:19:53
         priority: P1
-        product: HeartOfGold
+        product: Marvin
         resolution: FIXED
         severity: normal
         status: RESOLVED
@@ -512,3 +549,127 @@ The comment will be stored on the remote server with the other comments.
     >>> print message.text_contents
     This is a new remote comment.
     <BLANKLINE>
+
+
+== Linking remote bugs to Launchpad bugs ==
+
+BugzillaLPPlugin implements the ISupportsBackLinking interface, which
+provides methods to set and retrieve the Launchpad bug that links to a
+given remote bug from the remote server.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     ISupportsBackLinking)
+    >>> verifyObject(ISupportsBackLinking, bugzilla)
+    True
+
+The getLaunchpadBugId() method is used to retrive the current Launchpad
+bug ID for a given remote bug.
+
+    >>> launchpad_bug_id = bugzilla.getLaunchpadBugId(1)
+
+If there is no bug currently linked to the remote bug,
+getLaunchpadBugId() will return None.
+
+    >>> print launchpad_bug_id
+    None
+
+We'll set the launchpad_id for the remote bug so that we can retrieve
+it.
+
+    >>> bugzilla._bugs[1]['internals']['launchpad_id'] = 42
+
+getLaunchpadBugId() will return the current Launchpad bug ID if one is
+set.
+
+    >>> launchpad_bug_id = bugzilla.getLaunchpadBugId(1)
+    >>> print launchpad_bug_id
+    42
+
+setLaunchpadBugId() is used to set the Launchpad bug ID for a given
+remote bug.
+
+setLaunchpadBugId() requires authentication.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> bugzilla.setLaunchpadBugId(1, 10)
+    Using XML-RPC to generate token.
+    CALLED Launchpad.login({'token': '...'})
+    Successfully validated the token.
+    CALLED Launchpad.set_link({'id': 1, 'launchpad_id': 10})
+
+If we re-request the bug data from the remote server, we can see that
+the Launchpad bug ID has been updated for remote bug 1.
+
+    >>> del bugzilla._bugs[1]
+    >>> bugzilla.initializeRemoteBugDB([1])
+    CALLED Launchpad.get_bugs({'ids': [1], 'permissive': True})
+
+    >>> launchpad_bug_id = bugzilla.getLaunchpadBugId(1)
+    >>> print launchpad_bug_id
+    10
+
+
+== Working with a specified set of Bugzilla products ==
+
+BugzillaLPPlugin can be instructed to only get the data for a set of
+bug IDs if those bugs belong to one of a given set of products.
+
+    >>> ids_to_update = [1, 2]
+    >>> products_to_update = ['HeartOfGold']
+    >>> bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport())
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+
+    >>> bugzilla.initializeRemoteBugDB(ids_to_update, products_to_update)
+    CALLED Launchpad.get_bugs({'ids': [1, 2], 'permissive': True,
+    'products': ['HeartOfGold']})
+
+    >>> print_bugs(bugzilla._bugs)
+    Bug 2:
+        alias: bug-two
+        assigned_to: marvin@heartofgold.ship
+        component: Crew
+        creation_time: 20080611T09:23:12
+        id: 2
+        internals:...
+        is_open: True
+        last_change_time: 20080611T09:24:29
+        priority: P1
+        product: HeartOfGold
+        resolution: 
+        severity: high
+        status: NEW
+        summary: Collect unknown persons in docking bay 2.
+    <BLANKLINE>
+    <BLANKLINE>
+
+Specifying a set of IDs that don't belong to any of the products will
+result in no bugs being returned.
+
+    >>> del bugzilla._bugs[2]
+    >>> bugzilla.initializeRemoteBugDB([1], products_to_update)
+    CALLED Launchpad.get_bugs({'ids': [1], 'permissive': True,
+    'products': ['HeartOfGold']})
+
+    >>> len(bugzilla._bugs)
+    0
+
+
+== Getting the products for a set of remote bugs ==
+
+BugzillaLPPlugin provides a helper method, getProductsForRemoteBugs(),
+which takes a list of bug IDs or aliases and returns the products to
+which those bugs belong as a dict of (bug_id_or_alias, product)
+mappings.
+
+    >>> product_mappings = bugzilla.getProductsForRemoteBugs([1, 2])
+    CALLED Launchpad.get_bugs({'ids': [1, 2], 'permissive': True})
+
+    >>> for bug_id in sorted(product_mappings):
+    ...     print "%s: %s" % (bug_id, product_mappings[bug_id])
+    1: Marvin
+    2: HeartOfGold

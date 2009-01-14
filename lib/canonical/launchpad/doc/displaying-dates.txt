@@ -47,7 +47,7 @@ timestamp.
     ...         else:
     ...             return fixed_time
     >>> from zope.app.testing import ztapi
-    >>> from zope.app.traversing.interfaces import IPathAdapter
+    >>> from zope.traversing.interfaces import IPathAdapter
     >>> ztapi.provideAdapter(
     ...     datetime, IPathAdapter, TestDateTimeFormatterAPI, 'testfmt')
 

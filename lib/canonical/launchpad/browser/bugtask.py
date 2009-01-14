@@ -125,8 +125,10 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import decorates, EnumeratedType, Item
+from canonical.lazr import EnumeratedType, Item
+from lazr.delegates import delegates
 from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.lazr.interfaces.rest import IJSONRequestCache
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -449,6 +451,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
+        IJSONRequestCache(self.request).objects['bug'] = bug
+
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
@@ -571,6 +575,10 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self.request.response.addNotification(
             structured(
                 self._getUnsubscribeNotification(self.user, unsubed_dupes)))
+
+        # Because the unsubscribe above may change what the security policy
+        # says about the bug, we need to clear its cache.
+        self.request.clearSecurityPolicyCache()
 
         if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
@@ -862,8 +870,8 @@ class BugTaskEditView(LaunchpadEditFormView):
             editable_field_names = set(self.default_field_names)
             editable_field_names.discard('bugwatch')
 
-            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
-            # doesn't belong here! See https://launchpad.net/bugs/63000
+            # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
+            # doesn't belong here!
             if ('milestone' in editable_field_names and
                 not self.userCanEditMilestone()):
                 editable_field_names.remove("milestone")
@@ -1526,7 +1534,7 @@ class BugTaskListingItem:
     to get on the fly for each bug task in the listing.  These items are
     prefetched by the view and decorate the bug task.
     """
-    decorates(IBugTask, 'bugtask')
+    delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
                  has_specification):
@@ -1892,6 +1900,61 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
 
+    def buildBugTaskSearchParams(self, searchtext=None, extra_params=None):
+        """Build the parameters to submit to the `searchTasks` method.
+
+        Use the data submitted in the form to populate a dictionary
+        which, when expanded (using **params notation) can serve as the
+        input for searchTasks().
+        """
+
+        # We force the view to populate the data dictionary by calling
+        # _validate here.
+        data = {}
+        self._validate(None, data)
+
+        searchtext = data.get("searchtext")
+        if searchtext and searchtext.isdigit():
+            try:
+                bug = getUtility(IBugSet).get(searchtext)
+            except NotFoundError:
+                pass
+            else:
+                self.request.response.redirect(canonical_url(bug))
+
+        if extra_params:
+            data.update(extra_params)
+
+        params = {}
+
+        # A mapping of parameters that appear in the destination
+        # with a different name, or are being dropped altogether.
+        param_names_map = {
+            'searchtext': 'search_text',
+            'omit_dupes': 'omit_duplicates',
+            'subscriber': 'bug_subscriber',
+            'tag': 'tags',
+            # The correct value is being retrieved
+            # using get_sortorder_from_request()
+            'orderby': None,
+            }
+
+        for key, value in data.items():
+            if key in param_names_map:
+                param_name = param_names_map[key]
+                if param_name is not None:
+                    params[param_name] = value
+            else:
+                params[key] = value
+
+        assignee_option = self.request.form.get("assignee_option")
+        if assignee_option == "none":
+            params['assignee'] = NULL
+
+        params['order_by'] = get_sortorder_from_request(self.request)
+
+        return params
+
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an `ITableBatchNavigator` for the GET search criteria.
 
@@ -1925,6 +1988,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
 
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
+        search_params.user = self.user
         tasks = context.searchTasks(search_params)
         return tasks
 
@@ -2402,12 +2466,12 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             'Content-type', 'text/plain')
 
         # This uses the BugTaskSet internal API instead of using the
-        # standard searchTasks() because this can retrieve a lot of 
-        # bugs and we don't want to load all of that data in memory. 
+        # standard searchTasks() because the latter can retrieve a lot
+        # of bugs and we don't want to load all of that data in memory.
         # Retrieving only the bug numbers is much more efficient.
         search_params = self.buildSearchParams()
 
-        # XXX flacoste 2008/04/24 This should be moved to a 
+        # XXX flacoste 2008/04/24 This should be moved to a
         # BugTaskSearchParams.setTarget().
         if IDistroSeries.providedBy(self.context):
             search_params.setDistroSeries(self.context)
@@ -2593,7 +2657,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
         # iteration.
-        bugtasks_by_package = bugtask.getBugTasksByPackageName(all_bugtasks)
+        bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
         for bugtask in all_bugtasks:
             conjoined_master = bugtask.getConjoinedMaster(
@@ -2627,7 +2691,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         return bugtask_and_nomination_views
 
-    def currentBugTask(self):
+    @property
+    def current_bugtask(self):
         """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.
@@ -2638,6 +2703,20 @@ class BugTasksAndNominationsView(LaunchpadView):
         """Return True if the Also Affects links should be displayed."""
         # Hide the links when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
+
+    @property
+    def current_user_affected_status(self):
+        """Is the current user marked as affected by this bug?"""
+        return self.context.isUserAffected(self.user)
+
+    @property
+    def affects_form_value(self):
+        """The value to use in the inline me too form."""
+        affected = self.context.isUserAffected(self.user)
+        if affected is None or affected == False:
+            return 'YES'
+        else:
+            return 'NO'
 
 
 class BugTaskTableRowView(LaunchpadView):
@@ -2787,6 +2866,9 @@ class BugTaskPrivacyAdapter:
         return self.context.bug.private
 
 
+# XXX mars 2008-08-25 bug=261188
+# This whole class hierarchy should be replaced with something more
+# specific, ie. a class that generates BugTask page titles.
 class BugTaskSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBugTask`."""
 

@@ -110,8 +110,8 @@ class BranchFeedBase(FeedBase):
                                 date_created=branch.date_created,
                                 date_updated=branch.date_last_modified,
                                 date_published=branch.date_created,
-                                # XXX if author and owner are different
-                                # perhaps we should use them both?
+                                # XXX bac 2008-01-10: if author and owner are
+                                # different perhaps we should use them both?
                                 authors=[FeedPerson(branch.owner,
                                                     self.rootsite)],
                                 content=content_data)

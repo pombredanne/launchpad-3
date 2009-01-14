@@ -125,9 +125,6 @@ Comments can be searched when specifying a search text in the bugtask
 search. Whether comments are searched is controlled by the
 search_comments config option.
 
-    >>> from canonical.config import config
-    >>> OLD_SEARCH_COMMENTS = config.malone.search_comments
-
 For example, no Firefox bugs are found when searching for
 'wordincomment'.
 
@@ -138,7 +135,7 @@ For example, no Firefox bugs are found when searching for
     0
 
 If we add a comment containg the the search string to bug one, that bug
-will be returned by the search if search_comments is True.
+will be returned by the search only if search_comments is True.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -150,20 +147,28 @@ will be returned by the search if search_comments is True.
     >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
     <Message at ...>
 
-    >>> config.malone.search_comments = True
-    >>> found_bugtasks = firefox.searchTasks(comment_search)
-    >>> for bugtask in found_bugtasks:
-    ...     print "#%s" % bugtask.bug.id
-    #1
+When the search_comments config option is False, the bug is not found.
 
-If the search_comments config option is False, no bugs are found.
-
-    >>> config.malone.search_comments = False
+    >>> from canonical.config import config
+    >>> search_comments = """
+    ...     [malone]
+    ...     search_comments: %s
+    ...     """
+    >>> config.push('search_comments', search_comments % False)
     >>> found_bugtasks = firefox.searchTasks(comment_search)
     >>> [bugtask.bug.id for bugtask in found_bugtasks]
     []
 
-    >>> config.malone.search_comments = True
+    >>> config_data = config.pop('search_comments')
+
+If the search_comments config option is True, the bug is found.
+
+    >>> config.push('search_comments', search_comments % True)
+
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #1
 
     # Of course, searching in a project not containing bug #1 doesn't
     # return any matches.
@@ -172,7 +177,7 @@ If the search_comments config option is False, no bugs are found.
     >>> found_bugtasks.count()
     0
 
-    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS
+    >>> config_data = config.pop('search_comments')
 
 == Searching using bug full-text index ==
 
@@ -600,6 +605,37 @@ Searching for bugs with any of the tags returns only test bug a.
     test bug a [u'test-tag-1', u'test-tag-2']
 
 
+== Searching by date_closed ==
+
+It's possible to limit the search by date_closed, to get only bugs
+closed after a certain date. greater_than is used to search for bugs
+closed after a certain date.
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from canonical.launchpad.searchbuilder import greater_than
+    >>> product = factory.makeProduct()
+    >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
+    >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
+    >>> bug_closed_a_day_ago = factory.makeBug(
+    ...     product=product, date_closed=utc_now-timedelta(days=1),
+    ...     title="Closed a day ago")
+    >>> bug_closed_a_week_ago = factory.makeBug(
+    ...     product=product, date_closed=utc_now-timedelta(days=7),
+    ...     title="Closed a week ago")
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, orderby="-date_closed",
+    ...     date_closed=greater_than(utc_now))
+    >>> list(product.searchTasks(search_params))
+    []
+
+    >>> search_params.date_closed = greater_than(utc_now - timedelta(days=2))
+    >>> for bug_task in product.searchTasks(search_params):
+    ...     print bug_task.bug.title
+    Closed a day ago
+
+
 == Ordering search results ==
 
 The result returned by bugtask searches can come sorted by a specified order
@@ -667,3 +703,67 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
     19 Bug to be fixed in trunk [0 comments]
+
+
+== Searching using a flat interface ==
+
+An alternative, simplified interface for searching bug tasks is available
+by passing all search parameters as function arguments to searchTasks.
+This interface corresponds to the search options available from the web
+search form and the public API.
+
+    >>> def print_bugtasks(bugtasks):
+    ...     for bugtask in bugtasks:
+    ...         print '%s %s %s %s %s' % (
+    ...             bugtask.bug.id, bugtask.bugtargetdisplayname,
+    ...             bugtask.bug.title, bugtask.status.title.upper(),
+    ...             bugtask.importance.title.upper())
+
+
+When we call the method on Ubuntu, without any parameters, the result is
+identical to calling searchTasks.
+
+    >>> print_bugtasks(ubuntu.searchTasks(None, user=None))
+    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
+    9 thunderbird (Ubuntu) Thunderbird crashes CONFIRMED MEDIUM
+    2 Ubuntu Blackhole Trash folder NEW MEDIUM
+    19 cdrkit (Ubuntu) Bug to be fixed in trunk NEW UNDECIDED
+
+If we want to restrict the search using certain parameters pass them to
+the function directly. Here we search Ubuntu again, but only bugs for
+the firefox package.
+
+    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> source_package_name_set = getUtility(ISourcePackageNameSet)
+    >>> firefox_source_package = source_package_name_set['mozilla-firefox']
+    >>> print_bugtasks(ubuntu.searchTasks(
+    ...     None, user=None, sourcepackagename=firefox_source_package))
+    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
+
+Or search for bugs on a distribution source package directly.
+
+    >>> print_bugtasks(ubuntu_firefox.searchTasks(None, user=None))
+    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
+
+Or we can search a certain milestone (only getting bugs targeted to it).
+
+    >>> firefox_milestone_1 = firefox.getMilestone('1.0')
+    >>> print_bugtasks(firefox_milestone_1.searchTasks(None, user=None))
+    1 Mozilla Firefox Firefox does not support SVG NEW LOW
+    1 Mozilla Firefox 1.0 Firefox does not support SVG NEW UNDECIDED
+
+We can restrict our search for firefox bugs with a text search.
+
+    >>> print_bugtasks(firefox.searchTasks(
+    ...     None, user=None, search_text='instructions'))
+    5 Mozilla Firefox Firefox install instructions should be complete NEW CRITICAL
+
+Or restrict our search (over the mozilla project this time) to a list of
+relevant importance values.
+
+    >>> print_bugtasks(mozilla.searchTasks(
+    ...     None, user=None,
+    ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
+    4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
+    1 Mozilla Firefox Firefox does not support SVG NEW LOW

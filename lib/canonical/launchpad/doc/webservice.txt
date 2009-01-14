@@ -29,6 +29,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     # favorite_recipe.schema will be set to IRecipe once
     ...     # IRecipe is defined.
     ...     favorite_recipe = Object(schema=Interface)
+    ...     popularity = Int(readonly=True)
 
     >>> class ICommentTarget(Interface):
     ...     comments = Attribute('List of comments about this object.')
@@ -99,6 +100,7 @@ and IRecipe.
     ...     def __init__(self, name):
     ...         self.name = name
     ...         self.favorite_recipe = None
+    ...         self.popularity = 1
     >>> protect_schema(Author, IAuthor, write_permission=CheckerPublic)
 
     >>> class Comment(object):
@@ -552,18 +554,18 @@ define an adapter to IFieldMarshaller.
 
 Here's the implementation of IAuthorEntry: a simple decorator on the
 original model object. It subclasses Entry, a simple base class that
-defines a constructor. (See lazr/doc/decorates.txt for more on
-decorates().)
+defines a constructor. (See lazr/delegates/README.txt for more on
+delegates().)
 
     >>> from zope.component import adapts
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.lazr import decorates
+    >>> from lazr.delegates import delegates
     >>> from canonical.lazr.rest import Entry
 
     >>> class AuthorEntry(Entry):
     ...     """An author, as exposed through the web service."""
     ...     adapts(IAuthor)
-    ...     decorates(IAuthorEntry)
+    ...     delegates(IAuthorEntry)
     ...     schema = IAuthorEntry
 
     >>> verifyObject(IAuthorEntry, AuthorEntry(A1))
@@ -584,7 +586,7 @@ But the invariant will complain if that doesn't isn't true.
 
     >>> class InvalidAuthorEntry(Entry):
     ...     adapts(IAuthor)
-    ...     decorates(IAuthorEntry)
+    ...     delegates(IAuthorEntry)
     ...     schema = ICookbookEntry
 
     >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
@@ -603,24 +605,24 @@ Other entries are defined similarly.
     >>> class CookbookEntry(Entry):
     ...     """A cookbook, as exposed through the web service."""
     ...     adapts(ICookbook)
-    ...     decorates(ICookbookEntry)
+    ...     delegates(ICookbookEntry)
     ...     schema = ICookbookEntry
 
     >>> class DishEntry(Entry):
     ...     """A dish, as exposed through the web service."""
     ...     adapts(IDish)
-    ...     decorates(IDishEntry)
+    ...     delegates(IDishEntry)
     ...     schema = IDishEntry
 
     >>> class CommentEntry(Entry):
     ...     """A comment, as exposed through the web service."""
     ...     adapts(IComment)
-    ...     decorates(ICommentEntry)
+    ...     delegates(ICommentEntry)
     ...     schema = ICommentEntry
 
     >>> class RecipeEntry(Entry):
     ...     adapts(IRecipe)
-    ...     decorates(IRecipeEntry)
+    ...     delegates(IRecipeEntry)
     ...     schema = IRecipeEntry
 
 We need to register these entries as an adapter from (eg.) IAuthor to
@@ -735,7 +737,6 @@ called 'find_recipes'. Each custom operation is implemented as a class
 that implementsIResourceGETOperation.
 
     >>> from canonical.lazr.rest import ResourceGETOperation
-    >>> from zope.schema import TextLine
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> from canonical.lazr.fields import Reference
     >>> from canonical.lazr.interfaces import IResourceGETOperation
@@ -1013,7 +1014,7 @@ works. Here's page one, with two cookbooks on it.
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
-    [u'entries', u'next_collection_link', u'resource_type_link', 
+    [u'entries', u'next_collection_link', u'resource_type_link',
      u'start', u'total_size']
     >>> representation['next_collection_link']
     u'http://api.launchpad.dev/beta/cookbooks?ws.start=2&ws.size=2'
@@ -1236,6 +1237,7 @@ value (Brazilian) specified in CookbookFactoryOperation for it.
      (u'cover_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/cover'),
      (u'cuisine', u'Brazilian'),
+     (u'http_etag', u'...'),
      (u'name', u'Feijoada'),
      (u'recipes_collection_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/recipes'),
@@ -1251,10 +1253,11 @@ You can also traverse from an entry to an item in a scoped collection:
     >>> chicken_recipe = simplejson.loads(chicken_recipe_resource())
     >>> sorted(chicken_recipe.items())
     [(u'comments_collection_link',
-      u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
+     u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
     (u'cookbook_link',
      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking'),
     (u'dish_link', u'http://api.launchpad.dev/beta/dishes/Roast%20chicken'),
+    (u'http_etag', u'...'),
     (u'instructions', u'Draw, singe, stuff, and truss...'),
     (u'self_link',
      u'http://api.../The%20Joy%20of%20Cooking/recipes/Roast%20chicken')]
@@ -1275,7 +1278,8 @@ Another example traversing to a comment:
     >>> comment_one_resource = request.traverse(app)
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
-    [(u'resource_type_link', u'http://api.launchpad.dev/beta/#comment'),
+    [(u'http_etag', u'...'),
+     (u'resource_type_link', u'http://api.launchpad.dev/beta/#comment'),
      (u'self_link',
       u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]
@@ -1425,6 +1429,71 @@ exception.
     Traceback (most recent call last):
     ...
     TypeError: Could not serialize object [<object object...>] to JSON.
+
+
+== ETags ==
+
+Every entry resource has a short opaque string called an ETag that
+summarizes the resource's current state. The ETag is sent as the
+response header 'ETag'.
+
+    >>> julia_object = A1
+    >>> julia_url = quote('/beta/authors/Julia Child')
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_original = get_request.response.getHeader('ETag')
+
+The ETag is different across revisions of the software, but within a
+release it'll always the same for a given resource with a given state.
+
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_after_get = get_request.response.getHeader('ETag')
+
+    >>> etag_after_get == etag_original
+    True
+
+A client can use a previously obtained ETag as the value of
+If-None-Match when making a request. If the ETags match, it means the
+resource hasn't changed since the client's last request. The server
+sends a response code of 304 ("Not Modified") instead of sending the
+same representation again.
+
+    >>> headers = {'CONTENT_TYPE' : 'application/json',
+    ...            'HTTP_IF_NONE_MATCH' : etag_original }
+    >>> get_request = create_web_service_request(julia_url, environ=headers)
+    >>> get_request.traverse(app)()
+    ''
+    >>> get_request.response.getStatus()
+    304
+
+If the ETags don't match, the server assumes the client has an old
+representation, and sends the new representation.
+
+    >>> headers['HTTP_IF_NONE_MATCH'] = 'bad etag'
+    >>> get_request = create_web_service_request(julia_url, environ=headers)
+    >>> get_request.traverse(app)()
+    '{...}'
+
+Change the state of the resource, and the ETag changes.
+
+    >>> julia_object.favorite_recipe = C2_D2
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_after_modification = get_request.response.getHeader('ETag')
+
+    >>> etag_after_modification == etag_original
+    False
+
+The client can't modify read-only fields, but they might be modified
+behind the scenes. If one of them changes, the ETag will change.
+
+    >>> julia_object.popularity = 5
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_after_readonly_change = get_request.response.getHeader('ETag')
+    >>> etag_after_readonly_change == etag_original
+    False
 
 
 == Resource Visibility ==
@@ -1716,6 +1785,9 @@ their URLs, we make the change by modifying the cookbook's
 
     >>> change_joy_author(u'http://api.launchpad.dev' + path)
     ''
+
+    >>> joy_resource = create_web_service_request(
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking').traverse(app)
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['author_link']
     u'http://api.launchpad.dev/beta/authors/Julia%20Child'
@@ -1754,7 +1826,6 @@ if you specified it when you made the request.
     ...                   host='api.launchpad.dev:443')
     'author_link: No such object...'
 
-    >>> from textwrap import dedent
     >>> from canonical.config import config
     >>> config.push('use-https', """
     ...     [vhosts]
@@ -1766,16 +1837,38 @@ if you specified it when you made the request.
 
     >>> ignored = config.pop('use-https')
 
+
+= Within a template =
+
+A number of TALES adapters give different views on resource
+objects. The is_entry() function is a conditional that returns true when
+given an object that can be adapted to IEntry.
+
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> test_tales("context/webservice:is_entry", context=A1)
+    True
+    >>> test_tales("context/webservice:is_entry", context=AUTHORS)
+    False
+
+The json() function converts generic Python data structures to JSON,
+as well as objects that can be adapted to IEntry.
+
+    >>> test_tales("context/webservice:json", context="foobar")
+    '"foobar"'
+    >>> test_tales("context/webservice:json", context=A1)
+    '{"name": ...}'
+
+
 = Cleanup =
 
 The final step is to unregister the adapters registered for this test,
 so that they don't show up in other tests as parts of the site.
 
-    >>> from zope.app import zapi
+    >>> from zope.component import getGlobalSiteManager
+    >>> site = getGlobalSiteManager()
     >>> def unregister(required, provided, name=''):
-    ...     manager = zapi.getGlobalSiteManager()
-    ...     manager.adapters.register(required, provided, name, None)
-    ...     del manager._registrations[(tuple(required), provided, name)]
+    ...     site.unregisterAdapter(
+    ...         required=required, provided=provided, name=name)
     >>> unregister([IAuthor], IAuthorEntry)
     >>> unregister([ICookbook], ICookbookEntry)
     >>> unregister([IDish], IDishEntry)

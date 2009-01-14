@@ -1,7 +1,12 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
 
 <body>
 
@@ -34,9 +39,7 @@
         </p>
 
         <p>
-          <!--XXX leonardr 2007-11-13 bug=162483. Need a link here to
-                  mailing list help.-->
-          &#187; <a href="http://help.launchpad.net/">Help for mailing lists</a>
+          &#187; <a href="http://help.launchpad.net/ListHelp">Help for mailing lists</a>
         </p>
         <input tal:replace="structure view/request_list_creation/render" />
       </div>
@@ -46,6 +49,18 @@
         <p>The application for this team's mailing list is pending approval.</p>
         <p>
           <input tal:replace="structure view/cancel_list_creation/render" />
+        </p>
+      </div>
+
+      <div id="mailing_list_purge"
+           tal:condition="view/list_can_be_purged">
+        <p>You can purge this mailing list so that the team can be merged or
+        renamed, or so that the mailing list can be re-registered.  By purging
+        this list, you guarantee that there are no artifacts of this mailing
+        list (such as its persistent archives) that need to be manually
+        changed, backed up, deleted, or renamed.</p>
+        <p>
+          <input tal:replace="structure view/purge_list/render" />
         </p>
       </div>
 

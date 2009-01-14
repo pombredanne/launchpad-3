@@ -198,9 +198,10 @@ Joe observes under the search widget that there are checkboxes to select
 the question status to search. He notices that only some statuses are
 selected. He adds 'Invalid' to the selection, and run his search again.
 
+    >>> from canonical.launchpad.testing.pages import strip_label
+
     >>> statuses = browser.getControl(name='field.status').displayValue
-    >>> # Print the label without the leading non-breaking space.
-    >>> [status[1:] for status in statuses]
+    >>> [strip_label(status) for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
     >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search', index=0).click()
@@ -320,8 +321,7 @@ questions.)
     >>> print browser.title
     Answered questions for Ubuntu
     >>> statuses = browser.getControl(name='field.status').displayValue
-    >>> # Print the label without the leading non-breaking space.
-    >>> [status[1:] for status in statuses]
+    >>> [strip_label(status) for status in statuses]
     ['Answered', 'Solved']
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -697,8 +697,7 @@ there is an 'In' column displaying where the questions were filed.
 Only the default set of statuses is searched:
 
     >>> statuses = browser.getControl(name='field.status').displayValue
-    >>> # Print the label without the leading non-breaking space.
-    >>> [status[1:] for status in statuses]
+    >>> [strip_label(status) for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
 
 When no results are found, a message informs the user of this fact:

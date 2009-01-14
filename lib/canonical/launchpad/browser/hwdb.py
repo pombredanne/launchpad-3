@@ -3,11 +3,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'HWDBApplicationNavigation',
     'HWDBFingerprintSetView',
-    'HWDBSubmissionSetNavigation',
-    'HWDBSubmissionTextView',
     'HWDBPersonSubmissionsView',
-    'HWDBUploadView']
+    'HWDBSubmissionTextView',
+    'HWDBUploadView',
+    ]
 
 from textwrap import dedent
 
@@ -16,9 +17,12 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IHWDBApplication, IHWSubmissionForm, IHWSubmissionSet,
-    IHWSystemFingerprintSet, NotFoundError, ILaunchBag)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
+from canonical.launchpad.interfaces.hwdb import (
+    IHWDBApplication, IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet,
+    IHWSubmissionForm, IHWSubmissionSet, IHWSystemFingerprintSet,
+    IHWVendorIDSet)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -150,7 +154,8 @@ class HWDBSubmissionTextView(LaunchpadView):
             data["distribution_series"] = "(unknown)"
             data["architecture"] = "(unknown)"
 
-        data["system_fingerprint"] = self.context.system_fingerprint.fingerprint
+        data["system_fingerprint"] = (
+            self.context.system_fingerprint.fingerprint)
         data["url"] = self.context.raw_submission.http_url
 
         return dedent("""
@@ -164,7 +169,7 @@ class HWDBSubmissionTextView(LaunchpadView):
             Submission URL: %(url)s""" % data)
 
 
-class HWDBSubmissionSetNavigation(Navigation):
+class HWDBApplicationNavigation(Navigation):
     """Navigation class for HWDBSubmissionSet."""
 
     usedfor = IHWDBApplication
@@ -179,6 +184,38 @@ class HWDBSubmissionSetNavigation(Navigation):
     @stepthrough('+fingerprint')
     def traverse_hwdb_fingerprint(self, name):
         return HWDBFingerprintSetView(self.context, self.request, name)
+
+    @stepthrough('+device')
+    def traverse_device(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            raise NotFoundError('invalid value for ID: %r' % id)
+        return getUtility(IHWDeviceSet).getByID(id)
+
+    @stepthrough('+driver')
+    def traverse_driver(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            raise NotFoundError('invalid value for ID: %r' % id)
+        return getUtility(IHWDriverSet).getByID(id)
+
+    @stepthrough('+submissiondevice')
+    def traverse_submissiondevice(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            raise NotFoundError('invalid value for ID: %r' % id)
+        return getUtility(IHWSubmissionDeviceSet).get(id)
+
+    @stepthrough('+hwvendorid')
+    def traverse_hw_vendor_id(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            raise NotFoundError('invalid value for ID: %r' % id)
+        return getUtility(IHWVendorIDSet).get(id)
 
 
 class HWDBFingerprintSetView(LaunchpadView):

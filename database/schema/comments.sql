@@ -43,6 +43,16 @@ COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
 COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
+COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
+COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
+
+-- BranchJob
+
+COMMENT ON TABLE BranchJob IS 'Contains references to jobs that are executed for a branch.';
+COMMENT ON COLUMN BranchJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN BranchJob.branch IS 'The branch that this job is for.';
+COMMENT ON COLUMN BranchJob.job_type IS 'The type of job, like new revisions, or attribute change.';
+COMMENT ON COLUMN BranchJob.json_data IS 'Data that is specific to the type of job, whether this be the revisions to send email out for, or the changes that were recorded for the branch.';
 
 -- BranchMergeProposal
 
@@ -53,6 +63,7 @@ COMMENT ON COLUMN BranchMergeProposal.target_branch IS 'The branch where the use
 COMMENT ON COLUMN BranchMergeProposal.dependent_branch IS 'If the source branch was not branched off the target branch, then this is considered the dependent_branch.';
 COMMENT ON COLUMN BranchMergeProposal.date_created IS 'When the registrant created the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other information about the branch, like test URLs.';
+COMMENT ON COLUMN BranchMergeProposal.merge_diff IS 'The diff showing the predicted result of a merge.';
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
 COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
@@ -60,6 +71,7 @@ COMMENT ON COLUMN BranchMergeProposal.commit_message IS 'This is the commit mess
 COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the merge proposal in the overall landing queue.  If the branch has a merge_robot set and the merge robot controls multiple branches then the queue position is unique over all the queued merge proposals for the landing robot.';
 COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
+COMMENT ON COLUMN BranchMergeProposal.review_diff IS 'The diff to use for review purposes.';
 COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
@@ -75,6 +87,14 @@ COMMENt ON COLUMN BranchMergeProposal.root_message_id IS 'The root message of th
 COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge has been superceded by this one.';
 
 
+-- BranchMergeProposalJob
+
+COMMENT ON TABLE BranchMergeProposalJob IS 'Contains references to jobs that are executed for a branch merge proposal.';
+COMMENT ON COLUMN BranchMergeProposalJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN BranchMergeProposalJob.branch_merge_proposal IS 'The branch merge proposal that this job is for.';
+COMMENT ON COLUMN BranchMergeProposalJob.job_type IS 'The type of job, like new proposal, review comment, or new review requested.';
+COMMENT ON COLUMN BranchMergeProposalJob.json_data IS 'Data that is specific to the type of job, normally references to code review messages and or votes.';
+
 -- BranchMergeRobot
 
 COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
@@ -83,6 +103,16 @@ COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to 
 COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
 COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
 COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
+
+-- SeriesSourcePackageBranch
+
+COMMENT ON TABLE SeriesSourcePackageBranch IS 'Link between branches and distribution suite.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.distroseries IS 'The distroseries the branch is linked to.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.pocket IS 'The pocket the branch is linked to.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.sourcepackagename IS 'The sourcepackagename the branch is linked to.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.branch IS 'The branch being linked to a distribution suite.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.registrant IS 'The person who registered this link.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.date_created IS 'The date this link was created.';
 
 -- BranchSubscription
 
@@ -96,7 +126,7 @@ COMMENT ON COLUMN BranchSubscription.review_level IS 'The level of email the per
 -- BranchVisibilityPolicy
 
 COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
-COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don\'t directly have branches themselves, if a product of the project does not specify its own branch visibility policies, those of the project are used.';
+COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don''t directly have branches themselves, if a product of the project does not specify its own branch visibility policies, those of the project are used.';
 COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibility policies apply to.';
 COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
@@ -118,6 +148,7 @@ COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initial
 COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
 COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
+COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -170,12 +201,13 @@ COMMENT ON COLUMN BugTask.statusexplanation IS 'A place to store bug task specif
 COMMENT ON COLUMN BugTask.bugwatch IS 'This column allows us to link a bug
 task to a bug watch. In other words, we are connecting the state of the task
 to the state of the bug in a different bug tracking system. To the best of
-our ability we\'ll try and keep the bug task syncronised with the state of
+our ability we''ll try and keep the bug task syncronised with the state of
 the remote bug watch.';
 COMMENT ON COLUMN BugTask.date_left_new IS 'The date when this bug first transitioned out of the NEW status.';
 COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned to a status >= TRIAGED.';
 COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
+COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
 
 
 -- BugNotification
@@ -185,6 +217,14 @@ COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
 COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+
+
+-- BugNotificationAttachment
+
+COMMENT ON TABLE BugNotificationAttachment IS 'Attachments to be attached to a bug notification.';
+COMMENT ON COLUMN BugNotificationAttachment.message IS 'A message to be attached to the sent bug notification. It will be attached as a mime/multipart part, with a content type of message/rfc822.';
+COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notification, to which things should be attached to.';
+
 
 -- BugNotificationRecipient
 COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notification.';
@@ -232,6 +272,7 @@ COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Usin
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 COMMENT ON COLUMN BugTracker.version IS 'The version of the bug tracker software being used.';
 COMMENT ON COLUMN BugTracker.block_comment_pushing IS 'Whether to block pushing comments to the bug tracker. Having a value of false means that we will push the comments if the bug tracker supports it.';
+COMMENT ON COLUMN BugTracker.has_lp_plugin IS 'Whether we have confirmed that the Launchpad plugin was installed on the bug tracker, the last time checkwatches was run.';
 
 -- BugTrackerAlias
 
@@ -256,6 +297,14 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 
 COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
 COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
+COMMENT ON COLUMN BugWatch.remote_lp_bug_id IS 'The bug in Launchpad that the remote bug is pointing at. This can be different than the BugWatch.bug column, since the same remote bug can be linked from multiple bugs in Launchpad, but the remote bug can only link to a single bug in Launchpad. The main use case for this column is to avoid having to query the remote bug tracker for this information, in order to decide whether we need to give this information to the remote bug tracker.';
+
+
+-- BugAffectsPerson
+
+COMMENT ON TABLE BugAffectsPerson IS 'This table maintains a mapping between bugs and users indicating that they are affected by that bug. The value is calculated and cached in the Bug.users_affected_count column.';
+COMMENT ON COLUMN BugAffectsPerson.bug IS 'The bug affecting this person.';
+COMMENT ON COLUMN BugAffectsPerson.person IS 'The person affected by this bug.';
 
 
 -- CodeImport
@@ -323,6 +372,7 @@ COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on t
 --COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
 --COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
+
 -- CodeReviewMessage
 
 COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review discussion.';
@@ -377,6 +427,19 @@ COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This 
 COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
 
+-- Diff
+
+COMMENT ON TABLE Diff IS 'Information common to static or preview diffs';
+COMMENT ON COLUMN Diff.added_lines_count IS 'The number of lines added in the diff.';
+COMMENT ON COLUMN Diff.diff_text IS 'The library copy of the fulltext of the diff';
+COMMENT ON COLUMN Diff.diff_lines_count IS 'The number of lines in the diff';
+COMMENT ON COLUMN Diff.diffstat IS 'Statistics about the diff';
+COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in the diff';
+
+-- DistributionSourcepackage
+
+COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
+COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
 
 
 -- DistributionSourcePackageCache
@@ -412,7 +475,7 @@ COMMENT ON INDEX emailaddress__account__key IS 'Ensures that an Account only has
 
 -- FeaturedProject
 
-COMMENT ON TABLE FeaturedProject IS 'A list of featured projects. This table is really just a list of pillarname IDs, if a project\'s pillar name is in this list then it is a featured project and will be listed on the Launchpad home page.';
+COMMENT ON TABLE FeaturedProject IS 'A list of featured projects. This table is really just a list of pillarname IDs, if a project''s pillar name is in this list then it is a featured project and will be listed on the Launchpad home page.';
 COMMENT ON COLUMN FeaturedProject.pillar_name IS 'A reference to PillarName.id';
 
 -- KarmaCategory
@@ -444,7 +507,7 @@ COMMENT ON TABLE MailingListSubscription IS 'Track the subscriptions of a person
 COMMENT ON COLUMN MailingListSubscription.person IS 'The person who is subscribed to the mailing list.';
 COMMENT ON COLUMN MailingListSubscription.mailing_list IS 'The mailing list this person is subscribed to.';
 COMMENT ON COLUMN MailingListSubscription.date_joined IS 'The date this person subscribed to the mailing list.';
-COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person\'s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it\'s the person\'s preferred address.';
+COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person''s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it''s the person''s preferred address.';
 
 -- MailingListBan
 
@@ -458,18 +521,35 @@ COMMENT ON COLUMN MailingListBan.reason IS 'The reason for the ban.';
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
 COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
 
+-- MergeDirectiveJob
+COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
+COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
+COMMENT ON COLUMN MergeDirectiveJob.merge_directive IS 'Full MIME content of the message containing the merge directive.';
+COMMENt ON COLUMN MergeDirectiveJob.action IS 'Enumeration of the action to perform with the merge directive; push or create merge proposal.';
+
+
 -- MessageApproval
 
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
 COMMENT ON COLUMN MessageApproval.message IS 'Foreign key to message table pointing to the posted message.';
 COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
 COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the message was posted.';
-COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
+COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message''s text lives.';
 COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
 COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
 COMMENT ON COLUMN MessageApproval.reason IS 'The reason for the current status if any. This information will be displayed to the end user and mailing list moderators need to be aware of this - not a private whiteboard.';
 COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
 COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
+
+
+-- PreviewDiff
+COMMENT ON TABLE PreviewDiff IS 'Contains information about preview diffs, without duplicating information with BranchMergeProposal.';
+COMMENT ON COLUMN PreviewDiff.conflicts IS 'The text description of any conflicts present.';
+COMMENT ON COLUMN PreviewDiff.diff IS 'The last Diff generated for this PreviewDiff.';
+COMMENT ON COLUMN PreviewDiff.dependent_revision_id IS 'The dependant branch revision_id used to generate this diff.';
+COMMENT ON COLUMN PreviewDiff.source_revision_id IS 'The source branch revision_id used to generate this diff.';
+COMMENT ON COLUMN PreviewDiff.target_revision_id IS 'The target branch revision_id used to generate this diff.';
+
 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
@@ -482,12 +562,12 @@ COMMENT ON COLUMN Product.listurl IS 'This is the URL where information about a 
 COMMENT ON COLUMN Product.programminglang IS 'This field records, in plain text, the name of any significant programming languages used in this product. There are no rules, conventions or restrictions on this field at present, other than basic sanity. Examples might be "Python", "Python, C" and "Java".';
 COMMENT ON COLUMN Product.downloadurl IS 'The download URL for a Product should be the best place to download that product, typically off the relevant Project web site. This should not point at the actual file, but at a web page with download information.';
 COMMENT ON COLUMN Product.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this product. See the Project.lastdoap field for more info.';
-COMMENT ON COLUMN Product.sourceforgeproject IS 'The SourceForge project name for this product. This is not unique as SourceForge doesn\'t use the same project/product structure as DOAP.';
+COMMENT ON COLUMN Product.sourceforgeproject IS 'The SourceForge project name for this product. This is not unique as SourceForge doesn''t use the same project/product structure as DOAP.';
 COMMENT ON COLUMN Product.freshmeatproject IS 'The FreshMeat project name for this product. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
 COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has reviewed this product.';
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
-COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
+COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product''s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
@@ -495,12 +575,12 @@ COMMENT ON COLUMN Product.official_codehosting IS 'Whether or not this product u
 COMMENT ON COLUMN Product.bug_supervisor IS 'Person who is responsible for managing bugs on this product.';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
---COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.';
+--COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it''s different from the project bug tracker.';
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
 COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a product.';
 COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the branding of a product, on its home page.';
-COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
+COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product''s mugshot.';
 COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses that are not included in the License enumeration.';
@@ -517,11 +597,12 @@ COMMENT ON COLUMN ProductLicense.license IS 'An integer referencing a value in t
 
 -- ProductRelease
 
-COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific \'upstream\' software release, like Apache 2.0.49 or Evolution 1.5.4.';
-COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as \'1.2.4\' or \'2.0.38\' or \'7.4.3\'.';
---COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like \'that, and a pair of testicles\' or \'All your base-0 are belong to us\'. Many upstream projects are assigning fun names to their releases - these go in this field.';
+COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific ''upstream'' software release, like Apache 2.0.49 or Evolution 1.5.4.';
+COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as ''1.2.4'' or ''2.0.38'' or ''7.4.3''.';
+--COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like ''that, and a pair of testicles'' or ''All your base-0 are belong to us''. Many upstream projects are assigning fun names to their releases - these go in this field.';
 COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
+COMMENT ON COLUMN ProductRelease.milestone IS 'The milestone for this product release. This is scheduled to become a NOT NULL column, so every product release will be linked to a unique milestone.';
 
 -- ProductReleaseFile
 
@@ -592,7 +673,7 @@ initiated an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
 completed an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch\'s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
+COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
 this product series.  If user_branch is not set, then this is considered the
 product series branch.';
@@ -624,15 +705,15 @@ such as the dates the project was started and the way the project
 coordinates itself are suitable here.';
 COMMENT ON COLUMN Project.homepageurl IS 'The home page URL of this project. Note that this could well be the home page of the main product of this project as well, if the project is too small to have a separate home page for project and product.';
 COMMENT ON COLUMN Project.wikiurl IS 'This is the URL of a wiki that includes information about the project. It might be a page in a bigger wiki, or it might be the top page of a wiki devoted to this project.';
-COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this project. We cache the last DOAP fragment for this project because there may be some aspects of it which we are unable to represent in the database (such as multiple homepageurl\'s instead of just a single homepageurl) and storing the DOAP file allows us to re-parse it later and recover this information when our database model has been updated appropriately.';
+COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this project. We cache the last DOAP fragment for this project because there may be some aspects of it which we are unable to represent in the database (such as multiple homepageurl''s instead of just a single homepageurl) and storing the DOAP file allows us to re-parse it later and recover this information when our database model has been updated appropriately.';
 COMMENT ON COLUMN Project.name IS 'A short lowercase name uniquely identifying the product. Use cases include being used as a key in URL traversal.';
-COMMENT ON COLUMN Project.sourceforgeproject IS 'The SourceForge project name for this project. This is not unique as SourceForge doesn\'t use the same project/product structure as DOAP.';
+COMMENT ON COLUMN Project.sourceforgeproject IS 'The SourceForge project name for this project. This is not unique as SourceForge doesn''t use the same project/product structure as DOAP.';
 COMMENT ON COLUMN Project.freshmeatproject IS 'The FreshMeat project name for this project. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
 COMMENT ON COLUMN Project.reviewed IS 'Whether or not someone at Canonical has reviewed this project.';
 COMMENT ON COLUMN Project.active IS 'Whether or not this project should be considered active.';
 COMMENT ON COLUMN Project.translationgroup IS 'The translation group that has permission to edit translations across all products in this project. Note that individual products may have their own translationgroup, in which case those translators will also have permission to edit translations for that product.';
 COMMENT ON COLUMN Project.translationpermission IS 'The level of openness of
-this project\'s translation process. The enum lists different approaches to
+this project''s translation process. The enum lists different approaches to
 translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
@@ -640,12 +721,12 @@ changes at all).';
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
 COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a project.';
 COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image to display as the branding of a project, on its home page.';
-COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
+COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product''s mugshot.';
 COMMENT ON COLUMN Project.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on products in this project.';
 COMMENT ON COLUMN Project.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 
 -- ProjectRelationship
-COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the \'label\' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
+COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the ''label'' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
 COMMENT ON COLUMN ProjectRelationship.subject IS 'The subject of the relationship. Relationships are generally unidirectional - A AGGREGATES B is not the same as B AGGREGATES A. In the example "Gnome AGGREGATES Evolution", Gnome is the subject.';
 COMMENT ON COLUMN ProjectRelationship.object IS 'The object of the relationship. In the example "Gnome AGGREGATES Evolution", Evolution is the object.';
 COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. This integer takes one of the values enumerated in dbschema.py ProjectRelationship';
@@ -674,7 +755,7 @@ COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import
 COMMENT ON COLUMN POTemplate.name IS 'The name of the POTemplate set. It must be unique';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
-COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
+COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it''s different from POTemplate.sourcepackagename)';
 COMMENT ON COLUMN POTemplate.source_file IS 'Reference to Librarian file storing the last uploaded template file.';
 COMMENT ON COLUMN POTemplate.source_file_format IS 'File format for the Librarian file referenced in "source_file" column.';
 COMMENT ON COLUMN POTemplate.translation_domain IS 'The translation domain for this POTemplate';
@@ -682,7 +763,7 @@ COMMENT ON COLUMN POTemplate.translation_domain IS 'The translation domain for t
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
-COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
+COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it''s different from POFile.potemplate.sourcepackagename)';
 COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
 unreviewed TranslationMessages for this POFile.';
 
@@ -705,7 +786,7 @@ COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in tex
 COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the Launchpad.';
 COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a sprint.';
 COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the branding of a sprint, on its home page.';
-COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint\'s mugshot.';
+COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint''s mugshot.';
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
@@ -720,6 +801,12 @@ COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments s
 COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated this specification for the agenda of the sprint.';
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
+
+-- StaticDiff
+COMMENT ON TABLE StaticDiff IS 'Information about static diffs.';
+COMMENT ON COLUMN StaticDiff.from_revision_id IS 'The revision-id that the diff is from.';
+COMMENT ON COLUMN StaticDiff.diff IS 'The Diff.';
+COMMENT ON COLUMN StaticDiff.to_revision_id IS 'The revision-id that the diff is to.';
 
 -- TeamMembership
 COMMENT ON TABLE TeamMembership IS 'The direct membership of a person on a given team.';
@@ -788,14 +875,10 @@ validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
 COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
 is being used in Launchpad.';
-COMMENT ON COLUMN TranslationMessage.is_fuzzy IS 'Whether this translation
-must be checked before use it.';
 COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
 is being used in latest imported file.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
 this translation was obsolete in last imported file.';
-COMMENT ON COLUMN TranslationMessage.was_fuzzy_in_last_import IS 'Whether this
-imported translation must be checked before use it.';
 
 -- Question
 COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
@@ -920,6 +1003,7 @@ COMMENT ON COLUMN PackageDiff.from_source IS 'The SourcePackageRelease to diff f
 COMMENT ON COLUMN PackageDiff.to_source IS 'The SourcePackageRelease to diff to.';
 COMMENT ON COLUMN PackageDiff.date_fulfilled IS 'Instant when the diff was completed.';
 COMMENT ON COLUMN PackageDiff.diff_content IS 'LibraryFileAlias containing the th diff results.';
+COMMENT ON COLUMN PackageDiff.status IS 'Request status, PENDING(0) when created then goes to COMPLETED(1) or FAILED(2), both terminal status where diff_content and date_fulfilled will contain the results of the request.';
 
 
 -- PackageUpload
@@ -998,7 +1082,7 @@ COMMENT ON VIEW PublishedPackage IS
 
 -- ProcessorFamily
 
-COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchSeries that might be different to the architecture\'s name.';
+COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchSeries that might be different to the architecture''s name.';
 COMMENT ON COLUMN ProcessorFamily.name IS 'The name of the architecture. This is a short unix-style name such as i386 or amd64';
 COMMENT ON COLUMN ProcessorFamily.title IS 'A title for the architecture. For example "Intel i386 Compatible".';
 COMMENT ON COLUMN ProcessorFamily.description IS 'A description for this processor family. It might include any gotchas such as the fact that i386 does not necessarily mean that code would run on a 386... Ubuntu for example requires a 486.';
@@ -1040,7 +1124,7 @@ COMMENT ON COLUMN KarmaAction.category IS 'A dbschema value used to group action
 COMMENT ON COLUMN KarmaAction.points IS 'The number of points this action is worth of.';
 
 -- KarmaCache
-COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category and the context where that action was performed.';
+COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person''s karma points, grouped by the action category and the context where that action was performed.';
 COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
 COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
 COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person on this context (product/distribution).';
@@ -1077,7 +1161,7 @@ COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset 
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
 COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to that person.';
 COMMENT ON COLUMN Person.mugshot IS 'The library file alias of a hackermugshot image to display as the "face" of a person, on their home page.';
-COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of this person\'s mugshot.';
+COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of this person''s mugshot.';
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
@@ -1181,8 +1265,8 @@ upload. This is generally used to prioritise buildd activity but may also be
 used for "testing" systems or security work in the future. The "urgency" is
 set by the uploader, in the DSC file.';
 COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'The GPG key used to
-sign the DSC. This is not necessarily the maintainer\'s key, or the
-creator\'s key. For example, it\'s possible to produce a package, then ask a
+sign the DSC. This is not necessarily the maintainer''s key, or the
+creator''s key. For example, it''s possible to produce a package, then ask a
 sponsor to upload it.';
 COMMENT ON COLUMN SourcePackageRelease.component IS 'The component in which
 this sourcepackagerelease is intended (by the uploader) to reside. E.g.
@@ -1332,7 +1416,7 @@ COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have ac
 COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distribution in the Launchpad.';
 COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a distribution.';
 COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the branding of a distribution, on its home page.';
-COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions\'s mugshot.';
+COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions''s mugshot.';
 
 -- DistroSeries
 
@@ -1367,17 +1451,17 @@ COMMENT ON COLUMN DIstroComponentUploader.uploader IS 'The uploader(s) permitted
 
 -- LibraryFileContent
 
-COMMENT ON TABLE LibraryFileContent IS 'LibraryFileContent: A librarian file\'s contents. The librarian stores files in a safe and transactional way. This table represents the contents of those files within the database.';
+COMMENT ON TABLE LibraryFileContent IS 'LibraryFileContent: A librarian file''s contents. The librarian stores files in a safe and transactional way. This table represents the contents of those files within the database.';
 COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this librarian file was created';
 COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
-COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file\'s contents';
-COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file\'s contents';
+COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
+COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 
 -- LibraryFileAlias
 
-COMMENT ON TABLE LibraryFileAlias IS 'LibraryFileAlias: A librarian file\'s alias. The librarian stores, along with the file contents, a record stating the file name and mimetype. This table represents it.';
+COMMENT ON TABLE LibraryFileAlias IS 'LibraryFileAlias: A librarian file''s alias. The librarian stores, along with the file contents, a record stating the file name and mimetype. This table represents it.';
 COMMENT ON COLUMN LibraryFileAlias.content IS 'The libraryfilecontent which is the data in this file.';
 COMMENT ON COLUMN LibraryFileAlias.filename IS 'The name of the file. E.g. "foo_1.0-1_i386.deb"';
 COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. "application/x-debian-package"';
@@ -1401,7 +1485,7 @@ COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was mad
 COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
 COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
-COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It\'s NULL if it hasn\'t been consumed yet.';
+COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It''s NULL if it hasn''t been consumed yet.';
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
@@ -1504,16 +1588,16 @@ COMMENT ON COLUMN SecureSourcePackagePublishingHistory.archive IS 'The target ar
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
 of information linking upstream product series (branches) to distro
-packages, but it\'s not planned or likely to be complete, in the sense that
+packages, but it''s not planned or likely to be complete, in the sense that
 we do not attempt to have information for every branch in every derivative
-distro managed in Launchpad. So don\'t join through this table to get from
+distro managed in Launchpad. So don''t join through this table to get from
 product to source package, or vice versa. Rather, use the
 ProductSeries.sourcepackages attribute, or the
 SourcePackage.productseries attribute. You may need to create a
 SourcePackage with a given sourcepackagename and distroseries, then use its
 .productrelease attribute. The code behind those methods does more than just
 join through the tables, it is also smart enough to look at related
-distro\'s and parent distroseries, and at Ubuntu in particular.';
+distro''s and parent distroseries, and at Ubuntu in particular.';
 COMMENT ON COLUMN Packaging.productseries IS 'The upstream product series
 that has been packaged in this distroseries sourcepackage.';
 COMMENT ON COLUMN Packaging.sourcepackagename IS 'The source package name for
@@ -1590,15 +1674,15 @@ COMMENT ON TABLE PollOption IS 'The options belonging to polls.';
 COMMENT ON COLUMN PollOption.poll IS 'The poll this options belongs to.';
 COMMENT ON COLUMN PollOption.name IS 'The name of this option.';
 COMMENT ON COLUMN PollOption.title IS 'A short title for this option.';
-COMMENT ON COLUMN PollOption.active IS 'If TRUE, people will be able to vote on this option. Otherwise they don\'t.';
+COMMENT ON COLUMN PollOption.active IS 'If TRUE, people will be able to vote on this option. Otherwise they don''t.';
 
 -- Vote
-COMMENT ON TABLE Vote IS 'The table where we store the actual votes of people.  It may or may not have a reference to the person who voted, depending on the poll\'s secrecy.';
-COMMENT ON COLUMN Vote.person IS 'The person who voted. It\'s NULL for secret polls.';
+COMMENT ON TABLE Vote IS 'The table where we store the actual votes of people.  It may or may not have a reference to the person who voted, depending on the poll''s secrecy.';
+COMMENT ON COLUMN Vote.person IS 'The person who voted. It''s NULL for secret polls.';
 COMMENT ON COLUMN Vote.poll IS 'The poll for which this vote applies.';
 COMMENT ON COLUMN Vote.preference IS 'Used to identify in what order the options were chosen by a given user (in case of preferential voting).';
 COMMENT ON COLUMN Vote.option IS 'The choosen option.';
-COMMENT ON COLUMN Vote.token IS 'A unique token that\'s give to the user so he can change his vote later.';
+COMMENT ON COLUMN Vote.token IS 'A unique token that''s give to the user so he can change his vote later.';
 
 -- VoteCast
 COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to ensure they do not vote again, and potentially to notify people that they may still vote.';
@@ -1623,7 +1707,7 @@ COMMENT ON COLUMN ShippingRequest.postcode IS 'The postcode to which this reques
 COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to which this request should be shipped.';
 COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
 COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
-COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
+COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient''s name when a request is made by a ShipIt admin in behalf of someone else';
 COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
 COMMENT ON COLUMN ShippingRequest.normalized_address IS 'The normalized
 address of this request. It is maintained by a trigger because it''s safer than hacking sqlobject''s internals (specially because we sometimes update data behind sqlobject''s back).';
@@ -1654,12 +1738,12 @@ COMMENT ON TABLE ShipItSurveyResult IS 'A single element in a ShipItSurvey.';
 COMMENT ON COLUMN ShipItSurveyResult.answer IS 'The given answer. NULL indicates not answered (which may be different to declined to answer).';
 
 -- Shipment
-COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';
+COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can''t be changed anymore.';
 COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';
 COMMENT ON COLUMN Shipment.shippingrun IS 'The shippingrun to which this shipment belongs.';
 COMMENT ON COLUMN Shipment.dateshipped IS 'The date when this shipment was shipped by the shipping company.';
 COMMENT ON COLUMN Shipment.shippingservice IS 'The shipping service used for this shipment.';
-COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it\'s shipped.';
+COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it''s shipped.';
 
 -- ShippingRun
 COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are sent to the shipping company in the same date.';
@@ -1700,12 +1784,12 @@ COMMENT ON COLUMN DistributionMirror.displayname IS 'The displayname of the mirr
 COMMENT ON COLUMN DistributionMirror.description IS 'A description of the mirror.';
 COMMENT ON COLUMN DistributionMirror.owner IS 'The owner of the mirror.';
 COMMENT ON COLUMN DistributionMirror.reviewer IS 'The person who reviewed the mirror.';
-COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror\'s Internet link.';
+COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror''s Internet link.';
 COMMENT ON COLUMN DistributionMirror.country IS 'The country where the mirror is located.';
 COMMENT ON COLUMN DistributionMirror.content IS 'The content that is mirrored.';
 COMMENT ON COLUMN DistributionMirror.official_candidate IS 'Is the mirror a candidate for becoming an official mirror?';
 COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
-COMMENT ON COLUMN DistributionMirror.status IS 'This mirror\'s status.';
+COMMENT ON COLUMN DistributionMirror.status IS 'This mirror''s status.';
 COMMENT ON COLUMN DistributionMirror.whiteboard IS 'Notes on the current status of the mirror';
 COMMENT ON COLUMN DistributionMirror.date_created IS 'The date and time the mirror was created.';
 COMMENT ON COLUMN DistributionMirror.date_reviewed IS 'The date and time the mirror was reviewed.';
@@ -1750,6 +1834,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile wher
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
+COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from last import attempt.';
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
@@ -1773,7 +1858,16 @@ COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need buildin
 COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were built sucessfully?';
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
+COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
 
+-- ArchiveAuthToken
+
+COMMENT ON TABLE ArchiveAuthToken IS 'Authorisation tokens to use in .htaccess for published archives.';
+COMMENT ON COLUMN ArchiveAuthToken.archive IS 'The archive to which this token refers.';
+COMMENT ON COLUMN ArchiveAuthToken.person IS 'The person to which this token applies.';
+COMMENT ON COLUMN ArchiveAuthToken.date_created IS 'The date and time this token was created.';
+COMMENT ON COLUMN ArchiveAuthToken.date_deactivated IS 'The date and time this token was deactivated.';
+COMMENT ON COLUMN ArchiveAuthToken.token IS 'The token text for this authorisation.';
 
 -- ArchiveDependency
 COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
@@ -1791,16 +1885,42 @@ COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the pe
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
--- ArchiveRebuild
+-- ArchiveSubscriber
 
-COMMENT ON TABLE ArchiveRebuild IS 'ArchiveRebuild: A link table that ties a "rebuild archive" to a DistroSeries and that captures the rebild life cycle data.';
-COMMENT ON COLUMN ArchiveRebuild.archive IS 'The archive to be used for the rebuild.';
-COMMENT ON COLUMN ArchiveRebuild.distroseries IS 'The DistroSeries in question.';
-COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started the rebuild.';
-COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
-COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
-COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+COMMENT ON TABLE ArchiveSubscriber IS 'An authorised person or team subscription to an archive.';
+COMMENT ON COLUMN ArchiveSubscriber.archive IS 'The archive that the subscriber is authorised to see.';
+COMMENT ON COLUMN ArchiveSubscriber.registrant IS 'The person who authorised this subscriber.';
+COMMENT ON COLUMN ArchiveSubscriber.date_created IS 'The date and time this subscription was created.';
+COMMENT ON COLUMN ArchiveSubscriber.subscriber IS 'The person or team that this subscription refers to.';
+COMMENT ON COLUMN ArchiveSubscriber.date_expires IS 'The date and time this subscription will expire. If NULL, it does not expire.';
+COMMENT ON COLUMN ArchiveSubscriber.status IS 'The status of the subscription, e.g. PENDING, ACTIVE, CANCELLING, CANCELLED.';
+COMMENT ON COLUMN ArchiveSubscriber.description IS 'An optional note for the archive owner to describe the subscription.';
+COMMENT ON COLUMN ArchiveSubscriber.date_cancelled IS 'The date and time this subscription was revoked.';
+COMMENT ON COLUMN ArchiveSubscriber.cancelled_by IS 'The person who revoked this subscription.';
 
+-- PackageCopyRequest
+
+COMMENT ON TABLE PackageCopyRequest IS 'PackageCopyRequest: A table that captures the status and the details of an inter-archive package copy operation.';
+COMMENT ON COLUMN PackageCopyRequest.requester IS 'The person who requested the archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.source_archive IS 'The archive from which packages are to be copied.';
+COMMENT ON COLUMN PackageCopyRequest.source_distroseries IS 'The distroseries to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN PackageCopyRequest.source_component IS 'The component to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN PackageCopyRequest.source_pocket IS 'The pocket for the packages to be copied.';
+COMMENT ON COLUMN PackageCopyRequest.target_archive IS 'The archive to which packages will be copied.';
+COMMENT ON COLUMN PackageCopyRequest.target_distroseries IS 'The target distroseries.';
+COMMENT ON COLUMN PackageCopyRequest.target_component IS 'The target component.';
+COMMENT ON COLUMN PackageCopyRequest.target_pocket IS 'The target pocket.';
+COMMENT ON COLUMN PackageCopyRequest.status IS 'Archive operation status, may be one of: new, in-progress, complete, failed, cancelling, cancelled.';
+COMMENT ON COLUMN PackageCopyRequest.reason IS 'The reason why this copy operation was requested.';
+COMMENT ON COLUMN PackageCopyRequest.date_created IS 'Date of creation for this archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.date_started IS 'Start date/time of this archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.date_completed IS 'When did this archive operation conclude?';
+
+-- ArchiveArch
+
+COMMENT ON TABLE ArchiveArch IS 'ArchiveArch: A table that allows a user to specify which architectures an archive requires or supports.';
+COMMENT ON COLUMN ArchiveArch.archive IS 'The archive for which an architecture is specified.';
+COMMENT ON COLUMN ArchiveArch.processorfamily IS 'The architecture specified for the archive on hand.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
@@ -1882,6 +2002,7 @@ COMMENT ON COLUMN OpenIDRPConfig.description IS 'A description of the RP.  Shoul
 COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
+COMMENT ON COLUMN OpenIdRPConfig.can_query_any_team IS 'This RP can query for membership of any or all teams, including private teams. This setting overrides any other private team query ACLs, and should not be used if more granular options are suitable.';
 
 --OpenIDRPSummary
 COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
@@ -1899,7 +2020,7 @@ COMMENT ON COLUMN OpenIDRPSummary.total_logins IS 'The total number of times the
 COMMENT ON TABLE LanguagePack IS 'Store exported language packs for DistroSeries.';
 COMMENT ON COLUMN LanguagePack.file IS 'Librarian file where the language pack is stored.';
 COMMENT ON COLUMN LanguagePack.date_exported IS 'When was exported the language pack.';
-COMMENT ON COLUMN LanguagePack.date_last_used IS 'When did we stop using the language pack. It\'s used to decide whether we can remove it completely from the system. When it\'s being used, its value is NULL';
+COMMENT ON COLUMN LanguagePack.date_last_used IS 'When did we stop using the language pack. It''s used to decide whether we can remove it completely from the system. When it''s being used, its value is NULL';
 COMMENT ON COLUMN LanguagePack.distroseries IS 'The distribution series from where this language pack was exported.';
 COMMENT ON COLUMN LanguagePack.type IS 'Type of language pack. There are two types available, 1: Full export, 2: Update export based on language_pack_that_updates export.';
 COMMENT ON COLUMN LanguagePack.updates IS 'The LanguagePack that this one updates.';
@@ -1996,6 +2117,25 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
 COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
 
 
+-- Job
+
+COMMENT ON TABLE Job IS 'Common info about a job.';
+COMMENT ON COLUMN Job.requester IS 'Ther person who requested this job (if applicable).';
+COMMENT ON COLUMN Job.reason IS 'The reason that this job was created (if applicable)';
+COMMENT ON COLUMN Job.status IS 'An enum (JobStatus) indicating the job status, one of: new, in-progress, complete, failed, cancelling, cancelled.';
+COMMENT ON COLUMN Job.progress IS 'The percentage complete.  Can be NULL for some jobs that do not report progress.';
+COMMENT ON COLUMN Job.last_report_seen IS 'The last time the progress was reported.';
+COMMENT ON COLUMN Job.next_report_due IS 'The next time a progress report is expected.';
+COMMENT ON COLUMN Job.attempt_count IS 'The number of times this job has been attempted.';
+COMMENT ON COLUMN Job.max_retries IS 'The maximum number of retries valid for this job.';
+COMMENT ON COLUMN Job.log IS 'If provided, this is the tail of the log file being generated by the running job.';
+COMMENT ON COLUMN Job.scheduled_start IS 'The time when the job should start';
+COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
+COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
+COMMENT ON COLUMN Job.date_started IS 'If the job has started, the time when the job started.';
+COMMENT ON COLUMN Job.date_finished IS 'If the job has finished, the time when the job finished.';
+
+
 -- StructuralSubscription
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
 COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
@@ -2024,8 +2164,8 @@ COMMENT ON COLUMN OAuthRequestToken.consumer IS 'The consumer which is going to 
 COMMENT ON COLUMN OAuthRequestToken.person IS 'The person who authorized this token.';
 COMMENT ON COLUMN OAuthRequestToken.permission IS 'The permission given by the
 person to the consumer.';
-COMMENT ON COLUMN OAuthRequestToken.key IS 'This token\'s unique key.';
-COMMENT ON COLUMN OAuthRequestToken.secret IS 'The secret used by the consumer (together with the token\'s key) to get an access token once the user has authorized its use.';
+COMMENT ON COLUMN OAuthRequestToken.key IS 'This token''s unique key.';
+COMMENT ON COLUMN OAuthRequestToken.secret IS 'The secret used by the consumer (together with the token''s key) to get an access token once the user has authorized its use.';
 COMMENT ON COLUMN OAuthRequestToken.date_created IS 'The date/time in which the token was created.';
 COMMENT ON COLUMN OAuthRequestToken.date_expires IS 'When the authorization is to expire.';
 COMMENT ON COLUMN OAuthRequestToken.date_reviewed IS 'When the authorization request was authorized or rejected by the person.';
@@ -2039,8 +2179,8 @@ COMMENT ON COLUMN OAuthAccessToken.consumer IS 'The consumer which is going to a
 COMMENT ON COLUMN OAuthAccessToken.person IS 'The person on whose behalf the
 consumer will access Launchpad.';
 COMMENT ON COLUMN OAuthAccessToken.permission IS 'The permission given by that person to the consumer.';
-COMMENT ON COLUMN OAuthAccessToken.key IS 'This token\'s unique key.';
-COMMENT ON COLUMN OAuthAccessToken.secret IS 'The secret used by the consumer (together with the token\'s key) to access Launchpad on behalf of the person.';
+COMMENT ON COLUMN OAuthAccessToken.key IS 'This token''s unique key.';
+COMMENT ON COLUMN OAuthAccessToken.secret IS 'The secret used by the consumer (together with the token''s key) to access Launchpad on behalf of the person.';
 COMMENT ON COLUMN OAuthAccessToken.date_created IS 'The date/time in which the token was created.';
 COMMENT ON COLUMN OAuthAccessToken.date_expires IS 'The date/time in which this token will stop being accepted by Launchpad.';
 COMMENT ON COLUMN OAuthAccessToken.product IS 'The product associated with this token.';
@@ -2060,3 +2200,10 @@ COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this toke
 COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
 COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
 COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
+
+COMMENT ON TABLE UserToUserEmail IS 'A log of all direct user-to-user email contacts that have gone through Launchpad.';
+COMMENT ON COLUMN UserToUserEmail.sender IS 'The person sending this email.';
+COMMENT ON COLUMN UserToUserEmail.recipient IS 'The person receiving this email.';
+COMMENT ON COLUMN UserToUserEmail.date_sent IS 'The date the email was sent.';
+COMMENT ON COLUMN UserToUserEmail.subject IS 'The Subject: header.';
+COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';

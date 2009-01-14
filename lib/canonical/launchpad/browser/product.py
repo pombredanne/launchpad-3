@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductBrandingView',
+    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
@@ -31,14 +32,12 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSOP',
+    'ProductSetBreadcrumbBuilder',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
-    'ProductSetSOP',
     'ProductSetView',
-    'ProductShortLink',
     'ProductSpecificationsMenu',
     'ProductTranslationsMenu',
     'ProductView',
@@ -51,7 +50,7 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
 from zope.formlib import form
@@ -59,9 +58,9 @@ from zope.formlib import form
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
     ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -89,11 +88,10 @@ from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
-from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -102,6 +100,7 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
@@ -118,9 +117,6 @@ class ProductNavigation(
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -153,11 +149,7 @@ class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
 
-    def breadcrumb(self):
-        return 'Projects'
-
     def traverse(self, name):
-        # Raise a 404 on an invalid product name
         product = self.context.getByName(name)
         if product is None:
             raise NotFoundError(name)
@@ -246,20 +238,11 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        # product series, most recent first
-        return list(self.context.serieses[:num])
-
-    def listAltChildren(self, num):
-        return None
+class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProduct`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -381,7 +364,7 @@ class ProductOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change maintainer'
-        return Link('+reassign', text, icon='edit')
+        return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -510,16 +493,16 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'pending proposal'
         else:
-            text = 'active reviews'
+            text = 'pending proposals'
         return Link('+activereviews', text)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
-            text = 'approved merge'
+            text = 'unmerged proposal'
         else:
-            text = 'approved merges'
+            text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
     @enabled_with_permission('launchpad.Admin')
@@ -591,6 +574,7 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
+    @enabled_with_permission('launchpad.Edit')
     def translators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
@@ -620,19 +604,9 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
+class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IProductSet`."""
+    text = "Projects"
 
 
 class ProductSetFacets(StandardLaunchpadFacets):
@@ -705,11 +679,11 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     serieses = None
     development_focus = None
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
@@ -735,10 +709,10 @@ class SeriesWithReleases:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     releases = None
-    decorates(IProductSeries, 'series')
+    delegates(IProductSeries, 'series')
 
     def __init__(self, series):
         self.series = series
@@ -763,10 +737,10 @@ class ReleaseWithFiles:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     files = None
-    decorates(IProductRelease, 'release')
+    delegates(IProductRelease, 'release')
 
     def __init__(self, release):
         self.release = release
@@ -833,7 +807,7 @@ class ProductDownloadFileMixin:
         for release in releases:
             for release_file in release.files:
                 if release_file.libraryfile.id in self.delete_ids:
-                    release.deleteFileAlias(release_file.libraryfile)
+                    release_file.destroySelf()
                     self.delete_ids.remove(release_file.libraryfile.id)
                     del_count += 1
         return del_count
@@ -1051,6 +1025,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             driver = None
         return driver
 
+    @cachedproperty
+    def show_commercial_subscription_info(self):
+        """Should subscription information be shown?
+
+        Subscription information is only shown to the project maintainers,
+        Launchpad admins, and members of the Launchpad commercial team.  The
+        first two are allowed via the Launchpad.Edit permission.  The latter
+        is allowed via Launchpad.Commercial.
+        """
+        return (check_permission('launchpad.Edit', self.context) or
+                check_permission('launchpad.Commercial', self.context))
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
@@ -1189,8 +1175,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             return canonical_url(getUtility(IProductSet))
 
 
-class ProductChangeTranslatorsView(ProductEditView):
-    label = "Change translation group"
+class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
+    label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
 
 
@@ -1207,7 +1193,18 @@ class ProductAdminView(ProductEditView):
         need the ability to change it.
         """
         super(ProductAdminView, self).setUpFields()
-        self.form_fields += self._createRegistrantField()
+        self.form_fields = (self._createAliasesField() + self.form_fields
+                            + self._createRegistrantField())
+
+    def _createAliasesField(self):
+        """Return a PillarAliases field for IProduct.aliases."""
+        return form.Fields(
+            PillarAliases(
+                __name__='aliases', title=_('Aliases'),
+                description=_('Other names (separated by space) under which '
+                              'this project is known.'),
+                required=False, readonly=False),
+            render_context=self.render_context)
 
     def _createRegistrantField(self):
         """Return a popup widget person selector for the registrant.
@@ -1224,12 +1221,11 @@ class ProductAdminView(ProductEditView):
                               'product.  Distinct from the current '
                               'owner.  This is historical data and should '
                               'not be changed without good cause.'),
-                vocabulary='ValidPerson',
+                vocabulary='ValidPersonOrTeam',
                 required=True,
                 readonly=False,
-                default=self.context.registrant
                 ),
-            custom_widget=self.custom_widgets['registrant']
+            render_context=self.render_context
             )
 
     def validate(self, data):
@@ -1374,39 +1370,14 @@ class ProductSetView(LaunchpadView):
     __used_for__ = IProductSet
 
     max_results_to_display = config.launchpad.default_batch_size
+    results = None
+    searchrequested = False
 
     def initialize(self):
         form = self.request.form_ng
-        self.soyuz = form.getOne('soyuz')
-        self.rosetta = form.getOne('rosetta')
-        self.malone = form.getOne('malone')
-        self.bazaar = form.getOne('bazaar')
         self.search_string = form.getOne('text')
-        self.results = None
-
-        self.searchrequested = False
-        if (self.search_string is not None or
-            self.bazaar is not None or
-            self.malone is not None or
-            self.rosetta is not None or
-            self.soyuz is not None):
+        if self.search_string is not None:
             self.searchrequested = True
-
-        if form.getOne('exact_name'):
-            # If exact_name is supplied, we try and locate this name in
-            # the ProductSet -- if we find it, bingo, redirect. This
-            # argument can be optionally supplied by callers.
-            try:
-                product = self.context[self.search_string]
-            except NotFoundError:
-                # No product found, perform a normal search instead.
-                pass
-            else:
-                url = canonical_url(product)
-                if form.getOne('malone'):
-                    url = url + "/+bugs"
-                self.request.response.redirect(url)
-                return
 
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
@@ -1451,10 +1422,14 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget(
         'licenses', CheckBoxMatrixWidget, column_count=4,
         orientation='vertical')
-    custom_widget('active', LaunchpadRadioWidget)
-    custom_widget('license_reviewed', LaunchpadRadioWidget)
-    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
-    custom_widget('has_zero_licenses', LaunchpadRadioWidget)
+    custom_widget('active', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('license_reviewed', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('has_zero_licenses', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
     custom_widget('subscription_expires_after', DateWidget)
@@ -1543,7 +1518,7 @@ class ProductAddView(ProductAddViewBase):
             self.form_fields = self.form_fields.omit('owner',
                                                      'license_reviewed')
 
-    @action(_('Add'), name='add')
+    @action(_('Publish this Project'), name='add')
     def add_action(self, action, data):
         if self.user is None:
             raise zope.security.interfaces.Unauthorized(
@@ -1632,12 +1607,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
             if release.owner == oldOwner:
                 release.owner = newOwner
 
-class ProductShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
-
-
 class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     """View for the product code overview."""
 
@@ -1650,28 +1619,10 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     def initialize(self):
         self.product = self.context
 
-    @cachedproperty
-    def recent_revision_branches(self):
-        """Branches that have the most recent revisions."""
-        branch_set = getUtility(IBranchSet)
-        return branch_set.getBranchesWithRecentRevisionsForProduct(
-            self.context, 5, self.user)
-
     @property
     def codebrowse_root(self):
         """Return the link to codebrowse for this branch."""
         return config.codehosting.codebrowse_root
-
-    @cachedproperty
-    def recent_revisions(self):
-        """The tip revision for each of the recent revision branches."""
-        return [branch.getBranchRevision(sequence=branch.revision_count)
-                for branch in self.recent_revision_branches]
-
-    @cachedproperty
-    def latest_branches(self):
-        """The lastest branches registered for the product."""
-        return self.context.getLatestBranches(visible_by_user=self.user)
 
 
 class ProductBranchListingView(BranchListingView):
@@ -1680,7 +1631,7 @@ class ProductBranchListingView(BranchListingView):
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    @property
+    @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
         return getUtility(IBranchSet).getBranchesForContext(
@@ -1688,7 +1639,13 @@ class ProductBranchListingView(BranchListingView):
 
     @cachedproperty
     def development_focus_branch(self):
-        return self.context.development_focus.series_branch
+        dev_focus_branch = self.context.development_focus.series_branch
+        if dev_focus_branch is None:
+            return None
+        elif check_permission('launchpad.View', dev_focus_branch):
+            return dev_focus_branch
+        else:
+            return None
 
     @property
     def no_branch_message(self):
@@ -1712,6 +1669,8 @@ class ProductBranchListingView(BranchListingView):
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
+
+    show_set_development_focus = True
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
@@ -1754,12 +1713,11 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # person name if know, and the second part is the revision author
         # text.  Only one part of the tuple will be set.
         committers = set()
-        for revision in self._recent_revisions:
-            author = revision.revision_author
-            if author.person is None:
+        for (revision, author) in self._recent_revisions:
+            if author.personID is None:
                 committers.add((None, author.name))
             else:
-                committers.add((author.person.name, None))
+                committers.add((author.personID, None))
         return len(committers)
 
     @cachedproperty
@@ -1802,6 +1760,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
+        if not check_permission('launchpad.View', dev_focus_branch):
+            dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
@@ -1809,6 +1769,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
+                check_permission('launchpad.View', branch) and
                 show_branch(branch)):
                 result.append(branch)
         return result
@@ -1854,7 +1815,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
-        return self.product.development_focus.series_branch is not None
+        return self.development_focus_branch is not None
 
     def _getPluralText(self, count, singular, plural):
         if count == 1:

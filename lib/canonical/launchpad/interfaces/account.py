@@ -184,6 +184,10 @@ class IAccountPublic(Interface):
             title=_('Display Name'), required=True, readonly=False,
                 description=_("Your name as you would like it displayed."))
 
+    status = Choice(
+        title=_("The status of this account"), required=True,
+        readonly=False, vocabulary=AccountStatus)
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
@@ -194,18 +198,23 @@ class IAccountPrivate(Interface):
             title=_("Rationale for this account's creation."), required=True,
             readonly=True, values=AccountCreationRationale.items)
 
-    status = Choice(
-        title=_("The status of this account"), required=True,
-        readonly=False, vocabulary=AccountStatus)
+
     date_status_set = Datetime(
             title=_('Date status last modified.'),
             required=True, readonly=False)
+
     status_comment = Text(
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
 
     openid_identifier = TextLine(
             title=_("Key used to generate opaque OpenID identities."),
+            readonly=True, required=True)
+
+    # XXX sinzui 2008-09-04 bug=264783:
+    # Remove this attribute.
+    new_openid_identifier = TextLine(
+            title=_("Key used to generate New opaque OpenID identities."),
             readonly=True, required=True)
 
     password = PasswordField(
@@ -219,11 +228,14 @@ class IAccount(IAccountPublic, IAccountPrivate):
 class IAccountSet(Interface):
     """Creation of and access to `IAccount` providers."""
 
-    def new(rationale, displayname,
+    def new(rationale, displayname, openid_mnemonic=None,
             password=None, password_is_encrypted=False):
         """Create a new `IAccount`.
 
         :param rationale: An `AccountStatus` value.
+        :param displayname: The user's display name.
+        :param openid_mnemonic: The human-readable component in the account's
+            openid_identifier.
         :param password: A password.
         :param password_is_encrypted: If True, the password parameter has
             already been encrypted using the `IPasswordEncryptor` utility.
@@ -241,6 +253,23 @@ class IAccountSet(Interface):
         does not exist in the database or is not linked to an `IAccount`.
         """
 
-    def getByOpenIdIdentifier(openid_identity):
-        """Return the `IAccount` with the given OpenID identifier, or None."""
+    def getByOpenIDIdentifier(openid_identity):
+        """Return the `IAccount` with the given OpenID identifier.
 
+         :param open_identifier: An ascii compatible string that is either
+             the old or new openid_identifier that belongs to an account.
+         :return: An `IAccount`, or None if the the openid_identifier does
+             not belong to an account.
+         """
+
+    def createOpenIDIdentifier(mnemonic):
+        """Return a unique openid_identifier for OpenID identity URIs.
+
+        The identifier takes for form of 'nnn/mnemonic', where 'nnn' is
+        a random three digit sequence.
+
+        :param mnemonic: A string token that a user can remember.
+            eg. his user name.
+        :return: a unique string that no other user has, nor has ever been
+            used in the past.
+        """

@@ -10,13 +10,14 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 == Create some specific branches to use for this test ==
 
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.testing import (
-    ...     LaunchpadObjectFactory, time_counter)
+    >>> from canonical.launchpad.testing import time_counter
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> factory = LaunchpadObjectFactory()
+    >>> # Since the feed only shows revisions from the last 30 days, we
+    >>> # need recent revisions.
+    >>> initial_revision_date = datetime.now(pytz.UTC) - timedelta(days=10)
     >>> date_generator = time_counter(
-    ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
+    ...     initial_revision_date, timedelta(days=1))
     >>> mike = factory.makePerson(
     ...    name='mike', displayname='Mike Murphy', email='mike@example.com')
     >>> mary = factory.makePerson(
@@ -51,7 +52,6 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     3, makeRevision(
     ...         mary, 'rev3', "Mary's revision"))
 
-    >>> from canonical.launchpad.ftests import login_person
     >>> login_person(mike)
     >>> team = factory.makeTeam(mike, 'The M Team', name='m-team')
     >>> team.addMember(mary, mike)
@@ -83,9 +83,9 @@ of the person, which will be different each time the test is run.
 
     >>> print_parse_ids(anon_browser)
     <id>tag:launchpad.net,...:/code/~mike</id>
-    <id>tag:launchpad.net,2007-12-03:/revision/rev2.1</id>
-    <id>tag:launchpad.net,2007-12-02:/revision/rev2</id>
-    <id>tag:launchpad.net,2007-12-01:/revision/rev1</id>
+    <id>tag:launchpad.net,...:/revision/rev2.1</id>
+    <id>tag:launchpad.net,...:/revision/rev2</id>
+    <id>tag:launchpad.net,...:/revision/rev1</id>
 
 Ensure the self link is correct and there is only one.
 
@@ -105,10 +105,10 @@ of that team.
     [u'Latest Revisions by members of The M Team']
     >>> print_parse_ids(browser)
     <id>tag:launchpad.net,...:/code/~m-team</id>
-    <id>tag:launchpad.net,2007-12-04:/revision/rev3</id>
-    <id>tag:launchpad.net,2007-12-03:/revision/rev2.1</id>
-    <id>tag:launchpad.net,2007-12-02:/revision/rev2</id>
-    <id>tag:launchpad.net,2007-12-01:/revision/rev1</id>
+    <id>tag:launchpad.net,...:/revision/rev3</id>
+    <id>tag:launchpad.net,...:/revision/rev2.1</id>
+    <id>tag:launchpad.net,...:/revision/rev2</id>
+    <id>tag:launchpad.net,...:/revision/rev1</id>
 
 
 == Feed for a product's revisions ==
@@ -127,8 +127,8 @@ for the product, which will be different each time the test is run.
 
     >>> print_parse_ids(anon_browser)
     <id>tag:launchpad.net,...:/code/fooix</id>
-    <id>tag:launchpad.net,2007-12-03:/revision/rev2.1</id>
-    <id>tag:launchpad.net,2007-12-02:/revision/rev2</id>
+    <id>tag:launchpad.net,...:/revision/rev2.1</id>
+    <id>tag:launchpad.net,...:/revision/rev2</id>
 
 Ensure the self link points to the feed location and there is only one.
 
@@ -152,10 +152,10 @@ of the project, which will be different each time the test is run.
 
     >>> print_parse_ids(anon_browser)
     <id>tag:launchpad.net,...:/code/fubar</id>
-    <id>tag:launchpad.net,2007-12-04:/revision/rev3</id>
-    <id>tag:launchpad.net,2007-12-03:/revision/rev2.1</id>
-    <id>tag:launchpad.net,2007-12-02:/revision/rev2</id>
-    <id>tag:launchpad.net,2007-12-01:/revision/rev1</id>
+    <id>tag:launchpad.net,...:/revision/rev3</id>
+    <id>tag:launchpad.net,...:/revision/rev2.1</id>
+    <id>tag:launchpad.net,...:/revision/rev2</id>
+    <id>tag:launchpad.net,...:/revision/rev1</id>
 
 Ensure the self link points to the feed location and there is only one.
 

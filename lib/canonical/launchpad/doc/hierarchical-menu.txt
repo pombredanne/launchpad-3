@@ -1,0 +1,283 @@
+= Hierarchical menus =
+
+The location bar aids users in navigating the depths of Launchpad.  It
+is built from a list of Breadcrumb objects collected during Zope's
+object-traversal step.
+
+== A simple object hierarchy ==
+
+First, we need a hierarchy of objects to build upon:
+
+    >>> from zope.component import (getMultiAdapter, provideAdapter,
+    ...     queryAdapter)
+    >>> from zope.interface import Interface, implements
+
+    >>> class ICookbook(Interface):
+    ...     """A cookbook for holding recipes."""
+
+    >>> class IRecipe(Interface):
+    ...     """A recipe in a cookbook."""
+
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+    >>> class BaseContent:
+    ...     implements(ICanonicalUrlData)
+    ...
+    ...     def __init__(self, name, parent):
+    ...         self.name = name
+    ...         self.path = name
+    ...         self.inside = parent
+    ...         self.rootsite = None
+
+    >>> class Root(BaseContent):
+    ...     """ The site root."""
+
+    >>> class Cookbook(BaseContent):
+    ...     implements(ICookbook)
+
+    >>> class Recipe(BaseContent):
+    ...     implements(IRecipe)
+
+Today we'll be cooking with Spam!
+
+    >>> root = Root('', None)
+    >>> cookbook = Cookbook('joy-of-cooking', root)
+    >>> recipe = Recipe('spam', cookbook)
+
+
+== Discovering breadcrumbs ==
+
+The Hierarchy class builds the breadcrumbs by looking at each object in
+the request.traversed_objects attribute.  If a traversed object can be
+adapted to IBreadcrumbBuilder, then it is added to the breadcrumbs list.
+
+We'll add the objects to the request's list of traversed objects so
+the hierarchy will discover them.
+
+    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/spam',
+    ...     [root, cookbook, recipe])
+
+The hierarchy's list of breadcrumbs is empty since none of the objects
+have an IBreadcrumbBuilder adapter.
+
+    >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
+    >>> hierarchy.items()
+    []
+
+The ICookbook and IRecipe breadcrumb objects show up in the hierarchy
+after IBreadcrumbBuilder adapters are registered for them.  The
+hierarchy builds a list of breadcrumbs starting with the breadcrumb
+closest to the hierarchy root.
+
+    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+
+    # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
+    # give it a valid .text attribute.
+    >>> class TextualBreadcrumbBuilder(BreadcrumbBuilder):
+    ...     @property
+    ...     def text(self):
+    ...         return self.context.name.capitalize().replace('-', ' ')
+
+    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumbBuilder
+
+    >>> provideAdapter(
+    ...     TextualBreadcrumbBuilder, [ICookbook], IBreadcrumbBuilder)
+    >>> provideAdapter(
+    ...     TextualBreadcrumbBuilder, [IRecipe], IBreadcrumbBuilder)
+
+    >>> hierarchy.items()
+    [<Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>,
+     <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking/spam'
+        text='Spam'>]
+
+
+== Building IBreadcrumb objects ==
+
+The construction of breadcrumb objects is handled by an
+IBreadcrumbBuilder factory.  The factory adapts a context object and
+produces an IBreadcrumb object for that context.
+
+The builder holds a temporary copy of a breadcrumb until the breadcrumb
+is in a usable state.  This allows us to adapt the breadcrumb context
+object in one place, and to defer setting the breadcrumb's URL.  We can
+ask the builder for a finished breadcrumb after both the text and the
+URL have been specified.
+
+    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
+    >>> from zope.interface.verify import verifyObject
+
+    >>> builder = BreadcrumbBuilder(cookbook)
+    >>> verifyObject(IBreadcrumbBuilder, builder)
+    True
+
+    >>> builder.text = 'Joy of cooking'
+    >>> builder.url = 'http://launchpad.dev/joy-of-cooking'
+
+    >>> breadcrumb = builder.make_breadcrumb()
+    >>> verifyObject(IBreadcrumb, breadcrumb)
+    True
+    >>> breadcrumb
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
+The builder enforces the requirement for breadcrumbs to have a valid
+URL. The builder raises an error if a URL is not explicitly given by the
+developer.
+
+    >>> builder = BreadcrumbBuilder(cookbook)
+    >>> builder.text = 'Oops!'
+
+    >>> builder.make_breadcrumb()
+    Traceback (most recent call last):
+    ...
+    AssertionError: The builder has not been given a valid breadcrumb URL.
+
+The breadcrumb's attributes can be overridden with subclassing and
+Python properties.
+
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
+
+    >>> class DynamicBreadcrumbBuilder(BreadcrumbBuilder):
+    ...     @property
+    ...     def text(self):
+    ...         return self.context.name.capitalize().replace('-', ' ')
+    ...
+    ...     @property
+    ...     def url(self):
+    ...         return canonical_url(self.context)
+
+    >>> builder = DynamicBreadcrumbBuilder(cookbook)
+    >>> builder.make_breadcrumb()
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
+Breadcrumbs may have icons.  The icon is only set for a breadcrumb if
+the builder's context has an IPathAdapter registration.
+
+    >>> from zope.traversing.interfaces import IPathAdapter
+    >>> from canonical.launchpad.webapp.tales import (
+    ...     ObjectImageDisplayAPI)
+
+    # We need a custom image display adapter that overrides the
+    # the icon() method and returns an <img> tag.
+    >>> class RecipeImageDisplayAPI(ObjectImageDisplayAPI):
+    ...     def icon(self):
+    ...         return '<img src="/@@/recipe"/>'
+
+    >>> provideAdapter(
+    ...     RecipeImageDisplayAPI, [IRecipe], IPathAdapter, 'image')
+
+    >>> builder = DynamicBreadcrumbBuilder(recipe)
+    >>> builder.make_breadcrumb()
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking/spam'
+        text='Spam'
+        icon='<img src="/@@/recipe"/>'>
+
+The icon is not set if the the default image adapter can not find an
+icon for the object.
+
+    # We'll use the default image adapter, which doesn't know about
+    # ICookbook objects.
+    >>> provideAdapter(
+    ...     ObjectImageDisplayAPI, [ICookbook], IPathAdapter, 'image')
+
+    >>> print queryAdapter(cookbook, IPathAdapter, name='image').icon()
+    None
+
+    >>> builder = DynamicBreadcrumbBuilder(cookbook)
+    >>> builder.make_breadcrumb()
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
+
+== Customizing the hierarchy ==
+
+We can customize the hierarchy itself by changing the list of objects
+and URLs that it uses to construct the breadcrumbs list.
+
+The Hierarchy object should *not* construct the Breadcrumb objects
+itself.  It should let the IBreadcrumbBuilder handle it: this ensures
+consistency across the site.
+
+    >>> from canonical.launchpad.browser.launchpad import Hierarchy
+
+    >>> class CustomHierarchy(Hierarchy):
+    ...     def items(self):
+    ...         breadcrumb = self.breadcrumb_for(
+    ...             recipe, "http://launchpad.dev/some-spammy-url")
+    ...         # Omitted the check for 'breadcrumb is None'.
+    ...         return [breadcrumb]
+
+    >>> spammy_hierarchy = CustomHierarchy(root, request)
+    >>> spammy_hierarchy.items()
+    [<Breadcrumb
+        url='http://launchpad.dev/some-spammy-url'
+        text='Spam'
+        icon='<img src="/@@/recipe"/>'>]
+
+
+== Rendering the list ==
+
+The Hierarchy object is responsible for rendering the HTML for the
+location bar.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> from canonical.launchpad.testing.pages import extract_text
+
+    # Borrowed from launchpad.testing.pages.print_location()
+    >>> def print_hierarchy(html):
+    ...     soup = BeautifulSoup(html)
+    ...     hierarchy = soup.find(attrs={'id': 'lp-hierarchy'}).findAll(
+    ...         recursive=False)
+    ...     segments = [extract_text(step).encode('us-ascii', 'replace')
+    ...                 for step in hierarchy
+    ...                 if step.name != 'small']
+    ...     print 'Location:', ' > '.join(segments[2:])
+
+    >>> print_hierarchy(hierarchy.render())
+    Location: Joy of cooking > Spam
+
+The Launchpad Homepage displays no items in it's location bar.  We are
+considered to be on the home page if there are no breadcrumbs.
+
+    # Simulate a visit to the site root
+    >>> request = make_fake_request('http://launchpad.dev/', [root])
+    >>> homepage_hierarchy = getMultiAdapter(
+    ...     (root, request), name='+hierarchy')
+
+    >>> homepage_hierarchy.items()
+    []
+
+    >>> print_hierarchy(homepage_hierarchy.render())
+    Location:
+
+Breadcrumbs in the hierarchy that have icons are rendered with an <img>
+tag.  Breadcrumbs without icons are not.
+
+    >>> breadcrumb_no_icon, breadcrumb_with_icon = hierarchy.items()
+
+    >>> breadcrumb_no_icon
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
+    >>> 'img' in hierarchy.getHtmlForBreadcrumb(breadcrumb_no_icon)
+    False
+
+    >>> breadcrumb_with_icon
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking/spam'
+        text='Spam'
+        icon='<img src="/@@/recipe"/>'>
+
+    >>> print hierarchy.getHtmlForBreadcrumb(breadcrumb_with_icon)
+    <span ...><a ...><img src="/@@/recipe"/> Spam</a></span>

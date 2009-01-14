@@ -2,7 +2,7 @@ Gina Test
 ---------
 
 This file is a simple test for gina. It uses a test archive (kept in
-canonical.launchpad.scripts.ftests.archive_for_gina) and runs gina in
+canonical.launchpad.scripts.tests.archive_for_gina) and runs gina in
 quiet mode over it.
 
 Get the current counts of stuff in the database:
@@ -38,16 +38,19 @@ Create a distribution release and an arch release for breezy:
 
     >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IDistroSeriesSet)
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
-    >>> distroseries_set = getUtility(IDistroSeriesSet)
     >>> hoary = ubuntu.getSeries("hoary")
-    >>> breezy = distroseries_set.new(
-    ...     ubuntu, "breezy", "Breezy Badger", "My title",
+
+    # Only the distro owner and admins can create a new series.
+    >>> login('support@ubuntu.com')
+    >>> breezy = ubuntu.newSeries(
+    ...     "breezy", "Breezy Badger", "My title",
     ...     "My summary", "My description", "5.10",
     ...     hoary, celebs.launchpad_developers)
+    >>> login(ANONYMOUS)
+
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> breezy_i386 = DistroArchSeries(distroseries=breezy,
     ...                         processorfamily=pf,
@@ -116,7 +119,7 @@ Let's set up the filesystem:
     ... except OSError:
     ...     pass
     >>> relative_path = ('lib/canonical/launchpad/scripts/'
-    ...                  'ftests/gina_test_archive')
+    ...                  'tests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
@@ -483,7 +486,7 @@ Link to the "later" archive:
 
     >>> os.remove('/tmp/gina_test_archive')
     >>> relative_path = ('lib/canonical/launchpad/scripts/'
-    ...                  'ftests/gina_test_archive_2nd_run')
+    ...                  'tests/gina_test_archive_2nd_run')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
@@ -665,7 +668,7 @@ indexes from the 'hoary' suite.
 
     >>> os.remove('/tmp/gina_test_archive')
     >>> relative_path = ('lib/canonical/launchpad/scripts/'
-    ...                  'ftests/gina_test_archive')
+    ...                  'tests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
@@ -676,10 +679,14 @@ specified in the testing configuration.
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> lenny = distroseries_set.new(
-    ...     debian, "lenny", "lenny", "Lenny",
+
+    # Only the distro owner and admins can create a new series.
+    >>> login('mark@hbd.com')
+    >>> lenny = debian.newSeries(
+    ...     "lenny", "lenny", "Lenny",
     ...     "---", "!!!", "8.06",
     ...     hoary, celebs.launchpad_developers)
+    >>> login(ANONYMOUS)
 
 Note that we will create a Lenny/i386 port (DistroArchSeries) to check
 if no binaries get imported by mistake. However this is not required
@@ -732,6 +739,27 @@ hasn't changed.
     >>> debian_binaries = SBPPH.selectBy(archive=debian.main_archive)
     >>> debian_binaries.count() == number_of_debian_binaries
     True
+
+
+=== Processing multiple suites in the same batch ===
+
+Both, 'lenny' and 'hoary' (as partner) will be processed in the same
+batch.
+
+    >>> gina_proc = [
+    ...     sys.executable, 'scripts/gina.py', 'lenny', 'partner']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+
+    >>> print proc.stderr.read()
+    INFO    creating lockfile
+    ...
+    INFO    === Processing debian/lenny/release ===
+    ...
+    INFO    === Processing ubuntu/hoary/release ===
+    ...
+
+    >>> proc.wait()
+    0
 
 
 === Other tests ===

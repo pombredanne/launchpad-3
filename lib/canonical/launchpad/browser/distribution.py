@@ -1,40 +1,42 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Browser views for distributions."""
 
 __metaclass__ = type
 
 __all__ = [
-    'DistributionNavigation',
-    'DistributionSOP',
-    'DistributionFacets',
-    'DistributionSpecificationsMenu',
-    'DistributionView',
-    'DistributionPPASearchView',
-    'DistributionAllPackagesView',
-    'DistributionEditView',
-    'DistributionSetView',
     'DistributionAddView',
-    'DistributionArchiveMirrorsView',
-    'DistributionCountryArchiveMirrorsView',
-    'DistributionSeriesMirrorsView',
-    'DistributionSeriesMirrorsRSSView',
+    'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
+    'DistributionArchiveMirrorsView',
+    'DistributionArchivesView',
+    'DistributionBreadcrumbBuilder',
+    'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
-    'DistributionPendingReviewMirrorsView',
-    'DistributionUnofficialMirrorsView',
+    'DistributionEditView',
+    'DistributionFacets',
     'DistributionLanguagePackAdminView',
+    'DistributionNavigation',
+    'DistributionPackageSearchView',
+    'DistributionPendingReviewMirrorsView',
+    'DistributionPPASearchView',
+    'DistributionSeriesMirrorsRSSView',
+    'DistributionSeriesMirrorsView',
+    'DistributionSetBreadcrumbBuilder',
+    'DistributionSetContextMenu',
     'DistributionSetFacets',
     'DistributionSetNavigation',
-    'DistributionSetContextMenu',
-    'DistributionSetSOP',
+    'DistributionSetView',
+    'DistributionSpecificationsMenu',
+    'DistributionUnofficialMirrorsView',
+    'DistributionView',
     'UsesLaunchpadMixin',
     ]
 
 import datetime
 import operator
 
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -42,22 +44,23 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
+from canonical.launchpad.browser.archive import traverse_archive
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.interfaces.archive import IArchiveSet
+from canonical.launchpad.interfaces.archive import (
+    IArchiveSet, ArchivePurpose)
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -71,6 +74,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.image import ImageChangeWidget
 
 
@@ -117,9 +121,6 @@ class DistributionNavigation(
     def redirect_source(self):
         return canonical_url(self.context)
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     @stepto('+packages')
     def packages(self):
         return getUtility(IPublishedPackageSet)
@@ -144,13 +145,14 @@ class DistributionNavigation(
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
+    @stepthrough('+archive')
+    def traverse_archive(self, name):
+        return traverse_archive(self.context, name)
+
 
 class DistributionSetNavigation(Navigation):
 
     usedfor = IDistributionSet
-
-    def breadcrumb(self):
-        return 'Distributions'
 
     def traverse(self, name):
         # Raise a 404 on an invalid distribution name
@@ -160,19 +162,11 @@ class DistributionSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(distribution))
 
 
-class DistributionSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return self.context.serieses[:num]
-
-    def listAltChildren(self, num):
-        return None
+class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistribution`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -188,19 +182,9 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class DistributionSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return 'Distributions in Launchpad'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
+class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistributionSet`."""
+    text = 'Distributions'
 
 
 class DistributionSetFacets(StandardLaunchpadFacets):
@@ -539,6 +523,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
@@ -554,34 +539,17 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
+class DistributionPackageSearchView(PackageSearchViewBase):
+    """Customised PackageSearchView for Distribution"""
+
+    def contextSpecificSearch(self):
+        """See `AbstractPackageSearchView`."""
+        return self.context.searchSourcePackages(self.text)
+
+
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
                        UsesLaunchpadMixin):
     """Default Distribution view class."""
-
-    def initialize(self):
-        """Initialize template control fields.
-
-        Also check if the search action was invoked and setup a batched
-        list with the results if necessary.
-        """
-        # initialize control fields
-        self.matches = 0
-
-        # check if the user invoke search, if not dismiss
-        self.text = self.request.form.get('text', None)
-        if not self.text:
-            self.search_requested = False
-            return
-        self.search_requested = True
-
-        results = self.search_results()
-        self.matches = len(results)
-        if self.matches > 5:
-            self.detailed = False
-        else:
-            self.detailed = True
-
-        self.batchnav = BatchNavigator(results, self.request)
 
     @cachedproperty
     def translation_focus(self):
@@ -593,14 +561,6 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
             return self.context.currentseries
         else:
             return self.context.translation_focus
-
-    def search_results(self):
-        """Return IDistributionSourcePackages according given a text.
-
-        Try to find the source packages in this distribution that match
-        the given text.
-        """
-        return self.context.searchSourcePackages(self.text)
 
     def secondary_translatable_serieses(self):
         """Return a list of IDistroSeries that aren't the translation_focus.
@@ -634,6 +594,23 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
 
         return english_list(linked_milestones)
 
+
+class DistributionArchivesView(LaunchpadView):
+
+    @property
+    def batchnav(self):
+        """Return the batch navigator for the archives."""
+        return BatchNavigator(self.archive_list, self.request)
+
+    @cachedproperty
+    def archive_list(self):
+        """Returns the list of archives for the given distribution.
+        
+        The context may be an IDistroSeries or a users archives.
+        """
+        results = getUtility(IArchiveSet).getArchivesForDistribution(
+            self.context, purposes=[ArchivePurpose.COPY])
+        return results.order_by('date_created DESC')
 
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
@@ -679,12 +656,14 @@ class DistributionPPASearchView(LaunchpadView):
     @property
     def number_of_ppa_sources(self):
         """The number of sources published across all PPAs."""
-        return getUtility(IArchiveSet).number_of_ppa_sources
+        return getUtility(IArchiveSet).getNumberOfPPASourcesForDistribution(
+            self.context)
 
     @property
     def number_of_ppa_binaries(self):
         """The number of binaries published across all PPAs."""
-        return getUtility(IArchiveSet).number_of_ppa_binaries
+        return getUtility(IArchiveSet).getNumberOfPPABinariesForDistribution(
+            self.context)
 
     @property
     def latest_ppa_source_publications(self):
@@ -756,16 +735,6 @@ class DistributionEditView(LaunchpadEditFormView):
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
-    def isAdmin(self):
-        return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-
-    def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        if not self.isAdmin():
-            self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers',
-                'enable_bug_expiration')
-
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
         # enable_bug_expiration is disabled by JavaScript when official_malone
@@ -818,8 +787,8 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
             country_name = country.name
         request.response.setHeader('X-Generated-For-Country', country_name)
         request.response.setHeader('X-Generated-For-IP', ip_address)
-        # XXX: These are here only for debugging
-        # https://launchpad.net/bugs/173729. -- Guilherme Salgado, 2008-01-09
+        # XXX: Guilherme Salgado 2008-01-09 bug=173729: These are here only
+        # for debugging.
         request.response.setHeader(
             'X-REQUEST-HTTP_X_FORWARDED_FOR',
             request.get('HTTP_X_FORWARDED_FOR'))

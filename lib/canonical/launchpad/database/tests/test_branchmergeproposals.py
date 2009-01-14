@@ -4,14 +4,19 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 from unittest import TestCase, TestLoader
 
+from pytz import UTC
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter)
+    BranchMergeProposalGetter, is_valid_transition)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.event.branchmergeproposal import (
+    NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
@@ -21,15 +26,15 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+    LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
-class TestBranchMergeProposalTransitions(TestCase):
+class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     """Test the state transitions of branch merge proposals."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     # All transitions between states are handled my method calls
     # on the proposal.
@@ -45,12 +50,9 @@ class TestBranchMergeProposalTransitions(TestCase):
         }
 
     def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-        self.factory = LaunchpadObjectFactory()
-        owner = self.factory.makePerson()
-        self.target_branch = self.factory.makeBranch(owner=owner)
-        login(self.target_branch.owner.preferredemail.email)
+        TestCaseWithFactory.setUp(self)
+        self.target_branch = self.factory.makeBranch()
+        login_person(self.target_branch.owner)
 
     def assertProposalState(self, proposal, state):
         """Assert that the `queue_status` of the `proposal` is `state`."""
@@ -99,7 +101,8 @@ class TestBranchMergeProposalTransitions(TestCase):
     def assertTerminatingState(self, from_state):
         """Assert that the proposal cannot go to any other state."""
         for status in BranchMergeProposalStatus.items:
-            self.assertBadTransition(from_state, status)
+            if status != from_state:
+                self.assertBadTransition(from_state, status)
 
     def test_transitions_from_wip(self):
         """We can go from work in progress to any other state."""
@@ -123,12 +126,45 @@ class TestBranchMergeProposalTransitions(TestCase):
          merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
 
-        for status in (wip, needs_review, code_approved, rejected,
+        for status in (wip, needs_review, code_approved,
                        merged, queued, merge_failed):
             # All bad, rejected is a final state.
             self.assertBadTransition(rejected, status)
+        # Rejected -> Rejected is valid.
+        self.assertGoodTransition(rejected, rejected)
         # Can resubmit (supersede) a rejected proposal.
         self.assertGoodTransition(rejected, superseded)
+
+    def assertValidTransitions(self, expected, proposal, to_state, by_user):
+        # Check the valid transitions for the merge proposal by the specified
+        # user.
+        valid = set()
+        for state in BranchMergeProposalStatus.items:
+            if is_valid_transition(proposal, state, to_state, by_user):
+                valid.add(state)
+        self.assertEqual(expected, valid)
+
+    def test_transition_to_rejected_by_reviewer(self):
+        # A proposal should be able to go from any states to rejected if the
+        # user is a reviewer, except for superseded, merged or queued.
+        valid_transitions = set(BranchMergeProposalStatus.items)
+        valid_transitions -= set(
+            [BranchMergeProposalStatus.MERGED,
+             BranchMergeProposalStatus.QUEUED,
+             BranchMergeProposalStatus.SUPERSEDED])
+        proposal = self.factory.makeBranchMergeProposal()
+        self.assertValidTransitions(
+            valid_transitions, proposal, BranchMergeProposalStatus.REJECTED,
+            proposal.target_branch.owner)
+
+    def test_transition_to_rejected_by_non_reviewer(self):
+        # A non-reviewer should not be able to set a proposal as rejected.
+        proposal = self.factory.makeBranchMergeProposal()
+        # It is always valid to go to the same state.
+        self.assertValidTransitions(
+            set([BranchMergeProposalStatus.REJECTED]),
+            proposal, BranchMergeProposalStatus.REJECTED,
+            proposal.source_branch.owner)
 
     def test_transitions_from_merged(self):
         """Merged is a terminal state, so no transitions are valid."""
@@ -151,11 +187,55 @@ class TestBranchMergeProposalTransitions(TestCase):
             else:
                 self.assertBadTransition(queued, status)
 
+    def test_transitions_from_queued_dequeue(self):
+        # When a proposal is dequeued it is set to code approved, and the
+        # queue position is reset.
         proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch, set_state=queued)
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.QUEUED)
         proposal.dequeue()
         self.assertProposalState(
             proposal, BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertIs(None, proposal.queue_position)
+        self.assertIs(None, proposal.queuer)
+        self.assertIs(None, proposal.queued_revision_id)
+        self.assertIs(None, proposal.date_queued)
+
+    def test_transitions_from_queued_to_merged(self):
+        # When a proposal is marked as merged from queued, the queue_position
+        # is reset.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.QUEUED)
+        proposal.markAsMerged()
+        self.assertProposalState(
+            proposal, BranchMergeProposalStatus.MERGED)
+        self.assertIs(None, proposal.queue_position)
+
+    def test_transitions_from_queued_to_merge_failed(self):
+        # When a proposal is marked as merged from queued, the queue_position
+        # is reset.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.QUEUED)
+        proposal.mergeFailed(None)
+        self.assertProposalState(
+            proposal, BranchMergeProposalStatus.MERGE_FAILED)
+        self.assertIs(None, proposal.queue_position)
+
+    def test_transitions_to_wip_resets_reviewer(self):
+        # When a proposal was approved and is moved back into work in progress
+        # the reviewer, date reviewed, and reviewed revision are all reset.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertIsNot(None, proposal.reviewer)
+        self.assertIsNot(None, proposal.date_reviewed)
+        self.assertIsNot(None, proposal.reviewed_revision_id)
+        proposal.setAsWorkInProgress()
+        self.assertIs(None, proposal.reviewer)
+        self.assertIs(None, proposal.date_reviewed)
+        self.assertIs(None, proposal.reviewed_revision_id)
 
     def test_transitions_from_superseded(self):
         """Superseded is a terminal state, so no transitions are valid."""
@@ -171,10 +251,55 @@ class TestBranchMergeProposalTransitions(TestCase):
         self.assertEqual(sorted(all_states), sorted(keys),
                          "Missing possible states from the transition graph.")
 
+
+class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
+    """Test the resetting of date_review_reqeuested."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _createMergeProposal(self, needs_review):
+        # Create and return a merge proposal.
+        source_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeBranch(
+            product=source_branch.product)
+        login_person(target_branch.owner)
+        return source_branch.addLandingTarget(
+            source_branch.owner, target_branch,
+            date_created=datetime(2000, 1, 1, 12, tzinfo=UTC),
+            needs_review=needs_review)
+
+    def test_date_set_on_change(self):
+        # When the proposal changes to needs review state the date is
+        # recoreded.
+        proposal = self._createMergeProposal(needs_review=False)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            proposal.queue_status)
+        self.assertIs(None, proposal.date_review_requested)
+        # Requesting the merge then sets the date review requested.
+        proposal.requestReview()
+        self.assertSqlAttributeEqualsDate(
+            proposal, 'date_review_requested', UTC_NOW)
+
+    def test_date_not_reset_on_rerequest(self):
+        # When the proposal changes to needs review state the date is
+        # recoreded.
+        proposal = self._createMergeProposal(needs_review=True)
+        self.assertEqual(
+            BranchMergeProposalStatus.NEEDS_REVIEW,
+            proposal.queue_status)
+        self.assertEqual(
+            proposal.date_created, proposal.date_review_requested)
+        # Requesting the merge again will not reset the date review requested.
+        proposal.requestReview()
+        self.assertEqual(
+            proposal.date_created, proposal.date_review_requested)
+
+
 class TestBranchMergeProposalCanReview(TestCase):
     """Test the different cases that makes a branch deletable or not."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
@@ -204,7 +329,7 @@ class TestBranchMergeProposalCanReview(TestCase):
 class TestBranchMergeProposalQueueing(TestCase):
     """Test the enqueueing and dequeueing of merge proposals."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -281,7 +406,7 @@ class TestBranchMergeProposalQueueing(TestCase):
 class TestRootComment(TestCase):
     """Test the behavior of the root_comment attribute"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -308,10 +433,40 @@ class TestRootComment(TestCase):
         self.assertEqual(comment3, self.merge_proposal.root_comment)
 
 
+class TestCreateCommentNotifications(TestCaseWithFactory):
+    """Test the notifications are raised at the right times."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_notify_on_nominate(self):
+        # Ensure that a notification is emitted when a new comment is added.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        commenter = self.factory.makePerson()
+        login_person(commenter)
+        result, event = self.assertNotifies(
+            NewCodeReviewCommentEvent,
+            merge_proposal.createComment,
+            owner=commenter,
+            subject='A review.')
+        self.assertEqual(result, event.object)
+
+    def test_notify_on_nominate_suppressed_if_requested(self):
+        # Ensure that the notification is supressed if the notify listeners
+        # parameger is set to False.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        commenter = self.factory.makePerson()
+        login_person(commenter)
+        self.assertNoNotification(
+            merge_proposal.createComment,
+            owner=commenter,
+            subject='A review.',
+            _notify_listeners=False)
+
+
 class TestMergeProposalAllComments(TestCase):
     """Tester for `BranchMergeProposal.all_comments`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -336,7 +491,7 @@ class TestMergeProposalAllComments(TestCase):
 class TestMergeProposalGetComment(TestCase):
     """Tester for `BranchMergeProposal.getComment`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -362,7 +517,7 @@ class TestMergeProposalGetComment(TestCase):
 class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -372,7 +527,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         source_branch = self.factory.makeBranch()
         target_branch = self.factory.makeBranch(product=source_branch.product)
         registrant = self.factory.makePerson()
-        result, event = self.assertNotifies(SQLObjectCreatedEvent,
+        result, event = self.assertNotifies(
+            NewBranchMergeProposalEvent,
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, event.object)
 
@@ -459,11 +615,25 @@ class TestMergeProposalNotification(TestCaseWithFactory):
                  source_owner, target_owner, dependent_owner]),
             set(recipients.keys()))
 
+    def test_getNotificationRecipientsIncludesReviewers(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        # Both of the branch owners are now subscribed to their own
+        # branches with full code review notification level set.
+        source_owner = bmp.source_branch.owner
+        target_owner = bmp.target_branch.owner
+        login_person(source_owner)
+        reviewer = self.factory.makePerson()
+        bmp.nominateReviewer(reviewer, registrant=source_owner)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        subscriber_set = set([source_owner, target_owner, reviewer])
+        self.assertEqual(subscriber_set, set(recipients.keys()))
+
 
 class TestGetAddress(TestCaseWithFactory):
     """Test that the address property gives expected results."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -477,7 +647,7 @@ class TestGetAddress(TestCaseWithFactory):
 class TestBranchMergeProposalGetter(TestCaseWithFactory):
     """Test that the BranchMergeProposalGetter behaves as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -499,7 +669,7 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
     """Test the getProposalsForContext method."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator so the permission checks for things
@@ -665,10 +835,34 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_notify_on_nominate(self):
+        # Ensure that a notification is emitted on nomination.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        result, event = self.assertNotifies(
+            ReviewerNominatedEvent,
+            merge_proposal.nominateReviewer,
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner)
+        self.assertEqual(result, event.object)
+
+    def test_notify_on_nominate_suppressed_if_requested(self):
+        # Ensure that a notification is suppressed if notify listeners is set
+        # to False.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        self.assertNoNotification(
+            merge_proposal.nominateReviewer,
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            _notify_listeners=False)
 
     def test_no_initial_votes(self):
         """A new merge proposal has no votes."""
@@ -678,7 +872,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     def test_nominate_creates_reference(self):
         """A new vote reference is created when a reviewer is nominated."""
         merge_proposal = self.factory.makeBranchMergeProposal()
-        login(merge_proposal.source_branch.owner.preferredemail.email)
+        login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
@@ -690,24 +884,47 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(reviewer, vote_reference.reviewer)
         self.assertEqual(merge_proposal.source_branch.owner,
                          vote_reference.registrant)
-        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual('general', vote_reference.review_type)
+
+    def test_nominate_multiple_with_different_types(self):
+        # While an individual can only be requested to do one review
+        # (test_nominate_updates_reference) a team can have multiple
+        # nominations for different review types.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general-1')
+        # Second nomination of the same type fails.
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general-2')
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(
+            ['general-1', 'general-2'],
+            sorted([review.review_type for review in votes]))
 
     def test_nominate_updates_reference(self):
         """The existing reference is updated on re-nomination."""
         merge_proposal = self.factory.makeBranchMergeProposal()
-        login(merge_proposal.source_branch.owner.preferredemail.email)
+        login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         reference = merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
             review_type='General')
-        self.assertEqual('General', reference.review_type)
+        self.assertEqual('general', reference.review_type)
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
             review_type='Specific')
         # Note we're using the reference from the first call
-        self.assertEqual('Specific', reference.review_type)
+        self.assertEqual('specific', reference.review_type)
 
     def test_comment_with_vote_creates_reference(self):
         """A comment with a vote creates a vote reference."""
@@ -758,10 +975,10 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
-            review_type='General')
+            review_type='general')
         comment = merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content',
-            vote=CodeReviewVote.APPROVE)
+            vote=CodeReviewVote.APPROVE, review_type='general')
 
         votes = list(merge_proposal.votes)
         self.assertEqual(1, len(votes))
@@ -769,7 +986,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(reviewer, vote_reference.reviewer)
         self.assertEqual(merge_proposal.source_branch.owner,
                          vote_reference.registrant)
-        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
 
 

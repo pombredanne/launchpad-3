@@ -22,3 +22,12 @@ class any:
 class not_equals:
     def __init__(self, value):
         self.value = value
+
+class greater_than:
+    """Greater than value."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return "greater_than(%r)" % (self.value,)

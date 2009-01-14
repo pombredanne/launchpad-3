@@ -7,12 +7,12 @@
 
 
     <!-- This is class ProductReleaseSet -->
-    <content class="canonical.launchpad.database.ProductReleaseSet">
+    <class class="canonical.launchpad.database.ProductReleaseSet">
         <allow interface="canonical.launchpad.interfaces.IProductReleaseSet" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProductReleaseSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ProductReleaseSet"
@@ -22,12 +22,15 @@
 
 
     <!-- This is class ProductRelease -->
-    <content class="canonical.launchpad.database.ProductRelease">
-        <allow interface="canonical.launchpad.interfaces.IProductRelease" />
+    <class class="canonical.launchpad.database.ProductRelease">
+        <allow interface="canonical.launchpad.interfaces.IProductReleasePublic" />
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.IProductReleaseEditRestricted" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
-    </content>
+    </class>
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -43,6 +46,13 @@
         for="canonical.launchpad.interfaces.IProductRelease"
         path_expression="version"
         attribute_to_parent="productseries"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IProductReleaseFile"
+        path_expression="string:+file/${libraryfile/filename}"
+        rootsite="api"
+        attribute_to_parent="productrelease"
         />
 
     <browser:defaultView
@@ -71,7 +81,7 @@
         name="+index"
         class="canonical.launchpad.browser.ProductReleaseView"
         template="../templates/productrelease-index.pt"
-	/>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductRelease"
@@ -91,23 +101,22 @@
         template="../templates/productrelease-file-add.pt"
         />
 
-    <browser:editform
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductRelease"
+        name="+delete"
+        class="canonical.launchpad.browser.ProductReleaseDeleteView"
+        permission="launchpad.Edit"
+        facet="overview"
+        template="../templates/productrelease-delete.pt"
+        />
+
+    <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IProductRelease"
-      schema="canonical.launchpad.interfaces.IProductRelease"
       class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
       facet="overview"
-      label="Edit product release details"
-      fields="summary description changelog codename"
       permission="launchpad.Edit"
-      template="../templates/productrelease-edit.pt"
-      >
-      <browser:widget
-        field="summary"
-        class="zope.app.form.browser.TextAreaWidget"
-        width="62"
-        height="5" />
-    </browser:editform>
+      template="../templates/productrelease-edit.pt" />
 
     <browser:editform
         name="+review"
@@ -126,8 +135,11 @@
     </browser:editform>
 
     <!-- This is class ProductReleaseFile -->
-    <content class="canonical.launchpad.database.ProductReleaseFile">
-        <allow interface="canonical.launchpad.interfaces.IProductReleaseFile" />
-    </content>
+    <class class="canonical.launchpad.database.ProductReleaseFile">
+        <allow interface="canonical.launchpad.interfaces.IProductReleaseFilePublic" />
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.IProductReleaseFileEditRestricted" />
+    </class>
 
 </configure>

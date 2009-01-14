@@ -24,13 +24,13 @@
         template="../templates/bugtask-macros-cve.pt" />
 
     <!-- IBugTask -->
-    <content class="canonical.launchpad.database.BugTask">
+    <class class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
                            date_confirmed date_incomplete date_inprogress
                            date_left_new date_triaged date_fix_committed
-                           date_fix_released date_closed bug_subscribers
-                           is_complete canTransitionToStatus isMentor
-                           canMentor isSubscribed getPackageComponent
+                           date_fix_released date_left_closed date_closed
+                           bug_subscribers is_complete canTransitionToStatus
+                           isMentor canMentor isSubscribed getPackageComponent
                            userCanEditImportance userCanEditMilestone" />
         <require
             permission="launchpad.View"
@@ -42,7 +42,7 @@
                         asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
                         conjoined_master conjoined_slave subscribe
-                        getConjoinedMaster getBugTasksByPackageName" />
+                        getConjoinedMaster" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
@@ -64,7 +64,7 @@
             permission="launchpad.AnyPerson"
             attributes="offerMentoring retractMentoring"
             />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTask"
@@ -167,22 +167,29 @@
         attribute="__call__"
         />
 
+    <browser:page
+        name="+affectsmetoo"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugMarkAsAffectingUserView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-mark-as-affecting-user.pt" />
+
     <!-- NullBugTask -->
-    <content class="canonical.launchpad.database.bugtask.NullBugTask">
+    <class class="canonical.launchpad.database.bugtask.NullBugTask">
         <require
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IBugTask" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBugTask" />
-    </content>
+    </class>
 
     <!-- BugTaskSet -->
-    <content class="canonical.launchpad.database.BugTaskSet">
+    <class class="canonical.launchpad.database.BugTaskSet">
       <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
       <allow
           interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-    </content>
+    </class>
 
     <securedutility
         provides="canonical.launchpad.interfaces.IBugTaskSet"
@@ -370,27 +377,21 @@
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
 
-    <browser:generalform
+    <browser:page
       name="+linkcve"
       for="canonical.launchpad.interfaces.IBugTask"
-      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveLinkView"
-      fields="sequence"
-      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-cve.pt">
-    </browser:generalform>
+    </browser:page>
 
-    <browser:generalform
+    <browser:page
       name="+unlinkcve"
       for="canonical.launchpad.interfaces.IBugTask"
-      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveUnlinkView"
-      fields="sequence"
-      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-removecve.pt">
-    </browser:generalform>
+    </browser:page>
 
     <browser:page
       name="+addsubscriber"
@@ -401,9 +402,9 @@
       />
 
     <!-- BugTaskDelta -->
-    <content class="canonical.launchpad.database.bugtask.BugTaskDelta">
+    <class class="canonical.launchpad.database.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
-    </content>
+    </class>
 
   </facet>
 

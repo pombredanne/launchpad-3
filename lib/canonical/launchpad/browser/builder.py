@@ -4,45 +4,49 @@
 
 __metaclass__ = type
 
-__all__ = ['BuilderSetNavigation',
-           'BuilderSetFacets',
-           'BuilderSetOverviewMenu',
-           'BuilderSetView',
-           'BuilderSetAddView',
-           'BuilderNavigation',
-           'BuilderFacets',
-           'BuilderOverviewMenu',
-           'BuilderView']
+__all__ = [
+    'BuilderBreadcrumbBuilder',
+    'BuilderFacets',
+    'BuilderOverviewMenu',
+    'BuilderNavigation',
+    'BuilderSetAddView',
+    'BuilderSetBreadcrumbBuilder',
+    'BuilderSetFacets',
+    'BuilderSetOverviewMenu',
+    'BuilderSetNavigation',
+    'BuilderSetView',
+    'BuilderView',
+    ]
 
 import datetime
 import operator
 import pytz
 
-import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.app.form.browser import TextAreaWidget, TextWidget
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.interfaces import (
-    IBuilderSet, IBuilder, IBuildSet, IPerson, NotFoundError)
+from canonical.launchpad.interfaces.build import IBuildSet
+from canonical.launchpad.interfaces.builder import IBuilderSet, IBuilder
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, Link, Navigation,
-    StandardLaunchpadFacets, canonical_url, enabled_with_permission,
-    stepthrough)
+    ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link, Navigation,
+    StandardLaunchpadFacets, action, canonical_url, custom_widget,
+    enabled_with_permission, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.lazr import decorates
+from lazr.delegates import delegates
+from canonical.widgets import HiddenUserWidget
 
 
 class BuilderSetNavigation(GetitemNavigation):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
-
-    def breadcrumb(self):
-        return 'Build Farm'
 
     @stepthrough('+build')
     def traverse_build(self, name):
@@ -58,11 +62,20 @@ class BuilderSetNavigation(GetitemNavigation):
             return self.redirectSubTree(canonical_url(build))
 
 
+class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IBuilderSet`."""
+    text = 'Build Farm'
+
+
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
     usedfor = IBuilder
 
-    def breadcrumb(self):
+
+class BuilderBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IBuilder`."""
+    @property
+    def text(self):
         return self.context.title
 
 
@@ -240,7 +253,7 @@ class HiddenBuilder:
     This class modifies IBuilder attributes that should not be exposed
     while building a job for private job (private PPA or Security).
     """
-    decorates(IBuilder)
+    delegates(IBuilder)
 
     failnotes = None
     currentjob = None
@@ -292,40 +305,36 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         return False
 
 
-class BuilderSetAddView(AddView):
-    """Builder add view
+class BuilderSetAddView(LaunchpadFormView):
+    """View class for adding new Builders."""
 
-    Extends zope AddView and uses IBuilderSet utitlity to create a new
-    IBuilder.
-    """
-    __used_for__ = IBuilderSet
+    schema = IBuilder
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
+    label = "Register a new build machine"
 
-    def createAndAdd(self, data):
-        # add the owner information for the product
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated Launchpad owner")
+    field_names = [
+        'name', 'title', 'description', 'processor', 'url',
+        'active', 'virtualized', 'vm_host', 'owner'
+        ]
 
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        kw['owner'] = owner
+    custom_widget('owner', HiddenUserWidget)
+    custom_widget('description', TextAreaWidget, height=3)
+    custom_widget('url', TextWidget, displayWidth=30)
+    custom_widget('vm_host', TextWidget, displayWidth=30)
 
-        # grab a BuilderSet utility
-        builder_util = getUtility(IBuilderSet)
-        # XXX cprov 2005-06-21
-        # expand dict !!
-        builder = builder_util.new(**kw)
+    @action(_('Register builder'), name='register')
+    def register_action(self, action, data):
+        """Register a new builder."""
+        builder = getUtility(IBuilderSet).new(
+            processor=data.get('processor'),
+            url=data.get('url'),
+            name=data.get('name'),
+            title=data.get('title'),
+            description=data.get('description'),
+            owner=data.get('owner'),
+            active=data.get('active'),
+            virtualized=data.get('virtualized'),
+            vm_host=data.get('vm_host'),
+            )
         notify(ObjectCreatedEvent(builder))
-        self._nextURL = kw['name']
-        return builder
-
-    def nextURL(self):
-        return self._nextURL
+        self.next_url = canonical_url(builder)

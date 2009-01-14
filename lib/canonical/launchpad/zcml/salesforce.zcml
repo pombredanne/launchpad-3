@@ -5,13 +5,13 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.utilities.SalesforceVoucherProxy">
+    <class class="canonical.launchpad.utilities.SalesforceVoucherProxy">
         <allow interface="canonical.launchpad.interfaces.ISalesforceVoucherProxy" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.utilities.Voucher">
+    <class class="canonical.launchpad.utilities.Voucher">
         <allow interface="canonical.launchpad.interfaces.salesforce.ISalesforceVoucher" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.utilities.SalesforceVoucherProxy"

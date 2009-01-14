@@ -21,7 +21,7 @@ import tempfile
 from email import message_from_file
 
 from canonical.config import config
-from canonical.launchpad.mailman.config import configure_smtp
+from lazr.config import as_host_port
 from canonical.testing import smtp2mbox
 
 
@@ -43,7 +43,7 @@ class SMTPControl:
     def _command(self, command):
         """Send a command to the child process."""
         s = socket.socket()
-        s.connect(configure_smtp(config.mailman.smtp))
+        s.connect(as_host_port(config.mailman.smtp))
         s.setblocking(0)
         s.send(command + '\r\n')
         s.close()
@@ -54,7 +54,7 @@ class SMTPControl:
         self._pid = pid = os.fork()
         if pid == 0:
             # Child -- exec the server
-            host, port = configure_smtp(config.mailman.smtp)
+            host, port = as_host_port(config.mailman.smtp)
             logfile = os.path.join(
                 config.mailman.build_var_dir, 'logs', 'smtpd')
             os.execl(sys.executable, sys.executable,

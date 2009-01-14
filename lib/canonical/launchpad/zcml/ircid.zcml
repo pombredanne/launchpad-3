@@ -4,17 +4,17 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.IrcID">
+    <class class="canonical.launchpad.database.IrcID">
         <allow interface="canonical.launchpad.interfaces.IHasOwner" />
         <allow attributes="id person network nickname" />
         <require permission="launchpad.Edit"
                  set_schema="canonical.launchpad.interfaces.IIrcID"
                  attributes="destroySelf" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.IrcIDSet">
+    <class class="canonical.launchpad.database.IrcIDSet">
         <allow interface="canonical.launchpad.interfaces.IIrcIDSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.IrcIDSet"

@@ -16,7 +16,10 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from storm.expr import Not
+from storm.store import Store
+
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -200,19 +203,28 @@ class BugWatch(SQLBase):
 
         return message % error_data
 
+    @property
+    def unpushed_comments(self):
+        """Return the unpushed comments for this `BugWatch`."""
+        store = Store.of(self)
+        bug_messages = store.find(
+            BugMessage,
+            BugMessage.bug == self.bug,
+            BugMessage.bugwatch == self,
+            BugMessage.remote_comment_id == None)
+
+        return bug_messages
+
     def hasComment(self, comment_id):
         """See `IBugWatch`."""
-        query = """
-            BugMessage.message = Message.id
-            AND BugMessage.remote_comment_id = %s
-            AND BugMessage.bugwatch = %s
-        """ % sqlvalues(comment_id, self)
+        store = Store.of(self)
+        bug_messages = store.find(
+            BugMessage,
+            BugMessage.bug == self.bug.id,
+            BugMessage.bugwatch == self.id,
+            BugMessage.remote_comment_id == comment_id)
 
-        # XXX 2008-02-13 gmb:
-        #     This might be more efficient if we used an EXISTS query.
-        comment = BugMessage.selectOne(query, clauseTables=['Message'])
-
-        return comment is not None
+        return bug_messages.any() is not None
 
     def addComment(self, comment_id, message):
         """See `IBugWatch`."""
@@ -229,6 +241,21 @@ class BugWatch(SQLBase):
         bug_message = self.bug.linkMessage(
             message, bugwatch=self, user=bug_watch_updater,
             remote_comment_id=comment_id)
+        return bug_message
+
+    def getImportedBugMessages(self):
+        """See `IBugWatch`."""
+        store = Store.of(self)
+        # If a comment is linked to a bug watch and has a
+        # remote_comment_id, it means it's imported.
+        # XXX gmb 2008-12-09 bug 244768:
+        #     The Not() needs to be in this find() call due to bug
+        #     244768; we should remove it once that is solved.
+        return store.find(
+            BugMessage,
+            BugMessage.bug == self.bug.id,
+            BugMessage.bugwatch == self.id,
+            Not(BugMessage.remote_comment_id == None))
 
 
 class BugWatchSet(BugSetBase):
@@ -436,9 +463,13 @@ class BugWatchSet(BugSetBase):
         SourceForge instance in Launchpad).
         """
         # We're only interested in URLs that look like they come from a
-        # *Forge bugtracker.
-        if (not path.startswith('/support/tracker.php') and
-            not path.startswith('/tracker/index.php')):
+        # *Forge bugtracker. The valid URL schemes are:
+        # * /support/tracker.php
+        # * /tracker/(index.php) (index.php part is optional)
+        # * /tracker2/(index.php) (index.php part is optional)
+        sf_path_re = re.compile(
+            '^\/(support\/tracker\.php|tracker2?\/(index\.php)?)$')
+        if (sf_path_re.match(path) is None):
             return None
         if not query.get('aid'):
             return None

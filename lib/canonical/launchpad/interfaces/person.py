@@ -11,19 +11,22 @@ __all__ = [
     'IHasStanding',
     'INewPerson',
     'INewPersonForm',
-    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'ImmutableVisibilityError',
+    'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
+    'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -64,7 +67,7 @@ from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.location import (
-    IHasLocation, IObjectWithLocation, ISetLocation)
+    IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -73,12 +76,13 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
-    ITeamMembership, TeamMembershipStatus)
+    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -183,21 +187,21 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     OWNER_CREATED_LAUNCHPAD = DBItem(8, """
-        Created by the owner himself, coming from Launchpad.
+        Created by the owner, coming from Launchpad.
 
         Somebody was navigating through Launchpad and at some point decided to
         create an account.
         """)
 
     OWNER_CREATED_SHIPIT = DBItem(9, """
-        Created by the owner himself, coming from Shipit.
+        Created by the owner, coming from Shipit.
 
         Somebody went to one of the shipit sites to request Ubuntu CDs and was
         directed to Launchpad to create an account.
         """)
 
     OWNER_CREATED_UBUNTU_WIKI = DBItem(10, """
-        Created by the owner himself, coming from the Ubuntu wiki.
+        Created by the owner, coming from the Ubuntu wiki.
 
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
@@ -211,14 +215,14 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     OWNER_CREATED_UBUNTU_SHOP = DBItem(12, """
-        Created by the owner himself, coming from the Ubuntu Shop.
+        Created by the owner, coming from the Ubuntu Shop.
 
         Somebody went to the Ubuntu Shop and was directed to Launchpad to
         create an account.
         """)
 
     OWNER_CREATED_UNKNOWN_TRUSTROOT = DBItem(13, """
-        Created by the owner himself, coming from unknown OpenID consumer.
+        Created by the owner, coming from unknown OpenID consumer.
 
         Somebody went to an OpenID consumer we don't know about and was
         directed to Launchpad to create an account.
@@ -520,18 +524,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
+    oauth_request_tokens = Attribute(_("Non-expired request tokens"))
+
     sshkeys = Attribute(_('List of SSH keys'))
-
-    # XXX: salgado, 2008-06-19: This should probably be removed from here as
-    # it's already defined in IHasLocation (from which IPerson extends).
-    time_zone = exported(
-        Choice(title=_('Time zone'), required=True, readonly=False,
-               description=_('The time zone of where you live.'),
-               vocabulary='TimezoneName'))
-
-    openid_identifier = TextLine(
-        title=_("Key used to generate opaque OpenID identities."),
-        readonly=True, required=False)
 
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
@@ -551,9 +546,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_openid_enabled = Bool(
-        title=_("This user can use Launchpad as an OpenID provider."),
-        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -562,11 +554,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    allwikis = exported(
-        CollectionField(title=_("All WikiNames of this Person."),
-                        readonly=True, required=False,
-                        value_type=Reference(schema=IWikiName)),
-        exported_as='wiki_names')
+    wiki_names = exported(
+        CollectionField(
+            title=_("All WikiNames of this Person, sorted alphabetically by "
+                    "URL."),
+            readonly=True, required=False,
+            value_type=Reference(schema=IWikiName)))
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
                         readonly=True, required=False,
@@ -577,15 +570,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
-    branches = Attribute(
-        "All branches related to this person. They might be registered, "
-        "authored or subscribed by this person.")
-    authored_branches = Attribute("The branches whose author is this person.")
-    registered_branches = Attribute(
-        "The branches whose owner is this person and which either have no"
-        "author or an author different from this person.")
-    subscribed_branches = Attribute(
-        "Branches to which this person " "subscribes.")
     myactivememberships = exported(
         CollectionField(
             title=_("All TeamMemberships for Teams this Person is an "
@@ -719,14 +703,20 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     title = Attribute('Person Page Title')
 
     is_trusted_on_shipit = Bool(
-        title=_('Is this a trusted person on shipit?'))
+        title=_('Is this a trusted person on shipit?'),
+        description=_("A person is considered trusted on shipit if she's a "
+                      "member of the 'ubuntumembers' team or she has more "
+                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
+                      "entries."))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    archive = Attribute(
-        "The Archive owned by this person, his PPA.")
+    archive = exported(
+        Reference(title=_("Personal Package Archive"),
+                  description=_("The Archive owned by this person, his PPA."),
+                  schema=Interface)) # Really IArchive, see archive.py
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -849,6 +839,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         The product_name may be None.
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
+        # longer appropriate, given source package branches. It's used in
+        # browser/person.py, browser/specification.py.
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
@@ -872,7 +865,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         True if this Person is actually a Team, otherwise False.
         """
 
-    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
     # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
     # unfunge for this one attribute.
@@ -1062,17 +1055,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def addLanguage(language):
         """Add a language to this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
-        If the given language is already present, and IntegrityError will be
-        raised. This will be fixed soon; here's the discussion on this topic:
-        https://launchpad.ubuntu.com/malone/bugs/1317.
+        If the given language is one of the user's preferred languages
+        already, nothing will happen.
         """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
         """
@@ -1247,6 +1239,15 @@ class IPersonViewRestricted(Interface):
         title=_("List of participants with no coordinates recorded."),
         value_type=Reference(schema=Interface))
 
+    def getMembersWithPreferredEmails(include_teams=False):
+        """Returns a result set of persons with precached addresses.
+
+        Persons or teams without preferred email addresses are not included.
+        """
+
+    def getMembersWithPreferredEmailsCount(include_teams=False):
+        """Returns the count of persons/teams with preferred emails."""
+
     def getDirectAdministrators():
         """Return this team's administrators.
 
@@ -1309,6 +1310,12 @@ class IPersonEditRestricted(Interface):
         subscription deactivated (using the setMembershipData() method) by
         a team administrator.
         """
+
+    @operation_parameters(
+        visible=copy_field(ILocationRecord['visible'], required=True))
+    @export_write_operation()
+    def setLocationVisibility(visible):
+        """Specify the visibility of a person's location and time zone."""
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
@@ -1577,8 +1584,12 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def topPeople():
-        """Return the top 5 people by Karma score in the Launchpad."""
+    @collection_default_content()
+    def getTopContributors(limit=50):
+        """Return the top contributors in Launchpad, up to the given limit."""
+
+    def isNameBlacklisted(self, name):
+        """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
@@ -1700,10 +1711,6 @@ class IPersonSet(Interface):
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.
         """
-
-    @collection_default_content()
-    def getAllValidPersonsAndTeams():
-        """Return all valid persons and teams."""
 
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
@@ -1969,6 +1976,10 @@ class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
 
 
+class ImmutableVisibilityError(Exception):
+    """A change in team membership visibility is not allowed."""
+
+
 class InvalidName(Exception):
     """The name given for a person is not valid."""
 
@@ -1976,6 +1987,12 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class NoSuchPerson(NameLookupFailed):
+    """Raised when we try to look up an IPerson that doesn't exist."""
+
+    _message_prefix = "No such person"
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
@@ -2017,6 +2034,11 @@ IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
 # circular dependencies.
 for name in ['team', 'person', 'last_changed_by']:
     ITeamMembership[name].schema = IPerson
+
+# Fix schema of ITeamParticipation fields.  Has to be done here because of
+# circular dependencies.
+for name in ['team', 'person']:
+    ITeamParticipation[name].schema = IPerson
 
 # Thank circular dependencies once again.
 IIrcID['person'].schema = IPerson

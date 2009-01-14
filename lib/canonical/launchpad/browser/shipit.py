@@ -3,6 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'ShipItCustomRequestView',
+    'ShipItCustomRequestServerCDsView',
     'ShipItExportsView',
     'ShipitFrontPageView',
     'ShipItLoginView',
@@ -18,18 +20,17 @@ __all__ = [
     'ShippingRequestSetNavigation',
     'ShippingRequestsView',
     'StandardShipItRequestAddView',
+    'StandardShipItRequestEditView',
     'StandardShipItRequestSetNavigation',
     'StandardShipItRequestsView']
 
-from copy import copy
 from operator import attrgetter
 
 from zope.event import notify
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError, IInputWidget
-from zope.app.form.utility import setUpWidgets
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.formlib import form
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
@@ -39,9 +40,9 @@ from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
@@ -49,11 +50,11 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, IShipItApplication, IShipItReportSet,
-    IShipItSurveySet, IShippingRequestSet, IShippingRequestUser,
-    IShippingRunSet, IStandardShipItRequestSet, ShipItArchitecture,
+    IShipItSurveySet, IShippingRequestAdmin, IShippingRequestEdit,
+    IShippingRequestSet, IShippingRequestUser, IShippingRunSet,
+    IStandardShipItRequest, IStandardShipItRequestSet, ShipItArchitecture,
     ShipItConstants, ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
     ShippingRequestStatus, UnexpectedFormData)
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad import _
@@ -74,7 +75,7 @@ class ShipitFrontPageView(LaunchpadView):
 
     def initialize(self):
         self.flavour = _get_flavour_from_layer(self.request)
-        self.series = get_current_series_for_flavour(self.flavour)
+        self.series = ShipItConstants.current_distroseries
 
     @property
     def prerelease_mode(self):
@@ -104,24 +105,6 @@ def shipit_is_open(flavour):
         flavour, getUtility(ILaunchBag).user))
 
 
-def get_current_series_for_flavour(flavour):
-    """Return the current `ShipItDistroSeries`.
-
-    If the given flavour is Kubuntu and the current series is 8.04 we make
-    a copy of the series and update its title because Kubuntu 8.04 is not LTS.
-
-    XXX: salgado, 2008-04-18: As you can guess, this is a hack needed because
-    Kubuntu 8.04 is not LTS like the others (Ubuntu, Server and Edubuntu) and
-    can be removed as soon as we stop shipping Hardy.
-    """
-    series = ShipItConstants.current_distroseries
-    if (flavour == ShipItFlavour.KUBUNTU
-        and series == ShipItDistroSeries.HARDY):
-        series = copy(series)
-        series.title = series.title.replace(' LTS', '')
-    return series
-
-
 # XXX: GuilhermeSalgado 2005-09-09:
 # The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
@@ -140,7 +123,7 @@ class ShipItLoginView(LoginOrRegister):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
-        self.series = get_current_series_for_flavour(self.flavour)
+        self.series = ShipItConstants.current_distroseries
         self.origin = self.possible_origins[self.flavour]
 
     def is_open(self):
@@ -220,7 +203,7 @@ def _get_flavour_from_layer(request):
             'ShipItKUbuntuLayer or ShipItUbuntuLayer')
 
 
-class ShipItRequestView(GeneralFormView):
+class ShipItRequestView(LaunchpadFormView):
     """The view for people to create/edit ShipIt requests."""
 
     standard_order_page = '/myrequest'
@@ -232,43 +215,26 @@ class ShipItRequestView(GeneralFormView):
     _extra_fields = None
 
     schema = IShippingRequestUser
-    fieldNames = None
-    process_status = None
-    index = ViewPageTemplateFile('../templates/shipit-requestcds.pt')
+    field_names = None
 
-    def __init__(self, context, request):
-        """Override GeneralFormView.__init__() not to set up widgets."""
-        self.context = context
-        self.request = request
-        self.flavour = _get_flavour_from_layer(request)
-        self.series = get_current_series_for_flavour(self.flavour)
-        self.fieldNames = [
+    def initialize(self, flavour=None, distroseries=None):
+        if flavour is None:
+            self.flavour = _get_flavour_from_layer(self.request)
+        else:
+            self.flavour = flavour
+        if distroseries is None:
+            self.series = ShipItConstants.current_distroseries
+        else:
+            self.series = distroseries
+        self.field_names = [
             'recipientdisplayname', 'addressline1', 'addressline2', 'city',
             'province', 'country', 'postcode', 'phone', 'organization']
-        self._extra_fields = []
-        self.quantity_fields_mapping = {}
+        self._setExtraFields()
+        super(ShipItRequestView, self).initialize()
 
     def _setExtraFields(self):
-        """Set self._extra_fields that are shown in the custom order form.
-
-        These fields include the 'reason' and quantity widgets for users to
-        make custom orders.
-        """
-        ubuntu_kubuntu_and_server = [
-            ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
-        if self.flavour in ubuntu_kubuntu_and_server:
-            self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
-        elif self.flavour == ShipItFlavour.EDUBUNTU:
-            self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86'}
-        else:
-            raise AssertionError('Unrecognized flavour: %s' % self.flavour)
-
-        self._extra_fields = self.quantity_fields_mapping.values()
-        self.fieldNames.append('reason')
-        self.fieldNames.extend(self._extra_fields)
+        self._extra_fields = []
+        self.quantity_fields_mapping = {}
 
     def is_open(self):
         return shipit_is_open(self.flavour)
@@ -278,46 +244,16 @@ class ShipItRequestView(GeneralFormView):
         return config.shipit.prerelease_mode
 
     @property
-    def _keyword_arguments(self):
-        """All fields should be given as keyword arguments."""
-        return self.fieldNames
-
-    @property
     def _standard_fields(self):
-        return list(set(self.fieldNames) - set(self._extra_fields))
+        return list(set(self.field_names) - set(self._extra_fields))
 
-    @property
-    def quantity_widgets(self):
-        """Return a list with the quantity widgets that need to be shown."""
-        return [getattr(self, field_name + '_widget')
-                for field_name in self.quantity_fields_mapping.values()]
-
-    def _setUpWidgets(self, context=None):
-        # First we set up the standard widgets
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=self._standard_fields,
-            initial=self.initial_values, context=context)
-        # And then we set up the extra widgets that depend on the layer we are
-        # and are not attributes of our context; that's why their initial
-        # values comes from a different property.
-        if self._extra_fields:
-            setUpWidgets(
-                self, self.schema, IInputWidget, names=self._extra_fields,
-                initial=self.extra_fields_initial_values, context=context)
-
-    def renderCustomrequestForm(self):
-        self._setExtraFields()
-        self.should_show_custom_request = True
-        return self._renderForm()
-
-    def renderStandardrequestForm(self):
-        self.should_show_custom_request = False
-        return self._renderForm()
-
-    def _renderForm(self):
-        self._setUpWidgets()
-        self.process_form()
-        return self.index()
+    def setUpWidgets(self, context=None):
+        if context is None:
+            context = self.context
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, context, self.request,
+            data=self.initial_values, adapters=self.adapters,
+            ignore_request=False)
 
     @property
     def download_url(self):
@@ -330,14 +266,6 @@ class ShipItRequestView(GeneralFormView):
             return "http://www.kubuntu.org/download.php"
         else:
             raise AssertionError('Invalid self.flavour: %s' % self.flavour)
-
-    @property
-    def is_edubuntu(self):
-        return self.flavour == ShipItFlavour.EDUBUNTU
-
-    @property
-    def is_kubuntu(self):
-        return self.flavour == ShipItFlavour.KUBUNTU
 
     @property
     def initial_values(self):
@@ -363,17 +291,12 @@ class ShipItRequestView(GeneralFormView):
 
         return field_values
 
-    @property
-    def extra_fields_initial_values(self):
-        field_values = {}
-        if self.current_order is None:
-            return field_values
-        quantities = self._getCurrentOrderQuantitiesOfThisFlavour()
-        for arch, field_name in self.quantity_fields_mapping.items():
-            field_values[field_name] = quantities[arch]
-        return field_values
+    @cachedproperty
+    def has_multiple_options(self):
+        return len(self.standard_options) > 1
 
-    def standardShipItRequests(self):
+    @cachedproperty
+    def standard_options(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
         requests = getUtility(IStandardShipItRequestSet).getByFlavour(
             self.flavour, self.user)
@@ -437,44 +360,38 @@ class ShipItRequestView(GeneralFormView):
                     'Expected an id but got "%s"' % ordertype)
         if self.current_order_standard_id:
             return self.current_order_standard_id
-        for standardrequest in self.standardShipItRequests():
+        for standardrequest in self.standard_options:
             if standardrequest.isdefault:
                 return standardrequest.id
 
-    def process_form(self):
-        """Overwrite GeneralFormView's process_form() method because we want
-        to be able to have a 'Cancel' button in a different <form> element.
-        """
-        if 'cancel' in self.request.form:
-            if self.current_order is None:
-                # This is probably a user reloading the form he submitted
-                # cancelling his request, so we'll just refresh the page so he
-                # can see that he has no current request, actually.
-                return ''
-            self.current_order.cancel(self.user)
-            self.process_status = 'Request Cancelled'
-        else:
-            self.process_status = GeneralFormView.process_form(self)
+    @action('Cancel Request', name='cancel', validator='validate_cancel')
+    def cancel_request_action(self, action, data):
+        if self.current_order is None:
+            # This is probably a user reloading the form he submitted
+            # cancelling his request, so we'll just refresh the page so he
+            # can see that he has no current request, actually.
+            return
+        self.current_order.cancel(self.user)
+        self._current_order = None
+        self.request.response.addInfoNotification(_('Request Cancelled'))
 
-        flush_database_updates()
-        self._current_order = self.user.currentShipItRequest()
-        return self.process_status
-
-    def process(self, *args, **kw):
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
         """Process the submitted form, either creating a new request, or
         changing an existing one.
         """
         form = self.request.form
         need_notification = False
-        reason = kw.get('reason')
+        reason = data.get('reason')
         requestset = getUtility(IShippingRequestSet)
         current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                self.user, kw.get('recipientdisplayname'), kw.get('country'),
-                kw.get('city'), kw.get('addressline1'), kw.get('phone'),
-                kw.get('addressline2'), kw.get('province'),
-                kw.get('postcode'), kw.get('organization'), reason)
+                self.user, data.get('recipientdisplayname'),
+                data.get('country'), data.get('city'),
+                data.get('addressline1'), data.get('phone'),
+                data.get('addressline2'), data.get('province'),
+                data.get('postcode'), data.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
                        'can take up to <strong>sixteen weeks<strong> to '
@@ -487,7 +404,7 @@ class ShipItRequestView(GeneralFormView):
                        'country of shipping.')
         else:
             for name in self._standard_fields:
-                setattr(current_order, name, kw.get(name))
+                setattr(current_order, name, data.get(name))
             # 'reason' is special cased because it's only displayed on the
             # custom request form, and so it's part of self._extra_fields and
             # not self._standard_fields. Also, we can't simply override
@@ -510,8 +427,10 @@ class ShipItRequestView(GeneralFormView):
             if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
-                return ("The option you chose was not found. Please select "
-                        "one from the list below.")
+                self._abort()
+                self.addError(_("The option you chose was not found. Please "
+                                "select one from the list below."))
+                return
             quantities = request_type.quantities
             total_cds = request_type.totalCDs
         else:
@@ -519,7 +438,7 @@ class ShipItRequestView(GeneralFormView):
             quantities = {}
             total_cds = 0
             for arch, field_name in self.quantity_fields_mapping.items():
-                quantities[arch] = intOrZero(kw.get(field_name))
+                quantities[arch] = intOrZero(data.get(field_name))
                 total_cds += quantities[arch]
 
         # Here we set both requested and approved quantities. This is not a
@@ -529,10 +448,6 @@ class ShipItRequestView(GeneralFormView):
         # shipped.
         current_order.setQuantities(
             {self.flavour: quantities}, distroseries=self.series)
-
-        # Make sure that subsequent queries will see the RequestedCDs objects
-        # created/updated when we set the order quantities above.
-        flush_database_updates()
 
         current_flavours = current_order.getContainedFlavours()
 
@@ -588,7 +503,8 @@ class ShipItRequestView(GeneralFormView):
             # request pending in the code above, we need to clear them out.
             current_order.clearApprovedQuantities()
 
-        return msg
+        self._current_order = self.user.currentShipItRequest()
+        self.request.response.addInfoNotification(structured(msg))
 
     def userAlreadyRequestedFlavours(self, flavours):
         """Return True if any of the given flavours is contained in any of
@@ -601,29 +517,79 @@ class ShipItRequestView(GeneralFormView):
         return False
 
     def validate(self, data):
-        errors = []
         # We use a custom template with some extra widgets, so we have to
-        # cheat here and access self.request.form
+        # cheat here and access self.request.form directly.
         if not self.request.form.get('ordertype') and not self._extra_fields:
-            errors.append(UnexpectedFormData(_(
-                'The number of requested CDs was not provided.')))
+            self.addError(_('The number of requested CDs was not provided.'))
 
-        country = data['country']
-        if shipit_postcode_required(country) and not data['postcode']:
-            errors.append(LaunchpadValidationError(_(
-                "Shipping to your country requires a postcode, but you "
-                "didn't provide one. Please enter one below.")))
+        country = data.get('country')
+        postcode = data.get('postcode')
+        if country is not None:
+            if shipit_postcode_required(country) and postcode is None:
+                self.addError(_(
+                    "Shipping to your country requires a postcode, but you "
+                    "didn't provide one. Please enter one below."))
 
         if self.quantity_fields_mapping:
             total_cds = 0
             for field_name in self.quantity_fields_mapping.values():
-                total_cds += intOrZero(data[field_name])
+                total_cds += intOrZero(data.get(field_name))
             if total_cds == 0:
-                errors.append(LaunchpadValidationError(_(
-                    "You can't make a request with 0 CDs")))
+                self.addError(_("You can't make a request with 0 CDs"))
 
-        if errors:
-            raise WidgetsError(errors)
+    def render(self):
+        if self.current_order is None:
+            main_action_label = 'Submit Request'
+        elif self.currentOrderContainsCDsOfThisFlavour():
+            main_action_label = 'Change Request'
+        else:
+            main_action_label = 'Request More CDs'
+        self.setMainActionLabel(main_action_label)
+        return super(ShipItRequestView, self).render()
+
+    def setMainActionLabel(self, label):
+        actions = []
+        for action in self.actions:
+            # Only change the label of our 'continue' action.
+            if action.__name__ == 'field.actions.continue':
+                action.label = label
+            actions.append(action)
+        self.actions = form.Actions(*actions)
+
+
+class ShipItCustomRequestView(ShipItRequestView):
+    """The view for people to create/edit ShipIt custom requests."""
+
+    should_show_custom_request = True
+
+    def _setExtraFields(self):
+        """Set self._extra_fields that are shown in the custom order form.
+
+        These fields include the 'reason' and quantity widgets for users to
+        make custom orders.
+        """
+        if self.flavour == ShipItFlavour.SERVER:
+            self.quantity_fields_mapping = {
+                ShipItArchitecture.X86: 'ubuntu_quantityx86',
+                ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
+        elif self.flavour in ShipItFlavour.items:
+            self.quantity_fields_mapping = {
+                ShipItArchitecture.X86: 'ubuntu_quantityx86'}
+        else:
+            raise AssertionError('Unrecognized flavour: %s' % self.flavour)
+
+        self._extra_fields = self.quantity_fields_mapping.values()
+        self.field_names.append('reason')
+        self.field_names.extend(self._extra_fields)
+
+    @property
+    def initial_values(self):
+        values = super(ShipItCustomRequestView, self).initial_values
+        if self.current_order is not None:
+            quantities = self._getCurrentOrderQuantitiesOfThisFlavour()
+            for arch, field_name in self.quantity_fields_mapping.items():
+                values[field_name] = quantities[arch]
+        return values
 
 
 class ShipItRequestServerCDsView(ShipItRequestView):
@@ -632,9 +598,19 @@ class ShipItRequestServerCDsView(ShipItRequestView):
     standard_order_page = '/myrequest-server'
     custom_order_page = '/specialrequest-server'
 
-    def __init__(self, context, request):
-        super(ShipItRequestServerCDsView, self).__init__(context, request)
-        self.flavour = ShipItFlavour.SERVER
+    def initialize(self, distroseries=None):
+        super(ShipItRequestServerCDsView, self).initialize(
+            flavour=ShipItFlavour.SERVER, distroseries=distroseries)
+
+
+class ShipItCustomRequestServerCDsView(ShipItCustomRequestView):
+
+    standard_order_page = '/myrequest-server'
+    custom_order_page = '/specialrequest-server'
+
+    def initialize(self, distroseries=None):
+        super(ShipItCustomRequestServerCDsView, self).initialize(
+            flavour=ShipItFlavour.SERVER, distroseries=distroseries)
 
 
 class _SelectMenuOption:
@@ -732,7 +708,7 @@ class ShippingRequestsView:
             flavour = ShipItFlavour.items[self.selectedFlavourName]
 
         # Sort as directed by form, but also by id as a tie-breaker
-        # XXX: JeroenVermeulen bug=136345 2007-08-31: Indeterministic sorting
+        # XXX: JeroenVermeulen 2007-08-31 bug=136345: Indeterministic sorting
         # was breaking the xx-shipit-search-for-requests.txt test most of the
         # time (and blocking PQM).  This is a quick fix, but it looks like we
         # could also use some extra input checking here.  SQL sorting
@@ -783,12 +759,26 @@ class StandardShipItRequestAddView(AddView):
         notify(ObjectCreatedEvent(request))
 
 
+class StandardShipItRequestEditView(LaunchpadEditFormView):
+    """Edit an existing Standard ShipIt Request."""
+
+    schema = IStandardShipItRequest
+    field_names = ["flavour", "quantityx86", "quantityamd64",
+                   "user_description", "isdefault"]
+    label = "Edit standard option"
+
+    @action(_("Change"), name="change")
+    def action_change(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(getUtility(IStandardShipItRequestSet))
+
+
 class ShippingRequestAdminMixinView:
     """Basic functionality for administering a ShippingRequest.
 
     Any class that inherits from this one should also inherit from
-    GeneralFormView, or another class that stores the widgets as instance
-    attributes, named like fieldname_widget.
+    LaunchpadFormView, or another class that stores the widgets in
+    self.widgets.
     """
 
     # This is the order in which we display the distribution flavours
@@ -815,10 +805,9 @@ class ShippingRequestAdminMixinView:
         for flavour in self.ordered_flavours:
             row = [flavour.title]
             for arch in self.ordered_architectures:
-                widget_name = self.quantity_fields_mapping[flavour][arch]
-                if widget_name is not None:
-                    widget_name += '_widget'
-                    row.append(getattr(self, widget_name))
+                field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is not None:
+                    row.append(self.widgets[field_name])
                 else:
                     row.append(None)
             matrix.append(row)
@@ -850,16 +839,16 @@ class ShippingRequestAdminMixinView:
 
 
 class ShippingRequestApproveOrDenyView(
-        GeneralFormView, ShippingRequestAdminMixinView):
+        LaunchpadFormView, ShippingRequestAdminMixinView):
     """The page where admins can Approve/Deny existing requests."""
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: 'ubuntu_quantityamd64approved'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: 'kubuntu_quantityamd64approved'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
              ShipItArchitecture.AMD64: None},
@@ -868,68 +857,63 @@ class ShippingRequestApproveOrDenyView(
              ShipItArchitecture.AMD64: 'server_quantityamd64approved'}
         }
 
-    def process(self, *args, **kw):
-        """Process the submitted form.
+    schema = IShippingRequestEdit
+    label = 'Approve or deny this request'
+    field_names = [
+        "ubuntu_quantityx86approved", "ubuntu_quantityamd64approved",
+        "kubuntu_quantityx86approved", "kubuntu_quantityamd64approved",
+        "edubuntu_quantityx86approved",
+        "server_quantityx86approved", "server_quantityamd64approved",
+        "highpriority"]
 
-        Depending on the button used to submit the form, this method will
-        Approve, Deny or Change the approved quantities of this shipit request.
-        """
-        context = self.context
-        form = self.request.form
-
-        if context.isShipped():
+    def validate(self, data):
+        if self.context.isShipped():
             # This order was exported after the form was rendered; we can't
             # allow changing it, so we return to render the page again,
             # without the buttons that allow changing it.
-            # XXX: Guilherme Salgado 2006-07-27:
-            # It's probably a good idea to notify the user about what
-            # happened here.
+            self.addError("Could not change this request because it has been "
+                          "sent to the shipping company already.")
+
+    @action('Deny & Continue', name='deny')
+    def deny_action(self, action, data):
+        if not self.context.canBeDenied():
+            # This shipit request was changed behind our back; let's just
+            # refresh the page so the user can decide what to do with it.
             return
+        self.next_url = self._makeNextURL(previous_action='denied')
+        self.context.deny()
 
-        if 'DENY' not in form:
-            quantities = {}
-            for flavour in self.quantity_fields_mapping:
-                quantities[flavour] = {}
-                for arch in self.quantity_fields_mapping[flavour]:
-                    field_name = self.quantity_fields_mapping[flavour][arch]
-                    if field_name is None:
-                        # We don't ship this arch for this flavour
-                        continue
-                    quantities[flavour][arch] = kw[field_name]
+    def getQuantities(self, data):
+        quantities = {}
+        for flavour in self.quantity_fields_mapping:
+            quantities[flavour] = {}
+            for arch in self.quantity_fields_mapping[flavour]:
+                field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is None or field_name not in data:
+                    continue
+                quantities[flavour][arch] = data[field_name]
+        return quantities
 
-        if 'APPROVE' in form:
-            if not context.canBeApproved():
-                # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with it.
-                return
-            context.approve(whoapproved=getUtility(ILaunchBag).user)
-            context.highpriority = kw['highpriority']
-            context.setApprovedQuantities(quantities)
-            self._nextURL = self._makeNextURL(previous_action='approved')
-        elif 'CHANGE' in form:
-            if not context.isApproved():
-                # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with it.
-                return
-            self._nextURL = self._makeNextURL(previous_action='changed')
-            context.highpriority = kw['highpriority']
-            context.setApprovedQuantities(quantities)
-        elif 'DENY' in form:
-            if not context.canBeDenied():
-                # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with it.
-                return
-            self._nextURL = self._makeNextURL(previous_action='denied')
-            context.deny()
-        else:
-            # Nothing to do.
-            pass
+    @action('Approve & Continue', name='approve')
+    def approve_action(self, action, data):
+        if not self.context.canBeApproved():
+            # This shipit request was changed behind our back; let's just
+            # refresh the page so the user can decide what to do with it.
+            return
+        self.context.approve(whoapproved=self.user)
+        self.context.highpriority = data['highpriority']
+        self.context.setApprovedQuantities(self.getQuantities(data))
+        self.next_url = self._makeNextURL(previous_action='approved')
 
-    def submitted(self):
-        # Overwrite GeneralFormView.submitted() because we have several
-        # buttons on this page.
-        form = self.request.form
-        return 'APPROVE' in form or 'CHANGE' in form or 'DENY' in form
+    @action('Change Approved Totals', name='change')
+    def change_action(self, action, data):
+        if not self.context.isApproved():
+            # This shipit request was changed behind our back; let's just
+            # refresh the page so the user can decide what to do with it.
+            return
+        self.next_url = self._makeNextURL(previous_action='changed')
+        self.context.highpriority = data['highpriority']
+        self.context.setApprovedQuantities(self.getQuantities(data))
 
     def _makeNextURL(self, previous_action):
         # Need to flush all updates so that getOldestPending() can see the
@@ -999,16 +983,16 @@ class ShippingRequestApproveOrDenyView(
 
 
 class ShippingRequestAdminView(
-        GeneralFormView, ShippingRequestAdminMixinView):
+        LaunchpadFormView, ShippingRequestAdminMixinView):
     """Where admins can make new orders or change existing ones."""
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86',
-             ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86',
-             ShipItArchitecture.AMD64: 'kubuntu_quantityamd64'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
              ShipItArchitecture.AMD64: None},
@@ -1023,12 +1007,20 @@ class ShippingRequestAdminView(
         'recipientdisplayname', 'country', 'city', 'addressline1', 'phone',
         'addressline2', 'province', 'postcode', 'organization']
 
-    def __init__(self, context, request):
-        order_id = request.form.get('order')
+    schema = IShippingRequestAdmin
+    field_names = [
+        "recipientdisplayname", "addressline1", "addressline2", "city",
+        "province", "country", "postcode", "phone", "organization",
+        "ubuntu_quantityx86", "ubuntu_quantityamd64", "kubuntu_quantityx86",
+        "kubuntu_quantityamd64", "edubuntu_quantityx86", "server_quantityx86",
+        "server_quantityamd64", "highpriority"]
+
+    def initialize(self):
+        order_id = self.request.form.get('order')
         if order_id is not None and order_id.isdigit():
             self.current_order = getUtility(IShippingRequestSet).get(
                 int(order_id))
-        GeneralFormView.__init__(self, context, request)
+        super(ShippingRequestAdminView, self).initialize()
 
     @property
     def initial_values(self):
@@ -1049,17 +1041,25 @@ class ShippingRequestAdminView(
         # XXX: Guilherme Salgado 2006-04-21:
         # Even shipit admins shouldn't be allowed to make requests with 0
         # CDs. We need to check this here.
-        errors = []
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
-            errors.append(LaunchpadValidationError(_(
+            self.addError(_(
                 "Shipping to your country requires a postcode, but you "
-                "didn't provide one. Please enter one below.")))
+                "didn't provide one. Please enter one below."))
 
-        if errors:
-            raise WidgetsError(errors)
+    def render(self):
+        if self.current_order is not None:
+            actions = []
+            for action in self.actions:
+                # Only change the label of our 'request' action.
+                if action.__name__ == 'field.actions.request':
+                    action.label = 'Change Request'
+                actions.append(action)
+            self.actions = form.Actions(*actions)
+        return super(ShippingRequestAdminView, self).render()
 
-    def process(self, *args, **kw):
+    @action('Request', name='request')
+    def request_action(self, action, data):
         # All requests created through the admin UI have the shipit_admin
         # celeb as the recipient. This is so because shipit administrators
         # have to be able to create requests on behalf of people who don't
@@ -1075,15 +1075,15 @@ class ShippingRequestAdminView(
                 if field_name is None:
                     # We don't ship this arch for this flavour
                     continue
-                quantities[flavour][arch] = intOrZero(kw[field_name])
+                quantities[flavour][arch] = intOrZero(data[field_name])
 
         current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                shipit_admin, kw['recipientdisplayname'], kw['country'],
-                kw['city'], kw['addressline1'], kw['phone'],
-                kw['addressline2'], kw['province'], kw['postcode'],
-                kw['organization'])
+                shipit_admin, data['recipientdisplayname'], data['country'],
+                data['city'], data['addressline1'], data['phone'],
+                data['addressline2'], data['province'], data['postcode'],
+                data['organization'])
             msg = 'New request created successfully: %d' % current_order.id
 
             # This is a newly created request, and because it's created by a
@@ -1093,15 +1093,15 @@ class ShippingRequestAdminView(
             current_order.approve()
         else:
             for name in self.shipping_details_fields:
-                setattr(current_order, name, kw[name])
+                setattr(current_order, name, data[name])
             msg = 'Request %d changed' % current_order.id
 
             # This is a request being changed, so we just set the requested
             # quantities and don't approve it.
             current_order.setRequestedQuantities(quantities)
 
-        current_order.highpriority = kw['highpriority']
-        self._nextURL = canonical_url(current_order)
+        current_order.highpriority = data['highpriority']
+        self.next_url = canonical_url(current_order)
         self.request.response.addNotification(msg)
 
 
@@ -1188,6 +1188,7 @@ class ShipItSurveyView(LaunchpadFormView):
 
     schema = ShipItSurveySchema
     custom_widget('environment', LabeledMultiCheckBoxWidget)
+    custom_widget('platform', CheckBoxMatrixWidget, column_count=2)
     custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
     custom_widget('used_in', LabeledMultiCheckBoxWidget)
     custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)

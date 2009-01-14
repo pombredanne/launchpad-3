@@ -35,6 +35,7 @@ __all__ = [
     'LookupTree',
     ]
 
+import copy
 import string
 
 
@@ -169,7 +170,24 @@ class LookupTree:
                 # last value from the iterable is the result of the
                 # branch, and all the preceding values are keys.
                 branches.append(self._branch_factory(*arg))
-        self.branches = tuple(branches)
+
+        # Prune the branches to remove duplicate paths.
+        seen_keys = set()
+        pruned_branches = []
+        for branch in branches:
+            prune = seen_keys.intersection(branch.keys)
+            if len(prune) > 0:
+                if len(prune) == len(branch.keys):
+                    # This branch has no unseen keys, so skip it.
+                    continue
+                branch = copy.copy(branch)
+                branch.keys = tuple(
+                    key for key in branch.keys
+                    if key not in prune)
+            pruned_branches.append(branch)
+            seen_keys.update(branch.keys)
+
+        self.branches = tuple(pruned_branches)
         self._verify()
 
     def _verify(self):
@@ -216,8 +234,9 @@ class LookupTree:
     def flatten(self):
         """Generate a flat representation of this tree.
 
-        Generate tuples. The last element in the tuple is the
-        result. The previous elements are tuples of possible keys.
+        Generates tuples. The last element in the tuple is the
+        result. The previous elements are the branches followed to
+        reach the result.
 
         This can be useful for generating documentation, because it is
         a compact, flat representation of the tree.

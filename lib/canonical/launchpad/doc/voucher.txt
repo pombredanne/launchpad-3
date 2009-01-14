@@ -39,6 +39,11 @@ All of the sample voucher data in the transport can be shown.
     LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000003,Reserved
     LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000004,Reserved
     LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000005,Reserved
+    LPCBS12-f78df324-0cc2-11dd-8b6b-com000000001,Reserved
+    LPCBS12-f78df324-0cc2-11dd-8b6b-com000000002,Reserved
+    LPCBS12-f78df324-0cc2-11dd-8b6b-com000000003,Reserved
+    LPCBS12-f78df324-0cc2-11dd-8b6b-com000000004,Reserved
+    LPCBS12-f78df324-0cc2-11dd-8b6b-com000000005,Reserved
 
 We can retrieve all unredeemed vouchers for a person.
 
@@ -46,9 +51,11 @@ We can retrieve all unredeemed vouchers for a person.
     ...     IPersonSet)
     >>> from canonical.launchpad.interfaces.product import (
     ...     IProductSet)
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> mark = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark_identifier = removeSecurityProxy(mark.account).openid_identifier
 
-    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> vouchers = server.getUnredeemedVouchers(mark_identifier)
     >>> print_vouchers(vouchers)
     LPCBS12-f78df324-0cc2-11dd-8b6b-000000000001,Reserved
     LPCBS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved
@@ -74,11 +81,12 @@ A single voucher can be redeemed, but must be associated with a project.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> voucher = vouchers[0]['voucher_id']
-    >>> result = server.redeemVoucher(voucher, mark.openid_identifier,
-    ...                               firefox.id, firefox.displayname)
+    >>> result = server.redeemVoucher(
+    ...     voucher, mark_identifier,
+    ...     firefox.id, firefox.displayname)
     >>> print result
     True
-    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> vouchers = server.getUnredeemedVouchers(mark_identifier)
     >>> print_vouchers(vouchers)
     LPCBS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved
     LPCBS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved
@@ -101,8 +109,9 @@ fault.
     >>> SalesforceXMLRPCTestTransport.forced_fault = (
     ...     'redeemVoucher', 'NotFound','Something was not found.')
     >>> voucher = vouchers[0]['voucher_id']
-    >>> result = server.redeemVoucher(voucher, mark.openid_identifier,
-    ...                               firefox.id, firefox.displayname)
+    >>> result = server.redeemVoucher(
+    ...     voucher, mark_identifier,
+    ...     firefox.id, firefox.displayname)
     Traceback (most recent call last):
       ...
     Fault: <Fault NotFound: 'Something was not found.'>

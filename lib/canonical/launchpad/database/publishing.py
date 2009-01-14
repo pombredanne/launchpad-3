@@ -29,7 +29,6 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 
 from storm.expr import Desc, In
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -43,16 +42,21 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IArchiveSafePublisher,
+    ArchivePurpose, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
-    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+    PackagePublishingStatus, PackagePublishingPocket, PackageUploadStatus,
+    PoolFileOverwriteError)
+from canonical.launchpad.interfaces.build import IBuildSet, BuildStatus
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
+from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -484,17 +488,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             prejoins=preJoins)
         binary_publications = list(results)
 
-        unique_binary_locations = set(
-            [(pub.binarypackagerelease.id, pub.distroarchseries.id)
-             for pub in binary_publications])
+        unique_binary_ids = set(
+            [pub.binarypackagerelease.id for pub in binary_publications])
 
         unique_binary_publications = []
         for pub in binary_publications:
-            location = (pub.binarypackagerelease.id, pub.distroarchseries.id)
-            if location in unique_binary_locations:
+            if pub.binarypackagerelease.id in unique_binary_ids:
                 unique_binary_publications.append(pub)
-                unique_binary_locations.remove(location)
-                if len(unique_binary_locations) == 0:
+                unique_binary_ids.remove(pub.binarypackagerelease.id)
+                if len(unique_binary_ids) == 0:
                     break
 
         return unique_binary_publications
@@ -611,6 +613,26 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby
             )
+
+    @property
+    def source_package_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.sourcepackagerelease.name
+
+    @property
+    def source_package_version(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.sourcepackagerelease.version
+
+    @property
+    def component_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.component.name
+
+    @property
+    def section_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.section.name
 
     @property
     def displayname(self):
@@ -886,29 +908,82 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-        # Both lookups may raise NotFoundError; it should be handled in
-        # the caller.
         current = self.secure_record
-        target_das = distroseries[current.distroarchseries.architecturetag]
 
-        secure_copy = SecureBinaryPackagePublishingHistory(
-            archive=archive,
-            binarypackagerelease=self.binarypackagerelease,
-            distroarchseries=target_das,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False)
-        return BinaryPackagePublishingHistory.get(secure_copy.id)
+        if current.binarypackagerelease.architecturespecific:
+            try:
+                target_architecture = distroseries[
+                    current.distroarchseries.architecturetag]
+            except NotFoundError:
+                return []
+            destination_architectures = [target_architecture]
+        else:
+            destination_architectures = distroseries.architectures
+
+        copies = []
+        for architecture in destination_architectures:
+            copy = SecureBinaryPackagePublishingHistory(
+                archive=archive,
+                binarypackagerelease=self.binarypackagerelease,
+                distroarchseries=architecture,
+                component=current.component,
+                section=current.section,
+                priority=current.priority,
+                status=PackagePublishingStatus.PENDING,
+                datecreated=UTC_NOW,
+                pocket=pocket,
+                embargo=False)
+            copies.append(copy)
+
+        return [
+            BinaryPackagePublishingHistory.get(copy.id) for copy in copies]
 
 
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
     implements(IPublishingSet)
+
+    def getBuildsForSourceIds(self, source_publication_ids, archive=None):
+        """See `IPublishingSet`."""
+        # Import Build and DistroArchSeries locally to avoid circular
+        # imports, since that Build uses SourcePackagePublishingHistory
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        # If an archive was passed in as a parameter, add an extra expression
+        # to filter by archive:
+        extra_exprs = []
+        if archive is not None:
+            extra_exprs.append(
+                SourcePackagePublishingHistory.archive == archive)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            Build.distroarchseriesID == DistroArchSeries.id,
+            SourcePackagePublishingHistory.archiveID == Build.archiveID,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids),
+            *extra_exprs)
+
+        result_set.order_by(
+            SourcePackagePublishingHistory.id,
+            DistroArchSeries.architecturetag)
+
+        return result_set
+
+    def getByIdAndArchive(self, id, archive):
+        """See `IPublishingSet`."""
+        return Store.of(archive).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id == id,
+            SourcePackagePublishingHistory.archive == archive.id)
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.
@@ -928,33 +1003,11 @@ class PublishingSet:
                 for source_publication in source_publications]
 
     def getBuildsForSources(self, one_or_more_source_publications):
-        """See `PublishingSet`."""
-        # Import Build and DistroArchSeries locally to avoid circular
-        # imports, since that Build uses SourcePackagePublishingHistory
-        # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from canonical.launchpad.database.build import Build
-        from canonical.launchpad.database.distroarchseries import (
-            DistroArchSeries)
-
+        """See `IPublishingSet`."""
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
-        result_set = store.find(
-            (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            Build.distroarchseriesID == DistroArchSeries.id,
-            SourcePackagePublishingHistory.archiveID == Build.archiveID,
-            SourcePackagePublishingHistory.distroseriesID ==
-                DistroArchSeries.distroseriesID,
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
-
-        result_set.order_by(
-            SourcePackagePublishingHistory.id,
-            DistroArchSeries.architecturetag)
-
-        return result_set
+        return self.getBuildsForSourceIds(source_publication_ids)
 
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
@@ -969,7 +1022,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         source_result = store.find(
             (SourcePackagePublishingHistory, LibraryFileAlias,
              LibraryFileContent),
@@ -1016,7 +1069,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
              BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
@@ -1052,7 +1105,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, PackageDiff,
              LibraryFileAlias, LibraryFileContent),
@@ -1067,6 +1120,64 @@ class PublishingSet:
             Desc(PackageDiff.date_requested))
 
         return result_set
+
+    def getChangesFilesForSources(
+        self, one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import PackageUpload and PackageUploadSource locally
+        # to avoid circular imports, since PackageUpload uses
+        # {Secure}SourcePackagePublishingHistory.
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+        from canonical.launchpad.database.queue import (
+            PackageUpload, PackageUploadSource)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            (SourcePackagePublishingHistory, PackageUpload,
+             SourcePackageRelease, LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == PackageUpload.changesfileID,
+            PackageUpload.id == PackageUploadSource.packageuploadID,
+            PackageUpload.status == PackageUploadStatus.DONE,
+            PackageUpload.distroseriesID ==
+                SourcePackageRelease.upload_distroseriesID,
+            PackageUploadSource.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(SourcePackagePublishingHistory.id)
+        return result_set
+
+    def getBuildStatusSummariesForSourceIdsAndArchive(self,
+                                                      source_ids,
+                                                      archive):
+        """See `IPublishingSet`."""
+        # source_ids can be None or an empty sequence.
+        if not source_ids:
+            return {}
+
+        # Get the builds for all the requested sources.
+        result_set = self.getBuildsForSourceIds(source_ids, archive=archive)
+
+        # Populate the list of builds for each id in a dict.
+        source_builds = {}
+        for src_pub, build, distroarchseries in result_set:
+            source_builds.setdefault(src_pub.id, []).append(build)
+
+        # Gset the overall build status for each source's builds.
+        build_set = getUtility(IBuildSet)
+        source_build_statuses = {}
+        for source_id, builds in source_builds.items():
+            status_summary = build_set.getStatusSummaryForBuilds(builds)
+            source_build_statuses[source_id] = status_summary
+
+        return source_build_statuses
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
@@ -1099,7 +1210,7 @@ class PublishingSet:
             ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
                             removed_by, removal_comment)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # First update the source package publishing history table.
         source_ids = [source.id for source in sources]

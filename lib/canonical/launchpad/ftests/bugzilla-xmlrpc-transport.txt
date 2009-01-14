@@ -85,11 +85,11 @@ user id is always the same.
     >>> print response_dict['user_id']
     42
 
-The login cookies are in the response headers.
+The login cookies are in the transport's cookie jar.
 
-    >>> print bugzilla_transport.last_response_headers['Set-Cookie']
-    Bugzilla_login=...
-    Bugzilla_logincookie=...
+    >>> print bugzilla_transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[<Cookie Bugzilla_login=...>,
+        <Cookie Bugzilla_logincookie=...>]>
 
 
 == Launchpad.time() ==
@@ -145,7 +145,7 @@ so that they are treated as "key: value" pairs.
     is_open: True
     last_change_time: 20080610T16:19:53
     priority: P1
-    product: HeartOfGold
+    product: Marvin
     resolution: FIXED
     severity: normal
     status: RESOLVED
@@ -170,7 +170,7 @@ one bug will be returned (assuming they all exist and are accessible).
     is_open: True
     last_change_time: 20080610T16:19:53
     priority: P1
-    product: HeartOfGold
+    product: Marvin
     resolution: FIXED
     severity: normal
     status: RESOLVED
@@ -270,6 +270,49 @@ returned.
     >>> return_value = server.Launchpad.get_bugs({
     ...     'ids': [1, 2],
     ...     'changed_since': changed_since,
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> len(bug_dicts)
+    0
+
+Specifying a 'products' parameter will cause Launchpad.get_bugs() to
+only return bugs which affect those products.
+
+    >>> return_value = server.Launchpad.get_bugs({
+    ...     'products': ['HeartOfGold'],
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> assert len(bug_dicts) == 1, "There should only be one bug dict."
+
+    >>> bug_dict = bug_dicts[0]
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+
+If both products and ids are specified when calling
+Launchpad.get_bugs(), the union of bugs in (ids, products) will be
+returned.
+
+    >>> return_value = server.Launchpad.get_bugs({
+    ...     'ids': [1],
+    ...     'products': ['HeartOfGold'],
     ...     'permissive': True,
     ...     })
 
@@ -429,3 +472,41 @@ raised.
     Traceback (most recent call last):
       ...
     Fault: <Fault 101: 'Bug #42 does not exist.'>
+
+
+== Launchpad.set_link() ==
+
+The plugin API method Launchpad.set_link() allows Launchpad to tell the
+remote Bugzilla which Launchpad bug links to a given bug on that
+Bugzilla. It takes two arguments: the ID of the remote bug and the ID of
+the Launchpad bug linking to it.
+
+Launchpad.set_link() requires authentication.
+
+    >>> bugzilla_transport.expireCookie(bugzilla_transport.auth_cookie)
+    >>> server.Launchpad.set_link({'id': 1, 'launchpad_id': 1})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 410: 'Login Required'>
+
+Launchpad.set_link() will return  0 if no Launchpad bug has ever linked
+to the remote bug.
+
+    >>> bugzilla_transport.auth_cookie = "here we go again"
+    >>> result = server.Launchpad.set_link({'id': 1, 'launchpad_id': 10})
+    >>> print result['launchpad_id']
+    0
+
+Otherwise, Launchpad.set_link() will return the ID of the last Launchpad
+bug linked to the remote bug.
+
+    >>> result = server.Launchpad.set_link({'id': 1, 'launchpad_id': 11})
+    >>> print result['launchpad_id']
+    10
+
+The new Launchpad bug ID will be recorded in the remote bug's
+`internals` dict.
+
+    >>> for key, val in bugzilla_transport.bugs[1]['internals'].items():
+    ...     print "%s: %s" % (key, val)
+    launchpad_id: 11

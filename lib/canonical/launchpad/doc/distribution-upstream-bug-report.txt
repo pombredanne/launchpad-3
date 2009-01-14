@@ -45,6 +45,31 @@ triaged bugs, but there are some upstream ones with watches:
 
     >>> print_report(kubuntu.getPackagesAndPublicUpstreamBugCounts())
 
+getPackagesAndPublicUpstreamBugCounts() accepts an `exclude_packages`
+parameter. This is a list of the source packages that shouldn't be
+included in the report that getPackagesAndPublicUpstreamBugCounts()
+returns.
+
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(
+    ...     exclude_packages=['linux-source-2.6.15']))
+    mozilla-firefox     firefox 1 0 1 1
+    thunderbird         None    1 0 1 1
+
+To get the list of excluded packages for a distribution we can look at
+its `upstream_report_excluded_packages` property. For Kubuntu and
+Debian, this returns an empty list.
+
+    >>> debian.upstream_report_excluded_packages
+    []
+
+    >>> kubuntu.upstream_report_excluded_packages
+    []
+
+For Ubuntu, however, there is a list of excluded packages.
+
+    >>> ubuntu.upstream_report_excluded_packages
+    ['apport'...]
+
 If we triage a bugtask on firefox and thunderbird we'll see the count
 for triaged bugs updated:
 
@@ -236,6 +261,39 @@ threshold and make watched_bugs_class 'good'.
     >>> bug_data.watched_bugs_class
     'good'
 
+There is also a row_class property, which is used to colour the entire
+table row. Its return value is based on the watched_bugs_percentage just
+like watched_bugs_class is above. However, it is kept separate since the
+behaviour for colouring the row differs from the behaviour for colouring
+the watched bugs cell.
+
+If the watched_bugs_percentage property is < 20%, the row is marked as
+'bad'.
+
+    >>> bug_data.open_bugs = 100
+    >>> bug_data.triaged_bugs = 100
+    >>> bug_data.upstream_bugs = 50
+    >>> bug_data.watched_bugs = 5
+    >>> print bug_data.row_class
+    bad
+
+If the watched_bugs_percentage property is > 90%, the row is marked as
+'good'.
+
+    >>> bug_data.watched_bugs = 46
+    >>> print bug_data.row_class
+    good
+
+Otherwise, row_class returns an empty string.
+
+    >>> bug_data.watched_bugs = 40
+    >>> bug_data.row_class
+    ''
+
+    >>> bug_data.watched_bugs = 11
+    >>> bug_data.row_class
+    ''
+
 
 == The view ==
 
@@ -243,13 +301,7 @@ We test that the view data is constructed sanely and without any hidden
 defects. Let's set up some helpers to make it easier for us to output
 them:
 
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
-    >>> def create_view(distro):
-    ...     request = LaunchpadTestRequest()
-    ...     view = getMultiAdapter((distro, request), name='+upstreamreport')
-    ...     return view
+    >>> from canonical.launchpad.testing.systemdocs import create_view
 
     >>> def print_numbers(data):
     ...     for f in ['open_bugs',
@@ -287,7 +339,7 @@ them:
 
 Get an Ubuntu view:
 
-    >>> view = create_view(ubuntu)
+    >>> view = create_view(ubuntu, '+upstreamreport')
     >>> view.initialize()
 
 Here are the helper URLs we construct:
@@ -344,7 +396,7 @@ And the total line:
 
 A Kubuntu view is not nearly as interesting, though:
 
-    >>> view = create_view(kubuntu)
+    >>> view = create_view(kubuntu, '+upstreamreport')
     >>> view.initialize()
     >>> for item in view.data:
     ...     print_helpers(item)
@@ -356,6 +408,149 @@ Nada!
 
     >>> print_numbers(view.total)
     0   0   0   0   0.0    0.0   0.0            0  0  0
+
+
+== Sorting the report ==
+
+The upstream report is sortable by each of the columns displayed. We'll
+demonstrate this using the Ubuntu report.
+
+    >>> view = create_view(ubuntu, '+upstreamreport')
+
+The view has a sort_order property. This returns a tuple of (sort_key,
+reversed), where sort_key is a string which can be mapped to one of the
+properties of PackageBugReportData and reversed is a boolean which
+indicates whether the current sort is ascending (reversed=False) or
+descending (reversed=True). By default, the sort_order for any report is
+number of open bugs, descending.
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+The sort order can be changed by altering the sort_by request parameter.
+
+    >>> form = {'sort_by': 'product'}
+
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+    >>> view.sort_order
+    ('product', False)
+
+Prepending a '-' to the sort_by parameter will cause the sort_order to
+be reversed.
+
+    >>> form = {'sort_by': '-product'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('product', True)
+
+The DistributionUpstreamBugReport view has a list of valid sort keys. If
+we try to sort by a key that isn't in that list we'll get the default
+sort_order back. (See test_distribution_upstream_bug_report.py in
+browser/ftests for further testing of this).
+
+    >>> form = {'sort_by': 'ifthisisvalidilleatmyhat'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+The DistributionUpstreamBugReport view also has a sort_order_links
+property. This is a dict of URLs which is used to create the links in
+the sortable table header on the +upstreamreport page for the
+distribution.
+
+The current sort_order is the default one.
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+All the links, by default will link to a standard forward sort for their
+particular sort_key. In this case, this is also true of the open_bugs
+key, since this is at the moment reverse-sorted.
+
+    >>> def print_sort_order_links(view, key='link'):
+    ...     for sort_key in sorted(view.sort_order_links):
+    ...         link_dict = view.sort_order_links[sort_key]
+    ...         print sort_key, link_dict[key]
+
+    >>> print_sort_order_links(view)
+    bug_supervisor_name http://...?sort_by=bug_supervisor_name
+    bugtracker_name http://...?sort_by=bugtracker_name
+    dsp http://...?sort_by=dsp
+    open_bugs http://...?sort_by=open_bugs
+    product http://...?sort_by=product
+    triaged_bugs http://...?sort_by=triaged_bugs
+    triaged_bugs_class http://...?sort_by=triaged_bugs_class
+    triaged_bugs_delta http://...?sort_by=triaged_bugs_delta
+    triaged_bugs_percentage http://...?sort_by=triaged_bugs_percentage
+    upstream_bugs http://...?sort_by=upstream_bugs
+    upstream_bugs_class http://...?sort_by=upstream_bugs_class
+    upstream_bugs_delta http://...?sort_by=upstream_bugs_delta
+    upstream_bugs_percentage http://...?sort_by=upstream_bugs_percentage
+    watched_bugs http://...?sort_by=watched_bugs
+    watched_bugs_class http://...?sort_by=watched_bugs_class
+    watched_bugs_delta http://...?sort_by=watched_bugs_delta
+    watched_bugs_percentage http://...?sort_by=watched_bugs_percentage
+
+Changing the sort_order to a forward sort of, say, bug_supervisor_name
+will change the link for that sort key. The others will remain
+unaffected.
+
+    >>> form = {'sort_by': 'bug_supervisor_name'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('bug_supervisor_name', False)
+
+    >>> print_sort_order_links(view)
+    bug_supervisor_name http://...?sort_by=-bug_supervisor_name
+    bugtracker_name http://...?sort_by=bugtracker_name...
+
+Each sort_order_links dict has an 'arrow' key. This is the URL of the
+arrow icon to be displayed next to the link in the table header.
+
+    >>> print_sort_order_links(view, 'arrow')
+    bug_supervisor_name /@@/arrowUp
+    bugtracker_name /@@/arrowBlank
+    dsp /@@/arrowBlank
+    open_bugs /@@/arrowBlank
+    product /@@/arrowBlank
+    triaged_bugs /@@/arrowBlank
+    triaged_bugs_class /@@/arrowBlank
+    triaged_bugs_delta /@@/arrowBlank
+    triaged_bugs_percentage /@@/arrowBlank
+    upstream_bugs /@@/arrowBlank
+    upstream_bugs_class /@@/arrowBlank
+    upstream_bugs_delta /@@/arrowBlank
+    upstream_bugs_percentage /@@/arrowBlank
+    watched_bugs /@@/arrowBlank
+    watched_bugs_class /@@/arrowBlank
+    watched_bugs_delta /@@/arrowBlank
+    watched_bugs_percentage /@@/arrowBlank
+
+Altering the sort order will change the arrow for the current sort order
+accordingly.
+
+    >>> form = {'sort_by': '-bug_supervisor_name'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('bug_supervisor_name', True)
+
+    >>> print_sort_order_links(view, 'arrow')
+    bug_supervisor_name /@@/arrowDown
+    bugtracker_name /@@/arrowBlank...
+
+    >>> form = {'sort_by': '-bugtracker_name'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('bugtracker_name', True)
+
+    >>> print_sort_order_links(view, 'arrow')
+    bug_supervisor_name /@@/arrowBlank
+    bugtracker_name /@@/arrowDown...
 
 PS: This page is actually browser-tested in
 pagetests.distribution-upstream-bug-report. Look there for more details.

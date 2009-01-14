@@ -19,12 +19,12 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
-from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
     ILibraryFileAliasSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.webapp.interaction import Participation
 from canonical.launchpad.webapp import canonical_url
 from canonical.twistedsupport import defer_to_thread
 from canonical.twistedsupport.loggingsupport import (
@@ -112,7 +112,11 @@ def read_only_transaction(function):
     The transaction is always aborted."""
     def transacted(*args, **kwargs):
         begin()
-        login(ANONYMOUS)
+        # XXX gary 20-Oct-2008 bug 285808
+        # We should reconsider using a ftest helper for production code. For
+        # now, we explicitly keep the code from using a test request by using
+        # a basic participation.
+        login(ANONYMOUS, Participation())
         try:
             return function(*args, **kwargs)
         finally:
@@ -128,7 +132,11 @@ def writing_transaction(function):
     aborted if it raises an exception."""
     def transacted(*args, **kwargs):
         begin()
-        login(ANONYMOUS)
+        # XXX gary 20-Oct-2008 bug 285808
+        # We should reconsider using a ftest helper for production code. For
+        # now, we explicitly keep the code from using a test request by using
+        # a basic participation.
+        login(ANONYMOUS, Participation())
         try:
             ret = function(*args, **kwargs)
         except:
@@ -158,8 +166,7 @@ class CodeImportWorkerMonitor:
     """
 
     path_to_script = os.path.join(
-        get_rocketfuel_root(),
-        'scripts', 'code-import-worker.py')
+        config.root, 'scripts', 'code-import-worker.py')
 
     def __init__(self, job_id, logger):
         """Construct an instance.
@@ -299,4 +306,3 @@ class CodeImportWorkerMonitor:
             self._logger.info('Import succeeded.')
             status = CodeImportResultStatus.SUCCESS
         return self.finishJob(status)
-

@@ -11,14 +11,14 @@
       />
 
 <facet facet="bugs">
-    <content class="canonical.launchpad.database.BugNomination">
+    <class class="canonical.launchpad.database.BugNomination">
       <require permission="launchpad.View"
                attributes="id date_created date_decided distroseries productseries
                            bug owner decider target status isApproved isDeclined
                            isProposed canApprove" />
       <require permission="launchpad.Driver"
                attributes="approve decline" />
-    </content>
+    </class>
 
     <browser:menus
         module="canonical.launchpad.browser"

@@ -29,6 +29,8 @@ from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.components.archivedependencies import (
+    get_sources_list_for_building)
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import makePoolPath
 from canonical.launchpad.validators.person import validate_public_person
@@ -38,8 +40,7 @@ from canonical.launchpad.interfaces import (
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
     ILibraryFileAliasSet, NotFoundError, PackagePublishingPocket,
-    PackagePublishingStatus, ProtocolVersionMismatch, pocketsuffix)
-from canonical.launchpad.webapp.uri import URI
+    PackagePublishingStatus, ProtocolVersionMismatch)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.utils import copy_and_close
 
@@ -98,12 +99,12 @@ class Builder(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
-    failnotes = StringCol(dbName='failnotes', default=None)
-    virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
-    speedindex = IntCol(dbName='speedindex', default=0)
-    manual = BoolCol(dbName='manual', default=True)
-    vm_host = StringCol(dbName='vm_host', default=None)
-    active = BoolCol(dbName='active', default=True)
+    failnotes = StringCol(dbName='failnotes')
+    virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
+    speedindex = IntCol(dbName='speedindex')
+    manual = BoolCol(dbName='manual', default=False)
+    vm_host = StringCol(dbName='vm_host')
+    active = BoolCol(dbName='active', notNull=True, default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
@@ -228,118 +229,11 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.slave = new_slave
 
-    @property
-    def pocket_dependencies(self):
-        """A dictionary of pocket to possible pocket tuple.
-
-        Return a dictionary that maps a pocket to pockets that it can
-        depend on for a build.
-
-        The dependencies apply equally no matter which archive type is
-        using them; but some archives may not have builds in all the pockets.
-        """
-        return {
-            PackagePublishingPocket.RELEASE :
-                (PackagePublishingPocket.RELEASE,),
-            PackagePublishingPocket.SECURITY :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY),
-            PackagePublishingPocket.UPDATES :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY,
-                 PackagePublishingPocket.UPDATES),
-            PackagePublishingPocket.BACKPORTS :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY,
-                 PackagePublishingPocket.UPDATES,
-                 PackagePublishingPocket.BACKPORTS),
-            PackagePublishingPocket.PROPOSED :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY,
-                 PackagePublishingPocket.UPDATES,
-                 PackagePublishingPocket.PROPOSED),
-            }
-
-    def _determineArchivesForBuild(self, build_queue_item):
-        """Work out what sources.list lines should be passed to builder."""
-        ogre_components = " ".join(build_queue_item.build.ogre_components)
-        dist_name = build_queue_item.archseries.distroseries.name
-        target_archive = build_queue_item.build.archive
-        ubuntu_source_lines = []
-
-        if (target_archive.purpose == ArchivePurpose.PARTNER or
-            target_archive.purpose == ArchivePurpose.PPA):
-            # Although partner and PPA builds are always in the release
-            # pocket, they depend on the same pockets as though they
-            # were in the updates pocket.
-            #
-            # XXX Julian 2008-03-20
-            # Private PPAs, however, behave as though they are in the
-            # security pocket.  This is a hack to get the security
-            # PPA working as required until cprov lands his changes for
-            # configurable PPA pocket dependencies.
-            if target_archive.private:
-                ubuntu_pockets = self.pocket_dependencies[
-                    PackagePublishingPocket.SECURITY]
-            else:
-                ubuntu_pockets = self.pocket_dependencies[
-                    PackagePublishingPocket.UPDATES]
-
-            # Partner and PPA may also depend on any component.
-            ubuntu_components = 'main restricted universe multiverse'
-
-            # Calculate effects of current archive dependencies.
-            archive_dependencies = [target_archive]
-            archive_dependencies.extend(
-                [dependency.dependency
-                 for dependency in target_archive.dependencies])
-            for archive in archive_dependencies:
-                # Skip archives with no binaries published for the
-                # target distroarchseries.
-                published_binaries = archive.getAllPublishedBinaries(
-                    distroarchseries=build_queue_item.archseries,
-                    status=PackagePublishingStatus.PUBLISHED)
-                if published_binaries.count() == 0:
-                    continue
-
-                # Encode the private PPA repository password in the
-                # sources_list line. Note that the buildlog will be
-                # sanitized to not expose it.
-                if archive.private:
-                    uri = URI(archive.archive_url)
-                    uri = uri.replace(
-                        userinfo="buildd:%s" % archive.buildd_secret)
-                    url = str(uri)
-                else:
-                    url = archive.archive_url
-
-                source_line = (
-                    'deb %s %s %s'
-                    % (url, dist_name, ogre_components))
-                ubuntu_source_lines.append(source_line)
-        else:
-            ubuntu_pockets = self.pocket_dependencies[
-                build_queue_item.build.pocket]
-            ubuntu_components = ogre_components
-
-        # Here we build a list of sources.list lines for each pocket
-        # required in the primary archive.
-        for pocket in ubuntu_pockets:
-            if pocket == PackagePublishingPocket.RELEASE:
-                dist_pocket = dist_name
-            else:
-                dist_pocket = dist_name + pocketsuffix[pocket]
-            ubuntu_source_lines.append(
-                'deb http://ftpmaster.internal/ubuntu %s %s'
-                % (dist_pocket, ubuntu_components))
-
-        return ubuntu_source_lines
-
     def _verifyBuildRequest(self, build_queue_item, logger):
         """Assert some pre-build checks.
 
         The build request is checked:
-         * Virtualised builds can't build on a non-virtual builder
+         * Virtualized builds can't build on a non-virtual builder
          * Ensure that we have a chroot
          * Ensure that the build pocket allows builds for the current
            distroseries state.
@@ -351,8 +245,8 @@ class Builder(SQLBase):
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
         # correctly from EMBARGOED archive this assertion can be removed.
-        # XXX 2007-18-12 Julian. This is being addressed in the work on the
-        # blueprint:
+        # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
+        # addressed in the work on the blueprint:
         # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
         target_pocket = build_queue_item.build.pocket
         assert target_pocket != PackagePublishingPocket.SECURITY, (
@@ -415,12 +309,15 @@ class Builder(SQLBase):
             ******************
             """ % (self.name, self.url, filemap, args, status, info)
             logger.info(message)
-        except (xmlrpclib.Fault, socket.error), info:
+        except xmlrpclib.Fault, info:
             # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self.url, exc_info=1)
+            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
             self.failbuilder(
                 "Exception (%s) when setting up to new job" % info)
+            raise BuildSlaveFailure
+        except socket.error, info:
+            error_message = "Exception (%s) when setting up new job" % info
+            self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
     def startBuild(self, build_queue_item, logger):
@@ -449,7 +346,8 @@ class Builder(SQLBase):
         args['arch_indep'] = (
             build_queue_item.archhintlist == 'all' or
             build_queue_item.archseries.isNominatedArchIndep)
-        args['archives'] = self._determineArchivesForBuild(build_queue_item)
+        args['archives'] = get_sources_list_for_building(
+            build_queue_item.build)
         suite = build_queue_item.build.distroarchseries.distroseries.name
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
@@ -492,10 +390,14 @@ class Builder(SQLBase):
             return 'Idle'
 
         msg = 'Building %s' % currentjob.build.title
-        if currentjob.build.archive.purpose != ArchivePurpose.PPA:
+        if currentjob.build.archive.is_ppa:
+            return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
+        if currentjob.build.archive.is_copy:
+            return ('%s [%s/%s]' %
+                    (msg, currentjob.build.archive.owner.name,
+                     currentjob.build.archive.name))
+        else:
             return msg
-
-        return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""
@@ -602,6 +504,11 @@ class Builder(SQLBase):
         # to place the source in the archive, which is where builders
         # download the source from in the case of private builds (because
         # it's a secure location).
+        private_statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
+            )
         clauses = ["""
             ((archive.private IS TRUE AND
               EXISTS (
@@ -613,7 +520,7 @@ class Builder(SQLBase):
                       SourcePackagePublishingHistory.sourcepackagerelease =
                          Build.sourcepackagerelease AND
                       SourcePackagePublishingHistory.archive = Archive.id AND
-                      SourcePackagePublishingHistory.status = %s))
+                      SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
             buildqueue.build = build.id AND
@@ -622,7 +529,7 @@ class Builder(SQLBase):
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
-        """ % sqlvalues(PackagePublishingStatus.PUBLISHED,
+        """ % sqlvalues(private_statuses,
                         BuildStatus.NEEDSBUILD, self.processor.family)]
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
@@ -695,6 +602,33 @@ class Builder(SQLBase):
         except (BuildSlaveFailure, CannotBuild), err:
             logger.warn('Could not build: %s' % err)
 
+    def handleTimeout(self, logger, error_message):
+        """See IBuilder."""
+        builder_should_be_failed = True
+
+        if self.virtualized:
+            # Virtualized/PPA builder: attempt a reset.
+            logger.warn(
+                "Resetting builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            try:
+                self.resumeSlaveHost()
+            except CannotResumeHost, err:
+                # Failed to reset builder.
+                logger.warn(
+                    "Failed to reset builder: %s -- %s" %
+                    (self.url, str(err)), exc_info=True)
+            else:
+                # Builder was reset, do *not* mark it as failed.
+                builder_should_be_failed = False
+
+        if builder_should_be_failed:
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            self.failbuilder(error_message)
+
 
 class BuilderSet(object):
     """See IBuilderSet"""
@@ -713,12 +647,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, virtualized=True, vm_host=None):
+            active=True, virtualized=False, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
-                       description=description, owner=owner,
-                       virtualized=virtualized, builderok=builderok,
-                       failnotes=failnotes, vm_host=None)
+                       description=description, owner=owner, active=active,
+                       virtualized=virtualized, vm_host=vm_host,
+                       builderok=True, manual=True)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -741,12 +675,6 @@ class BuilderSet(object):
 
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
-        if virtualized:
-            archive_purposes = [ArchivePurpose.PPA]
-        else:
-            archive_purposes = [
-                ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]
-
         query = """
            BuildQueue.build = Build.id AND
            Build.archive = Archive.id AND
@@ -754,8 +682,8 @@ class BuilderSet(object):
            DistroArchSeries.processorfamily = Processor.family AND
            Processor.id = %s AND
            Build.buildstate = %s AND
-           Archive.purpose IN %s
-        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, archive_purposes)
+           Archive.require_virtualized = %s
+        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, virtualized)
 
         clauseTables = [
             'Build', 'DistroArchSeries', 'Processor', 'Archive']

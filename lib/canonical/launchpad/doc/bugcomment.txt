@@ -95,8 +95,11 @@ display a link to view the full comment. Let's change the default
 threshold so that all comments truncate.
 
     >>> from canonical.config import config
-    >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
-    >>> config.malone.max_comment_size = 20
+    >>> max_comment_size = """
+    ...     [malone]
+    ...     max_comment_size: 20
+    ...     """
+    >>> config.push('max_comment_size', max_comment_size)
 
 (For bug comments the context isn't too important, so we get the page using
 just any of the bug's bugtask.)
@@ -227,5 +230,5 @@ Wrapping up
 
 Be nice and restore the comment size to what it was originally.
 
-    >>> config.malone.max_comment_size = OLD_COMMENT_SIZE
+    >>> config_data = config.pop('max_comment_size')
 

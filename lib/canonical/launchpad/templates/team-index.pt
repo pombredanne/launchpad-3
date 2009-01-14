@@ -23,7 +23,6 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-emails" />
   <div tal:replace="structure context/@@+portlet-latestquestions" />
 </metal:leftportlets>
 
@@ -61,6 +60,8 @@
       </li>
     </tal:not-restricted>
   </ul>
+
+  <div class="section" tal:content="structure context/@@+portlet-map" />
 
   <div class="left">
     <tal:recent-members>

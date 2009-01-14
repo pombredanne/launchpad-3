@@ -7,13 +7,13 @@ import logging
 
 import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationService, IPrincipal
+from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, use_template
-
 
 
 class TranslationUnavailable(Exception):
@@ -22,6 +22,28 @@ class TranslationUnavailable(Exception):
 
 class NotFoundError(KeyError):
     """Launchpad object not found."""
+
+
+class NameLookupFailed(NotFoundError):
+    """Raised when a lookup by name fails.
+
+    Subclasses should define the `_message_prefix` class variable, which will
+    be prefixed to the quoted name of the name that could not be found.
+
+    :ivar name: The name that could not be found.
+    """
+
+    _message_prefix = "Not found"
+
+    def __init__(self, name, message=None):
+        if message is None:
+            message = self._message_prefix
+        self.message = "%s: '%s'." % (message, name)
+        self.name = name
+        NotFoundError.__init__(self, self.message)
+
+    def __str__(self):
+        return self.message
 
 
 class UnexpectedFormData(AssertionError):
@@ -52,7 +74,7 @@ class ILaunchpadContainer(Interface):
         """Return True if this context is within the given scope."""
 
 
-class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
+class ILaunchpadRoot(IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
 
@@ -233,11 +255,21 @@ class IStructuredString(Interface):
 
 
 class IBreadcrumb(Interface):
-    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+    """A breadcrumb link."""
 
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
+
+    icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
+
+
+class IBreadcrumbBuilder(IBreadcrumb):
+    """An object that builds `IBreadcrumb` objects."""
+    # We subclass IBreadcrumb to minimize interface drift.
+
+    def make_breadcrumb():
+        """Return an object implementing the `IBreadcrumb` interface."""
 
 
 #
@@ -370,10 +402,6 @@ class IBasicLaunchpadRequest(Interface):
         'The StepsToGo object for this request, allowing you to inspect and'
         ' alter the remaining traversal steps.')
 
-    breadcrumbs = Attribute(
-        'List of IBreadcrumb objects.  This is appended to during traversal'
-        ' so that a page can render appropriate breadcrumbs.')
-
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
 
@@ -504,7 +532,7 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationService):
+class IPlacelessAuthUtility(IAuthenticationUtility):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
@@ -609,7 +637,7 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # XXX mpt 2006-03-22 bugs=36287:
     # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
@@ -666,8 +694,8 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, `zope.i18n.Message`,
-        	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of
+        	`zope.i18n.Message`, , or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
         	INFO, NOTICE, WARNING, ERROR.
@@ -775,22 +803,86 @@ class IAlwaysSubmittedWidget(Interface):
     'Optional' marker for such widgets.
     """
 
+
 class ISingleLineWidgetLayout(Interface):
     """A widget that is displayed in a single table row next to its label."""
 
+
 class IMultiLineWidgetLayout(Interface):
     """A widget that is displayed on its own table row below its label."""
+
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
 
 
-class IBreadcrumbProvider(Interface):
-    """Object that provides breadcrumb text."""
-
-    def breadcrumb():
-        """Breadcrumb text."""
-
 class IPrimaryContext(Interface):
     """The primary context that used to determine the tabs for the web UI."""
     context = Attribute('The primary context.')
+
+
+#
+# Database policies
+#
+class IDatabasePolicy(Interface):
+    """Implement database policy based on the request.
+
+    The publisher adapts the request to `IDatabasePolicy` to
+    instantiate the policy for the current request.
+    """
+    def beforeTraversal():
+        """Install the database policy into the current thread."""
+
+    def afterCall():
+        """Perform any necessary cleanup of the database policy."""
+
+
+class MasterUnavailable(Exception):
+    """A master (writable replica) database was requested but not available.
+    """
+
+
+MAIN_STORE = 'main' # The main database.
+AUTH_STORE = 'auth' # The authentication database.
+
+DEFAULT_FLAVOR = 'default' # Default flavor for current state.
+MASTER_FLAVOR = 'master' # The master database.
+SLAVE_FLAVOR = 'slave' # A slave database.
+
+
+class IStoreSelector(Interface):
+    """Get a Storm store with a desired flavor.
+
+    Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
+ 
+    The master is writable and up to date, but we should not use it
+    whenever possible because there is only one master and we don't want
+    it to be overloaded.
+
+    The slave is read only replica of the master and may lag behind the
+    master. For many purposes such as serving unauthenticated web requests
+    and generating reports this is fine. We can also have as many slave
+    databases as we are prepared to pay for, so they will perform better
+    because they are less loaded.
+    """
+    def get(name, flavor):
+        """Retrieve a Storm Store.
+
+        Results should not be shared between threads, as which store is
+        returned for a given name or flavor can depend on thread state
+        (eg. the HTTP request currently being handled).
+
+        If a SLAVE_FLAVOR is requested, the MASTER_FLAVOR may be returned
+        anyway.
+
+        The DEFAULT_FLAVOR flavor may return either a master or slave
+        depending on process state. Application code using the
+        DEFAULT_FLAVOR flavor should assume they have a MASTER and that
+        a higher level will catch the exception raised if an attempt is
+        made to write changes to a read only store. DEFAULT_FLAVOR exists
+        for backwards compatibility, and new code should explicitly state
+        if they want a master or a slave.
+
+        :raises MasterUnavailable: A master database was requested but
+            it is not available.
+        """

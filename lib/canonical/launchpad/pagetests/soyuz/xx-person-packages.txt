@@ -32,7 +32,7 @@ packages are being displayed.
     7 packages
     ...
     Uploaded packages
-    5 packages
+    6 packages
     ...
     PPA packages
     1 package
@@ -99,10 +99,10 @@ page that lists uploaded packages in batches.
     >>> browser.getLink("Uploaded Packages").click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     Uploaded packages
-    1...5 of 5 results
+    1...5 of 6 results
     ...
     Name    Uploaded to          Version When        Failures   Bugs  Questions
-    cdrkit  Ubuntu Breezy-autotest  1.0  2006-12-01  i386       0     0
+    foobar  Ubuntu Breezy-autotest  1.0  2006-12-01  i386       0     0
     ...
 
 The navigation link to "PPA Packages" takes the user to the
@@ -301,8 +301,10 @@ applicable:
 
 == Packages deleted from a PPA ==
 
-When a package is deleted from a PPA it should not appear in the
-packages list any more.
+When a package is deleted from a PPA, in contrast to the archive index
+it will continue to appear in the related-software packages list.  This
+is to be consistent with the other lists on these pages and also helps
+some MOTU users in reviewing candidates' packages.
 
 First list the packages in the PPA.
 
@@ -328,7 +330,7 @@ Then delete the 'iceweasel' package.
     Deletion comment: Bug 184490
 
     >>> def print_ppa_packages(contents):
-    ...     packages = find_tags_by_class(contents, 'ppa_package_row')
+    ...     packages = find_tags_by_class(contents, 'archive_package_row')
     ...     for pkg in packages:
     ...         print extract_text(pkg)
     ...     empty_section = find_tag_by_id(contents, 'empty-result')
@@ -336,8 +338,11 @@ Then delete the 'iceweasel' package.
     ...         print extract_text(empty_section)
     >>> print_ppa_packages(admin_browser.contents)
 
-Now re-list the PPA's packages, 'iceweasel' was deleted above and should
-not show again.
+Now re-list the PPA's packages, 'iceweasel' was deleted but still
+appears.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+        2006-04-11 None - -
+

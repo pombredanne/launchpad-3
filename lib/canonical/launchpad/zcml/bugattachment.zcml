@@ -10,7 +10,7 @@
       factory="canonical.launchpad.browser.bugattachment.BugAttachmentPrimaryContext"
       />
 
-    <content class="canonical.launchpad.database.BugAttachment">
+    <class class="canonical.launchpad.database.BugAttachment">
         <require
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IBugAttachment"
@@ -19,7 +19,7 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBugAttachment"
             />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugAttachment"
@@ -42,9 +42,9 @@
         />
 
     <!-- BugAttachmentSet -->
-    <content class="canonical.launchpad.database.BugAttachmentSet">
+    <class class="canonical.launchpad.database.BugAttachmentSet">
         <allow interface="canonical.launchpad.interfaces.IBugAttachmentSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BugAttachmentSet"

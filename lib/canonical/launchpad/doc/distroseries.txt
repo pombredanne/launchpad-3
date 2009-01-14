@@ -161,18 +161,22 @@ the upload will have to wait for manual approval anyway:
 You can search through binary packages publishing in a distribution
 release by using the searchPackages method, which uses magical fti:
 
-    >>> len(warty.searchPackages("pmount"))
+    >>> warty.searchPackages("pmount").count()
     1
 
 This also works for small or weirdly named packages that don't work
 through fti, and even for substrings:
 
-    >>> len(warty.searchPackages("linux-2.6.12"))
+    >>> warty.searchPackages("linux-2.6.12").count()
     1
-    >>> len(warty.searchPackages("at"))
+    >>> warty.searchPackages("at").count()
     1
-    >>> len(warty.searchPackages("inux-2"))
-    1
+    >>> pkgs = warty.searchPackages('a')
+    >>> for dsbp in pkgs:
+    ...     print "%s: %s" % (dsbp.__class__.__name__, dsbp.name)
+    DistroSeriesBinaryPackage: foobar
+    DistroSeriesBinaryPackage: mozilla-firefox
+    DistroSeriesBinaryPackage: at
 
 
 == DistroSeriess have components and sections ==
@@ -256,9 +260,9 @@ publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
    >>> login("foo.bar@canonical.com")
-   >>> humpy = distroseriesset.new(ubuntu, 'humpy', 'Humpy Hippo',
-   ...                              'The Humpy Hippo', 'Fat', 'Yo Momma',
-   ...                              '99.2',hoary, hoary.owner)
+   >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
+   ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
+   ...                          '99.2',hoary, hoary.owner)
    >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily,
    ...                            True, humpy.owner)
    >>> humpy.nominatedarchindep = humpy_i386
@@ -292,9 +296,9 @@ resulted of the sourcepackagerelease in question, but built anywhere.
 Initialise a new distroseries based on warty (since it has, at least
 one coherent published source + binary, mozilla-firefox)
 
-   >>> bumpy = distroseriesset.new(ubuntu, 'bumpy', 'Bumpy',
-   ...                              'The Bumpy', 'Fat', 'Boom',
-   ...                              '99.3', warty, warty.owner)
+   >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
+   ...                          'The Bumpy', 'Fat', 'Boom',
+   ...                          '99.3', warty, warty.owner)
 
    >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
    ...                            True, bumpy.owner)
@@ -328,6 +332,73 @@ the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
    4
+
+
+== Hiding translations ==
+
+The hide_all_translations flag, if set, hides a distroseries'
+translations in the user interface.  The check for visibility happens in
+checkTranslationsViewable.
+
+    >>> untranslatable_series = factory.makeDistroRelease()
+    >>> untranslatable_series.hide_all_translations = False
+
+When translations are visible, checkTranslationsViewable() completes
+normally.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     TranslationUnavailable)
+    >>> def get_visibility_notice(series):
+    ...     """Print the notice about series' translations being hidden."""
+    ...     try:
+    ...         series.checkTranslationsViewable()
+    ...     except TranslationUnavailable, e:
+    ...         return str(e)
+    ...     return None
+
+    >>> print get_visibility_notice(untranslatable_series)
+    None
+
+But when translations are hidden, it raises TranslationUnavailable.
+
+    >>> untranslatable_series.hide_all_translations = True
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series...
+
+Exactly what message is displayed depends on the series' status.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.EXPERIMENTAL
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not available yet.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.DEVELOPMENT
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not available yet.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.FROZEN
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.CURRENT
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.SUPPORTED
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.OBSOLETE
+    >>> print get_visibility_notice(untranslatable_series)
+    This release series is obsolete.  Its translations are no longer
+    available.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.FUTURE
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not available yet.
+
 
 == Translatable Packages and Packaging ==
 
@@ -668,8 +739,8 @@ translated in Hoary but not in Humpy.
     >>> def add_translation(pofile, potmsgset, translation):
     ...     """Set translation for given message set in given `POFile`."""
     ...     potmsgset.updateTranslation(
-    ...         pofile, carlos, { 0: translation }, is_fuzzy=False,
-    ...         is_imported=False, lock_timestamp=now())
+    ...         pofile, carlos, { 0: translation }, is_imported=False,
+    ...         lock_timestamp=now())
 
     >>> context_msg = add_messageset_to_template(
     ...     potemplate_humpy, 0, u"Obsolete message", None)
@@ -706,14 +777,14 @@ Carlos also updates a regular string in the parent release.
     ...     u'evolution addressbook')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'hoary updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 And another update in a string that was previously untranslated.
 
     >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(u'has ')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'empty string translated' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 Update a string in the child release.
 
@@ -721,7 +792,7 @@ Update a string in the child release.
     ...     u'current addressbook folder')
     >>> dummy = potmsgset_humpy.updateTranslation(
     ...     pofile_es_humpy, carlos, { 0: u'humpy updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 These are the respective expected numbers of translated messages, messages
 whose translations have changed in Launchpad, ones that are newly translated
@@ -763,9 +834,9 @@ the total number of current translations that matters.
     ...         query, clauseTables=['POTMsgSet']).count()
 
     >>> count_current_translations(pofile_es_hoary)
-    13
+    11
     >>> count_current_translations(pofile_es_humpy)
-    12
+    10
 
 There are also some obsolete messages.
 
@@ -803,8 +874,8 @@ messages-with-context.  The obsolete messages do not show up.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
-    @@ -43,7 +43,7 @@
+     msgid "have "
+    @@ -42,7 +42,7 @@
     <BLANKLINE>
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
@@ -858,7 +929,7 @@ were in Hoary, or were translated in Humpy but not at all in Hoary.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
+     msgid "have "
     @@ -281,12 +281,12 @@
     <BLANKLINE>
      msgctxt "context1"
@@ -896,7 +967,7 @@ of those string when we next migrate updates.
     ...     u'current addressbook folder')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'second hoary updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
     >>> print compare_translations(hoary, humpy)
@@ -913,7 +984,7 @@ of those string when we next migrate updates.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
+     msgid "have "
     @@ -281,12 +281,12 @@
     ...
 
@@ -938,8 +1009,8 @@ Thus Humpy now has one more message translated than Hoary does.
 Finally, prepare a new distro series to do the copy using an external script
 to do the translation migration to this new distro series.
 
-    >>> testing_series = distroseriesset.new(
-    ...     ubuntu, 'testing', 'Testing Test', 'The Testing Test', 'Fat',
+    >>> testing_series = ubuntu.newSeries(
+    ...     'testing', 'Testing Test', 'The Testing Test', 'Fat',
     ...     'Yo Momma', '99.4',hoary, hoary.owner)
     >>> testing_series.defer_translation_imports = False
     >>> testing_series.hide_all_translations
@@ -997,6 +1068,8 @@ sets the defer_translation_imports flag itself before copying.
     >>> print error_output
     INFO    creating lockfile
     INFO    Starting...
+    INFO    Populating blank distroseries ... with translations from 3.
+    ...
     INFO    Done...
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
@@ -1012,10 +1085,10 @@ flag to its previous value (off).
     True
 
 
-    >>> # Set the flag again to facilitate further testing.
+    # Set the flag again to facilitate further testing.
     >>> testing_series.defer_translation_imports = True
 
-Once the script finished, new distro series does have templates.
+Once the script has finished, the new distro series does have templates.
 
     >>> len(testing_series.getCurrentTranslationTemplates()) > 0
     True

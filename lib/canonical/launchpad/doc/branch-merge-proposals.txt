@@ -80,8 +80,6 @@ terminal states (merged, rejected, superseded) that are of interest.
 The landing_candidates only returns unmerged proposals, with the most
 recent branch merge proposals first.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> proposal = factory.makeBranchMergeProposal(
     ...     target_branch=target_branch, dependent_branch=scanned_branch)
     >>> proposal = proposal.resubmit(proposal.registrant)
@@ -139,7 +137,7 @@ A branch merge proposal can be in one of several states:
     ...     print state.title
     Work in progress
     Needs review
-    Code approved
+    Approved
     Rejected
     Merged
     Code failed to merge
@@ -234,7 +232,7 @@ author have not been approved.
     >>> proposal.date_reviewed is not None
     True
     >>> print proposal.queue_status.title
-    Code approved
+    Approved
     >>> proposal.reviewed_revision_id == tip.revision_id
     True
 
@@ -253,15 +251,15 @@ Rejected proposals cannot be approved again.  They must be resubmitted
     >>> proposal.approveBranch(sample_person, tip.revision_id)
     Traceback (most recent call last):
     BadStateTransition: Invalid state transition for merge proposal:
-      Rejected -> Code approved
+      Rejected -> Approved
 
-Proposals that are `Code approved` can be moved back into the
+Proposals that are `Approved` can be moved back into the
 `Needs review` state.
 
     >>> proposal = proposal.resubmit(sample_person)
     >>> proposal.approveBranch(sample_person, tip.revision_id)
     >>> print proposal.queue_status.title
-    Code approved
+    Approved
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
     Needs review
@@ -290,7 +288,7 @@ a user in the reviewer team can approve or reject the branch.
 
     >>> proposal.approveBranch(eric_the_reviewer, tip.revision_id)
     >>> print proposal.queue_status.title
-    Code approved
+    Approved
 
 
 == Queueing up a branch that has been approved ==
@@ -327,7 +325,7 @@ Approved.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(proposal)
     >>> print proposal.queue_status.title
-    Code approved
+    Approved
     >>> print proposal.queue_position
     None
     >>> print proposal.queuer

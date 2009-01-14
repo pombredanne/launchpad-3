@@ -7,7 +7,7 @@
 
   <!-- CodeImportMachine -->
 
-  <content class="canonical.launchpad.database.CodeImportMachine">
+  <class class="canonical.launchpad.database.CodeImportMachine">
     <implements interface="canonical.launchpad.interfaces.ICodeImportMachine" />
     <allow
         attributes="id state hostname current_jobs date_created heartbeat
@@ -18,7 +18,14 @@
     <!-- ICodeImportMachine has no set_schema, because all modifications
          should be done through methods that create CodeImportEvent objects when
          appropriate. -->
-  </content>
+  </class>
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ICodeImportMachineSet"
+    factory="canonical.launchpad.browser.CodeImportMachineSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
 
   <facet facet="branches">
 

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Question views."""
 
@@ -19,7 +19,6 @@ __all__ = [
     'QuestionSetNavigation',
     'QuestionRejectView',
     'QuestionSetView',
-    'QuestionSOP',
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
@@ -43,7 +42,6 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import (
@@ -51,7 +49,7 @@ from canonical.launchpad.helpers import (
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
-    ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
     IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
     QuestionSort, NotFoundError, UnexpectedFormData)
@@ -236,7 +234,7 @@ class QuestionLanguageVocabularyFactory:
         languages = list(languages)
 
         # Insert English as the first element, to make it the default one.
-        english = getUtility(ILanguageSet)['en']
+        english = getUtility(ILaunchpadCelebrities).english
         if english in languages:
             languages.remove(english)
         languages.insert(0, english)
@@ -252,7 +250,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([getUtility(ILanguageSet)['en']])
+            supported_languages = set([english])
 
         terms = []
         for lang in languages:
@@ -379,13 +377,25 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         LaunchpadFormView.setUpFields(self)
         self.form_fields = self.createLanguageField() + self.form_fields
 
-    def setUpWidgets(self):
-        """Set up the widgets using the view's form fields and the context."""
+    def _getFieldsForWidgets(self):
+        """Return fields for which need we widgets.
+
+        Depending on the action, not all fields are present on the screen,
+        and need validation.
+        """
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
             fields = self.form_fields.select(*self.search_field_names)
         else:
             fields = self.form_fields
+        for field in fields:
+            if field.__name__ in self.custom_widgets:
+                field.custom_widget = self.custom_widgets[field.__name__]
+        return fields
+
+    def setUpWidgets(self):
+        """Set up the widgets using the view's form fields and the context."""
+        fields = self._getFieldsForWidgets()
         self.widgets = form.setUpWidgets(
             fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
@@ -1048,6 +1058,8 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         rendered_items = []
         rendered_values = set()
         count = 0
+
+        # Render normal values.
         for term in self.vocabulary.searchForTerms(self.getSearchQuery()):
             selected = term.value in values
             rendered_items.append(self.renderTerm(count, term, selected))
@@ -1057,8 +1069,30 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         # Some selected values may not be included in the search results;
         # insert them at the beginning of the list.
         for missing in set(values).difference(rendered_values):
-            term = self.vocabulary.getTerm(missing)
-            rendered_items.insert(0, self.renderTerm(count, term, True))
+            if missing != self._missing:
+                term = self.vocabulary.getTerm(missing)
+                rendered_items.insert(0, self.renderTerm(count, term, True))
+                count += 1
+
+        # Display self._messageNoValue radio button since an existing
+        # FAQ may not be relevant. This logic is copied from
+        # zope/app/form/browser/itemswidgets.py except that we have
+        # to prepend the value at the end of this method to prevent
+        # the insert in the for-loop above from going to the top of the list.
+        missing = self._toFormValue(self.context.missing_value)
+
+        if self._displayItemForMissingValue and not self.context.required:
+            if missing in values:
+                render = self.renderSelectedItem
+            else:
+                render = self.renderItem
+
+            missing_item = render(count,
+                self.translate(self._messageNoValue),
+                missing,
+                self.name,
+                self.cssClass)
+            rendered_items.insert(0, missing_item)
             count += 1
 
         return rendered_items
@@ -1154,17 +1188,6 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
 
-class QuestionSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IQuestion`."""
-
-    def getMainHeading(self):
-        """See ```IStructuralHeaderPresentation`."""
-        question = self.context
-        return _('Question #${id} in ${target}',
-                 mapping=dict(
-                    id=question.id, target=question.target.displayname))
-
-
 class QuestionContextMenu(ContextMenu):
     """Context menu of actions that can be performed upon a Question."""
     usedfor = IQuestion
@@ -1254,4 +1277,3 @@ class QuestionSetContextMenu(ContextMenu):
         """Return a Link to the find distribution view."""
         text = 'Find distribution'
         return Link('/distros', text, icon='search')
-

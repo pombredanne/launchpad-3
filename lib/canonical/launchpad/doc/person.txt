@@ -361,7 +361,7 @@ PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from zope.app.event.interfaces import IObjectCreatedEvent
+    >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -586,8 +586,8 @@ team will go to that address.
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
 
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
-    >>> contactEmailAddresses(ubuntu_team)
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> get_contact_email_addresses(ubuntu_team)
     set(['support@ubuntu.com'])
 
 On the other hand, if a team doesn't have a contact email address, all
@@ -602,7 +602,7 @@ direct member of that team.
     [u'david.allouche@canonical.com', u'foo.bar@canonical.com',
      u'robertc@robertcollins.net']
 
-    >>> sorted(contactEmailAddresses(vcs_imports))
+    >>> sorted(get_contact_email_addresses(vcs_imports))
     ['david.allouche@canonical.com', 'foo.bar@canonical.com',
      'robertc@robertcollins.net']
 
@@ -745,26 +745,14 @@ Searching only for Teams based on their names or email addresses:
     >>> print_people(personset.findTeam('translators'))
     Ubuntu Translators (ubuntu-translators): []
 
-You can get the complete list of people and teams by using the
-getAllValidPersonsAndTeams() method.
+You can get the top overall contributors, that is, the people with the
+most karma.
 
-    >>> people_and_teams = personset.getAllValidPersonsAndTeams()
-    >>> personset.getByName('salgado') in people_and_teams
-    True
-
-    >>> personset.getByName('guadamen') in people_and_teams
-    True
-
-    >>> [person.name
-    ...  for person in people_and_teams if not person.is_valid_person_or_team]
-    []
-
-    >>> from canonical.launchpad.database.person import Person
-    >>> valid_people = Person.select("person.id = ValidPersonCache.id",
-    ...                              clauseTables=['ValidPersonCache'])
-    >>> teams = Person.select("teamowner IS NOT NULL")
-    >>> set(people_and_teams).difference(list(valid_people) + list(teams))
-    set([])
+    >>> for person in personset.getTopContributors(limit=3):
+    ...     print "%s: %s" % (person.name, person.karma)
+    name16: 241
+    name12: 138
+    sabdfl: 130
 
 
 == Packages related to a person ==
@@ -803,6 +791,7 @@ question to any PPA.
     ...     print (sprelease.name,
     ...            sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
+    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
@@ -962,6 +951,34 @@ Person.languages.
     en     English
     es     Spanish
 
+To add new languages we use Person.addLanguage().
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> languageset = getUtility(ILanguageSet)
+    >>> carlos.addLanguage(languageset['pt_BR'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'pt_BR', u'es']
+
+Adding a language which is already in the person's preferred ones will
+be a no-op.
+
+    >>> carlos.addLanguage(languageset['es'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'pt_BR', u'es']
+
+And to remove languages we use Person.removeLanguage().
+
+    >>> carlos.removeLanguage(languageset['pt_BR'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'es']
+
+Trying to remove a language which is not in the person's preferred ones
+will be a no-op.
+
+    >>> carlos.removeLanguage(languageset['pt_BR'])
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'es']
+
 The Person.languages list is ordered alphabetically by the languages'
 English names.
 
@@ -1038,8 +1055,6 @@ and ILanguage.
 We can get the list of translators that did some translation in
 Launchpad and expressed their interest for a concrete language.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-
     # Sample data is not complete for this test, so we need to note that
     # another Spanish translator expressed its interest on doing Spanish
     # translations.  That other person is Foo Bar (name16).
@@ -1049,7 +1064,6 @@ Launchpad and expressed their interest for a concrete language.
     >>> print foo_bar.displayname
     Foo Bar
 
-    >>> languageset = getUtility(ILanguageSet)
     >>> spanish = languageset.getLanguageByCode('es')
     >>> foo_bar.addLanguage(spanish)
     >>> translators = personset.getTranslatorsByLanguage(spanish)

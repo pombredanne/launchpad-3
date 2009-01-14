@@ -6,7 +6,7 @@ the individual resources.
 
 == Authorization ==
 
-  # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
+  # XXX leonardr 2008-05-22 spec=api-bugs-remote:
   # Once we launch the web service this test will be removed
   # because all users will have access to the web service.
 
@@ -14,7 +14,7 @@ In a development environment, any Launchpad person with an OAuth token
 can make a request of the web service. Here's the 'no-priv' user
 making a request.
 
-  >>> print user_webservice.get("/beta/~launchpad").getOutput()
+  >>> print user_webservice.get("/~launchpad").getOutput()
   HTTP/1.1 200 Ok
   ...
 
@@ -36,7 +36,7 @@ a member of the 'admins' team.
 
 Now 'no-priv' can no longer make web service requests.
 
-  >>> print user_webservice.get("/beta/~launchpad").getOutput()
+  >>> print user_webservice.get("/~launchpad").getOutput()
   HTTP/1.1 401 Unauthorized
   ...
   no-priv is not a member of the beta test team.
@@ -45,7 +45,7 @@ Now 'no-priv' can no longer make web service requests.
 But 'salgado' belongs to the 'admins' team, and so can make web
 service requests.
 
-  >>> print webservice.get("/beta/~launchpad").getOutput()
+  >>> print webservice.get("/~launchpad").getOutput()
   HTTP/1.1 200 Ok
   ...
 
@@ -60,7 +60,7 @@ access to the web service will be cut off altogether.
   ...     """)
   >>> config.push('test', test_data)
 
-  >>> print webservice.get("/beta/~launchpad").getOutput()
+  >>> print webservice.get("/~launchpad").getOutput()
   HTTP/1.1 401 Unauthorized
   ...
   salgado is not a member of the beta test team.
@@ -73,18 +73,18 @@ access to the web service will be cut off altogether.
 
 An attempt to access a nonexistent resource yields a 404 error.
 
-  >>> print webservice.get("/beta/no-such-resource")
+  >>> print webservice.get("/no-such-resource")
   HTTP/1.1 404 Not Found
   ...
 
 An attempt to access an existing resource without versioning the URL
 yields a 404 error.
 
-  >>> print webservice.get("/people")
+  >>> print webservice.get("/people", api_version="/")
   HTTP/1.1 404 Not Found
   ...
 
-  >>> print webservice.get("/")
+  >>> print webservice.get("/", api_version="/")
   HTTP/1.1 404 Not Found
   ...
 
@@ -94,27 +94,27 @@ yields a 404 error.
 An attempt to use an unsupported or nonexistent HTTP method on a
 resource yields a 405 error.
 
-  >>> print webservice("/beta/", method="COPY")
+  >>> print webservice("/", method="COPY")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET HEAD POST PATCH PUT DELETE OPTIONS
   ...
 
-  >>> print webservice.delete("/beta/bugs")
+  >>> print webservice.delete("/bugs")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
 
-  >>> print webservice.delete("/beta/people")
+  >>> print webservice.delete("/people")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET POST
   ...
 
-  >>> print webservice.delete("/beta/~salgado")
+  >>> print webservice.delete("/~salgado")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET POST PUT PATCH
   ...
 
-  >>> print webservice.delete("/beta/debian/+source/mozilla-firefox/+bug/1")
+  >>> print webservice.delete("/debian/+source/mozilla-firefox/+bug/1")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET POST PUT PATCH
   ...
@@ -125,8 +125,19 @@ resource yields a 405 error.
 An attempt to PATCH a document with unsupported media type to a
 resource yields a 415 error.
 
-  >>> print webservice.patch("/beta/~salgado", 'text/plain', "Foo")
+  >>> print webservice.patch("/~salgado", 'text/plain', "Foo")
   HTTP/1.1 415 Unsupported Media Type
+  ...
+
+The only supported media types are ones that begin with 'application/json'.
+
+  >>> print webservice.patch("/~salgado", 'application/json', "{}")
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print webservice.patch(
+  ...     "/~salgado", 'application/json; charset=UTF-8', "{}")
+  HTTP/1.1 200 Ok
   ...
 
 
@@ -135,7 +146,55 @@ resource yields a 415 error.
 Soyuz build set (exposed on the web at +builds) are not available on the
 web service:
 
-    >>> print webservice.get("/beta/+builds")
+    >>> print webservice.get("/+builds")
     HTTP/1.1 404 Not Found
+    ...
+
+== API Requests to other hosts ==
+
+JavaScript working with the API must deal with the browser's Same Origin
+Policy - requests may only be made to the host that the page was loaded
+from.  For example, we can not visit a page on http://bugs.launchpad.net
+and make a request to http://api.launchpad.net.
+
+Instead of directing the request to api.launchpad.net, we may direct it
+at the /api subpath of the current virtual host, such as
+http://bugs.launchpad.net/api.  Such requests are handled as if they
+were directed at the api.launchpad.net subdomain.
+
+The URLs in the returned representations point to the current host,
+rather than the api host.  The canonical_url() function also returns
+links to the current host.
+
+The ServiceRoot for http://bugs.launchpad.dev/api/beta/ is the same as a
+request to http://api.launchpad.net/beta/, but with the links pointing
+to a different host.
+
+    >>> root = webservice.get(
+    ...     'http://bugs.launchpad.dev/api/beta/').jsonBody()
+    >>> print root['people_collection_link']
+    http://bugs.launchpad.dev/api/beta/people
+
+Requests on these hosts also honor the standard Launchpad authorization
+scheme (and don't require OAuth).
+
+    >>> from canonical.launchpad.testing.pages import WebServiceCaller
+    >>> noauth_webservice = WebServiceCaller()
+    >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
+    >>> print noauth_webservice.get(
+    ...     'http://bugs.launchpad.dev/api/beta/people/+me',
+    ...     headers={'Authorization': sample_auth})
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://bugs.launchpad.dev/api/beta/~name12
+    <BLANKLINE>
+
+But the regular authentication still doesn't work on the normal API
+virtual host:
+
+    >>> print noauth_webservice.get(
+    ...     'http://api.launchpad.dev/beta/people/+me',
+    ...     headers={'Authorization': sample_auth})
+    HTTP/1.1 401 Unauthorized
     ...
 

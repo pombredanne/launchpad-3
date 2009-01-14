@@ -73,28 +73,39 @@ We can change this to the 1.0 series through the edit form:
 
 Regular users can't access the 'Administer' link.
 
-  >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Administer')
-  Traceback (most recent call last):
-  ...
-  LinkNotFoundError
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('Administer')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 And they can't go directly to the +admin page.
 
-  >>> browser.open('http://launchpad.dev/firefox/+admin')
-  Traceback (most recent call last):
-  ...
-  Unauthorized...
-
+    >>> browser.open('http://launchpad.dev/firefox/+admin')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+   
 But administrators can access the page:
 
-  >>> admin_browser.open('http://launchpad.dev/firefox')
-  >>> admin_browser.getLink('Administer').click()
+    >>> admin_browser.open('http://launchpad.dev/firefox')
+    >>> admin_browser.getLink('Administer').click()
+   
+    >>> admin_browser.url
+    'http://launchpad.dev/firefox/+admin'
+    >>> admin_browser.title
+    'Administer Mozilla Firefox in Launchpad'
 
-  >>> admin_browser.url
-  'http://launchpad.dev/firefox/+admin'
-  >>> admin_browser.title
-  'Administer Mozilla Firefox in Launchpad'
+And in that page they can set aliases to the product.
+
+    >>> admin_browser.getControl('Aliases').value
+    ''
+    >>> admin_browser.getControl('Aliases').value = 'iceweasel'
+    >>> admin_browser.getControl('Change').click()
+
+    >>> admin_browser.getLink('Administer').click()
+    >>> admin_browser.getControl('Aliases').value
+    'iceweasel'
 
 
 == Renaming Products ==
@@ -109,7 +120,7 @@ First a user adds a product named newproductname.
     >>> user_browser.getControl(name='field.description').value = 'description'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> print user_browser.url
     http://launchpad.dev/newproductname
 
@@ -123,7 +134,7 @@ Then a product named newproductname2.
     >>> user_browser.getControl(name='field.description').value = 'description2'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> print user_browser.url
     http://launchpad.dev/newproductname2
 
@@ -179,7 +190,7 @@ created but we allow admins to change it to correct data.
     ...     'http://launchpad.dev/newproductname3')
     >>> print extract_text(find_main_content(admin_browser.contents))
     Details...
-    Registered No Privileges Person on...
+    Registered ... by No Privileges Person
     ...
 
     >>> admin_browser.open(
@@ -188,7 +199,19 @@ created but we allow admins to change it to correct data.
     >>> admin_browser.getControl(name='field.actions.change').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
     Details...
-    Registered Celso Providelo on...
+    Registered ... by Celso Providelo
+    ...
+
+The registrant really should only be a person, not a team, but that
+constraint has to be relaxed to account for old data where we do have
+teams as registrants.
+
+    >>> admin_browser.open('http://launchpad.dev/newproductname3/+admin')
+    >>> admin_browser.getControl('Registrant').value = 'registry'
+    >>> admin_browser.getControl('Change').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Details...
+    Registered ... by Registry Administrators
     ...
 
 
@@ -242,14 +265,23 @@ again have zero licenses.
     Other/Proprietary or Other/Open Source.
 
 
-== Commercial Admin can use the reviewer whiteboard on +review-license page ==
+== Launchpad developers can use the reviewer whiteboard ==
 
-A Commercial Admin can use the reviewer whiteboard on the +review-license page
-for storing random notes about a project. At first the whiteboard is
-empty, then we store some insightful notes in it.
+A member of the Launchpad Developers team can use the reviewer whiteboard on
+the +review-license page for storing random notes about a project. At first the
+whiteboard is empty, then we store some insightful notes in it.
 
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> celebs.launchpad_developers.addMember(nopriv, nopriv)
+    >>> logout()
     >>> commercial_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
+    ...     auth='Basic no-priv@canonical.com:test')
     >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
     >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
     ''
@@ -325,3 +357,9 @@ The product can then be reactivated.
     >>> contents = find_main_content(commercial_browser.contents)
     >>> print contents.find(id='project-inactive')
     None
+
+Revert name12's team membership.
+
+    >>> login('foo.bar@canonical.com')
+    >>> nopriv.leave(celebs.launchpad_developers)
+    >>> logout()

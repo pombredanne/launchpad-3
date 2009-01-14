@@ -5,9 +5,9 @@
   i18n_domain="launchpad">
 
   <!-- LaunchpadStatistic -->
-  <content class="canonical.launchpad.database.LaunchpadStatistic">
+  <class class="canonical.launchpad.database.LaunchpadStatistic">
     <allow interface="canonical.launchpad.interfaces.ILaunchpadStatistic" />
-  </content>
+  </class>
 
 
   <!-- LaunchpadStatisticSet -->
@@ -16,13 +16,6 @@
     provides="canonical.launchpad.interfaces.ILaunchpadStatisticSet">
     <allow interface="canonical.launchpad.interfaces.ILaunchpadStatisticSet" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
-    factory="canonical.launchpad.browser.LaunchpadStatisticSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:url
     for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"

@@ -11,7 +11,7 @@ __all__ = [
 import os
 import atexit
 
-from canonical.testing.layers import AppServerLayer
+from canonical.testing.layers import AppServerLayer, LayerProcessController
 from canonical.launchpad.mailman.runmailman import start_mailman, stop_mailman
 from canonical.launchpad.mailman.testing import logwatcher
 
@@ -30,18 +30,19 @@ class MailmanLayer(AppServerLayer):
     @classmethod
     def setUp(cls):
         # Stop Mailman if it's currently running.
-        pid_file = os.path.join(
-            AppServerLayer.appserver_config.mailman.build_var_dir,
-            'data', 'master-qrunner.pid')
+        config = LayerProcessController.appserver_config
+        pid_file = os.path.join(config.mailman.build_var_dir,
+                                'data', 'master-qrunner.pid')
         if os.path.exists(pid_file):
-            stop_mailman(quiet=True, config=AppServerLayer.appserver_config)
-        start_mailman(quiet=True, config=AppServerLayer.appserver_config)
+            stop_mailman(quiet=True, config=config)
+        start_mailman(quiet=True, config=config)
         # Make sure that mailman is killed even if tearDown() is skipped.
         atexit.register(cls.tearDown)
 
     @classmethod
     def tearDown(cls):
-        stop_mailman(quiet=True, config=AppServerLayer.appserver_config)
+        stop_mailman(quiet=True,
+                     config=LayerProcessController.appserver_config)
 
     @classmethod
     def testSetUp(cls):

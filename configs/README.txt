@@ -49,12 +49,7 @@ An instance directory may contain several lazr.config conf files.
 CanonicalConfig loads the config file named for the process that is
 running, eg. if the processes name is 'test', CanonicalConfig looks for
 test-lazr.conf. launchpad-lazr.conf is loaded if not a lazr config files
-named for the process. A process may set process name in the config
-to load a specific conf file. the authserver calls:
-
-    config.setProcess('authserver')
-
-to force authserver-lazr.conf to be loaded.
+named for the process.
 
 All this information is available in the config object.
 

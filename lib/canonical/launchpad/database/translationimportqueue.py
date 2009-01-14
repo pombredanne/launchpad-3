@@ -10,10 +10,11 @@ __all__ = [
 
 import tarfile
 import os.path
+import posixpath
 import datetime
 import re
 import pytz
-from StringIO import StringIO
+from cStringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
@@ -29,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
     ISourcePackage, ITranslationImporter, ITranslationImportQueue,
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
-    TranslationFileFormat)
+    TranslationFileFormat, TranslationImportQueueConflictError)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -77,7 +78,6 @@ class TranslationImportQueueEntry(SQLBase):
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
         notNull=True, default=DEFAULT)
-
 
     @property
     def sourcepackage(self):
@@ -259,7 +259,8 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate_subset = potemplateset.getSubset(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
-            productseries=self.productseries)
+            productseries=self.productseries,
+            iscurrent=True)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
@@ -270,7 +271,7 @@ class TranslationImportQueueEntry(SQLBase):
             # it in a different source package as a second try. To do it, we
             # need to get a subset of all packages in current distro series.
             potemplate_subset = potemplateset.getSubset(
-                distroseries=self.distroseries)
+                distroseries=self.distroseries, iscurrent=True)
             potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
                 translation_domain)
 
@@ -402,8 +403,13 @@ class TranslationImportQueueEntry(SQLBase):
         to link the .po and .pot files coming from different packages. The
         solution we take is to look for the translation domain across the
         whole distro series. In the concrete case of KDE language packs, they
-        have the sourcepackagename following the pattern 'kde-i18n-LANGCODE'.
+        have the sourcepackagename following the pattern 'kde-i18n-LANGCODE'
+        (KDE3) or kde-l10n-LANGCODE (KDE4).
         """
+        # Recognize "kde-i18n-LANGCODE" and "kde-l10n-LANGCODE" as
+        # special cases.
+        kde_prefix_pattern = '^kde-(i18n|l10n)-'
+
         importer = getUtility(ITranslationImporter)
 
         assert is_gettext_name(self.path), (
@@ -416,7 +422,7 @@ class TranslationImportQueueEntry(SQLBase):
             # it with productseries.
             return None
 
-        if self.sourcepackagename.name.startswith('kde-i18n-'):
+        if re.match(kde_prefix_pattern, self.sourcepackagename.name):
             # We need to extract the language information from the package
             # name
 
@@ -429,9 +435,9 @@ class TranslationImportQueueEntry(SQLBase):
                 'zhtw': 'zh_TW',
                 }
 
-            lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
-            if lang_code in lang_mapping:
-                lang_code = lang_mapping[lang_code]
+            lang_code = re.sub(
+                kde_prefix_pattern, '', self.sourcepackagename.name)
+            lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):
             # This package has the language information included as part of a
@@ -489,12 +495,12 @@ class TranslationImportQueueEntry(SQLBase):
                 return None
             translation_domain = potemplate.translation_domain
         else:
-            # The guessed language from the directory doesn't math the
+            # The guessed language from the directory doesn't match the
             # language from the filename. Leave it for an admin.
             return None
 
         if (self.sourcepackagename.name in ('k3b-i18n', 'koffice-l10n') or
-            self.sourcepackagename.name.startswith('kde-i18n-')):
+            re.match(kde_prefix_pattern, self.sourcepackagename.name)):
             # K3b and official KDE packages store translations and code in
             # different packages, so we don't know the sourcepackagename that
             # use the translations.
@@ -594,6 +600,85 @@ class TranslationImportQueue:
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
 
+    def _getMatchingEntry(self, path, importer, potemplate, pofile,
+                           sourcepackagename, distroseries, productseries):
+        """Find an entry that best matches the given parameters, if such an
+        entry exists.
+
+        When the user uploads a file, we need to figure out whether to update
+        an existing entry or create a new one.  There may be zero, one, or
+        multiple entries that match the new upload.  If it's more than one,
+        that will be because one matching entry is more specific than the
+        other.  'More specific' refers to how well the import location has
+        been specified for this entry.  There are three cases, ordered from
+        least specific to most specific:
+
+        1. potemplate and pofile are None,
+        2. potemplate is not None but pofile is None,
+        3. potemplate and pofile are both not None.
+
+        If no exactly matching entry can be found, the next more specific
+        entry is chosen, if it exists. If there is more than one such entry,
+        there is no best choice and `TranslationImportQueueConflictError`
+        is raised.
+
+        :return: The matching entry or None, if no matching entry was found
+            at all."""
+
+        # Find possible candidates by querying the database.
+        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
+        queries.append(
+            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
+        # Depending on how specific the new entry is, potemplate and pofile
+        # may be None.
+        if potemplate is not None:
+            queries.append(
+                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
+                    potemplate))
+        if pofile is not None:
+            queries.append(
+                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
+        if sourcepackagename is not None:
+            # The import is related with a sourcepackage and a distribution.
+            queries.append(
+                'TranslationImportQueueEntry.sourcepackagename = %s' % (
+                    sqlvalues(sourcepackagename)))
+            queries.append(
+                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
+                    distroseries))
+        else:
+            # The import is related with a productseries.
+            assert productseries is not None, (
+                'sourcepackagename and productseries cannot be both None at'
+                ' the same time.')
+
+            queries.append(
+                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
+                    productseries))
+        # Order the results by level of specificity.
+        entries = TranslationImportQueueEntry.select(
+                ' AND '.join(queries),
+                orderBy="potemplate IS NULL DESC, pofile IS NULL DESC")
+
+        # Deal with the simple cases.
+        if entries.count() == 0:
+            return None
+        if entries.count() == 1:
+            return entries[0]
+
+        # Check that the top two entries differ in levels of specificity.
+        # Other entries don't matter because they are either of the same
+        # or even greater specificity, as specified in the query.
+        pofile_specificity_is_equal = (
+            (entries[0].pofile is None) == (entries[1].pofile is None))
+        potemplate_specificity_is_equal = (
+            (entries[0].potemplate is None) ==
+            (entries[1].potemplate is None))
+        if pofile_specificity_is_equal and potemplate_specificity_is_equal:
+            raise TranslationImportQueueConflictError
+
+        return entries[0]
+
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
@@ -632,38 +717,19 @@ class TranslationImportQueue:
             name=filename, size=size, file=file,
             contentType=format_importer.content_type)
 
-        # Check if we got already this request from this user.
-        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
-        queries.append(
-            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
-        if potemplate is not None:
-            queries.append(
-                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
-                    potemplate))
-        if pofile is not None:
-            queries.append(
-                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
-        if sourcepackagename is not None:
-            # The import is related with a sourcepackage and a distribution.
-            queries.append(
-                'TranslationImportQueueEntry.sourcepackagename = %s' % (
-                    sqlvalues(sourcepackagename)))
-            queries.append(
-                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
-                    distroseries))
+        try:
+            entry = self._getMatchingEntry(path, importer, potemplate,
+                    pofile, sourcepackagename, distroseries, productseries)
+        except TranslationImportQueueConflictError:
+            return None
+        if entry is None:
+            # It's a new row.
+            entry = TranslationImportQueueEntry(path=path, content=alias,
+                importer=importer, sourcepackagename=sourcepackagename,
+                distroseries=distroseries, productseries=productseries,
+                is_published=is_published, potemplate=potemplate,
+                pofile=pofile, format=format)
         else:
-            # The import is related with a productseries.
-            assert productseries is not None, (
-                'sourcepackagename and productseries cannot be both None at'
-                ' the same time.')
-
-            queries.append(
-                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
-                    productseries))
-
-        entry = TranslationImportQueueEntry.selectOne(' AND '.join(queries))
-
-        if entry is not None:
             # It's an update.
             entry.content = alias
             entry.is_published = is_published
@@ -692,36 +758,29 @@ class TranslationImportQueue:
             entry.date_status_changed = UTC_NOW
             entry.format = format
             entry.sync()
-        else:
-            # It's a new row.
-            entry = TranslationImportQueueEntry(path=path, content=alias,
-                importer=importer, sourcepackagename=sourcepackagename,
-                distroseries=distroseries, productseries=productseries,
-                is_published=is_published, potemplate=potemplate,
-                pofile=pofile, format=format)
 
         return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None):
+        potemplate=None, filename_filter=None):
         """See ITranslationImportQueue."""
-        # XXX: This whole set of ifs is a workaround for bug 44773
-        # (Python's gzip support sometimes fails to work when using
-        # plain tarfile.open()). The issue is that we can't rely on
-        # tarfile's smart detection of filetypes and instead need to
+        # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
+        # workaround for bug 44773 (Python's gzip support sometimes fails to
+        # work when using plain tarfile.open()). The issue is that we can't
+        # rely on tarfile's smart detection of filetypes and instead need to
         # hardcode the type explicitly in the mode. We simulate magic
         # here to avoid depending on the python-magic package. We can
         # get rid of this when http://bugs.python.org/issue1488634 is
         # fixed.
         #
-        # XXX: Incidentally, this also works around bug #1982 (Python's
-        # bz2 support is not able to handle external file objects). That
-        # bug is worked around by using tarfile.open() which wraps the
-        # fileobj in a tarfile._Stream instance. We can get rid of this
-        # when we upgrade to python2.5 everywhere.
-        #       -- kiko, 2008-02-08
+        # XXX: 2008-02-08 kiko bug=1982: Incidentally, this also works around
+        # bug #1982 (Python's bz2 support is not able to handle external file
+        # objects). That bug is worked around by using tarfile.open() which
+        # wraps the fileobj in a tarfile._Stream instance. We can get rid of
+        # this when we upgrade to python2.5 everywhere.
         num_files = 0
+        conflict_files = []
 
         if content.startswith('BZh'):
             mode = "r|bz2"
@@ -731,42 +790,57 @@ class TranslationImportQueue:
             mode = "r|tar"
         else:
             # Not a tarball, we ignore it.
-            return num_files
+            return (num_files, conflict_files)
+
+        translation_importer = getUtility(ITranslationImporter)
 
         try:
             tarball = tarfile.open('', mode, StringIO(content))
         except tarfile.ReadError:
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
-            return num_files
+            return (num_files, conflict_files)
 
         for tarinfo in tarball:
-            filename = tarinfo.name
-            # XXX: JeroenVermeulen 2007-06-18 bug=121798:
-            # Work multi-format support in.
-            # For now we're only interested in PO and POT files.  We skip
-            # "dotfiles," i.e. files whose names start with a dot, and we
-            # ignore anything that isn't a file (such as directories,
-            # symlinks, and above all, device files which could cause some
-            # serious security headaches).
-            looks_useful = (
-                tarinfo.isfile() and
-                not filename.startswith('.') and
-                is_gettext_name(filename))
-            if looks_useful:
-                file_content = tarball.extractfile(tarinfo).read()
-                if len(file_content) > 0:
-                    self.addOrUpdateEntry(
-                        tarinfo.name, file_content, is_published, importer,
-                        sourcepackagename=sourcepackagename,
-                        distroseries=distroseries,
-                        productseries=productseries,
-                        potemplate=potemplate)
-                    num_files += 1
+            if not tarinfo.isfile():
+                # Don't be tricked into reading directories, symlinks,
+                # or worst of all: devices.
+                continue
+
+            filename = posixpath.normpath(tarinfo.name)
+            if filename_filter:
+                filename = filename_filter(filename)
+            if filename is None or filename == '':
+                continue
+
+            if posixpath.basename(filename).startswith('.'):
+                # Dotfile.  Probably an editor backup or somesuch.
+                continue
+
+            base, ext = posixpath.splitext(filename)
+            if ext not in translation_importer.supported_file_extensions:
+                # Doesn't look like a supported translation file type.
+                continue
+
+            file_content = tarball.extractfile(tarinfo).read()
+
+            if len(file_content) == 0:
+                # Empty.  Ignore.
+                continue
+
+            entry = self.addOrUpdateEntry(
+                filename, file_content, is_published, importer,
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries, productseries=productseries,
+                potemplate=potemplate)
+            if entry == None:
+                conflict_files.append(filename)
+            else:
+                num_files += 1
 
         tarball.close()
 
-        return num_files
+        return (num_files, conflict_files)
 
     def get(self, id):
         """See ITranslationImportQueue."""
@@ -1027,4 +1101,3 @@ class HasTranslationImportsMixin:
         translation_import_queue = TranslationImportQueue()
         return translation_import_queue.getAllEntries(
             self, import_status=import_status, file_extensions=extensions)
-

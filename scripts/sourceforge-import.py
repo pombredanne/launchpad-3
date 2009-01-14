@@ -1,10 +1,11 @@
 #!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 import logging
 import optparse
 import sys
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from zope.component import getUtility
@@ -14,6 +15,7 @@ from canonical.launchpad.interfaces import IProductSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.ftests import login
+from canonical.launchpad.webapp.interaction import Participation
 
 from canonical.launchpad.scripts.sftracker import Tracker, TrackerImporter
 
@@ -40,17 +42,26 @@ def main(argv):
     logger(options, 'canonical.launchpad.scripts.sftracker')
 
     # don't send email
-    config.zopeless.send_email = False
+    send_email_data = """
+        [zopeless]
+        send_email: False
+        """
+    config.push('send_email_data', send_email_data)
 
     execute_zcml_for_scripts()
     ztm = initZopeless()
-    login('bug-importer@launchpad.net')
+    # XXX gary 21-Oct-2008 bug 285808
+    # We should reconsider using a ftest helper for production code.  For now,
+    # we explicitly keep the code from using a test request by using a basic
+    # participation.
+    login('bug-importer@launchpad.net', Participation())
 
     product = getUtility(IProductSet).getByName(options.product)
     tracker = Tracker(options.dumpfile, options.dumpdir)
     importer = TrackerImporter(product, options.verify_users)
 
     importer.importTracker(ztm, tracker)
+    config.pop('send_email_data')
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

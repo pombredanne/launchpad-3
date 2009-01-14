@@ -12,10 +12,10 @@
     </securedutility>
 
     <!-- TranslationsOverview -->
-    <content class="canonical.launchpad.database.TranslationsOverview">
+    <class class="canonical.launchpad.database.TranslationsOverview">
         <allow
           interface="canonical.launchpad.interfaces.ITranslationsOverview" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.TranslationsOverview"

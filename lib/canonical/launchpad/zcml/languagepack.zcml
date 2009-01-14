@@ -7,12 +7,12 @@
     <facet facet="translations">
 
         <!-- LanguagePack -->
-        <content class="canonical.launchpad.database.LanguagePack">
+        <class class="canonical.launchpad.database.LanguagePack">
             <allow interface="canonical.launchpad.interfaces.ILanguagePack"/>
             <require
                 permission="launchpad.LanguagePacksAdmin"
                 set_schema="canonical.launchpad.interfaces.ILanguagePack" />
-        </content>
+        </class>
 
         <!-- LanguageSet -->
         <securedutility

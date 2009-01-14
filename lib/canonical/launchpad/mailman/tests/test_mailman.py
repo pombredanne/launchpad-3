@@ -1,4 +1,3 @@
-#! /usr/bin/env python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Test harness for Launchpad/Mailman doctests."""
@@ -7,18 +6,21 @@ import os
 import errno
 import shutil
 import unittest
+import transaction
 
 # pylint: disable-msg=F0401
 from Mailman.MailList import MailList
-from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
+from Mailman.mm_cfg import MAILMAN_SITE_LIST, QUEUE_DIR, VAR_PREFIX
+from Mailman.Utils import list_names
 
 from canonical.launchpad.mailman.testing import helpers
 from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
     tearDown as tearDownBrowser)
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import AppServerLayer
+from canonical.testing.layers import LayerProcessController
 
 
 HERE = os.path.dirname(__file__)
@@ -28,8 +30,10 @@ def setUp(testobj):
     """Set up for all integration doctests."""
     # We'll always need an smtp server.
     setUpBrowser(testobj)
-    AppServerLayer.smtp_controller.reset()
-    testobj.globs['smtpd'] = AppServerLayer.smtp_controller
+    LayerProcessController.smtp_controller.reset()
+    testobj.globs['transaction'] = transaction
+    testobj.globs['factory'] = LaunchpadObjectFactory()
+    testobj.globs['smtpd'] = LayerProcessController.smtp_controller
     testobj.globs['mhonarc_watcher'] = MailmanLayer.mhonarc_watcher
     testobj.globs['smtpd_watcher'] = MailmanLayer.smtpd_watcher
     testobj.globs['vette_watcher'] = MailmanLayer.vette_watcher
@@ -41,7 +45,7 @@ def setUp(testobj):
 def tearDown(testobj):
     """Common tear down for the integration tests."""
     tearDownBrowser(testobj)
-    AppServerLayer.smtp_controller.reset()
+    LayerProcessController.smtp_controller.reset()
     # Clear out any qfiles hanging around from a previous run.  Do this first
     # to prevent stale list references.
     for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
@@ -51,7 +55,9 @@ def tearDown(testobj):
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
-    for team_name in ('itest-one', 'itest-two', 'itest-three', 'fake-team'):
+    for team_name in list_names():
+        if team_name == MAILMAN_SITE_LIST:
+            continue
         # pylint: disable-msg=W0702
         try:
             # Ensure that the lock gets cleaned up properly by first acquiring
@@ -75,7 +81,7 @@ def tearDown(testobj):
             if error.errno != errno.ENOENT:
                 raise
         # Delete the MHonArc archives if they exist.
-        path = os.path.join(VAR_PREFIX, 'mhonarc')
+        path = os.path.join(VAR_PREFIX, 'mhonarc', team_name)
         try:
             shutil.rmtree(path)
         except OSError, error:

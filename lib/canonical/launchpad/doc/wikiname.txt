@@ -14,7 +14,7 @@ on that wiki.
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> wiki_name = getUtility(IWikiNameSet).new(
-    ...     salgado, 'http://wiki.ubuntu.com', 'Salgado')
+    ...     salgado, 'https://wiki.canonical.com/', 'Salgado')
 
 The returned WikiName object provides both IWikiName and IHasOwner.
 
@@ -23,3 +23,11 @@ The returned WikiName object provides both IWikiName and IHasOwner.
     True
     >>> verifyObject(IHasOwner, wiki_name)
     True
+
+All wiki names of a person can be obtained, ordered alphabetically by wiki URL
+and name, through IPerson.wiki_names.
+
+    >>> for wiki in salgado.wiki_names:
+    ...     print "%s%s" % (wiki.wiki, wiki.wikiname)
+    https://wiki.canonical.com/Salgado
+    https://wiki.ubuntu.com/GuilhermeSalgado

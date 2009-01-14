@@ -11,6 +11,7 @@
   <!-- Note that we need to do this early, as later startup
        subscribers may break without fixups -->
 
+  <include package="zope.component" />
   <include package="zope.app.component" />
   <!-- We don't need generations, as they are zodb specific.
   <include package="zope.app.generations" file="subscriber.zcml" />
@@ -18,7 +19,7 @@
   <!-- Ordinary Application (non-view) configuration) -->
   <include package="zope.app.interface" />
   <include package="zope.app.security" />
-  <include package="zope.app.event" />
+
   <!--
   <include package="zope.app.observable" />
   <include package="zope.app.annotation" />
@@ -36,28 +37,28 @@
   <!-- We don't need any of the default publications. -->
   <!-- include package="zope.app.publication" / -->
 
-  <!-- selected things from zope.app.traversing -->
+  <!-- selected things from zope.traversing -->
 <adapter
     for="*"
-    factory="zope.app.traversing.adapters.Traverser"
-    provides="zope.app.traversing.interfaces.ITraverser" />
+    factory="zope.traversing.adapters.Traverser"
+    provides="zope.traversing.interfaces.ITraverser" />
 
 <adapter
     for="*"
-    factory="zope.app.traversing.adapters.DefaultTraversable"
-    provides="zope.app.traversing.interfaces.ITraversable" />
+    factory="zope.traversing.adapters.DefaultTraversable"
+    provides="zope.traversing.interfaces.ITraversable" />
 <view
     name="view" type="*"
-    provides="zope.app.traversing.interfaces.ITraversable" for="*"
-    factory="zope.app.traversing.namespace.view"
+    provides="zope.traversing.interfaces.ITraversable" for="*"
+    factory="zope.traversing.namespace.view"
     />
 
 <view
     name="resource" type="*"
-    provides="zope.app.traversing.interfaces.ITraversable" for="*"
-    factory="zope.app.traversing.namespace.resource"
+    provides="zope.traversing.interfaces.ITraversable" for="*"
+    factory="zope.traversing.namespace.resource"
     />
-  <!-- end of selected things from zope.app.traversing -->
+  <!-- end of selected things from zope.traversing -->
 
   <include package="zope.app.pagetemplate" />
   <include package="zope.app.zapi" />
@@ -66,10 +67,10 @@
   <include package="zope.app.http" />
 
   <!-- Translations -->
-  <!-- XXX it is not possible to include a 'package' attribute in the
-       registerTranslations directive.  This seems to be a shortcoming
-       in the 'path' field design, where it can't be made relative to
-       a package given in this directive.
+  <!-- XXX Robert Collins 2004-11-23: it is not possible to include a
+       'package' attribute in the registerTranslations directive.  This seems
+       to be a shortcoming in the 'path' field design, where it can't be made
+       relative to a package given in this directive.
   <i18n:registerTranslations package="zope.app" directory="translation_files" />
   -->
   <!--

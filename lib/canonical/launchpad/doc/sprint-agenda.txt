@@ -45,7 +45,10 @@ the date_decided.
     >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
-    >>> sl.date_decided = None
+    # Nobody is allowed to write directly to SprintSpecification.date_decided,
+    # so we need to remove its security proxy here.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(sl).date_decided = None
     >>> sl.declineBy(jblack)
     >>> print sl.status.title, sl.decider.name, sl.date_decided is not None
     Declined jblack True

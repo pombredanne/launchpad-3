@@ -185,10 +185,6 @@ class ITranslationMessage(Interface):
         title=_("Whether the translation has all needed plural forms or not"),
         readonly=True, required=True)
 
-    is_fuzzy = Bool(
-        title=_("Whether this translation must be checked before use it"),
-        readonly=False, default=False, required=True)
-
     is_imported = Bool(
         title=_(
             "Whether this translation is being used in latest imported file"),
@@ -198,11 +194,6 @@ class ITranslationMessage(Interface):
         title=_(
             "Whether this translation was obsolete in last imported file"),
         readonly=False, default=False, required=True)
-
-    was_fuzzy_in_last_import = Bool(
-        title=_(
-            "Whether this imported translation must be checked before use it"
-            ), readonly=False, default=False, required=True)
 
     is_empty = Bool(
         title=_("Whether this message has any translation"),

@@ -11,18 +11,18 @@
             interface="canonical.launchpad.interfaces.ITranslationExporter" />
     </securedutility>
 
-    <content
+    <class
         class="canonical.launchpad.translationformat.translation_export.ExportedTranslationFile">
         <allow
           interface="canonical.launchpad.interfaces.IExportedTranslationFile" />
-    </content>
+    </class>
 
     <!-- Translation file export plugins -->
-    <content
+    <class
         class="canonical.launchpad.translationformat.gettext_po_exporter.GettextPOExporter">
         <allow
           interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
-    </content>
+    </class>
 
     <subscriber
         for="canonical.launchpad.interfaces.ITranslationExporter"
@@ -30,11 +30,11 @@
         factory="canonical.launchpad.translationformat.gettext_po_exporter.GettextPOExporter"
         />
 
-    <content
+    <class
         class="canonical.launchpad.translationformat.gettext_mo_exporter.GettextMOExporter">
         <allow
           interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
-    </content>
+    </class>
 
     <subscriber
         for="canonical.launchpad.interfaces.ITranslationExporter"
@@ -42,11 +42,11 @@
         factory="canonical.launchpad.translationformat.gettext_mo_exporter.GettextMOExporter"
         />
 
-    <content
+    <class
         class="canonical.launchpad.translationformat.kde_po_exporter.KdePOExporter">
         <allow
           interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
-    </content>
+    </class>
 
     <subscriber
         for="canonical.launchpad.interfaces.ITranslationExporter"
@@ -54,11 +54,11 @@
         factory="canonical.launchpad.translationformat.kde_po_exporter.KdePOExporter"
         />
 
-    <content
+    <class
         class="canonical.launchpad.translationformat.xpi_po_exporter.XPIPOExporter">
         <allow
           interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
-    </content>
+    </class>
 
     <subscriber
         for="canonical.launchpad.interfaces.ITranslationExporter"

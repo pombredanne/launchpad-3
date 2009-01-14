@@ -12,7 +12,7 @@ import pytz
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (
-    flush_database_caches, flush_database_updates, cursor)
+    cursor, flush_database_caches, flush_database_updates, sqlvalues)
 from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces.person import (
@@ -136,6 +136,231 @@ class TestTeamMembershipSet(unittest.TestCase):
         self.failIf(sample_person.inTeam(motu))
 
 
+class TeamParticipationTestCase(unittest.TestCase):
+    """Tests for team participation using 5 teams."""
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login('foo.bar@canonical.com')
+        person_set = getUtility(IPersonSet)
+        self.foo_bar = person_set.getByEmail('foo.bar@canonical.com')
+        self.no_priv = person_set.getByName('no-priv')
+        self.team1 = person_set.newTeam(self.foo_bar, 'team1', 'team1')
+        self.team2 = person_set.newTeam(self.foo_bar, 'team2', 'team2')
+        self.team3 = person_set.newTeam(self.foo_bar, 'team3', 'team3')
+        self.team4 = person_set.newTeam(self.foo_bar, 'team4', 'team4')
+        self.team5 = person_set.newTeam(self.foo_bar, 'team5', 'team5')
+
+    def assertParticipantsEquals(self, participant_names, team):
+        """Assert that the participants names in team are the expected ones.
+        """
+        self.assertEquals(
+            sorted(participant_names),
+            sorted([participant.name for participant in team.allmembers]))
+
+
+class TestTeamParticipationHierarchy(TeamParticipationTestCase):
+    """Participation management tests using 5 nested teams.
+
+    Create a team hierarchy with 5 teams and one person (no-priv) as
+    member of the last team in the chain.
+        team1
+           team2
+              team3
+                 team4
+                    team5
+                       no-priv
+    """
+
+    def setUp(self):
+        """Setup the team hierarchy."""
+        super(TestTeamParticipationHierarchy, self).setUp()
+        self.team5.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foo_bar, force_team_add=True)
+        self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+
+    def testTeamParticipationSetUp(self):
+        """Make sure that the TeamParticipation are sane after setUp."""
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv'], self.team5)
+
+    def testSevereHierarchyByRemovingTeam3FromTeam2(self):
+        """Make sure that the participations is updated correctly when
+        the hierarchy is severed in the two.
+
+        This is similar to what was experienced in bug 261915.
+        """
+        self.team2.setMembershipData(
+            self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(['name16', 'team2'], self.team1)
+        self.assertParticipantsEquals(['name16'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+    def testRemovingLeafTeam(self):
+        """Make sure that participations are updated correctly when removing
+        the leaf team.
+        """
+        self.team4.setMembershipData(
+            self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'team2', 'team3', 'team4'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'team3', 'team4'], self.team2)
+        self.assertParticipantsEquals(['name16', 'team4'], self.team3)
+        self.assertParticipantsEquals(['name16'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+
+class TestTeamParticipationTree(TeamParticipationTestCase):
+    """Participation management tests using 5 nested teams
+
+    Create a team hierarchy looking like this:
+        team1
+           team2
+         team5  team3
+                  team4
+                     team5
+                       no-priv
+    """
+
+    def setUp(self):
+        """Setup the team hierarchy."""
+        super(TestTeamParticipationTree, self).setUp()
+        self.team5.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team5, self.foo_bar, force_team_add=True)
+        self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+
+    def testTeamParticipationSetUp(self):
+        """Make sure that the TeamParticipation are sane after setUp."""
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv'], self.team5)
+
+    def testRemoveTeam3FromTeam2(self):
+        self.team2.setMembershipData(
+            self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team5'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+    def testRemoveTeam5FromTeam4(self):
+        self.team4.setMembershipData(
+            self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'team4'], self.team3)
+        self.assertParticipantsEquals(['name16'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+
+class TestTeamParticipationMesh(TeamParticipationTestCase):
+    """Participation management tests using two roots and some duplicated
+    branches.
+
+    Create a team hierarchy looking like this:
+        team1    /--team6
+            team2        \
+             |  team3    |
+             \--- team4-/
+                     team5
+                       no-priv
+    """
+
+    def setUp(self):
+        """Setup the team hierarchy."""
+        super(TestTeamParticipationMesh, self).setUp()
+        self.team6 = getUtility(IPersonSet).newTeam(
+            self.foo_bar, 'team6', 'team6')
+        self.team5.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+        self.team6.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team6.addMember(self.team4, self.foo_bar, force_team_add=True)
+
+    def testTeamParticipationSetUp(self):
+        """Make sure that the TeamParticipation are sane after setUp."""
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team6)
+
+    def testRemoveTeam3FromTeam2(self):
+        self.team2.setMembershipData(
+            self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team6)
+
+    def testRemoveTeam5FromTeam4(self):
+        self.team4.setMembershipData(
+            self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'team2', 'team3', 'team4'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'team3', 'team4'], self.team2)
+        self.assertParticipantsEquals(['name16', 'team4'], self.team3)
+        self.assertParticipantsEquals(['name16'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'team2', 'team3', 'team4'], self.team6)
+
+
 class TestTeamMembership(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
@@ -174,56 +399,6 @@ class TestTeamMembership(unittest.TestCase):
                         "teamA is not a participant of itself")
         self.failUnless(teamB.hasParticipationEntryFor(teamB),
                         "teamB is not a participant of itself")
-
-    def test_indirect_members_are_kicked_when_kicking_team(self):
-        """Indirect members are kicked when the team in which they are a
-        direct member is kicked.
-
-        Create a team hierarchy with 5 teams and one person (no-priv) as
-        member of the last team in the chain.
-            team1
-               team2
-                  team3
-                     team4
-                        team5
-                           no-priv
-
-        Then kick the latest team (team5) from team4 and check that neither
-        no-priv nor team5 are indirect members of any other teams.
-        """
-        login('mark@hbd.com')
-        person_set = getUtility(IPersonSet)
-        sabdfl = person_set.getByName('sabdfl')
-        no_priv = person_set.getByName('no-priv')
-        team1 = person_set.newTeam(sabdfl, 'team1', 'team1')
-        team2 = person_set.newTeam(sabdfl, 'team2', 'team2')
-        team3 = person_set.newTeam(sabdfl, 'team3', 'team3')
-        team4 = person_set.newTeam(sabdfl, 'team4', 'team4')
-        team5 = person_set.newTeam(sabdfl, 'team5', 'team5')
-        team5.addMember(no_priv, sabdfl)
-        self.failUnless(no_priv in team5.activemembers)
-        team1.addMember(team2, sabdfl, force_team_add=True)
-        team2.addMember(team3, sabdfl, force_team_add=True)
-        team3.addMember(team4, sabdfl, force_team_add=True)
-        team4.addMember(team5, sabdfl, force_team_add=True)
-        self.failUnless(team3 in team2.activemembers)
-        self.failUnless(team4 in team3.activemembers)
-        self.failUnless(team5 in team4.activemembers)
-        self.failUnless(no_priv in team4.allmembers)
-        self.failUnless(no_priv in team3.allmembers)
-        self.failUnless(no_priv in team2.allmembers)
-        self.failUnless(no_priv in team1.allmembers)
-        team4.setMembershipData(
-            team5, TeamMembershipStatus.DEACTIVATED, sabdfl)
-        flush_database_updates()
-        self.failIf(team5 in team4.allmembers)
-        self.failIf(team5 in team3.allmembers)
-        self.failIf(team5 in team2.allmembers)
-        self.failIf(team5 in team1.allmembers)
-        self.failIf(no_priv in team4.allmembers)
-        self.failIf(no_priv in team3.allmembers)
-        self.failIf(no_priv in team2.allmembers)
-        self.failIf(no_priv in team1.allmembers)
 
     def test_membership_status_changes_are_immediately_flushed_to_db(self):
         """Any changes to a membership status must be imediately flushed.
@@ -461,13 +636,13 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
 class TestCheckTeamParticipationScript(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
-    def _runScript(self):
+    def _runScript(self, expected_returncode=0):
         process = subprocess.Popen(
             'cronscripts/check-teamparticipation.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (out, err) = process.communicate()
-        self.assertEqual(process.returncode, 0, (out, err))
+        self.assertEqual(process.returncode, expected_returncode, (out, err))
         return out, err
 
     def test_no_output_if_no_invalid_entries(self):
@@ -476,34 +651,90 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         self.assertEqual((out, err), ('', ''))
 
     def test_report_invalid_teamparticipation_entries(self):
-        """The script reports invalid TeamParticipation entries.
+        """The script reports missing/spurious TeamParticipation entries.
 
         As well as missing self-participation.
         """
         cur = cursor()
-        # Create a new entry in the Person table and update its
-        # TeamParticipation so that the person is a participant in a team
-        # (without being a member) and the person is not a member of itself.
+        # Create a new entry in the Person table and change its
+        # self-participation entry, making that person a participant in a team
+        # where it should not be as well as making that person not a member of
+        # itself (as everybody should be).
         cur.execute("""
             INSERT INTO
                 Person (id, name, displayname, creation_rationale)
                 VALUES (9999, 'zzzzz', 'zzzzzz', 1);
             UPDATE TeamParticipation
                 SET team = (
-                    SELECT id FROM Person WHERE teamowner IS NOT NULL limit 1)
+                    SELECT id
+                    FROM Person
+                    WHERE teamowner IS NOT NULL
+                    ORDER BY name
+                    LIMIT 1)
                 WHERE person = 9999;
             """)
+        # Now add the new person as a member of another team but don't create
+        # the relevant TeamParticipation for that person on that team.
+        cur.execute("""
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9999,
+                    (SELECT id
+                        FROM Person
+                        WHERE teamowner IS NOT NULL
+                        ORDER BY name desc
+                        LIMIT 1),
+                    %s);
+            """ % sqlvalues(TeamMembershipStatus.APPROVED))
         import transaction
         transaction.commit()
 
         out, err = self._runScript()
-        self.assertEqual(err, '', (out, err))
+        self.assertEqual(out, '', (out, err))
         self.failUnless(
-            re.search('Invalid TeamParticipation entry for zzzzz', out),
+            re.search('missing TeamParticipation entries for zzzzz', err),
             (out, err))
         self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', out),
+            re.search('spurious TeamParticipation entries for zzzzz', err),
             (out, err))
+        self.failUnless(
+            re.search('not members of themselves:.*zzzzz.*', err),
+            (out, err))
+
+    def test_report_circular_team_references(self):
+        """The script reports circular references between teams.
+
+        If that happens, though, the script will have to report the circular
+        references and exit, to avoid an infinite loop when checking for
+        missing/spurious TeamParticipation entries.
+        """
+        # Create two new teams and make them members of each other.
+        cursor().execute("""
+            INSERT INTO
+                Person (id, name, displayname, teamowner)
+                VALUES (9998, 'test-team1', 'team1', 1);
+            INSERT INTO
+                Person (id, name, displayname, teamowner)
+                VALUES (9997, 'test-team2', 'team2', 1);
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9998, 9997, %(approved)s);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (9998, 9997);
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9997, 9998, %(approved)s);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (9997, 9998);
+            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        import transaction
+        transaction.commit()
+        out, err = self._runScript(expected_returncode=1)
+        self.assertEqual(out, '', (out, err))
+        self.failUnless(
+            re.search('Circular references found', err), (out, err))
 
 
 def test_suite():

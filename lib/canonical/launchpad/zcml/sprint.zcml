@@ -5,12 +5,26 @@
   i18n_domain="launchpad">
 
   <!-- Sprint -->
-  <content class="canonical.launchpad.database.Sprint">
+  <class class="canonical.launchpad.database.Sprint">
     <allow interface="canonical.launchpad.interfaces.ISprint" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISprint" />
-  </content>
+  </class>
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ISprint"
+    factory="canonical.launchpad.browser.SprintBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    factory="canonical.launchpad.browser.SprintSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
 
   <browser:menus
       module="canonical.launchpad.browser.sprint"
@@ -71,9 +85,6 @@
     <browser:page
       name="+specs"
       template="../templates/hasspecifications-specs.pt" />
-    <browser:page
-      name="+categorized"
-      template="../templates/specificationtarget-categorized.pt" />
     <browser:page
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
@@ -164,9 +175,9 @@
 
 
   <!-- SprintSet -->
-  <content class="canonical.launchpad.database.SprintSet">
+  <class class="canonical.launchpad.database.SprintSet">
     <allow interface="canonical.launchpad.interfaces.ISprintSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.SprintSet"
@@ -178,13 +189,6 @@
     for="canonical.launchpad.interfaces.ISprintSet"
     path_expression="string:sprints"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ISprintSet"
-    factory="canonical.launchpad.browser.SprintSetSOP"
-    permission="zope.Public"
     />
 
   <browser:defaultView

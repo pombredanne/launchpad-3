@@ -5,21 +5,19 @@ __metaclass__ = type
 import inspect
 
 import zope.app.form.browser.metaconfigure
+import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
-import zope.component.servicenames
-from zope.app.component.contentdirective import ContentDirective
-from zope.app.component.fields import LayerField
+import zope.configuration.config
 from zope.app.component.metaconfigure import (
-    adapter, handler, PublicPermission, utility, view)
+    handler, PublicPermission, utility, view)
 from zope.app.file.image import Image
-from zope.app.pagetemplate.engine import Engine
+from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publisher.browser.viewmeta import (
     page as original_page, pages as original_pages)
-from zope.app.security.metadirectives import IDefinePermissionDirective
-from zope.app.security.permission import Permission
 from zope.component import getUtility
+from zope.component.zcml import adapter
 from zope.configuration.fields import (
-    GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
+    GlobalInterface, GlobalObject, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
@@ -27,14 +25,17 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.schema import TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
+from zope.security.permission import Permission
 from zope.security.proxy import ProxyFactory
 
+from zope.app.component.contentdirective import ClassDirective
+
+from zope.security.zcml import IPermissionDirective
+
 from canonical.launchpad.layers import FeedsLayer
-from canonical.launchpad.webapp.generalform import (
-    GeneralFormView, GeneralFormViewFactory)
 from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu, IAuthorization, IBreadcrumbProvider,
-    ICanonicalUrlData, IContextMenu, IFacetMenu, INavigationMenu)
+    IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
+    IFacetMenu, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RenamedView
 
 
@@ -106,7 +107,7 @@ class SecuredUtilityDirective:
         self._context = _context
         self.provides = provides
         self.permission_collector = PermissionCollectingContext()
-        self.contentdirective = ContentDirective(
+        self.contentdirective = ClassDirective(
             self.permission_collector, class_)
 
     def require(self, _context, **kw):
@@ -282,7 +283,7 @@ def navigation(_context, module, classes):
         layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        view(_context, factory, IBrowserRequest, name, for_, layer,
+        view(_context, factory, layer, name, for_,
                 permission=PublicPermission, provides=provides,
                 allowed_interface=[IBrowserPublisher])
         #view(_context, factory, layer, name, for_,
@@ -292,17 +293,6 @@ def navigation(_context, module, classes):
         xmlrpc_layer = IXMLRPCRequest
         view(_context, factory, xmlrpc_layer, name, for_,
              permission=PublicPermission, provides=provides)
-
-        # Register the navigation a breadcrumb provider.
-        # This needs to be named to avoid the issue with a kind of overlap
-        # with the main IBrowserPublisher registration, and how the publisher
-        # looks up views without asking for a specific interface.
-        layer = IDefaultBrowserLayer
-        provides = IBreadcrumbProvider
-        name = 'breadcrumb'
-        view(_context, factory, IBrowserRequest, name, for_, layer,
-                permission=PublicPermission, provides=provides,
-                allowed_interface=[IBreadcrumbProvider])
 
 
 class InterfaceInstanceDispatcher:
@@ -368,7 +358,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             raise AttributeError('The name "%s" is not in %s.%s'
                 % (attribute_to_parent, for_.__module__, for_.__name__))
     if path_expression is not None:
-        compiled_path_expression = Engine.compile(path_expression)
+        compiled_path_expression = TrustedEngine.compile(path_expression)
 
     # Dead chicken for the namespace gods.
     rootsite_ = rootsite
@@ -501,14 +491,13 @@ class IRenamedPageDirective(Interface):
         title=u"Specification of the object that has the renamed page",
         required=True )
 
-    layer = LayerField(
+    layer = GlobalInterface(
         title=u"The layer the renamed page is in.",
         description=u"""
         A skin is composed of layers. It is common to put skin
         specific views in a layer named after the skin. If the 'layer'
         attribute is not supplied, it defaults to 'default'.""",
-        required=False,
-        )
+        required=False)
 
     name = zope.schema.TextLine(
         title=u"The name of the old page.",
@@ -591,108 +580,6 @@ class AddFormDirective(
         zope.app.form.browser.metaconfigure.AddFormDirective.__call__(self)
 
 
-class IGeneralFormDirective(
-    zope.app.form.browser.metadirectives.ICommonFormInformation,
-    IAssociatedWithAFacet):
-    """
-    Define a general form
-
-    The standard Zope addform and editform make many assumptions about the
-    type of data you are expecting, and the sorts of results you want (in
-    particular, they conflate the "interface" of the schema you are using
-    for the rendered form with the interface of any resulting object).
-
-    The Launchpad GeneralForm is simpler - it provides the same ability to
-    render a form automatically but then it allows you to process the
-    user input and do whatever you want with it.
-    """
-
-    description = MessageID(
-        title=u"A longer description of the form.",
-        description=u"""
-        A UI may display this with the item or display it when the
-        user requests more assistance.""",
-        required=False
-        )
-
-    arguments = Tokens(
-        title=u"Arguments",
-        description=u"""
-        A list of field names to supply as positional arguments to the
-        factory.""",
-        required=False,
-        value_type=PythonIdentifier()
-        )
-
-    keyword_arguments = Tokens(
-        title=u"Keyword arguments",
-        description=u"""
-        A list of field names to supply as keyword arguments to the
-        factory.""",
-        required=False,
-        value_type=PythonIdentifier()
-        )
-
-
-class GeneralFormDirective(
-    zope.app.form.browser.metaconfigure.BaseFormDirective):
-
-    view = GeneralFormView
-    default_template = '../templates/template-generalform.pt'
-
-    # This makes 'facet' a valid attribute for the directive:
-    facet = None
-
-    # default form information
-    description = None
-    arguments = None
-    keyword_arguments = None
-
-    def _handle_arguments(self, leftover=None):
-        schema = self.schema
-        fields = self.fields
-        arguments = self.arguments
-        keyword_arguments = self.keyword_arguments
-
-        if leftover is None:
-            leftover = fields
-
-        if arguments:
-            missing = [n for n in arguments if n not in fields]
-            if missing:
-                raise ValueError(
-                    "Some arguments are not included in the form", missing)
-            optional = [n for n in arguments if not schema[n].required]
-            if optional:
-                raise ValueError("Some arguments are optional, use"
-                                 " keyword_arguments for them",
-                                 optional)
-            leftover = [n for n in leftover if n not in arguments]
-
-        if keyword_arguments:
-            missing = [n for n in keyword_arguments if n not in fields]
-            if missing:
-                raise ValueError(
-                    "Some keyword_arguments are not included in the form",
-                    missing)
-            leftover = [n for n in leftover if n not in keyword_arguments]
-
-    def __call__(self):
-        facet = self.facet or getattr(self._context, 'facet', None)
-        if facet is not None:
-            cdict = {'__launchpad_facetname__': facet}
-            new_class = type('SimpleLaunchpadViewClass', (), cdict)
-            self.bases += (new_class, )
-        self._processWidgets()
-        self._handle_arguments()
-        self._context.action(
-            discriminator=self._discriminator(),
-            callable=GeneralFormViewFactory,
-            args=self._args()+(self.arguments, self.keyword_arguments),
-            kw={'menu': self.menu},
-            )
-
-
 class IGroupingFacet(IAssociatedWithAFacet):
     """Grouping directive that just has a facet attribute."""
 
@@ -726,7 +613,7 @@ class SchemaDisplayDirective(
             self)
 
 
-class IDefineLaunchpadPermissionDirective(IDefinePermissionDirective):
+class IDefineLaunchpadPermissionDirective(IPermissionDirective):
 
     access_level = TextLine(
         title=u"Access level", required=False,

@@ -4,13 +4,17 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.DistroSeries">
-    <allow interface="canonical.launchpad.interfaces.IDistroSeries"/>
+  <class class="canonical.launchpad.database.DistroSeries">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
     <allow interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+    <require
+        permission="launchpad.Edit"
+        interface="canonical.launchpad.interfaces.IDistroSeriesEditRestricted"
+        />
     <require
         permission="launchpad.TranslationsAdmin"
         set_attributes="hide_all_translations defer_translation_imports"
@@ -44,7 +48,7 @@
         permission="launchpad.AnyPerson"
         attributes="addBugSubscription addSubscription
                     removeBugSubscription" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.DistroSeriesSet"
@@ -52,12 +56,6 @@
     <allow interface="canonical.launchpad.interfaces.IDistroSeriesSet" />
   </securedutility>
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistroSeries"
-    factory="canonical.launchpad.browser.DistroSeriesSOP"
-    permission="zope.Public"
-    />
   <adapter
     for="canonical.launchpad.interfaces.IDistroSeries"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
@@ -68,6 +66,13 @@
     provides="canonical.launchpad.interfaces.ILaunchpadUsage"
     for="canonical.launchpad.interfaces.IDistroSeries"
     factory="canonical.launchpad.components.distroseries.distroseries_to_launchpadusage"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    factory="canonical.launchpad.browser.DistroSeriesBreadcrumbBuilder"
     permission="zope.Public"
     />
 
@@ -147,6 +152,22 @@
     template="../templates/bugtarget-bugs.pt"
     />
 
+  <browser:page
+     for="canonical.launchpad.interfaces.IDistroSeries"
+     name="+macros"
+     permission="zope.Public"
+     template="../templates/packagesearch-macros.pt"
+     />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="zope.Public"
+    name="+search"
+    facet="overview"
+    class="canonical.launchpad.browser.DistroSeriesPackageSearchView"
+    template="../templates/distroseries-search.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.DistroSeriesView"
@@ -167,11 +188,6 @@
       name="+builds"
       facet="overview"
       template="../templates/distroseries-builds.pt"
-      />
-    <browser:page
-      name="+search"
-      facet="overview"
-      template="../templates/distroseries-search.pt"
       />
     <browser:page
       name="+builds-list"
@@ -325,22 +341,14 @@
     template="../templates/milestone-add.pt"
     />
 
-  <browser:addform
+  <browser:page
     name="+addport"
     for="canonical.launchpad.interfaces.IDistroSeries"
-    schema="canonical.launchpad.interfaces.IDistroArchSeries"
-    fields="architecturetag processorfamily official owner supports_virtualized"
-    arguments="architecturetag processorfamily official owner"
-    keyword_arguments="supports_virtualized"
     class="canonical.launchpad.browser.DistroArchSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"
     template="../templates/distroseries-addport.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"

@@ -1,15 +1,15 @@
 = Code Imports =
 
-CodeImport objects model the process surrounding the code import service
-of Launchpad. A CodeImport object is created by a user requesting an
-import, the import source is then reviewed by privileged users. Then
-importd, the code import daemon, performs the initial import that
+CodeImport objects model the process surrounding the code import
+service of Launchpad. A CodeImport object is created by a user
+requesting an import, the import source is then reviewed by privileged
+users. Then the code import servoce performs the initial import that
 populates the import branch, and updates it regularly.
 
 We can import code from CVS or Subversion.
 
-CodeImports are hidden from regular users currently.  David Allouche is
-a member of the vcs-imports team and can access the objects freely.
+To allow this test to modify CodeImports freely, we log in as a member
+of the vcs-imports team.
 
     >>> login('david.allouche@canonical.com')
 
@@ -79,10 +79,10 @@ three members of the vcs-imports team.
     >>> from canonical.launchpad.mail import stub
     >>> len(stub.test_emails)
     3
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> len(contactEmailAddresses(vcs_imports))
+    >>> len(get_contact_email_addresses(vcs_imports))
     3
     >>> import email
     >>> message = email.message_from_string(stub.test_emails[0][2])
@@ -138,70 +138,22 @@ specified subversion branch url.
     >>> svn_import == existing_import
     True
 
-
-== Creating a CodeImport from existing data ==
-
-The first production code that creates CodeImports will be a sync
-script that creates CodeImports from the existing information in the
-ProductSeries table.  The only ProductSeries with such information in
-the sample data is evolution/trunk.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSeriesSet, ImportStatus)
-    >>> [series] = getUtility(IProductSeriesSet).searchImports(
-    ...     importstatus=ImportStatus.PROCESSING)
-    >>> series.product.name
-    u'evolution'
-    >>> series.name
-    u'trunk'
-    >>> series.cvsroot
-    u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
-    >>> series.cvsmodule
-    u'evolution'
-
-Once we've found the series, creating a new CodeImport with the same
-source details is a fairly simple matter.
-
-    >>> from canonical.launchpad.database.codeimport import CodeImport
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
-    >>> if series.importstatus in (ImportStatus.SYNCING,
-    ...                            ImportStatus.PROCESSING):
-    ...     review_status = CodeImportReviewStatus.REVIEWED
-    ... else:
-    ...     review_status = CodeImportReviewStatus.NEW
-    >>> from_existing_import = CodeImport(
-    ...     registrant=vcs_imports,
-    ...     owner=vcs_imports,
-    ...     branch=series.import_branch,
-    ...     rcs_type=series.rcstype,
-    ...     cvs_root=series.cvsroot,
-    ...     cvs_module=series.cvsmodule,
-    ...     svn_branch_url=series.svnrepository,
-    ...     review_status=review_status)
-
-This CodeImport is associated to the evolution/main ProductSeries
-(because the series' import_branch is the branch of the CodeImport):
-
-    >>> from_existing_import.series.name
-    u'trunk'
-
-
-== Updating code import review status ==
+== Updating code import details ==
 
 Members of the VCS Imports team (import operators), or Launchpad
-administrators can update the review status of code imports.  This is
-done using the code import methods: approve; suspend; invalidate and
-markFailing.
+administrators can update the details of the code import, including
+the review status.  This is done using the code import method
+'updateFromData'.  updateFromData returns a MODIFY CodeImportEvent if
+any changes were made, or None if not.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
-    >>> code_import = factory.makeCodeImport()
+    >>> code_import = factory.makeCodeImport(
+    ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title
     Pending Review
 
-When an import operator updates the status of the code import, emails
-are sent out to the branch subscribers, and to the members of VCS
-Imports.
+When an import operator updates the code import emails are sent out to
+the branch subscribers and members of VCS Imports that describe the
+change.
 
 The logged in user is normally subscribed to the new import as it is
 created if done through the web UI, so we'll add nopriv here.
@@ -218,14 +170,24 @@ created if done through the web UI, so we'll add nopriv here.
 
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
+    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> ignore_old_emails = pop_notifications()
-    >>> code_import.approve({}, nopriv)
+    >>> modify_event = code_import.updateFromData(
+    ...     {'review_status': CodeImportReviewStatus.REVIEWED,
+    ...      'svn_branch_url': 'http://svn.example.com/project/trunk'},
+    ...     nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
     The import has been approved and an import will start shortly.
+    <BLANKLINE>
+    ... is now being imported from:
+        http://svn.example.com/project/trunk
+    instead of:
+        http://svn.example.com/project
+    <BLANKLINE>
     -- =
     http://code.launchpad.dev/~vcs-imports/product.../name...
     You are receiving this email as you are subscribed to the branch.
@@ -233,38 +195,11 @@ created if done through the web UI, so we'll add nopriv here.
     s/product.../name.../+edit-subscription.
     ----------------------------------------
 
-Similarly, an email is sent out when the import is suspended or
-invalidated.
+updateFromData is smart enough to not send an email if no changes were
+actually made.
 
-    >>> code_import.suspend({}, nopriv)
+    >>> code_import.updateFromData({}, nopriv)
     >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Suspended
-    <BLANKLINE>
-    The import has been suspended.
-    ...
-    ----------------------------------------
-
-    >>> code_import.invalidate({}, nopriv)
-    >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Invalid
-    <BLANKLINE>
-    The import has been marked as invalid.
-    ...
-    ----------------------------------------
-
-    >>> code_import.markFailing({}, nopriv)
-    >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Failing
-    <BLANKLINE>
-    The import has been marked as failing.
-    ...
-    ----------------------------------------
 
 
 == Update intervals ==
@@ -337,7 +272,6 @@ present the import's details on the page of the branch.
 Finally, you can search for imports by review status.  For instance,
 there is a single sample CodeImport with the "REVIEWED" status:
 
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> reviewed_imports = list(code_import_set.search(
     ...     review_status=CodeImportReviewStatus.REVIEWED))
     >>> reviewed_imports
@@ -392,15 +326,17 @@ on those objects.
       ...
     ForbiddenAttribute: ('svn_branch_url', <CodeImport ...>)
 
-Modifications can be done using the CodeImport.updateFromData method. If
-any change were made, this method creates a CodeImportEvent describing
-them. The CodeImportEvent records the user that made the change, so we
-need to pass the user as an argument.
+Modifications can be done using the CodeImport.updateFromData
+method. If any change were made, this method creates and returns a
+CodeImportEvent describing them. The CodeImportEvent records the user
+that made the change, so we need to pass the user as an argument.
 
     >>> svn_import.svn_branch_url
     u'svn://svn.example.com/trunk'
     >>> data = {'svn_branch_url': 'svn://svn.example.com/branch/1.0'}
-    >>> svn_import.updateFromData(data, nopriv)
+    >>> modify_event = svn_import.updateFromData(data, nopriv)
+    >>> modify_event.event_type.name
+    'MODIFY'
     >>> svn_import.svn_branch_url
     u'svn://svn.example.com/branch/1.0'
     >>> svn_events = event_set.getEventsForCodeImport(svn_import)
@@ -414,3 +350,41 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
     Traceback (most recent call last):
     ...
     Unauthorized: (<CodeImport ...>, 'updateFromData', 'launchpad.Edit')
+
+We saw above how changes to SVN details are displayed in emails above.
+CVS details are displayed in a similar way.
+
+    >>> from canonical.launchpad.mailout.codeimport import (
+    ...     make_email_body_for_code_import_update)
+    >>> login('david.allouche@canonical.com')
+    >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
+    >>> modify_event = cvs_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, None)
+    ~vcs-imports/firefox/trunk-cvs is now being imported from:
+        hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
+    instead of:
+        hello from :pserver:anonymous@cvs.example.com:/cvsroot
+
+In addition, updateFromData can be used to set the branch whiteboard,
+which is also described in the email that is sent.
+
+    >>> data = {'whiteboard': 'stuff'}
+    >>> modify_event = cvs_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, 'stuff')
+    The branch whiteboard was changed to:
+    <BLANKLINE>
+    stuff
+    >>> print cvs_import.branch.whiteboard
+    stuff
+
+Setting the whiteboard to None is how it is deleted.
+
+    >>> data = {'whiteboard': None}
+    >>> modify_event = cvs_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, '')
+    The branch whiteboard was deleted.
+    >>> print cvs_import.branch.whiteboard
+    None

@@ -3,7 +3,7 @@
 """
 The One True Way to send mail from the Launchpad application.
 
-Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
+Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
 IMailSentEvent or IMailErrorEvent to record status.
 
 TODO: We should append a signature to messages sent through
@@ -15,27 +15,32 @@ messaging settings -- stub 2004-10-21
 
 __all__ = [
     'format_address',
+    'get_msgid',
+    'MailController',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
     'raw_sendmail']
 
+import sha
 import sets
 from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
 from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
 from email import Charset
 from smtplib import SMTP
 
 from zope.app import zapi
-from zope.app.mail.interfaces import IMailDelivery
+from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
 from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
 from canonical.launchpad.mail.stub import TestMailer
+from canonical.launchpad import versioninfo
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -103,37 +108,80 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers=None):
 
     Returns the `Message-Id`.
     """
-    if headers is None:
-        headers = {}
-    if zisinstance(to_addrs, basestring):
-        to_addrs = [to_addrs]
-
-    # It's the caller's responsibility to encode the address fields to
-    # ASCII strings.
-    # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
-    # so we can provide a Unicode string and get the right encoding.
-    for address in [from_addr] + list(to_addrs):
-        if not isinstance(address, str) or not is_ascii_only(address):
-            raise AssertionError(
-                'Expected an ASCII str object, got: %r' % address)
+    ctrl = MailController(from_addr, to_addrs, subject, body, headers)
+    return ctrl.send()
 
 
-    do_paranoid_email_content_validation(
-        from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
+class MailController(object):
+    """Message generation interface closer to peoples' mental model."""
 
-    msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
-    # The header_body_values may be a list or tuple of values, so we will add
-    # a header once for each value provided for that header. (X-Launchpad-Bug,
-    # for example, may often be set more than once for a bugmail.)
-    for header, header_body_values in headers.items():
-        if not zisinstance(header_body_values, (list, tuple)):
-            header_body_values = [header_body_values]
-        for header_body_value in header_body_values:
-            msg[header] = header_body_value
-    msg['To'] = ','.join(to_addrs)
-    msg['From'] = from_addr
-    msg['Subject'] = subject
-    return sendmail(msg)
+    def __init__(self, from_addr, to_addrs, subject, body, headers=None):
+        self.from_addr = from_addr
+        if zisinstance(to_addrs, basestring):
+            to_addrs = [to_addrs]
+        self.to_addrs = to_addrs
+        self.subject = subject
+        self.body = body
+        if headers is None:
+            headers = {}
+        self.headers = headers
+        self.attachments = []
+
+    def addAttachment(self, content, content_type='application/octet-stream',
+                      inline=False, filename=None):
+        attachment = Message()
+        attachment.set_payload(content)
+        attachment['Content-type'] = content_type
+        if inline:
+            disposition = 'inline'
+        else:
+            disposition = 'attachment'
+        disposition_kwargs = {}
+        if filename is not None:
+            disposition_kwargs['filename'] = filename
+        attachment.add_header(
+            'Content-Disposition', disposition, **disposition_kwargs)
+        self.attachments.append(attachment)
+
+    def makeMessage(self):
+        # It's the caller's responsibility to encode the address fields to
+        # ASCII strings.
+        # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
+        # so we can provide a Unicode string and get the right encoding.
+        for address in [self.from_addr] + list(self.to_addrs):
+            if not isinstance(address, str) or not is_ascii_only(address):
+                raise AssertionError(
+                    'Expected an ASCII str object, got: %r' % address)
+
+        do_paranoid_email_content_validation(
+            from_addr=self.from_addr, to_addrs=self.to_addrs,
+            subject=self.subject, body=self.body)
+        if len(self.attachments) == 0:
+            msg = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
+        else:
+            msg = MIMEMultipart()
+            body_part = Message()
+            body_part.set_payload(self.body)
+            msg.attach(body_part)
+            for attachment in self.attachments:
+                msg.attach(attachment)
+
+        # The header_body_values may be a list or tuple of values, so we will
+        # add a header once for each value provided for that header.
+        # (X-Launchpad-Bug, for example, may often be set more than once for a
+        # bugmail.)
+        for header, header_body_values in self.headers.items():
+            if not zisinstance(header_body_values, (list, tuple)):
+                header_body_values = [header_body_values]
+            for header_body_value in header_body_values:
+                msg[header] = header_body_value
+        msg['To'] = ','.join(self.to_addrs)
+        msg['From'] = self.from_addr
+        msg['Subject'] = self.subject
+        return msg
+
+    def send(self):
+        return sendmail(self.makeMessage())
 
 
 def simple_sendmail_from_person(
@@ -166,7 +214,7 @@ def sendmail(message, to_addrs=None):
     If to_addrs is None, the message will be sent to all the addresses
     specified in the To: and CC: headers.
 
-    Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
+    Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
 
     Returns the Message-Id
@@ -185,7 +233,7 @@ def sendmail(message, to_addrs=None):
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:
-        message['Message-Id'] = make_msgid('launchpad@canonical')
+        message['Message-Id'] = get_msgid()
 
     # Add a Date: header if it isn't already there
     if 'date' not in message:
@@ -218,6 +266,16 @@ def sendmail(message, to_addrs=None):
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
+    message.set_param('Revision', str(versioninfo.revno), 'X-Generated-By')
+    message.set_param('Instance', config.name, 'X-Generated-By')
+
+    # Add a shared secret header for pre-approval with Mailman. This approach
+    # helps security, but still exposes us to a replay attack; we consider the
+    # risk low.
+    del message['X-Launchpad-Hash']
+    hash = sha.new(config.mailman.shared_secret)
+    hash.update(str(message['message-id']))
+    message['X-Launchpad-Hash'] = hash.hexdigest()
 
     raw_message = message.as_string()
     if isZopeless():
@@ -252,6 +310,10 @@ def sendmail(message, to_addrs=None):
             config.canonical.bounce_address, to_addrs, raw_message)
 
 
+def get_msgid():
+    return make_msgid('launchpad')
+
+
 def raw_sendmail(from_addr, to_addrs, raw_message):
     """Send a raw RFC8222 email message.
 
@@ -278,4 +340,3 @@ if __name__ == '__main__':
             'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
             'Testing Zopeless', 'This is the body')
     tm.uninstall()
-

@@ -14,6 +14,7 @@ from canonical.widgets.date import (
 from canonical.widgets.image import (
     GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.widgets.itemswidgets import *
+from canonical.widgets.location import LocationWidget
 from canonical.widgets.owner import IUserWidget, HiddenUserWidget
 from canonical.widgets.popup import (
     ISinglePopupWidget, SearchForUpstreamPopupWidget, SinglePopupWidget)

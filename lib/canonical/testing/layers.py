@@ -32,8 +32,8 @@ __all__ = [
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
     'LaunchpadZopelessLayer',
-    'LayerIsolationError',
     'LayerInvariantError',
+    'LayerIsolationError',
     'LibrarianLayer',
     'PageTestLayer',
     'TwistedAppServerLayer',
@@ -69,13 +69,13 @@ import transaction
 
 import zope.app.testing.functional
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
-from zope.component import getUtility, getGlobalSiteManager
+from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical import pidfile
+from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
@@ -86,6 +86,8 @@ from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
 from canonical.lazr.timeout import (
@@ -99,6 +101,7 @@ from canonical.testing.smtpcontrol import SMTPControl
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
+WAIT_INTERVAL = datetime.timedelta(seconds=120)
 
 
 class MockRootFolder:
@@ -151,14 +154,13 @@ def is_ca_available():
 def disconnect_stores():
     """Disconnect Storm stores."""
     zstorm = getUtility(IZStorm)
-    stores = []
-    for store_name in ['main', 'session']:
-        if store_name in zstorm._named:
-            store = zstorm.get(store_name)
-            zstorm.remove(store)
-            stores.append(store)
+    stores = [
+        store for name, store in zstorm.iterstores() if name != 'session']
+
     # If we have any stores, abort the transaction and close them.
     if stores:
+        for store in stores:
+            zstorm.remove(store)
         transaction.abort()
         for store in stores:
             store.close()
@@ -173,7 +175,7 @@ def reconnect_stores(database_config_section='launchpad'):
     disconnect_stores()
     dbconfig.setConfigSection(database_config_section)
 
-    main_store = getUtility(IZStorm).get('main')
+    main_store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
 
     # Confirm the database has the right patchlevel
@@ -227,6 +229,11 @@ class BaseLayer:
     # The name of this test - this is the same output that the testrunner
     # displays. It is probably unique, but not guaranteed to be so.
     test_name = None
+
+    # A flag to disable a check for threads still running after test
+    # completion.  This is hopefully a temporary measure; see the comment
+    # in tearTestDown.
+    disable_thread_check = False
 
     @classmethod
     @profiled
@@ -301,8 +308,21 @@ class BaseLayer:
             ]
 
         if new_threads:
-            BaseLayer.flagTestIsolationFailure(
-                "Test left new live threads: %s" % repr(new_threads))
+            # XXX gary 2008-12-03 bug=304913
+            # The codehosting acceptance tests are intermittently leaving
+            # threads around, apparently because of bzr. disable_thread_check
+            # is a mechanism to turn off the BaseLayer behavior of causing a
+            # test to fail if it leaves a thread behind. This comment is found
+            # in both canonical.codehosting.tests.test_acceptance and
+            # canonical.testing.layers
+            if BaseLayer.disable_thread_check:
+                print ("ERROR DISABLED: "
+                       "Test left new live threads: %s") % repr(new_threads)
+            else:
+                BaseLayer.flagTestIsolationFailure(
+                    "Test left new live threads: %s" % repr(new_threads))
+
+        BaseLayer.disable_thread_check = False
         del BaseLayer._threads
 
         if signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL:
@@ -426,8 +446,10 @@ class LibrarianLayer(BaseLayer):
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
-        LibrarianTestSetup().setUp()
+        the_librarian = LibrarianTestSetup()
+        the_librarian.setUp()
         LibrarianLayer._check_and_reset()
+        atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
@@ -708,6 +730,29 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
                 "Test didn't reset default timeout function.")
         set_default_timeout_function(None)
 
+    # A database connection to the session database, created by the first
+    # call to resetSessionDb.
+    _raw_sessiondb_connection = None
+
+    @classmethod
+    @profiled
+    def resetSessionDb(cls):
+        """Reset the session database.
+
+        Layers that need session database isolation call this explicitly
+        in the testSetUp().
+        """
+        if LaunchpadLayer._raw_sessiondb_connection is None:
+            from storm.uri import URI
+            from canonical.launchpad.webapp.adapter import (
+                LaunchpadSessionDatabase)
+            launchpad_session_database = LaunchpadSessionDatabase(
+                URI('launchpad-session:'))
+            LaunchpadLayer._raw_sessiondb_connection = (
+                launchpad_session_database.raw_connect())
+        LaunchpadLayer._raw_sessiondb_connection.cursor().execute(
+            "DELETE FROM SessionData")
+
 
 class FunctionalLayer(BaseLayer):
     """Loads the Zope3 component architecture in appserver mode."""
@@ -905,7 +950,9 @@ class GoogleServiceLayer(BaseLayer):
 
     @classmethod
     def setUp(cls):
-        GoogleServiceTestSetup().setUp()
+        google = GoogleServiceTestSetup()
+        google.setUp()
+        atexit.register(google.tearDown)
 
     @classmethod
     def tearDown(cls):
@@ -1007,7 +1054,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         # XXX flacoste 2006-10-25 bug=68189: This should be configured from
         # ZCML but execute_zcml_for_scripts() doesn't cannot support a
         # different testing configuration.
-        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
+        provideUtility(TestMailBox(), IMailBox)
 
     @classmethod
     @profiled
@@ -1138,7 +1185,15 @@ class MockHTTPTask:
         # care about that for our tests anyway.
         self.start_time = time.time()
         self.status = response.getStatus()
-        self.bytes_written = int(response.getHeader('Content-length'))
+        # When streaming files (see lib/zope/publisher/httpresults.txt)
+        # the 'Content-Length' header is missing. When it happens we set
+        # 'bytes_written' to an obviously invalid value. This variable is
+        # used for logging purposes, see webapp/servers.py.
+        content_length = response.getHeader('Content-Length')
+        if content_length is not None:
+            self.bytes_written = int(content_length)
+        else:
+            self.bytes_written = -1
         self.request_data.headers = self.request.headers
         self.request_data.first_line = first_line
 
@@ -1203,6 +1258,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def startStory(cls):
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
+        LaunchpadLayer.resetSessionDb()
         PageTestLayer.resetBetweenTests(False)
 
     @classmethod
@@ -1268,8 +1324,13 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
                 event.set()
 
 
-class _BaseAppServerLayer:
-    """Environment for starting and stopping the app server."""
+class LayerProcessController:
+    """Controller for starting and stopping subprocesses.
+
+    Layers which need to start and stop a child process appserver or smtp
+    server should call the methods in this class, but should NOT inherit from
+    this class.
+    """
 
     # Holds the Popen instance of the spawned app server.
     appserver = None
@@ -1283,20 +1344,107 @@ class _BaseAppServerLayer:
 
     @classmethod
     @profiled
-    def setUp(cls):
-        if cls.appserver is not None:
-            raise LayerInvariantError('setUp() called twice')
-        cls.cleanUpStaleAppServer()
-        cls.startAppServer()
-        # Make sure that the app server is killed even if tearDown() is
-        # skipped.
-        atexit.register(cls.tearDown)
-        cls.waitUntilAppServerIsReady()
+    def startSMTPServer(cls):
+        """Start the SMTP server if it hasn't already been started."""
+        if cls.smtp_controller is not None:
+            raise LayerInvariantError('SMTP server already running')
         cls.smtp_controller = SMTPControl()
         cls.smtp_controller.start()
+        # Make sure that the smtp server is killed even if tearDown() is
+        # skipped, which can happen if FunctionalLayer is in the mix.
+        atexit.register(cls.stopSMTPServer)
 
     @classmethod
-    def cleanUpStaleAppServer(cls):
+    @profiled
+    def startAppServer(cls):
+        """Start the app server if it hasn't already been started."""
+        if cls.appserver is not None:
+            raise LayerInvariantError('App server already running')
+        cls._cleanUpStaleAppServer()
+        cls._runAppServer()
+        cls._waitUntilAppServerIsReady()
+        # Make sure that the app server is killed even if tearDown() is
+        # skipped.
+        atexit.register(cls.stopAppServer)
+
+    @classmethod
+    @profiled
+    def stopSMTPServer(cls):
+        """Kill the SMTP server and wait until it's exited."""
+        if cls.smtp_controller is not None:
+            cls.smtp_controller.reset()
+            cls.smtp_controller.stop()
+            cls.smtp_controller = None
+
+    @classmethod
+    def _kill(cls, sig):
+        """Kill the appserver with `sig`.
+
+        :param sig: the signal to kill with
+        :type sig: int
+        :return: True if the signal was delivered, otherwise False.
+        :rtype: bool
+        """
+        try:
+            os.kill(cls.appserver.pid, sig)
+        except OSError, error:
+            if error.errno == errno.ESRCH:
+                # The child process doesn't exist.  Maybe it went away by the
+                # time we got here.
+                cls.appserver = None
+                return False
+            else:
+                # Something else went wrong.
+                raise
+        else:
+            return True
+
+    @classmethod
+    @profiled
+    def stopAppServer(cls):
+        """Kill the appserver and wait until it's exited."""
+        if cls.appserver is not None:
+            # Unfortunately, Popen.wait() does not support a timeout, so poll
+            # for a little while, then SIGKILL the process if it refuses to
+            # exit.  test_on_merge.py will barf if we hang here for more than
+            # 900 seconds (15 minutes).
+            until = datetime.datetime.now() + WAIT_INTERVAL
+            last_chance = False
+            if not cls._kill(signal.SIGTERM):
+                # The process is already gone.
+                return
+            while True:
+                # Sleep and poll for process exit.
+                if cls.appserver.poll() is not None:
+                    break
+                time.sleep(0.5)
+                # If we slept long enough, send a harder kill and wait again.
+                # If we already had our last chance, raise an exception.
+                if datetime.datetime.now() > until:
+                    if last_chance:
+                        raise RuntimeError("The appserver just wouldn't die")
+                    last_chance = True
+                    if not cls._kill(signal.SIGKILL):
+                        # The process is already gone.
+                        return
+                    until = datetime.datetime.now() + WAIT_INTERVAL
+            cls.appserver = None
+
+    @classmethod
+    @profiled
+    def postTestInvariants(cls):
+        """Enforce some invariants after each test.
+
+        Must be called in your layer class's `testTearDown()`.
+        """
+        if cls.appserver.poll() is not None:
+            raise LayerIsolationError(
+                "App server died in this test (status=%s):\n%s" % (
+                    cls.appserver.returncode, cls.appserver.stdout.read()))
+        DatabaseLayer.force_dirty_database()
+
+    @classmethod
+    def _cleanUpStaleAppServer(cls):
         """Kill any stale app server or pid file."""
         pid = pidfile.get_pid('launchpad', cls.appserver_config)
         if pid is not None:
@@ -1309,7 +1457,7 @@ class _BaseAppServerLayer:
             pidfile.remove_pidfile('launchpad', cls.appserver_config)
 
     @classmethod
-    def startAppServer(cls):
+    def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
@@ -1325,7 +1473,7 @@ class _BaseAppServerLayer:
             env=environ, cwd=_config.root)
 
     @classmethod
-    def waitUntilAppServerIsReady(cls):
+    def _waitUntilAppServerIsReady(cls):
         """Wait until the app server accepts connection."""
         assert cls.appserver is not None, "App server isn't started."
         root_url = cls.appserver_config.vhost.mainsite.rooturl
@@ -1356,105 +1504,83 @@ class _BaseAppServerLayer:
             os.kill(cls.appserver.pid, signal.SIGTERM)
             cls.appserver = None
 
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        """Kills a started app server."""
-        if cls.appserver is None:
-            return
-        if cls.appserver.poll() is None:
-            os.kill(cls.appserver.pid, signal.SIGTERM)
-            cls.appserver.wait()
-        cls.appserver = None
-        cls.smtp_controller.reset()
-        cls.smtp_controller.stop()
 
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        if cls.appserver.poll() is not None:
-            raise LayerIsolationError(
-                "App server died in this test (status=%s):\n%s" % (
-                    cls.appserver.returncode, cls.appserver.stdout.read()))
-        DatabaseLayer.force_dirty_database()
-
-
-class AppServerLayer(LaunchpadFunctionalLayer, _BaseAppServerLayer):
+class AppServerLayer(LaunchpadFunctionalLayer):
     """Layer for tests that run in the webapp environment with an app server.
     """
 
     @classmethod
     @profiled
     def setUp(cls):
-        pass
+        LayerProcessController.startSMTPServer()
+        LayerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        LayerProcessController.stopAppServer()
+        LayerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        LayerProcessController.postTestInvariants()
 
 
-class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
-    """Layer for tests that run in the zopeless environment with an app server.
+class ZopelessAppServerLayer(LaunchpadZopelessLayer):
+    """Layer for tests that run in the zopeless environment with an appserver.
     """
 
     @classmethod
     @profiled
     def setUp(cls):
-        pass
+        LayerProcessController.startSMTPServer()
+        LayerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        LayerProcessController.stopAppServer()
+        LayerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        LayerProcessController.postTestInvariants()
 
 
-class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer,
-                            _BaseAppServerLayer):
+class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     """Layer for twisted-using zopeless tests that need a running app server.
     """
 
     @classmethod
     @profiled
     def setUp(cls):
-        pass
+        LayerProcessController.startSMTPServer()
+        LayerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        LayerProcessController.stopAppServer()
+        LayerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        LayerProcessController.postTestInvariants()

@@ -7,13 +7,13 @@
 <facet facet="bugs">
 
   <!-- BugProductInfestation -->
-  <content class="canonical.launchpad.database.BugProductInfestation">
+  <class class="canonical.launchpad.database.BugProductInfestation">
     <allow interface="canonical.launchpad.interfaces.IBugProductInfestation" />
       <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
       <require
         permission="zope.Public"
         set_schema="canonical.launchpad.interfaces.IBugProductInfestation" />
-  </content>
+  </class>
 
   <browser:addform
     name="+new"
@@ -29,13 +29,13 @@
     />
 
   <!-- BugProductInfestationSet -->
-  <content class="canonical.launchpad.database.BugProductInfestationSet">
+  <class class="canonical.launchpad.database.BugProductInfestationSet">
     <allow
       interface="canonical.launchpad.interfaces.IBugProductInfestationSet"
       />
     <allow
       interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.BugProductInfestationSet"

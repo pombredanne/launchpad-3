@@ -1,22 +1,22 @@
 <configure xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
-    <!-- OpenId virtual host root -->
+    <!-- OpenID virtual host root -->
     <securedutility
-        class="canonical.launchpad.systemhomes.OpenIdApplication"
-        provides="canonical.launchpad.interfaces.IOpenIdApplication">
-        <allow interface="canonical.launchpad.interfaces.IOpenIdApplication" />
+        class="canonical.launchpad.systemhomes.OpenIDApplication"
+        provides="canonical.launchpad.interfaces.IOpenIDApplication">
+        <allow interface="canonical.launchpad.interfaces.IOpenIDApplication" />
     </securedutility>
 
     <browser:url
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
-        urldata="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationURL"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        urldata="canonical.launchpad.browser.openiddiscovery.OpenIDApplicationURL"
         />
 
     <!-- Root navigation -->
     <browser:navigation
         module="canonical.launchpad.browser.openiddiscovery"
-        classes="OpenIdApplicationNavigation"
+        classes="OpenIDApplicationNavigation"
         />
 
     <browser:page
@@ -24,35 +24,60 @@
         permission="zope.Public"
         name="main_template"
         template="../templates/loginservice-main-template.pt"
-        layer="canonical.launchpad.layers.OpenIdLayer" />
+        layer="canonical.launchpad.layers.OpenIDLayer" />
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/loginservice-main-template.pt"
+        layer="canonical.launchpad.layers.IdLayer" />
 
     <!-- Root document -->
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         name="+index"
         />
 
     <browser:page
-        layer="canonical.launchpad.layers.OpenIdLayer"
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        layer="canonical.launchpad.layers.OpenIDLayer"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         permission="zope.Public"
         name="+index"
-        class="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationIndexView"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIDApplicationIndexView"
         template="../templates/openid-index.pt"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        layer="canonical.launchpad.layers.IdLayer"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        permission="zope.Public"
+        name="+index"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIDApplicationIndexView"
+        template="../templates/openid-index.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         name="+xrds"
         permission="zope.Public"
-        class="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationIndexView"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIDApplicationIndexView"
         attribute="xrds"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
-        layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        layer="canonical.launchpad.layers.OpenIDLayer"
+        class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
+        name="+pre-authorize-rp"
+        permission="launchpad.AnyPerson"
+        attribute="__call__"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        layer="canonical.launchpad.layers.IdLayer"
         class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
         name="+pre-authorize-rp"
         permission="launchpad.AnyPerson"
@@ -60,11 +85,11 @@
         />
 
     <!-- OpenID persistent identity URLs -->
-    <content
+    <class
         class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">
       <allow
           interface="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity" />
-    </content>
+    </class>
 
     <adapter
       for="canonical.launchpad.interfaces.account.IAccount"
@@ -72,11 +97,16 @@
       factory="canonical.launchpad.components.openidserver.account_to_openidpersistentidentity"
       />
 
+    <adapter
+      for="canonical.launchpad.interfaces.person.IPerson"
+      provides="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
+      factory="canonical.launchpad.components.openidserver.person_to_openidpersistentidentity"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
         path_expression="string:${openid_identifier}"
-        parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
-        rootsite="openid"
+        parent_utility="canonical.launchpad.interfaces.IOpenIDApplication"
         />
 
     <browser:defaultView
@@ -100,46 +130,55 @@
         attribute="xrds"
         />
 
-    <!-- OpenID Provider -->
+    <!-- Old OpenID Provider -->
     <browser:page
-        layer="canonical.launchpad.layers.OpenIdLayer"
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        layer="canonical.launchpad.layers.OpenIDLayer"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         permission="zope.Public"
         name="+openid"
-        class="canonical.launchpad.browser.openidserver.OpenIdView"
+        class="canonical.launchpad.browser.openidserver.OpenIDView"
+        />
+
+    <!-- New OpenID Provider -->
+    <browser:page
+        layer="canonical.launchpad.layers.IdLayer"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        permission="zope.Public"
+        name="+openid"
+        class="canonical.launchpad.browser.openidserver.OpenIDView"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         permission="zope.Public"
         name="+decide"
         class="canonical.launchpad.browser.openidserver.LoginServiceAuthorizeView"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         permission="zope.Public"
         name="+login-register"
         class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
         />
 
-    <content class="canonical.launchpad.database.OpenIdAuthorization">
+    <class class="canonical.launchpad.database.OpenIDAuthorization">
         <allow
-            interface="canonical.launchpad.interfaces.IOpenIdAuthorization"
+            interface="canonical.launchpad.interfaces.IOpenIDAuthorization"
             />
-    </content>
+    </class>
 
     <securedutility
-        class="canonical.launchpad.database.OpenIdAuthorizationSet"
-        provides="canonical.launchpad.interfaces.IOpenIdAuthorizationSet">
+        class="canonical.launchpad.database.OpenIDAuthorizationSet"
+        provides="canonical.launchpad.interfaces.IOpenIDAuthorizationSet">
         <allow
-            interface="canonical.launchpad.interfaces.IOpenIdAuthorizationSet"
+            interface="canonical.launchpad.interfaces.IOpenIDAuthorizationSet"
             />
     </securedutility>
 
     <utility
-        provides="canonical.launchpad.interfaces.ILaunchpadOpenIdStoreFactory"
-        component="canonical.launchpad.database.openidserver.LaunchpadOpenIdStore">
+        provides="canonical.launchpad.interfaces.ILaunchpadOpenIDStoreFactory"
+        component="canonical.launchpad.database.openidserver.LaunchpadOpenIDStore">
     </utility>
 
     <browser:page
@@ -150,14 +189,14 @@
         />
 
     <!-- IOpenIDRPConfig -->
-    <content
+    <class
         class="canonical.launchpad.database.OpenIDRPConfig">
       <allow interface="canonical.launchpad.interfaces.IOpenIDRPConfig" />
       <require
           permission="launchpad.Admin"
           attributes="destroySelf"
           set_schema="canonical.launchpad.interfaces.IOpenIDRPConfig" />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIDRPConfig"
@@ -191,7 +230,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
         path_expression="string:+rpconfig"
-        parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
+        parent_utility="canonical.launchpad.interfaces.IOpenIDApplication"
         />
 
     <browser:navigation

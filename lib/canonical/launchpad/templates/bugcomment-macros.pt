@@ -23,7 +23,7 @@
   </div>
 
   <div class="boardCommentDetails" tal:condition="comment/bugwatch">
-    <img tal:replace="structure comment/bugtask/target/image:icon" />
+    <img width="14" height="14" src="/@@/bug-remote" alt=""/>
     In
     <a tal:attributes="href comment/bugwatch/url"
        tal:content="comment/bugwatch/title" />,
@@ -55,14 +55,7 @@
       </li>
     </ul>
 
-    <div style="font-family: monospace;"
-      tal:condition="view/user"
-      tal:content="structure comment/text_for_display/fmt:email-to-html">
-      Comment text.
-    </div>
-
-    <div style="font-family: monospace;"
-      tal:condition="not:view/user"
+    <div class="bug-comment"
       tal:content="structure
         comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
       Comment text.

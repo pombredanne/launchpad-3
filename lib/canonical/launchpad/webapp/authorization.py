@@ -1,20 +1,22 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 import warnings
+import weakref
 
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
 from zope.component.interfaces import IView
 
+from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy
 from zope.security.checker import CheckerPublic
 from zope.security.proxy import removeSecurityProxy
 from zope.security.simplepolicies import ParanoidSecurityPolicy
 from zope.security.management import (
-    system_user, checkPermission as zcheckPermission)
-from zope.app.security.permission import (
+    system_user, checkPermission as zcheckPermission, getInteraction)
+from zope.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
@@ -24,8 +26,14 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
+
 
 steveIsFixingThis = False
+
+
+LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = (
+    'launchpad.security_policy_cache')
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
@@ -39,10 +47,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         the principal's access_level is not sufficient for that permission,
         returns False.
         """
-        # This doesn't work as a global import and it doesn't seem to be the
-        # consequence of circular dependencies:
-        # https://pastebin.canonical.com/3921/
-        from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
         lp_permission = getUtility(ILaunchpadPermission, permission)
         if lp_permission.access_level == "write":
             required_access_level = [
@@ -122,15 +126,26 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # Remove security proxies from object to authorize.
         objecttoauthorize = removeSecurityProxy(objecttoauthorize)
 
-        principals = [participation.principal
-                      for participation in self.participations
+        participations = [participation
+                          for participation in self.participations
                           if participation.principal is not system_user]
-        if len(principals) == 0:
+        if len(participations) == 0:
             principal = None
-        elif len(principals) > 1:
+            cache = None
+        elif len(participations) > 1:
             raise RuntimeError("More than one principal participating.")
         else:
-            principal = principals[0]
+            participation = participations[0]
+            if IApplicationRequest.providedBy(participation):
+                wd = participation.annotations.setdefault(
+                    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+                    weakref.WeakKeyDictionary())
+                cache = wd.setdefault(objecttoauthorize, {})
+                if permission in cache:
+                    return cache[permission]
+            else:
+                cache = None
+            principal = participation.principal
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
@@ -149,7 +164,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
 
-        # XXX Steve Alexander 2005-01-12: 
+        # XXX Steve Alexander 2005-01-12:
         # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
             if steveIsFixingThis:
@@ -181,6 +196,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
                         authorization)
+                if cache is not None:
+                    cache[permission] = result
                 return bool(result)
 
 
@@ -195,3 +212,14 @@ def check_permission(permission_name, context):
 
     # Now call Zope's checkPermission.
     return zcheckPermission(permission_name, context)
+
+
+def clear_cache():
+    """clear current interaction's IApplicationRequests' authorization caches.
+    """
+    for p in getInteraction().participations:
+        if IApplicationRequest.providedBy(p):
+            # LaunchpadBrowserRequest provides a ``clearSecurityPolicyCache``
+            # method, but it is not in an interface, and not implemented by
+            # all classes that implement IApplicationRequest.
+            del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]

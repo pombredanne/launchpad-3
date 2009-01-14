@@ -47,36 +47,31 @@ the number of active reviews and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/fooix')
     >>> print_tag_with_id(browser.contents, 'merge-counts')
-    2 active reviews, 1 approved merge
+    2 pending proposals, 1 unmerged proposal
 
 The 'active reviews' and 'approved merge' text are links to the listing pages
 for these.
 
-    >>> browser.getLink('active reviews').click()
+    >>> browser.getLink('pending proposals').click()
     >>> print browser.title
     Active code reviews for Fooix
-
-The listing page also has the summary section.
-
-    >>> print_tag_with_id(browser.contents, 'application-summary')
-    4 branches owned by 3 people, ...
-    2 active reviews, 1 approved merge ...
 
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote
 summary.
 
     >>> print_tag_with_id(browser.contents, 'proposal-listing')
-    Branch Merge Proposal
-            Requested By  Date Review Requested   Vote Summary
+    Branch Merge Proposal   Requested By          Activity
     lp://dev/~albert/fooix/review &rArr; lp://dev/fooix
-            Albert        ...                     no votes (no comments)
+            Albert        ...                     None
     lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
-            Bob           ...                     no votes (no comments)
+            Bob           ...                     None
 
-The approved merges has the date the merge was approved.
+We go back to the proposals listing, and check the approved merges has
+the date the merge was approved.
 
-    >>> browser.getLink('approved merge').click()
+    >>> browser.open('http://code.launchpad.dev/fooix')
+    >>> browser.getLink('unmerged proposal').click()
     >>> print browser.title
     Approved merges for Fooix
 

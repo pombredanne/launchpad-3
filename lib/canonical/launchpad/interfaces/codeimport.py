@@ -153,58 +153,21 @@ class ICodeImport(Interface):
 
     results = Attribute("The results for this code import.")
 
-    # XXX: MichaelHudson 2008-05-20, bug=232076: This attribute is only
-    # necessary for the transition from the old to the new code import system,
-    # and should be deleted after that process is done.
-    source_product_series = Attribute(
-        "The ProductSeries from which this CodeImport was constructed if "
-        "any.")
-
-    def approve(data, user):
-        """Approve the import.
-
-        Additional attributes can also be updated.
-        A code import job will be created for the import.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        """
-
-    def suspend(data, user):
-        """Suspend the import.
-
-        Additional attributes can also be updated.
-        If there was a pending job, it will be removed.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        """
-
-    def invalidate(data, user):
-        """Invalidate the import.
-
-        Additional attributes can also be updated.
-        If there was a pending job, it will be removed.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        """
-
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 
-        Create a MODIFY `CodeImportEvent` if needed.
+        Creates and returns a MODIFY `CodeImportEvent` if changes were made.
+
+        This method preserves the invariant that a `CodeImportJob` exists for
+        a given import if and only if its review_status is REVIEWED, creating
+        and deleting jobs as necessary.
 
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: The MODIFY `CodeImportEvent`, if any changes were made, or
+            None if no changes were made.
         """
 
 
@@ -214,17 +177,6 @@ class ICodeImportSet(Interface):
     def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
-
-    def newFromProductSeries(product_series):
-        """Create a new CodeImport from the import data in a ProductSeries.
-
-        Note that this method deactivates the import associated with the given
-        ProductSeries, which is asserted to be in the AUTOTESTED, TESTING,
-        PROCESSING, SYNCING or STOPPED import states.
-        """
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
-        # necessary for the transition from the old to the new code import
-        # system, and should be deleted after that process is done.
 
     def getAll():
         """Return an iterable of all CodeImport objects."""

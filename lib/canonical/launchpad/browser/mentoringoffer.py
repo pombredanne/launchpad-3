@@ -9,38 +9,26 @@ __all__ = [
     'HasMentoringOffersView',
     'MentoringOfferSetFacets',
     'MentoringOfferSetOverviewMenu',
-    'MentoringOfferSetSOP',
     'MentoringOfferSetView',
     'MentoringOfferAddView',
     'MentoringOfferRetractView',
     ]
 
-from zope.component import getUtility
-
-from canonical.launchpad.webapp.batching import BatchNavigator
-
 from canonical.launchpad import _
-
 from canonical.launchpad.interfaces import (
-    IBug,
     IBugTask,
     IDistribution,
     IMentoringOffer,
     IMentoringOfferSet,
-    ILaunchBag,
     IPerson,
     IProduct,
     IProject,
     ISpecification,
-    ITeam,
     )
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation,
-    StandardLaunchpadFacets, ApplicationMenu, enabled_with_permission,
-    LaunchpadView, LaunchpadFormView, action)
-from canonical.launchpad.webapp.authorization import check_permission
+    ApplicationMenu, LaunchpadFormView, LaunchpadView, Link,
+    StandardLaunchpadFacets, action, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 
 class MentoringOfferSetFacets(StandardLaunchpadFacets):
@@ -63,21 +51,6 @@ class MentoringOfferSetOverviewMenu(ApplicationMenu):
     def successful(self):
         text = 'Recent successes'
         return Link('+success', text, icon='info')
-
-
-class MentoringOfferSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
 
 
 class CanBeMentoredView:

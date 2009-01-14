@@ -11,6 +11,7 @@ from zope.interface import Interface
 from zope.schema import Datetime, Object, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import (
@@ -33,15 +34,19 @@ class ICodeReviewVoteReference(Interface):
         title=_('Date Created'), required=True, readonly=True)
 
     registrant = Object(
-        title=_("The person who orgiginally registered this vote"),
+        title=_("The person who originally registered this vote"),
         required=True, schema=IPerson)
 
-    reviewer = Object(
-        title=_("The person who cast this vote"),
-        required=True, schema=IPerson)
+    reviewer = PublicPersonChoice(
+        title=_('Reviewer'), required=True,
+        description=_('A person who you want to review this.'),
+        vocabulary='ValidPersonOrTeam')
 
     review_type = TextLine(
-        title=_('Review type'), required=False)
+        title=_('Review type'), required=False,
+        description=_(
+            "Lowercase keywords describing the type of review you're "
+            "performing."))
 
     comment = Object(
         title=_(

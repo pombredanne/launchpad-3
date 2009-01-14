@@ -15,7 +15,6 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, append=True,
                         message=r'Module .*? is being added to sys.path')
 
-
 def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
 
@@ -25,16 +24,14 @@ permitted_database_imports = text_lines_to_set("""
     zope.testing.doctest
     canonical.librarian.db
     canonical.doap.fileimporter
-    canonical.foaf.nickname
     canonical.archivepublisher.ftparchive
     canonical.archivepublisher.publishing
     canonical.archivepublisher.domination
     canonical.archivepublisher.deathrow
-    canonical.authserver.database
+    canonical.codehosting.inmemory
     canonical.launchpad.vocabularies.dbobjects
     canonical.launchpad.validators.person
     canonical.librarian.client
-    importd.Job
     """)
 
 
@@ -150,15 +147,26 @@ class NotFoundPolicyViolation(JackbootError):
                 % self.import_into)
 
 
+# pylint: disable-msg=W0102,W0602
 def import_fascist(name, globals={}, locals={}, fromlist=[]):
     global naughty_imports
 
     try:
         module = original_import(name, globals, locals, fromlist)
-    except:
-        #if 'layers' in name:
-        #    import pdb; pdb.set_trace()
-        raise
+    except ImportError:
+        # XXX sinzui 2008-04-17 bug=277274:
+        # import_fascist screws zope configuration module which introspects
+        # the stack to determine if an ImportError means a module
+        # initialization error or a genuine error. The browser:page always
+        # tries to load a layer from zope.app.layers first, which most of the
+        # time doesn't exist and dies a horrible death because of the import
+        # fascist. That's the long explanation for why we special case this
+        # module.
+        if name.startswith('zope.app.layers.'):
+            name = name[16:]
+            module = original_import(name, globals, locals, fromlist)
+        else:
+            raise
     # Python's re module imports some odd stuff every time certain regexes
     # are used.  Let's optimize this.
     # Also, 'dedent' is not in textwrap.__all__.
@@ -203,8 +211,8 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             raise error
         elif (list(fromlist) != ['*'] and hasattr(module, '__all__') and
               not is_test_module(import_into)):
-            # "from foo import bar" is naughty if bar isn't in foo.__all__ (and
-            # foo actually has an __all__).  Unless foo is within a tests
+            # "from foo import bar" is naughty if bar isn't in foo.__all__
+            # (and foo actually has an __all__).  Unless foo is within a tests
             # or ftests module or bar is itself a module.
             for attrname in fromlist:
                 if attrname != '__doc__' and attrname not in module.__all__:

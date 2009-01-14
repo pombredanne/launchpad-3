@@ -9,13 +9,18 @@ import unittest
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
-from bzrlib.repofmt.pack_repo import RepositoryFormatPackDevelopment1
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
-from bzrlib.tests.repository_implementations.test_repository import (
-            TestCaseWithRepository)
+try:
+    from bzrlib.tests.repository_implementations.test_repository import (
+                TestCaseWithRepository)
+except ImportError:
+    from bzrlib.tests.per_repository import TestCaseWithRepository
+
 
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.tests.helpers import LoomTestMixin
+from canonical.launchpad.webapp.uri import URI
 from canonical.testing import reset_logging
 
 
@@ -27,7 +32,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # make_bzrdir relies on this being a relative filesystem path.
         self._source_branch_path = 'source-branch'
         self.worker = self.makePullerWorker(
-            self.get_transport(self._source_branch_path).base)
+            self.get_url(self._source_branch_path),
+            self.get_url('dest-path'))
 
     def tearDown(self):
         TestCaseWithRepository.tearDown(self)
@@ -51,8 +57,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.assertEqual(
             source_branch.last_revision(), dest_branch.last_revision())
         # Assert that the mirrored branch is in source's format
-        # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
-        # See bug 45277.
+        # XXX AndrewBennetts 2006-05-18 bug=45277: comparing format objects
+        # is ugly.
         self.assertEqual(
             source_branch.repository._format.get_format_description(),
             dest_branch.repository._format.get_format_description())
@@ -84,24 +90,54 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # When we mirror a stacked branch for the first time, the mirrored
         # branch has the same stacked-on branch.
         base_branch = self._createSourceBranch(
-            RepositoryFormatPackDevelopment1(),
+            RepositoryFormatKnitPack5(),
             BzrDirMetaFormat1(),
             branch_format=BzrBranchFormat7())
         stacked_branch = self._makeStackedBranch(
             'stacked-branch', base_branch)
-        worker = self.makePullerWorker(stacked_branch.base)
+        worker = self.makePullerWorker(
+            stacked_branch.base, self.get_url('dest'))
         worker.mirror()
         mirrored_branch = Branch.open(worker.dest)
         self.assertMirrored(stacked_branch, mirrored_branch)
         orig = stacked_branch.get_stacked_on_url()
         mirrored = mirrored_branch.get_stacked_on_url()
-        self.assertEqual(orig, mirrored)
+        self.assertEqual(URI(orig).path, mirrored)
+
+    def test_reStackedBranch(self):
+        # When we re-mirror a stacked branch we propagate any change of
+        # stacking information.
+        # Create and mirror a stacked branch as in the previous test.
+        base_branch = self._createSourceBranch(
+            RepositoryFormatKnitPack5(),
+            BzrDirMetaFormat1(),
+            branch_format=BzrBranchFormat7())
+        stacked_branch = self._makeStackedBranch(
+            'stacked-branch', base_branch)
+        worker = self.makePullerWorker(
+            stacked_branch.base, self.get_url('dest'))
+        worker.mirror()
+
+        # Change the stacked-on URL and re-mirror.
+        new_base = base_branch.bzrdir.clone(
+            self.get_url('new-base')).open_branch()
+        stacked_branch.set_stacked_on_url(new_base.base)
+        worker = self.makePullerWorker(
+            stacked_branch.base, self.get_url('dest'))
+        worker.mirror()
+
+        # Check that the mirrored branch's stacked_on_url has changed.
+        mirrored_branch = Branch.open(worker.dest)
+        self.assertMirrored(stacked_branch, mirrored_branch)
+        orig = stacked_branch.get_stacked_on_url()
+        mirrored = mirrored_branch.get_stacked_on_url()
+        self.assertEqual(URI(orig).path, mirrored)
 
     def test_loomBranch(self):
         # When we mirror a loom branch for the first time, the mirrored loom
         # branch matches the original.
         branch = self._createSourceBranch(
-            RepositoryFormatPackDevelopment1(),
+            RepositoryFormatKnitPack5(),
             BzrDirMetaFormat1())
         self.loomify(branch)
         self.worker.mirror()

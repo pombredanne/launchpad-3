@@ -26,13 +26,22 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Use an administrator for the factory
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
 
+    def assertOneKarmaEvent(self, person, product):
+        # Make sure there is one and only one karma event for the person and
+        # product.
+        result = Store.of(person).find(
+            Karma,
+            Karma.person == person,
+            Karma.product == product)
+        self.assertEqual(1, result.count())
+
     def test_junkBranchMoved(self):
         # When a junk branch is moved to a product, the revision author will
         # get karma on the product.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -43,13 +52,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
-        # Get the karma event.
-        [karma] = list(Store.of(author).find(
-            Karma,
-            Karma.person == author,
-            Karma.product == branch.product))
-        self.assertEqual(karma.datecreated, rev.revision_date)
-        self.assertEqual(karma.product, branch.product)
+        self.assertOneKarmaEvent(author, branch.product)
 
     def test_newRevisionAuthor(self):
         # When a user validates an email address that is part of a revision
@@ -71,13 +74,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
-        # Get the karma event.
-        [karma] = list(Store.of(author).find(
-            Karma,
-            Karma.person == author,
-            Karma.product == branch.product))
-        self.assertEqual(karma.datecreated, rev.revision_date)
-        self.assertEqual(karma.product, branch.product)
+        self.assertOneKarmaEvent(author, branch.product)
 
     def test_ownerJunkBranchWithAnotherProductBranch(self):
         # If the revision author has the revision in a junk branch but someone
@@ -87,7 +84,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
-        branch = self.factory.makeBranch(explicit_junk=True, owner=author)
+        branch = self.factory.makeBranch(product=None, owner=author)
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Now we have a junk branch which has a revision with an email address
@@ -113,12 +110,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
-        # Get the karma event.
-        [karma] = list(Store.of(author).find(
-            Karma,
-            Karma.person == author,
-            Karma.product == b2.product))
-        self.assertEqual(karma.datecreated, rev.revision_date)
+        self.assertOneKarmaEvent(author, b2.product)
 
 
 def test_suite():

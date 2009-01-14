@@ -11,7 +11,7 @@ created and imported branches), on the bug details page for bug-branch
 links, and on the blueprint pages when branches are associated with the
 blueprint.
 
-    >>> from canonical.launchpad.ftests.branch_helper import (
+    >>> from canonical.launchpad.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
@@ -115,12 +115,12 @@ listing tab.
     lp://dev/~no-priv/landscape/testing-branch      New   ...
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    lp://dev/~name12/landscape/feature-x            New   ...
     lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
 
     >>> print_landscape_code_listing(admin_browser)
-    lp://dev/~name12/landscape/feature-x            New   ...
     lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
     lp://dev/~no-priv/landscape/testing-branch      New   ...
 
 
@@ -169,27 +169,27 @@ viewable branches.
 
     >>> print_person_code_listing(landscape_dev_browser)
     Total of 12 branches listed
-    lp://dev/~name12/landscape/feature-x            New   ...
     lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
     Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(landscape_dev_browser, '/+registeredbranches')
     Total of 11 branches listed
-    lp://dev/~name12/landscape/feature-x            New   ...
     lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
 
     >>> print_person_code_listing(admin_browser)
     Total of 12 branches listed
-    lp://dev/~name12/landscape/feature-x            New   ...
     lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(admin_browser, '/+ownedbranches')
     Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(admin_browser, '/+registeredbranches')
     Total of 11 branches listed
-    lp://dev/~name12/landscape/feature-x            New   ...
     lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
 
 
 == Bug branch links ==
@@ -219,7 +219,7 @@ Now link to a private branch.
     ...     '~landscape-developers/landscape/trunk')
     >>> landscape_dev_browser.getControl('Continue').click()
     >>> printBugBranchLinks(landscape_dev_browser)
-    ~landscape-developers/landscape/trunk (New) - Fix In Progress
+    ~landscape-developers/landscape/trunk (New)
 
 Since the link is to a private branch, the entire section is not
 visible to a user that isn't able to see the branch itself.
@@ -277,14 +277,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    Landscape trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    Landscape trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
 
 But normal people can't.
 

@@ -12,7 +12,6 @@ import traceback
 from time import time
 import warnings
 
-import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
@@ -23,12 +22,17 @@ from storm.exceptions import TimeoutError
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
+import transaction
 from zope.component import getUtility
-from zope.interface import classImplements, implements
+from zope.interface import classImplements, classProvides, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
+from canonical.lazr.utils import safe_hasattr
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
+
 
 __all__ = [
     'DisconnectionError',
@@ -40,6 +44,7 @@ __all__ = [
     'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
+    'StoreSelector',
     ]
 
 
@@ -205,7 +210,7 @@ def break_main_thread_db_access(*ignored):
     _main_thread_id = thread.get_ident()
 
     try:
-        getUtility(IZStorm).get('main')
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     except StormAccessFromMainThread:
         # LaunchpadDatabase correctly refused to create a connection
         pass
@@ -224,7 +229,16 @@ isolation_level_map = {
     'serializable': ISOLATION_LEVEL_SERIALIZABLE,
     }
 
+
 class LaunchpadDatabase(Postgres):
+
+    def __init__(self, uri):
+        # The uri is just a property name in the config, such as main_master
+        # or auth_slave.
+        # We don't invoke the superclass constructor as it has a very limited
+        # opinion on what uri is.
+        # pylint: disable-msg=W0231
+        self._uri = uri
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -233,9 +247,14 @@ class LaunchpadDatabase(Postgres):
             _main_thread_id == thread.get_ident()):
             raise StormAccessFromMainThread()
 
-        self._dsn = 'dbname=%s user=%s' % (dbconfig.dbname, dbconfig.dbuser)
-        if dbconfig.dbhost:
-            self._dsn += ' host=%s' % dbconfig.dbhost
+        # We set self._dsn here rather than in __init__ so when the Store
+        # is reconnected it pays attention to any config changes.
+        config_entry = self._uri.database.replace('-', '_')
+        connection_string = getattr(dbconfig, config_entry)
+        assert 'user=' not in connection_string, (
+                "Database username should not be specified in "
+                "connection string (%s)." % connection_string)
+        self._dsn = "%s user=%s" % (connection_string, dbconfig.dbuser)
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
@@ -260,6 +279,8 @@ class LaunchpadSessionDatabase(Postgres):
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
+        if safe_hasattr(raw_connection, 'auto_close'):
+            raw_connection.auto_close = False
         raw_connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         _reset_dirty_commit_flags(*flags)
         return raw_connection
@@ -297,12 +318,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
                 connection, raw_cursor, statement, params)
         except TimeoutError:
             info = sys.exc_info()
-            # make sure the current transaction can not be committed by
-            # sending a broken SQL statement to the database
-            try:
-                raw_cursor.execute('break this transaction')
-            except psycopg2.DatabaseError:
-                pass
+            transaction.doom()
             OpStats.stats['timeouts'] += 1
             try:
                 raise info[0], info[1], info[2]
@@ -367,3 +383,27 @@ class LaunchpadStatementTracer:
 
 install_tracer(LaunchpadTimeoutTracer())
 install_tracer(LaunchpadStatementTracer())
+
+
+class StoreSelector:
+    classProvides(IStoreSelector)
+
+    @staticmethod
+    def getDefaultFlavor():
+        """Return the DEFAULT_FLAVOR for the current thread."""
+        return getattr(_local, 'default_store_flavor', DEFAULT_FLAVOR)
+
+    @staticmethod
+    def setDefaultFlavor(flavor):
+        """Change what the DEFAULT_FLAVOR is for the current thread."""
+        _local.default_store_flavor = flavor
+
+    @staticmethod
+    def get(name, flavor):
+        """See `IStoreSelector`."""
+        if flavor == DEFAULT_FLAVOR:
+            flavor = StoreSelector.getDefaultFlavor()
+            if flavor == DEFAULT_FLAVOR:
+                # None set, use MASTER by default.
+                flavor = MASTER_FLAVOR
+        return getUtility(IZStorm).get('%s-%s' % (name, flavor))

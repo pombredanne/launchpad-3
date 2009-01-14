@@ -5,11 +5,11 @@
     i18n_domain="launchpad">
 
   <!-- BugTrackerPerson -->
-  <content
+  <class
       class="canonical.launchpad.database.bugtrackerperson.BugTrackerPerson">
     <allow
         interface="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPerson"
         />
-  </content>
+  </class>
 
 </configure>

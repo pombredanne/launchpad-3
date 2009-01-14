@@ -17,7 +17,7 @@
         />
 
     <!-- BugTracker -->
-    <content class="canonical.launchpad.database.BugTracker">
+    <class class="canonical.launchpad.database.BugTracker">
       <implements interface="canonical.launchpad.interfaces.IBugTracker" />
       <require
           permission="zope.Public"
@@ -25,13 +25,21 @@
                       getBugsWatching getBugWatchesNeedingUpdate
                       getLinkedPersonByName id imported_bug_messages
                       latestwatches name owner products projects
-                      summary title watches" />
+                      summary title watches getBugFilingLink
+                      has_lp_plugin" />
       <require
           permission="launchpad.Edit"
           attributes="destroySelf ensurePersonForSelf linkPersonToSelf"
           set_attributes="aliases baseurl bugtrackertype contactdetails
-                          name owner summary title" />
-    </content>
+                          name owner summary title has_lp_plugin" />
+    </class>
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBugTracker"
+      factory="canonical.launchpad.browser.BugTrackerBreadcrumbBuilder"
+      permission="zope.Public"
+      />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTracker"
@@ -60,15 +68,6 @@
             />
     </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugTracker"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.BugTrackerEditView">
-        <browser:page name="+oldedit"
-            template="../templates/bugtracker-edit.pt"
-            />
-    </browser:pages>
-
     <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IBugTracker"
@@ -78,9 +77,9 @@
       />
 
     <!-- BugTrackerSet -->
-    <content class="canonical.launchpad.database.BugTrackerSet">
+    <class class="canonical.launchpad.database.BugTrackerSet">
         <allow interface="canonical.launchpad.interfaces.IBugTrackerSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BugTrackerSet"
@@ -116,16 +115,16 @@
         template="../templates/bugtrackers-add.pt" />
 
     <!-- BugTrackerAlias -->
-    <content class="canonical.launchpad.database.BugTrackerAlias">
+    <class class="canonical.launchpad.database.BugTrackerAlias">
         <allow interface="canonical.launchpad.interfaces.IBugTrackerAlias" />
         <require permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IBugTrackerAlias" />
-    </content>
+    </class>
 
     <!-- BugTrackerAliasSet -->
-    <content class="canonical.launchpad.database.BugTrackerAliasSet">
+    <class class="canonical.launchpad.database.BugTrackerAliasSet">
         <allow interface="canonical.launchpad.interfaces.IBugTrackerAliasSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BugTrackerAliasSet"
@@ -134,9 +133,9 @@
     </securedutility>
 
     <!-- RemoteBug -->
-    <content class="canonical.launchpad.browser.bugtracker.RemoteBug">
+    <class class="canonical.launchpad.browser.bugtracker.RemoteBug">
         <allow interface="canonical.launchpad.interfaces.IRemoteBug" />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IRemoteBug"

@@ -49,6 +49,8 @@ upstream already registered in Launchpad which uses the same bugtracker as
 the one specified by the user. If there are any we present them as options
 for the user to use as the affected upstream.
 
+    >>> from canonical.launchpad.testing.pages import strip_label
+
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/tomcat/+bug/2/+affects-new-product')
     >>> user_browser.title
@@ -66,8 +68,9 @@ for the user to use as the affected upstream.
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
     There are some projects using the bug tracker you specified. One of
     these may be the one you were trying to register.
-    >>> user_browser.getControl(name='field.existing_product').displayValue
-    ['\xa0The Foo Project']
+    >>> control = user_browser.getControl(name='field.existing_product')
+    >>> [strip_label(label) for label in control.displayValue]
+    ['The Foo Project']
 
 Now we can either choose to report the bug as affecting our existing Foo
 Project or create the new Bar Project.

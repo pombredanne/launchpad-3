@@ -18,14 +18,17 @@ Anne subscribes to the team and its mailing list.
 
 The team is set as the project's answer contact.
 
+    >>> from canonical.launchpad.testing.pages import strip_label
+
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0The Launchpad mailing list for this team...]
+    >>> control = browser.getControl(name='field.contact_method')
+    >>> [strip_label(label) for label in control.displayValue]
+    ['The Launchpad mailing list for this team...]
 
     >>> browser.open(
     ...     'http://answers.launchpad.dev:8085/firefox/+answer-contact')
@@ -51,8 +54,8 @@ member.
     # are 1) the original posted message on the +addquestion, 2) the message
     # as sent to Anne, 3) the message as sent to the archiver.
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
 
     >>> messages = smtpd.getMessages()
     >>> len(messages)
@@ -75,7 +78,8 @@ Here is the message to the person who added the question.
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
     Precedence: bulk
-    X-Generated-By: Launchpad (canonical.com)
+    ...
+    X-Launchpad-Hash: ...
     Received: by smtp2mbox
     <BLANKLINE>
     New question #... on Mozilla Firefox:
@@ -159,11 +163,11 @@ server.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
 
-Mailman then delivers two messages's to the team mailing list's recipients.
+Mailman then delivers two messages to the team mailing list's recipients.
 One is sent to Anne and the other is sent to the archiver.
 
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
@@ -232,8 +236,9 @@ Notifications will no longer be sent to the mailing list.
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0Each member individually']
+    >>> control = browser.getControl(name='field.contact_method')
+    >>> [strip_label(label) for label in control.displayValue]
+    ['Each member individually']
 
     >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'Another question'

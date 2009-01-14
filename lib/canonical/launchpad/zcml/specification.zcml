@@ -7,7 +7,7 @@
 <facet facet="specifications">
 
   <!-- Specification -->
-  <content class="canonical.launchpad.database.Specification">
+  <class class="canonical.launchpad.database.Specification">
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
     <!-- We allow any authenticated person to update the whiteboard -->
     <require
@@ -30,11 +30,11 @@
     <allow attributes="bugs bug_links" />
 
     <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.SpecificationBug">
+  <class class="canonical.launchpad.database.SpecificationBug">
       <allow interface="canonical.launchpad.interfaces.ISpecificationBug"/>
-  </content>
+  </class>
 
   <browser:menus
     module="canonical.launchpad.browser"
@@ -138,14 +138,10 @@
     template="../templates/specification-givefeedback.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
-    fields="person essential"
-    label="Subscribe someone else"
-    arguments="person essential"
     permission="launchpad.AnyPerson"
     template="../templates/specification-addsubscriber.pt"
     />
@@ -166,81 +162,45 @@
     template="../templates/specification-superseding.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+edit"
-    schema="canonical.launchpad.interfaces.ISpecification"
+    for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Edit title and summary"
-    fields="name title specurl summary whiteboard"
     permission="launchpad.Edit"
-    template="../templates/specification-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-    <browser:widget
-      field="specurl"
-      class="zope.app.form.browser.TextWidget"
-      displayWidth="60" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+whiteboard"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Edit specification status whiteboard"
-    fields="whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditWhiteboardView"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+people"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Change the people involved"
-    fields="assignee drafter approver whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditPeopleView"
     permission="launchpad.Edit"
-    template="../templates/specification-people.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:generalform
+  <browser:page
     name="+setdistroseries"
-    schema="canonical.launchpad.interfaces.ISpecification"
+    for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationGoalProposeView"
-    label="Target to a distribution series"
-    fields="distroseries whiteboard"
-    keyword_arguments="distroseries whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distroseries.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:generalform>
+  </browser:page>
 
-  <browser:generalform
+  <browser:page
     name="+setproductseries"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationGoalProposeView"
-    label="Target to a product series"
-    fields="productseries whiteboard"
-    keyword_arguments="productseries whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationProductSeriesGoalProposeView"
     permission="launchpad.Edit"
     template="../templates/specification-productseries.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:generalform>
+  </browser:page>
 
   <browser:page
     name="+decide"
@@ -250,47 +210,29 @@
     template="../templates/specification-goaldecide.pt">
   </browser:page>
 
-  <browser:editform
+  <browser:page
     name="+priority"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Change priority"
-    fields="priority direction_approved whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditPriorityView"
     permission="launchpad.Admin"
-    template="../templates/specification-priority.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+status"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Change status"
-    fields="definition_status implementation_status whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditStatusView"
     permission="launchpad.Edit"
-    template="../templates/specification-status.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+milestone"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Target to a milestone"
-    fields="milestone whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditMilestoneView"
     permission="launchpad.Edit"
-    template="../templates/specification-milestone.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
   <browser:addform
     name="+requestfeedback"
@@ -329,33 +271,24 @@
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationDependencyAddView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-dependency.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+removedependency"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationDependencyRemoval"
     class="canonical.launchpad.browser.SpecificationDependencyRemoveView"
-    label="Remove a dependency"
-    fields="dependency"
-    keyword_arguments="dependency"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-removedep.pt">
-  </browser:generalform>
+  </browser:page>
 
-  <browser:addform
+  <browser:page
     name="+linksprint"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SpecificationSprintAddView"
-    label="Propose specification for meeting agenda"
-    fields="sprint"
-    keyword_arguments="sprint"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-linksprint.pt">
-  </browser:addform>
+    template="../templates/specification-linksprint.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.ISpecification"
@@ -390,9 +323,9 @@
     />
 
   <!-- SpecificationSet -->
-  <content class="canonical.launchpad.database.SpecificationSet">
+  <class class="canonical.launchpad.database.SpecificationSet">
     <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.SpecificationSet"
@@ -448,18 +381,11 @@
   />
 
   <!-- SpecificationDelta -->
-  <content class="canonical.launchpad.components.specification.SpecificationDelta">
+  <class class="canonical.launchpad.components.specification.SpecificationDelta">
     <allow interface="canonical.launchpad.interfaces.ISpecificationDelta" />
-  </content>
+  </class>
 
 </facet>
-
-<adapter
-  provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-  for="canonical.launchpad.interfaces.ISpecification"
-  factory="canonical.launchpad.browser.SpecificationSHP"
-  permission="zope.Public"
-  />
 
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification

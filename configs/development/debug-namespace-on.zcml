@@ -3,7 +3,7 @@
    >
   <view
       name="debug" type="*"
-      provides="zope.app.traversing.interfaces.ITraversable" for="*"
-      factory="zope.app.traversing.namespace.debug"
+      provides="zope.traversing.interfaces.ITraversable" for="*"
+      factory="zope.traversing.namespace.debug"
       />
 </configure>

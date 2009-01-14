@@ -5,9 +5,6 @@ The anchorpiece of the "upstream" world is the Product, which is a piece of
 software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
-    >>> from canonical.config import config
-    >>> from canonical.launchpad.database.product import (
-    ...     get_allowed_default_stacking_names)
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
     ...     NotFoundError)
@@ -54,9 +51,24 @@ Let's call that evo from now onwards just so the tests can be clearer.
 
     >>> evo = p
 
-We'll also fetch the a52dec product from the database.
+To fetch a product we use IProductSet.getByName() or IProductSet.__getitem__.
+The former will, by default, reeturn active and inactive products, while the
+later returns only active ones. Both can be used to look up products by their
+aliases, though.
 
     >>> a52dec = productset.getByName('a52dec')
+    >>> a52dec.name
+    u'a52dec'
+    >>> productset['a52dec'].name
+    u'a52dec'
+    
+    >>> a52dec.setAliases(['a51dec'])
+    >>> a52dec.aliases
+    [u'a51dec']
+    >>> productset['a51dec'].name
+    u'a52dec'
+    >>> productset.getByName('a51dec').name
+    u'a52dec'
 
 Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:
@@ -119,6 +131,30 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
     2000
     >>> print FakeStatsProductSet().count_reviewed()
     3000
+
+IProductSet can also retrieve the latest products registered.  By
+default the latest five are returned.
+
+    >>> latest = productset.latest()
+    >>> projects = [project.displayname for project in latest]
+    >>> for project in sorted(projects):
+    ...     print project
+    Bazaar
+    Derby
+    Launchpad Translations
+    Mega Money Maker
+    Redfish
+
+The quantity can be specified and that many, if available, will be
+returned.
+
+    >>> latest = productset.latest(quantity=3)
+    >>> projects = [project.displayname for project in latest]
+    >>> for project in sorted(projects):
+    ...     print project
+    Derby
+    Launchpad Translations
+    Mega Money Maker
 
 
 == Translatable Products ==
@@ -361,7 +397,18 @@ ProductSeries of a product.
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
+Milestones for products can only be created by product/project owners,
+registry experts, or admins.
+
     >>> firefox_one_zero = firefox.getSeries('1.0')
+    >>> product_owner_email = firefox.owner.preferredemail.email
+    >>> login("no-priv@canonical.com")
+    >>> firefox_one_zero.newMilestone(
+    ...     name='impossible', dateexpected=datetime(2018, 10, 1))
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<ProductSeries at ...>, 'newMilestone', 'launchpad.Edit')
+    >>> login(product_owner_email)
     >>> firefox_milestone = firefox_one_zero.newMilestone(
     ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
 
@@ -418,6 +465,10 @@ no longer appear in the result set.
     >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForContext(
     ...     context=productset.getByName('thunderbird'),
     ...     lifecycle_statuses=None)
+
+    # Only an owner, admin, or a bazaar expert can set the
+    # branch.lifecycle_status.
+    >>> login('foo.bar@canonical.com')
     >>> for branch_view in thunderbird_branches:
     ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForContext
     ...     # returns objects from BranchWithSortKeys, which is a view and so
@@ -569,49 +620,29 @@ branch is 'stacked' on to a default base branch, called the 'default
 stacked-on branch' in Bazaar terminology. This default stacked-on branch
 is the development focus branch of a product.
 
-For the initial rollout of default stacking, only certain projects will
-have default stacked on branches. These projects are:
+A freshly created product has a development focus series but this
+series has no branch set, so the product has no
+default_stacked_on_branch.
 
-    >>> for name in get_allowed_default_stacking_names():
-    ...     print name
-    evolution
-    firefox
-
-This is determined by the allow_default_stacking configuration variable:
-
-    >>> print config.codehosting.allow_default_stacking
-    evolution,firefox
-
-Bazaar is not yet allowed to have default stacking enabled, so it cannot
-have a default stacked-on branch, whether or not it has a development
-focus set.
-
-    >>> bazaar = getUtility(IProductSet).getByName('bzr')
-    >>> print bazaar.development_focus.series_branch
+    >>> product = factory.makeProduct()
+    >>> print product.development_focus.series_branch
     None
-    >>> print bazaar.default_stacked_on_branch
-    None
-    >>> branch = getUtility(IBranchSet).get(1)
-    >>> bazaar.development_focus.user_branch = branch
-    >>> print bazaar.development_focus.series_branch is not None
-    True
-    >>> print bazaar.default_stacked_on_branch
+    >>> print product.default_stacked_on_branch
     None
 
-In the sample data, Firefox has no development focus branch set, so it
-has no default stacked-on branch:
+If a product has a development focus branch, it must have a non-NULL
+last_mirrored time to be suitable for use as a default stacked-on
+branch.
 
-    >>> print firefox.development_focus.series_branch
+    >>> branch = factory.makeBranch(name='trunk')
+    >>> print branch.last_mirrored
     None
-    >>> print firefox.default_stacked_on_branch
+    >>> product.development_focus.user_branch = branch
+    >>> print product.default_stacked_on_branch
     None
-
-However, Evolution has a branch for its development focus in the sample
-data and it is explicitly whitelisted in the allow_default_stacking
-configuration variable so it has a default stacked-on branch.
-
-    >>> evolution = getUtility(IProductSet).getByName('evolution')
-    >>> print evolution.development_focus.series_branch.unique_name
-    ~vcs-imports/evolution/main
-    >>> print evolution.default_stacked_on_branch.unique_name
-    ~vcs-imports/evolution/main
+    >>> branch.startMirroring()
+    >>> branch.mirrorComplete('rev1')
+    >>> branch.last_mirrored
+    datetime.datetime(...)
+    >>> print product.default_stacked_on_branch.name
+    trunk

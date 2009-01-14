@@ -67,27 +67,11 @@ The content object is discovered by traversing the URL hierarchy.
 Here is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam.
 Each object has a canonical url derived from its place in the hierarchy.
 
-    >>> from zope.security.management import endInteraction, newInteraction
-    >>> from canonical.launchpad.webapp import canonical_url, urlsplit
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
     # Menu testing requires a request object that provides the traversed
     # objects. This function does most of the work, but views must be
     # assigned to the _last_obj_traversed attribute.
-    >>> def make_fake_request(url, traversed_objects=None):
-    ...     """Return a fake request object for menu testing."""
-    ...     url_parts = urlsplit(url)
-    ...     server_url = '://'.join(url_parts[0:2])
-    ...     path_info = url_parts[2]
-    ...     request = LaunchpadTestRequest(
-    ...         SERVER_URL=server_url,
-    ...         PATH_INFO=path_info)
-    ...     request._traversed_names = path_info.split('/')[1:]
-    ...     request.traversed_objects = traversed_objects
-    ...     # After making the request, setup a new interaction.
-    ...     endInteraction()
-    ...     newInteraction(request)
-    ...     return request
+    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> from canonical.launchpad.webapp import canonical_url
 
     >>> root = Root('', None)
     >>> cookbook = Cookbook('joy-of-cooking', root)
@@ -547,6 +531,8 @@ The iterlinks() method of menus requires a `IHTTPApplicationRequest`
 (a request object) present in the `Interaction` to determine the
 state of its links. Without a request, an error is raised.
 
+    >>> from zope.security.management import endInteraction
+
     >>> endInteraction()
     >>> summarise_links(RecipeMenu(recipe))
     Traceback (most recent call last):
@@ -862,8 +848,8 @@ TAL namespace 'menu' is used to query the state of a menu and to iterate
 over the links. The TALES takes the form of 'view/menu:navigation'.
 
     >>> from zope.interface import classImplements
-    >>> from zope.app.traversing.adapters import DefaultTraversable
-    >>> from zope.app.traversing.interfaces import IPathAdapter, ITraversable
+    >>> from zope.traversing.adapters import DefaultTraversable
+    >>> from zope.traversing.interfaces import IPathAdapter, ITraversable
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp.tales import MenuAPI
     >>> from canonical.lazr.testing.menus import summarise_tal_links

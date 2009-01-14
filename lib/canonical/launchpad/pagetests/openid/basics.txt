@@ -44,53 +44,6 @@ date enough Zope3
     foo:+bar
 
 
-== OpenID Server Discovery ==
-
-A Launchpad user's home page contains the required <link rel="openid.server" />
-tag to allow OpenID consumers to determine the URL of the OpenID server to
-be contacted.
-
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> print anon_browser.contents
-    <...
-    <head>
-    ...
-    <link rel="openid.server" href="http://openid.launchpad.dev/+openid" />
-    <link
-        rel="openid.delegate"
-        href="http://openid.launchpad.dev/+id/sabdfl_oid" />
-    </head>
-    ...
-
-
-Teams do not have this tag of course.
-
-    >>> anon_browser.open('http://launchpad.dev/~admins')
-    >>> 'openid' in anon_browser.contents
-    False
-
-
-The standard person homepage delegates to a permanent identity URL
-
-    >>> anon_browser.open('http://openid.launchpad.dev/+id/sabdfl_oid')
-    >>> print anon_browser.contents
-    <html ...>
-    <head>
-    ...
-    <link rel="openid.server" href="http://openid.launchpad.dev/+openid" />
-    ...
-    >>> 'openid.delegate' in anon_browser.contents
-    False
-
-
-If a permanent, human memorable, identity URL is needed we have that too.
-It is just a redirect to the above permanent identity URL.
-
-    >>> anon_browser.open('http://openid.launchpad.dev/sabdfl')
-    >>> anon_browser.url
-    'http://openid.launchpad.dev/+id/sabdfl_oid'
-
-
 == associate Mode ==
 
 Establish a shared secret between Consumer and Identity Provider.

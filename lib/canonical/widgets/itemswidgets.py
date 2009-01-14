@@ -5,11 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'LaunchpadDropdownWidget',
+    'CheckBoxMatrixWidget',
     'LabeledMultiCheckBoxWidget',
+    'LaunchpadDropdownWidget',
     'LaunchpadRadioWidget',
     'LaunchpadRadioWidgetWithDescription',
-    'CheckBoxMatrixWidget',
+    'PlainMultiCheckBoxWidget',
     ]
 
 import math
@@ -28,13 +29,10 @@ class LaunchpadDropdownWidget(DropdownWidget):
         return contents
 
 
-class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
-    """MultiCheckBoxWidget which wraps option labels with proper
-    <label> elements.
-    """
+class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
+    """MultiCheckBoxWidget that copes with CustomWidgetFacotry."""
 
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+    _joinButtonToMessageTemplate = u'%s&nbsp;%s '
 
     def __init__(self, field, vocabulary, request):
         # XXX flacoste 2006-07-23 Workaround Zope3 bug #545:
@@ -43,57 +41,69 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
 
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render a checkbox and text without without label."""
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        element = renderElement(
+            u'input', value=value, name=name, id=id,
+            cssClass=cssClass, type='checkbox', **kw)
+        return self._joinButtonToMessageTemplate % (element, text)
+
+
+class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
+    """MultiCheckBoxWidget which wraps option labels with proper
+    <label> elements.
+    """
+
+    _joinButtonToMessageTemplate = (
+        u'<label for="%s" style="font-weight: normal">%s&nbsp;%s</label> ')
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render a checkbox and text in a label with a style attribute."""
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='checkbox',
+                             **kw)
+        option_id = '%s.%s' % (self.name, index)
+        return self._joinButtonToMessageTemplate % (option_id, elem, text)
+
 
 # XXX Brad Bollenbach 2006-08-10 bugs=56062: This is a hack to
 # workaround Zope's RadioWidget not properly selecting the default value.
 class LaunchpadRadioWidget(RadioWidget):
     """A widget to work around a bug in RadioWidget."""
 
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        # This is an almost-complete copy of the method in Zope.  We need it
+        # to inject the style in the label, and we omit the "for" in the label
+        # because it is redundant (and not used in legacy tests).
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='radio',
+                             **kw)
+        return renderElement(u'label',
+                             contents='%s&nbsp;%s' % (elem, text),
+                             **{'style': 'font-weight: normal'})
 
     def _div(self, cssClass, contents, **kw):
         return contents
-
-    def renderItems(self, value):
-        """Render the items with the correct radio button selected."""
-        # XXX Brad Bollenbach 2006-08-11: Workaround the fact that
-        # value is a value taken directly from the form, when it should
-        # instead have been already converted to a vocabulary term, to
-        # ensure the code in the rest of this method will select the
-        # appropriate radio button.
-        if value == self._missing:
-            value = self.context.missing_value
-
-        no_value = None
-        if (value == self.context.missing_value
-            and getattr(self, 'firstItem', False)
-            and len(self.vocabulary) > 0
-            and self.context.required):
-            # Grab the first item from the iterator:
-            values = [iter(self.vocabulary).next().value]
-        elif value != self.context.missing_value:
-            values = [value]
-        else:
-            # the "no value" option will be checked
-            no_value = 'checked'
-            values = []
-
-        items = self.renderItemsWithValues(values)
-        if not self.context.required:
-            kwargs = {
-                'index': None,
-                'text': self.translate(self._messageNoValue),
-                'value': '',
-                'name': self.name,
-                'cssClass': self.cssClass}
-            if no_value:
-                option = self.renderSelectedItem(**kwargs)
-            else:
-                option = self.renderItem(**kwargs)
-            items.insert(0, option)
-
-        return items
 
 
 class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
@@ -207,4 +217,3 @@ class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
 
         html.append('</table>')
         return '\n'.join(html)
-

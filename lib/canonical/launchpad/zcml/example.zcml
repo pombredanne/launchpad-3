@@ -9,9 +9,9 @@
 
     <!-- This is class Example -->
     <!-- CONTENT CLASSES -->
-    <content class="canonical.launchpad.database.Example">
+    <class class="canonical.launchpad.database.Example">
         <allow interface="canonical.launchpad.interfaces.IExample" />
-    </content>
+    </class>
 
     <!-- UTILITY DECLARATION-->
     <securedutility

@@ -11,8 +11,16 @@ First we have to go to the +requestmerge page.
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+requestmerge')
-    >>> '<h1>Merge Launchpad accounts</h1>' in browser.contents
-    True
+    >>> print_location(browser.contents)
+    Hierarchy: Launchpad
+    Tabs:
+    * Launchpad Home (selected) - http://launchpad.dev/
+    * Code - http://code.launchpad.dev/
+    * Bugs - http://bugs.launchpad.dev/
+    * Blueprints - http://blueprints.launchpad.dev/
+    * Translations - http://translations.launchpad.dev/
+    * Answers - http://answers.launchpad.dev/
+    Main heading: Merge Launchpad accounts
 
 If we try to merge a nonexistent account, we'll get an error page.
 
@@ -28,6 +36,19 @@ The same will happen if we try to merge a team.
     >>> browser.getControl('Submit').click()
     >>> 'There are <strong>1</strong> input errors' in browser.contents
     True
+
+In preparation for the actual merge (below), we add an extra email
+address to the 'foo' account, to show how things work when the dupe
+account has more than one email address.
+
+    >>> from canonical.launchpad.database.emailaddress import EmailAddressSet
+    >>> from canonical.launchpad.database.person import PersonSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> foo = PersonSet().getByName('foo')
+    >>> email = EmailAddressSet().new(
+    ...     'bar.foo@canonical.com', person=foo,
+    ...     status=EmailAddressStatus.VALIDATED)
 
 Then we find the duplicate account and request the merge.
 This redirects to the page which displays all email addresses owned by the
@@ -99,29 +120,6 @@ dupe account. And now the merge is completed successfully.
     True
 
 
-# XXX StuartBishop 2006-06-06: 
-# Removed because things are still failing for me, so this is just
-# another variable to worry about. Or maybe it needs to be called more
-# often or something --
-#
-# XXX kiko 2006-05-15: 
-# Hack to start a new transaction and clear caches etc. This should
-# not be necessary, but it currently is.
-# 
-#     >>> def new_transaction():
-#     ...     import time
-#     ...     time.sleep(2)
-#     ...     import gc
-#     ...     while gc.collect():
-#     ...       pass
-#     ...     import transaction
-#     ...     import canonical.database.sqlbase
-#     ...     transaction.abort()
-#     ...     canonical.database.sqlbase.flush_database_caches()
-#     ...     transaction.begin()
-# 
-#     >>> new_transaction()
-
 If the account we were trying to merge had a single email address, the
 process would be a little simpler.
 
@@ -157,7 +155,7 @@ Get the token we'll have to use to finish the registration process.
     >>> assert not stub.test_emails
     >>> token_url = get_token_url_from_email(raw_msg)
 
-    # XXX: SteveA 2006-10-21: To prevent spurious failures in PQM.
+    # XXX: Steve Alexander 2006-10-21: To prevent spurious failures in PQM.
     #>>> browser.open(token_url)
     #>>> browser.getControl('Confirm').click()
     #>>> 'The accounts have been merged successfully' in browser.contents

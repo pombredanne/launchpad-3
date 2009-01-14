@@ -8,9 +8,7 @@ __all__ = ["OpStats", "IOpStats"]
 from cStringIO import StringIO
 from time import time
 
-from zope.interface import Interface, implements
-
-from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
+from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
 class OpStats(LaunchpadXMLRPCView):
@@ -21,9 +19,11 @@ class OpStats(LaunchpadXMLRPCView):
 
     @classmethod
     def resetStats(cls):
+        """Reset the the collected stats to 0."""
         OpStats.stats.update({
             # Global
             'requests': 0, # Requests, all protocols, all statuses
+            'retries': 0, # Optimistic transaction retries.
             'soft timeouts': 0, # Requests that generated a soft timeout OOPS
             'timeouts': 0, # Requests that generated a hard timeout OOPS
 

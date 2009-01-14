@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'Breadcrumb',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -36,14 +35,15 @@ from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
     WebServiceLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, ICanonicalUrlData, ILaunchBag, ILaunchpadApplication,
-    ILaunchpadContainer, ILaunchpadRoot, IOpenLaunchBag, IStructuredString,
-    NoCanonicalUrl, NotFoundError)
+    ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
+    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
+    NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -82,18 +82,6 @@ class DecoratorAdvisor:
 class stepthrough(DecoratorAdvisor):
 
     magic_class_attribute = '__stepthrough_traversals__'
-
-    def __init__(self, name, breadcrumb=None):
-        """Register a stepthrough traversal with the name stepped through.
-
-        You can optionally provide a breadcrumb function that is called
-        with the argument 'self'.  So, a method will do.
-        """
-        DecoratorAdvisor.__init__(self, name)
-        self.breadcrumb = breadcrumb
-
-    def getValueToStore(self):
-        return (self.fn, self.breadcrumb)
 
 
 class stepto(DecoratorAdvisor):
@@ -186,6 +174,7 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
+    - striped_class<-- a tr class for an alternating row background
     """
 
     def __init__(self, context, request):
@@ -233,6 +222,19 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
+
+    @cachedproperty
+    def striped_class(self):
+        """Return a generator which yields alternating CSS classes.
+
+        This is to be used for HTML tables in which the row colors should be
+        alternated.
+        """
+        def bg_stripe_generator():
+            while True:
+                yield 'white'
+                yield 'shaded'
+        return bg_stripe_generator()
 
     def _getErrorMessage(self):
         """Property getter for `error_message`."""
@@ -527,14 +529,6 @@ class LaunchpadContainer:
         return self.context == scope
 
 
-class Breadcrumb:
-    implements(IBreadcrumb)
-
-    def __init__(self, url, text):
-        self.url = url
-        self.text = text
-
-
 class Navigation:
     """Base class for writing browser navigation components.
 
@@ -550,12 +544,6 @@ class Navigation:
 
     # Set this if you want to set a new layer before doing any traversal.
     newlayer = None
-
-    def breadcrumb(self):
-        """Return the text of the context object's breadcrumb, or None for
-        no breadcrumb.
-        """
-        return None
 
     def traverse(self, name):
         """Override this method to handle traversal.
@@ -604,16 +592,6 @@ class Navigation:
             if value is not None:
                 combined_info.update(value)
         return combined_info
-
-    def _append_breadcrumb(self, text):
-        """Add a breadcrumb to the request, at the current URL with the given
-        text.
-
-        request.getURL(1) represents the path traversed so far, but without
-        the step we're currently working out how to traverse.
-        """
-        self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -671,12 +649,6 @@ class Navigation:
         # traversed_objects list:
         request.traversed_objects.append(self.context)
 
-        # Next, if there is a breadcrumb for the context, add it to the
-        # request's list of breadcrumbs.
-        breadcrumb_text = self.breadcrumb()
-        if breadcrumb_text is not None:
-            self._append_breadcrumb(breadcrumb_text)
-
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
@@ -699,11 +671,7 @@ class Navigation:
                 stepstogo = request.stepstogo
                 if stepstogo:
                     nextstep = stepstogo.consume()
-                    handler, breadcrumb_fn = namespace_traversals[name]
-                    if breadcrumb_fn is not None:
-                        breadcrumb_text = breadcrumb_fn(self)
-                        if breadcrumb_text is not None:
-                            self._append_breadcrumb(breadcrumb_text)
+                    handler = namespace_traversals[name]
                     try:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:

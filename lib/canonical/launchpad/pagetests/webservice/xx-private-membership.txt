@@ -9,13 +9,13 @@ team.
 
     # XXX: 2008-08-01, salgado: Notice how the total_size is incorrect here.
     # That ought to be fixed at some point.
-    >>> member = user_webservice.get("/beta/~member").jsonBody()
+    >>> member = user_webservice.get("/~member").jsonBody()
     >>> response = user_webservice.get(
     ...     member['memberships_details_collection_link'])
     >>> print sorted(response.jsonBody().items())
     [(u'entries', []),
      (u'resource_type_link',
-      u'http://.../beta/#team_membership-page-resource'),
+      u'http://.../#team_membership-page-resource'),
      (u'start', 0),
      (u'total_size', 1)]
 
@@ -26,8 +26,8 @@ Salgado can, though, because he's a Launchpad admin.
     >>> print sorted(response.jsonBody().items())
     [(u'entries',
       [{u'status': u'Approved',...
-        u'team_link': u'http://.../beta/~myteam'...
+        u'team_link': u'http://.../~myteam'...
      (u'resource_type_link',
-      u'http://.../beta/#team_membership-page-resource'),
+      u'http://.../#team_membership-page-resource'),
      (u'start', 0),
      (u'total_size', 1)]

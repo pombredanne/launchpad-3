@@ -33,7 +33,7 @@ class IPackageDiff(Interface):
     to_source = Attribute(_("The target ISourcePackageRelease."))
 
     date_requested = Datetime(
-        title=_('Date Requested'), required=True)
+        title=_('Date Requested'), required=True, readonly=True)
 
     requester = Choice(
         title=_('User'),

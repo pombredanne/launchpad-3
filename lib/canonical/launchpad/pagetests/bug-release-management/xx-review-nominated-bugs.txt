@@ -82,10 +82,12 @@ nominations.
 
 After approving the nominated bugs, the listing is empty.
 
-    >>> from canonical.launchpad.database import BugSet, DistributionSet
-    >>> ubuntu = DistributionSet().getByName('ubuntu')
+    # Use the DB classes directly to avoid having to setup a zope interaction
+    # (i.e. login()) and bypass the security proxy.
+    >>> from canonical.launchpad.database import Bug, Distribution
+    >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
-    >>> bug_one = BugSet().get(1)
+    >>> bug_one = Bug.get(1)
     >>> hoary_nomination = bug_one.getNominationFor(hoary)
     >>> nomination_control = admin_browser.getControl(
     ...     name='field.review_action_%s' % hoary_nomination.id)
@@ -114,10 +116,12 @@ A product series has the same nomination listing as a distro series.
     >>> print_bugtasks(user_browser.contents)
     1  Firefox does not support SVG Low  New
 
-    >>> from canonical.launchpad.database import ProductSet
-    >>> firefox = ProductSet().getByName('firefox')
+    # Use the DB classes directly to avoid having to setup a zope interaction
+    # (i.e. login()) and bypass the security proxy.
+    >>> from canonical.launchpad.database import Product
+    >>> firefox = Product.byName('firefox')
     >>> firefox_1_0 = firefox.getSeries('1.0')
-    >>> bug_one = BugSet().get(1)
+    >>> bug_one = Bug.get(1)
     >>> firefox_nomination = bug_one.getNominationFor(firefox_1_0)
 
     >>> admin_browser.open('http://bugs.launchpad.dev/firefox/1.0')

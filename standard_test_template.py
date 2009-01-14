@@ -6,6 +6,8 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.launchpad.testing import TestCase
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

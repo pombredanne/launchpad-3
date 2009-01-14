@@ -52,7 +52,6 @@ Bart does not leave the team though, his subscription merely gets disabled.
     >>> helpers.unsubscribe('Bart', 'itest-one')
 
     # Change Anne's email address to her alternative.
-    >>> import transaction
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> from canonical.launchpad.interfaces.person import IPersonSet
@@ -154,10 +153,10 @@ only in case are the same address.
 Emma joins Launchpad as normal, then subscribes a mixed-case alternative
 email address.
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> login('foo.bar@canonical.com')
-    >>> emma = new_person('Emma')
-    >>> email = email_set.new('EmmaXPerson@example.org', emma)
+    >>> emma = factory.makePersonByName('Emma')
+    >>> email = email_set.new(
+    ...     'EmmaXPerson@example.org', emma, account=emma.account)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> from canonical.launchpad.interfaces.mailinglist import IMailingListSet
     >>> emma.join(team_one)

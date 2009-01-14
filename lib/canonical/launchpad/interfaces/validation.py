@@ -315,13 +315,14 @@ def validate_new_team_email(email):
     from canonical.launchpad.webapp import canonical_url
     from canonical.launchpad.interfaces import IEmailAddressSet
     _validate_email(email)
-    email = getUtility(IEmailAddressSet).getByEmail(email)
-    if email is not None:
+    email_address = getUtility(IEmailAddressSet).getByEmail(email)
+    if email_address is not None:
+        person = email_address.person
         message = _('${email} is already registered in Launchpad and is '
                     'associated with <a href="${url}">${team}</a>.',
-                    mapping={'email': escape(email.email),
-                             'url':   canonical_url(email.person),
-                             'team':  escape(email.person.browsername)})
+                    mapping={'email': escape(email),
+                             'url': canonical_url(person),
+                             'team': escape(person.browsername)})
         raise LaunchpadValidationError(structured(message))
     return True
 
@@ -603,9 +604,5 @@ def validate_date_interval(start_date, end_date, error_msg=None):
     """
     if error_msg is None:
         error_msg = _("This event can't start after it ends.")
-    errors = []
     if start_date >= end_date:
-        errors.append(LaunchpadValidationError(error_msg))
-    if errors:
-        raise WidgetsError(errors)
-
+        raise WidgetsError([LaunchpadValidationError(error_msg)])

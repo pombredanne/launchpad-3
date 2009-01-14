@@ -119,7 +119,8 @@
                                <data type="integer"/>
                             </attribute>
                         </optional>
-                        <!-- XXX specify a set of required properties? -->
+                        <!-- XXX: Abel Deuring 2007-12-07:
+                             specify a set of required properties? -->
                         <oneOrMore>
                             <ref name="property"/>
                         </oneOrMore>
@@ -174,7 +175,8 @@
     <define name="softwareSection">
         <interleave>
             <element name="lsbrelease">
-                <!-- XXX specify a more restrictive set of allowed
+                <!-- XXX: Abel Deuring 2007-12-07:
+                     specify a more restrictive set of allowed
                      and/or required properties?
                 -->
                 <oneOrMore>
@@ -425,7 +427,7 @@
                 <attribute name="type">
                     <value>int</value>
                 </attribute>
-                <data type="int">
+                <data type="long">
                     <except>
                         <value/>
                     </except>

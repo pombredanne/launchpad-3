@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
     <!-- Project -->
-    <content class="canonical.launchpad.database.Project">
+    <class class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
@@ -24,7 +24,13 @@
         <require
             permission="launchpad.Admin"
             set_attributes="registrant" />
-    </content>
+        <!-- IHasAliases -->
+        <allow attributes="aliases" />
+        <require
+          permission="launchpad.Admin"
+          attributes="setAliases"
+          />
+    </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IProject"
@@ -32,16 +38,23 @@
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
         />
 
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProject"
+      factory="canonical.launchpad.browser.ProjectBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProjectSet"
+      factory="canonical.launchpad.browser.ProjectSetBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProjectNavigation"
-        />
-
-    <adapter
-        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-        for="canonical.launchpad.interfaces.IProject"
-        factory="canonical.launchpad.browser.ProjectSOP"
-        permission="zope.Public"
         />
 
     <browser:menus
@@ -332,9 +345,9 @@
         permission="launchpad.AnyPerson" />
 
     <!-- ProjectSet-->
-    <content class="canonical.launchpad.database.ProjectSet">
+    <class class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ProjectSet"
@@ -393,9 +406,9 @@
     </browser:pages>
 
     <!-- ProjectSeries -->
-    <content class="canonical.launchpad.database.ProjectSeries">
+    <class class="canonical.launchpad.database.ProjectSeries">
         <allow interface="canonical.launchpad.interfaces.IProjectSeries" />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IProjectSeries"

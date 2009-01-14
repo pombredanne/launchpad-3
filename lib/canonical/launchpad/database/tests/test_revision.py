@@ -11,7 +11,6 @@ from unittest import TestCase, TestLoader
 import psycopg2
 import pytz
 from storm.store import Store
-import transaction
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -63,7 +62,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         # If the revision author is known, allocate karma.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
-            author=author.preferredemail.email)
+            author=author.preferredemail.email,
+            revision_date=datetime.now(pytz.UTC) - timedelta(days=5))
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
         self.failUnless(rev.karma_allocated)
@@ -99,7 +99,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Nor is this revision identified as needing karma allocated.
@@ -111,7 +111,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -138,6 +138,22 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_karmaDateForFutureRevisions(self):
+        # If the revision date is some time in the future, then the karma date
+        # is set to be the time that the revision was created.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email,
+            revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        # Get the karma event.
+        [karma] = list(Store.of(author).find(
+            Karma,
+            Karma.person == author,
+            Karma.product == branch.product))
+        self.assertEqual(karma.datecreated, rev.date_created)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
@@ -207,76 +223,145 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # not returned.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(
-            1, owner=self.author, explicit_junk=True)
+            1, owner=self.author, product=None)
         self.assertEqual(
             b1, self.revision.getBranch(allow_private=True, allow_junk=False))
 
 
-class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
-    """Test the `getPublicRevisionsForPerson` method of `RevisionSet`."""
+class GetPublicRevisionsTestCase(TestCaseWithFactory):
+    """A base class for the tests for people, products and projects."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
         TestCaseWithFactory.setUp(self, "admin@canonical.com")
-        self.author = self.factory.makePerson()
-        self.revision = self.factory.makeRevision(
-            author=self.author.preferredemail.email)
+        # Since the tests order by date, but also limit to the last 30
+        # days, we want a time counter that starts 10 days ago.
         self.date_generator = time_counter(
-            datetime(2007, 1, 1, tzinfo=pytz.UTC),
+            datetime.now(pytz.UTC) - timedelta(days=10),
             delta=timedelta(days=1))
 
-    def _makeRevision(self, author=None):
-        """Make a revision owned by `author`.
-
-        `author` defaults to self.author if not set."""
-        if author is None:
-            author = self.author
+    def _makeRevision(self, revision_date=None):
+        """Make a revision using the date generator."""
+        if revision_date is None:
+            revision_date = self.date_generator.next()
         return self.factory.makeRevision(
-            author=author.preferredemail.email,
-            revision_date=self.date_generator.next())
+            revision_date=revision_date)
 
     def _addRevisionsToBranch(self, branch, *revs):
         # Add the revisions to the the branch.
         for sequence, rev in enumerate(revs):
             branch.createBranchRevision(sequence, rev)
 
-    def testRevisionsMustBeInABranch(self):
-        # A revision authored by the person must be in a branch to be
-        # returned.
-        rev1 = self._makeRevision()
-        self.assertEqual(self.author, rev1.revision_author.person)
-        self.assertEqual(
-            [],
-            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
-        b = self.factory.makeBranch()
-        b.createBranchRevision(1, rev1)
-        self.assertEqual(
-            [rev1],
-            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+    def _makeBranch(self, product=None):
+        # Make a branch.
+        if product is None:
+            # If the test defines a product, use that, otherwise
+            # have the factory generate one.
+            product = getattr(self, 'product', None)
+        return self.factory.makeBranch(product=product)
 
-    def testRevisionsMustBeInAPublicBranch(self):
-        # A revision authored by the person must be in a branch to be
-        # returned.
-        rev1 = self._makeRevision()
-        b = self.factory.makeBranch()
-        b.createBranchRevision(1, rev1)
-        b.private = True
-        self.assertEqual(
-            [],
-            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+    def _makeRevisionInBranch(self, product=None):
+        # Make a revision, and associate it with a branch.  The branch is made
+        # with the product passed in, which means that if there was no product
+        # passed in, the factory makes a new one.
+        if product is None:
+            product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        rev = self._makeRevision()
+        branch.createBranchRevision(1, rev)
+        return rev
+
+    def _getRevisions(self, day_limit=30):
+        raise NotImplementedError('_getRevisions')
+
+
+class RevisionTestMixin:
+    """Common tests for the different GetPublicRevision test cases."""
 
     def testNewestRevisionFirst(self):
         # The revisions are ordered with the newest first.
         rev1 = self._makeRevision()
         rev2 = self._makeRevision()
         rev3 = self._makeRevision()
-        branch = self.factory.makeBranch()
-        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
-        self.assertEqual(
-            [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self.assertEqual([rev3, rev2, rev1], self._getRevisions())
+
+    def testRevisionsOnlyReturnedOnce(self):
+        # If the revisions appear in multiple branches, they are only returned
+        # once.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        self._addRevisionsToBranch(
+            self._makeBranch(), rev1, rev2, rev3)
+        self._addRevisionsToBranch(
+            self._makeBranch(), rev1, rev2, rev3)
+        self.assertEqual([rev3, rev2, rev1], self._getRevisions())
+
+    def testRevisionsMustBeInABranch(self):
+        # A revision authored by the person must be in a branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        self.assertEqual([], self._getRevisions())
+        b = self._makeBranch()
+        b.createBranchRevision(1, rev1)
+        self.assertEqual([rev1], self._getRevisions())
+
+    def testRevisionsMustBeInAPublicBranch(self):
+        # A revision authored by the person must be in a branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        b = self._makeBranch()
+        b.createBranchRevision(1, rev1)
+        b.private = True
+        self.assertEqual([], self._getRevisions())
+
+    def testRevisionDateRange(self):
+        # Revisions where the revision_date is older than the day_limit, or
+        # some time in the future are not returned.
+        now = datetime.now(pytz.UTC)
+        day_limit = 5
+        # Make the first revision earlier than our day limit.
+        rev1 = self._makeRevision(
+            revision_date=(now - timedelta(days=(day_limit + 2))))
+        # The second one is just two days ago.
+        rev2 = self._makeRevision(
+            revision_date=(now - timedelta(days=2)))
+        # The third is in the future
+        rev3 = self._makeRevision(
+            revision_date=(now + timedelta(days=2)))
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self.assertEqual([rev2],  self._getRevisions(day_limit))
+
+
+class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase,
+                                      RevisionTestMixin):
+    """Test the `getPublicRevisionsForPerson` method of `RevisionSet`."""
+
+    def setUp(self):
+        GetPublicRevisionsTestCase.setUp(self)
+        self.author = self.factory.makePerson()
+        self.revision = self.factory.makeRevision(
+            author=self.author.preferredemail.email)
+
+    def _getRevisions(self, day_limit=30):
+        # Returns the revisions for the person.
+        return list(RevisionSet.getPublicRevisionsForPerson(
+                self.author, day_limit))
+
+    def _makeRevision(self, author=None, revision_date=None):
+        """Make a revision owned by `author`.
+
+        `author` defaults to self.author if not set."""
+        if revision_date is None:
+            revision_date = self.date_generator.next()
+        if author is None:
+            author = self.author
+        return self.factory.makeRevision(
+            author=author.preferredemail.email,
+            revision_date=revision_date)
 
     def testTeamRevisions(self):
         # Revisions owned by all members of a team are returned.
@@ -288,170 +373,51 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
         rev3 = self._makeRevision(self.factory.makePerson())
         branch = self.factory.makeBranch()
         self._addRevisionsToBranch(branch, rev1, rev2, rev3)
-        self.assertEqual(
-            [rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForPerson(team)))
-
-    def testRevisionsOnlyReturnedOnce(self):
-        # If the revisions appear in multiple branches, they are only returned
-        # once.
-        rev1 = self._makeRevision()
-        rev2 = self._makeRevision()
-        rev3 = self._makeRevision()
-        self._addRevisionsToBranch(
-            self.factory.makeBranch(), rev1, rev2, rev3)
-        self._addRevisionsToBranch(
-            self.factory.makeBranch(), rev1, rev2, rev3)
-        self.assertEqual(
-            [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+        self.assertEqual([rev2, rev1],
+                         list(RevisionSet.getPublicRevisionsForPerson(team)))
 
 
-class TestGetPublicRevisonsForProduct(TestCaseWithFactory):
+class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase,
+                                       RevisionTestMixin):
     """Test the `getPublicRevisionsForProduct` method of `RevisionSet`."""
 
-    layer = DatabaseFunctionalLayer
-
     def setUp(self):
-        # Use an administrator to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, "admin@canonical.com")
-        self.date_generator = time_counter(
-            datetime(2007, 1, 1, tzinfo=pytz.UTC),
-            delta=timedelta(days=1))
+        GetPublicRevisionsTestCase.setUp(self)
         self.product = self.factory.makeProduct()
 
-    def _makeRevision(self):
-        """Make a revision using the date generator."""
-        return self.factory.makeRevision(
-            revision_date=self.date_generator.next())
-
-    def _addRevisionsToBranch(self, branch, *revs):
-        # Add the revisions to the the branch.
-        for sequence, rev in enumerate(revs):
-            branch.createBranchRevision(sequence, rev)
-
-    def _makeRevisionInBranch(self, product=None):
-        # Make a revision, and associate it with a branch.  The branch is made
-        # with the product passed in, which means that if there was no product
-        # passed in, the factory makes a new one.
-        if product is None:
-            product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(product=product)
-        rev = self._makeRevision()
-        branch.createBranchRevision(1, rev)
-        return rev
+    def _getRevisions(self, day_limit=30):
+        # Returns the revisions for the person.
+        return list(RevisionSet.getPublicRevisionsForProduct(
+                self.product, day_limit))
 
     def testRevisionsMustBeInABranchOfProduct(self):
         # The revision must be in a branch for the product.
         # returned.
         rev1 = self._makeRevisionInBranch(product=self.product)
         rev2 = self._makeRevisionInBranch()
-        self.assertEqual(
-            [rev1],
-            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
-
-    def testRevisionsMustBeInAPublicBranch(self):
-        # A revision for the project must be in a public branch to be
-        # returned.
-        rev1 = self._makeRevision()
-        b = self.factory.makeBranch(product=self.product)
-        b.createBranchRevision(1, rev1)
-        b.private = True
-        self.assertEqual(
-            [],
-            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
-
-    def testNewestRevisionFirst(self):
-        # The revisions are ordered with the newest first.
-        rev1 = self._makeRevision()
-        rev2 = self._makeRevision()
-        rev3 = self._makeRevision()
-        branch = self.factory.makeBranch(product=self.product)
-        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
-        self.assertEqual(
-            [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
-
-    def testRevisionsOnlyReturnedOnce(self):
-        # If the revisions appear in multiple branches, they are only returned
-        # once.
-        rev1 = self._makeRevision()
-        rev2 = self._makeRevision()
-        rev3 = self._makeRevision()
-        self._addRevisionsToBranch(
-            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
-        self._addRevisionsToBranch(
-            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
-        self.assertEqual(
-            [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+        self.assertEqual([rev1], self._getRevisions())
 
 
-class TestGetPublicRevisonsForProject(TestCaseWithFactory):
+class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
+                                       RevisionTestMixin):
     """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
 
-    layer = DatabaseFunctionalLayer
-
     def setUp(self):
-        # Use an administrator to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, "admin@canonical.com")
-        self.date_generator = time_counter(
-            datetime(2007, 1, 1, tzinfo=pytz.UTC),
-            delta=timedelta(days=1))
+        GetPublicRevisionsTestCase.setUp(self)
         self.project = self.factory.makeProject()
         self.product = self.factory.makeProduct(project=self.project)
 
-    def _makeRevision(self):
-        """Make a revision using the date generator."""
-        return self.factory.makeRevision(
-            revision_date=self.date_generator.next())
-
-    def _addRevisionsToBranch(self, branch, *revs):
-        # Add the revisions to the the branch.
-        for sequence, rev in enumerate(revs):
-            branch.createBranchRevision(sequence, rev)
-
-    def _makeRevisionInBranch(self, product=None):
-        # Make a revision, and associate it with a branch.  The branch is made
-        # with the product passed in, which means that if there was no product
-        # passed in, the factory makes a new one.
-        if product is None:
-            product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(product=product)
-        rev = self._makeRevision()
-        branch.createBranchRevision(1, rev)
-        return rev
+    def _getRevisions(self, day_limit=30):
+        # Returns the revisions for the person.
+        return list(RevisionSet.getPublicRevisionsForProject(
+                self.project, day_limit))
 
     def testRevisionsMustBeInABranchOfProduct(self):
         # The revision must be in a branch for the product.
         # returned.
         rev1 = self._makeRevisionInBranch(product=self.product)
         rev2 = self._makeRevisionInBranch()
-        self.assertEqual(
-            [rev1],
-            list(RevisionSet.getPublicRevisionsForProject(self.project)))
-
-    def testRevisionsMustBeInAPublicBranch(self):
-        # A revision for the project must be in a public branch to be
-        # returned.
-        rev1 = self._makeRevision()
-        b = self.factory.makeBranch(product=self.product)
-        b.createBranchRevision(1, rev1)
-        b.private = True
-        self.assertEqual(
-            [],
-            list(RevisionSet.getPublicRevisionsForProject(self.project)))
-
-    def testNewestRevisionFirst(self):
-        # The revisions are ordered with the newest first.
-        rev1 = self._makeRevision()
-        rev2 = self._makeRevision()
-        rev3 = self._makeRevision()
-        branch = self.factory.makeBranch(product=self.product)
-        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
-        self.assertEqual(
-            [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+        self.assertEqual([rev1], self._getRevisions())
 
     def testProjectRevisions(self):
         # Revisions in all products that are part of the project are returned.
@@ -459,23 +425,52 @@ class TestGetPublicRevisonsForProject(TestCaseWithFactory):
         rev1 = self._makeRevisionInBranch(product=self.product)
         rev2 = self._makeRevisionInBranch(product=another_product)
         rev3 = self._makeRevisionInBranch()
-        self.assertEqual(
-            [rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+        self.assertEqual([rev2, rev1], self._getRevisions())
 
-    def testRevisionsOnlyReturnedOnce(self):
-        # If the revisions appear in multiple branches, they are only returned
-        # once.
-        rev1 = self._makeRevision()
-        rev2 = self._makeRevision()
-        rev3 = self._makeRevision()
-        self._addRevisionsToBranch(
-            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
-        self._addRevisionsToBranch(
-            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
-        self.assertEqual(
-            [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+
+class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
+    """Test the `getRecentRevisionsForProduct` method of `RevisionSet`."""
+
+    def setUp(self):
+        GetPublicRevisionsTestCase.setUp(self)
+        self.product = self.factory.makeProduct()
+
+    def _getRecentRevisions(self, day_limit=30):
+        # Return a list of the recent revisions and revision authors.
+        return list(RevisionSet.getRecentRevisionsForProduct(
+                self.product, day_limit))
+
+    def testRevisionAuthorMatchesRevision(self):
+        # The revision author returned with the revision is the same as the
+        # author for the revision.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        results = self._getRecentRevisions()
+        self.assertEqual(1, len(results))
+        revision, revision_author = results[0]
+        self.assertEqual(revision.revision_author, revision_author)
+
+    def testRevisionsMustBeInABranchOfProduct(self):
+        # The revisions returned revision must be in a branch for the product.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch()
+        self.assertEqual([(rev1, rev1.revision_author)],
+                         self._getRecentRevisions())
+
+    def testRevisionDateRange(self):
+        # Revisions where the revision_date is older than the day_limit, or
+        # some time in the future are not returned.
+        now = datetime.now(pytz.UTC)
+        day_limit = 5
+        # Make the first revision earlier than our day limit.
+        rev1 = self._makeRevision(
+            revision_date=(now - timedelta(days=(day_limit + 2))))
+        # The second one is just two days ago.
+        rev2 = self._makeRevision(revision_date=(now - timedelta(days=2)))
+        # The third is in the future
+        rev3 = self._makeRevision(revision_date=(now + timedelta(days=2)))
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self.assertEqual([(rev2, rev2.revision_author)],
+                         self._getRecentRevisions(day_limit))
 
 
 class TestTipRevisionsForBranches(TestCase):
@@ -561,6 +556,53 @@ class TestTipRevisionsForBranches(TestCase):
         timestamp = time.time()
         date = datetime.fromtimestamp(timestamp, tz=UTC)
         self.assertEqual(date, revision_set._timestampToDatetime(timestamp))
+
+
+class TestOnlyPresent(TestCaseWithFactory):
+    """Tests for `RevisionSet.onlyPresent`.
+
+    Note that although onlyPresent returns a set, it is a security proxied
+    set, so we have to convert it to a real set before doing any comparisons.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def test_empty(self):
+        # onlyPresent returns no results when passed no revids.
+        self.assertEqual(
+            set(),
+            set(getUtility(IRevisionSet).onlyPresent([])))
+
+    def test_none_present(self):
+        # onlyPresent returns no results when passed a revid not present in
+        # the database.
+        not_present = self.factory.getUniqueString()
+        self.assertEqual(
+            set(),
+            set(getUtility(IRevisionSet).onlyPresent([not_present])))
+
+    def test_one_present(self):
+        # onlyPresent returns a revid that is present in the database.
+        present = self.factory.makeRevision().revision_id
+        self.assertEqual(
+            set([present]),
+            set(getUtility(IRevisionSet).onlyPresent([present])))
+
+    def test_some_present(self):
+        # onlyPresent returns only the revid that is present in the database.
+        not_present = self.factory.getUniqueString()
+        present = self.factory.makeRevision().revision_id
+        self.assertEqual(
+            set([present]),
+            set(getUtility(IRevisionSet).onlyPresent([present, not_present])))
+
+    def test_call_twice_in_one_transaction(self):
+        # onlyPresent creates temporary tables, but cleans after itself so
+        # that it can safely be called twice in one transaction.
+        not_present = self.factory.getUniqueString()
+        getUtility(IRevisionSet).onlyPresent([not_present])
+        # This is just "assertNotRaises"
+        getUtility(IRevisionSet).onlyPresent([not_present])
 
 
 def test_suite():

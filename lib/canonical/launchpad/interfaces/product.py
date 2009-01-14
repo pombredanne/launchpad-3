@@ -7,16 +7,20 @@ __metaclass__ = type
 
 __all__ = [
     'IProduct',
-    'IProductSet',
+    'IProductEditRestricted',
+    'IProductPublic',
     'IProductReviewSearch',
+    'IProductSet',
     'License',
     'LicenseStatus',
+    'NoSuchProduct',
     ]
 
 import sets
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Object, Set, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -25,6 +29,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -33,8 +38,10 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
     ILaunchpadUsage)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -45,14 +52,15 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters)
+    REQUEST_USER, call_with, collection_default_content,
+    export_as_webservice_collection, export_as_webservice_entry,
+    export_factory_operation, export_operation_as, export_read_operation,
+    exported, operation_parameters, operation_returns_collection_of,
+    rename_parameters_as)
 
 
 class LicenseStatus(DBEnumeratedType):
@@ -74,58 +82,52 @@ class LicenseStatus(DBEnumeratedType):
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
-    # XXX: EdwinGrubbs 2008-04-11 bug=216040
-    # The deprecated licenses can be removed in the next cycle.
+    sort_order = (
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC', 'ECLIPSE',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
+        'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
+        'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
+        'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(10, "Academic Free License")
-    AFFERO = DBItem(20, "Affero GPL")
+    AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
-    _DEPRECATED_CDDL = DBItem(60, "CDDL")
-    _DEPRECATED_CECILL = DBItem(70, "CeCILL License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
-    _DEPRECATED_EIFFEL = DBItem(110, "Eiffel Forum License")
-    _DEPRECATED_GNAT = DBItem(120, "GNAT Modified GPL")
     GNU_GPL_V2 = DBItem(130, "GNU GPL v2")
     GNU_GPL_V3 = DBItem(135, "GNU GPL v3")
     GNU_LGPL_V2_1 = DBItem(150, "GNU LGPL v2.1")
     GNU_LGPL_V3 = DBItem(155, "GNU LGPL v3")
-    _DEPRECATED_IBM = DBItem(140, "IBM Public License")
     MIT = DBItem(160, "MIT / X / Expat License")
     MPL = DBItem(170, "Mozilla Public License")
-    _DEPRECATED_OPEN_CONTENT = DBItem(180, "Open Content License")
     OPEN_SOFTWARE = DBItem(190, "Open Software License")
     PERL = DBItem(200, "Perl License")
     PHP = DBItem(210, "PHP License")
     PUBLIC_DOMAIN = DBItem(220, "Public Domain")
     PYTHON = DBItem(230, "Python License")
-    _DEPRECATED_QPL = DBItem(240, "Q Public License")
-    _DEPRECATED_SUN_PUBLIC = DBItem(250, "SUN Public License")
-    _DEPRECATED_W3C = DBItem(260, "W3C License")
-    _DEPRECATED_ZLIB = DBItem(270, "zlib/libpng License")
     ZPL = DBItem(280, "Zope Public License")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact,IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
-    """A Product.
+class IProductEditRestricted(Interface):
+    """IProduct properties which require launchpad.Edit permission."""
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
-    For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others.
-    """
-    export_as_webservice_entry('project')
+    def newSeries(owner, name, summary, branch=None):
+        """Creates a new ProductSeries for this product."""
+
+
+class IProductPublic(
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, ISpecificationTarget, IPillar):
+    """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -154,8 +156,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("Project owner, it can either a valid Person or "
-                          "Team inside Launchpad context.")))
+            description=_("The person or team who maintains the project "
+                          "information in Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
@@ -163,8 +165,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             required=True,
             readonly=True,
             vocabulary='ValidPersonOrTeam',
-            description=_("Project registrant, a valid Person "
-                          "within Launchpad context.")))
+            description=_("This person registered the project in "
+                          "Launchpad.")))
 
     driver = exported(
         PublicPersonChoice(
@@ -216,8 +218,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 development. Don't repeat anything from the Summary.""")))
 
     datecreated = exported(
-        TextLine(
+        Datetime(
             title=_('Date Created'),
+            required=True, readonly=True,
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
 
@@ -259,7 +262,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     programminglang = exported(
         TextLine(
-            title=_('Programming Language'),
+            title=_('Programming Languages'),
             required=False,
             description=_("""A comma delimited list of programming
                 languages used for this project.""")),
@@ -287,30 +290,34 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    icon = IconImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/product',
-        description=_(
-            "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project. The icon will be "
-            "displayed next to the project name everywhere in Launchpad that "
-            "we refer to the project and link to it."))
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/product',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this project. The icon "
+                "will be displayed next to the project name everywhere in "
+                "Launchpad that we refer to the project and link to it.")))
 
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/product-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this project. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/product-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this project. It should "
+                "be no bigger than 50kb in size.")))
 
-    mugshot = MugshotImageUpload(
-        title=_("Brand"), required=False,
-        default_image_resource='/@@/product-mugshot',
-        description=_(
-            "A large image of exactly 192x192 pixels, that will be displayed "
-            "on this project's home page in Launchpad. It should be no "
-            "bigger than 100kb in size. "))
+    mugshot = exported(
+        MugshotImageUpload(
+            title=_("Brand"), required=False,
+            default_image_resource='/@@/product-mugshot',
+            description=_(
+                "A large image of exactly 192x192 pixels, that will be "
+                "displayed on this project's home page in Launchpad. It "
+                "should be no bigger than 100kb in size.")),
+        exported_as='brand')
 
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this project's attributes are
@@ -379,8 +386,12 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    branches = Attribute(_("""An iterator over the Bazaar branches that are
-    related to this product."""))
+    branches = exported(
+        CollectionField(
+            title=_("An iterator over the Bazaar branches that are "
+                    "related to this product."),
+            readonly=True,
+            value_type=Reference(schema=IBranch)))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 
@@ -436,7 +447,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
-                                  subscription_months, whiteboard=None):
+                                  subscription_months, whiteboard=None,
+                                  current_datetime=None):
         """Redeem a voucher and extend the subscription expiration date.
 
         The voucher must have already been verified to be redeemable.
@@ -446,6 +458,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
+        :param current_datetime: Current time.  Will be datetime.now() if not specified.
         :return: None
         """
 
@@ -454,9 +467,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
-
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
         """Returns the series for this product that has the name given, or
@@ -482,6 +492,21 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     def userCanEdit(user):
         """Can the user edit this product?"""
+
+class IProduct(IProductEditRestricted, IProductPublic):
+    """A Product.
+
+    The Launchpad Registry describes the open source world as Projects and
+    Products. Each Project may be responsible for several Products.
+    For example, the Mozilla Project has Firefox, Thunderbird and The
+    Mozilla App Suite as Products, among others.
+    """
+
+    export_as_webservice_entry('project')
+
+# Fix cyclic references.
+IProject['products'].value_type = Reference(IProduct)
+IProductRelease['product'].schema = IProduct
 
 
 class IProductSet(Interface):
@@ -510,11 +535,11 @@ class IProductSet(Interface):
         raised.
         """
 
-    def getByName(name, default=None, ignore_inactive=False):
+    def getByName(name, ignore_inactive=False):
         """Return the product with the given name, ignoring inactive products
         if ignore_inactive is True.
 
-        Return the default value if there is no such product.
+        Return None if there is no such product.
         """
 
     def getProductsWithBranches(num_products=None):
@@ -532,13 +557,28 @@ class IProductSet(Interface):
         A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        displayname='display_name', project='project_group',
+        homepageurl='home_page_url', screenshotsurl='screenshots_url',
+        freshmeatproject='freshmeat_project', wikiurl='wiki_url',
+        downloadurl='download_url',
+        sourceforgeproject='sourceforge_project',
+        programminglang='programming_lang')
+    @export_factory_operation(
+        IProduct, ['name', 'displayname', 'title', 'summary', 'description',
+                   'project', 'homepageurl', 'screenshotsurl',
+                   'downloadurl', 'freshmeatproject', 'wikiurl',
+                   'sourceforgeproject', 'programminglang',
+                   'licenses', 'license_info', 'registrant'])
+    @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
-                      description, project=None, homepageurl=None,
+                      description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None,
+                      license_reviewed=False, mugshot=None, logo=None,
+                      icon=None, licenses=None, license_info=None,
                       registrant=None):
         """Create and return a brand new Product.
 
@@ -549,7 +589,8 @@ class IProductSet(Interface):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
-    @operation_parameters(text=TextLine())
+    @operation_parameters(text=TextLine(title=_("Search text")))
+    @operation_returns_collection_of(IProduct)
     @export_read_operation()
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
@@ -560,8 +601,19 @@ class IProductSet(Interface):
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 
+
+    @operation_returns_collection_of(IProduct)
+    @call_with(quantity=None)
+    @export_read_operation()
     def latest(quantity=5):
-        """Return the latest products registered in the Launchpad."""
+        """Return the latest projects registered in the Launchpad.
+
+        If the quantity is not specified or is a value that is not 'None'
+        then the set of projects returned is limited to that value (the
+        default quantity is 5).  If quantity is 'None' then all projects are
+        returned.  For the web service it is not possible to specify the
+        quantity, so all projects are returned, latest first.
+        """
 
     def getTranslatables():
         """Return an iterator over products that have translatable resources.
@@ -671,3 +723,9 @@ class IProductReviewSearch(Interface):
 
     subscription_modified_before = Date(
         title=_("and"), required=False)
+
+
+class NoSuchProduct(NameLookupFailed):
+    """Raised when we try to find a product that doesn't exist."""
+
+    _message_prefix = "No such product"

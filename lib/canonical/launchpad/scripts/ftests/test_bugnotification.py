@@ -14,7 +14,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.database import BugTask
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
@@ -30,6 +30,7 @@ class MockBug:
     duplicateof = None
     private = False
     security_related = False
+    messages = []
 
     def __init__(self, id, owner):
         self.id = id
@@ -169,7 +170,8 @@ class TestGetEmailNotificattions(unittest.TestCase):
             recipients = {}
             for notification in notifications:
                 for recipient in notification.recipients:
-                    for address in contactEmailAddresses(recipient.person):
+                    for address in get_contact_email_addresses(
+                        recipient.person):
                         recipients[address] = recipient
             expected_to_addresses = recipients.keys()
             self.assertEqual(

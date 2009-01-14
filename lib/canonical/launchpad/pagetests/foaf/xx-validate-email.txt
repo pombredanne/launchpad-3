@@ -53,7 +53,7 @@ Check that the email address now shows up as validated.
     >>> browser.getLink('E-mail Settings').click()
     >>> browser.getControl(name="field.VALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com')
-    <ItemControl...optionValue='salgado@ubuntu.com'>
+    <ItemControl...optionValue='salgado@ubuntu.com'...>
 
     >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com')

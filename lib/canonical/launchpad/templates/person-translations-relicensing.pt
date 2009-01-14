@@ -13,27 +13,23 @@
     <div metal:fill-slot="main">
       <h1>Sorry to interrupt&#8230;</h1>
       <p>
-        Launchpad is all about sharing and collaborating between projects.
+        When you make a translation in Launchpad, it's available for use
+        by all projects that use Launchpad.
       </p>
       <p>
-        To help us with this, we&#8217;d like your permission to
-        <strong>license all your translations</strong>,
-        <a tal:attributes="href string:${context/fmt:url}">past</a> and future,
-        <strong>under the <a href="https://help.launchpad.net/Legal/BSDLicense"
-        >BSD&nbsp;license</a></strong>.
-        We&#8217;ve chosen the BSD license because it&#8217;s universally
-        compatible with projects that use other licenses.
-      </p>
-      <p>
+        So that the maximum number of projects can benefit from this,
+        we ask that you agree to <strong>license all your translations
+        using the
+        <a href="https://help.launchpad.net/Legal/BSDLicense">BSD licence</a></strong>.
         If you change your mind later, you can return to this page
-        (&#8220;Translations licensing&#8221;)
-        any time until July 31st.
-        If you choose not to accept the BSD license, we&#8217;ll remove your
-        translations from Launchpad shortly after then.
+        (“Translations licensing”) at any time.
       </p>
       <p>
-        For more about why we&#8217;re clarifying translations licensing,
-        see our
+        If you do not agree to the BSD licence, you will not be able
+        to make translations in Launchpad.
+      </p>
+      <p>
+        For more about why we ask this from you, see our
         <a href="http://help.launchpad.net/Translations/LicensingFAQ"
         >translations&nbsp;licensing&nbsp;FAQ</a>.
       </p>
