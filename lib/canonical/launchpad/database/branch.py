@@ -75,7 +75,7 @@ from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import (
     validate_public_person)
 from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.database.job import Job, JobStatus
+from canonical.launchpad.database.job import Job, LeaseHeld
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
@@ -1724,6 +1724,15 @@ class RevisionMailJob(BranchDiffJob):
                 Job.id.is_in(Job.ready_jobs)))
         return (RevisionMailJob(job) for job in jobs)
 
+    @classmethod
+    def runAll(klass):
+        for job in klass.iterReady():
+            try:
+                job.job.acquireLease()
+            except LeaseHeld:
+                continue
+            job.run()
+
     @property
     def revno(self):
         revno = self.metadata['revno']
@@ -1761,4 +1770,11 @@ class RevisionMailJob(BranchDiffJob):
 
     def run(self):
         """See `IRevisionMailJob`."""
-        self.getMailer().sendAll()
+        self.job.start()
+        try:
+            self.getMailer().sendAll()
+        except:
+            self.job.fail()
+            raise
+        else:
+            self.job.complete()

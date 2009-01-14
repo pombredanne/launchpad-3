@@ -28,6 +28,7 @@ from canonical.launchpad.database.branchmergeproposal import (
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
+from canonical.launchpad.database.job import LeaseHeld
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
@@ -1663,6 +1664,35 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job.job.complete()
         self.assertEqual([], list(RevisionMailJob.iterReady()))
 
+    def test_runAll(self):
+        branch = self.factory.makeBranch()
+        branch.subscribe(branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        job_1 = RevisionMailJob.create(
+            branch, 0, 'from@example.org', 'body', False, 'foo')
+        job_2 = RevisionMailJob.create(
+            branch, 1, 'from@example.org', 'body', False, 'bar')
+        RevisionMailJob.runAll()
+        self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
+        self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
+        (mail1, mail2) = pop_notifications()
+        self.assertEqual(
+            set(['foo', 'bar']), set(mail1['Subject', mail2['Subject']]))
+
+    def test_runAll_skips_lease_failures(self):
+        branch = self.factory.makeBranch()
+        job_1 = RevisionMailJob.create(
+            branch, 0, 'from@example.org', 'body', False, 'subject')
+        job_2 = RevisionMailJob.create(
+            branch, 1, 'from@example.org', 'body', False, 'subject')
+        def raise_lease_held():
+            raise LeaseHeld()
+        job_2.job.acquireLease = raise_lease_held
+        RevisionMailJob.runAll()
+        self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
+        self.assertEqual(JobStatus.WAITING, job_2.job.status)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
