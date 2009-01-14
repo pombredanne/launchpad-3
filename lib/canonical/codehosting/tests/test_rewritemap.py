@@ -68,7 +68,7 @@ class TestRewriteMapScript(TestCase):
 
     def testRemoteBranchNotWritten(self):
         # Remote branches do not have entries in the rewrite file.
-        branch = self.factory.makeAnyBranch(BranchType.REMOTE)
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         self.assertNotInRewriteMap(branch)
 
 
