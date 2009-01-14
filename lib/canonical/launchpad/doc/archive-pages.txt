@@ -372,8 +372,6 @@ initial/empty state.
     ...         'field.actions.save': 'Save',
     ...         })
 
-    >>> transaction.commit()
-
 After processing the POST the view will redirect to itself.
 
     >>> view.next_url is not None

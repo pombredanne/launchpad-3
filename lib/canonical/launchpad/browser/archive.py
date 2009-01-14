@@ -38,6 +38,8 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.browser.librarian import FileNavigationMixin
+from canonical.launchpad.components.archivedependencies import (
+    default_component_dependency_name, default_pocket_dependency)
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
@@ -1103,7 +1105,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
         if primary_dependency is None:
-            default_value = PackagePublishingPocket.UPDATES
+            default_value = default_pocket_dependency
         else:
             default_value = primary_dependency.pocket
 
@@ -1152,13 +1154,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
-        if primary_dependency is not None:
-            if primary_dependency.component == multiverse:
-                default_value = multiverse
-            else:
-                default_value = None
+        if primary_dependency is None:
+            default_value = getUtility(IComponentSet)[
+                default_component_dependency_name]
         else:
-            default_value = multiverse
+            default_value = primary_dependency.component
 
         terms = [all_components, follow_primary]
         primary_components_vocabulary = SimpleVocabulary(terms)
@@ -1220,17 +1220,28 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
+        # Received values.
         dependency_pocket = data.get('primary_dependencies')
         dependency_component = data.get('primary_components')
 
+        # Check if the given values correspond to the default scenario
+        # for the context archive.
+        default_component_dependency = getUtility(IComponentSet)[
+            default_component_dependency_name]
+        is_default_dependency = (
+            dependency_pocket == default_pocket_dependency and
+            dependency_component == default_component_dependency)
+
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
-        multiverse = getUtility(IComponentSet)['multiverse']
 
-        if (primary_dependency is None and
-            dependency_pocket == PackagePublishingPocket.UPDATES and
-            dependency_component == multiverse):
+        # No action is required if there is no primary_dependency
+        # override set and the given values match it.
+        if primary_dependency is None and is_default_dependency:
             return
+
+        # Similarly, no action is required if the given values match
+        # the existing primary_dependency override.
         if (primary_dependency is not None and
             primary_dependency.pocket == dependency_pocket and
             primary_dependency.component == dependency_component):
@@ -1241,8 +1252,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             self.context.removeArchiveDependency(
                 self.context.distribution.main_archive)
 
-        if (dependency_pocket == PackagePublishingPocket.UPDATES and
-            dependency_component == multiverse):
+        if is_default_dependency:
             self._messages.append(
                 '<p>Default primary dependencies restored.</p>')
             return

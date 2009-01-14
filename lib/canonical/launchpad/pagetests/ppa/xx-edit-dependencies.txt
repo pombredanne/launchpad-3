@@ -357,6 +357,12 @@ contains a extra dependency.
     ( ) Proposed (default dependencies and proposed updates).
     ( ) Backports (default dependencies and unsupported updates).
 
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    ( ) Use all Ubuntu components available.
+    (*) Use the same components used for each source in the Ubuntu
+        primary archive.
+
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for No Privileges Person
 
@@ -397,6 +403,12 @@ processed.
     ( ) Default (security dependencies and recommended updates).
     ( ) Proposed (default dependencies and proposed updates).
     ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    (*) Use all Ubuntu components available.
+    ( ) Use the same components used for each source in the Ubuntu
+        primary archive.
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth

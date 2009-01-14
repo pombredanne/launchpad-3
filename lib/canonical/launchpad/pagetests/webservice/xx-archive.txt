@@ -519,15 +519,26 @@ returned from the function call.
 If there's nothing to copy at all, an error is returned.  Repeating the copy
 above will give this effect.
 
-    >>> print cprov_webservice.named_post(
+    >>> already_copied = cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
     ...     to_series="warty")
+    >>> print already_copied
     HTTP/1.1 400 Bad Request
     ...
     CannotCopy: Packages already copied.
     <BLANKLINE>
+
+Within the web application, the CannotCopy exception means that there
+was an oversight in the code that called syncSources()--that method
+shouldn't have been called in the first place. The CannotCopy
+exception therefore results in an OOPS. But within the web service,
+syncSources is invoked directly by the client, and any problems are
+the client's fault. Therefore, there's no need to record an OOPS.
+
+    >>> 'X-Lazr-Oopsid' in already_copied.getOutput()
+    False
 
 Keys with not enough permissions in Celso's PPA context are not
 allowed to call the method at all.
