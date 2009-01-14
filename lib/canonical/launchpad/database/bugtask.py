@@ -1346,15 +1346,15 @@ class BugTaskSet:
                                  "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
-            clauseTables.append('BugAttachment')
+            attachment_clause = (
+                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
             if isinstance(params.attachmenttype, any):
                 where_cond = "BugAttachment.type IN (%s)" % ", ".join(
                     sqlvalues(*params.attachmenttype.query_values))
             else:
                 where_cond = "BugAttachment.type = %s" % sqlvalues(
                     params.attachmenttype)
-            extra_clauses.append("BugAttachment.bug = BugTask.bug")
-            extra_clauses.append(where_cond)
+            extra_clauses.append(attachment_clause % where_cond)
 
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))
