@@ -154,7 +154,10 @@ class PackageCloner:
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
-        # This is diagnostic output and will be removed in the final branch.
+        self._cleanup()
+
+    def _print_diagnostics(self, store):
+        """Prints diagnostic output, used for debugging."""
         rset = store.execute("""
             SELECT sourcepackagename, s_version, t_version
             FROM tmp_merge_copy_data
@@ -174,7 +177,6 @@ class PackageCloner:
             FROM tmp_merge_copy_data
         """)
         print('all packages:\n%s' % '\n'.join(str(r) for r in rset))
-        self._cleanup()
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.
