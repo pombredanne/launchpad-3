@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd
+# Copyright 2004-2009 Canonical Ltd
+# pylint: disable-msg=E0211,E0213
 
 """Person-related view classes."""
 
@@ -262,7 +263,7 @@ class RestrictedMembershipsPersonView(LaunchpadView):
 
 
 class BranchTraversalMixin:
-    """Logic for traversing to branches below from IPersons.
+    """Logic for traversing to branches from `IPerson`s.
 
     Branches can be reached from
     code.launchpad.net/~person/+branch/other/path/info or from

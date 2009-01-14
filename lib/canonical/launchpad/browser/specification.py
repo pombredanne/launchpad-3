@@ -71,7 +71,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, action, canonical_url, enabled_with_permission,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 

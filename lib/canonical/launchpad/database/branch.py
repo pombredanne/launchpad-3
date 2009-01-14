@@ -1189,10 +1189,15 @@ class BranchSet:
         """Given a path within a branch, return the branch and the path."""
         namespace_set = getUtility(IBranchNamespaceSet)
         parsed = namespace_set.parseBranchPath(path)
+        parsed_path = None
         for parsed_path, branch_name, suffix in parsed:
             branch = self._getBranchInNamespace(parsed_path, branch_name)
             if branch is not None:
                 return branch, suffix
+
+        if parsed_path is None:
+            raise NoSuchBranch(path)
+
         # This will raise an interesting error if any of the given objects
         # don't exist.
         namespace_set.interpret(
