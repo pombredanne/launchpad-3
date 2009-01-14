@@ -58,9 +58,9 @@ from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
 from canonical.launchpad.searchbuilder import any, greater_than
 from canonical.launchpad.webapp import (
-    custom_widget, action, canonical_url, ContextMenu,
-    LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
-    Link, Navigation, structured, StandardLaunchpadFacets)
+    ContextMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, redirection, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -103,6 +103,17 @@ class BugNavigation(Navigation):
 
     @stepthrough('attachments')
     def traverse_attachments(self, name):
+        """Retrieve a BugAttachment by ID.
+
+        If an attachment is found, redirect to its canonical URL.
+        """
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context:
+                return redirection(canonical_url(attachment), status=301)
+
+    @stepthrough('+attachment')
+    def traverse_attachment(self, name):
         """Retrieve a BugAttachment by ID.
 
         Only return a attachment if it is related to this bug.

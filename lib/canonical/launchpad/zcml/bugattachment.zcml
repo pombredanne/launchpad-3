@@ -23,7 +23,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugAttachment"
-        path_expression="string:attachments/${id}"
+        path_expression="string:+attachment/${id}"
         attribute_to_parent="bug"
         />
 
