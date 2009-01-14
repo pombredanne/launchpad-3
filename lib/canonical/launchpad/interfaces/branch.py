@@ -679,6 +679,14 @@ class IBranch(IHasOwner):
             "The source package that this is a branch of. Source package "
             "branches always belong to a distribution series."))
 
+    distribution = Attribute(
+        "The IDistribution that this branch belongs to. None if not a "
+        "package branch.")
+
+    sourcepackage = Attribute(
+        "The ISourcePackage that this branch belongs to. None if not a "
+        "package branch.")
+
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 

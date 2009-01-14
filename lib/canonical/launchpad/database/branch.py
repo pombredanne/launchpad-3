@@ -159,6 +159,13 @@ class Branch(SQLBase):
             return ProductContainer(self.product)
 
     @property
+    def distribution(self):
+        """See `IBranch`."""
+        if self.distroseries is None:
+            return None
+        return self.distroseries.distribution
+
+    @property
     def revision_history(self):
         return BranchRevision.select('''
             BranchRevision.branch = %s AND

@@ -232,6 +232,23 @@ class TestBranch(TestCaseWithFactory):
         self.assertEqual(sourcepackage, launchbag.sourcepackage)
         self.assertIs(None, branch.product)
 
+    def test_distribution_personal(self):
+        # The distribution property of a branch is None for personal branches.
+        branch = self.factory.makePersonalBranch()
+        self.assertIs(None, branch.distribution)
+
+    def test_distribution_product(self):
+        # The distribution property of a branch is None for product branches.
+        branch = self.factory.makeProductBranch()
+        self.assertIs(None, branch.distribution)
+
+    def test_distribution_package(self):
+        # The distribution property of a branch is the distribution of the
+        # distroseries for package branches.
+        branch = self.factory.makePackageBranch()
+        self.assertEqual(
+            branch.distroseries.distribution, branch.distribution)
+
 
 class TestGetByUniqueName(TestCaseWithFactory):
     """Tests for `IBranchSet.getByUniqueName`."""
