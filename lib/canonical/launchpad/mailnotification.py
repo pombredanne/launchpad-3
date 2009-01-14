@@ -44,7 +44,7 @@ from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -306,7 +306,7 @@ def _send_bug_details_to_new_bug_subscribers(
 
     to_addrs = set()
     for new_sub in new_subs:
-        to_addrs.update(contactEmailAddresses(new_sub))
+        to_addrs.update(get_contact_email_addresses(new_sub))
 
     if not to_addrs:
         return
@@ -1134,7 +1134,7 @@ def notify_team_join(event):
         reviewer = membership.reviewed_by
         # Somebody added this person as a member, we better send a
         # notification to the person too.
-        member_addrs = contactEmailAddresses(person)
+        member_addrs = get_contact_email_addresses(person)
 
         subject = 'You have been added to %s' % team.name
         templatename = 'new-member-notification.txt'
@@ -1761,7 +1761,7 @@ def notify_specification_subscription_created(specsub, event):
         {'blueprint_name' : spec.name,
          'blueprint_title' : spec.title,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 @block_implicit_flushes
@@ -1791,7 +1791,7 @@ def notify_specification_subscription_modified(specsub, event):
          'blueprint_title' : spec.title,
          'specsub_type' : specsub_type,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 
