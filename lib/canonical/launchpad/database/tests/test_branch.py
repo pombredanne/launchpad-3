@@ -1096,20 +1096,6 @@ class BranchDateLastModified(TestCaseWithFactory):
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
-    def test_specBranchLinkUpdates(self):
-        """Linking a branch to a spec updates the last modified time."""
-        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.factory.makeAnyBranch(date_created=date_created)
-        self.assertEqual(branch.date_last_modified, date_created)
-
-        spec = getUtility(ISpecificationSet).new(
-            name='some-spec', title='Some spec', product=branch.product,
-            owner=branch.owner, summary='', specurl=None,
-            definition_status=SpecificationDefinitionStatus.NEW)
-        spec.linkBranch(branch, branch.owner)
-        self.assertTrue(branch.date_last_modified > date_created,
-                        "Date last modified was not updated.")
-
     def test_updateScannedDetails_with_null_revision(self):
         # If updateScannedDetails is called with a null revision, it
         # effectively means that there is an empty branch, so we can't use the

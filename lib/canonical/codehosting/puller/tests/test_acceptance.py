@@ -312,7 +312,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # branch of the product if such a thing exists.
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeProductBranch(
-            BranchType.MIRRORED, product=default_branch.product)
+            branch_type=BranchType.MIRRORED, product=default_branch.product)
         tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
@@ -331,7 +331,7 @@ class TestBranchPuller(PullerBranchTestCase):
         default_branch = self._makeDefaultStackedOnBranch(
             branch_type=BranchType.MIRRORED)
         db_branch = self.factory.makeProductBranch(
-            BranchType.HOSTED, product=default_branch.product)
+            branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
         command, retcode, output, error = self.runPuller('upload')
@@ -354,7 +354,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # though, as the paths are as they should be when the puller is run.
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeProductBranch(
-            BranchType.HOSTED, product=default_branch.product)
+            branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
         # Because Bazaar can't access branches over bzr+ssh in this test, we
@@ -379,7 +379,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # aren't stacked when they are mirrored.
         default_branch = self._makeDefaultStackedOnBranch(private=True)
         db_branch = self.factory.makeProductBranch(
-            BranchType.MIRRORED, product=default_branch.product)
+            branch_type=BranchType.MIRRORED, product=default_branch.product)
 
         tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()

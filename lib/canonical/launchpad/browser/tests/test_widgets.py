@@ -205,7 +205,8 @@ class TestBranchPopupWidget(unittest.TestCase):
         popup = self.makeBranchPopup(vocab)
 
         # Make a branch on a different product.
-        branch = self.factory.makeProductBranch(BranchType.MIRRORED)
+        branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED)
         self.assertNotEqual(self.launch_bag.product, branch.product)
 
         # Trying to make a branch with that URL will fail.
