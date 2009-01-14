@@ -715,7 +715,7 @@ message translations were ignored.
 
     >>> message = get_pofile_translation_message(
     ...     pofile, u'translator-credits')
-    >>> print message.msgstr0.translation
+    >>> message.msgstr0.translation
     u'helpful@example.com'
     >>> potemplate['translator-credits'].getLocalTranslationMessages(welsh)
     []
