@@ -810,7 +810,7 @@ finally name).
     >>> branch_for_b_called_c = factory.makeProductBranch(
     ...     owner=person, product=product_b, name='c')
     >>> junk_branch = factory.makePersonalBranch(
-    ...     owner=person, product=None, name='junk')
+    ...     owner=person, name='junk')
     >>> other = factory.makePerson(name='other')
     >>> other_branch_for_b_called_a = factory.makeProductBranch(
     ...     owner=other, product=product_b, name='a',

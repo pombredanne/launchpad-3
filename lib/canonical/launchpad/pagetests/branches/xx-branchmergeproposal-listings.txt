@@ -28,7 +28,7 @@ Make a single proposal for albert that is needing review.
 Make two proposals for bob, one needing review, and one approved.
 
     >>> bob = factory.makePerson(name='bob')
-    >>> branch = factory.makeProducBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=bob, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.requestReview()

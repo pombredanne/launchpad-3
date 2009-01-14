@@ -40,7 +40,7 @@ Let's make a mirrored branch to play with:
 
     >>> login(ANONYMOUS)
     >>> branch = removeSecurityProxy(
-    ...     factory.makeAnyBranch(BranchType.MIRRORED))
+    ...     factory.makeAnyBranch(branch_type=BranchType.MIRRORED))
     >>> logout()
 
 At the moment, it's not scheduled to be mirrored.
@@ -75,8 +75,8 @@ time goes on.
     >>> eric = factory.makePerson(name='eric')
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeProductBranch(
-    ...     BranchType.HOSTED, owner=eric, product=fooix, name='trunk',
-    ...     title='The Fooix Trunk')
+    ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
+    ...     name='trunk', title='The Fooix Trunk')
     >>> branch_url = '/' + branch.unique_name
     >>> logout()
 
