@@ -487,7 +487,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if product is None:
             product = self.makeProduct()
-        return self.makeBranch(product=product, sourcepackage=None, **kwargs)
+        return self.makeBranch(product=product, **kwargs)
 
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
