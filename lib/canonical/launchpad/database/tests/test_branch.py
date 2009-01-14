@@ -1539,7 +1539,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         tree_transport = tree.bzrdir.root_transport
         tree_transport.put_bytes("hello.txt", "Hello World\n")
         tree.add('hello.txt')
-        tree.commit('rev1', timestamp=1000000000.0, timezone=0)
+        tree.commit('rev1', timestamp=1e9, timezone=0)
         job = BranchDiffJob.create(branch, '0', '1')
         diff = job.run()
         transaction.commit()
@@ -1628,7 +1628,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         tree.commit('First commit')
         job = RevisionMailJob.create(
             branch, 1, 'from@example.com', 'hello', True, 'subject')
-        mailer = job.get_mailer()
+        mailer = job.getMailer()
         self.assertIn('+bar\n', mailer.diff)
 
     def test_perform_diff_ignored_for_revno_0(self):
@@ -1639,7 +1639,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
             branch, 0, 'from@example.com', 'hello', True, 'subject')
         self.assertIs(None, job.from_revision_spec)
         self.assertIs(None, job.to_revision_spec)
-        mailer = job.get_mailer()
+        mailer = job.getMailer()
         self.assertIs(None, mailer.diff)
 
     def test_iterReady_ignores_BranchDiffJobs(self):

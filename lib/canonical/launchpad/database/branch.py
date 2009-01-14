@@ -1645,12 +1645,12 @@ class BranchDiffJob(object):
     @classmethod
     def create(klass, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
-        metadata = klass.get_metadata(from_revision_spec, to_revision_spec)
+        metadata = klass.getMetadata(from_revision_spec, to_revision_spec)
         branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
         return klass(branch_job)
 
     @staticmethod
-    def get_metadata(from_revision_spec, to_revision_spec):
+    def getMetadata(from_revision_spec, to_revision_spec):
         return {
             'from_revision_spec': from_revision_spec,
             'to_revision_spec': to_revision_spec,
@@ -1709,7 +1709,7 @@ class RevisionMailJob(BranchDiffJob):
         else:
             from_revision_spec = None
             to_revision_spec = None
-        metadata.update(BranchDiffJob.get_metadata(from_revision_spec,
+        metadata.update(BranchDiffJob.getMetadata(from_revision_spec,
                         to_revision_spec))
         branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
         return klass(branch_job)
@@ -1747,7 +1747,7 @@ class RevisionMailJob(BranchDiffJob):
     def subject(self):
         return self.metadata['subject']
 
-    def get_mailer(self):
+    def getMailer(self):
         """Return a BranchMailer for this job."""
         if self.perform_diff and self.to_revision_spec is not None:
             diff = BranchDiffJob.run(self)
@@ -1761,4 +1761,4 @@ class RevisionMailJob(BranchDiffJob):
 
     def run(self):
         """See `IRevisionMailJob`."""
-        self.get_mailer().sendAll()
+        self.getMailer().sendAll()
