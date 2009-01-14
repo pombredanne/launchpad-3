@@ -221,9 +221,10 @@ class TestRevisionGetBranch(TestCaseWithFactory):
     def testGetBranchNotJunk(self):
         # If allow_junk is set to False, then branches without products are
         # not returned.
-        b1 = self.makeBranchWithRevision(1)
-        b2 = self.makeBranchWithRevision(
-            1, owner=self.author, product=None)
+        b1 = self.factory.makeProductBranch()
+        b1.createBranchRevision(1, self.revision)
+        b2 = self.factory.makePersonalBranch(owner=self.author)
+        b2.createBranchRevision(1, self.revision)
         self.assertEqual(
             b1, self.revision.getBranch(allow_private=True, allow_junk=False))
 
@@ -266,7 +267,7 @@ class GetPublicRevisionsTestCase(TestCaseWithFactory):
         # Make a revision, and associate it with a branch.  The branch is made
         # with the product passed in, which means that if there was no product
         # passed in, the factory makes a new one.
-        branch = self._makeBranch(product)
+        branch = self.factory.makeProductBranch(product=product)
         rev = self._makeRevision()
         branch.createBranchRevision(1, rev)
         return rev

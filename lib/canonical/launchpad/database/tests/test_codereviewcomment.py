@@ -44,10 +44,10 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
         self.assertEqual(comment, self.bmp.root_comment)
-        self.assertEqual('Re: [Merge] '
-            'lp://dev/~person-name2/product-name8/branch4 into '
-            'lp://dev/~person-name13/product-name8/branch15',
-            comment.message.subject)
+        self.assertEqual(
+            'Re: [Merge] %s into %s' % (
+                self.bmp.source_branch.bzr_identity,
+                self.bmp.target_branch.bzr_identity), comment.message.subject)
         self.assertEqual('Message content', comment.message.chunks[0].content)
 
     def test_createReplyComment(self):
