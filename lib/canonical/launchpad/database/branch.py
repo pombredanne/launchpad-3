@@ -298,12 +298,9 @@ class Branch(SQLBase):
         """See `IBranch`."""
         launchbag.add(self.product)
         if self.distroseries is not None:
-            from canonical.launchpad.database.sourcepackage import (
-                SourcePackage)
             launchbag.add(self.distroseries)
             launchbag.add(self.distribution)
-            launchbag.add(
-                SourcePackage(self.sourcepackagename, self.distroseries))
+            launchbag.add(self.sourcepackage)
 
     def getStackedBranches(self):
         """See `IBranch`."""

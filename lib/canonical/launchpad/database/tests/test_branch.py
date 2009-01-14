@@ -225,11 +225,8 @@ class TestBranch(TestCaseWithFactory):
         launchbag = self.makeLaunchBag()
         branch.addToLaunchBag(launchbag)
         self.assertEqual(branch.distroseries, launchbag.distroseries)
-        self.assertEqual(
-            branch.distroseries.distribution, launchbag.distribution)
-        sourcepackage = SourcePackage(
-            branch.sourcepackagename, branch.distroseries)
-        self.assertEqual(sourcepackage, launchbag.sourcepackage)
+        self.assertEqual(branch.distribution, launchbag.distribution)
+        self.assertEqual(branch.sourcepackage, launchbag.sourcepackage)
         self.assertIs(None, branch.product)
 
     def test_distribution_personal(self):
