@@ -858,8 +858,6 @@ the public Ubuntu-team PPA, which is empty.
     ...         'field.actions.copy': 'Copy',
     ...         })
 
-    >>> transaction.commit()
-
 The action cannot be performed due to the 'private mismatch'
 error. Nothing was copied to Ubuntu-team PPA.
 

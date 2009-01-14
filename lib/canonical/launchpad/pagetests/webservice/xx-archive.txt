@@ -552,8 +552,8 @@ allowed to call the method at all.
 
 === Copy privacy mismatch ===
 
-Copy 'privacy mismatch' error is raised, in the for of `CannotCopy`
-exception, for attempts to copy a private source to a public archive.
+A CannotCopy error, giving the reason "Cannot copy private source into
+public archives." is raised if such operation is requested.
 
 Let's make Celso's PPA private and create a private source publication.
 
