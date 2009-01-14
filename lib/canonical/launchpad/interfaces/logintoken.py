@@ -255,7 +255,18 @@ class ILoginTokenSet(Interface):
         """
 
     def searchByEmailRequesterAndType(email, requester, type, consumed=None):
-        """Return all LoginTokens for the given email, requester and type."""
+        """Return all LoginTokens for the given email, requester and type.
+
+        :param email: The email address to search for.
+        :param requester: The Person object representing the requester
+            to search for.
+        :param type: The LoginTokenType to search for.
+        :param consumed: A flag indicating whether to return consumed tokens.
+            If False, only unconsumed tokens will be returned.
+            If True, only consumed tokens will be returned.
+            If None, this parameter will be ignored and all tokens will be
+            returned.
+        """
 
     def deleteByEmailRequesterAndType(email, requester, type):
         """Delete all LoginToken entries with the given email, requester and
@@ -264,7 +275,18 @@ class ILoginTokenSet(Interface):
     def searchByFingerprintRequesterAndType(fingerprint, requester, type,
                                             consumed=None):
         """Return all LoginTokens for the given fingerprint, requester and
-        type."""
+        type.
+
+        :param fingerprint: The LoginToken fingerprint to search for.
+        :param requester: The Person object representing the requester
+            to search for.
+        :param type: The LoginTokenType to search for.
+        :param consumed: A flag indicating whether to return consumed tokens.
+            If False, only unconsumed tokens will be returned.
+            If True, only consumed tokens will be returned.
+            If None, this parameter will be ignored and all tokens will be
+            returned.
+        """
 
     def deleteByFingerprintRequesterAndType(fingerprint, requester, type):
         """Delete all LoginToken entries with the given fingerprint,

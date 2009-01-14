@@ -9,9 +9,8 @@ import random
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
+from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 from storm.expr import And, Not
-from storm.store import Store
 
 from canonical.config import config
 

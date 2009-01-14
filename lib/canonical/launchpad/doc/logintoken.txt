@@ -19,7 +19,6 @@ follows:
        tokens of the same type and for the same email address.
 
     >>> from canonical.launchpad.database.person import Person
-    >>> from canonical.launchpad.database.logintoken import LoginTokenSet
     >>> from canonical.launchpad.interfaces.logintoken import (
     ...     ILoginTokenSet, LoginTokenType)
     >>> from canonical.launchpad.mail import stub
@@ -80,10 +79,11 @@ foobar's list of unconfirmed emails anymore.
     []
 
 Consuming a token will only consume that token and other unconsumed
-tokens for that email address and token type. Tokens which have already
-been consumed will not be updated. We'll remove the security proxy from
-the original token so that we can force its date_consumed attribute to
-something of our own making.
+tokens for that email address and token type. To make the process more
+efficient, tokens which have already been consumed will not be updated
+(see bug 315103). We'll remove the security proxy from the original
+token so that we can force its date_consumed attribute to something of
+our own making.
 
     >>> import pytz
     >>> from datetime import datetime
