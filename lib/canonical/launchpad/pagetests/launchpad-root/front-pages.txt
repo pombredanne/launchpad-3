@@ -38,16 +38,12 @@ It also includes a search form...
 
 ...and lists of featured projects and marketing material.
 
-  >>> for tag in find_tags_by_class(browser.contents, 'three column right'):
+  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
   ...     print extract_text(tag.renderContents())
   Featured projects
   ...
   Ubuntu
 
-  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
-  ...     print extract_text(tag.renderContents())
-  What is Launchpad?
-  ...
 
 The front pages for the other applications, however, do have
 application tabs. On these pages, the tab normally named "Overview"
