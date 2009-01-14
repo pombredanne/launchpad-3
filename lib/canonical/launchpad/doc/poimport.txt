@@ -322,8 +322,8 @@ Fuzzy translations are ignored.
     ...     return potmsgset.getCurrentTranslationMessage(
     ...         pofile.language, pofile.variant)
     >>> message = get_pofile_translation_message(pofile, u'bar')
-    >>> message.translations
-    [None]
+    >>> print message
+    None
 
 We can also get the ones that have validation errors.
 
@@ -715,8 +715,8 @@ message translations were ignored.
 
     >>> message = get_pofile_translation_message(
     ...     pofile, u'translation-credits')
-    >>> message.msgstr0.translation
-    u'helpful@example.com'
+    >>> print message
+    None
     >>> potemplate['translator-credits'].getLocalTranslationMessages(welsh)
     []
 
