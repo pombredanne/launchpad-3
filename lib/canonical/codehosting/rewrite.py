@@ -17,9 +17,6 @@ from canonical.twistedsupport import extract_result
 __all__ = ['BranchRewriter']
 
 
-FORWARD_TO_CODEBROWSE_PREFIXES = ['/static', '/+login']
-
-
 class BranchRewriter:
 
     def __init__(self, logger, proxy):
@@ -66,9 +63,10 @@ class BranchRewriter:
         caller will catch and log them.
         """
         T = time.time()
-        for prefix in FORWARD_TO_CODEBROWSE_PREFIXES:
-            if resource_location.startswith(prefix):
-                return self._codebrowse_url(resource_location)
+        # Codebrowse generates references to its images and stylesheets
+        # starting with "/static", so pass them on unthinkingly.
+        if resource_location.startswith('/static/'):
+            return self._codebrowse_url(resource_location)
         trailingSlash = resource_location.endswith('/')
         deferred = self.client.translatePath(resource_location)
         try:
@@ -77,7 +75,12 @@ class BranchRewriter:
             if faults.check_fault(f, faults.PathTranslationError):
                 return "NULL"
             elif faults.check_fault(f, faults.PermissionDenied):
-                return self._codebrowse_url(resource_location)
+                # If we get permission denied, redirect to the https version
+                # of the codehost (which doesn't redirect through here and
+                # does authentication via OpenID).
+                return urlutils.join(
+                    config.codehosting.secure_codebrowse_root,
+                    resource_location)
             else:
                 raise
         if transport_type == BRANCH_TRANSPORT:

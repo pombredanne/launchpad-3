@@ -61,16 +61,14 @@ RewriteLock /var/tmp/rewrite-lock
   ProxyTimeout 20
 
   RewriteEngine On
-  RewriteMap branch-rewrite prg:%BRANCH_REWRITE%
 
   RequestHeader add X-Forwarded-Scheme https
 
   RewriteRule ^/$ http://launchpad.dev [L]
-  RewriteRule ^(/.*)$ ${branch-rewrite:$1} [L,P]
-  RewriteRule ^(/.*)$ http://launchpad.dev [L]
+  RewriteRule ^/(.*)$ http://localhost:8080/$1 [L,P]
 
   <Location />
-    ProxyPassReverse http://localhost:9999/
+    ProxyPassReverse http://localhost:8080/
   </Location>
 </VirtualHost>
 

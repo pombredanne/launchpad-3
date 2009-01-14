@@ -5,6 +5,7 @@
 
 * pass private branch urls on to codebrowse
 * pass /static/, /+login/ urls on to codebrowse
+   * actually just static!
 * add config value for location of cookie-signing secret
 * translatePath needs to handle usernames too
 * adjust apache config
