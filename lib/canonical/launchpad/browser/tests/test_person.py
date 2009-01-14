@@ -59,6 +59,11 @@ class PersonView_openid_identity_url_TestCase(TestCaseWithFactory):
 
 
 class TestBranchTraversal(TestCaseWithFactory):
+    """Branches are traversed to from IPersons. Test we can reach them.
+
+    This class tests the `PersonNavigation` class to see that we can traverse
+    to branches from such objects.
+    """
 
     layer = DatabaseFunctionalLayer
 
@@ -71,6 +76,15 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertEqual(url, redirection.target)
 
     def traverse(self, segments):
+        """Traverse to 'segments' using a 'PersonNavigation' object.
+
+        Using the Zope traversal machinery, traverse to the path given by
+        'segments', starting at a `PersonNavigation` object wrapped around the
+        'person' attribute.
+
+        :param segments: A list of path segments.
+        :return: The object found.
+        """
         stack = list(reversed(segments))
         name = stack.pop()
         request = FakeRequest(['~' + self.person.name], stack)

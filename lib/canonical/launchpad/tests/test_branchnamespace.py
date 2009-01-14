@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, BranchType)
+    BranchLifecycleStatus, BranchType, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespace, IBranchNamespaceSet,
     lookup_branch_namespace, InvalidNamespace)
@@ -511,6 +511,19 @@ class TestNamespaceSet(TestCaseWithFactory):
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
+    def test_traverse_junk_branch_not_found(self):
+        person = self.factory.makePerson()
+        segments = iter([person.name, '+junk', 'no-such-branch'])
+        self.assertRaises(
+            NoSuchBranch, self.namespace_set.traverse, segments)
+        self.assertEqual([], list(segments))
+
+    def test_traverse_person_not_found(self):
+        segments = iter(['no-such-person', 'whatever'])
+        self.assertRaises(
+            NoSuchPerson, self.namespace_set.traverse, segments)
+        self.assertEqual(['whatever'], list(segments))
+
     def test_traverse_product_branch(self):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable
         # of path segments, including product branches.
@@ -530,6 +543,15 @@ class TestNamespaceSet(TestCaseWithFactory):
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
+    def test_traverse_product_not_found(self):
+        # IBranchNamespaceSet.traverse raises NoSuchProduct if it cannot find
+        # the product.
+        person = self.factory.makePerson()
+        segments = iter([person.name, 'no-such-product', 'branch'])
+        self.assertRaises(
+            NoSuchProduct, self.namespace_set.traverse, segments)
+        self.assertEqual(['branch'], list(segments))
+
     def test_traverse_package_branch_aliases(self):
         # Distributions can have aliases. IBranchNamespaceSet.traverse will
         # find a branch where its distro is given as an alias.
@@ -547,6 +569,37 @@ class TestNamespaceSet(TestCaseWithFactory):
             ])
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
+
+    def test_traverse_distribution_not_found(self):
+        # IBranchNamespaceSet.traverse raises NoSuchProduct if it cannot find
+        # the distribution. We do this since we can't tell the difference
+        # between a non-existent product and a non-existent distro.
+        person = self.factory.makePerson()
+        segments = iter(
+            [person.name, 'no-such-distro', 'jaunty', 'evolution', 'branch'])
+        self.assertRaises(
+            NoSuchProduct, self.namespace_set.traverse, segments)
+        self.assertEqual(['jaunty', 'evolution', 'branch'], list(segments))
+
+    def test_traverse_distroseries_not_found(self):
+        person = self.factory.makePerson()
+        distro = self.factory.makeDistribution()
+        segments = iter(
+            [person.name, distro.name, 'no-such-series', 'package', 'branch'])
+        self.assertRaises(
+            NoSuchDistroSeries, self.namespace_set.traverse, segments)
+        self.assertEqual(['package', 'branch'], list(segments))
+
+    def test_traverse_sourcepackagename_not_found(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        distro = distroseries.distribution
+        segments = iter(
+            [person.name, distro.name, distroseries.name, 'no-such-package',
+             'branch'])
+        self.assertRaises(
+            NoSuchSourcePackageName, self.namespace_set.traverse, segments)
+        self.assertEqual(['branch'], list(segments))
 
     def test_traverse_leaves_trailing_segments(self):
         # traverse doesn't consume all the elements of the iterable. It only

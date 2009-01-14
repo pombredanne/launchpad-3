@@ -52,13 +52,25 @@ class FakeRequest:
         self.traversed_objects = []
 
     def getTraversalStack(self):
+        """See `IPublicationRequest`.
+
+        This method is called by traversal machinery.
+        """
         return self._stack
 
     def setTraversalStack(self, stack):
+        """See `IPublicationRequest`.
+
+        This method is called by traversal machinery.
+        """
         self._stack = stack
 
     @property
     def stepstogo(self):
+        """See IBasicLaunchpadRequest.
+
+        This method is called by traversal machinery.
+        """
         return StepsToGo(self)
 
     def getApplicationURL(self):

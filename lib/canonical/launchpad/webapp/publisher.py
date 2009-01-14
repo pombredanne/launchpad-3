@@ -89,9 +89,14 @@ class stepthrough(DecoratorAdvisor):
       def traverse_foo(self, name):
           return getUtility(IFooSet).getByName(name)
 
+    which looks up an object in IFooSet called 'name', allowing a URL
+    traversal that looks like:
+
+      launchpad.net/.../+foo/name
+
     See also doc/navigation.txt.
 
-    This uses Zope`s class advisor stuff to make sure that the path segment
+    This uses Zope's class advisor stuff to make sure that the path segment
     passed to `stepthrough` is handled by the decorated method.
 
     That is::
@@ -107,10 +112,19 @@ class stepto(DecoratorAdvisor):
     A stepto method must take no arguments and return an object for the URL at
     that point.
 
+      @stepto('+foo')
+      def traverse_foo(self):
+          return getUtility(IFoo)
+
+    which looks up an object for '+foo', allowing a URL traversal that looks
+    like:
+
+      launchpad.net/.../+foo
+
     See also doc/navigation.txt.
 
-    This uses Zope`s class advisor stuff to make sure that the path segment
-    passed to `stepthrough` is handled by the decorated method.
+    This uses Zope's class advisor stuff to make sure that the path segment
+    passed to `stepto` is handled by the decorated method.
 
     That is::
       cls.__stepto_traversals__[argument] = decorated
