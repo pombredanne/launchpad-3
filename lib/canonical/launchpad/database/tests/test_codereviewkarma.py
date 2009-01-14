@@ -61,9 +61,8 @@ class TestCodeReviewKarma(TestCaseWithFactory):
     def test_mergeProposalCreationAllocatesKarma(self):
         # Registering a branch merge proposal creates a karma event for the
         # registrant.
-        source_branch = self.factory.makeProductBranch()
-        target_branch = self.factory.makeProductBranch(
-            product=source_branch.product)
+        source_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeBranch(product=source_branch.product)
         registrant = self.factory.makePerson()
         # We need to clear the karma event list before we add the landing
         # target as there would be other karma events for the branch
@@ -97,7 +96,7 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         # If the reviewer is also the registrant of the proposal, they just
         # get a normal code review comment karma event.
         commenter = self.factory.makePerson()
-        target_branch = self.factory.makeProductBranch(owner=commenter)
+        target_branch = self.factory.makeBranch(owner=commenter)
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch, registrant=commenter)
         self.karma_events = []
@@ -117,7 +116,7 @@ class TestCodeReviewKarma(TestCaseWithFactory):
     def test_approvingOwnCodeReview(self):
         # Approving your own merge proposal isn't such a significant event.
         reviewer = self.factory.makePerson()
-        target_branch = self.factory.makeProductBranch(owner=reviewer)
+        target_branch = self.factory.makeBranch(owner=reviewer)
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch, registrant=reviewer)
         self.karma_events = []
@@ -138,7 +137,7 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         # either, and I don't know why someone would, but hey, people are
         # strange.
         reviewer = self.factory.makePerson()
-        target_branch = self.factory.makeProductBranch(owner=reviewer)
+        target_branch = self.factory.makeBranch(owner=reviewer)
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch, registrant=reviewer)
         self.karma_events = []

@@ -31,8 +31,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         email = self.factory.getUniqueEmailAddress()
         owner = self.factory.makePerson(email=email)
         product = self.factory.makeProduct(owner=owner)
-        branch = self.factory.makeProductBranch(
-            product=product, **branch_args)
+        branch = self.factory.makeBranch(product=product, **branch_args)
         login(email)
         product.development_focus.user_branch = branch
         return product, branch
@@ -83,7 +82,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             private=True)
         url = canonical_url(product, rootsite='code')
-        self.factory.makeProductBranch(product=product)
+        self.factory.makeBranch(product=product)
         # This is just "assertNotRaises"
         self.getUserBrowser(canonical_url(product, rootsite='code'))
 

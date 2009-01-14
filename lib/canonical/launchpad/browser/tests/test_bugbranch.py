@@ -19,7 +19,7 @@ class TestBugBranchPrimaryContext(TestCaseWithFactory):
     def testPrimaryContext(self):
         # The primary context of a bug branch link is the same as the
         # primary context of the branch that is linked to the bug.
-        branch = self.factory.makeProductBranch()
+        branch = self.factory.makeBranch()
         bug = self.factory.makeBug(product=branch.product)
         login_person(branch.owner)
         bugbranch = bug.addBranch(branch, branch.owner)

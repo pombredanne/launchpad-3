@@ -115,7 +115,7 @@ If there are no branches, it will say so nicely.
 Let's add a branch.
 
     >>> login(ANONYMOUS)
-    >>> b1 = factory.makeAnyBranch(owner=eric)
+    >>> b1 = factory.makeBranch(owner=eric)
     >>> logout()
 
 The summary is now shown.
@@ -127,7 +127,7 @@ The summary is now shown.
 Now we'll create another branch, and unsubscribe the owner from it.
 
     >>> login(ANONYMOUS)
-    >>> b2 = factory.makeAnyBranch(owner=eric)
+    >>> b2 = factory.makeBranch(owner=eric)
     >>> ignored = b2.unsubscribe(eric)
     >>> logout()
 

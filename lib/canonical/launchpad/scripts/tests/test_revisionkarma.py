@@ -41,7 +41,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makePersonalBranch()
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -60,7 +60,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # give the karma to the user.
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Since the revision author is not known, the revisions do not at this
@@ -84,7 +84,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
-        branch = self.factory.makePersonalBranch(owner=author)
+        branch = self.factory.makeBranch(product=None, owner=author)
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Now we have a junk branch which has a revision with an email address
@@ -92,7 +92,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now create a non junk branch owned by someone else that has the
         # revision.
-        b2 = self.factory.makeProductBranch()
+        b2 = self.factory.makeBranch()
         # Put the author's revision in the ancestry.
         b2.createBranchRevision(None, rev)
 

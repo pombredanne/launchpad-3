@@ -33,7 +33,7 @@ class TestPersonSetBranchCounts(TestCase):
         self.assertEqual(0, PersonSet().getPeopleWithBranches().count())
 
     def test_five_branches(self):
-        branches = [self.factory.makeAnyBranch() for x in range(5)]
+        branches = [self.factory.makeBranch() for x in range(5)]
         # Each branch has a different product, so any individual product
         # will return one branch.
         self.assertEqual(5, PersonSet().getPeopleWithBranches().count())

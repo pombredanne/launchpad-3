@@ -140,7 +140,7 @@ class TestMakeBugBranch(unittest.TestCase):
 
     def setUp(self):
         factory = LaunchpadObjectFactory()
-        self.branch = factory.makeAnyBranch()
+        self.branch = factory.makeBranch()
         self.bug = factory.makeBug()
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
@@ -216,7 +216,7 @@ class TestBugLinking(BzrSyncTestCase):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
         self.bug2 = self.factory.makeBug()
-        self.new_db_branch = self.factory.makeAnyBranch()
+        self.new_db_branch = self.factory.makeBranch()
         self.layer.txn.commit()
 
     def getBugURL(self, bug):

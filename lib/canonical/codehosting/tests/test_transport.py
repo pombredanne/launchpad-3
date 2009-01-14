@@ -32,7 +32,7 @@ class TestingServer(LaunchpadInternalServer):
         """
         frontend = InMemoryFrontend()
         branchfs = frontend.getFilesystemEndpoint()
-        branch = frontend.getLaunchpadObjectFactory().makeAnyBranch()
+        branch = frontend.getLaunchpadObjectFactory().makeBranch()
         self._branch_path = branch.unique_name
         # XXX: JonathanLange bug=276972 2008-10-07: This should back on to a
         # MemoryTransport, but a bug in Bazaar's implementation makes it

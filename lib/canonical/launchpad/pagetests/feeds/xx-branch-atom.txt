@@ -18,7 +18,7 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
     >>> def make_branch(owner, product, name):
     ...     global factory, date_generator
-    ...     factory.makeProductBranch(name=name, product=product,
+    ...     factory.makeBranch(name=name, product=product,
     ...         owner=owner, date_created=date_generator.next())
     >>> mike = factory.makePerson(name='mike', displayname='Mike Murphy')
     >>> mary = factory.makePerson(name='mary', displayname='Mary Murphy')

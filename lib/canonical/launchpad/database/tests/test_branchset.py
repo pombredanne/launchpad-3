@@ -171,12 +171,12 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """Return a datetime representing 'now' in UTC."""
         return datetime.now(pytz.timezone('UTC'))
 
-    def makeAnyBranch(self):
-        return self.factory.makeAnyBranch(branch_type=self.branch_type)
+    def makeBranch(self):
+        return self.factory.makeBranch(self.branch_type)
 
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.next_mirror_time)
 
@@ -187,7 +187,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """
         # We run these in separate transactions so as to have the times set to
         # different values. This is closer to what happens in production.
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.startMirroring()
         transaction.commit()
         branch.requestMirror()
@@ -200,7 +200,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def test_startMirroringRemovesFromPullQueue(self):
         # Starting a mirror removes the branch from the pull queue.
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         self.assertEqual(
             set([branch]),
@@ -211,7 +211,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -220,7 +220,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring branches resets their mirror request times."""
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         transaction.commit()
         branch.startMirroring()
@@ -235,7 +235,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         # mirroring during the upgrade will have their next_mirror_time set
         # properly eventually. This test can be removed after the 2.1.9
         # release.
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         # Set next_mirror_time to NOW, putting the branch in the pull queue.
         branch.requestMirror()
         next_mirror_time = branch.next_mirror_time
@@ -260,7 +260,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """If a branch fails to mirror then update failures but don't mirror
         again until asked.
         """
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorFailed('No particular reason')
@@ -275,7 +275,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
     def test_pastNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the past are mirrored."""
         transaction.begin()
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch_id = branch.id
         transaction.commit()
@@ -287,7 +287,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
     def test_futureNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the future are not mirrored."""
         transaction.begin()
-        branch = removeSecurityProxy(self.makeAnyBranch())
+        branch = removeSecurityProxy(self.makeBranch())
         tomorrow = self.getNow() + timedelta(1)
         branch.next_mirror_time = tomorrow
         branch.syncUpdate()
@@ -299,7 +299,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """Pull queue has the oldest mirror request times first."""
         branches = []
         for i in range(3):
-            branch = removeSecurityProxy(self.makeAnyBranch())
+            branch = removeSecurityProxy(self.makeBranch())
             branch.next_mirror_time = self.getNow() - timedelta(hours=i+1)
             branch.sync()
             branches.append(branch)
@@ -314,7 +314,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
 
     def test_mirrorFailureResetsMirrorRequest(self):
         """If a branch fails to mirror then mirror again later."""
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorFailed('No particular reason')
@@ -324,7 +324,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
     def test_mirrorFailureBacksOffExponentially(self):
         """If a branch repeatedly fails to mirror then back off exponentially.
         """
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         num_failures = 3
         for i in range(num_failures):
             branch.requestMirror()
@@ -339,7 +339,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """If a branch's mirror failures exceed the maximum, disable
         mirroring.
         """
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         for i in range(MAXIMUM_MIRROR_FAILURES):
             branch.requestMirror()
             branch.startMirroring()
@@ -351,7 +351,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """Mirroring 'mirrored' branches sets their mirror request time to six
         hours in the future.
         """
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         transaction.commit()
         branch.startMirroring()
@@ -367,7 +367,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         # value. This test confirms that branches which were in the middle of
         # mirroring during the upgrade will have their next_mirror_time set
         # properly eventually.
-        branch = self.makeAnyBranch()
+        branch = self.makeBranch()
         # Set next_mirror_time to NOW, putting the branch in the pull queue.
         branch.requestMirror()
         next_mirror_time = branch.next_mirror_time
@@ -461,7 +461,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
 
     def assertBranchRule(self, registrant, owner, expected_rule):
         """Check the getBranchVisibilityRuleForBranch results for a branch."""
-        branch = self.factory.makeProductBranch(
+        branch = self.factory.makeBranch(
             registrant=registrant, owner=owner, product=self.product)
         rule = self.product.getBranchVisibilityRuleForBranch(branch)
         self.assertEqual(rule, expected_rule,

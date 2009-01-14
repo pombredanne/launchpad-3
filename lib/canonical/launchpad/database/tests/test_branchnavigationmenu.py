@@ -17,7 +17,7 @@ class TestBranchNavigation(TestCaseWithFactory):
 
     def test_simple_branch(self):
         """Branches implement IBranchNavigation"""
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeBranch()
         self.assertTrue(IBranchNavigationMenu.providedBy(branch))
 
     def test_merge_proposal(self):

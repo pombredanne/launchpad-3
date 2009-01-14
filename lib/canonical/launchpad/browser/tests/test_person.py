@@ -78,12 +78,12 @@ class TestBranchTraversal(TestCaseWithFactory):
         return traverser.publishTraverse(request, name)
 
     def test_redirect_product_branch(self):
-        branch = self.factory.makeProductBranch(owner=self.person)
+        branch = self.factory.makeBranch(owner=self.person)
         segments = ['+branch', branch.product.name, branch.name]
         self.assertRedirects(segments, canonical_url(branch))
 
     def test_redirect_junk_branch(self):
-        branch = self.factory.makePersonalBranch(owner=self.person)
+        branch = self.factory.makeBranch(owner=self.person, product=None)
         segments = ['+branch', '+junk', branch.name]
         self.assertRedirects(segments, canonical_url(branch))
 
@@ -105,7 +105,7 @@ class TestBranchTraversal(TestCaseWithFactory):
             canonical_url(branch))
 
     def test_junk_branch(self):
-        branch = self.factory.makePersonalBranch(owner=self.person)
+        branch = self.factory.makeBranch(owner=self.person, product=None)
         segments = ['+junk', branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
@@ -114,7 +114,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertRaises(NotFound, self.traverse, ['+junk', branch_name])
 
     def test_product_branch(self):
-        branch = self.factory.makeProductBranch(owner=self.person)
+        branch = self.factory.makeBranch(owner=self.person)
         segments = [branch.product.name, branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
@@ -131,7 +131,11 @@ class TestBranchTraversal(TestCaseWithFactory):
             NotFound, self.traverse, [product.name, branch_name])
 
     def test_package_branch(self):
-        branch = self.factory.makePackageBranch(owner=self.person)
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            owner=self.person, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
         segments = [
             branch.distroseries.distribution.name,
             branch.distroseries.name,

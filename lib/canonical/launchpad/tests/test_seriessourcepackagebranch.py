@@ -32,7 +32,7 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeBranch()
         now = datetime.now(pytz.UTC)
         sspb = series_set.new(
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
@@ -51,7 +51,7 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeBranch()
         sspb = series_set.new(
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
             branch, registrant)
@@ -65,7 +65,7 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeBranch()
         sspb = series_set.new(
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
             branch, registrant)

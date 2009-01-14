@@ -8,8 +8,8 @@ page, together with the last failure message we got when mirroring.
     >>> eric = factory.makePerson(
     ...     name='eric', email='eric@example.com', password='test')
     >>> from canonical.launchpad.interfaces import BranchType
-    >>> mirror_branch = factory.makeAnyBranch(
-    ...     branch_type=BranchType.MIRRORED, owner=eric)
+    >>> mirror_branch = factory.makeBranch(
+    ...     BranchType.MIRRORED, owner=eric)
     >>> mirror_name = mirror_branch.unique_name
     >>> from canonical.launchpad.webapp import canonical_url
     >>> branch_location = str(canonical_url(mirror_branch))
@@ -179,9 +179,8 @@ message.  Any ssh access requires that Launchpad use client ssh keys
 or passwords, neither of which is currently supported.
 
     >>> login(ANONYMOUS)
-    >>> mirror_branch = factory.makeAnyBranch(
-    ...     branch_type=BranchType.MIRRORED,
-    ...     url='sftp://example.com/bad/location')
+    >>> mirror_branch = factory.makeBranch(
+    ...     BranchType.MIRRORED, url='sftp://example.com/bad/location')
     >>> branch_location = canonical_url(mirror_branch)
     >>> logout()
 
@@ -199,8 +198,8 @@ If a remote branch specifies a location with the scheme 'sftp' or 'bzr+ssh'
 then there is no error shown.
 
     >>> login(ANONYMOUS)
-    >>> remote_branch = factory.makeAnyBranch(
-    ...     branch_type=BranchType.REMOTE,
+    >>> remote_branch = factory.makeBranch(
+    ...     BranchType.REMOTE,
     ...     url='bzr+ssh://example.com/remote/branch')
     >>> branch_location = canonical_url(remote_branch)
     >>> logout()
@@ -218,7 +217,7 @@ then there is no error shown.
 A hosted branch with an error message does show a mirror-failure.
 
     >>> login(ANONYMOUS)
-    >>> hosted_branch = factory.makeAnyBranch()
+    >>> hosted_branch = factory.makeBranch()
     >>> hosted_branch.mirrorFailed('Some weird internal failure.')
     >>> branch_location = canonical_url(hosted_branch)
     >>> logout()

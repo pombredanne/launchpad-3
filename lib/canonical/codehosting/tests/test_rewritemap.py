@@ -43,32 +43,31 @@ class TestRewriteMapScript(TestCase):
 
     def testFileGeneration(self):
         # A simple smoke test for the rewritemap cronscript.
-        branch = self.factory.makeProductBranch()
+        branch = self.factory.makeBranch()
         self.assertInRewriteMap(branch)
 
     def testFileGenerationJunkProduct(self):
         # Like test_file_generation, but demonstrating a +junk product.
-        branch = self.factory.makePersonalBranch()
+        branch = self.factory.makeBranch(product=None)
         self.assertInRewriteMap(branch)
 
     def testPrivateBranchNotWritten(self):
         # Private branches do not have entries in the rewrite file.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeBranch(private=True)
         self.assertNotInRewriteMap(branch)
 
     def testPrivateStackedBranch(self):
         # Branches stacked on private branches don't have entries in the
         # rewrite file.
-        stacked_on_branch = self.factory.makeAnyBranch(private=True)
-        stacked_branch = self.factory.makeAnyBranch(
-            stacked_on=stacked_on_branch)
+        stacked_on_branch = self.factory.makeBranch(private=True)
+        stacked_branch = self.factory.makeBranch(stacked_on=stacked_on_branch)
         branch_name = stacked_branch.unique_name
         branch_id = stacked_branch.id
         self.assertNotInRewriteMap(stacked_branch)
 
     def testRemoteBranchNotWritten(self):
         # Remote branches do not have entries in the rewrite file.
-        branch = self.factory.makeAnyBranch(BranchType.REMOTE)
+        branch = self.factory.makeBranch(BranchType.REMOTE)
         self.assertNotInRewriteMap(branch)
 
 

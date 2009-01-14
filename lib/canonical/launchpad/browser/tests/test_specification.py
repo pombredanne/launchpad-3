@@ -37,7 +37,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         return traverser.publishTraverse(request, name)
 
     def test_junk_branch(self):
-        branch = self.factory.makePersonalBranch()
+        branch = self.factory.makeBranch(product=None)
         self.linkBranch(branch)
         segments = [branch.owner.name, '+junk', branch.name]
         self.assertEqual(
@@ -56,7 +56,7 @@ class TestBranchTraversal(TestCaseWithFactory):
             NotFound, self.traverse, [person.name, '+junk', branch_name])
 
     def test_product_branch(self):
-        branch = self.factory.makeProductBranch()
+        branch = self.factory.makeBranch()
         self.linkBranch(branch)
         segments = [branch.owner.name, branch.product.name, branch.name]
         self.assertEqual(
@@ -84,7 +84,10 @@ class TestBranchTraversal(TestCaseWithFactory):
             NotFound, self.traverse, [person.name, product.name, branch_name])
 
     def test_package_branch(self):
-        branch = self.factory.makePackageBranch()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
         self.linkBranch(branch)
         segments = [
             branch.owner.name,

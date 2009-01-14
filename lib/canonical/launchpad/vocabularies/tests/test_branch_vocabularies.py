@@ -42,21 +42,21 @@ class TestBranchVocabulary(BranchVocabTestCase):
         sprocket = factory.makeProduct(name='sprocket')
         # Scotty's branches.
         scotty = factory.makePerson(name='scotty')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=scotty, product=widget, name='fizzbuzz')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=scotty, product=widget, name='mountain')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=scotty, product=sprocket, name='fizzbuzz')
         # Spotty's branches.
         spotty = factory.makePerson(name='spotty')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=spotty, product=widget, name='hill')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=spotty, product=widget, name='sprocket')
         # Sprocket's branches.
         sprocket_person = factory.makePerson(name='sprocket')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=sprocket_person, product=widget, name='foo')
 
     def test_emptySearch(self):
@@ -149,14 +149,14 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
         test_product = factory.makeProduct(name='widget')
         other_product = factory.makeProduct(name='sprocket')
         person = factory.makePerson(name='scotty')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=person, product=test_product, name='main')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=person, product=test_product, name='mountain')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=person, product=other_product, name='main')
         person = factory.makePerson(name='spotty')
-        factory.makeProductBranch(
+        factory.makeBranch(
             owner=person, product=test_product, name='hill')
 
     def test_mainBranches(self):
