@@ -88,7 +88,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -429,13 +430,10 @@ class BranchTypeError(Exception):
     """
 
 
-# XXX: JonathanLange 2009-01-14: This should be a NotFoundError subclass.
-class NoSuchBranch(Exception):
+class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
-    def __init__(self, unique_name):
-        self.unique_name = unique_name
-        Exception.__init__(self, "No such branch: %s" % (unique_name,))
+    _message_prefix = "No such branch"
 
 
 class BadBranchSearchContext(Exception):
