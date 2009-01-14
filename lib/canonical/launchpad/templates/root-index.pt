@@ -59,12 +59,13 @@
         <strong tal:content="view/blueprint_count">123</strong>&nbsp;blueprints,
         and&nbsp;counting...
       </div>
-      <div style="width:90%; margin:auto;">
+      <div id="home-description">Launchpad is a unique collaboration and 
+      <a href="http://bazaar-vcs.org/">bazaar</a>
+      code hosting platform for software projects.</div>
+      <div id="home-page" style="width:90%; margin:auto;">
         <div class="three column left" id="featured-projects">
+          <h2>Featured projects</h2>
           <table style="margin:auto;">
-            <tr>
-              <td><h2>Featured projects</h2></td>
-            </tr>
             <tr>
               <td>
                 <table>
@@ -82,45 +83,32 @@
               </td>
             </tr>
             <tr>
-            <td tal:condition="context/required:launchpad.Admin" align="right">
+            <td tal:condition="context/required:launchpad.Admin" colspan="2">
               <a href="+featuredprojects">&raquo; Manage featured project list</a></td>
             </tr>
           </table>
-          <ul tal:condition="not: view/featured_projects">
-            <li class="product"><a href="/exaile">Exaile Media Player</a></li>
-            <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
-            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
-            <li class="product"><a href="/democracy">Miro TV Player</a></li>
-            <li class="product"><a href="/awn">Avant Window Navigator</a></li>
-            <li class="product"><a href="/schooltool">SchoolTool</a></li>
-            <li class="product"><a href="/tangocms">TangoCMS</a></li>
-          </ul>
-          <p>
-
-          </p>
         </div>
 
         <div class="three column middle">
+          <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
-            <li class="news"><h2>What&#8217;s new?</h2></li>
             <li class="news">
               <a href="http://news.launchpad.net/cool-new-stuff/announcing-the-launchpad-plugin-api-spec">
-                <strong>New bug plugin API</strong><br />          
+                <strong>New bug plugin API</strong><br />
                 Create your own plugin for direct communication between Launchpad
                 and your favourite bug tracker.
               </a>
            </li>
            <li class="news">
               <a href="http://news.launchpad.net/cool-new-stuff/new-launchpad-plugins-for-drupal">
-                <strong>Drupal integration</strong><br />          
+                <strong>Drupal integration</strong><br />
                 Authenticate visitors to your Drupal site using Launchpad
                 and assign roles based on their team memberships.
               </a>
            </li>
            <li class="news">
               <a href="http://news.launchpad.net/general/launchpad-now-on-twitter-and-identica">
-                <strong>We're on Twitter and identi.ca</strong><br />          
+                <strong>We're on Twitter and identi.ca</strong><br />
                 Follow Launchpad news and bug reports. Also, microblog your project using Launchpad feeds!
               </a>
            </li>
@@ -140,6 +128,7 @@
         <div class="three column right">
           <div style="margin:auto; width:230px;">
             <h2>Get started</h2>
+             <div class="home-banners home-banner-container">
               <div class="home-banners">
                 <a href="/projects/+new-guided"><img src="/@@/add"
                 /> Create a new Project</a><br/>
@@ -152,11 +141,12 @@
                 <a href="/people"><img src="/@@/crowd" alt="people icon"
                 /> Browse People &amp; Teams</a>
               </div>
-            <h2>What is Launchpad?</h2>
-              Launchpad is a <strong>hosting</strong> service for 
-              <strong>open source</strong> projects that's
-              big on <strong>collaboration</strong>.<br/>
-              <a href="/+tour">Take a tour...</a>
+
+              <div class="home-banners">
+                <a href="/+tour"><img src="/@@/maybe" alt="launchpad tour"
+                /> Take the tour</a>
+              </div>
+            </div>
           </div>
         </div>
       </div><!-- 3 cols -->
