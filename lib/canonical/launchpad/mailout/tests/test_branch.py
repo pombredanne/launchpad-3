@@ -53,11 +53,11 @@ class TestRecipientReason(TestCaseWithFactory):
         login_person(merge_proposal.registrant)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
-        return vote_reference, subscriber
+        return merge_proposal, vote_reference, subscriber
 
     def test_forReviewer(self):
         """Test values when created from a branch subscription."""
-        vote_reference, subscriber = self.makeReviewerAndSubscriber()
+        ignored, vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
@@ -65,12 +65,12 @@ class TestRecipientReason(TestCaseWithFactory):
             vote_reference.branch_merge_proposal.source_branch, reason.branch)
 
     def test_getReasonReviewer(self):
-        vote_reference, subscriber = self.makeReviewerAndSubscriber()
+        bmp, vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(
-            'You are requested to review the proposed merge of'
-            ' lp://dev/~person-name5/product-name11/branch7 into'
-            ' lp://dev/~person-name16/product-name11/branch18.',
+            'You are requested to review the proposed merge of %s into %s.'
+            % (bmp.source_branch.bzr_identity,
+               bmp.target_branch.bzr_identity),
             reason.getReason())
 
     def test_getReasonPerson(self):
@@ -78,9 +78,9 @@ class TestRecipientReason(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
             subscription, subscription.person, '', merge_proposal)
-        self.assertEqual('You are subscribed to branch'
-            ' lp://dev/~person-name5/product-name11/branch7.',
-            reason.getReason())
+        self.assertEqual(
+            'You are subscribed to branch %s.'
+            % merge_proposal.source_branch.bzr_identity, reason.getReason())
 
     def test_getReasonTeam(self):
         """Ensure the correct reason is generated for teams."""
@@ -90,9 +90,9 @@ class TestRecipientReason(TestCaseWithFactory):
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
             subscription, team_member, '', bmp)
-        self.assertEqual('Your team Qux is subscribed to branch'
-            ' lp://dev/~person-name5/product-name11/branch7.',
-            reason.getReason())
+        self.assertEqual(
+            'Your team Qux is subscribed to branch %s.'
+            % bmp.source_branch.bzr_identity, reason.getReason())
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
