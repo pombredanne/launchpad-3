@@ -157,7 +157,6 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
                 or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
 
-
 class ViewPillar(AuthorizationBase):
     usedfor = IPillar
     permission = 'launchpad.View'
@@ -1838,7 +1837,7 @@ class AppendArchive(ViewArchive):
 
 class ViewArchiveAuthToken(AuthorizationBase):
     """Restrict editing of archive tokens.
-    
+
     The user just needs to be mentioned in the token, have append privilege
     to the archive or be an admin.
     """

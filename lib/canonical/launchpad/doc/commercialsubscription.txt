@@ -489,7 +489,7 @@ Anonymous users cannot access 'forReview'.
     >>> gnome = product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized
+    Unauthorized:... 'forReview', 'launchpad.Commercial'...
 
 The no-priv user cannot access 'forReview'.
 
@@ -499,8 +499,33 @@ The no-priv user cannot access 'forReview'.
     >>> gnome =  product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized
+    Unauthorized:... 'forReview', 'launchpad.Commercial'...
 
-    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
-    >>> from zope.component import getAdapter
-    >>> getAdapter(product_set, IAuthorization, 'launchpad.Commercial')
+The commercial-member, a member of the Commercial admins team, can
+access 'forReview'.
+
+    >>> login('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev
+
+An admin can access 'forReview'.
+
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev

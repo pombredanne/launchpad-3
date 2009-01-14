@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Text, TextLine
+from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.lazr.fields import ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -29,6 +29,8 @@ class ICommercialSubscription(Interface):
     # Mark commercial subscriptions  as exported entries for the Launchpad
     # API.
     export_as_webservice_entry()
+
+    id = Int(title=_('ID'), readonly=True, required=True)
 
     product = exported(
         ReferenceChoice(
@@ -95,14 +97,3 @@ class ICommercialSubscription(Interface):
 # Fix circular dependency issues.
 from canonical.launchpad.interfaces.product import IProduct
 ICommercialSubscription['product'].schema = IProduct
-
-
-#class ICommercialSubscriptionList(Interface):
-#    """The controls for a voucher listing."""
-#    sourcepackagename = Choice(
-#        title=_("Source Package Name"), required=False,
-#        description=_("The source package in which the bug occurs. "
-#        "Leave blank if you are not sure."),
-#        vocabulary='SourcePackageName')
-#    distribution = Choice(
-#        title=_("Distribution"), required=False, vocabulary='Distribution')

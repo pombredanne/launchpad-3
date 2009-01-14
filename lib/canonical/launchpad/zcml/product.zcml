@@ -5,16 +5,6 @@
   xmlns:zope="http://namespaces.zope.org/zope"
   i18n:domain="launchpad">
 
-  <!-- CommercialSubscription -->
-  <class class="canonical.launchpad.database.CommercialSubscription">
-    <allow
-      interface="canonical.launchpad.interfaces.ICommercialSubscription" />
-    <require
-      permission="launchpad.Edit"
-      set_attributes="date_expires date_starts purchaser registrant
-                      sales_system_id is_active"
-      />
-  </class>
   <!-- Product -->
   <class class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProductPublic" />
@@ -544,12 +534,6 @@
     />
 
   <!-- ProductSet-->
-  <securedutility
-    class="canonical.launchpad.database.ProductSet"
-    provides="canonical.launchpad.interfaces.IProductSet">
-    <allow interface="canonical.launchpad.interfaces.IProductSet" />
-  </securedutility>
-
   <class class="canonical.launchpad.database.ProductSet">
     <allow
       attributes="title people all_active get getByName getProductsWithBranches
@@ -558,11 +542,17 @@
                   count_bounties count_buggy count_featureful count_reviewed count_answered
                   count_codified"
       />
+  </class>
+
+  <securedutility
+    class="canonical.launchpad.database.ProductSet"
+    provides="canonical.launchpad.interfaces.IProductSet">
+    <allow interface="canonical.launchpad.interfaces.IProductSet" />
     <require
-      permission="launchpad.Admin"
+      permission="launchpad.Commercial"
       attributes="forReview"
       />
-  </class>
+  </securedutility>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProductSet"
