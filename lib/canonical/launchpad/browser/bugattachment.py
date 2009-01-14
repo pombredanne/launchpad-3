@@ -33,7 +33,11 @@ class BugAttachmentPrimaryContext:
 
     def __init__(self, nomination):
         launchbag = getUtility(ILaunchBag)
-        self.context = launchbag.bugtask.target
+        bugtask = launchbag.bugtask
+        if bugtask is None:
+            self.context = launchbag.bug
+        else:
+            self.context = launchbag.bugtask.target
 
 
 class BugAttachmentEditView(LaunchpadFormView):
