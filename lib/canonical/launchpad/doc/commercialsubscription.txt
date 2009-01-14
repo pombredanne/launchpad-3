@@ -8,7 +8,7 @@ which does not qualify for free hosting, has an unexpired subscription.
     >>> from canonical.launchpad.interfaces import (
     ...     ICommercialSubscription, IProductSet)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS)
+    >>> login('no-priv@canonical.com')
 
 An open source project should not have a commercial subscription,
 indicated by 'None'.
