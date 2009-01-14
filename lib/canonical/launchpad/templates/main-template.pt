@@ -101,6 +101,10 @@
               tal:attributes="src string:${yui}/base/base.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/anim/anim.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/plugin/plugin.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
@@ -130,16 +134,6 @@
         initInlineHelp();
       }
       registerLaunchpadFunction(onLoadFunction);
-    </script>
-
-    <script tal:condition="view/user|nothing"
-     tal:content="structure string:LP.client.links.me =
-       '${view/user/fmt:api_url}';">
-    </script>
-
-    <script tal:condition="context/webservice:is_entry"
-     tal:content="structure string:LP.client.cache.context =
-       ${context/webservice:json_entry};">
     </script>
 
     <tal:needs_json tal:condition="request/needs_json">
@@ -424,6 +418,26 @@
                  top:-500px; left:-500px;">
       </iframe>
     </tal:datepicker>
+
+    <tal:cache condition="view/user|nothing"
+               define="cache request/webservicerequest:cache;
+                       links cache/links;
+                       objects cache/objects;">
+      <script tal:repeat="key links"
+        tal:content="structure string:LP.client.links['${key}'] =
+                        '${links/?key/fmt:api_url}';">
+      </script>
+      <script tal:repeat="key objects"
+        tal:content="structure string:LP.client.cache['${key}'] =
+         ${objects/?key/webservice:json};">
+      </script>
+    </tal:cache>
+
+    <script tal:condition="context/webservice:is_entry"
+     tal:content="structure string:LP.client.cache['context'] =
+       ${context/webservice:json};">
+    </script>
+
   </body>
 </html>
 <tal:requestlog

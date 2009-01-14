@@ -336,4 +336,20 @@
            canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
       handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications" />
 
+  <class class="canonical.launchpad.mailout.branch.RecipientReason">
+      <allow attributes="getReason branch mail_header recipient" />
+  </class>
+  <class class="canonical.launchpad.database.branch.BranchJob">
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
+  </class>
+  <class class="canonical.launchpad.database.branch.BranchDiffJob">
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchDiffJob" />
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
+  </class>
+  <securedutility
+      component="canonical.launchpad.database.branch.BranchDiffJob"
+      provides="canonical.launchpad.interfaces.branch.IBranchDiffJobSource" >
+    <allow
+     interface="canonical.launchpad.interfaces.branch.IBranchDiffJobSource" />
+  </securedutility>
 </configure>

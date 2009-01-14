@@ -21,10 +21,10 @@ from bzrlib.urlutils import escape, local_path_to_url
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
-    AsyncLaunchpadTransport, LaunchpadInternalServer, LaunchpadServer,
-    BranchTransportDispatch, TransportDispatch, UnknownTransportType)
+    AsyncLaunchpadTransport, branch_id_to_path, LaunchpadInternalServer,
+    LaunchpadServer, BranchTransportDispatch, TransportDispatch,
+    UnknownTransportType)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
@@ -719,19 +719,18 @@ class LaunchpadTransportTests:
         self.assertTrue(transport.has(orange))
 
     def test_createBranch_not_found_error(self):
-        # When createBranch raises an exception with faultCode
-        # NOT_FOUND_FAULT_CODE, the transport should translate this to a
-        # TransportNotPossible exception (see the comment in transport.py for
-        # why we translate to TransportNotPossible and not NoSuchFile).
+        # When createBranch raises faults.NotFound the transport should
+        # translate this to a PermissionDenied exception (see the comment in
+        # transport.py for why we translate to TransportNotPossible and not
+        # NoSuchFile).
         transport = self.getTransport()
         return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, "does not exist", transport.mkdir,
             '~%s/no-such-product/some-name' % self.requester.name)
 
     def test_createBranch_permission_denied_error(self):
-        # When createBranch raises an exception with faultCode
-        # PERMISSION_DENIED_FAULT_CODE, the transport should translate
-        # this to a PermissionDenied exception.
+        # When createBranch raises faults.PermissionDenied, the transport
+        # should translate this to a PermissionDenied exception.
         transport = self.getTransport()
         person = self.factory.makePerson()
         product = self.factory.makeProduct()

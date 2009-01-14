@@ -7,6 +7,8 @@ __all__ = ['Roundup']
 
 import csv
 
+from urllib import quote_plus
+
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData)
@@ -16,184 +18,28 @@ from canonical.launchpad.webapp.uri import URI
 
 
 PYTHON_BUGS_HOSTNAME = 'bugs.python.org'
+MPLAYERHQ_BUGS_HOSTNAME = 'roundup.mplayerhq.hu'
 
 
-def parse_python_status(remote_status):
-    """Convert a Python bug status into a (status, resolution) tuple.
+def create_query_string(items):
+    """Join the items to form a valid URL query string.
 
-    :param remote_status: A bugs.python.org status string in the form
-        '<status>:<resolution>', where status is an integer and
-        resolution is an integer or None. An AssertionError will be
-        raised if these conditions are not met.
+    There is urllib.urlencode that does a similar job, but you can't
+    specify the safe characters. Roundup likes URLs with @s in them,
+    and they work just fine unquoted.
     """
-    try:
-        status, resolution = remote_status.split(':')
-    except ValueError:
-        raise AssertionError(
-            "The remote status must be a string of the form "
-            "<status>:<resolution>.")
-
-    if status.isdigit():
-        status = int(status)
-    else:
-        raise AssertionError("The remote status must be an integer.")
-
-    if resolution.isdigit():
-        resolution = int(resolution)
-    elif resolution == 'None':
-        resolution = None
-    else:
-        raise AssertionError(
-            "The resolution must be an integer or 'None'.")
-
-    return (status, resolution)
+    return '&'.join(
+        '%s=%s' % (quote_plus(key, '@'), quote_plus(value))
+        for (key, value) in items)
 
 
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
-    def __init__(self, baseurl):
-        """Create a new Roundup instance.
-
-        :bugtracker: The Roundup bugtracker.
-
-        If the bug tracker's baseurl is one which points to
-        bugs.python.org, the behaviour of the Roundup bugtracker will be
-        different from that which it exhibits to every other Roundup bug
-        tracker, since the Python Roundup instance is very specific to
-        Python and in fact behaves rather more like SourceForge than
-        Roundup.
-        """
-        super(Roundup, self).__init__(baseurl)
-
-        if self.isPython():
-            # The bug export URLs differ only from the base Roundup ones
-            # insofar as they need to include the resolution column in
-            # order for us to be able to successfully export it.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=activity&@group=priority"
-                "&@pagesize=50&@startwith=0")
-        else:
-            # XXX: 2007-08-29 Graham Binns
-            #      I really don't like these URLs but Roundup seems to
-            #      be very sensitive to changing them. These are the
-            #      only ones that I can find that work consistently on
-            #      all the roundup instances I can find to test them
-            #      against, but I think that refining these should be
-            #      looked into at some point.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=activity&@group=priority&@pagesize=50"
-                "&@startwith=0")
-
-    def isPython(self):
-        """Return True if the remote bug tracker is at bugs.python.org.
-
-        Return False otherwise.
-        """
-        return PYTHON_BUGS_HOSTNAME in self.baseurl
-
-    def _getBug(self, bug_id):
-        """Return the bug with the ID bug_id from the internal bug list.
-
-        :param bug_id: The ID of the remote bug to return.
-        :type bug_id: int
-
-        BugNotFound will be raised if the bug does not exist.
-        InvalidBugId will be raised if bug_id is not of a valid format.
-        """
-        try:
-            bug_id = int(bug_id)
-        except ValueError:
-            raise InvalidBugId(
-                "bug_id must be convertible an integer: %s." % str(bug_id))
-
-        try:
-            return self.bugs[bug_id]
-        except KeyError:
-            raise BugNotFound(bug_id)
-
-    def getRemoteBug(self, bug_id):
-        """See `ExternalBugTracker`."""
-        bug_id = int(bug_id)
-        query_url = '%s/%s' % (
-            self.baseurl, self.single_bug_export_url % bug_id)
-        reader = csv.DictReader(self._fetchPage(query_url))
-        return (bug_id, reader.next())
-
-    def getRemoteBugBatch(self, bug_ids):
-        """See `ExternalBugTracker`"""
-        # XXX: 2007-08-28 Graham Binns
-        #      At present, Roundup does not support exporting only a
-        #      subset of bug ids as a batch (launchpad bug 135317). When
-        #      this bug is fixed we need to change this method to only
-        #      export the bug ids needed rather than hitting the remote
-        #      tracker for a potentially massive number of bugs.
-        query_url = '%s/%s' % (self.baseurl, self.batch_bug_export_url)
-        remote_bugs = csv.DictReader(self._fetchPage(query_url))
-        bugs = {}
-        for remote_bug in remote_bugs:
-            # We're only interested in the bug if it's one of the ones in
-            # bug_ids.
-            if remote_bug['id'] not in bug_ids:
-                continue
-
-            bugs[int(remote_bug['id'])] = remote_bug
-
-        return bugs
-
-    def getRemoteImportance(self, bug_id):
-        """See `ExternalBugTracker`.
-
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
-        """
-        return UNKNOWN_REMOTE_IMPORTANCE
-
-    def getRemoteStatus(self, bug_id):
-        """See `ExternalBugTracker`."""
-        remote_bug = self._getBug(bug_id)
-        if self.isPython():
-            # A remote bug must define a status and a resolution, even
-            # if that resolution is 'None', otherwise we can't
-            # accurately assign a BugTaskStatus to it.
-            try:
-                status = remote_bug['status']
-                resolution = remote_bug['resolution']
-            except KeyError:
-                raise UnparseableBugData(
-                    "Remote bug %s does not define both a status and a "
-                    "resolution." % bug_id)
-
-            # Remote status is stored as a string, so for sanity's sake
-            # we return an easily-parseable string.
-            return '%s:%s' % (status, resolution)
-
-        else:
-            try:
-                return remote_bug['status']
-            except KeyError:
-                raise UnparseableBugData(
-                    "Remote bug %s does not define a status.")
-
-    def convertRemoteImportance(self, remote_importance):
-        """See `ExternalBugTracker`.
-
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        BugTaskImportance.UNKNOWN will always be returned.
-        """
-        return BugTaskImportance.UNKNOWN
+    _status_fields_map = {
+        PYTHON_BUGS_HOSTNAME: ('status', 'resolution'),
+        MPLAYERHQ_BUGS_HOSTNAME: ('status', 'substatus'),
+        }
 
     # Our mapping of Roundup => Launchpad statuses. Roundup statuses
     # are integer-only and highly configurable.  Therefore we map the
@@ -242,26 +88,208 @@ class Roundup(ExternalBugTracker):
             _status_lookup_python_1)),       # Failback
         )
 
+    # Status tree for roundup.mplayerhq.hu Roundup instances. This is
+    # a mapping of all statuses that have ever been used (as of
+    # December 2008) in the Mplayer Roundup instance, not a
+    # comprehensive mapping of all /possible/ statuses. Appropriate
+    # mappings have been guessed at by looking at example bugs for
+    # each combination found.
+    #
+    # If new combinations are used, we will see OOPSes, and we should
+    # then see what they have used that combination to mean before
+    # adding them to this lookup tree.
+    #
+    _status_lookup_mplayerhq = LookupTree(
+        # status (new)
+        (1, LookupTree(
+                # substatus (new, open)
+                (1, 2, BugTaskStatus.NEW),
+                # substatus (analyzed)
+                (4, BugTaskStatus.TRIAGED),
+                )),
+        # status (open)
+        (2, LookupTree(
+                # substatus (open)
+                (2, BugTaskStatus.NEW),
+                # substatus (reproduced)
+                (3, BugTaskStatus.CONFIRMED),
+                # substatus (analyzed, approved)
+                (4, 6, 7, BugTaskStatus.TRIAGED),
+                # substatus (needs_more_info)
+                (5, BugTaskStatus.INCOMPLETE),
+                # substatus (fixed)
+                (10, BugTaskStatus.FIXCOMMITTED),
+                # substatus (implemented)
+                (13, BugTaskStatus.INPROGRESS),
+                )),
+        # status (closed)
+        (3, LookupTree(
+                # substatus (analyzed, needs_more_info, approved,
+                #            duplicate, invalid, works_for_me, reject)
+                (4, 5, 6, 8, 9, 12, BugTaskStatus.INVALID),
+                # substatus (fixed, implemented, applied)
+                (10, 13, 15, BugTaskStatus.FIXRELEASED),
+                # substatus (wont_fix, wont_implement, reject)
+                (11, 14, 16, BugTaskStatus.WONTFIX),
+                )),
+        )
+
     # Combine custom mappings with the standard mappings, using the
     # remote host as the first key into the tree.
     _status_lookup_titles = (
         'Remote host', 'Roundup status', 'Roundup resolution')
     _status_lookup = LookupTree(
         (PYTHON_BUGS_HOSTNAME, _status_lookup_python),
+        (MPLAYERHQ_BUGS_HOSTNAME, _status_lookup_mplayerhq),
         (_status_lookup_standard,), # Default
         )
 
+    def __init__(self, baseurl):
+        """Create a new Roundup instance.
+
+        :baseurl: The starting URL for accessing the remote Roundup
+            bug tracker.
+
+        The fields/columns to fetch from the remote bug tracker are
+        derived based on the host part of the baseurl.
+        """
+        super(Roundup, self).__init__(baseurl)
+        self.host = URI(self.baseurl).host
+
+        self._status_fields = (
+            self._status_fields_map.get(self.host, ('status',)))
+        fields = ('title', 'id', 'activity') + self._status_fields
+
+        # Roundup is quite particular about URLs, so although several
+        # of the parameters below seem redundant or irrelevant, they
+        # are needed for compatibility with the broadest range of
+        # Roundup instances in the wild. Test before changing them!
+        self.query_base = [
+            ("@action", "export_csv"),
+            ("@columns", ",".join(fields)),
+            ("@sort", "id"),
+            ("@group", "priority"),
+            ("@filter", "id"),
+            ("@pagesize", "50"),
+            ("@startwith", "0"),
+            ]
+
+    def getSingleBugExportURL(self, bug_id):
+        """Return the URL for single bug CSV export."""
+        query = list(self.query_base)
+        query.append(('id', str(bug_id)))
+        return "%s/issue?%s" % (self.baseurl, create_query_string(query))
+
+    def getBatchBugExportURL(self):
+        """Return the URL for batch (all bugs) CSV export."""
+        query = self.query_base
+        return "%s/issue?%s" % (self.baseurl, create_query_string(query))
+
+    def _getBug(self, bug_id):
+        """Return the bug with the ID bug_id from the internal bug list.
+
+        :param bug_id: The ID of the remote bug to return.
+        :type bug_id: int
+
+        BugNotFound will be raised if the bug does not exist.
+        InvalidBugId will be raised if bug_id is not of a valid format.
+        """
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId(
+                "bug_id must be an integer: %s." % str(bug_id))
+
+        try:
+            return self.bugs[bug_id]
+        except KeyError:
+            raise BugNotFound(bug_id)
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        bug_id = int(bug_id)
+        query_url = self.getSingleBugExportURL(bug_id)
+        reader = csv.DictReader(self._fetchPage(query_url))
+        return (bug_id, reader.next())
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`"""
+        # XXX: 2007-08-28 Graham Binns bug=135317
+        #      At present, Roundup does not support exporting only a
+        #      subset of bug ids as a batch (launchpad bug 135317). When
+        #      this bug is fixed we need to change this method to only
+        #      export the bug ids needed rather than hitting the remote
+        #      tracker for a potentially massive number of bugs.
+        query_url = self.getBatchBugExportURL()
+        remote_bugs = csv.DictReader(self._fetchPage(query_url))
+        bugs = {}
+        for remote_bug in remote_bugs:
+            # We're only interested in the bug if it's one of the ones in
+            # bug_ids.
+            if remote_bug['id'] not in bug_ids:
+                continue
+
+            bugs[int(remote_bug['id'])] = remote_bug
+
+        return bugs
+
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def getRemoteStatus(self, bug_id):
+        """See `ExternalBugTracker`."""
+        remote_bug = self._getBug(bug_id)
+
+        # This could be done in a single list comprehension, but it's
+        # done the long way so that we can raise a more useful error
+        # if a field value is missing.
+        field_values = []
+        for field in self._status_fields:
+            if field in remote_bug:
+                field_values.append(remote_bug[field])
+            else:
+                raise UnparseableBugData(
+                    "Remote bug %s does not define a value for %s." % (
+                        bug_id, field))
+
+        return ':'.join(field_values)
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
-        if self.isPython():
-            remote_status_key = parse_python_status(remote_status)
-        elif remote_status.isdigit():
-            remote_status_key = (int(remote_status),)
-        else:
-            raise UnknownRemoteStatusError(remote_status)
+        fields = self._status_fields
+        field_values = remote_status.split(':')
 
-        host = URI(self.baseurl).host
+        if len(field_values) != len(fields):
+            raise UnknownRemoteStatusError(
+                "%d field(s) expected, got %d: %s" % (
+                    len(fields), len(field_values), remote_status))
+
+        for index, field_value in enumerate(field_values):
+            if field_value == "None":
+                field_values[index] = None
+            elif field_value.isdigit():
+                field_values[index] = int(field_value)
+            else:
+                raise UnknownRemoteStatusError(
+                    "Unrecognized value for field %d (%s): %s" % (
+                        (index + 1), fields[index], field_value))
+
         try:
-            return self._status_lookup.find(host, *remote_status_key)
+            return self._status_lookup.find(self.host, *field_values)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)

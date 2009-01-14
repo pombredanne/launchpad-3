@@ -25,12 +25,13 @@
                       getBugsWatching getBugWatchesNeedingUpdate
                       getLinkedPersonByName id imported_bug_messages
                       latestwatches name owner products projects
-                      summary title watches getBugFilingLink" />
+                      summary title watches getBugFilingLink
+                      has_lp_plugin" />
       <require
           permission="launchpad.Edit"
           attributes="destroySelf ensurePersonForSelf linkPersonToSelf"
           set_attributes="aliases baseurl bugtrackertype contactdetails
-                          name owner summary title" />
+                          name owner summary title has_lp_plugin" />
     </class>
 
     <adapter

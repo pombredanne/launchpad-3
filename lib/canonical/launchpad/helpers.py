@@ -268,15 +268,6 @@ def obfuscateEmail(emailaddr, idx=None):
     return text_replaced(emailaddr, replacements[idx])
 
 
-def convertToHtmlCode(text):
-    """Return the given text converted to HTML codes, like &#103;.
-
-    This is usefull to avoid email harvesting, while keeping the email address
-    in a form that a 'normal' person can read.
-    """
-    return ''.join(["&#%s;" % ord(c) for c in text])
-
-
 def validate_translation(original, translation, flags):
     """Check with gettext if a translation is correct or not.
 

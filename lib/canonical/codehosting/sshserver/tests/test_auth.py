@@ -11,7 +11,7 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import userauth
 from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.ssh.keys import BadKeyError
+from twisted.conch.ssh.keys import BadKeyError, Key
 from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 from twisted.internet import defer
 from twisted.python import failure
@@ -19,11 +19,11 @@ from twisted.python.util import sibpath
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting import sshserver
+from canonical.codehosting.sshserver import auth
 from canonical.config import config
-from canonical.launchpad.daemons.sftp import getPublicKeyString
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
+
 
 class MockRealm:
     """A mock realm for testing userauth.SSHUserAuthServer.
@@ -40,7 +40,7 @@ class MockRealm:
             'initialBranches': []}
         return (
             interfaces[0],
-            sshserver.LaunchpadAvatar(user_dict, None),
+            auth.LaunchpadAvatar(user_dict, None),
             lambda: None)
 
 
@@ -80,7 +80,7 @@ class UserAuthServerMixin:
     def setUp(self):
         self.portal = Portal(MockRealm())
         self.transport = MockSSHTransport(self.portal)
-        self.user_auth = sshserver.SSHUserAuthServer(self.transport)
+        self.user_auth = auth.SSHUserAuthServer(self.transport)
 
     def _getMessageName(self, message_type):
         """Get the name of the message for the given message type constant."""
@@ -171,7 +171,7 @@ class MockChecker(SSHPublicKeyDatabase):
             return credentials.username
         else:
             return failure.Failure(
-                sshserver.UserDisplayedUnauthorizedLogin(self.error_message))
+                auth.UserDisplayedUnauthorizedLogin(self.error_message))
 
 
 class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
@@ -204,9 +204,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     def _makeKey(self):
         keydir = sibpath(__file__, 'keys')
-        public_key = getPublicKeyString(
-            data=open(os.path.join(keydir,
-                                   'ssh_host_key_rsa.pub'), 'rb').read())
+        public_key = Key.fromString(
+            open(os.path.join(keydir, 'ssh_host_key_rsa.pub'), 'rb').read())
         if isinstance(public_key, str):
             return chr(0) + NS('rsa') + NS(public_key)
         else:
@@ -359,8 +358,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         :param do_signature_checking: if False, as is the default, monkeypatch
             the returned instance to not verify the signatures of the keys.
         """
-        checker = sshserver.PublicKeyFromLaunchpadChecker(
-            self.authserver)
+        checker = auth.PublicKeyFromLaunchpadChecker(self.authserver)
         if not do_signature_checking:
             checker._cbRequestAvatarId = self._cbRequestAvatarId
         return checker
@@ -410,7 +408,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         """
         d = self.assertFailure(
             checker.requestAvatarId(creds),
-            sshserver.UserDisplayedUnauthorizedLogin)
+            auth.UserDisplayedUnauthorizedLogin)
         d.addCallback(
             lambda exception: self.assertEqual(str(exception), error_message))
         return d
@@ -452,7 +450,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         d.addCallback(
             lambda exception:
             self.failIf(isinstance(exception,
-                                   sshserver.UserDisplayedUnauthorizedLogin),
+                                   auth.UserDisplayedUnauthorizedLogin),
                         "Should not be a UserDisplayedUnauthorizedLogin"))
         return d
 
