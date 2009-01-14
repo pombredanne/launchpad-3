@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
@@ -11,12 +11,16 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
+    'NoSuchDistroSeries',
     ]
 
-from zope.schema import Bool, Choice, Int, Object, TextLine
+from zope.schema import Bool, Datetime, Choice, Object, TextLine
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.fields import (
+    Description, PublicPersonChoice, Summary, Title)
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -26,10 +30,14 @@ from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -110,60 +118,80 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
-    name = TextLine(
-        title=_("Name"), required=True,
-        description=_("The name of this series."))
-    displayname = TextLine(
-        title=_("Display name"), required=True,
-        description=_("The series displayname."))
-    fullseriesname = TextLine(
-        title=_("Series full name"), required=False,
-        description=_("The series full name, e.g. Ubuntu Warty"))
-    title = Title(
-        title=_("Title"), required=True,
-        description=_("""The title of this series. It should be distinctive
-                      and designed to look good at the top of a page."""))
-    summary = Summary(title=_("Summary"), required=True,
-        description=_("A brief summary of the highlights of this release. "
-                      "It should be no longer than a single paragraph, up "
-                      "to 200 words."))
-    description = Description(title=_("Description"), required=True,
-        description=_("A detailed description of this series, with "
-                      "information on the architectures covered, the "
-                      "availability of security updates and any other "
-                      "relevant information."))
-    version = TextLine(title=_("Version"), required=True,
-        description=_("The version string for this series."))
-    distribution = Int(title=_("Distribution"), required=True,
-        description=_("The distribution for which this is a series."))
+    name = exported(
+        TextLine(
+            title=_("Name"), required=True,
+            description=_("The name of this series.")))
+    displayname = exported(
+        TextLine(
+            title=_("Display name"), required=True,
+            description=_("The series displayname.")))
+    fullseriesname = exported(
+        TextLine(
+            title=_("Series full name"), required=False,
+            description=_("The series full name, e.g. Ubuntu Warty")))
+    title = exported(
+        Title(
+            title=_("Title"), required=True,
+            description=_(
+                "The title of this series. It should be distinctive "
+                "and designed to look good at the top of a page.")))
+    summary = exported(
+        Summary(title=_("Summary"), required=True,
+            description=_(
+                "A brief summary of the highlights of this release. "
+                "It should be no longer than a single paragraph, up "
+                "to 200 words.")))
+    description = exported(
+        Description(title=_("Description"), required=True,
+            description=_("A detailed description of this series, with "
+                          "information on the architectures covered, the "
+                          "availability of security updates and any other "
+                          "relevant information.")))
+    version = exported(
+        TextLine(
+            title=_("Version"), required=True,
+            description=_("The version string for this series.")))
+    distribution = exported(
+        Reference(
+            IDistribution,
+            title=_("Distribution"), required=True,
+            description=_("The distribution for which this is a series.")))
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
     upload_components = Attribute("The series components that can be "
                                   "uploaded to.")
     sections = Attribute("The series sections.")
-    status = Choice(
-        title=_("Status"), required=True,
-        vocabulary=DistroSeriesStatus)
-    datereleased = Attribute("The datereleased.")
-    parent_series = Choice(
-        title=_("Parent series"),
-        description=_("The series from which this one was branched."),
-        required=True,
-        vocabulary='DistroSeries')
-    owner = Attribute("Owner")
-    date_created = Attribute("The date this series was registered.")
-    driver = Choice(
-        title=_("Driver"),
-        description=_(
-            "The person or team responsible for decisions about features "
-            "and bugs that will be targeted to this series of the "
-            "distribution."),
-        required=False, vocabulary='ValidPersonOrTeam')
-    changeslist = TextLine(
-        title=_("E-mail changes to"), required=True,
-        description=_("The mailing list or other e-mail address that "
-                      "Launchpad should notify about new uploads."),
-        constraint=email_validator)
+    status = exported(
+        Choice(
+            title=_("Status"), required=True,
+            vocabulary=DistroSeriesStatus))
+    datereleased = exported(
+        Datetime(title=_("Date released")))
+    parent_series = exported(
+        Choice(
+            title=_("Parent series"),
+            description=_("The series from which this one was branched."),
+            required=True,
+            vocabulary='DistroSeries'))
+    owner = exported(
+        PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
+    date_created = exported(
+        Datetime(title=_("The date this series was registered.")))
+    driver = exported(
+        Choice(
+            title=_("Driver"),
+            description=_(
+                "The person or team responsible for decisions about features "
+                "and bugs that will be targeted to this series of the "
+                "distribution."),
+            required=False, vocabulary='ValidPersonOrTeam'))
+    changeslist = exported(
+        TextLine(
+            title=_("E-mail changes to"), required=True,
+            description=_("The mailing list or other e-mail address that "
+                          "Launchpad should notify about new uploads."),
+            constraint=email_validator))
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(
@@ -259,15 +287,24 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     previous_serieses = Attribute("Previous series from the same "
         "distribution.")
 
-    main_archive = Attribute('Main Archive')
+    main_archive = exported(
+        Reference(
+            IArchive,
+            title=_('Distribution Main Archive')))
 
-    supported = Attribute(
-        "Whether or not this series is currently supported.")
+    supported = exported(
+        Bool(
+            title=_("Supported"),
+            description=_(
+                "Whether or not this series is currently supported.")))
 
-    active = Attribute(
-        "Whether or not this series is stable and supported, or under "
-        "current development. This excludes series which are experimental "
-        "or obsolete.")
+    active = exported(
+        Bool(
+            title=_("Active"),
+            description=_(
+                "Whether or not this series is stable and supported, or "
+                "under current development. This excludes series which "
+                "are experimental or obsolete.")))
 
     def isUnstable():
         """Whether or not a distroseries is unstable.
@@ -326,6 +363,17 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getTranslatableSourcePackages():
         """Return a list of Source packages in this distribution series
         that can be translated.
+        """
+
+    def checkTranslationsViewable():
+        """Raise `TranslationUnavailable` if translations are hidden.
+
+        Checks the `hide_all_translations` flag.  If it is set, these
+        translations are not to be shown to the public.  In that case an
+        appropriate message is composed based on the series' `status`,
+        and a `TranslationUnavailable` exception is raised.
+
+        Simply returns if translations are not hidden.
         """
 
     def getUnlinkedTranslatableSourcePackages():
@@ -614,6 +662,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
     """A series of an operating system distribution."""
+    export_as_webservice_entry()
 
 
 # We assign the schema for an `IHasBugs` method argument here
@@ -665,3 +714,9 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
+
+
+class NoSuchDistroSeries(NameLookupFailed):
+    """Raised when we try to find a DistroSeries that doesn't exist."""
+
+    _message_prefix = "No such distribution series"

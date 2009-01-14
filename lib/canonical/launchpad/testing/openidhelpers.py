@@ -9,6 +9,7 @@ __all__ = [
     'complete_from_browser',
     'make_endpoint',
     'make_identifier_select_endpoint',
+    'print_endpoints',
 ]
 
 from StringIO import StringIO
@@ -16,6 +17,7 @@ import urllib2
 
 from openid import fetchers
 from openid.consumer.discover import (
+    discover, discoverNoYadis,
     OpenIDServiceEndpoint, OPENID_1_0_TYPE, OPENID_1_1_TYPE,
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
@@ -165,3 +167,22 @@ def complete_from_browser(consumer, browser, expected_claimed_id=None):
     if expected_claimed_id is not None:
         del consumer.consumer._verifyDiscoveryResultsOpenID1
     return response
+
+def print_endpoints(url, yadis=True):
+    """Print the OpenID services found through YADIS discovery."""
+    if not yadis :
+        claimed_id, services = discoverNoYadis(url)
+    else:
+        claimed_id, services = discover(url)
+    print 'Claimed ID:', claimed_id
+    print '----'
+    if not services:
+        print 'No services discovered'
+    for service in services:
+        print 'Local ID:', service.getLocalID()
+        print 'Server URL:', service.server_url
+        print 'Supports:'
+        for type_uri in service.type_uris:
+            print '  ' + type_uri
+        print '----'
+

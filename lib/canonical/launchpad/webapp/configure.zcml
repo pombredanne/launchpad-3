@@ -29,6 +29,21 @@
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
         />
+    <adapter
+        for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        />
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        />
+    <adapter
+        for="canonical.launchpad.layers.FeedsLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
+        />
 
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
@@ -426,6 +441,11 @@
     <subscriber
         for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
         handler="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        />
+
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
+        handler="canonical.launchpad.rest.me.cache_me_link_when_principal_identified"
         />
 
     <subscriber

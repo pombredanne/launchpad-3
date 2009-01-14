@@ -81,29 +81,21 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <browser:editform
+    <browser:page
         name="+edit"
-        schema="canonical.launchpad.interfaces.IPOTemplate"
+        for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateEditView"
-        label="Change PO template information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="description priority owner"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <browser:editform
+    <browser:page
         name="+admin"
-        schema="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateEditView"
-        label="Administer PO template"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        class="canonical.launchpad.browser.POTemplateAdminView"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
-        fields="name translation_domain description header iscurrent owner
-                productseries distroseries sourcepackagename
-                from_sourcepackagename sourcepackageversion binarypackagename
-                languagepack path source_file_format priority
-                date_last_updated"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 

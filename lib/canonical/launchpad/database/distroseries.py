@@ -16,19 +16,26 @@ from cStringIO import StringIO
 from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
+
+from storm.locals import SQL, Join
+from storm.store import Store
+
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (cursor, flush_database_caches,
-    flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
-from canonical.launchpad.database.binarypackagename import (
-    BinaryPackageName)
+from canonical.database.sqlbase import (
+    cursor, flush_database_caches, flush_database_updates, quote_like,
+    quote, SQLBase, sqlvalues)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
+from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
@@ -68,24 +75,37 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-
 from canonical.launchpad.helpers import shortlist
-
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
-    IBuildSet, ICanPublishPackages, IDistroSeries, IDistroSeriesSet,
-    IHasBuildRecords, IHasQueueItems, IHasTranslationTemplates,
-    ILibraryFileAliasSet, IPublishedPackageSet, ISourcePackage,
-    ISourcePackageName, ISourcePackageNameSet, IStructuralSubscriptionTarget,
-    LanguagePackType, NotFoundError, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationImplementationStatus,
-    SpecificationSort)
-from canonical.launchpad.interfaces.publishing import active_publishing_status
-
+from canonical.launchpad.interfaces.archive import (
+    ALLOW_RELEASE_BUILDS, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.binarypackagename import (
+    IBinaryPackageName)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
+from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from canonical.launchpad.interfaces.publishedpackage import (
+    IPublishedPackageSet)
+from canonical.launchpad.interfaces.publishing import (
+    active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
+    PackagePublishingStatus)
+from canonical.launchpad.interfaces.queue import IHasQueueItems
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageName, ISourcePackageNameSet)
+from canonical.launchpad.interfaces.specification import (
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from canonical.launchpad.mail import signed_message_from_string
-
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, IStoreSelector, MAIN_STORE, SLAVE_FLAVOR,
+    TranslationUnavailable)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -324,7 +344,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = """
             SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status = %s AND
+            SourcePackagePublishingHistory.status IN %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -333,7 +353,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(
                     self,
                     self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.PUBLISHED,
+                    active_publishing_status,
                     PackagePublishingPocket.RELEASE)
         self.sourcecount = SourcePackageName.select(
             query, distinct=True,
@@ -349,14 +369,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.status IN %s AND
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s
             """ % sqlvalues(
-                    PackagePublishingStatus.PUBLISHED,
+                    active_publishing_status,
                     PackagePublishingPocket.RELEASE,
                     self,
                     self.distribution.all_distro_archive_ids)
@@ -647,6 +667,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 archtag, self.distribution.name, self.name))
         return item
 
+    def checkTranslationsViewable(self):
+        """See `IDistroSeries`."""
+        if not self.hide_all_translations:
+            # Yup, viewable.
+            return
+
+        future = [
+            DistroSeriesStatus.EXPERIMENTAL,
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FUTURE,
+            ]
+        if self.status in future:
+            raise TranslationUnavailable(
+                "Translations for this release series are not available yet.")
+        elif self.status == DistroSeriesStatus.OBSOLETE:
+            raise TranslationUnavailable(
+                "This release series is obsolete.  Its translations are no "
+                "longer available.")
+        else:
+            raise TranslationUnavailable(
+                "Translations for this release series are not currently "
+                "available.  Please come back soon.")
+
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
         query = """
@@ -792,12 +835,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
             # XXX: Julian 2007-09-14: this should come from a single
             # location where this is specified, not sprinkled around the code.
-            allow_release_builds = (
-                ArchivePurpose.PPA, ArchivePurpose.PARTNER)
-
             query += ("""AND (Archive.purpose in %s OR
                             SourcePackagePublishingHistory.pocket != %s)""" %
-                      sqlvalues(allow_release_builds,
+                      sqlvalues(ALLOW_RELEASE_BUILDS,
                                 PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishingHistory.select(
@@ -1087,22 +1127,49 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def searchPackages(self, text):
         """See `IDistroSeries`."""
-        package_caches = DistroSeriesPackageCache.select("""
-            distroseries = %s AND
-            archive IN %s AND
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        find_spec = (
+            DistroSeriesPackageCache,
+            BinaryPackageName,
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
+            )
+        origin = [
+            DistroSeriesPackageCache,
+            Join(
+                BinaryPackageName,
+                DistroSeriesPackageCache.binarypackagename ==
+                    BinaryPackageName.id
+                )
+            ]
+
+        # Note: When attempting to convert the query below into straight
+        # Storm expressions, a 'tuple index out-of-range' error was always
+        # raised.
+        package_caches = store.using(*origin).find(
+            find_spec,
+            """DistroSeriesPackageCache.distroseries = %s AND
+            DistroSeriesPackageCache.archive IN %s AND
             (fti @@ ftq(%s) OR
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text)),
-            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
-            orderBy=['-rank'],
-            prejoins=['binarypackagename'],
-            distinct=True)
-        return [DistroSeriesBinaryPackage(
-            distroseries=self,
-            binarypackagename=cache.binarypackagename, cache=cache)
-            for cache in package_caches]
+                   quote(text), quote_like(text))
+            ).config(distinct=True)
+
+        ranked_package_caches = package_caches.order_by('rank DESC')
+
+        # Create a function that will decorate the results, converting
+        # them from the find_spec above into a DSBP:
+        def result_to_dsbp((cache, binary_package_name, rank)):
+            return DistroSeriesBinaryPackage(
+                distroseries=cache.distroseries,
+                binarypackagename=binary_package_name,
+                cache=cache)
+
+        # Return the decorated result set so the consumer of these
+        # results will only see DSBPs
+        return DecoratedResultSet(package_caches, result_to_dsbp)
 
     def newArch(self, architecturetag, processorfamily, official, owner,
                 supports_virtualized=False):
@@ -1420,11 +1487,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
-            allowed_purposes = (
-                ArchivePurpose.PRIMARY,
-                ArchivePurpose.PARTNER,
-                )
-            if archive.purpose not in allowed_purposes:
+            if archive.purpose not in MAIN_ARCHIVE_PURPOSES:
                 continue
 
             # XXX cprov 20080612: Implicitly creating a PARTNER archive for

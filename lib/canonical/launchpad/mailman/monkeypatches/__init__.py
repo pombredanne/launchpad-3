@@ -4,10 +4,7 @@
 import os
 import shutil
 
-from canonical.lazr.config import as_host_port
-
-
-HERE = os.path.dirname(__file__)
+from lazr.config import as_host_port
 
 
 def monkey_patch(mailman_path, config):
@@ -39,7 +36,7 @@ def monkey_patch(mailman_path, config):
     # will get appended to Mailman's sys.path.
     import canonical
     from canonical.launchpad.mailman.config import configure_siteowner
-    launchpad_top = os.path.dirname(HERE)
+    launchpad_top = os.path.dirname(os.path.dirname(canonical.__file__))
     # Read the email footer template for all Launchpad messages.
     from canonical.launchpad.helpers import get_email_template
     footer = get_email_template('mailinglist-footer.txt')
@@ -139,7 +136,8 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
         finally:
             handler_file.close()
     # Install the launchpad site templates.
-    launchpad_template_path = os.path.join(HERE, 'sitetemplates')
+    here = os.path.dirname(__file__)
+    launchpad_template_path = os.path.join(here, 'sitetemplates')
     site_template_path = os.path.join(mailman_path, 'templates', 'site')
     if os.path.isdir(site_template_path):
         shutil.rmtree(site_template_path)

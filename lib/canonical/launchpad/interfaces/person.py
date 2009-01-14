@@ -11,19 +11,22 @@ __all__ = [
     'IHasStanding',
     'INewPerson',
     'INewPersonForm',
-    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'ImmutableVisibilityError',
+    'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
+    'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -79,6 +82,7 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -542,9 +546,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_openid_enabled = Bool(
-        title=_("This user can use Launchpad as an OpenID provider."),
-        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -553,11 +554,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    allwikis = exported(
-        CollectionField(title=_("All WikiNames of this Person."),
-                        readonly=True, required=False,
-                        value_type=Reference(schema=IWikiName)),
-        exported_as='wiki_names')
+    wiki_names = exported(
+        CollectionField(
+            title=_("All WikiNames of this Person, sorted alphabetically by "
+                    "URL."),
+            readonly=True, required=False,
+            value_type=Reference(schema=IWikiName)))
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
                         readonly=True, required=False,
@@ -711,8 +713,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    archive = Attribute(
-        "The Archive owned by this person, his PPA.")
+    archive = exported(
+        Reference(title=_("Personal Package Archive"),
+                  description=_("The Archive owned by this person, his PPA."),
+                  schema=Interface)) # Really IArchive, see archive.py
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -835,6 +839,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         The product_name may be None.
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
+        # longer appropriate, given source package branches. It's used in
+        # browser/person.py, browser/specification.py.
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
@@ -1048,17 +1055,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def addLanguage(language):
         """Add a language to this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
-        If the given language is already present, and IntegrityError will be
-        raised. This will be fixed soon; here's the discussion on this topic:
-        https://launchpad.ubuntu.com/malone/bugs/1317.
+        If the given language is one of the user's preferred languages
+        already, nothing will happen.
         """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
         """
@@ -1232,6 +1238,15 @@ class IPersonViewRestricted(Interface):
     unmapped_participants = CollectionField(
         title=_("List of participants with no coordinates recorded."),
         value_type=Reference(schema=Interface))
+
+    def getMembersWithPreferredEmails(include_teams=False):
+        """Returns a result set of persons with precached addresses.
+
+        Persons or teams without preferred email addresses are not included.
+        """
+
+    def getMembersWithPreferredEmailsCount(include_teams=False):
+        """Returns the count of persons/teams with preferred emails."""
 
     def getDirectAdministrators():
         """Return this team's administrators.
@@ -1961,6 +1976,10 @@ class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
 
 
+class ImmutableVisibilityError(Exception):
+    """A change in team membership visibility is not allowed."""
+
+
 class InvalidName(Exception):
     """The name given for a person is not valid."""
 
@@ -1968,6 +1987,12 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class NoSuchPerson(NameLookupFailed):
+    """Raised when we try to look up an IPerson that doesn't exist."""
+
+    _message_prefix = "No such person"
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

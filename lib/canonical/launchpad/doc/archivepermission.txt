@@ -131,6 +131,20 @@ or team has permission to upload to the supplied component:
     ...     print uploader.person.name
     ubuntu-team
 
+The component argument can also be a string type and it's converted
+internally to a component object:
+
+    >>> uploaders = permission_set.uploadersForComponent(
+    ...     ubuntu.main_archive, "main")
+
+If the string is not a valid component, a NotFound exception is thrown:
+
+    >>> uploaders = permission_set.uploadersForComponent(
+    ...     ubuntu.main_archive, "badcomponent")
+    Traceback (most recent call last):
+    ...
+    ComponentNotFound: 'badcomponent'
+
 If the component argument is not passed, it will return
 ArchivePermission records for all matching components:
 
@@ -171,14 +185,14 @@ You can also pass a string package name instead of an ISourcePackageName:
     >>> uploaders.count()
     0
 
-Passing a non-existent package name will cause a NotFoundError
+Passing a non-existent package name will cause a SourceNotFound
 to be thrown.
 
     >>> uploaders = permission_set.uploadersForPackage(
     ...     ubuntu.main_archive, "fakepackage")
     Traceback (most recent call last):
     ...
-    NotFoundError: 'fakepackage'
+    SourceNotFound: No such source package: 'fakepackage'.
 
 Similarly, packagesForUploader() returns the ArchivePermission records where
 the supplied user has permission to upload to packages.

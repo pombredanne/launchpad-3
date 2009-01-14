@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageSet,
     IUserToUserEmail, InvalidEmailMessage)
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.lazr.config import as_timedelta
+from lazr.config import as_timedelta
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -698,6 +698,11 @@ class DirectEmailAuthorization:
             # back, so this would give us 'now'.
             return after
         return affecters[expiry].date_sent
+
+    @property
+    def message_quota(self):
+        """See `IDirectEmailAuthorization`."""
+        return config.launchpad.user_to_user_max_messages
 
     def record(self, message):
         """See `IDirectEmailAuthorization`."""

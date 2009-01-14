@@ -26,7 +26,6 @@ IScriptActivitySet.recordSuccess():
   >>> from canonical.database.sqlbase import ZopelessTransactionManager
   >>> from canonical.launchpad.interfaces import IScriptActivitySet
 
-  >>> factory = LaunchpadObjectFactory()
   >>> UTC = pytz.timezone('UTC')
   >>> ztm = ZopelessTransactionManager._installed
 

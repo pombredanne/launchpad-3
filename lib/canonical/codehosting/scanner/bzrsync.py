@@ -16,22 +16,27 @@ import urlparse
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import BzrBranchFormat4
-from bzrlib.diff import show_diff_trees
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
+from bzrlib import urlutils
+import transaction
 
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
+    BranchSubscriptionNotificationLevel, BugBranchStatus,
+    IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branch import (
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchDiffJobSource,
+    IBranchSet,)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 from canonical.launchpad.webapp.uri import URI
@@ -73,27 +78,29 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def get_diff(bzr_branch, bzr_revision):
+def get_diff(db_branch, bzr_revision):
     """Return the diff for `bzr_revision` on `bzr_branch`.
 
-    :param bzr_branch: A `bzrlib.branch.Branch` object.
+    This operation is not expected to take a long time.
+    :param db_branch: A `canonical.launchpad.interface.IBranch` object.
     :param bzr_revision: A Bazaar `Revision` object.
     :return: A byte string that is the diff of the changes introduced by
-        `bzr_revision` on `bzr_branch`.
+        `bzr_revision` on `db_branch`.
     """
-    repo = bzr_branch.repository
-    if bzr_revision.parent_ids:
-        ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
-        tree_new, tree_old = repo.revision_trees(ids)
+    if len(bzr_revision.parent_ids) > 0:
+        basis = bzr_revision.parent_ids[0]
     else:
-        # can't get both trees at once, so one at a time
-        tree_new = repo.revision_tree(bzr_revision.revision_id)
-        tree_old = repo.revision_tree(NULL_REVISION)
-
-    diff_content = StringIO()
-    show_diff_trees(tree_old, tree_new, diff_content)
-    raw_diff = diff_content.getvalue()
-    return raw_diff.decode('utf8', 'replace')
+        basis = NULL_REVISION
+    basis_spec = 'revid:%s' % basis
+    revision_spec = 'revid:%s' % bzr_revision.revision_id
+    diff_job = getUtility(IBranchDiffJobSource).create(
+        db_branch, basis_spec, revision_spec)
+    static_diff = diff_job.run()
+    diff_job.destroySelf()
+    transaction.commit()
+    revision_diff = static_diff.diff.text.decode('utf8', 'replace')
+    static_diff.destroySelf()
+    return revision_diff
 
 
 def get_revision_message(bzr_branch, bzr_revision):
@@ -265,7 +272,7 @@ class BranchMailer:
                 contents = ('%d revisions were removed from the branch.'
                             % number_removed)
             # No diff is associated with the removed email.
-            self.pending_emails.append((contents, '', None))
+            self.pending_emails.append((contents, '', None, 'removed'))
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
         """Generate an email for a revision for later sending.
@@ -280,7 +287,7 @@ class BranchMailer:
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
             if self.generate_diffs:
-                revision_diff = get_diff(bzr_branch, bzr_revision)
+                revision_diff = get_diff(self.db_branch, bzr_revision)
             else:
                 revision_diff = ''
             # Use the first (non blank) line of the commit message
@@ -299,7 +306,7 @@ class BranchMailer:
             subject = '[Branch %s] Rev %s: %s' % (
                 self.db_branch.unique_name, sequence, first_line)
             self.pending_emails.append(
-                (message, revision_diff, subject))
+                (message, revision_diff, subject, sequence))
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
@@ -333,14 +340,58 @@ class BranchMailer:
                        ' in the revision history of the branch.' %
                        revisions)
             send_branch_revision_notifications(
-                self.db_branch, self.email_from, message, '', None)
+                self.db_branch, self.email_from, message, '', None, 'initial')
         else:
-            for message, diff, subject in self.pending_emails:
+            for message, diff, subject, revno in self.pending_emails:
                 send_branch_revision_notifications(
                     self.db_branch, self.email_from, message, diff,
-                    subject)
+                    subject, revno)
 
         self.trans_manager.commit()
+
+
+class BranchMergeDetectionHandler:
+    """Handle merge detection events."""
+
+    def __init__(self, logger=None):
+        if logger is None:
+            logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
+
+    def _markSourceBranchMerged(self, source):
+        # If the source branch is a series branch, then don't change the
+        # lifecycle status of it at all.
+        if source.associatedProductSeries().count() > 0:
+            return
+        # In other cases, we now want to update the lifecycle status of the
+        # source branch to merged.
+        self.logger.info("%s now Merged.", source.bzr_identity)
+        source.lifecycle_status = BranchLifecycleStatus.MERGED
+
+    def mergeProposalMerge(self, proposal):
+        """Handle a detected merge of a proposal."""
+        self.logger.info(
+            'Merge detected: %s => %s',
+            proposal.source_branch.bzr_identity,
+            proposal.target_branch.bzr_identity)
+        proposal.markAsMerged()
+        # Don't update the source branch unless the target branch is a series
+        # branch.
+        if proposal.target_branch.associatedProductSeries().count() == 0:
+            return
+        self._markSourceBranchMerged(proposal.source_branch)
+
+    def mergeOfTwoBranches(self, source, target):
+        """Handle the merge of source into target."""
+        # If the target branch is not the development focus, then don't update
+        # the status of the source branch.
+        self.logger.info(
+            'Merge detected: %s => %s',
+            source.bzr_identity, target.bzr_identity)
+        dev_focus = target.product.development_focus
+        if target != dev_focus.user_branch:
+            return
+        self._markSourceBranchMerged(source)
 
 
 class WarehouseBranchPolicy(BranchPolicy):
@@ -356,6 +407,14 @@ class WarehouseBranchPolicy(BranchPolicy):
         uri = URI(url)
         if uri.scheme != 'lp-mirrored':
             raise InvalidStackedBranchURL(url)
+
+    def transformFallbackLocation(self, branch, url):
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        We're happy to open stacked branches in the usual manner, but want to
+        go on checking the URLs of any branches we then open.
+        """
+        return urlutils.join(branch.base, url), True
 
 
 def iter_list_chunks(a_list, size):
@@ -382,6 +441,7 @@ class BzrSync:
         self.db_branch = branch
         self._bug_linker = BugBranchLinker(self.db_branch)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
+        self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch, handling locking.
@@ -457,7 +517,48 @@ class BzrSync:
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
         self.autoMergeProposals(bzr_ancestry)
+        self.autoMergeBranches(bzr_ancestry)
         self.trans_manager.commit()
+
+    def autoMergeBranches(self, bzr_ancestry):
+        """Detect branches that have been merged."""
+        # We only check branches that have been merged into the branch that is
+        # being scanned as we already have the ancestry handy.  It is much
+        # more work to determine which other branches this branch has been
+        # merged into.  At this stage the merge detection only checks other
+        # branches merged into the scanned one.
+
+        # Only do this for non-junk branches.
+        if self.db_branch.product is None:
+            return
+        # Get all the active branches for the product, and if the
+        # last_scanned_revision is in the ancestry, then mark it as merged.
+        branches = getUtility(IBranchSet).getBranchesForContext(
+            context=self.db_branch.product,
+            visible_by_user=LAUNCHPAD_SERVICES,
+            lifecycle_statuses=(
+                BranchLifecycleStatus.NEW,
+                BranchLifecycleStatus.DEVELOPMENT,
+                BranchLifecycleStatus.EXPERIMENTAL,
+                BranchLifecycleStatus.MATURE,
+                BranchLifecycleStatus.ABANDONED))
+        for branch in branches:
+            last_scanned = branch.last_scanned_id
+            # If the branch doesn't have any revisions, not any point setting
+            # anything.
+            if last_scanned is None or last_scanned == NULL_REVISION:
+                # Skip this branch.
+                pass
+            elif branch == self.db_branch:
+                # No point merging into ourselves.
+                pass
+            elif self.db_branch.last_scanned_id == last_scanned:
+                # If the tip revisions are the same, then it is the same
+                # branch, not one merged into the other.
+                pass
+            elif last_scanned in bzr_ancestry:
+                self._merge_handler.mergeOfTwoBranches(
+                    branch, self.db_branch)
 
     def autoMergeProposals(self, bzr_ancestry):
         """Detect merged proposals."""
@@ -470,7 +571,7 @@ class BzrSync:
         # ui by a person, of by PQM once it is integrated.
         for proposal in self.db_branch.landing_candidates:
             if proposal.source_branch.last_scanned_id in bzr_ancestry:
-                proposal.markAsMerged()
+                self._merge_handler.mergeProposalMerge(proposal)
 
         # Now check the landing targets.
         final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
@@ -482,7 +583,7 @@ class BzrSync:
                 branch_revision = proposal.target_branch.getBranchRevision(
                     revision_id=tip_rev_id)
                 if branch_revision is not None:
-                    proposal.markAsMerged()
+                    self._merge_handler.mergeProposalMerge(proposal)
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
@@ -675,16 +776,13 @@ class BzrSync:
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
-        self.logger.info("Updating branch scanner status.")
         if len(bzr_history) > 0:
             last_revision = bzr_history[-1]
+            revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
         else:
-            last_revision = NULL_REVISION
+            revision = None
 
-        # FIXME: move that conditional logic down to updateScannedDetails.
-        # -- DavidAllouche 2007-02-22
         revision_count = len(bzr_history)
-        if ((last_revision != self.db_branch.last_scanned_id)
-                or (revision_count != self.db_branch.revision_count)):
-            self.db_branch.updateScannedDetails(
-                last_revision, revision_count)
+        self.logger.info(
+            "Updating branch scanner status: %s revs", revision_count)
+        self.db_branch.updateScannedDetails(revision, revision_count)

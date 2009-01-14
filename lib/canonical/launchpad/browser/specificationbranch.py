@@ -6,9 +6,12 @@ __metaclass__ = type
 
 __all__ = [
     'BranchLinkToSpecificationView',
-    'SpecificationBranchStatusView',
     'SpecificationBranchBranchInlineEditView',
+    'SpecificationBranchStatusView',
+    'SpecificationBranchURL',
     ]
+
+from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ISpecificationBranch
@@ -18,6 +21,27 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+
+class SpecificationBranchURL:
+    """Specification branch URL creation rules."""
+
+    implements(ICanonicalUrlData)
+
+    rootsite = "blueprints"
+
+    def __init__(self, specification_branch):
+        self.branch = specification_branch.branch
+        self.specification = specification_branch.specification
+
+    @property
+    def inside(self):
+        return self.specification
+
+    @property
+    def path(self):
+        return u'+branch/%s' % self.branch.unique_name[1:]
 
 
 class SpecificationBranchStatusView(LaunchpadEditFormView):

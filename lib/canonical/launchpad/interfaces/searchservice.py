@@ -9,6 +9,7 @@ __all__ = [
     'ISearchResult',
     'ISearchResults',
     'ISearchService',
+    'GoogleResponseError',
     'GoogleWrongGSPVersion',
     ]
 
@@ -39,7 +40,10 @@ class ISearchResults(Interface):
 
     total = Int(
         title=_('Total'), required=True,
-        description=_('The total number of items that matched a search.'))
+        description=_(
+            'The total number of items that matched a search. This '
+            'collection may be a slice of the total items because the '
+            'search service returns the results in batches.'))
     start = Int(
         title=_('Start'), required=True,
         description=_(
@@ -48,7 +52,11 @@ class ISearchResults(Interface):
             'of the total search results.'))
 
     def __len__():
-        """The number of items in the collection returned by the search."""
+        """The number of items in the collection returned by the search.
+
+        This number may be much smaller than the total matches because the
+        search service may batch the items.
+        """
 
     def __getitem__(index):
         """Return the item at index in the collection."""
@@ -59,6 +67,10 @@ class ISearchResults(Interface):
 
 class GoogleWrongGSPVersion(ValueError):
     """Raised when the content is not parsable Google Search Protocol XML."""
+
+
+class GoogleResponseError(SyntaxError):
+    """Raised when Google's response is not contain valid XML."""
 
 
 class ISearchService(Interface):

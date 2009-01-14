@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
     ISourcePackage, ITranslationImporter, ITranslationImportQueue,
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
-    TranslationFileFormat)
+    TranslationFileFormat, TranslationImportQueueConflictError)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -78,7 +78,6 @@ class TranslationImportQueueEntry(SQLBase):
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
         notNull=True, default=DEFAULT)
-
 
     @property
     def sourcepackage(self):
@@ -260,7 +259,8 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate_subset = potemplateset.getSubset(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
-            productseries=self.productseries)
+            productseries=self.productseries,
+            iscurrent=True)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
@@ -271,7 +271,7 @@ class TranslationImportQueueEntry(SQLBase):
             # it in a different source package as a second try. To do it, we
             # need to get a subset of all packages in current distro series.
             potemplate_subset = potemplateset.getSubset(
-                distroseries=self.distroseries)
+                distroseries=self.distroseries, iscurrent=True)
             potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
                 translation_domain)
 
@@ -600,6 +600,85 @@ class TranslationImportQueue:
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
 
+    def _getMatchingEntry(self, path, importer, potemplate, pofile,
+                           sourcepackagename, distroseries, productseries):
+        """Find an entry that best matches the given parameters, if such an
+        entry exists.
+
+        When the user uploads a file, we need to figure out whether to update
+        an existing entry or create a new one.  There may be zero, one, or
+        multiple entries that match the new upload.  If it's more than one,
+        that will be because one matching entry is more specific than the
+        other.  'More specific' refers to how well the import location has
+        been specified for this entry.  There are three cases, ordered from
+        least specific to most specific:
+
+        1. potemplate and pofile are None,
+        2. potemplate is not None but pofile is None,
+        3. potemplate and pofile are both not None.
+
+        If no exactly matching entry can be found, the next more specific
+        entry is chosen, if it exists. If there is more than one such entry,
+        there is no best choice and `TranslationImportQueueConflictError`
+        is raised.
+
+        :return: The matching entry or None, if no matching entry was found
+            at all."""
+
+        # Find possible candidates by querying the database.
+        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
+        queries.append(
+            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
+        # Depending on how specific the new entry is, potemplate and pofile
+        # may be None.
+        if potemplate is not None:
+            queries.append(
+                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
+                    potemplate))
+        if pofile is not None:
+            queries.append(
+                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
+        if sourcepackagename is not None:
+            # The import is related with a sourcepackage and a distribution.
+            queries.append(
+                'TranslationImportQueueEntry.sourcepackagename = %s' % (
+                    sqlvalues(sourcepackagename)))
+            queries.append(
+                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
+                    distroseries))
+        else:
+            # The import is related with a productseries.
+            assert productseries is not None, (
+                'sourcepackagename and productseries cannot be both None at'
+                ' the same time.')
+
+            queries.append(
+                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
+                    productseries))
+        # Order the results by level of specificity.
+        entries = TranslationImportQueueEntry.select(
+                ' AND '.join(queries),
+                orderBy="potemplate IS NULL DESC, pofile IS NULL DESC")
+
+        # Deal with the simple cases.
+        if entries.count() == 0:
+            return None
+        if entries.count() == 1:
+            return entries[0]
+
+        # Check that the top two entries differ in levels of specificity.
+        # Other entries don't matter because they are either of the same
+        # or even greater specificity, as specified in the query.
+        pofile_specificity_is_equal = (
+            (entries[0].pofile is None) == (entries[1].pofile is None))
+        potemplate_specificity_is_equal = (
+            (entries[0].potemplate is None) ==
+            (entries[1].potemplate is None))
+        if pofile_specificity_is_equal and potemplate_specificity_is_equal:
+            raise TranslationImportQueueConflictError
+
+        return entries[0]
+
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
@@ -638,38 +717,19 @@ class TranslationImportQueue:
             name=filename, size=size, file=file,
             contentType=format_importer.content_type)
 
-        # Check if we got already this request from this user.
-        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
-        queries.append(
-            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
-        if potemplate is not None:
-            queries.append(
-                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
-                    potemplate))
-        if pofile is not None:
-            queries.append(
-                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
-        if sourcepackagename is not None:
-            # The import is related with a sourcepackage and a distribution.
-            queries.append(
-                'TranslationImportQueueEntry.sourcepackagename = %s' % (
-                    sqlvalues(sourcepackagename)))
-            queries.append(
-                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
-                    distroseries))
+        try:
+            entry = self._getMatchingEntry(path, importer, potemplate,
+                    pofile, sourcepackagename, distroseries, productseries)
+        except TranslationImportQueueConflictError:
+            return None
+        if entry is None:
+            # It's a new row.
+            entry = TranslationImportQueueEntry(path=path, content=alias,
+                importer=importer, sourcepackagename=sourcepackagename,
+                distroseries=distroseries, productseries=productseries,
+                is_published=is_published, potemplate=potemplate,
+                pofile=pofile, format=format)
         else:
-            # The import is related with a productseries.
-            assert productseries is not None, (
-                'sourcepackagename and productseries cannot be both None at'
-                ' the same time.')
-
-            queries.append(
-                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
-                    productseries))
-
-        entry = TranslationImportQueueEntry.selectOne(' AND '.join(queries))
-
-        if entry is not None:
             # It's an update.
             entry.content = alias
             entry.is_published = is_published
@@ -698,13 +758,6 @@ class TranslationImportQueue:
             entry.date_status_changed = UTC_NOW
             entry.format = format
             entry.sync()
-        else:
-            # It's a new row.
-            entry = TranslationImportQueueEntry(path=path, content=alias,
-                importer=importer, sourcepackagename=sourcepackagename,
-                distroseries=distroseries, productseries=productseries,
-                is_published=is_published, potemplate=potemplate,
-                pofile=pofile, format=format)
 
         return entry
 
@@ -727,6 +780,7 @@ class TranslationImportQueue:
         # wraps the fileobj in a tarfile._Stream instance. We can get rid of
         # this when we upgrade to python2.5 everywhere.
         num_files = 0
+        conflict_files = []
 
         if content.startswith('BZh'):
             mode = "r|bz2"
@@ -736,7 +790,7 @@ class TranslationImportQueue:
             mode = "r|tar"
         else:
             # Not a tarball, we ignore it.
-            return num_files
+            return (num_files, conflict_files)
 
         translation_importer = getUtility(ITranslationImporter)
 
@@ -745,7 +799,7 @@ class TranslationImportQueue:
         except tarfile.ReadError:
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
-            return num_files
+            return (num_files, conflict_files)
 
         for tarinfo in tarball:
             if not tarinfo.isfile():
@@ -774,16 +828,19 @@ class TranslationImportQueue:
                 # Empty.  Ignore.
                 continue
 
-            self.addOrUpdateEntry(
+            entry = self.addOrUpdateEntry(
                 filename, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate)
-            num_files += 1
+            if entry == None:
+                conflict_files.append(filename)
+            else:
+                num_files += 1
 
         tarball.close()
 
-        return num_files
+        return (num_files, conflict_files)
 
     def get(self, id):
         """See ITranslationImportQueue."""
@@ -1044,4 +1101,3 @@ class HasTranslationImportsMixin:
         translation_import_queue = TranslationImportQueue()
         return translation_import_queue.getAllEntries(
             self, import_status=import_status, file_extensions=extensions)
-

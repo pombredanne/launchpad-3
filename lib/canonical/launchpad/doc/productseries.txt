@@ -11,8 +11,6 @@ ProductSeries.
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports, IPersonSet, IProductSeries, IProductSet)
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
 
 First, get a product that has some ProductSeries in the sample data.
 

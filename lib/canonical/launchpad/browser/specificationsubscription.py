@@ -9,22 +9,37 @@ __all__ = [
     ]
 
 
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.specificationsubscription import (
+    ISpecificationSubscription)
 from canonical.launchpad.webapp import (
-    canonical_url, GeneralFormView)
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 
 
-class SpecificationSubscriptionAddView(GeneralFormView):
+class SpecificationSubscriptionAddView(LaunchpadFormView):
 
-    def process(self, person, essential):
-        self._nextURL = canonical_url(self.context)
-        return self.context.subscribe(person, self.user, essential)
+    schema = ISpecificationSubscription
+    field_names = ['person', 'essential']
+    label = 'Subscribe someone else'
+    for_input = True
+
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
+        self.context.subscribe(data['person'], self.user, data['essential'])
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
-class SpecificationSubscriptionEditView(SQLObjectEditView):
+class SpecificationSubscriptionEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        self.request.response.redirect(
-            canonical_url(self.context.specification))
+    schema = ISpecificationSubscription
+    field_names = ['essential']
+    label = 'Edit subscription'
 
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context.specification)

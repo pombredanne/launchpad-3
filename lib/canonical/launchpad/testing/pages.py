@@ -15,6 +15,11 @@ import sys
 import unittest
 import urllib
 
+# pprint25 is a copy of pprint.py from Python 2.5, which is almost
+# identical to that in 2.4 except that it resolves an ordering issue
+# which makes the 2.4 version unsuitable for use in a doctest.
+import pprint25
+
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
@@ -591,7 +596,7 @@ def print_self_link_of_entries(json_body):
 
 
 def print_ppa_packages(contents):
-    packages = find_tags_by_class(contents, 'ppa_package_row')
+    packages = find_tags_by_class(contents, 'archive_package_row')
     for pkg in packages:
         print extract_text(pkg)
     empty_section = find_tag_by_id(contents, 'empty-result')
@@ -648,6 +653,14 @@ def print_tag_with_id(contents, id):
     """A simple helper to print the extracted text of the tag."""
     tag = find_tag_by_id(contents, id)
     print extract_text(tag)
+
+
+def print_errors(contents):
+    """Print all the errors on the page."""
+    errors = find_tags_by_class(contents, 'error')
+    error_texts = [extract_text(error) for error in errors]
+    for error in error_texts:
+        print error
 
 
 def setupBrowser(auth=None):
@@ -735,7 +748,9 @@ def setUpGlobs(test):
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_errors'] = print_errors
     test.globs['print_location'] = print_location
     test.globs['print_location_apps'] = print_location_apps
     test.globs['print_navigation_links'] = print_navigation_links

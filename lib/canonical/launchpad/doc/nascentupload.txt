@@ -924,3 +924,35 @@ Now try the "bar" upload:
     False
 
   >>> print bar2.rejection_message
+
+
+== Uploads to copy archives ==
+
+Uploads to copy archives are not allowed.
+
+    >>> from canonical.launchpad.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> copy_archive = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='no-uploads-allowed')
+    >>> copy_archive_policy = getPolicy(
+    ...     name='anything', distro='ubuntu', distroseries='hoary')
+
+Make this upload policy pertain to the copy archive.
+
+    >>> copy_archive_policy.archive = copy_archive
+    >>> quodlibet = NascentUpload(
+    ...     datadir("quodlibet_0.13.1-1_i386.changes"),
+    ...     copy_archive_policy, mock_logger_quiet)
+
+Now process the upload.
+
+    >>> quodlibet.process()
+
+The upload fails due to the fact that it's destined for a copy archive.
+
+    >>> quodlibet.is_rejected
+    True
+    >>> print quodlibet.rejection_message
+    Uploads to copy archives are not allowed.

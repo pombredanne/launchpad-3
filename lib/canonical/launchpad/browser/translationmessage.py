@@ -1,4 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0404
+# (Disable warning about importing two different datetime modules)
 
 """View classes for ITranslationMessage interface."""
 
@@ -1054,10 +1056,10 @@ class CurrentTranslationMessageView(LaunchpadView):
             translation_entry = {
                 'plural_index': index,
                 'current_translation': text_to_html(
-                    current_translation, self.context.potmsgset.flags()),
+                    current_translation, self.context.potmsgset.flags),
                 'submitted_translation': submitted_translation,
                 'imported_translation': text_to_html(
-                    imported_translation, self.context.potmsgset.flags()),
+                    imported_translation, self.context.potmsgset.flags),
                 'imported_translation_message': imported_translationmessage,
                 'suggestion_block': self.suggestion_blocks[index],
                 'suggestions_count': self.suggestions_count[index],
@@ -1286,7 +1288,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         return text_to_html(
             self.context.pofile.prepareTranslationCredits(
                 self.context.potmsgset),
-            self.context.potmsgset.flags())
+            self.context.potmsgset.flags)
 
     @cachedproperty
     def sequence(self):
@@ -1299,7 +1301,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         """Return the singular form prepared to render in a web page."""
         return text_to_html(
             self.context.potmsgset.singular_text,
-            self.context.potmsgset.flags())
+            self.context.potmsgset.flags)
 
     @property
     def plural_text(self):
@@ -1309,7 +1311,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         """
         return text_to_html(
             self.context.potmsgset.plural_text,
-            self.context.potmsgset.flags())
+            self.context.potmsgset.flags)
 
     # XXX mpt 2006-09-15: Detecting tabs, newlines, and leading/trailing
     # spaces is being done one way here, and another way in the functions
@@ -1454,7 +1456,7 @@ class TranslationMessageSuggestions:
                 'plural_index': plural_form,
                 'suggestion_text': text_to_html(
                     submission.translations[plural_form],
-                    submission.potmsgset.flags()),
+                    submission.potmsgset.flags),
                 'potmsgset': submission.potmsgset,
                 'pofile': submission.pofile,
                 'person': submission.submitter,

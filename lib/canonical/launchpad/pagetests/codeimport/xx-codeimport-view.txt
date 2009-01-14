@@ -66,8 +66,6 @@ If we create a lot of imports, the listing view will be batched.
 
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> for i in range(10):
     ...     new_import = factory.makeCodeImport()
 

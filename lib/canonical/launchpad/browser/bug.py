@@ -32,8 +32,9 @@ import pytz
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
+from zope import formlib
 from zope.interface import implements, providedBy, Interface
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
@@ -163,8 +164,7 @@ class BugContextMenu(ContextMenu):
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
-        text = 'Mark as duplicate'
-        return Link('+duplicate', text)
+        return Link('+duplicate', '')
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -539,6 +539,20 @@ class BugSecrecyEditView(BugEditViewBase):
     field_names = ['private', 'security_related']
     label = "Bug visibility and security"
 
+    def setUpFields(self):
+        """Make the read-only version of `private` writable."""
+        private_field = Bool(
+            __name__='private',
+            title=_("This bug report should be private"),
+            required=False,
+            description=_("Private bug reports are visible only to "
+                          "their subscribers."),
+            default=False)
+        super(BugEditViewBase, self).setUpFields()
+        self.form_fields = self.form_fields.omit('private')
+        self.form_fields += formlib.form.Fields(private_field)
+
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
@@ -649,7 +663,7 @@ class BugTextView(LaunchpadView):
 
         for status in ["left_new", "confirmed", "triaged", "assigned",
                        "inprogress", "closed", "incomplete",
-                       "fix_committed", "fix_released"]:
+                       "fix_committed", "fix_released", "left_closed"]:
             date = getattr(task, "date_%s" % status)
             if date:
                 text.append("date-%s: %s" % (

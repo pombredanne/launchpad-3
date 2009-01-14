@@ -271,6 +271,12 @@
     />
 
   <utility
+    name="TranslationTemplate"
+    component="canonical.launchpad.vocabularies.TranslationTemplateVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
+
+  <utility
     name="UserTeamsParticipation"
     component="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

@@ -55,7 +55,7 @@ And the other Ubuntu distributions should be there too.
     >>> print extract_text(content.findAll('h2')[1])
     Other versions of Ubuntu
 
-    >>> print extract_text(content.findAll('ul')[0])
+    >>> print extract_text(content.find(id='distroseries-list'))
     6.6.6 Breezy Badger Autotest
     5.10 The Grumpy Groundhog Release
     4.10 The Warty Warthog Release
@@ -97,7 +97,7 @@ And the other Ubuntu distributions should be there too.
     >>> print extract_text(content.findAll('h2')[1])
     Other versions of Debian
 
-    >>> print extract_text(content.findAll('ul')[0])
+    >>> print extract_text(content.find(id='distroseries-list'))
     3.2 Sid
     3.0 WOODY
 

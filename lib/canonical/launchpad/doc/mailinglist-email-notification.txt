@@ -10,7 +10,7 @@ via email.
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
-    ...		new_team, new_person, new_list_for_team)
+    ...		new_team, new_list_for_team)
 
     # login() as an admin so that we can call IPerson.join() on any
     # person/team we want.
@@ -20,7 +20,7 @@ When a new email list becomes active, an email notification is sent to
 all active team members.
 
     >>> team_one = new_team('team-one', with_list=False)
-    >>> anne = new_person('Anne')
+    >>> anne = factory.makePersonByName('Anne')
     >>> anne.join(team_one)
 
     # Clear out the team-membership status emails.
@@ -91,12 +91,12 @@ individual team members.
     >>> sub_team = new_team('sub-team', with_list=False)
     >>> super_team.addMember(sub_team, salgado, force_team_add=True)
     >>> anne.join(super_team)
-    >>> lars = new_person('Lars')
+    >>> lars = factory.makePersonByName('Lars')
     >>> lars.join(sub_team)
 
     # Cris should receive a single email, even though she is a member
     # of both teams.
-    >>> cris = new_person('Cris')
+    >>> cris = factory.makePersonByName('Cris')
     >>> cris.join(super_team)
     >>> cris.join(sub_team)
 

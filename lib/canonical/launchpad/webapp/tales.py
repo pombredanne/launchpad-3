@@ -403,7 +403,7 @@ class ObjectFormatterAPI:
     # constants, so it's not a problem. We might want to use something like
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmt:url/+edit).
-    traversable_names = {'link': 'link', 'url': 'url'}
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {}
 
@@ -419,6 +419,15 @@ class ObjectFormatterAPI:
         url = canonical_url(
             self._context, path_only_if_possible=True, view_name=view_name)
         return url
+
+    def api_url(self, context):
+        """Return the object's (partial) canonical web service URL.
+
+        This method returns everything that goes after the web service
+        version number. It's the same as 'url', but without any view
+        name.
+        """
+        return self.url()
 
     def traverse(self, name, furtherPath):
         if name in self.traversable_names:
@@ -2124,12 +2133,15 @@ class FormattersAPI:
         if not self._stringtoformat:
             return self._stringtoformat
         else:
+            linkified_text = re_substitute(self._re_linkify,
+                self._linkify_substitution, break_long_words,
+                cgi.escape(self._stringtoformat))
             return ('<pre style="'
                     'white-space: -moz-pre-wrap;'
                     'white-space: -o-pre-wrap;'
                     'word-wrap: break-word;'
                     '">%s</pre>'
-                    % cgi.escape(self._stringtoformat)
+                    % linkified_text
                     )
 
     # Match lines that start with one or more quote symbols followed
@@ -2285,7 +2297,9 @@ class FormattersAPI:
         """, re.VERBOSE)
 
     def obfuscate_email(self):
-        """Obfuscate an email address as '<email address hidden>'.
+        """Obfuscate an email address if there's no authenticated user.
+
+        The email address is obfuscated as <email address hidden>.
 
         This formatter is intended to hide possible email addresses from
         unauthenticated users who view this text on the Web. Run this before
@@ -2298,6 +2312,8 @@ class FormattersAPI:
         mailto:person@domain.dom and http://person:password@domain.dom both
         match, though the http match is in fact not an email address.
         """
+        if getUtility(ILaunchBag).user is not None:
+            return self._stringtoformat
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
         text = text.replace(

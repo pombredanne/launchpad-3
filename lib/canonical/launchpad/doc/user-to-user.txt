@@ -7,8 +7,6 @@ throttling happens over a configurable interval.
 
 Anne and Bart are Launchpad users.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> anne = factory.makePerson('anne@example.com', 'anne')
     >>> bart = factory.makePerson('bart@example.com', 'bart')
 

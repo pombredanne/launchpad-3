@@ -12,7 +12,7 @@
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <p class="object timestamp">
 
-          Reported
+          Bug #<tal:block content="context/bug/id"/> reported
           by <tal:reporter replace="structure context/bug/owner/fmt:link" />
           <span
               tal:attributes="title context/bug/datecreated/fmt:datetime"
@@ -56,31 +56,6 @@
          >
         <tal:expiration_message replace="view/expiration_message" />
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
-      </p>
-
-      <p
-         id="number_of_dupes"
-         tal:condition="context/bug/duplicates"
-         tal:define="number_of_dupes context/bug/duplicates/count"
-         >This bug has
-      <tal:num-dupes condition="python:number_of_dupes == 1">1 duplicate</tal:num-dupes>
-      <tal:num-dupes condition="python:number_of_dupes > 1" content="string:${number_of_dupes} duplicates"
-                     >2 duplicates</tal:num-dupes>
-      </p>
-
-      <p
-        tal:define="duplicateof context/bug/duplicateof"
-        tal:condition="duplicateof"
-        id="duplicate-of"
-      >
-
-          This report is a duplicate of
-          <a tal:condition="duplicateof/required:launchpad.View"
-             tal:attributes="href duplicateof/fmt:url; title duplicateof/title"
-             tal:content="string:bug #${duplicateof/id}">bug #42</a>
-          <span tal:condition="not:duplicateof/required:launchpad.View"
-                tal:replace="string:bug #${duplicateof/id}" />
-
       </p>
 
       <p id="bug-is-question" class="informational message"
@@ -129,75 +104,59 @@
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
-          <td style="text-align: left;">
-            <form
-                id="affectsmetooform"
-                name="affectsmetooform"
-                method="post"
-                enctype="multipart/form-data"
-                accept-charset="UTF-8"
-                tal:define="link context_menu/affectsmetoo"
-                tal:condition="link/enabled"
-                tal:attributes="action link/url">
-              <input
-                  name="field.affects"
-                  type="hidden"
-                  tal:attributes="value view/affects_form_value" />
-              <input
-                  type="hidden"
-                  name="field.actions.change"
-                  value="" />
-              <tal:affected condition="view/current_user_is_affected">
-                <img width="14" height="14" src="/@@/flame-icon" alt="" />
-                This bug affects me too
-              </tal:affected>
-              <tal:affected condition="not: view/current_user_is_affected">
-                This bug doesn't affect me
-              </tal:affected>
-              (<tal:affectsmetoo
-                  define="link context_menu/affectsmetoo"
-                  condition="link/enabled"
-                  replace="structure link/render" />)
-              <tal:nothing condition="nothing">
-                The following is a trick to allow users to mark
-                themselves as affected by a bug with only one click.
-                If Javascript is available, we submit the form and
-                immediately go back to the same page, saving them the
-                need to go to a new page.
-              </tal:nothing>
-              <script type="text/javascript">
-                function sendMeTooForm(e) {
-                    $('affectsmetooform').submit();
-                    e.preventDefault();
-                }
-                function connectMeTooLink() {
-                    var me_too_link = getFirstElementByTagAndClassName(
-                        'a', 'menu-link-affectsmetoo');
-                    connect(me_too_link, 'onclick', sendMeTooForm);
-                }
-                registerLaunchpadFunction(connectMeTooLink);
-              </script>
-            </form>
-          </td>
-        </tr>
-        <tr>
           <td style="text-align: left; width: 50%;">
-            <tal:markduplicate
-                define="link context_menu/markduplicate"
-                condition="link/enabled"
-                replace="structure link/render" />
+            <a
+              tal:define="link context_menu/markduplicate"
+              tal:condition="python: link.enabled and not
+                            context.bug.duplicateof"
+              tal:attributes="href link/url">
+              <img src="/@@/bug-dupe-icon" /> Mark as duplicate</a>
+            <tal:block
+              tal:condition="context/bug/duplicates"
+              tal:define="number_of_dupes context/bug/duplicates/count"
+            ><span id="number_of_dupes">(This bug has
+            <tal:num-dupes condition="python:number_of_dupes == 1">1
+            duplicate)</tal:num-dupes>
+            <tal:num-dupes condition="python:number_of_dupes > 1"
+            content="string:${number_of_dupes} duplicates)"
+            >2 duplicates</tal:num-dupes></span>
+            </tal:block>
+            <tal:block
+              tal:define="duplicateof context/bug/duplicateof"
+              tal:condition="duplicateof"
+            >Duplicate of
+              <a
+                tal:condition="duplicateof/required:launchpad.View"
+                tal:attributes="href duplicateof/fmt:url; title
+                   duplicateof/title; style string:margin-right: 4px;
+                   id string:duplicate-of;"
+                tal:content="string:bug #${duplicateof/id}"
+              >bug #42</a>
+                <span
+                  tal:condition="not:duplicateof/required:launchpad.View"
+                  tal:replace="string:bug #${duplicateof/id}" />
+            <a
+              tal:define="link context_menu/markduplicate"
+              tal:condition="python: link.enabled"
+              id="change_duplicate_bug"
+              title="Edit or remove linked duplicate bug"
+              tal:attributes="href link/url">
+              <img src="/@@/edit" />
+            </a>
+
+            </tal:block>
           </td>
 
           <td style="text-align: right; width: 50%;">
             <tal:createquestion
-                define="link context_menu/createquestion"
-                condition="link/enabled"
-                replace="structure link/render" />
+              define="link context_menu/createquestion"
+              condition="link/enabled"
+              replace="structure link/render" />
 
             <tal:removequestion
-                define="link context_menu/removequestion"
-                condition="link/enabled"
-                replace="structure link/render" />
+              define="link context_menu/removequestion"
+              condition="link/enabled"
+              replace="structure link/render" />
           </td>
         </tr>
       </table>
@@ -208,14 +167,8 @@
         <div id="nonportlets">
 
       <div class="report">
-        <tal:user condition="view/user">
-          <tal:description
-              define="global description context/bug/description/fmt:text-to-html" />
-        </tal:user>
-        <tal:not-user condition="not:view/user">
-          <tal:description
-              define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
-        </tal:not-user>
+        <tal:description
+            define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
         <div id="bug-description" tal:content="structure description" />
 
@@ -251,13 +204,12 @@
               <tal:branch-ref replace="structure bug_branch/branch/fmt:link"/>
               (<span tal:content="bug_branch/branch/lifecycle_status/title"
               tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
-              >Experimental</span>) -
+              >Experimental</span>)
               <tal:bug_branch_status condition="not: show_edit|nothing"
                                      replace="bug_branch/status/title"/>
               <a tal:condition="show_edit"
                  tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
                                  onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
-                <tal:bug_branch_status replace="bug_branch/status/title"/>
                 <img src="/@@/bug-status-expand"/>
               </a>
               <dl tal:condition="bug_branch/whiteboard"

@@ -9,7 +9,7 @@
     <allow
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease
-                  releases publishing_history binary_package_names
+                  releases publishing_history
                   current_publishing_records bug_reporting_guidelines
                   latest_overall_publication __getitem__ getVersion
                   __eq__ __ne__ bugtasks searchTasks
@@ -37,6 +37,10 @@
       permission="launchpad.AnyPerson"
       attributes="newQuestion createQuestionFromBug addAnswerContact
                   removeAnswerContact"
+      />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="bug_reporting_guidelines"
       />
   </class>
   <adapter
@@ -100,6 +104,15 @@
       template="../templates/distributionsourcepackage-portlet-pub-details.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageEditView"
+    name="+edit"
+    facet="overview"
+    template="../templates/distributionsourcepackage-edit.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

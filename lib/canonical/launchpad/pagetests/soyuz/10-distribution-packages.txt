@@ -139,7 +139,7 @@ Package "foobar" is deleted:
     ...     "detail_foobar_1.0")
     >>> print extract_text(first_header)
     1.0 
-    Deleted in warty-release on 2006-12-02
+    Deleted in warty-release on 2006-12-02 (Reason: I do not like it.)
 
 Package "alsa-utils" is pending in Warty and published in Hoary:
 

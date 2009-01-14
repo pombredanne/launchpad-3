@@ -13,14 +13,12 @@ chooses the 'Register a project' link.
 The first page of project registration provides information about
 registration. Sample Person reads the explanation:
 
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Hi there!
-    ...
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'instructions'))
     Launchpad is a service for registering and hosting software
     projects. Service is provided free for open source/free software
     projects. But let us steal a minute of your time to point out a few
     important things before you proceed with the actual registration.
-    ...
 
 He sees hints to the existence of staging, the user guide and the tour:
 
@@ -47,6 +45,7 @@ form:
     >>> user_browser.title
     'Register a project in Launchpad'
 
+
 == The product registration form ==
 
 Sample Person sees the new project form. It encourages him
@@ -64,7 +63,7 @@ his project a soon as he submits the form.
     ...     print extract_text(tag)
     Want to test drive Launchpad?  Use  staging.launchpad.net, our code
     staging instance. You can use that server to create sample projects,
-    file random bugs and even push throw-away branches, all without disturbing 
+    file random bugs and even push throw-away branches, all without disturbing
     the community actively using Launchpad.
     The more information you provide here, the more attention and
     collaboration your project will be able to attract. You can edit these
@@ -90,11 +89,11 @@ it out:
     >>> user_browser.getControl(
     ...     'Download URL').value = 'http://www.testing.com/download/'
     >>> user_browser.getControl(
-    ...     'Programming Language').value = 'Visual Python++, C'
+    ...     'Programming Languages').value = 'Visual Python++, C'
     >>> user_browser.getControl('Summary').value = 'This is the summary'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> user_browser.url
     'http://launchpad.dev/projects/+new'
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
@@ -105,7 +104,7 @@ He is a bit lazy and checks out whether just 'http://' for the url
 works. It doesn't:
 
     >>> user_browser.getControl('Homepage URL').value = 'http://'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> user_browser.url
     'http://launchpad.dev/projects/+new'
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
@@ -116,7 +115,7 @@ The license is also mandatory:
 
     >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
     >>> user_browser.getControl(name='field.licenses').value = []
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> user_browser.url
     'http://launchpad.dev/projects/+new'
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
@@ -127,7 +126,7 @@ The license is also mandatory:
 But at this point he gets it right!
 
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
 
     >>> user_browser.url
     'http://launchpad.dev/testing'
@@ -175,12 +174,12 @@ since the field is not required.
     >>> user_browser.getControl(
     ...     'Download URL').value = 'http://www.testing.com/download/'
     >>> user_browser.getControl(
-    ...     'Programming Language').value = 'Visual Python++, C'
+    ...     'Programming Languages').value = 'Visual Python++, C'
     >>> user_browser.getControl('Summary').value = 'This is the summary'
     >>> user_browser.getControl(name='field.licenses').value = [
     ...     'OTHER_PROPRIETARY']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> user_browser.url
     'http://launchpad.dev/testing2'
     >>> 'Test Product' in user_browser.contents
@@ -224,7 +223,7 @@ is also sent to feedback@canonical.com.
     >>> user_browser.getControl(name='field.licenses').value = [
     ...     'OTHER_OPEN_SOURCE']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> user_browser.url
     'http://launchpad.dev/foss'
     >>> 'Test Product' in user_browser.contents
@@ -260,7 +259,7 @@ Now let's try to insert a product with the same name (testing).
     >>> user_browser.getControl('Summary').value = 'This is the summary'
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> user_browser.url
     'http://launchpad.dev/projects/+new'
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
@@ -296,7 +295,7 @@ the reviewed value should be on.
     >>> browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> browser.getControl(name='field.license_info').value = 'foo'
     >>> browser.getControl('License reviewed').click()
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Publish this Project').click()
     >>> print browser.url
     http://launchpad.dev/projects/+new
 
@@ -309,7 +308,7 @@ the reviewed value should be on.
 And finally, submit a successful creation by an admin.
 
     >>> browser.getControl('Maintainer').value = 'sabdfl'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Publish this Project').click()
     >>> print browser.url
     http://launchpad.dev/warpage
 
@@ -337,6 +336,43 @@ It's also possible to set the product's icon/emblem at creation time.
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
 
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> user_browser.url
     'http://launchpad.dev/testing3'
+
+
+== Staging dependent messages ==
+
+The guide and new project pages explain the purpose of staging and
+provide links to them. Sample Person can see the message when he
+chooses to register his project.
+
+    >>> user_browser.open('http://launchpad.dev/projects/+new-guided')
+    >>> find_tag_by_id(user_browser.contents, 'staging-message')
+    <li ...> <strong>Want to test drive Launchpad?</strong>
+    If you've never used Launchpad before, start off at
+    <a href="https://staging.launchpad.net/">...
+
+    >>> user_browser.getLink('the registration form').click()
+    >>> find_tag_by_id(user_browser.contents, 'staging-message')
+    <p ...> <strong>Want to test drive Launchpad?</strong>
+    Use <a href="https://staging.launchpad.net/">...
+
+Except for when the environment is staging since the user presumably
+came to staging from the message. Sample person does not see the
+messages.
+
+    >>> from canonical.config import config
+    >>> config.push('demo', """
+    ...     [launchpad]
+    ...     is_demo: True
+    ...     """)
+
+    >>> user_browser.open('http://launchpad.dev/projects/+new-guided')
+    >>> print find_tag_by_id(user_browser.contents, 'staging-message')
+    None
+    >>> user_browser.getLink('the registration form').click()
+    >>> print find_tag_by_id(user_browser.contents, 'staging-message')
+    None
+
+    >>> config_data = config.pop('demo')

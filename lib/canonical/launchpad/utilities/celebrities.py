@@ -112,6 +112,7 @@ class LaunchpadCelebrities:
     bazaar_experts = CelebrityDescriptor(IPersonSet, 'bazaar-experts')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
+    gnome_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'gnome-bugs')
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
@@ -130,6 +131,7 @@ class LaunchpadCelebrities:
     katie = CelebrityDescriptor(IPersonSet, 'katie')
     commercial_admin = CelebrityDescriptor(IPersonSet, 'commercial-admins')
     lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
+    ppa_key_guard = CelebrityDescriptor(IPersonSet, 'ppa-key-guard')
 
     @property
     def ubuntu_archive_mirror(self):

@@ -34,10 +34,10 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
-     contactEmailAddresses, filenameToContentType, get_email_template)
+     get_contact_email_addresses, filenameToContentType, get_email_template)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
@@ -145,6 +145,11 @@ class Build(SQLBase):
         return self.buildstate not in [BuildStatus.NEEDSBUILD,
                                        BuildStatus.BUILDING,
                                        BuildStatus.SUPERSEDED]
+
+    @property
+    def arch_tag(self):
+        """See `IBuild`."""
+        return self.distroarchseries.architecturetag
 
     @property
     def distributionsourcepackagerelease(self):
@@ -542,7 +547,7 @@ class Build(SQLBase):
         # notify_owner will be disabled to avoid *spamming* Debian people.
         creator = self.sourcepackagerelease.creator
         extra_headers['X-Creator-Recipient'] = ",".join(
-            contactEmailAddresses(creator))
+            get_contact_email_addresses(creator))
 
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
@@ -558,11 +563,12 @@ class Build(SQLBase):
             self.archive == self.sourcepackagerelease.upload_archive)
 
         if package_was_not_copied and config.builddmaster.notify_owner:
-            recipients = recipients.union(contactEmailAddresses(creator))
+            recipients = recipients.union(
+                get_contact_email_addresses(creator))
             dsc_key = self.sourcepackagerelease.dscsigningkey
             if dsc_key:
                 recipients = recipients.union(
-                    contactEmailAddresses(dsc_key.owner))
+                    get_contact_email_addresses(dsc_key.owner))
 
         # Modify notification contents according the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
@@ -573,13 +579,13 @@ class Build(SQLBase):
         if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
-                contactEmailAddresses(buildd_admins))
+                get_contact_email_addresses(buildd_admins))
             archive_tag = '%s primary archive' % self.distribution.name
             subject = "[Build #%d] %s" % (self.id, self.title)
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
             recipients = recipients.union(
-                contactEmailAddresses(self.archive.owner))
+                get_contact_email_addresses(self.archive.owner))
             # For PPAs we run the risk of having no available contact_address,
             # for instance, when both, SPR.creator and Archive.owner have
             # not enabled it.
@@ -758,13 +764,12 @@ class BuildSet:
 
         self._handleOptionalParams(queries, status, name)
 
+        # This code MUST match the logic in the Build security adapter,
+        # otherwise users are likely to get 403 errors, or worse.
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
         if user is not None:
-            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-                    or
-                    user.inTeam(
-                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 queries.append("""
                 (Archive.private = FALSE
                  OR %s IN (SELECT TeamParticipation.person
@@ -775,23 +780,10 @@ class BuildSet:
         else:
             queries.append("Archive.private = FALSE")
 
-        # Ordering according status
-        # * SUPERSEDED & All by -datecreated
-        # * FULLYBUILT & FAILURES by -datebuilt
-        # It should present the builds in a more natural order.
-        if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
-        else:
-            orderBy = ["-Build.datebuilt"]
-
-        # all orders fallback to id if the primary order doesn't succeed
-        orderBy.append("id")
-
-
         queries.append("builder=%s" % builder_id)
 
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy=orderBy)
+                            orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None):
@@ -943,3 +935,45 @@ class BuildSet:
         return Build.select(
             query, orderBy=["-datecreated", "id"],
             clauseTables=["Archive"])
+
+    def getStatusSummaryForBuilds(self, builds):
+        """See `IBuildSet`."""
+        # Create a small helper function to collect the builds for a given
+        # list of build states:
+        def collect_builds(*states):
+            wanted = []
+            for state in states:
+                candidates = [build for build in builds
+                                if build.buildstate == state]
+                wanted.extend(candidates)
+            return wanted
+
+        failed = collect_builds(BuildStatus.FAILEDTOBUILD,
+                                BuildStatus.MANUALDEPWAIT,
+                                BuildStatus.CHROOTWAIT,
+                                BuildStatus.FAILEDTOUPLOAD)
+        needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
+        building = collect_builds(BuildStatus.BUILDING)
+
+        # Note: the BuildStatus DBItems are used here to summarize the
+        # status of a set of builds:s
+        if len(building) != 0:
+            return {
+                'status': BuildSetStatus.BUILDING,
+                'builds': building,
+                }
+        elif len(needsbuild) != 0:
+            return {
+                'status': BuildSetStatus.NEEDSBUILD,
+                'builds': needsbuild,
+                }
+        elif len(failed) != 0:
+            return {
+                'status': BuildSetStatus.FAILEDTOBUILD,
+                'builds': failed,
+                }
+        else:
+            return {
+                'status': BuildSetStatus.FULLYBUILT,
+                'builds': builds,
+                }

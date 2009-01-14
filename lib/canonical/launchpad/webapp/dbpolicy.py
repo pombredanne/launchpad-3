@@ -1,10 +1,12 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Launchpad IDatabaseInteractionPolicy."""
+"""Launchpad database policies."""
 
 __metaclass__ = type
 __all__ = [
     'LaunchpadDatabasePolicy',
+    'SlaveDatabasePolicy',
+    'MasterDatabasePolicy',
     ]
 
 from datetime import datetime, timedelta
@@ -13,10 +15,9 @@ from textwrap import dedent
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.interface import implements
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
-from canonical.launchpad.layers import FeedsLayer, WebServiceLayer
+from canonical.config import config
 from canonical.launchpad.webapp import LaunchpadView
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
@@ -32,12 +33,30 @@ def _now():
     return datetime.utcnow()
 
 
-class LaunchpadDatabasePolicy:
+# Can be tweaked by the test suite to simulate replication lag.
+_test_lag = None
 
+
+class BaseDatabasePolicy:
+    """Base class for database policies."""
     implements(IDatabasePolicy)
 
     def __init__(self, request):
         self.request = request
+
+    def afterCall(self):
+        """See `IDatabasePolicy`.
+
+        Resets the default flavor. In the app server, it isn't necessary to 
+        reset the default store as it will just be selected the next request. 
+        However, changing the default store in the middle of a pagetest 
+        can break things.
+        """
+        da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
+
+
+class LaunchpadDatabasePolicy(BaseDatabasePolicy):
+    """Default database policy for web requests."""
 
     def beforeTraversal(self):
         """Install the database policy.
@@ -51,41 +70,39 @@ class LaunchpadDatabasePolicy:
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']
 
+        # If this is a Retry attempt, force use of the master database.
+        if getattr(self.request, '_retry_count', 0) > 0:
+            da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+
         # Select if the DEFAULT_FLAVOR Store will be the master or a
         # slave. We select slave if this is a readonly request, and
         # only readonly requests have been made by this user recently.
         # This ensures that a user will see any changes they just made
         # on the master, despite the fact it might take a while for
         # those changes to propagate to the slave databases.
-        if FeedsLayer.providedBy(self.request):
-            # We don't want the feeds layer to access the
-            # session since the cookie set by vhosts using ssl
-            # will not get passed into the feeds vhost because it
-            # doesn't use ssl. Since it doesn't see the cookie for
-            # the current session, it will create a new cookie which
-            # overwrites the https cookie.
-            da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
         elif self.read_only:
-            if WebServiceLayer.providedBy(self.request):
-                # Don't bother checking the session for a webservice request,
-                # since we don't even set the session in the afterCall()
-                # method.
-                last_write = None
+            lag = self.getReplicationLag(MAIN_STORE)
+            if (lag is not None
+                and lag > timedelta(seconds=config.database.max_usable_lag)):
+                # Don't use the slave at all if lag is greater than the
+                # configured threshold. This reduces replication oddities
+                # noticed by users, as well as reducing load on the
+                # slave allowing it to catch up quicker.
+                da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
             else:
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
                 now = _now()
-            # 'recently' is  2 minutes plus the replication lag.
-            recently = timedelta(minutes=2)
-            lag = self.getReplicationLag(MAIN_STORE)
-            if lag is None:
+                # 'recently' is  2 minutes plus the replication lag.
                 recently = timedelta(minutes=2)
-            else:
-                recently = timedelta(minutes=2) + lag
-            if last_write is None or last_write < now - recently:
-                da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
-            else:
-                da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+                if lag is None:
+                    recently = timedelta(minutes=2)
+                else:
+                    recently = timedelta(minutes=2) + lag
+                if last_write is None or last_write < now - recently:
+                    da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
+                else:
+                    da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
         else:
             da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
@@ -94,10 +111,7 @@ class LaunchpadDatabasePolicy:
 
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
-        if (not self.read_only
-            and not WebServiceLayer.providedBy(self.request)
-            and not FeedsLayer.providedBy(self.request)
-            and not IXMLRPCRequest.providedBy(self.request)):
+        if not self.read_only:
             # We need to further distinguish whether it's safe to write to
             # the session, which will be true if the principal is
             # authenticated or if there is already a session cookie hanging
@@ -127,19 +141,42 @@ class LaunchpadDatabasePolicy:
                     last_write < now - timedelta(minutes=1)):
                     # set value
                     session_data['last_write'] = now
-        # For the webapp, it isn't necessary to reset the default store as
-        # it will just be selected the next request. However, changing the
-        # default store in the middle of a pagetest can break things.
-        da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+        super(LaunchpadDatabasePolicy, self).afterCall()
 
     def getReplicationLag(self, name):
         """Return the replication delay for the named replication set.
-       
+
         :returns: timedelta, or None if this isn't a replicated environment,
         """
+        # Support the test suite hook.
+        global _test_lag
+        if _test_lag is not None:
+            return _test_lag
+
         # sl_status only gives meaningful results on the origin node.
         store = da.StoreSelector.get(name, MASTER_FLAVOR)
         return store.execute("SELECT replication_lag()").get_one()[0]
+
+
+class SlaveDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that always selects the SLAVE_FLAVOR.
+
+    This policy is used for Feeds requests and other always-read only request.
+    """
+    def beforeTraversal(self):
+        """See `IDatabasePolicy`."""
+        da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
+
+
+class MasterDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that always select the MASTER_FLAVOR.
+
+    This policy is used for XMLRPC and WebService requests which don't
+    support session cookies.
+    """
+    def beforeTraversal(self):
+        """See `IDatabasePolicy`."""
+        da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
 
 class WhichDbView(LaunchpadView):

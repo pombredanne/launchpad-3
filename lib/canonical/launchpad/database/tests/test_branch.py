@@ -4,15 +4,33 @@
 
 __metaclass__ = type
 
-from datetime import datetime
-from pytz import UTC
-import transaction
+from datetime import datetime, timedelta
 from unittest import TestCase, TestLoader
+
+from pytz import UTC
 
 from sqlobject import SQLObjectNotFound
 
+import transaction
+
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
+from canonical.launchpad.database.branch import (
+    BranchDiffJob, BranchJob, BranchJobType, BranchSet, BranchSubscription,
+    ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
+    DeletionCallable, DeletionOperation)
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
+from canonical.launchpad.database.bugbranch import BugBranch
+from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
+from canonical.launchpad.database.product import ProductSet
+from canonical.launchpad.database.specificationbranch import (
+    SpecificationBranch)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
@@ -20,28 +38,23 @@ from canonical.launchpad.interfaces import (
     IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
     ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     SpecificationDefinitionStatus)
-from canonical.launchpad.database.branch import (BranchSet,
-    BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
-     DeleteCodeImport, DeletionCallable, DeletionOperation)
-from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal,
-    )
-from canonical.launchpad.database.bugbranch import BugBranch
-from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
-from canonical.launchpad.database.codereviewcomment import CodeReviewComment
-from canonical.launchpad.database.product import ProductSet
-from canonical.launchpad.database.revision import RevisionSet
-from canonical.launchpad.database.specificationbranch import (
-    SpecificationBranch,
-    )
+from canonical.launchpad.interfaces.branch import (
+    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchDiffJob,
+    IBranchJob, NoSuchBranch)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.interfaces.job import JobStatus
+from canonical.launchpad.interfaces.person import NoSuchPerson
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.launchpad.xmlrpc.faults import (
+    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
+    NoSuchSeries)
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestCodeImport(TestCase):
@@ -64,7 +77,7 @@ class TestCodeImport(TestCase):
 class TestBranchGetRevision(TestCaseWithFactory):
     """Make sure that `Branch.getBranchRevision` works as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -120,7 +133,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
 class TestBranch(TestCaseWithFactory):
     """Test basic properties about Launchpad database branches."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_pullURLHosted(self):
         # Hosted branches are pulled from internal Launchpad URLs.
@@ -148,14 +161,216 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
         self.assertRaises(AssertionError, branch.getPullURL)
 
+    def test_unique_name_product(self):
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            '~%s/%s/%s' % (
+                branch.owner.name, branch.product.name, branch.name),
+            branch.unique_name)
 
-class TestBranchDeletion(TestCase):
+    def test_unique_name_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        self.assertEqual(
+            '~%s/+junk/%s' % (branch.owner.name, branch.name),
+            branch.unique_name)
+
+    def test_unique_name_source_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(
+            '~%s/%s/%s/%s/%s' % (
+                branch.owner.name, distroseries.distribution.name,
+                distroseries.name, sourcepackagename.name, branch.name),
+            branch.unique_name)
+
+    def test_container_name_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        self.assertEqual('+junk', branch.container.name)
+
+    def test_container_name_product(self):
+        branch = self.factory.makeBranch()
+        self.assertEqual(branch.product.name, branch.container.name)
+
+    def test_container_name_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(
+            '%s/%s/%s' % (
+                distroseries.distribution.name, distroseries.name,
+                sourcepackagename.name),
+            branch.container.name)
+
+
+class TestGetByUniqueName(TestCaseWithFactory):
+    """Tests for `IBranchSet.getByUniqueName`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch_set = getUtility(IBranchSet)
+
+    def test_not_found(self):
+        unused_name = self.factory.getUniqueString()
+        found = self.branch_set.getByUniqueName(unused_name)
+        self.assertIs(None, found)
+
+    def test_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+
+    def test_product(self):
+        branch = self.factory.makeBranch()
+        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+
+    def test_source_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+
+
+class TestGetByPath(TestCaseWithFactory):
+    """Test `IBranchSet._getByPath`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self._unsafe_branch_set = removeSecurityProxy(getUtility(IBranchSet))
+
+    def getByPath(self, path):
+        return self._unsafe_branch_set._getByPath(path)
+
+    def makeRelativePath(self):
+        arbitrary_num_segments = 7
+        return '/'.join([
+            self.factory.getUniqueString()
+            for i in range(arbitrary_num_segments)])
+
+    def test_finds_exact_personal_branch(self):
+        branch = self.factory.makeBranch(product=None)
+        found_branch, suffix = self.getByPath(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual('', suffix)
+
+    def test_finds_suffixed_personal_branch(self):
+        branch = self.factory.makeBranch(product=None)
+        suffix = self.makeRelativePath()
+        found_branch, found_suffix = self.getByPath(
+            branch.unique_name + '/' + suffix)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual(suffix, found_suffix)
+
+    def test_missing_personal_branch(self):
+        owner = self.factory.makePerson()
+        namespace = get_branch_namespace(owner)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+
+    def test_missing_suffixed_personal_branch(self):
+        owner = self.factory.makePerson()
+        namespace = get_branch_namespace(owner)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        suffix = self.makeRelativePath()
+        self.assertRaises(
+            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+
+    def test_finds_exact_product_branch(self):
+        branch = self.factory.makeBranch()
+        found_branch, suffix = self.getByPath(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual('', suffix)
+
+    def test_finds_suffixed_product_branch(self):
+        branch = self.factory.makeBranch()
+        suffix = self.makeRelativePath()
+        found_branch, found_suffix = self.getByPath(
+            branch.unique_name + '/' + suffix)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual(suffix, found_suffix)
+
+    def test_missing_product_branch(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = get_branch_namespace(owner, product=product)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+
+    def test_missing_suffixed_product_branch(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = get_branch_namespace(owner, product=product)
+        suffix = self.makeRelativePath()
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        self.assertRaises(
+            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+
+    def test_finds_exact_package_branch(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        found_branch, suffix = self.getByPath(branch.unique_name)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual('', suffix)
+
+    def test_missing_package_branch(self):
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        namespace = get_branch_namespace(
+            owner, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        #self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
+
+    def test_missing_suffixed_package_branch(self):
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        namespace = get_branch_namespace(
+            owner, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        suffix = self.makeRelativePath()
+        branch_name = namespace.getBranchName(self.factory.getUniqueString())
+        #self.assertRaises(
+        #    NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+        self.assertRaises(
+            NoSuchProduct, self.getByPath, branch_name + '/' + suffix)
+
+    def test_no_preceding_tilde(self):
+        self.assertRaises(
+            InvalidNamespace, self.getByPath, self.makeRelativePath())
+
+    def test_too_short(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            InvalidNamespace, self.getByPath, '~%s' % person.name)
+
+    def test_no_such_product(self):
+        person = self.factory.makePerson()
+        branch_name = '~%s/%s/%s' % (
+            person.name, self.factory.getUniqueString(), 'branch-name')
+        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
+
+
+class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        login('test@canonical.com')
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         self.branch_set = BranchSet()
@@ -244,22 +459,18 @@ class TestBranchDeletion(TestCase):
 
     def test_revisionsDeletable(self):
         """A branch that has some revisions can be deleted."""
-        # We want the changes done in the setup to stay around, and by
-        # default the switchDBUser aborts the transaction.
-        transaction.commit()
-        launchpad_dbuser = config.launchpad.dbuser
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        revision = RevisionSet().new(
-            revision_id='some-unique-id', log_body='commit message',
-            revision_date=None, revision_author='ddaa@localhost',
-            parent_ids=[], properties=None)
+        revision = self.factory.makeRevision()
         self.branch.createBranchRevision(0, revision)
+        # Need to commit the addition to make sure that the branch revisions
+        # are recorded as there and that the appropriate deferred foreign keys
+        # are set up.
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")
         unique_name = self.branch.unique_name
         self.branch.destroySelf()
+        # Commit again to trigger the deferred indices.
+        transaction.commit()
         self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
                          "Branch was not deleted.")
 
@@ -680,7 +891,7 @@ class StackedBranches(TestCaseWithFactory):
 
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -803,12 +1014,10 @@ class BranchAddLandingTarget(TestCase):
 
 class BranchDateLastModified(TestCaseWithFactory):
     """Exercies the situations where date_last_modifed is udpated."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(BranchDateLastModified, self).setUp()
-        login('test@canonical.com')
-        self.addCleanup(logout)
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
 
     def test_initialValue(self):
         """Initially the date_last_modifed is the date_created."""
@@ -844,15 +1053,67 @@ class BranchDateLastModified(TestCaseWithFactory):
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
-    def test_updateScannedDetailsUpdateModifedTime(self):
-        """A branch that has been scanned is considered modified."""
+    def test_updateScannedDetails_with_null_revision(self):
+        # If updateScannedDetails is called with a null revision, it
+        # effectively means that there is an empty branch, so we can't use the
+        # revision date, so we set the last modified time to UTC_NOW.
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
         branch = self.factory.makeBranch(date_created=date_created)
-        self.assertEqual(branch.date_last_modified, date_created)
+        branch.updateScannedDetails(None, 0)
+        self.assertSqlAttributeEqualsDate(
+            branch, 'date_last_modified', UTC_NOW)
 
-        branch.updateScannedDetails("hello world", 42)
-        self.assertTrue(branch.date_last_modified > date_created,
-                        "Date last modified was not updated.")
+    def test_updateScannedDetails_with_revision(self):
+        # If updateScannedDetails is called with a revision with which has a
+        # revision date set in the past (the usual case), the last modified
+        # time of the branch is set to be the date from the Bazaar revision
+        # (Revision.revision_date).
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.factory.makeBranch(date_created=date_created)
+        revision_date = datetime(2005, 2, 2, 12, tzinfo=UTC)
+        revision = self.factory.makeRevision(revision_date=revision_date)
+        branch.updateScannedDetails(revision, 1)
+        self.assertEqual(revision_date, branch.date_last_modified)
+
+    def test_updateScannedDetails_with_future_revision(self):
+        # If updateScannedDetails is called with a revision with which has a
+        # revision date set in the future, UTC_NOW is used as the last modifed
+        # time.  date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.factory.makeBranch(date_created=date_created)
+        revision_date = datetime.now(UTC) + timedelta(days=1000)
+        revision = self.factory.makeRevision(revision_date=revision_date)
+        branch.updateScannedDetails(revision, 1)
+        self.assertSqlAttributeEqualsDate(
+            branch, 'date_last_modified', UTC_NOW)
+
+
+class TestBranchLifecycleStatus(TestCaseWithFactory):
+    """Exercises changes in lifecycle status."""
+    layer = DatabaseFunctionalLayer
+
+    def checkStatusAfterUpdate(self, initial_state, expected_state):
+        # Make sure that the lifecycle status of the branch with the initial
+        # lifecycle state to be the expected_state after a revision has been
+        # scanned.
+        branch = self.factory.makeBranch(lifecycle_status=initial_state)
+        revision = self.factory.makeRevision()
+        branch.updateScannedDetails(revision, 1)
+        self.assertEqual(expected_state, branch.lifecycle_status)
+
+    def test_updateScannedDetails_active_branch(self):
+        # If a new revision is scanned, and the branch is in an active state,
+        # then the lifecycle status isn't changed.
+        for state in DEFAULT_BRANCH_STATUS_IN_LISTING:
+            self.checkStatusAfterUpdate(state, state)
+
+    def test_updateScannedDetails_inactive_branch(self):
+        # If a branch is inactive (merged or abandonded) and a new revision is
+        # scanned, the branch is moved to the development state.
+        for state in (BranchLifecycleStatus.MERGED,
+                      BranchLifecycleStatus.ABANDONED):
+            self.checkStatusAfterUpdate(
+                state, BranchLifecycleStatus.DEVELOPMENT)
 
 
 class BranchSorting(TestCase):
@@ -989,6 +1250,279 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         # This is just "assertNotRaises"
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
+
+
+class TestGetByUrl(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBranch(self):
+        """Create a branch with aa/b/c as its unique name."""
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        return self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+
+    def test_getByUrl_with_http(self):
+        """getByUrl recognizes LP branches for http URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ssh(self):
+        """getByUrl recognizes LP branches for bzr+ssh URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl(
+            'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_sftp(self):
+        """getByUrl recognizes LP branches for sftp URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ftp(self):
+        """getByUrl does not recognize LP branches for ftp URLs.
+
+        This is because Launchpad doesn't currently support ftp.
+        """
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertIs(None, branch2)
+
+    def test_getByURL_with_lp_prefix(self):
+        """lp: URLs for the configured prefix are supported."""
+        branch_set = getUtility(IBranchSet)
+        url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
+        self.assertRaises(NoSuchPerson, branch_set.getByUrl, url)
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        branch2 = branch_set.getByUrl(url)
+        self.assertIs(None, branch2)
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        branch2 = branch_set.getByUrl(url)
+        self.assertEqual(branch, branch2)
+
+    def test_getByURL_for_production(self):
+        """test_getByURL works with production values."""
+        branch_set = getUtility(IBranchSet)
+        branch = self.makeBranch()
+        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
+        branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+
+class TestGetByLPPath(TestCaseWithFactory):
+    """Ensure URLs are correctly expanded."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getByLPPath_with_three_parts(self):
+        """Test the behaviour with three-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
+        self.assertRaises(
+            NoSuchPerson, branch_set.getByLPPath, '~aa/bb/c')
+        owner = self.factory.makePerson(name='aa')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
+
+    def test_getByLPPath_with_junk_branch(self):
+        """Test the behaviour with junk branches."""
+        owner = self.factory.makePerson(name='aa')
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
+        branch = self.factory.makeBranch(owner=owner, product=None, name='c')
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
+
+    def test_getByLPPath_with_two_parts(self):
+        """Test the behaviour with two-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
+        series = self.factory.makeSeries(name='dd', product=product)
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
+        series.user_branch = self.factory.makeBranch()
+        self.assertEqual(
+            (series.user_branch, None, series),
+            branch_set.getByLPPath('bb/dd'))
+
+    def test_getByLPPath_with_one_part(self):
+        """Test the behaviour with one names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidProductIdentifier, branch_set.getByLPPath, 'b')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
+        # We are not testing the security proxy here, so remove it.
+        product = removeSecurityProxy(self.factory.makeProduct('bb'))
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
+        branch = self.factory.makeBranch()
+        product.development_focus.user_branch = branch
+        self.assertEqual(
+            (branch, None, product.development_focus),
+            branch_set.getByLPPath('bb'))
+
+
+class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
+    """Tests the visible_by_user checks for getBranchesForContext."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        self.product = self.factory.makeProduct()
+        self.public_branch = self.factory.makeBranch(product=self.product)
+        self.private_branch_1 = self.factory.makeBranch(
+            product=self.product, private=True)
+        # Need a second private branch by another owner.
+        self.private_branch_2 = self.factory.makeBranch(
+            product=self.product, private=True)
+        self.public_only = set([self.public_branch])
+        self.all_branches = set(
+            [self.public_branch, self.private_branch_1,
+             self.private_branch_2])
+
+    def _getBranches(self, visible_by_user=None):
+        branches = getUtility(IBranchSet).getBranchesForContext(
+            context=self.product, visible_by_user=visible_by_user)
+        return set(branches)
+
+    def test_anonymous_only_sees_public(self):
+        # An anonymous user will only see public branches.
+        self.assertEqual(self.public_only, self._getBranches())
+
+    def test_normal_user_only_sees_public(self):
+        # A user who is not the owner nor special only sees public branches.
+        self.assertEqual(self.public_only, self._getBranches())
+
+    def test_private_owner_sees_public_and_own(self):
+        # A private branch owner can see their private branches and the public
+        # branches.
+        self.assertEqual(set([self.public_branch, self.private_branch_1]),
+                         self._getBranches(self.private_branch_1.owner))
+
+    def test_launchpad_services_sees_all(self):
+        # The special launchpad services identity can see all branches.
+        self.assertEqual(self.all_branches,
+                         self._getBranches(LAUNCHPAD_SERVICES))
+
+    def test_admins_see_all(self):
+        # Launchpad admins see all.
+        admin_user = self.factory.makePerson()
+        celebs = getUtility(ILaunchpadCelebrities)
+        celebs.admin.addMember(admin_user, celebs.admin.teamowner)
+
+        self.assertEqual(self.all_branches, self._getBranches(admin_user))
+
+    def test_bazaar_experts_see_all(self):
+        # Bazaar experts see all.
+        expert = self.factory.makePerson()
+        celebs = getUtility(ILaunchpadCelebrities)
+        celebs.bazaar_experts.addMember(
+            expert, celebs.bazaar_experts.teamowner)
+
+        self.assertEqual(self.all_branches, self._getBranches(expert))
+
+
+class TestBranchJob(TestCaseWithFactory):
+    """Tests for BranchJob."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchJob implements IBranchJob."""
+        branch = self.factory.makeBranch()
+        verifyObject(
+            IBranchJob, BranchJob(branch, BranchJobType.STATIC_DIFF, {}))
+
+    def test_destroySelf_destroys_job(self):
+        """Ensure that BranchJob.destroySelf destroys the Job as well."""
+        branch = self.factory.makeBranch()
+        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
+        job_id = branch_job.job.id
+        branch_job.destroySelf()
+        self.assertRaises(SQLObjectNotFound, BranchJob.get, job_id)
+
+
+class TestBranchDiffJob(TestCaseWithFactory):
+    """Tests for BranchDiffJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        verifyObject(
+            IBranchDiffJob, BranchDiffJob.create(1, '0', '1'))
+
+    def test_run_revision_ids(self):
+        """Ensure that run calculates revision ids."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit', rev_id='rev1')
+        job = BranchDiffJob.create(branch, '0', '1')
+        static_diff = job.run()
+        self.assertEqual('null:', static_diff.from_revision_id)
+        self.assertEqual('rev1', static_diff.to_revision_id)
+
+    def test_run_diff_content(self):
+        """Ensure that run generates expected diff."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        open('file', 'wb').write('foo\n')
+        tree.add('file')
+        tree.commit('First commit')
+        open('file', 'wb').write('bar\n')
+        tree.commit('Next commit')
+        job = BranchDiffJob.create(branch, '1', '2')
+        static_diff = job.run()
+        transaction.commit()
+        content_lines = static_diff.diff.text.splitlines()
+        self.assertEqual(
+            content_lines[3:], ['@@ -1,1 +1,1 @@', '-foo', '+bar', ''],
+            content_lines[3:])
+        self.assertEqual(7, len(content_lines))
+
+    def test_run_is_idempotent(self):
+        """Ensure running an equivalent job emits the same diff."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        job1 = BranchDiffJob.create(branch, '0', '1')
+        static_diff1 = job1.run()
+        job2 = BranchDiffJob.create(branch, '0', '1')
+        static_diff2 = job2.run()
+        self.assertTrue(static_diff1 is static_diff2)
+
+    def test_run_sets_status_completed(self):
+        """Ensure status is set to completed when a job runs to completion."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        job = BranchDiffJob.create(branch, '0', '1')
+        job.run()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
 
 
 def test_suite():

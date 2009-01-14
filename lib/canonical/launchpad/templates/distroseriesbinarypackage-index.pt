@@ -28,6 +28,22 @@
       Package Description
   </tal:description>
 
+  <tal:sourcepkg tal:define="spackage context/last_sourcepackagerelease"
+                   tal:condition="spackage">
+    <h2>Source package</h2>
+
+      <div id="source">
+        <ul>
+          <li class="source package">
+            <a 
+               tal:content="spackage/title"
+               tal:attributes="href spackage/fmt:url"
+               id="source_package">SOURCEPACKAGE</a>
+          </li>
+        </ul>
+      </div>
+  </tal:sourcepkg>
+
 </div>
 </body>
 </html>

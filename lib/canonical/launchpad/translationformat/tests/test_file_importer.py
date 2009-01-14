@@ -19,7 +19,11 @@ from canonical.testing import LaunchpadZopelessLayer
 
 TEST_LANGUAGE = "eo"
 TEST_MSGID = "Thank You"
-TEST_TRANSLATION = "Dankon"
+TEST_MSGSTR = "Dankon"
+TEST_MSGSTR2 = "Dankon al vi"
+TEST_EXPORT_DATE = '"X-Launchpad-Export-Date: 2008-11-05 13:31+0000\\n"\n'
+TEST_EXPORT_DATE_EARLIER = (
+                   '"X-Launchpad-Export-Date: 2008-11-05 13:20+0000\\n"\n')
 NUMBER_OF_TEST_MESSAGES = 1
 TEST_TEMPLATE = r'''
 msgid ""
@@ -27,201 +31,204 @@ msgstr ""
 "PO-Revision-Date: 2005-05-03 20:41+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-
+%s
 msgid "%s"
 msgstr ""
-''' % (TEST_MSGID)
+'''
+TEST_TEMPLATE_EXPORTED = TEST_TEMPLATE % (TEST_EXPORT_DATE, TEST_MSGID)
+TEST_TEMPLATE_PUBLISHED = TEST_TEMPLATE % ("", TEST_MSGID)
 
 TEST_TRANSLATION_FILE = r'''
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2008-11-05 13:22+0000\n"
+"Last-Translator: Foo Bar <foo.bar@canonical.com>\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+%s
+msgid "%s"
+msgstr "%s"
+'''
+TEST_TRANSLATION_EXPORTED = TEST_TRANSLATION_FILE % (
+    TEST_EXPORT_DATE, TEST_MSGID, TEST_MSGSTR)
+TEST_TRANSLATION_PUBLISHED = TEST_TRANSLATION_FILE % (
+    "", TEST_MSGID, TEST_MSGSTR)
+# This is needed for test_FileImporter_importFile_conflict and differs from
+# the others in export timestamp and msgstr content.
+TEST_TRANSLATION_EXPORTED_EARLIER = TEST_TRANSLATION_FILE % (
+    TEST_EXPORT_DATE_EARLIER, TEST_MSGID, TEST_MSGSTR2)
+
+# The following two are needed for test_FileImporter_importFile_error.
+# The translation file has an error in the format specifiers.
+TEST_MSGID_ERROR = "format specifier follows %d"
+TEST_TEMPLATE_FOR_ERROR = r'''
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2005-05-03 20:41+0100\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#, c-format
+msgid "%s"
+msgstr ""
+''' % (TEST_MSGID_ERROR)
+
+TEST_TRANSLATION_FILE_WITH_ERROR = r'''
 msgid ""
 msgstr ""
 "PO-Revision-Date: 2008-09-17 20:41+0100\n"
 "Last-Translator: Foo Bar <foo.bar@canonical.com>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
+"X-Launchpad-Export-Date: 2008-11-05 13:31+0000\n"
 
+#, c-format
 msgid "%s"
-msgstr "%s"
-''' % (TEST_MSGID, TEST_TRANSLATION)
+msgstr "format specifier changes %%s"
+'''  % (TEST_MSGID_ERROR)
 
 class FileImporterTestCase(unittest.TestCase):
     """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        factory = LaunchpadObjectFactory()
-        # Add a new entry for testing purposes. It's a template one.
-        self.translation_import_queue = getUtility(ITranslationImportQueue)
-        is_published = True
-        importer_person = factory.makePerson()
-        self.potemplate = factory.makePOTemplate()
-        self.pofile = factory.makePOFile(
-            TEST_LANGUAGE, potemplate=self.potemplate)
-        self.template_entry = self.translation_import_queue.addOrUpdateEntry(
-            self.potemplate.path, TEST_TEMPLATE,
-            is_published, importer_person,
-            productseries=self.potemplate.productseries,
-            potemplate=self.potemplate)
+    def _createFileImporters(self, pot_content, po_content, is_published):
+        """Create queue entries from POT and PO content strings.
+        Create importers from the entries."""
+        pot_importer = self._createPOTFileImporter(
+            pot_content, is_published)
+        po_importer = self._createPOFileImporter(
+            pot_importer, po_content, is_published)
+        return (pot_importer, po_importer)
 
-        # Add another one, a translation file.
-        translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            self.pofile.path, TEST_TRANSLATION_FILE,
-            is_published, importer_person,
-            productseries=self.potemplate.productseries,
-            pofile=self.pofile)
-
+    def _createPOTFileImporter(self, pot_content, is_published):
+        """Create queue entries from POT content string.
+        Create an importer from the entry."""
+        potemplate = self.factory.makePOTemplate()
+        template_entry = self.translation_import_queue.addOrUpdateEntry(
+            potemplate.path, pot_content,
+            is_published, self.importer_person,
+            productseries=potemplate.productseries,
+            potemplate=potemplate)
         transaction.commit()
+        return POTFileImporter(
+            template_entry, GettextPOImporter(), None )
 
-        # Create objects to test
-        self.file_importer = FileImporter(
-            self.template_entry, GettextPOImporter(), None )
-        self.pot_importer = POTFileImporter(
-            self.template_entry, GettextPOImporter(), None )
-        self.po_importer = POFileImporter(
+    def _createPOFileImporter(self,
+            pot_importer, po_content, is_published, existing_pofile = None):
+        """Create a PO entry from content, relating to a template_entry.
+        Create an importer for the entry."""
+        potemplate = pot_importer.translation_import_queue_entry.potemplate
+        if existing_pofile == None:
+            pofile = self.factory.makePOFile(
+                TEST_LANGUAGE, potemplate=potemplate)
+        else:
+            pofile = existing_pofile
+        translation_entry = self.translation_import_queue.addOrUpdateEntry(
+            pofile.path, po_content,
+            is_published, self.importer_person,
+            productseries=potemplate.productseries,
+            pofile=pofile)
+        transaction.commit()
+        return POFileImporter(
             translation_entry, GettextPOImporter(), None )
 
-    def test_fileImporter_init(self):
-        # The number of test messages is constant (see above).
-        self.failUnlessEqual(
-            len(self.file_importer.translation_file.messages),
-            NUMBER_OF_TEST_MESSAGES,
-            "FileImporter.__init__ did not parse the template file "
-            "correctly.")
+    def _createImporterForExportedEntries(self):
+        """Set up entries that where exported from LP, i.e. that contain the
+        'X-Launchpad-Export-Date:' header."""
+        return self._createFileImporters(
+            TEST_TEMPLATE_EXPORTED, TEST_TRANSLATION_EXPORTED, False)
 
-    def test_fileImporter_importMessage(self):
+    def _createImporterForPublishedEntries(self):
+        """Set up entries that where exported from LP, i.e. that do not
+        contain the 'X-Launchpad-Export-Date:' header."""
+        return self._createFileImporters(
+            TEST_TEMPLATE_PUBLISHED, TEST_TRANSLATION_PUBLISHED, True)
+
+    def _createFileImporter(self):
+        """Create just an (incomplete) FileImporter for basic tests.
+        The importer is based on a template.
+        These tests don't care about Imported or Published."""
+        potemplate = self.factory.makePOTemplate()
+        template_entry = self.translation_import_queue.addOrUpdateEntry(
+            potemplate.path, TEST_TEMPLATE_EXPORTED,
+            False, self.importer_person,
+            productseries=potemplate.productseries,
+            potemplate=potemplate)
+        transaction.commit()
+        return FileImporter(
+            template_entry, GettextPOImporter(), None )
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
+        self.translation_import_queue = getUtility(ITranslationImportQueue)
+        self.importer_person = self.factory.makePerson()
+
+    def test_FileImporter_importMessage_NotImplemented(self):
+        importer = self._createFileImporter()
         self.failUnlessRaises( NotImplementedError,
-            self.file_importer.importMessage, None)
+            importer.importMessage, None)
 
-    def test_fileImporter_importFile(self):
-        # import File calls importMethod which should raise the exception.
-        self.failUnlessRaises( NotImplementedError,
-            self.file_importer.importFile)
+    def test_FileImporter_format_exporter(self):
+        # Test if format_exporter behaves like a singleton
+        importer = self._createFileImporter()
+        self.failUnless(importer._cached_format_exporter is None,
+            "FileImporter._cached_format_exporter was not None, "
+            "although it had not been used yet.")
 
-    def test_fileImporter_getOrCreatePOTMsgSet(self):
-        # Set the potemplate instance, usually done by subclass
-        self.file_importer.potemplate = self.potemplate
+        format_exporter1 = importer.format_exporter
+        self.failUnless(format_exporter1 is not None,
+            "FileImporter.format_exporter was not instantiated on demand.")
+
+        format_exporter2 = importer.format_exporter
+        self.failUnless(format_exporter1 is format_exporter2,
+            "FileImporter.format_exporter was instantiated multiple time, "
+            "but should have been cached.")
+
+    def test_FileImporter_getOrCreatePOTMsgSet(self):
+        pot_importer = self._createPOTFileImporter(
+            TEST_TEMPLATE_EXPORTED, False)
         # There is another test (init) to make sure this works.
-        message = self.file_importer.translation_file.messages[0]
+        message = pot_importer.translation_file.messages[0]
         # Try to get the potmsgset by hand to verify it is not already in
         # the DB
         potmsgset1 = (
-            self.potemplate.getPOTMsgSetByMsgIDText(
+            pot_importer.potemplate.getPOTMsgSetByMsgIDText(
                 message.msgid_singular, plural_text=message.msgid_plural,
                 context=message.context))
         self.failUnless(potmsgset1 is None,
-            "IPOTMsgSet object already exists in DB, unable to test "
+            "IPOTMsgSet object already existed in DB, unable to test "
             "FileImporter.getOrCreatePOTMsgSet")
 
-        potmsgset1 = self.file_importer.getOrCreatePOTMsgSet(message)
+        potmsgset1 = pot_importer.getOrCreatePOTMsgSet(message)
         self.failUnless(potmsgset1 is not None,
             "FileImporter.getOrCreatePOTMessageSet did not create a new "
             "IPOTMsgSet object in the database.")
 
-        potmsgset2 = self.file_importer.getOrCreatePOTMsgSet(message)
+        potmsgset2 = pot_importer.getOrCreatePOTMsgSet(message)
         self.failUnlessEqual(potmsgset1.id, potmsgset2.id,
             "FileImporter.getOrCreatePOTMessageSet did not get an existing "
             "IPOTMsgSet object from the database.")
 
-    def test_fileImporter_storeTranslationsInDatabase(self):
-        # Set the potemplate instance, usually done by subclass
-        self.file_importer.potemplate = self.potemplate
-        # There is another test (init) to make sure this works.
-        message = self.file_importer.translation_file.messages[0]
-        # There is another test (getOrCreatePOTMsgSet) to make sure this
-        # works.
-        potmsgset = self.file_importer.getOrCreatePOTMsgSet(message)
-
-        retval = self.file_importer.storeTranslationsInDatabase(
-            message, potmsgset)
-        self.failUnless( retval is None,
-            "FileImporter.storeTranslationsInDatabase tries to store data "
-            "without refrence to an IPOFile.")
-
-        # Perform a sanity check for empty errors list
-        self.failUnlessEqual(len(self.file_importer.errors), 0,
-            "FileImporter.errors list is not empty, although freshly "
-            "initialised.")
-
-        # Complete necessary attributes, usually done by subclass
-        self.file_importer.pofile = self.pofile
-        self.file_importer.is_editor = True
-        self.file_importer.last_translator = self.template_entry.importer
-
-        # Test for normal operation
-        retval = self.file_importer.storeTranslationsInDatabase(
-            message, potmsgset)
-        self.failUnless(
-            (retval is not None) and
-            (len(self.file_importer.errors) == 0),
-            "FileImporter.storeTranslationsInDatabase fails when storing "
-            "a message without errors.")
-
-# TODO: henninge 2008-10-02 Make storeTranslationsInDatabase reject a
-#  translation because of a conflict.
-# TODO: henninge 2008-10-02 Make storeTranslationsInDatabase accept a
-#  translation with error.
-
-    def test_fileImporter_format_exporter(self):
-        # Test if format_exporter behaves like a singleton
-        self.failUnless(self.file_importer._cached_format_exporter is None,
-            "FileImporter._cached_format_exporter is not None, "
-            "although it has not been used yet.")
-
-        format_exporter1 = self.file_importer.format_exporter
-        self.failUnless(format_exporter1 is not None,
-            "FileImporter.format_exporter is not instantiated on demand.")
-
-        format_exporter2 = self.file_importer.format_exporter
-        self.failUnless(format_exporter1 is format_exporter2,
-            "FileImporter.format_exporter is instantiated multiple time, "
-            "but should be cached.")
-
-    def test_POTFileImporter_init(self):
+    def test_FileImporter_init(self):
+        (pot_importer, po_importer) = self._createImporterForExportedEntries()
+        # The number of test messages is constant (see above).
+        self.failUnlessEqual(
+            len(pot_importer.translation_file.messages),
+            NUMBER_OF_TEST_MESSAGES,
+            "FileImporter.__init__ did not parse the template file "
+            "correctly.")
         # Test if POTFileImporter gets initialised correctly.
-        self.failUnless(self.pot_importer.potemplate is not None,
-            "POTFileImporter has no reference to an IPOTemplate.")
-        self.failUnless(self.pot_importer.pofile is None or
-            self.pot_importer.pofile.language == "en",
-            "POTFileImporter references an IPOFile which is not English." )
-
-    def test_POTFileImporter_importMessage_implemented(self):
-        # The class must implement importMessage and not throw
-        # NotImplementedError like the base class does.
-        try:
-            self.pot_importer.importMessage(None)
-        except NotImplementedError:
-            self.fail("POTFileImporter does not implement importMessage()")
-        except:
-            pass
-
-    def test_POTFileImporter_importFile(self):
-        # Run the whole show and see what comes out.
-        errors = self.pot_importer.importFile()
-        self.failUnlessEqual(len(errors), 0,
-            "POTFileImporter.importFile returns errors where there should "
-            "be none.")
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(TEST_MSGID)
-        self.failUnless(potmsgset is not None,
-            "POTFileImporter.importFile does not create an IPOTMsgSet "
-            "object in the database.")
-
-    def test_POFileImporter_init(self):
+        self.failUnless(pot_importer.potemplate is not None,
+            "POTFileImporter had no reference to an IPOTemplate.")
+        self.failUnless(pot_importer.pofile is None or
+            pot_importer.pofile.language == "en",
+            "POTFileImporter referenced an IPOFile which was not English." )
         # Test if POFileImporter gets initialised correctly.
-        self.failUnless(self.po_importer.potemplate is not None,
-            "POTFileImporter has no reference to an IPOTemplate.")
-        self.failUnless(self.po_importer.pofile is not None,
-            "POFileImporter has no reference to an IPOFile.")
+        self.failUnless(po_importer.potemplate is not None,
+            "POTFileImporter had no reference to an IPOTemplate.")
+        self.failUnless(po_importer.pofile is not None,
+            "POFileImporter had no reference to an IPOFile.")
 
-    def test_POFileImporter_importMessage(self):
-        # The class must implement importMessage and not throw
-        # NotImplementedError like the base class does.
-        try:
-            self.po_importer.importMessage(None)
-        except NotImplementedError:
-            self.fail("POFileImporter does not implement importMessage()")
-        except:
-            pass
-
-    def test_POFileImporter_getPersonByEmail(self):
+    def test_FileImporter_getPersonByEmail(self):
+        (pot_importer, po_importer) = self._createImporterForExportedEntries()
         # Check whether we create new persons with the correct explanation.
         # When importing a POFile, it may be necessary to create new Person
         # entries, to represent the last translators of that POFile.
@@ -233,7 +240,7 @@ class FileImporterTestCase(unittest.TestCase):
             personset.getByEmail(test_email) is None,
             'There is already an account for %s' % test_email)
 
-        person = self.po_importer._getPersonByEmail(test_email)
+        person = po_importer._getPersonByEmail(test_email)
 
         self.failUnlessEqual(
             person.creation_rationale.name, 'POFILEIMPORT',
@@ -241,10 +248,100 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnlessEqual(
             person.creation_comment,
             'when importing the %s translation of %s' % (
-                self.po_importer.pofile.language.displayname,
-                self.po_importer.potemplate.displayname),
+                po_importer.pofile.language.displayname,
+                po_importer.potemplate.displayname),
             'Did not create the correct comment for %s' % test_email)
 
+    def test_FileImporter_importFile_ok(self):
+        # Test correct import operation for both
+        # exported and published files.
+        importers = (
+                     self._createImporterForExportedEntries(),
+                     self._createImporterForPublishedEntries()
+                     )
+        for (pot_importer, po_importer) in importers:
+            # Run the import and see if PotMsgSet and TranslationMessage
+            # entries are correctly created in the DB.
+            errors = pot_importer.importFile()
+            self.failUnlessEqual(len(errors), 0,
+                "POTFileImporter.importFile returned errors where there "
+                "should be none.")
+            potmsgset = pot_importer.potemplate.getPOTMsgSetByMsgIDText(
+                                                                TEST_MSGID)
+            self.failUnless(potmsgset is not None,
+                "POTFileImporter.importFile did not create an IPOTMsgSet "
+                "object in the database.")
+
+            errors = po_importer.importFile()
+            self.failUnlessEqual(len(errors), 0,
+                "POFileImporter.importFile returned errors where there "
+                "should be none.")
+            message = po_importer.pofile.getCurrentTranslationMessage(
+                                                        unicode(TEST_MSGID))
+            self.failUnless(message is not None,
+                "POFileImporter.importFile did not create an "
+                "ITranslationMessage object in the database.")
+
+    def test_FileImporter_importFile_conflict(self):
+        (pot_importer, po_importer) = (
+            self._createImporterForExportedEntries())
+        # Use importFile to store a template and a translation.
+        # Then try to store a different translation for the same msgid
+        # with an earlier export timestamp to provoke an update conflict.
+
+        # First import template.
+        errors = pot_importer.importFile()
+        self.failUnlessEqual(len(errors), 0,
+            "POTFileImporter.importFile returned errors where there should "
+            "be none.")
+        # Now import translation.
+        errors = po_importer.importFile()
+        self.failUnlessEqual(len(errors), 0,
+            "POFileImporter.importFile returned errors where there should "
+            "be none.")
+        transaction.commit()
+
+        # Create new POFileImporter with an earlier timestamp and
+        # a different translation (msgstr).
+        po_importer2 = self._createPOFileImporter(
+            pot_importer, TEST_TRANSLATION_EXPORTED_EARLIER, False,
+            po_importer.pofile)
+        # Try to import this, too.
+        errors = po_importer2.importFile()
+        self.failUnlessEqual(len(errors), 1,
+            "No error detected when importing a pofile with an earlier "
+            "export timestamp (update conflict).")
+        self.failUnless( errors[0]['error-message'].find(
+                u"updated by someone else after you") != -1,
+            "importFile() failed to detect a message update conflict.")
+
+    def test_FileImporter_importFile_error(self):
+        # Test that gettextpo.error is handled correctly during import.
+        # This is done by trying to store a translation (msgstr) with format
+        # spefifiers that do not match those in the msgid, as they should.
+        (pot_importer, po_importer) = self._createFileImporters(
+            TEST_TEMPLATE_FOR_ERROR,
+            TEST_TRANSLATION_FILE_WITH_ERROR, False)
+        errors = pot_importer.importFile()
+        self.failUnlessEqual(len(errors), 0,
+            "POTFileImporter.importFile returned errors where there should "
+            "be none.")
+        errors = po_importer.importFile()
+        self.failUnlessEqual(len(errors), 1,
+            "No error detected when importing a pofile with mismatched "
+            "format specifiers.")
+        self.failUnless( errors[0]['error-message'].find(
+                u"format specifications in 'msgid' and 'msgstr' "
+                u"for argument 1 are not the same") != -1,
+            "importFile() failed to detect mismatched format specifiers "
+            "when importing a pofile.")
+        # Although the message has an error, it should still be stored
+        # in the database!
+        message = po_importer.pofile.getCurrentTranslationMessage(
+                                                   unicode(TEST_MSGID_ERROR))
+        self.failUnless(message is not None,
+            "POFileImporter.importFile did not create an "
+            "ITranslationMessage object with format errors in the database.")
 
 def test_suite():
     suite = unittest.TestSuite()

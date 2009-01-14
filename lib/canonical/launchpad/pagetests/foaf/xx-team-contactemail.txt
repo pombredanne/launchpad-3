@@ -81,13 +81,3 @@ Follow the token link, to confirm the new email address.
     ['Another e-mail address']
     >>> browser.getControl(name='field.contact_address').value
     'foo@example.com'
-
-The team's overview page has a portlet that lets you manage the team's contact
-addresses.
-
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> browser.getLink('Manage Addresses').click()
-    >>> print browser.url
-    http://launchpad.dev/%7Elandscape-developers/+contactaddress
-    >>> print browser.title
-    Landscape Developers contact address

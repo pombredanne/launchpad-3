@@ -118,6 +118,10 @@
 
   </div><!-- non-portlets-->
 
+  <div id="review-diff" tal:condition="context/review_diff">
+  <h2>Review Diff</h2>
+  <pre tal:content="context/review_diff/diff/text" />
+  </div>
   <div class="back-link">
     &laquo; Back to <tal:link replace="structure context/source_branch/fmt:bzr-link"/>
   </div>

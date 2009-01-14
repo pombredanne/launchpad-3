@@ -17,4 +17,9 @@
       (<a tal:attributes="href view/queue_location">view queue</a>)
     </tal:queued>
   </tal:source-branch>
+  <tal:for-merging condition="context/queue_status/enumvalue:MERGED">
+    <tal:have-revno condition="context/merged_revno">
+      at revision <tal:revno replace="context/merged_revno"/>
+    </tal:have-revno>
+  </tal:for-merging>
 </tal:root>

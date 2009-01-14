@@ -7,7 +7,7 @@ email addresses must be unique.
     ...     IEmailAddress, IEmailAddressSet)
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> person = LaunchpadObjectFactory().makePerson()
+    >>> person = factory.makePerson()
 
 We can get an email address through IEmailAddressSet.getByEmail().
 

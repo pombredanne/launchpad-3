@@ -8,10 +8,17 @@ This code talks to the internal XML-RPC server for the branch filesystem.
 __metaclass__ = type
 __all__ = [
     'BlockingProxy',
-    'CachingAuthserverClient',
+    'BranchFileSystemClient',
+    'NotInCache',
+    'trap_fault',
     ]
 
+import time
+
 from twisted.internet import defer
+from twisted.web.xmlrpc import Fault
+
+from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 
 
 class BlockingProxy:
@@ -23,98 +30,83 @@ class BlockingProxy:
         return getattr(self._proxy, method_name)(*args)
 
 
-class CachingAuthserverClient:
-    """Wrapper for the authserver that caches responses for a particular user.
+class NotInCache(Exception):
+    """Raised when we try to get a path from the cache that's not present."""
 
-    This only wraps the methods that are used for serving branches via a
-    Bazaar transport: createBranch, getBranchInformation and requestMirror.
 
-    In the normal course of operation, our Bazaar transport translates from
-    "virtual branch identifier" (currently '~owner/product/name') to a branch
-    ID. It does this many, many times for a single Bazaar operation. Thus, it
-    makes sense to cache results from the authserver.
+class BranchFileSystemClient:
+    """Wrapper for the branch filesystem endpoint for a particular user.
+
+    This wrapper caches the results of calls to translatePath in order to
+    avoid a large number of roundtrips. In the normal course of operation, our
+    Bazaar transport translates virtual paths to real paths on disk using this
+    client. It does this many, many times for a single Bazaar operation, so we
+    cache the results here.
     """
 
-    def __init__(self, authserver, user_id):
-        """Construct a caching authserver.
+    def __init__(self, branchfs_endpoint, user_id, expiry_time=None,
+                 _now=time.time):
+        """Construct a caching branchfs_endpoint.
 
-        :param authserver: An XML-RPC proxy that implements callRemote.
+        :param branchfs_endpoint: An XML-RPC proxy that implements callRemote.
         :param user_id: The database ID of the user who will be making these
             requests. An integer.
         """
-        self._authserver = authserver
-        self._branch_info_cache = {}
-        self._stacked_branch_cache = {}
+        self._branchfs_endpoint = branchfs_endpoint
+        self._cache = {}
         self._user_id = user_id
+        self.expiry_time = expiry_time
+        self._now = _now
 
-    def createBranch(self, owner, product, branch):
-        """Create a branch on the authserver.
+    def _getMatchedPart(self, path, transport_tuple):
+        """Return the part of 'path' that the endpoint actually matched."""
+        trailing_length = len(transport_tuple[2])
+        if trailing_length == 0:
+            matched_part = path
+        else:
+            matched_part = path[:-trailing_length]
+        return matched_part.rstrip('/')
 
-        This raises any Faults that might be raised by the authserver's
+    def _addToCache(self, transport_tuple, path):
+        """Cache the given 'transport_tuple' results for 'path'.
+
+        :return: the 'transport_tuple' as given, so we can use this as a
+            callback.
+        """
+        (transport_type, data, trailing_path) = transport_tuple
+        matched_part = self._getMatchedPart(path, transport_tuple)
+        if transport_type == BRANCH_TRANSPORT:
+            self._cache[matched_part] = (transport_type, data, self._now())
+        return transport_tuple
+
+    def _getFromCache(self, path):
+        """Get the cached 'transport_tuple' for 'path'."""
+        split_path = path.strip('/').split('/')
+        for object_path, value in self._cache.iteritems():
+            transport_type, data, inserted_time = value
+            split_object_path = object_path.strip('/').split('/')
+            if split_path[:len(split_object_path)] == split_object_path:
+                if (self.expiry_time is not None
+                    and self._now() > inserted_time + self.expiry_time):
+                    del self._cache[object_path]
+                    break
+                trailing_path = '/'.join(split_path[len(split_object_path):])
+                return (transport_type, data, trailing_path)
+        raise NotInCache(path)
+
+    def createBranch(self, branch_path):
+        """Create a Launchpad `IBranch` in the database.
+
+        This raises any Faults that might be raised by the branchfs_endpoint's
         `createBranch` method, so for more information see
-        `IHostedBranchStorage.createBranch`.
+        `IBranchFileSystem.createBranch`.
 
-        :param owner: The owner of the branch. A string that is the name of a
-            Launchpad `IPerson`.
-        :param product: The project that the branch belongs to. A string that
-            is either '+junk' or the name of a Launchpad `IProduct`.
-        :param branch: The name of the branch to create.
-
+        :param branch_path: The path to the branch to create.
         :return: A `Deferred` that fires the ID of the created branch.
         """
-        deferred = defer.maybeDeferred(
-            self._authserver.callRemote, 'createBranch', self._user_id,
-            owner, product, branch)
-
-        def clear_cache(branch_id):
-            # Clear the cache for this branch. We *could* populate it with
-            # (branch_id, 'w'), but then we'd be building in more assumptions
-            # about the authserver.
-            self._branch_info_cache[(owner, product, branch)] = None
-            return branch_id
-
-        return deferred.addCallback(clear_cache)
-
-    def getBranchInformation(self, owner, product, branch):
-        """Get branch information from the authserver.
-
-        :param owner: The owner of the branch. A string that is the name of a
-            Launchpad `IPerson`.
-        :param product: The project that the branch belongs to. A string that
-            is either '+junk' or the name of a Launchpad `IProduct`.
-        :param branch: The name of the branch that we are interested in.
-
-        :return: A Deferred that fires (branch_id, permissions), where
-            'permissions' is WRITABLE if the current user can write to the
-            branch, and READ_ONLY if they cannot. If the branch doesn't exist,
-            return ('', ''). The "current user" is the user ID passed to the
-            constructor.
-        """
-        branch_info = self._branch_info_cache.get((owner, product, branch))
-        if branch_info is not None:
-            return defer.succeed(branch_info)
-
-        deferred = defer.maybeDeferred(
-            self._authserver.callRemote, 'getBranchInformation',
-            self._user_id, owner, product, branch)
-        def add_to_cache(branch_info):
-            self._branch_info_cache[
-                (owner, product, branch)] = branch_info
-            return branch_info
-        return deferred.addCallback(add_to_cache)
-
-    def getDefaultStackedOnBranch(self, product):
-        branch_name = self._stacked_branch_cache.get(product)
-        if branch_name is not None:
-            return defer.succeed(branch_name)
-
-        deferred = defer.maybeDeferred(
-            self._authserver.callRemote, 'getDefaultStackedOnBranch',
-            self._user_id, product)
-        def add_to_cache(branch_name):
-            self._stacked_branch_cache[product] = branch_name
-            return branch_name
-        return deferred.addCallback(add_to_cache)
+        return defer.maybeDeferred(
+            self._branchfs_endpoint.callRemote, 'createBranch', self._user_id,
+            branch_path)
 
     def requestMirror(self, branch_id):
         """Mark a branch as needing to be mirrored.
@@ -122,5 +114,32 @@ class CachingAuthserverClient:
         :param branch_id: The database ID of the branch.
         """
         return defer.maybeDeferred(
-            self._authserver.callRemote, 'requestMirror', self._user_id,
-            branch_id)
+            self._branchfs_endpoint.callRemote,
+            'requestMirror', self._user_id, branch_id)
+
+    def translatePath(self, path):
+        """Translate 'path'."""
+        try:
+            return defer.succeed(self._getFromCache(path))
+        except NotInCache:
+            deferred = defer.maybeDeferred(
+                self._branchfs_endpoint.callRemote,
+                'translatePath', self._user_id, path)
+            deferred.addCallback(self._addToCache, path)
+            return deferred
+
+
+def trap_fault(failure, *fault_classes):
+    """Trap a fault, based on fault code.
+
+    :param failure: A Twisted L{Failure}.
+    :param *fault_codes: `LaunchpadFault` subclasses.
+    :raise Failure: if 'failure' is not a Fault failure, or if the fault code
+        does not match the given codes.
+    :return: The Fault if it matches one of the codes.
+    """
+    failure.trap(Fault)
+    fault = failure.value
+    if fault.faultCode in [cls.error_code for cls in fault_classes]:
+        return fault
+    raise failure

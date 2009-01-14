@@ -126,8 +126,10 @@ The home page of a project contains a list of all products which are part of tha
 
 Inactive products are not included in that list, though.
 
-    >>> from canonical.launchpad.database import ProductSet
-    >>> firefox = ProductSet().getByName('firefox')
+    # Use the DB classes directly to avoid having to setup a zope interaction
+    # (i.e. login()) and bypass the security proxy.
+    >>> from canonical.launchpad.database import Product
+    >>> firefox = Product.byName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()
 

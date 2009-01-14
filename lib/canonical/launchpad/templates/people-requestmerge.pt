@@ -39,10 +39,10 @@
         <p class="discreet">
           Note: If you no longer have access to the duplicated account's
           email address, you may place a
-          <a href="/launchpad/+addquestion">support request</a> or contact the
-          <a href="http://lists.canonical.com/mailman/listinfo/launchpad-users"
-            >Launchpad users</a> mailing list; Launchpad administrators will
-          tend to your request.
+          <a href="/launchpad/+addquestion">support request</a> or contact us
+          at <a href="mailto:feedback@launchpad.net"
+             >feedback@launchpad.net</a>. The Launchpad administrators will
+          tend to your request as soon as possible.
         </p>
 
         <p tal:define="status view/update"

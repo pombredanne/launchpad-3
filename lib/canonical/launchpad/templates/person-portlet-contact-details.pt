@@ -27,19 +27,29 @@
             <tal:no_preferredemail
               condition="view/email_address_visibility/are_none_available">
               <tal:is-team condition="context/isTeam">
-                No contact address <br /><small>(Launchpad notifications are
-                sent to all team members)</small>
+                No contact address
+                <metal:define metal:define-macro="contact">
+                  <tal:can-contact condition="view/can_contact">
+                    (<a href="+contactuser"
+                       tal:attributes="title view/contact_link_title"
+                       tal:content="view/specific_contact_text">Contact this person</a>)
+                    <tal:no_preferredemail
+                      condition="view/email_address_visibility/are_none_available">
+                      <br /><small>(Launchpad notifications are sent to all
+                                    team members)</small>
+                    </tal:no_preferredemail>
+                  </tal:can-contact>
+                </metal:define>
               </tal:is-team>
-              <tal:not-team condition="not:context/isTeam">
-                No public address provided.
-                (<a href="+contactuser">Contact this user</a>)
-              </tal:not-team>
+              <tal:comment replace="nothing">
+              Otherwise the user is not valid; this portlet is not used.
+              </tal:comment>
             </tal:no_preferredemail>
 
             <tal:cant-view-hidden-emails
               condition="view/email_address_visibility/are_hidden">
               No public address provided.
-              (<a href="+contactuser">Contact this user</a>)
+              <tal:contact metal:use-macro="template/macros/contact" />
             </tal:cant-view-hidden-emails>
 
             <tal:emails
@@ -51,7 +61,7 @@
                   tal:condition="view/email_address_visibility/are_public"/>
                 <tal:email replace="email">foo2@bar.com</tal:email>
                 <tal:contact condition="repeat/email/start">
-                  (<a href="+contactuser">Contact this user</a>)
+                  <tal:contact metal:use-macro="template/macros/contact" />
                 </tal:contact>
                 <br tal:omit-tag="repeat/email/end" />
               </span>
@@ -70,10 +80,16 @@
           <th>Icon:</th>
           <td><tal:icon replace="structure context/image:icon" /></td>
         </tr>
-        <tr tal:condition="context/allwikis">
+        <tal:XXX condition="nothing">
+          # XXX: salgado, 2008-11-25 bug=296739: We should use
+          # context/wiki_names/is_empty here, but we can't do that because
+          # there's a bug preventing us from updating our version of storm
+          # to trunk.
+        </tal:XXX>
+        <tr tal:condition="context/wiki_names/any">
           <th>Wiki:</th>
           <td>
-            <span tal:repeat="wiki context/allwikis">
+            <span tal:repeat="wiki context/wiki_names">
               <a tal:content="wiki/url"
                  tal:attributes="href wiki/url"
                >WikiName</a><tal:block condition="not: repeat/wiki/end">,
@@ -92,8 +108,8 @@
         <tr tal:condition="context/jabberids">
           <th>Jabber:</th>
           <td>
-            <tal:block repeat="jabberid view/htmlJabberIDs">
-              <span tal:replace="structure jabberid"
+            <tal:block repeat="jabberid context/jabberids">
+              <span tal:replace="jabberid/jabberid/fmt:obfuscate-email"
                 /><span tal:condition="not: repeat/jabberid/end">,</span>
             </tal:block>
           </td>
@@ -101,11 +117,12 @@
         <tr tal:condition="context/gpgkeys">
           <th>OpenPGP keys:</th>
           <td>
-            <tal:block repeat="key context/gpgkeys">
-              <a tal:attributes="href key/keyserverURL">
-                <span tal:replace="key/keyid"
+            <tal:keys repeat="key context/gpgkeys">
+              <a tal:attributes="href key/keyserverURL"
+                 tal:omit-tag="not: request/lp:person">
+                <tal:keyid replace="key/keyid"
                   /></a><span tal:condition="not: repeat/key/end">,</span>
-            </tal:block>
+            </tal:keys>
           </td>
         </tr>
 
@@ -123,19 +140,16 @@
           </tr>
         </tal:keys>
 
-        <tal:can-view-openid-login
-          condition="context/required:launchpad.Edit">
-          <tr tal:condition="context/is_openid_enabled">
-            <th>OpenID login:</th>
-            <td title="This URL is not disclosed to others.">
-              <img src="/@@/private" alt="" />
-              <tal:openid-login content="view/openid_identity_url" />
-              <span class="help"
-                  ><a href="https://help.launchpad.net/OpenID"
-                     >(What&rsquo;s&nbsp;this?)</a></span>
-            </td>
-          </tr>
-        </tal:can-view-openid-login>
+        <tr tal:condition="not: context/is_team">
+          <th>OpenID login:</th>
+          <td>
+            <img src="/@@/private" alt="" />
+            <tal:openid-login content="view/openid_identity_url" />
+            <span class="help"
+                ><a href="https://help.launchpad.net/OpenID"
+                   >(What&rsquo;s&nbsp;this?)</a></span>
+          </td>
+        </tr>
 
       </tbody>
     </table>

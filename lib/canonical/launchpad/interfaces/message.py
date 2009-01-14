@@ -14,6 +14,7 @@ __all__ = [
     'IndexedMessage',
     'InvalidEmailMessage',
     'MissingSubject',
+    'QuotaReachedError',
     'UnknownSender',
     ]
 
@@ -27,7 +28,7 @@ from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
@@ -190,7 +191,7 @@ class IIndexedMessage(Interface):
 
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
-    decorates(IMessage)
+    delegates(IMessage)
     implements(IIndexedMessage)
 
     def __init__(self, context, inside, index):
@@ -205,6 +206,15 @@ class IMessageChunk(Interface):
     sequence = Int(title=_('Sequence order'), required=True, readonly=True)
     content = Text(title=_('Text content'), required=False, readonly=True)
     blob = Int(title=_('Binary content'), required=False, readonly=True)
+
+
+class QuotaReachedError(Exception):
+    """The user-to-user contact email quota has been reached for today."""
+
+    def __init__(self, sender, authorization):
+        Exception.__init__(self)
+        self.sender = sender
+        self.authorization = authorization
 
 
 class IUserToUserEmail(Interface):
@@ -250,6 +260,10 @@ class IDirectEmailAuthorization(Interface):
         title=_('The earliest date used to throttle senders.'),
         readonly=True,
         )
+
+    message_quota = Int(
+        title=_('The maximum number of messages allowed per quota period'),
+        readonly=True)
 
     def record(message):
         """Record that the message was sent.

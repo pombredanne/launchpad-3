@@ -1061,7 +1061,7 @@ sources_list.
 
     >>> a_builder.dispatchBuildCandidate(partner_candidate)
     ensurepresent called, url=...
-    ensurepresent called, url=http://localhost:58000/106/foo_666.dsc
+    ensurepresent called, url=http://localhost:58000/.../foo_666.dsc
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary
@@ -1134,11 +1134,7 @@ password for the archive):
     >>> login(ANONYMOUS)
 
 Dispatch the build again. Celso's archive sources.list entry now has the
-buildd:secret@ part in the URL.  Also note that because it's a private
-PPA, it's missing the dependency on the updates pocket.  This is mainly
-to accommodate the security build private PPA which must not depend
-on the updates pocket.  This will be replaced in the future by a
-proper solution that allows configurable pocket dependencies.
+buildd:secret@ part in the URL.
 
 Also note that when ensurepresent() is called, it receives a URL that
 points to the private archive rather than the librarian for the private
@@ -1158,8 +1154,12 @@ that the mangling tools will run over the built packages.
     OkSlave BUILDING
     Archives:
      deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu hoary main
-     deb http://ftpmaster.internal/ubuntu hoary main universe
-     deb http://ftpmaster.internal/ubuntu hoary-security main universe
+     deb http://ftpmaster.internal/ubuntu hoary
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates
+         main restricted universe multiverse
     Suite: hoary
     Archive Purpose: PRIMARY
     Archive Private: True

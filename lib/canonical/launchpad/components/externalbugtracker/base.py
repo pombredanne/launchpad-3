@@ -29,7 +29,6 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.components import treelookup
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.interfaces.bugwatch import BugWatchErrorType
 from canonical.launchpad.interfaces.externalbugtracker import (
     IExternalBugTracker)
 

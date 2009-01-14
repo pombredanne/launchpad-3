@@ -57,18 +57,30 @@ that, though.
     Your involvement
     You are a member of this team.
 
-He can also see the contact email address.
+He can also see the contact email address and a link to contact the team.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email: support@ubuntu.com
-    (Contact this user)
+    (Contact this team)
+
+Member can contact their team even if the team does not have a contact
+address:
+
+    >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> sample_browser.open('http://launchpad.dev/~landscape-developers')
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
+    Contact details
+    Email: No contact address
+      (Contact this team)
+      (Launchpad notifications are sent to all team members)
 
 As teams do not have OpenID Logins, there is not link in the Contact
 details section for help.
 
-    >>> browser.getLink(u"What&#8217;s\xa0this?")
+    >>> sample_browser.getLink(u"What&#8217;s\xa0this?")
     Traceback (most recent call last):
      ...
     LinkNotFoundError
@@ -76,19 +88,41 @@ details section for help.
 If the logged in user is an indirect member of the team, we'll say that and
 will even show the path from the user to the team.
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name18')
+    >>> sample_browser.open('http://launchpad.dev/~name18')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'your-involvement'))
+    ...     find_tag_by_id(sample_browser.contents, 'your-involvement'))
     Your involvement
     You are an indirect member of this team:
     Sample Person &rarr; Warty Security Team &rarr; Ubuntu Gnome Team
 
 It is also possible to view the set of mugshots of the people in the team.
 
-    >>> browser = setupBrowser()
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+mugshots')
-    >>> print find_main_content(browser.contents)
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+mugshots')
+    >>> print find_main_content(anon_browser.contents)
     <...
     <h1>Who's in this team?</h1>
     ...
+
+
+== Non members ==
+
+No Privileges Person is not a member of the Ubuntu team.
+
+    >>> user_browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'your-involvement'))
+    Your involvement
+    You are not a member of this team.
+
+He can see the contact address, but the link's title explains the email
+will actually go to the team's owner.
+
+    >>> content = find_tag_by_id(user_browser.contents, 'contact-details')
+    >>> print extract_text(content)
+    Contact details
+    Email: support@ubuntu.com
+    (Contact this team)
+
+    >>> content.a
+    <a href="+contactuser"
+      title="Send an email to this team's owner through Launchpad">...
