@@ -83,7 +83,11 @@
               </td>
             </tr>
             <tr>
-            <td tal:condition="context/required:launchpad.Admin" colspan="2">
+              <td colspan="2">&nbsp;</td>
+            </tr>
+            <tr>
+              <td tal:condition="context/required:launchpad.Admin"
+                colspan="2" align="center">
               <a href="+featuredprojects">&raquo; Manage featured project list</a></td>
             </tr>
           </table>
@@ -141,7 +145,6 @@
                 <a href="/people"><img src="/@@/crowd" alt="people icon"
                 /> Browse People &amp; Teams</a>
               </div>
-
               <div class="home-banners">
                 <a href="/+tour"><img src="/@@/maybe" alt="launchpad tour"
                 /> Take the tour</a>
