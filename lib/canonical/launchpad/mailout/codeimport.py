@@ -9,7 +9,7 @@ import textwrap
 from zope.component import getUtility
 
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+    get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeImportReviewStatus,
     ILaunchpadCelebrities)
@@ -41,7 +41,7 @@ def new_import(code_import, event):
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
                'X-Launchpad-Message-Rationale':
                    'Operator @%s' % vcs_imports.name}
-    for address in contactEmailAddresses(vcs_imports):
+    for address in get_contact_email_addresses(vcs_imports):
         simple_sendmail(from_address, address, subject, body, headers)
 
 
