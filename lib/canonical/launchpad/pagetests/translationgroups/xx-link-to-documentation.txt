@@ -82,4 +82,14 @@ the documentation url through the edit view.
     >>> test_browser.getControl('Change').click()
     >>> print test_browser.url
     http://translations.launchpad.dev/~name12
+    >>> translator_listing = find_tags_by_class(
+    ...     test_browser.contents, 'listing')[1]
+    >>> print extract_text(translator_listing)
+    Translation Group
+    Language
+    Documentation URL
+    Just a testing team
+    Esperanto
+    http://www.launchpad.net/
+
 

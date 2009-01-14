@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'ITranslator',
-    'IEditTranslator',
     'IAdminTranslator',
+    'IEditTranslator',
+    'ITranslator',
     'ITranslatorSet',
     ]
 
@@ -20,26 +20,29 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 
 class IEditTranslator(Interface):
-    """Set of widgets needed to edit a translator entry.
-    
+    """Set of translator attributes that the translator can edit himself as
+    well as being editable by the translation group owner.
+
     Translators can edit the data in their `ITranslator` entry.
-    Currently this is just the documentation URL."""
+    Currently this is just the documentation URL.
+    """
 
     documentation_url = URIField(
         title=_('Documentation URL'), required=False,
         allowed_schemes=['http', 'https', 'ftp'],
         allow_userinfo=False,
-        description=_("URL to the documentation for translation work done "
-                      "here: process, vocabulary standards, caveats. "
-                      "Please include the http://."))
+        description=_("The URL of the documentation on how to do "
+                      "translation work here. "
+                      "Includes the http://, https://, or ftp://."))
 
 
 class IAdminTranslator(Interface):
-    """Set of widgets needed to administer a translator entry.
+    """Set of attributes that can only be edited by the owner of the
+    translation group this translator is part of.
 
-    Adding a translator to a translation group and assigning the language
-    the he is responsible for is an administrative task that is achived
-    with these widgets.
+    These attributes let you add translators to translation groups and set
+    the languages that the translators are responsible for. These are all
+    administrative tasks.
     """
 
     id = Int(
@@ -65,11 +68,12 @@ class IAdminTranslator(Interface):
 class ITranslator(IEditTranslator, IAdminTranslator):
     """A member of a `TranslationGroup`.
 
-    This is not the same thing as what is called a translator in the UI.
-    An `ITranslator` represents a person or team appointed within a
-    translation group to be responsible for a language.  On the other
-    hand, any logged-in Launchpad user can act as a translator by
-    suggesting or entering translations.
+    This is the aggregation of all the attributes for a translator.
+
+    This is not the same thing as what the UI calls a 'translator'. A
+    translator there is any logged-in Launchpad user, since any such user can
+    suggest or enter translation. An `ITranslator` is a person or team who
+    coordinates translation work done in a language.
     """
 
 

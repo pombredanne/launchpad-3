@@ -21,17 +21,6 @@ class TranslatorEditView(LaunchpadEditFormView):
 
     schema = IEditTranslator
 
-    @property
-    def initial_values(self):
-        """Initialize some values on the form, when it's possible."""
-        field_values = {}
-        if self.request.method == 'POST':
-            # We got a form post, we don't need to do any initialisation.
-            return field_values
-        # Fill the know values.
-        field_values['documentation_url'] = self.context.documentation_url
-        return field_values
-
     @action("Change")
     def change_action(self, action, data):
         """Edit the translator that does translations for a given language."""

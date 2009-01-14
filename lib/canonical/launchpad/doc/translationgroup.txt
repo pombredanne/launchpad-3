@@ -94,7 +94,17 @@ is a part of:
     ...     print trans.language.code
     ...     print trans.translationgroup.name
     ...     print trans.documentation_url
+    es
+    testing-translation-team
+    None
 
+    >>> for trans in translators.getByTranslator(no_priv):
+    ...     print trans.language.code
+    ...     print trans.translationgroup.name
+    ...     print trans.documentation_url
+    cy
+    foo-translators
+    None
 
 "Do you want us to shut everything down?"
 
