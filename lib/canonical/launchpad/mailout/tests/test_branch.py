@@ -26,9 +26,9 @@ class TestRecipientReason(TestCaseWithFactory):
         """Test fixture."""
         if subscriber is None:
             subscriber = self.factory.makePerson()
-        source_branch = self.factory.makeBranch(title='foo')
-        target_branch = self.factory.makeBranch(product=source_branch.product,
-            title='bar')
+        source_branch = self.factory.makeProductBranch(title='foo')
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product, title='bar')
         merge_proposal = source_branch.addLandingTarget(
             source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(

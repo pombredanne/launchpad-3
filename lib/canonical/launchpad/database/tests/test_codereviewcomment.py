@@ -12,14 +12,15 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
+
 class TestCodeReviewComment(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        source = self.factory.makeBranch(title='source-branch')
-        target = self.factory.makeBranch(
+        source = self.factory.makeProductBranch(title='source-branch')
+        target = self.factory.makeProductBranch(
             product=source.product, title='target-branch')
         self.bmp = source.addLandingTarget(source.owner, target)
         self.submitter = self.factory.makePerson(password='password')

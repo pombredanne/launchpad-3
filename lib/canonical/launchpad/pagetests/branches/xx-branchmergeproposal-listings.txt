@@ -14,13 +14,13 @@ Log-in an administrator to avoid permission problems.
 
 Make a trunk branch and set as the development focus branch.
 
-    >>> trunk = factory.makeBranch(product=fooix)
+    >>> trunk = factory.makeProductBranch(product=fooix)
     >>> fooix.development_focus.user_branch = trunk
 
 Make a single proposal for albert that is needing review.
 
     >>> albert = factory.makePerson(name='albert')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=albert, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(albert, trunk)
     >>> proposal.requestReview()
@@ -28,12 +28,12 @@ Make a single proposal for albert that is needing review.
 Make two proposals for bob, one needing review, and one approved.
 
     >>> bob = factory.makePerson(name='bob')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProducBranch(
     ...     owner=bob, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.requestReview()
 
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=bob, product=fooix, name='approved')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.approveBranch(trunk.owner, 'some-revision')
