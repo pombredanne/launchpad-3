@@ -180,7 +180,7 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         self.assertEqual(
             '~%s/%s/%s/%s/%s' % (
-                branch.owner.name, branch.distroseries.distribution.name,
+                branch.owner.name, branch.distribution.name,
                 branch.distroseries.name, branch.sourcepackagename.name,
                 branch.name),
             branch.unique_name)
@@ -197,8 +197,8 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         self.assertEqual(
             '%s/%s/%s' % (
-                branch.distroseries.distribution.name,
-                branch.distroseries.name, branch.sourcepackagename.name),
+                branch.distribution.name, branch.distroseries.name,
+                branch.sourcepackagename.name),
             branch.container.name)
 
     def makeLaunchBag(self):
