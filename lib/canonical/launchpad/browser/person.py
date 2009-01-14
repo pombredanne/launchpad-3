@@ -262,20 +262,14 @@ class RestrictedMembershipsPersonView(LaunchpadView):
 
 
 class BranchTraversalMixin:
-    """Branch of this person or team for the specified product and
-    branch names.
+    """Logic for traversing to branches below from IPersons.
 
-    For example:
+    Branches can be reached from
+    code.launchpad.net/~person/+branch/other/path/info or from
+    code.launchpad.net/~person/other/path/info.
 
-    * '/~ddaa/bazaar/devel' points to the branch whose owner
-    name is 'ddaa', whose product name is 'bazaar', and whose branch name
-    is 'devel'.
-
-    * '/~sabdfl/+junk/junkcode' points to the branch whose
-    owner name is 'sabdfl', with no associated product, and whose branch
-    name is 'junkcode'.
-
-    * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
+    Most of the knowledge of how branch paths work is stored in
+    `IBranchNamespaceSet`. This class simply delegates to that.
     """
 
     def _getSegments(self, pillar_name=None):
