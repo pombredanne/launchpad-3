@@ -317,7 +317,11 @@ And should be accepted by our validator.
 
 Fuzzy translations are ignored.
 
-    >>> message = pofile[u'bar']
+    >>> def get_pofile_translation_message(pofile, msgid):
+    ...     potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
+    ...     return potmsgset.getCurrentTranslationMessage(
+    ...         pofile.language, pofile.variant)
+    >>> message = get_pofile_translation_message(pofile, u'bar')
     >>> message.translations
     [None]
 
@@ -465,9 +469,11 @@ file.  The translation credits are special; upstream uploads can
 credits for translations in Launchpad are generated automatically,
 non-upstream translations for these messages are ignored.
 
-    >>> pofile['foo'].msgstr0.translation
+    >>> message = get_pofile_translation_message(pofile, 'foo')
+    >>> message.msgstr0.translation
     u'blah'
-    >>> pofile['translator-credits'].msgstr0.translation
+    >>> message = get_pofile_translation_message(pofile, 'translator-credits')
+    >>> message.msgstr0.translation
     u'helpful@example.com'
 
 
@@ -707,7 +713,9 @@ We've imported a new translation for "Foo %s."
 Since this last upload was not the upstream one, however, its credits
 message translations were ignored.
 
-    >>> pofile['translator-credits'].msgstr0.translation
+    >>> message = get_pofile_translation_message(
+    ...     pofile, u'translation-credits')
+    >>> message.msgstr0.translation
     u'helpful@example.com'
     >>> potemplate['translator-credits'].getLocalTranslationMessages(welsh)
     []
