@@ -166,6 +166,15 @@ class Branch(SQLBase):
         return self.distroseries.distribution
 
     @property
+    def sourcepackage(self):
+        """See `IBranch`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        if self.distroseries is None:
+            return None
+        return SourcePackage(self.sourcepackagename, self.distroseries)
+
+    @property
     def revision_history(self):
         return BranchRevision.select('''
             BranchRevision.branch = %s AND
