@@ -201,3 +201,4 @@ class ICanGetMilestonesDirectly(Interface):
 # Fix cyclic references.
 IMilestone['target'].schema = IHasMilestones
 IMilestone['series_target'].schema = IHasMilestones
+IProductRelease['milestone'].schema = IMilestone
