@@ -19,7 +19,40 @@ RewriteLock /var/tmp/rewrite-lock
   RedirectMatch permanent /(.*) http://bazaar.launchpad.dev/$1
 </VirtualHost>
 
-<VirtualHost 127.0.0.88:80>
+<VirtualHost 127.0.0.99:443>
+  ServerName bazaar.launchpad.dev
+  LogLevel debug
+
+  SSLEngine On
+  SSLProxyEngine On
+  SSLCertificateFile /etc/apache2/ssl/launchpad.crt
+  SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
+
+  ProxyRequests off
+  <Proxy *>
+    Order deny,allow
+    Allow from localhost 127.0.0.0/255.0.0.0
+  </Proxy>
+  ProxyTimeout 20
+
+  RewriteEngine On
+  RewriteMap branch-rewrite prg:%BRANCH_REWRITE%
+  RewriteLog /tmp/rlog
+  RewriteLogLevel 9
+
+
+  # Requests to the root are redirected to the Launchpad homepage.
+  RewriteRule ^/$ http://launchpad.dev [L]
+  RewriteRule ^(/.*)$ ${branch-rewrite:$1}
+  RewriteRule ^http://localhost:8080/(.*)$ http://localhost:9999/$1 [L,P]
+  RewriteRule ^(/.*)$ http://launchpad.dev [L]
+
+  <Location />
+    ProxyPassReverse http://localhost:9999/
+  </Location>
+</VirtualHost>
+
+<VirtualHost 127.0.0.99:80>
   ServerName bazaar.launchpad.dev
   LogLevel debug
 
@@ -36,7 +69,7 @@ RewriteLock /var/tmp/rewrite-lock
   # Requests to the root are redirected to the Launchpad homepage.
   RewriteRule ^/$ http://launchpad.dev [L]
 
-  RewriteRule ^(/~.*)$ ${branch-rewrite:$1} [L,P]
+  RewriteRule ^(/.*)$ ${branch-rewrite:$1} [L,P]
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/static/
   <Directory /var/tmp/bazaar.launchpad.dev/static/>
