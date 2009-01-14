@@ -60,7 +60,11 @@ class BranchMergeProposalListingItem:
         review = self.context.getUsersVoteReference(self.proposal_reviewer)
         if not review.comment:
             return '<em>None</em>'
-        return 'Vote goes here!'
+        vote_string = '<span class="vote%s">%s</span>' % (
+            review.comment.vote.name, review.comment.vote.title)
+        if review.review_type:
+            vote_string = ' '.join([vote_string, review.comment.vote_tag])
+        return vote_string
 
 
 
