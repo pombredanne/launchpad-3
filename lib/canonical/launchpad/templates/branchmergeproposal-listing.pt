@@ -50,6 +50,10 @@
             tal:content="structure proposal/vote_summary">
           Vote Summary
         </td>
+        <td tal:condition="context/show_column/review|nothing">
+          Vote Summary
+        </td>
+
       </tr>
     </tbody>
   </table>
