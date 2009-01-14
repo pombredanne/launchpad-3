@@ -4958,7 +4958,7 @@ class PersonActiveReviewsView(PersonBMPListingView):
 class PersonRequestedReviewsView(PersonBMPListingView):
     """Branch merge proposals for the person that are needing review."""
 
-    extra_columns = ['date_review_requested', 'vote_summary',]
+    extra_columns = ['date_review_requested', 'review',]
     _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
                      BranchMergeProposalStatus.NEEDS_REVIEW]
 

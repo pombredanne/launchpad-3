@@ -29,10 +29,10 @@ class BranchMergeProposalListingItem:
 
     delegates(IBranchMergeProposal, 'context')
 
-    def __init__(self, branch_merge_proposal, summary, reviewer):
+    def __init__(self, branch_merge_proposal, summary, proposal_reviewer):
         self.context = branch_merge_proposal
         self.summary = summary
-        self.reviewer = reviewer
+        self.proposal_reviewer = proposal_reviewer
 
     @property
     def vote_summary(self):
@@ -57,7 +57,10 @@ class BranchMergeProposalListingItem:
     @property
     def reviewer_vote(self):
         """A vote from the specified reviewer."""
-        return self.context.getUsersVoteReference(self.reviewer)
+        review = self.context.getUsersVoteReference(self.proposal_reviewer)
+        if not review.comment:
+            return '<em>None</em>'
+        return 'Vote goes here!'
 
 
 
@@ -87,7 +90,7 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
         """Create the listing item for the proposal."""
         summary = self._vote_summaries[proposal]
         return BranchMergeProposalListingItem(proposal, summary,
-            reviewer=self.view.getUserFromContext())
+            proposal_reviewer=self.view.getUserFromContext())
 
     @property
     def proposals(self):

@@ -17,6 +17,9 @@
         <th tal:condition="context/show_column/date_reviewed|nothing">
           Date Reviewed
         </th>
+        <th tal:condition="context/show_column/review|nothing">
+          Review
+        </th>
         <th tal:condition="context/show_column/vote_summary|nothing">
           Activity
         </th>
@@ -46,14 +49,13 @@
           </span>
           <tal:date replace="proposal/date_reviewed/fmt:approximatedate"/>
         </td>
+        <td tal:condition="context/show_column/review|nothing"
+            tal:content="structure proposal/reviewer_vote">
+        </td>
         <td tal:condition="context/show_column/vote_summary|nothing"
             tal:content="structure proposal/vote_summary">
           Vote Summary
         </td>
-        <td tal:condition="context/show_column/review|nothing">
-          Vote Summary
-        </td>
-
       </tr>
     </tbody>
   </table>
