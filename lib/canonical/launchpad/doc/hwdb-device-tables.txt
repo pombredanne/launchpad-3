@@ -447,6 +447,25 @@ HWVendorIDSet.getByBusAndVendorID() must be a valid ID for the given bus.
     ...
     ValueError: '8086' is not a valid vendor ID for PCI
 
+HWVendorIDSet.get() returns the HWVendorID record with the given ID...
+
+    >>> vendor_id = vendor_id_set.get(1)
+    >>> print vendor_id.bus.name, vendor_id.vendor_id_for_bus
+    SYSTEM MSI
+
+...or None, if no such record exists.
+
+    >>> print vendor_id_set.get(1000000)
+    None
+
+HWVendorIDSet.idsForBus() returns all known HWVendorIDs for a given bus.
+
+    >>> for vendor_id in vendor_id_set.idsForBus(HWBus.PCI):
+    ...     print vendor_id.bus.name, vendor_id.vendor_id_for_bus
+    PCI 0x10ae
+    PCI 0x10de
+    PCI 0x8086
+
 
 == HWDevice ==
 
