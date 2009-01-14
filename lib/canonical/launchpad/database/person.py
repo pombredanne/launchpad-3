@@ -667,12 +667,7 @@ class Person(
 
     @property
     def browsername(self):
-        """Return a name suitable for display on a web page.
-
-        Originally, this was calculated but now we just use displayname.
-        You should continue to use this method, however, as we may want to
-        change again, such as returning '$displayname ($name)'.
-        """
+        """See `IPersonPublic`."""
         return self.displayname
 
     @property
