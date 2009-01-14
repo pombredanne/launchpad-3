@@ -878,6 +878,12 @@ class IBranch(IHasOwner):
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
 
+        Use this when traversing to this branch in the web UI.
+
+        In particular, add information about the branch's container to the
+        launchbag. If the branch has a product, add that; if it has a source
+        package, add lots of information about that.
+
         :param launchbag: `ILaunchBag`.
         """
 
