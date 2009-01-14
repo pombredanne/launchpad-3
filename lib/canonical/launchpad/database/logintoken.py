@@ -56,7 +56,7 @@ class LoginToken(SQLBase):
 
         if self.fingerprint is not None:
             tokens = LoginTokenSet().searchByFingerprintRequesterAndType(
-                self.fingerprint, self.requester, self.tokentype)
+                self.fingerprint, self.requester, self.tokentype, False)
         else:
             tokens = LoginTokenSet().searchByEmailRequesterAndType(
                 self.email, self.requester, self.tokentype, False)
@@ -273,10 +273,11 @@ class LoginTokenSet:
             LoginToken.requester == requester,
             LoginToken.tokentype == type)
 
-        if consumed:
-            query = And(query, Not(LoginToken.date_consumed == None))
-        elif not consumed:
-            query = And(query, LoginToken.date_consumed == None)
+        if consumed is not None:
+            if consumed:
+                query = And(query, Not(LoginToken.date_consumed == None))
+            else:
+                query = And(query, LoginToken.date_consumed == None)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         return store.find(LoginToken, query)
@@ -288,11 +289,21 @@ class LoginTokenSet:
             token.destroySelf()
 
     def searchByFingerprintRequesterAndType(self, fingerprint, requester,
-                                            type):
+                                            type, consumed=None):
         """See ILoginTokenSet."""
-        return LoginToken.select(AND(LoginToken.q.fingerprint==fingerprint,
-                                     LoginToken.q.requesterID==requester.id,
-                                     LoginToken.q.tokentype==type))
+        query = And(
+            LoginToken.fingerprint == fingerprint,
+            LoginToken.requester == requester,
+            LoginToken.tokentype == type)
+
+        if consumed is not None:
+            if consumed:
+                query = And(query, Not(LoginToken.date_consumed == None))
+            else:
+                query = And(query, LoginToken.date_consumed == None)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        return store.find(LoginToken, query)
 
     def getPendingGPGKeys(self, requesterid=None):
         """See ILoginTokenSet."""

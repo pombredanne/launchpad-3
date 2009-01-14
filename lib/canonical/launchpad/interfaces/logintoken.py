@@ -254,14 +254,15 @@ class ILoginTokenSet(Interface):
         Return the default value if there's no such LoginToken.
         """
 
-    def searchByEmailRequesterAndType(email, requester, type):
+    def searchByEmailRequesterAndType(email, requester, type, consumed=None):
         """Return all LoginTokens for the given email, requester and type."""
 
     def deleteByEmailRequesterAndType(email, requester, type):
         """Delete all LoginToken entries with the given email, requester and
         type."""
 
-    def searchByFingerprintRequesterAndType(fingerprint, requester, type):
+    def searchByFingerprintRequesterAndType(fingerprint, requester, type,
+                                            consumed=None):
         """Return all LoginTokens for the given fingerprint, requester and
         type."""
 
