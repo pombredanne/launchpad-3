@@ -76,8 +76,8 @@ class BranchRewriter:
                 return "NULL"
             elif faults.check_fault(f, faults.PermissionDenied):
                 # If we get permission denied, redirect to the https version
-                # of the codehost (which doesn't redirect through here and
-                # does authentication via OpenID).
+                # of the codehost which doesn't redirect through here and
+                # does authentication via OpenID.
                 return urlutils.join(
                     config.codehosting.secure_codebrowse_root,
                     resource_location)
