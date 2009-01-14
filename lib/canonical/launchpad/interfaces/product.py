@@ -150,7 +150,8 @@ class IProductCommercialRestricted(Interface):
                 readonly=True,
                 description=_(
                     "Whether the project's licensing qualifies for free "
-                    "hosting or the project has an up-to-date subscription.")))
+                    "hosting or the project has an up-to-date "
+                    "subscription.")))
 
     license_reviewed = exported(
         Bool(
@@ -469,8 +470,8 @@ class IProductPublic(
                 title=_("Commercial subscription is due"),
                 readonly=True,
                 description=_(
-                    "Whether the project's licensing requires a new commercial "
-                    "subscription to use launchpad.")))
+                    "Whether the project's licensing requires a new "
+                    "commercial subscription to use launchpad.")))
 
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
@@ -620,7 +621,8 @@ class IProductSet(Interface):
         search_text=TextLine(title=_("Search text")),
         active=Bool(title=_("Is the project active")),
         license_reviewed=Bool(title=_("Is the project license reviewed")),
-        licenses = Set(title=_('Licenses'), value_type=Choice(vocabulary=License)),
+        licenses = Set(title=_('Licenses'),
+                       value_type=Choice(vocabulary=License)),
         license_info_is_empty=Bool(title=_("License info is empty")),
         has_zero_licenses=Bool(title=_("Has zero licenses")),
         created_after=Date(title=_("Created after date")),

@@ -9,12 +9,12 @@ __all__ = [
     'ICommercialSubscription',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.lazr.fields import ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -40,7 +40,8 @@ class ICommercialSubscription(Interface):
             vocabulary='Product',
             schema=Interface,   # Really IProduct.  Set properly below.
             description=_(
-                "Project for which this commercial subscription is applied.")))
+                "Project for which this commercial subscription is "
+                "applied.")))
 
     date_created = exported(
         Datetime(
