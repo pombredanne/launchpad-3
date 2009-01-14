@@ -479,3 +479,50 @@ are stored in HWSubmission.devices.
     parent_link: u'.../+hwdb/+submissiondevice/2'
     resource_type_link: u'.../#h_w_submission_device'
     self_link: u'.../+hwdb/+submissiondevice/3'
+
+
+== Vendor ID queries ==
+
+A vendor ID can be accessed by via its database ID.
+
+    >>> vendor_id = webservice.get('+hwdb/+hwvendorid/1').jsonBody()
+    >>> pprint_entry(vendor_id)
+    bus: u'System'
+    id: 1
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_vendor_i_d'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+hwvendorid/1'
+    vendor_id: u'MSI'
+
+A 404 error is returned, when a non-existent ID is passed in the URL...
+
+    >>> print webservice.get('/+hwdb/+hwvendorid/1000000')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'1000000'
+
+...and when an otherwise invalid ID is passed.
+
+    >>> print webservice.get('/+hwdb/+hwvendorid/nonsense')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'nonsense'
+
+Known vendor IDs for a given bus can be queried with
+HWDBApplication.vendorIDs().
+
+    >>> vendor_ids = webservice.get(
+    ...     '/+hwdb?ws.op=vendorIDs&bus=USB').jsonBody()
+    >>> for vendor_id in vendor_ids['entries']:
+    ...     pprint_entry(vendor_id)
+    bus: u'USB'
+    id: 3
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_vendor_i_d'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+hwvendorid/3'
+    vendor_id: u'0x04b4'
+    bus: u'USB'
+    id: 4
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_vendor_i_d'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+hwvendorid/4'
+    vendor_id: u'0x0dda'

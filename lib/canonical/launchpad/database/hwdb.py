@@ -480,6 +480,18 @@ class HWVendorIDSet:
                 repr(vendor_id), bus.title))
         return HWVendorID.selectOneBy(bus=bus, vendor_id_for_bus=vendor_id)
 
+    def get(self, id):
+        """See `IHWVendorIDSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWVendorID, HWVendorID.id == id).one()
+
+    def idsForBus(self, bus):
+        """See `IHWVendorIDSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(HWVendorID, bus=bus)
+        result_set.order_by(HWVendorID.vendor_id_for_bus)
+        return result_set
+
 
 class HWDevice(SQLBase):
     """See `IHWDevice.`"""
