@@ -98,8 +98,50 @@ variable is on, or if the user is a developer.
      ...
     InvalidInput: bad email
 
-    >>> ignored = config.pop('traceback_off')
 
+=== Internal server errors ===
+
+Exceptions that are server-side errors are handled a little
+differently. In some cases, a non-developer user may be prevented from
+seeing the exception message.
+
+    >>> class ServerError(Exception):
+    ...     """Something went wrong on the server side."""
+    ...     webservice_error(500)
+
+If show_trackbacks is True, the user is going to see a full trackback
+anyway, so there's no point in hiding the exception message.
+
+    >>> print render_error_view(ServerError('DB crash'), request)
+    DB crash
+    <BLANKLINE>
+    Traceback (most recent call last):
+     ...
+    ServerError: DB crash
+
+If show_trackbacks is False, but the user is a developer, they'll see
+the exception message.
+
+    >>> ignored = config.pop('traceback_on')
+    >>> config.canonical.show_tracebacks
+    False
+    >>> the_launchbag.developer = True
+    >>> print render_error_view(ServerError('DB crash'), request)
+    DB crash
+    <BLANKLINE>
+    Traceback (most recent call last):
+     ...
+    ServerError: DB crash
+
+Here's where it's different. If show_trackbacks is False and the user
+is not a developer, on an internal server error they'll see the
+exception class name instead of a message.
+
+    >>> the_launchbag.developer = False
+    >>> print render_error_view(ServerError('DB crash'), request)
+    ServerError
+
+    >>> ignored = config.pop('traceback_off')
 
 == Default exceptions ==
 
