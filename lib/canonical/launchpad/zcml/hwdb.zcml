@@ -112,8 +112,13 @@
 
     <class class="canonical.launchpad.database.HWVendorID">
         <allow interface="canonical.launchpad.interfaces.IHWVendorID" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWVendorID"
+        path_expression="string:+hwvendorid/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWVendorIDSet"
