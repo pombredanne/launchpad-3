@@ -882,6 +882,36 @@ class TestCopyPackage(TestCase):
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
 
+    def testCopyFromPrivateToPublicPPAs(self):
+        """Check if copying private sources into public archives is denied."""
+        # Set up a private PPA.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        cprov.archive.buildd_secret = "secret"
+        cprov.archive.private = True
+
+        # Create a source and binary private publication.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.0', distroseries=hoary)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary)
+
+        # Run the copy package script storing the logged information.
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='cprov', include_binaries=True,
+            from_suite='hoary', to_suite='hoary')
+        copy_helper.logger = TestLogger()
+        copied = copy_helper.mainTask()
+
+        # Nothing was copied and an error message was printed explaining why.
+        self.assertEqual(len(copied), 0)
+        self.assertEqual(
+            copy_helper.logger.lines[-1],
+            'foo 1.0 in hoary '
+            '(Cannot copy private source into public archives.)')
+
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
         # Set up a private PPA.
