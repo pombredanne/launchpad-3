@@ -106,11 +106,11 @@ of their reviews
 
     >>> browser.open('http://code.launchpad.dev/~robert/+requestedreviews')
     >>> print_tag_with_id(browser.contents, 'page-summary')
-    Related branches: 1 (1 registered, 1 owned, 1 subscribed)
-    1 active proposal, 0 approved merges, 0 requested reviews
+    Related branches: 0 (0 registered, 0 owned, 0 subscribed)
+    0 active proposals, 0 approved merges, 1 requested review
 
     >>> print_tag_with_id(browser.contents, 'proposal-listing')
-    Branch Merge Proposal                               Requested By    Review
-    lp://dev/~albert/fooix/review &rArr; lp://dev/fooix Albert ...      None
+    Branch Merge Proposal             Requested By    Review
+    lp://dev/~albert/fooix/review ... Albert ...      Pending ui
 
 

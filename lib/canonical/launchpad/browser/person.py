@@ -780,7 +780,7 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         return Link('+addbranch', text, icon='add', enabled=enabled)
 
     def requested_reviews(self):
-        if self.approved_merge_count == 1:
+        if self.requested_review_count == 1:
             text = 'requested review'
         else:
             text = 'requested reviews'
