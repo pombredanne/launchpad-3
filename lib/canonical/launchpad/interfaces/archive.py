@@ -756,7 +756,8 @@ class IArchiveAppend(Interface):
         """Create a new authorisation token.
 
         :param person: An IPerson whom this token is for
-        :param token: Optional token string, one will be generated if not set
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
         :param date_created: Optional, defaults to now
 
         :return: A new IArchiveAuthToken
