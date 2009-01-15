@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -70,39 +70,37 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     @property
     def featured_projects_col_b(self):
-        """Return a list of featured projects."""
+        """The list of featured projects."""
         return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
 
     @property
     def branch_count(self):
-        """Return the total branch count in all of Launchpad."""
+        """The total branch count in all of Launchpad."""
         return getUtility(IBranchSet).count()
 
     @property
     def bug_count(self):
-        """Return the total bug count in all of Launchpad."""
+        """The total bug count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('bug_count')
 
     @property
     def project_count(self):
-        """Return the total project count in all of Launchpad."""
+        """The total project count in all of Launchpad."""
         return getUtility(IProductSet).count_all()
 
     @property
     def translation_count(self):
-        """Return the total count of translatable strings in all
-        of Launchpad
-        """
+        """The total count of translatable strings in all of Launchpad """
         return getUtility(ILaunchpadStatisticSet).value('pomsgid_count')
 
     @property
     def blueprint_count(self):
-        """Return the total blueprint count in all of Launchpad."""
+        """The total blueprint count in all of Launchpad."""
         return getUtility(ISpecificationSet).specification_count
 
     @property
     def answer_count(self):
-        """Return the total blueprint count in all of Launchpad."""
+        """The total blueprint count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('question_count')
 
 

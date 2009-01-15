@@ -1266,8 +1266,15 @@ beside the mugshot. */
 #home-page img {
   vertical-align: middle;
 }
-#featured-projects table td {
-  padding: 2px;
+#featured-projects ul {
+  list-style-type: none;
+  width: 50%;
+  margin: 0;
+  padding: 0 ;
+  float: left;
+}
+#featured-projects li {
+  padding-bottom: 2px;
 }
 .home-banners {
   background-color: #8890ff;
@@ -1286,7 +1293,7 @@ beside the mugshot. */
 .home-banner-container {
   width: 100%;
   background-color: #ededed;
-  padding: 1em; 
+  padding: 1em;
   padding-top: 0;
 }
 

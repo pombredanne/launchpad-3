@@ -59,38 +59,28 @@
         <strong tal:content="view/blueprint_count">123</strong>&nbsp;blueprints,
         and&nbsp;counting...
       </div>
-      <div id="home-description">Launchpad is a unique collaboration and 
+      <div id="home-description">Launchpad is a unique collaboration and
       <a href="http://bazaar-vcs.org/">bazaar</a>
       code hosting platform for software projects.</div>
       <div id="home-page" style="width:90%; margin:auto;">
         <div class="three column left" id="featured-projects">
           <h2>Featured projects</h2>
-          <table style="margin:auto;">
-            <tr>
-              <td>
-                <table>
-                  <tr tal:repeat="project view/featured_projects_col_a">
-                    <td tal:content="structure project/fmt:link" />
-                  </tr>
-                </table>
-              </td>
-              <td>
-                <table>
-                  <tr tal:repeat="project view/featured_projects_col_b">
-                    <td tal:content="structure project/fmt:link" />
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2">&nbsp;</td>
-            </tr>
-            <tr>
-              <td tal:condition="context/required:launchpad.Admin"
-                colspan="2" align="center">
-              <a href="+featuredprojects">&raquo; Manage featured project list</a></td>
-            </tr>
-          </table>
+          <div style="margin:auto;">
+            <ul>
+              <li tal:repeat="project view/featured_projects_col_a">
+                <a tal:content="structure project/fmt:link" />
+              </li>
+            </ul>
+            <ul>
+              <li tal:repeat="project view/featured_projects_col_b">
+                <a tal:content="structure project/fmt:link" />
+              </li>
+            </ul>
+            <div tal:condition="context/required:launchpad.Admin" 
+                 style="margin:auto; clear:both; text-align: center; padding-top: 1em;">
+              <a href="+featuredprojects">&raquo; Manage featured project list</a>
+            </div>
+          </div>
         </div>
 
         <div class="three column middle">
