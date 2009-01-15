@@ -1740,7 +1740,11 @@ class ProcessingLoop(object):
             HWSubmissionProcessingStatus.SUBMITTED,
             user=self.janitor
             )[:chunk_size]
-        if submissions.count() < chunk_size:
+        # Listify the submissions, since we'll have to loop over each
+        # one anyway. This saves a COUNT query for getting the number of
+        # submissions
+        submissions = list(submissions)
+        if len(submissions) < chunk_size:
             self.finished = True
         for submission in submissions:
             try:
