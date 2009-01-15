@@ -32,7 +32,7 @@ class TestSendbranchmail(TestCaseWithFactory):
             'cronscripts/sendbranchmail.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual('Ran 1 RevisionMailJobs.\n', stdout)
-        self.assertEqual('', stderr)
+        self.assertEqual('INFO    creating lockfile\n', stderr)
 
 
 def test_suite():

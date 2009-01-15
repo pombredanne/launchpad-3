@@ -24,4 +24,4 @@ class RunRevisionMailJobs(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RunRevisionMailJobs('sendcodemail').run()
+    RunRevisionMailJobs('sendcodemail').lock_and_run()
