@@ -722,13 +722,23 @@ class PersonBranchCountMixin:
             self.user)
         return query.count()
 
+    @cachedproperty
+    def requested_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
+            self.context, [
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user)
+        return query.count()
+
 
 class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     usedfor = IPerson
     facet = 'branches'
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'approved_merges']
+             'active_reviews', 'approved_merges', 'requested_reviews']
 
     def all_related(self):
         return Link(canonical_url(self.context, rootsite='code'),
@@ -745,10 +755,14 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'active proposal'
         else:
-            text = 'active reviews'
-        return Link('+activereviews', text)
+            text = 'active proposals'
+        if self.user == self.context:
+            summary = 'Proposals I have submitted'
+        else:
+            summary = 'Proposals %s has submitted' % self.context.displayname
+        return Link('+activereviews', text, summary=summary)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
@@ -764,6 +778,17 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
             enabled = self.user.inTeam(self.context)
         text = 'Register branch'
         return Link('+addbranch', text, icon='add', enabled=enabled)
+
+    def requested_reviews(self):
+        if self.requested_review_count == 1:
+            text = 'requested review'
+        else:
+            text = 'requested reviews'
+        if self.user == self.context:
+            summary = 'Proposals I am reviewing'
+        else:
+            summary = 'Proposals %s is reviewing' % self.context.displayname
+        return Link('+requestedreviews', text, summary=summary)
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -4928,11 +4953,19 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
         When we add support for reviews commented on, we'll want to add
         support for showing the summary even if there are no branches.
         """
-        return self.total_branch_count
+        return self.total_branch_count or self.requested_review_count
 
 
-class PersonActiveReviewsView(BranchMergeProposalListingView):
-    """Branch merge proposals for the person that are needing review."""
+class PersonBMPListingView(BranchMergeProposalListingView):
+    """Base class for the proposal listings that defines the user."""
+
+    def getUserFromContext(self):
+        """Get the relevant user from the context."""
+        return self.context
+
+
+class PersonActiveReviewsView(PersonBMPListingView):
+    """Branch merge proposals that the person has submitted."""
 
     extra_columns = ['date_review_requested', 'vote_summary']
     _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
@@ -4947,7 +4980,29 @@ class PersonActiveReviewsView(BranchMergeProposalListingView):
         return "%s has no active code reviews." % self.context.displayname
 
 
-class PersonApprovedMergesView(BranchMergeProposalListingView):
+class PersonRequestedReviewsView(PersonBMPListingView):
+    """Branch merge proposals for the person that are needing review."""
+
+    extra_columns = ['date_review_requested', 'review',]
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
+                     BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Code reviews requested of %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no reviews pending." % self.context.displayname
+
+    def getVisibleProposalsForUser(self):
+        """Branch merge proposals that are visible by the logged in user."""
+        return getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
+            self.context, self._queue_status, self.user)
+
+
+class PersonApprovedMergesView(PersonBMPListingView):
     """Branch merge proposals that have been approved for the person."""
 
     extra_columns = ['date_reviewed']

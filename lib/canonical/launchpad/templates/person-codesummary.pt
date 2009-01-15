@@ -37,6 +37,11 @@
     <tal:link
         define="link context/menu:branches/approved_merges"
         replace="structure link/render"
+        />,
+    <strong class="count" tal:content="view/requested_review_count">5</strong>
+    <tal:link
+        define="link context/menu:branches/requested_reviews"
+        replace="structure link/render"
         />
   </p>
 </div>
