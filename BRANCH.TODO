@@ -3,25 +3,47 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-- Need to pull the following dependencies into ``sourcecode``:
-  ``z3c.ptcompat``, ``z3c.pt``, ``chameleon.zpt``,
-  ``chameleon.core``, ``sourcecodegen``. The last 4 are on launchpad
-  already, the first is being imported.
+- Need to pull the following dependencies into ``sourcecode``::
 
-- Got it to run on a hacked virtualenv: 
+  - lp:sourcecodegen/trunk
+  - lp:~sidnei/chameleon.core/check-macro-exists
+  - lp:chameleon.zpt/trunk
+  - lp:~sidnei/z3c.pt/tales-function-namespaces
+  - lp:z3c.ptcompat/trunk
 
-  - symlink ``zope`` and ``zope.interface-3.3.1.egg-info`` from
-    ``/usr/share/pyshared``. There's no ``zope.interface 3.3.1`` egg on
-    PyPI
+- Need to manually install ``lxml`` (any specific version? tested with
+  2.1.1).
 
-  - Check out the 5 dependencies above and do a ``python setup.py
-    develop`` from each, making sure the virtualenv is activated.
+- Run launchpad with ``PREFER_Z3C_PT=true make run`` to enable
+  ``z3c.pt``. Omitting it or setting to false will disable ``z3c.pt``
+  and use ``zope.pagetemplate`` instead.
 
-  - run launchpad with ``PREFER_Z3C_PT=true make run PYTHON=`which
-    python```, again with the virtualenv being active.
+- Other useful environment options for ``z3c.pt``::
 
-- Waiting for review and merge by ``mborch``: 
-  ``lp:~sidnei/z3c.pt/tales-function-namespaces``
+  # in debug-mode, templates on disk are reloaded if they're modified
+  CHAMELEON_DEBUG (default: false)
 
-- Global ``modules`` is not available by default. Need to find where
-  it's supposed to be registered.
+  # disable disk-cache to prevent the compiler from caching on disk
+  CHAMELEON_CACHE (default: true)
+
+  # in debug source-mode, the source code is written to disk before
+  # compilation
+  CHAMELEON_SOURCE (default: false)
+
+  # when validation is enabled, dynamically inserted content is
+  # validated against the XHTML standard
+  CHAMELEON_VALIDATE (default: false)
+
+Known Issues
+~~~~~~~~~~~~
+
+Going to https://bugs.launchpad.dev/firefox/+bug/5 causes a traceback::
+	  
+    Traceback (most recent call last):
+    ...
+    * Module compiler.transformer, line 129, in parsesuite
+          return self.transform(parser.suite(text))
+    IndentationError: expected an indented block (line 215)
+    
+See also bugs #312597, #312498, #317572 and #317573.
+
