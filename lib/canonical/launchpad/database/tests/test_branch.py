@@ -1679,7 +1679,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
         (mail1, mail2) = pop_notifications()
         self.assertEqual(
-            set(['foo', 'bar']), set(mail1['Subject', mail2['Subject']]))
+            set(['foo', 'bar']), set([mail1['Subject'], mail2['Subject']]))
 
     def test_runAll_skips_lease_failures(self):
         branch = self.factory.makeBranch()
