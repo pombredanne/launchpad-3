@@ -191,6 +191,10 @@ class ArchivePopulator(SoyuzScript):
         # of binary packages. It's a forthcoming feature.
         pkg_cloner = getUtility(IPackageCloner)
 
+        # Mark the package copy request as being "in progress".
+        pcr.markAsInprogress()
+        self.txn.commit()
+
         if merge_copy == True:
             pkg_cloner.mergeCopy(the_origin, the_destination)
         else:
