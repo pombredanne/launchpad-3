@@ -840,13 +840,18 @@ the total number of current translations that matters.
 
 There are also some obsolete messages.
 
-    >>> msg = pofile_es_hoary.getCurrentTranslationMessage(
+    >>> potmsgset = pofile_es_hoary.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_hoary.language)
     >>> msg.translations
     [u'Obsolete (in Hoary)']
-    >>> msg = pofile_es_humpy.getCurrentTranslationMessage(
+
+    >>> potmsgset = pofile_es_humpy.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
-    >>> print msg.msgstr0
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_humpy.language)
+    >>> print msg
     None
 
 When we compare the full translations for hoary and humpy, we see the
@@ -949,13 +954,17 @@ were in Hoary, or were translated in Humpy but not at all in Hoary.
 
 Obsolete messages are not copied.
 
-    >>> msg = pofile_es_hoary.getCurrentTranslationMessage(
+    >>> potmsgset = pofile_es_hoary.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_hoary.language)
     >>> msg.translations
     [u'Obsolete (in Hoary)']
-    >>> msg = pofile_es_humpy.getCurrentTranslationMessage(
+    >>> potmsgset = pofile_es_humpy.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
-    >>> print msg.msgstr0
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_humpy.language)
+    >>> print msg
     None
 
 Changes in Humpy supersede any translation changes that may be made in its

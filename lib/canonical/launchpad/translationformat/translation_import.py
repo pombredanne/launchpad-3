@@ -716,11 +716,6 @@ class POFileImporter(FileImporter):
             message.flags.remove('fuzzy')
             message._translations = None
 
-        if len(message.flags) > 0:
-            flags_comment = u", "+u", ".join(message.flags)
-        else:
-            flags_comment = u""
-
         translation_message = self.storeTranslationsInDatabase(
             message, potmsgset)
 
