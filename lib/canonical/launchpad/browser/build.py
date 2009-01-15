@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
@@ -140,6 +141,18 @@ class BuildView(LaunchpadView):
         return (check_permission('launchpad.Edit', self.context)
             and self.context.can_be_retried)
 
+    @property
+    def has_accepted_upload(self):
+        """Return True if this build has an accepted package upload."""
+        package_upload = self.context.package_upload
+
+        if package_upload is None:
+            return False
+
+        if package_upload.status == PackageUploadStatus.ACCEPTED:
+            return True
+        else:
+            return False
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""

@@ -151,3 +151,47 @@ retry it.
 
 See pagetests/soyuz/xx-build-record.txt for further information about
 the build-retry permission system.
+
+=== BuildView.has_accepted_uploads property ===
+
+The build view provides the property BuildView.has_accepted_uploads
+that returns whether the build has a package upload that has been
+accepted. The builds that we are using for testing do not even have
+a package upload, so will return False:
+
+    >>> cprov_failed_build_view.has_accepted_upload
+    False
+
+First lets create a package upload for this build:
+
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingPocket)
+    >>> from canonical.launchpad.database.queue import PackageUploadBuild
+    >>> build = cprov_failed_build_view.context
+    >>> package_upload = build.distroseries.createQueueEntry(
+    ...     PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
+    ...     build.archive)
+    >>> package_upload_build = PackageUploadBuild(
+    ...     packageupload =package_upload,
+    ...     build=cprov_failed_build_view.context)
+
+The status of the package upload will, by default, be NEW:
+
+    >>> print package_upload.status.name
+    NEW
+
+Now, even though our build has a package upload, because the status is
+not ACCEPTED, has_accepted_uploads is still False:
+
+    >>> cprov_failed_build_view.has_accepted_upload
+    False
+
+But once the upload has been accepted, has_accepted_upload is True:
+
+    >>> login('foo.bar@canonical.com')
+    >>> package_upload.setAccepted()
+    >>> login("no-priv@canonical.com")
+
+    >>> cprov_failed_build_view.has_accepted_upload
+    True
+
