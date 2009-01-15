@@ -318,6 +318,14 @@ class TestPopulateArchiveScript(TestCase):
             IPackageCopyRequestSet).getByTargetArchive(copy_archive)
         self.assertTrue(pcr.status == PackageCopyStatus.COMPLETE)
 
+        # This date is set when the copy request makes the transition to
+        # the "in progress" state.
+        self.assertTrue(pcr.date_started is not None)
+        # This date is set when the copy request makes the transition to
+        # the "completed" state.
+        self.assertTrue(pcr.date_completed is not None)
+        self.assertTrue(pcr.date_started <= pcr.date_completed)
+
         # Last but not least, check that the copy archive creation reason was
         # captured as well.
         self.assertTrue(pcr.reason == 'zero builds')
