@@ -788,7 +788,7 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
             summary = 'Proposals I am reviewing'
         else:
             summary = 'Proposals %s is reviewing' % self.context.displayname
-        return Link('+approvedmerges', text, summary=summary)
+        return Link('+requestedreviews', text, summary=summary)
 
 
 class PersonBugsMenu(ApplicationMenu):

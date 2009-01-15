@@ -57,15 +57,7 @@ class BranchMergeProposalListingItem:
     @property
     def reviewer_vote(self):
         """A vote from the specified reviewer."""
-        review = self.context.getUsersVoteReference(self.proposal_reviewer)
-        if not review.comment:
-            return '<em>None</em>'
-        vote_string = '<span class="vote%s">%s</span>' % (
-            review.comment.vote.name, review.comment.vote.title)
-        if review.review_type:
-            vote_string = ' '.join([vote_string, review.comment.vote_tag])
-        return vote_string
-
+        return self.context.getUsersVoteReference(self.proposal_reviewer)
 
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
