@@ -183,12 +183,16 @@ you'll raise an error.
     >>> token_set.searchByFingerprintRequesterAndType(
     ...     fingerprint, token.requester, token.tokentype,
     ...     consumed="eggs")
+    Traceback (most recent call last):
+      ...
     AssertionError: consumed should be one of {True, False, None}.
     Got 'eggs'.
 
     >>> token_set.searchByEmailRequesterAndType(
     ...     'test@canonical.com', token.requester, token.tokentype,
     ...     consumed="spam")
+    Traceback (most recent call last):
+      ...
     AssertionError: consumed should be one of {True, False, None}.
     Got 'spam'.
 
