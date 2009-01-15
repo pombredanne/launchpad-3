@@ -163,13 +163,13 @@ class TestReadiness(TestCase):
             [], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_lease_expired(self):
-        UNIX_EPOCH=datetime.datetime.fromtimestamp(0, pytz.timezone('UTC'))
+        UNIX_EPOCH = datetime.datetime.fromtimestamp(0, pytz.timezone('UTC'))
         job = Job(lease_expires=UNIX_EPOCH)
         self.assertEqual(
             [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_lease_in_future(self):
-        future=datetime.datetime.fromtimestamp(
+        future = datetime.datetime.fromtimestamp(
             time.time() + 1000, pytz.timezone('UTC'))
         job = Job(lease_expires=future)
         self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))

@@ -1747,7 +1747,7 @@ class RevisionMailJob(BranchDiffJob):
                 continue
             try:
                 job.run()
-            except:
+            except Exception:
                 info = sys.exc_info()
                 reporter = getUtility(IErrorReportingUtility)
                 reporter.raising(info)
