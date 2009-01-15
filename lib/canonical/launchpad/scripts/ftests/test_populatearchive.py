@@ -472,6 +472,7 @@ class TestPopulateArchiveScript(TestCase):
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
+        # Also, make sure the package copy request status was updated.
         [pcr] = getUtility(
             IPackageCopyRequestSet).getByTargetArchive(copy_archive)
         self.assertTrue(pcr.status == PackageCopyStatus.COMPLETE)
