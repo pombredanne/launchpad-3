@@ -217,19 +217,6 @@ class POFileMixIn(RosettaStats):
         header.has_plural_forms = self.potemplate.hasPluralMessage()
         return header
 
-    def getCurrentTranslationMessage(self, msgid_text, context=None,
-                                     ignore_obsolete=False):
-        """See `IPOFile`."""
-        if not isinstance(msgid_text, unicode):
-            raise AssertionError(
-                "Can't index with type %s. (Must be unicode.)"
-                % type(msgid_text))
-
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
-            singular_text=msgid_text, context=context)
-        return self.getCurrentTranslationMessageFromPOTMsgSet(
-            potmsgset, ignore_obsolete=ignore_obsolete)
-
     def _getTranslationSearchQuery(self, pofile, plural_form, text):
         """Query for finding `text` in `plural_form` translations of `pofile`.
         """
@@ -504,28 +491,6 @@ class POFile(SQLBase, POFileMixIn):
     def __iter__(self):
         """See `IPOFile`."""
         return iter(self.currentMessageSets())
-
-    def getCurrentTranslationMessageFromPOTMsgSet(self, potmsgset,
-                                                  ignore_obsolete=False):
-        """See `IPOFile`."""
-        if potmsgset is None or (ignore_obsolete and potmsgset.sequence <= 0):
-            # There is no IPOTMsgSet for this id.
-            return None
-
-        current = potmsgset.getCurrentTranslationMessage(self.language)
-        if current is None:
-            return DummyTranslationMessage(self, potmsgset)
-        else:
-            return current
-
-    def __getitem__(self, msgid_text):
-        """See `IPOFile`."""
-        translation_message = self.getCurrentTranslationMessage(
-            unicode(msgid_text), ignore_obsolete=True)
-        if translation_message is None:
-            raise NotFoundError(msgid_text)
-        else:
-            return translation_message
 
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
@@ -1000,18 +965,6 @@ class DummyPOFile(POFileMixIn):
         self.from_sourcepackagename = None
         self.translation_messages = None
 
-    def __getitem__(self, msgid_text):
-        translation_message = self.getCurrentTranslationMessage(
-            msgid_text, ignore_obsolete=True)
-        if translation_message is None:
-            raise NotFoundError(msgid_text)
-        else:
-            return translation_message
-
-    def __iter__(self):
-        """See `IPOFile`."""
-        return iter(self.currentMessageSets())
-
     def messageCount(self):
         return self.potemplate.messageCount()
 
@@ -1044,15 +997,6 @@ class DummyPOFile(POFileMixIn):
     def canAddSuggestions(self, person):
         """See `IPOFile`."""
         return _can_add_suggestions(self, person)
-
-    def getCurrentTranslationMessageFromPOTMsgSet(self, potmsgset,
-                                                  ignore_obsolete=False):
-        """See `IPOFile`."""
-        if potmsgset is None or (ignore_obsolete and potmsgset.sequence <= 0):
-            # There is no IPOTMsgSet for this id.
-            return None
-
-        return DummyTranslationMessage(self, potmsgset)
 
     def emptySelectResults(self):
         return POFile.select("1=2")
