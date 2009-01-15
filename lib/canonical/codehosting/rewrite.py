@@ -63,7 +63,8 @@ class BranchRewriter:
         try:
             transport_type, info, trailing = extract_result(deferred)
         except xmlrpclib.Fault, f:
-            if f.faultCode == faults.PathTranslationError.error_code:
+            if faults.check_fault(f, faults.PathTranslationError,
+                                  faults.PermissionDenied):
                 return "NULL"
             else:
                 raise
