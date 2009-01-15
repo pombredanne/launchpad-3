@@ -24,13 +24,8 @@
     <tr>
     <td width="80%" id="main-content">
 
-      <p class="informational message"
-         tal:define="status view/process_status"
-         tal:condition="status"
-         tal:content="status" />
-
       <div class="error message"
-        tal:repeat="top_of_page_error view/top_of_page_errors"
+        tal:repeat="top_of_page_error view/form_wide_errors"
         tal:content="structure top_of_page_error">
         Schema validation errors.
       </div>
@@ -46,8 +41,8 @@
       </tal:block>
 
       <br />
-      <label tal:attributes="for view/highpriority_widget/name">
-        <span tal:replace="structure view/highpriority_widget" />
+      <label tal:attributes="for view/widgets/highpriority/name">
+        <span tal:replace="structure view/widgets/highpriority" />
         High priority
       </label>
       <br />
@@ -66,14 +61,10 @@
       <div style="text-align: right;">
         <input type="hidden" name="series"
                tal:attributes="value view/series/name" />
-        <tal:block condition="not: view/current_order">
-          <input type="submit" value="Request" name="FORM_SUBMIT" />
-        </tal:block>
-        <tal:block condition="view/current_order">
-          <input type="hidden" name="order" 
-                 tal:attributes="value view/current_order/id" />
-          <input type="submit" value="Change Request" name="FORM_SUBMIT" />
-        </tal:block>
+        <input tal:condition="view/current_order"
+               tal:attributes="value view/current_order/id"
+               type="hidden" name="order" />
+        <input tal:replace="structure view/actions/field.actions.request/render" />
       </div>
 
       </form>

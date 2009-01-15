@@ -1,4 +1,3 @@
-#! /usr/bin/env python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Test harness for Launchpad/Mailman doctests."""
@@ -7,6 +6,7 @@ import os
 import errno
 import shutil
 import unittest
+import transaction
 
 # pylint: disable-msg=F0401
 from Mailman.MailList import MailList
@@ -31,6 +31,7 @@ def setUp(testobj):
     # We'll always need an smtp server.
     setUpBrowser(testobj)
     LayerProcessController.smtp_controller.reset()
+    testobj.globs['transaction'] = transaction
     testobj.globs['factory'] = LaunchpadObjectFactory()
     testobj.globs['smtpd'] = LayerProcessController.smtp_controller
     testobj.globs['mhonarc_watcher'] = MailmanLayer.mhonarc_watcher
@@ -80,7 +81,7 @@ def tearDown(testobj):
             if error.errno != errno.ENOENT:
                 raise
         # Delete the MHonArc archives if they exist.
-        path = os.path.join(VAR_PREFIX, 'mhonarc')
+        path = os.path.join(VAR_PREFIX, 'mhonarc', team_name)
         try:
             shutil.rmtree(path)
         except OSError, error:

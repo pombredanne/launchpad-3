@@ -62,6 +62,46 @@ IPackageCopyRequest's associated with an archive:
     >>> ppa_archive_view.package_copy_requests.count()
     0
 
+An ArchiveView provides a helper method returning a simplified status
+vocabulary for selecting a status filter:
+
+    >>> for term in ppa_archive_view.simplified_status_vocabulary:
+    ...     print term.title
+    Published
+    Superseded
+    Any Status
+
+An ArchiveView provides a helper method returning a distribution series
+vocabulary for selecting a series filter:
+
+    >>> for term in ppa_archive_view.series_vocabulary:
+    ...     print term.title
+    Any Series
+    Breezy Badger Autotest
+    Warty
+
+An ArchiveView provides a getPublishingRecords() method that can be used
+to get all the publishing records for an archive:
+
+    >>> for publishing in ppa_archive_view.getPublishingRecords():
+    ...     print publishing.source_package_name
+    cdrkit
+    iceweasel
+    pmount
+
+The getPublishingRecords() method can also filter by distroseries when
+appropriate:
+
+    >>> filtered_view = create_initialized_view(
+    ...     cprov.archive,
+    ...     name="+index",
+    ...     method='GET',
+    ...     form={'field.series_filter': 'warty'})
+    >>> for publishing in filtered_view.getPublishingRecords():
+    ...     print publishing.source_package_name
+    iceweasel
+    pmount
+
 
 == ArchiveSourceSelectionFormView ==
 
@@ -270,6 +310,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': 'sabdfl',
     ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
 
@@ -327,10 +368,9 @@ initial/empty state.
     ...         'field.selected_dependencies': ['sabdfl'],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
-
-    >>> transaction.commit()
 
 After processing the POST the view will redirect to itself.
 
@@ -346,9 +386,6 @@ Now all the updated fields can be inspected.
 
     >>> view.has_dependencies
     False
-
-    >>> len(view.widgets.get('selected_dependencies').vocabulary)
-    0
 
     >>> print view.focusedElementScript()
     <!--
@@ -372,6 +409,25 @@ for UPDATES pocket (see archive-dependencies.txt for more information).
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
 
+A similar widget is used for the primary archive component overrides ,
+which contains two pre-defined options. By default all PPAs use all
+ubuntu components available to satisfy build dependencies, i.e. the
+'multiverse' component.
+
+    >>> primary_components = view.widgets.get(
+    ...     'primary_components').vocabulary
+    >>> for term in primary_components:
+    ...     if term.value is not None:
+    ...         print term.value.name
+    ...     else:
+    ...         print term.value
+    multiverse
+    None
+
+    >>> print view.widgets.get(
+    ...     'primary_components')._getCurrentValue().name
+    multiverse
+
 The form validation code identifies attempts to change the primary
 dependency to the same value and doesn't change anything. Even when
 there is no explicit primary dependency set.
@@ -382,11 +438,9 @@ there is no explicit primary dependency set.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
-
-    >>> len(add_updates_view.widgets.get('selected_dependencies').vocabulary)
-    0
 
     >>> add_updates_view.widgets.get(
     ...     'primary_dependencies')._getCurrentValue()
@@ -400,27 +454,27 @@ Any other pre-defined primary dependency can be selected.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'PROPOSED',
+    ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
     ...         })
 
     >>> transaction.commit()
 
-Once the page is reloaded, the selected primary dependency is
-presented in the 'selected_dependencies' widget and selected as a
+Once the page is reloaded, the selected primary dependency is the
 current value of 'primary_dependencies' widget.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
 
-    >>> selectable_dependencies = view.widgets.get(
-    ...     'selected_dependencies').vocabulary
-    >>> for dependency in selectable_dependencies:
-    ...     print dependency.title
-    <a href="http://launchpad.dev/ubuntu/+archive/primary">Primary Archive
-    for Ubuntu Linux - PROPOSED</a>
-
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
+
+Primary dependencies are not listed in the 'selected_dependencies'
+widget. They can only be modified via the 'primary_dependencies'
+options.
+
+    >>> len(view.widgets.get('selected_dependencies').vocabulary)
+    0
 
 As mentioned, attempts to override primary dependencies to the same
 value are detected in the form validation and nothing is changed, even
@@ -428,12 +482,34 @@ when there is an explicit override.
 
     >>> add_proposed_view.initialize()
 
-    >>> len(add_proposed_view.widgets.get('selected_dependencies').vocabulary)
-    1
-
     >>> add_proposed_view.widgets.get(
     ...     'primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
+
+Attempts to override only the component dependencies are also detected
+and processed correctly.
+
+    >>> add_proposed_primary_view = create_initialized_view(
+    ...     cprov.archive, name="+edit-dependencies",
+    ...     form={
+    ...         'field.selected_dependencies': [],
+    ...         'field.dependency_candidate': '',
+    ...         'field.primary_dependencies': 'PROPOSED',
+    ...         'field.primary_components': 'FOLLOW_PRIMARY',
+    ...         'field.actions.save': 'Save',
+    ...         })
+
+    >>> transaction.commit()
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+edit-dependencies")
+
+    >>> print view.widgets.get(
+    ...     'primary_dependencies')._getCurrentValue().title
+    Proposed
+
+    >>> print view.widgets.get('primary_components')._getCurrentValue()
+    None
 
 Overriding the primary dependencies back to the 'default' value
 (UPDATES pocket) will result in the override removal and the 'default'
@@ -444,9 +520,6 @@ option to be selected.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
-
-    >>> len(view.widgets.get('selected_dependencies').vocabulary)
-    0
 
     >>> view.widgets.get('primary_dependencies')._getCurrentValue()
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
@@ -481,6 +554,7 @@ PPA the form fails because he has no permission to view its contents.
     ...     'field.selected_dependencies': [],
     ...     'field.dependency_candidate': 'pirulito-team',
     ...     'field.primary_dependencies': 'UPDATES',
+    ...     'field.primary_components': 'FOLLOW_PRIMARY',
     ...     'field.actions.save': 'Save',
     ...     }
 

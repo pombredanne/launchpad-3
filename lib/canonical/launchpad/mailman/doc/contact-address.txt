@@ -54,8 +54,8 @@ member.
     # are 1) the original posted message on the +addquestion, 2) the message
     # as sent to Anne, 3) the message as sent to the archiver.
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
 
     >>> messages = smtpd.getMessages()
     >>> len(messages)
@@ -163,11 +163,11 @@ server.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
 
-Mailman then delivers two messages's to the team mailing list's recipients.
+Mailman then delivers two messages to the team mailing list's recipients.
 One is sent to Anne and the other is sent to the archiver.
 
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
-    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2

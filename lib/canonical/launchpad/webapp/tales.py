@@ -2297,7 +2297,9 @@ class FormattersAPI:
         """, re.VERBOSE)
 
     def obfuscate_email(self):
-        """Obfuscate an email address as '<email address hidden>'.
+        """Obfuscate an email address if there's no authenticated user.
+
+        The email address is obfuscated as <email address hidden>.
 
         This formatter is intended to hide possible email addresses from
         unauthenticated users who view this text on the Web. Run this before
@@ -2310,6 +2312,8 @@ class FormattersAPI:
         mailto:person@domain.dom and http://person:password@domain.dom both
         match, though the http match is in fact not an email address.
         """
+        if getUtility(ILaunchBag).user is not None:
+            return self._stringtoformat
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
         text = text.replace(

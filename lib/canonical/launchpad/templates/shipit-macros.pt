@@ -80,59 +80,59 @@
 <metal:shipping_details define-macro="shipping_details">
   <tal:comment replace="nothing">
     This macro expects the view to have the following widgets:
-      recipientdisplayname_widget
-      organization_widget
-      addressline1_widget
-      addressline2_widget
-      city_widget
-      province_widget
-      postcode_widget
-      country_widget
-      phone_widget
+      recipientdisplayname
+      organization
+      addressline1
+      addressline2
+      city
+      province
+      postcode
+      country
+      phone
   </tal:comment>
 
     <tr>
-      <tal:block tal:define="widget nocall:view/recipientdisplayname_widget">
+      <tal:block tal:define="widget nocall:view/widgets/recipientdisplayname">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/organization_widget">
+      <tal:block tal:define="widget nocall:view/widgets/organization">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/addressline1_widget">
+      <tal:block tal:define="widget nocall:view/widgets/addressline1">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/addressline2_widget">
+      <tal:block tal:define="widget nocall:view/widgets/addressline2">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/city_widget">
+      <tal:block tal:define="widget nocall:view/widgets/city">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/province_widget">
+      <tal:block tal:define="widget nocall:view/widgets/province">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/postcode_widget">
+      <tal:block tal:define="widget nocall:view/widgets/postcode">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/country_widget">
+      <tal:block tal:define="widget nocall:view/widgets/country">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
-      <tal:block tal:define="widget nocall:view/phone_widget">
+      <tal:block tal:define="widget nocall:view/widgets/phone">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
