@@ -288,18 +288,19 @@ Viewing a bug comment.
 >>> check("/firefox/+bug/1/comments/1", auth=True)
 >>> check_not_found("/firefox/+bug/1/comments/42")
 
-Bug attachments in the context of a bug task.
+Bug attachments in the context of a bug task are all redirected to be
+in bug context.
 
 >>> check_not_found("/firefox/+bug/1/attachments")
->>> check_redirect("/firefox/+bug/1/attachments/1")
->>> check("/firefox/+bug/1/attachments/1", auth=True)
+>>> check_redirect("/firefox/+bug/1/attachments/1", status=301)
+>>> check_not_found("/firefox/+bug/2/attachments/1")
 
-Bug attachments in the context of a bug. Required by the web-services
-API, and will soon become the home for attachments in the web UI.
+Bug attachments in the context of a bug.
 
->>> check_redirect("/bugs/1/attachments/1")
->>> check("/bugs/1/attachments/1", auth=True)
+>>> check_redirect("/bugs/1/attachments/1", status=301)
 >>> check_not_found("/bugs/2/attachments/1")
+>>> check("/bugs/1/+attachment/1", auth=True)
+>>> check_not_found("/bugs/2/+attachment/1")
 
 Viewing a bug in the context of an upstream where the bug has not yet
 been reported.
