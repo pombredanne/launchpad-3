@@ -500,36 +500,6 @@ class FakeBranchFilesystem:
         person = self._person_set.get(person_id)
         return person.inTeam(branch.owner)
 
-    def getBranchInformation(self, requester_id, user_name, product_name,
-                             branch_name):
-        unique_name = '~%s/%s/%s' % (user_name, product_name, branch_name)
-        branch = self._branch_set._find(unique_name=unique_name)
-        if branch is None:
-            return '', ''
-        if not self._canRead(requester_id, branch):
-            return '', ''
-        if branch.branch_type == BranchType.REMOTE:
-            return '', ''
-        if self._canWrite(requester_id, branch):
-            permission = 'w'
-        else:
-            permission = 'r'
-        return branch.id, permission
-
-    def getDefaultStackedOnBranch(self, requester_id, product_name):
-        if product_name == '+junk':
-            return ''
-        product = self._product_set.getByName(product_name)
-        if product is None:
-            return faults.NotFound(
-                'Project %r does not exist.' % (product_name,))
-        branch = product.development_focus.user_branch
-        if branch is None:
-            return ''
-        if not self._canRead(requester_id, branch):
-            return ''
-        return '/' + product.development_focus.user_branch.unique_name
-
     def _serializeControlDirectory(self, requester, product_path,
                                    trailing_path):
         try:

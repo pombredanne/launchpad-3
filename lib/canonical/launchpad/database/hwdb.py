@@ -258,7 +258,10 @@ class HWSubmissionSet:
         result_set = store.find(HWSubmission,
                                 HWSubmission.status == status,
                                 self._userHasAccessStormClause(user))
-        result_set.order_by(HWSubmission.date_submitted, HWSubmission.id)
+        # Provide a stable order. Sorting by id, to get the oldest
+        # submissions first. When date_submitted has an index, we could
+        # sort by that first.
+        result_set.order_by(HWSubmission.id)
         return result_set
 
     def search(self, user=None, device=None, driver=None, distribution=None,
@@ -476,6 +479,18 @@ class HWVendorIDSet:
             raise ValueError('%s is not a valid vendor ID for %s' % (
                 repr(vendor_id), bus.title))
         return HWVendorID.selectOneBy(bus=bus, vendor_id_for_bus=vendor_id)
+
+    def get(self, id):
+        """See `IHWVendorIDSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWVendorID, HWVendorID.id == id).one()
+
+    def idsForBus(self, bus):
+        """See `IHWVendorIDSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(HWVendorID, bus=bus)
+        result_set.order_by(HWVendorID.vendor_id_for_bus)
+        return result_set
 
 
 class HWDevice(SQLBase):

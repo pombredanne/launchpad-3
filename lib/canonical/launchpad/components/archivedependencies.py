@@ -27,6 +27,8 @@ __metaclass__ = type
 
 __all__ = [
     'component_dependencies',
+    'default_component_dependency_name',
+    'default_pocket_dependency',
     'get_components_for_building',
     'get_primary_current_component',
     'get_sources_list_for_building',
@@ -75,6 +77,10 @@ pocket_dependencies = {
         PackagePublishingPocket.PROPOSED,
         ),
     }
+
+default_pocket_dependency = PackagePublishingPocket.UPDATES
+
+default_component_dependency_name = 'multiverse'
 
 
 def get_components_for_building(build):
@@ -218,24 +224,10 @@ def _get_default_primary_dependencies(build):
         archive.
     """
     if build.archive.purpose in ALLOW_RELEASE_BUILDS:
-        # Although partner and PPA builds are always in the release
-        # pocket, they depend on the same pockets as though they
-        # were in the updates pocket.
-        #
-        # XXX Julian 2008-03-20
-        # Private PPAs, however, behave as though they are in the
-        # security pocket.  This is a hack to get the security
-        # PPA working as required until cprov lands his changes for
-        # configurable PPA pocket dependencies.
-        if build.archive.private:
-            primary_pockets = pocket_dependencies[
-                PackagePublishingPocket.SECURITY]
-            primary_components = component_dependencies[
-                get_primary_current_component(build)]
-        else:
-            primary_pockets = pocket_dependencies[
-                PackagePublishingPocket.UPDATES]
-            primary_components = component_dependencies['multiverse']
+        primary_pockets = pocket_dependencies[
+            default_pocket_dependency]
+        primary_components = component_dependencies[
+            default_component_dependency_name]
     else:
         primary_pockets = pocket_dependencies[build.pocket]
         primary_components = get_components_for_building(build)
