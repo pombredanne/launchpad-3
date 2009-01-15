@@ -4953,7 +4953,7 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
         When we add support for reviews commented on, we'll want to add
         support for showing the summary even if there are no branches.
         """
-        return self.total_branch_count
+        return self.total_branch_count or self.requested_review_count
 
 
 class PersonBMPListingView(BranchMergeProposalListingView):

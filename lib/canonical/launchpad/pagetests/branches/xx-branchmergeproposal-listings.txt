@@ -105,6 +105,10 @@ A person can also list all of their currently requested reviews, and the status
 of their reviews
 
     >>> browser.open('http://code.launchpad.dev/~robert/+requestedreviews')
+    >>> print_tag_with_id(browser.contents, 'page-summary')
+    Related branches: 1 (1 registered, 1 owned, 1 subscribed)
+    1 active proposal, 0 approved merges, 0 requested reviews
+
     >>> print_tag_with_id(browser.contents, 'proposal-listing')
     Branch Merge Proposal                               Requested By    Review
     lp://dev/~albert/fooix/review &rArr; lp://dev/fooix Albert ...      None
