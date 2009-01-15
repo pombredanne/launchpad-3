@@ -1492,6 +1492,9 @@ class IRevisionMailJobSource(Interface):
     def create(db_branch, revno, email_from, message, perform_diff, subject):
         """Create and return a new object that implements IRevisionMailJob."""
 
+    def runAll():
+        """Run all ready RevisionMailJobs."""
+
 
 def bazaar_identity(branch, associated_series, is_dev_focus):
     """Return the shortest lp: style branch identity."""

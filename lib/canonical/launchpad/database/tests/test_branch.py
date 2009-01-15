@@ -1674,12 +1674,13 @@ class TestRevisionMailJob(TestCaseWithFactory):
             branch, 0, 'from@example.org', 'body', False, 'foo')
         job_2 = RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', False, 'bar')
-        RevisionMailJob.runAll()
+        done_jobs = RevisionMailJob.runAll()
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
         (mail1, mail2) = pop_notifications()
         self.assertEqual(
             set(['foo', 'bar']), set([mail1['Subject'], mail2['Subject']]))
+        self.assertEqual([job_1, job_2], done_jobs)
 
     def test_runAll_skips_lease_failures(self):
         branch = self.factory.makeBranch()
@@ -1690,9 +1691,10 @@ class TestRevisionMailJob(TestCaseWithFactory):
         def raise_lease_held():
             raise LeaseHeld()
         job_2.job.acquireLease = raise_lease_held
-        RevisionMailJob.runAll()
+        done_jobs = RevisionMailJob.runAll()
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual(JobStatus.WAITING, job_2.job.status)
+        self.assertEqual([job_1], done_jobs)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

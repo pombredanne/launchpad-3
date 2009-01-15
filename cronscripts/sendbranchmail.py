@@ -16,10 +16,11 @@ from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
 class RunRevisionMailJobs(LaunchpadCronScript):
-    """Run pending code mail jobs."""
+    """Run pending branch mail jobs."""
 
     def main(self):
-        getUtility(IRevisionMailJobSource).runAll()
+        jobs = getUtility(IRevisionMailJobSource).runAll()
+        print 'Ran %d RevisionMailJobs.' % len(jobs)
 
 
 if __name__ == '__main__':

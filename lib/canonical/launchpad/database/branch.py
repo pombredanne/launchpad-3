@@ -1692,6 +1692,9 @@ class RevisionMailJob(BranchDiffJob):
     def __eq__(self, other):
         return (self.context == other.context)
 
+    def __ne__(self, other):
+        return not (self == other)
+
     @classmethod
     def create(
         klass, branch, revno, from_address, body, perform_diff, subject):
@@ -1726,12 +1729,16 @@ class RevisionMailJob(BranchDiffJob):
 
     @classmethod
     def runAll(klass):
+        """See `IRevisionMailJobSource`."""
+        done_jobs = []
         for job in klass.iterReady():
             try:
                 job.job.acquireLease()
             except LeaseHeld:
                 continue
             job.run()
+            done_jobs.append(job)
+        return done_jobs
 
     @property
     def revno(self):
