@@ -33,6 +33,8 @@ class BugAttachment(SQLBase):
     title = StringCol(notNull=True)
     libraryfile = ForeignKey(
         foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
+    data = ForeignKey(
+        foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
     message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
