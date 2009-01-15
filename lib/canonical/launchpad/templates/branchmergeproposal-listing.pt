@@ -52,7 +52,7 @@
         <td tal:condition="context/show_column/review|nothing"
             tal:define="comment proposal/reviewer_vote/comment">
           <tal:voted-already condition="comment/vote|nothing">
-            
+
             <span tal:condition="comment/vote/name|nothing"
                   tal:attributes="class string:vote${comment/vote/name}"
                   tal:content="comment/vote/title">
