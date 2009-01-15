@@ -180,10 +180,8 @@ method.
 First, get a branch:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBranchSet, IPersonSet
-  >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-  >>> branch = getUtility(IBranchSet).getByUniqueName(
-  ...     '~%s/+junk/+junk.dev' % person.name)
+  >>> from canonical.launchpad.interfaces import IBranchSet
+  >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/+junk/junk.dev')
 
 The last commit on this branch has the revision number 6.
 
