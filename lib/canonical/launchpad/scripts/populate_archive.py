@@ -30,6 +30,18 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
+def specified(option):
+    """Return False if option was not supplied or is an empty string.
+    
+    Return True otherwise.
+    """
+    if option is None:
+        return False
+    if isinstance(option, basestring) and option.strip() == '':
+        return False
+    return True
+
+
 class ArchivePopulator(SoyuzScript):
     """
     Create a copy archive and populate it with packages.
@@ -140,6 +152,9 @@ class ArchivePopulator(SoyuzScript):
         merge_copy = False
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
+            if not specified(reason):
+                raise SoyuzScriptError(
+                    "error: reason for copy archive creation not specified.")
             # First load the processor families for the specified family names
             # from the database. This will fail if an invalid processor family
             # name was specified on the command line; that's why it should be
@@ -191,42 +206,33 @@ class ArchivePopulator(SoyuzScript):
 
     def mainTask(self):
         """Main function entry point."""
-        def not_specified(option):
-            return (option is None or option == '')
-        def specified(option):
-            return not (option is None or option == '')
-
         opts = self.options
 
-        if not_specified(opts.proc_families):
+        if not specified(opts.proc_families):
             raise SoyuzScriptError(
                 "error: processor families not specified.")
 
-        if not_specified(opts.from_distribution):
+        if not specified(opts.from_distribution):
             raise SoyuzScriptError(
                 "error: origin distribution not specified.")
 
-        if not_specified(opts.to_distribution):
+        if not specified(opts.to_distribution):
             raise SoyuzScriptError(
                 "error: destination distribution not specified.")
 
-        if not_specified(opts.to_user):
+        if not specified(opts.to_user):
             raise SoyuzScriptError("error: copy archive owner not specified.")
-        if not_specified(opts.to_archive):
+        if not specified(opts.to_archive):
             raise SoyuzScriptError(
                 "error: destination copy archive not specified.")
         if not valid_name(opts.to_archive):
             raise SoyuzScriptError(
                 "Invalid destination archive name: '%s'" % opts.to_archive)
-        if not_specified(opts.reason):
-            raise SoyuzScriptError(
-                "error: reason for copy operation not specified.")
-
         if opts.include_binaries == True:
             raise SoyuzScriptError(
                 "error: copying of binary packages is not supported yet.")
 
-        if (specified(opts.from_user) and not_specified(opts.from_archive)):
+        if (specified(opts.from_user) and not specified(opts.from_archive)):
             opts.from_archive = 'ppa'
 
         if specified(opts.from_archive) and not valid_name(opts.from_archive):
