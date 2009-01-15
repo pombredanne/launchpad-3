@@ -924,12 +924,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
-    def link(self, view_name):
+    def link(self, view_name, rootsite=None):
         """See `ObjectFormatterAPI`."""
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return '&lt;redacted&gt;'
-        return super(TeamFormatterAPI, self).link(view_name)
+        return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
