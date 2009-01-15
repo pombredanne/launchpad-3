@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.mailout.branch import (
-    send_branch_revision_notifications)
+    BranchMailer as MailoutMailer)
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -339,14 +339,16 @@ class BranchMailer:
             message = ('First scan of the branch detected %s'
                        ' in the revision history of the branch.' %
                        revisions)
-            send_branch_revision_notifications(
-                self.db_branch, self.email_from, message, '', None, 'initial')
+            mailer = MailoutMailer.forRevision(
+                self.db_branch, 'initial', self.email_from, message, None,
+                None)
+            mailer.sendAll()
         else:
             for message, diff, subject, revno in self.pending_emails:
-                send_branch_revision_notifications(
-                    self.db_branch, self.email_from, message, diff,
-                    subject, revno)
-
+                mailer = MailoutMailer.forRevision(
+                    self.db_branch, revno, self.email_from, message, diff,
+                    subject)
+                mailer.sendAll()
         self.trans_manager.commit()
 
 
