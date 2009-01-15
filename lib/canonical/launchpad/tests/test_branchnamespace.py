@@ -11,6 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
@@ -248,7 +249,8 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
-        namespace = PackageNamespace(person, distroseries, sourcepackagename)
+        namespace = PackageNamespace(
+            person, SourcePackage(sourcepackagename, distroseries))
         self.assertEqual(
             '~%s/%s/%s/%s' % (
                 person.name, distroseries.distribution.name,
@@ -260,7 +262,8 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
-        namespace = PackageNamespace(person, distroseries, sourcepackagename)
+        namespace = PackageNamespace(
+            person, SourcePackage(sourcepackagename, distroseries))
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
 
@@ -324,17 +327,13 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_lookup_package(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage()
         namespace = lookup_branch_namespace(
-            '~%s/%s/%s/%s' % (
-                person.name, distroseries.distribution.name,
-                distroseries.name, sourcepackagename.name))
+            '~%s/%s' % (person.name, sourcepackage.path))
         self.assertIsInstance(namespace, PackageNamespace)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
         namespace = removeSecurityProxy(namespace)
-        self.assertEqual(distroseries, namespace.distroseries)
-        self.assertEqual(sourcepackagename, namespace.sourcepackagename)
+        self.assertEqual(sourcepackage, namespace.sourcepackage)
 
     def test_lookup_package_no_distribution(self):
         person = self.factory.makePerson()
