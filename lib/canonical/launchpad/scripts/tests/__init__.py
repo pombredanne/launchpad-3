@@ -4,13 +4,12 @@
 
 # Make this a package.
 
-# Note: by adding one's name to the copyright section, one is arguably making a
-# substantial modification.
+# Note: by adding one's name to the copyright section, one is arguably making
+# a substantial modification.
 
 
 import os.path
 import subprocess
-import sys
 
 from canonical.config import config
 

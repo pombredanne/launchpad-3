@@ -15,9 +15,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 import pytz
 from sqlobject import IntCol, StringCol
-from storm.expr import Select, And, Not, Or
-from storm.info import ClassAlias
-from storm.references import ReferenceSet
+from storm.expr import Select, And, Or
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.job import IJob, JobStatus
