@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import sys
 
 import transaction
 
@@ -20,6 +21,7 @@ import pytz
 import simplejson
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import classProvides, implements
 
@@ -1728,15 +1730,24 @@ class RevisionMailJob(BranchDiffJob):
         return (RevisionMailJob(job) for job in jobs)
 
     @classmethod
-    def runAll(klass):
+    def runAll(klass, jobs=None):
         """See `IRevisionMailJobSource`."""
         done_jobs = []
-        for job in klass.iterReady():
+        if jobs is None:
+            jobs = klass.iterReady()
+        for job in jobs:
             try:
                 job.job.acquireLease()
             except LeaseHeld:
                 continue
-            job.run()
+            try:
+                job.run()
+            except:
+                info = sys.exc_info()
+                job.job.fail()
+                reporter = getUtility(IErrorReportingUtility)
+                reporter.raising(info)
+                continue
             done_jobs.append(job)
         return done_jobs
 

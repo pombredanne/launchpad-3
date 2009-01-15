@@ -14,6 +14,7 @@ from sqlobject import SQLObjectNotFound
 import transaction
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -58,7 +59,8 @@ from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
 
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (DatabaseFunctionalLayer,
+LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 class TestCodeImport(TestCase):
@@ -1572,7 +1574,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 class TestRevisionMailJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_providesInterface(self):
         """Ensure that BranchDiffJob implements IBranchDiffJob."""
@@ -1664,7 +1666,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job.job.complete()
         self.assertEqual([], list(RevisionMailJob.iterReady()))
 
-    def test_runAll(self):
+    def makeBranchAndJobs(self):
         branch = self.factory.makeBranch()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
@@ -1674,6 +1676,10 @@ class TestRevisionMailJob(TestCaseWithFactory):
             branch, 0, 'from@example.org', 'body', False, 'foo')
         job_2 = RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', False, 'bar')
+        return branch, job_1, job_2
+
+    def test_runAll(self):
+        branch, job_1, job_2 = self.makeBranchAndJobs()
         done_jobs = RevisionMailJob.runAll()
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
@@ -1683,11 +1689,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual([job_1, job_2], done_jobs)
 
     def test_runAll_skips_lease_failures(self):
-        branch = self.factory.makeBranch()
-        job_1 = RevisionMailJob.create(
-            branch, 0, 'from@example.org', 'body', False, 'subject')
-        job_2 = RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', False, 'subject')
+        branch, job_1, job_2 = self.makeBranchAndJobs()
         def raise_lease_held():
             raise LeaseHeld()
         job_2.job.acquireLease = raise_lease_held
@@ -1695,6 +1697,22 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual(JobStatus.WAITING, job_2.job.status)
         self.assertEqual([job_1], done_jobs)
+
+    def test_runAll_reports_oopses(self):
+        branch, job_1, job_2 = self.makeBranchAndJobs()
+        def raiseError():
+            job_1.job.start()
+            raise Exception('Fake exception.  Foobar, I say!')
+        job_1.run = raiseError
+        done_jobs = RevisionMailJob.runAll([job_1, job_2])
+        self.assertEqual([job_2], done_jobs)
+        self.assertEqual([], list(RevisionMailJob.iterReady()))
+        self.assertEqual(JobStatus.FAILED, job_1.job.status)
+        self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
+        reporter = getUtility(IErrorReportingUtility)
+        oops = reporter.getLastOopsReport()
+        self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
