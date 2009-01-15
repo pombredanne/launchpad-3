@@ -10,7 +10,6 @@ __all__ = [
 from cStringIO import StringIO
 
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.interfaces import (
@@ -18,26 +17,12 @@ from canonical.launchpad.interfaces import (
     IBugAttachmentEditForm, ILaunchBag)
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
 
     usedfor = IBugAttachmentSet
-
-
-class BugAttachmentPrimaryContext:
-    """The primary context is the nearest `IBugTarget`."""
-    implements(IPrimaryContext)
-
-    def __init__(self, nomination):
-        launchbag = getUtility(ILaunchBag)
-        bugtask = launchbag.bugtask
-        if bugtask is None:
-            self.context = launchbag.bug
-        else:
-            self.context = launchbag.bugtask.target
 
 
 class BugAttachmentEditView(LaunchpadFormView):

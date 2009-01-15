@@ -463,56 +463,5 @@ incorrect removal by downloading and re-attach the file.
        http://.../foo.baz
 
 
-== IPrimaryContext for BugAttachments ==
 
-A BugAttachment can be adapted to its IPrimaryContext for use with
-menus. The IPrimaryContext for a BugAttachment is the IBugTarget
-traversed in the URL.
 
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
-    >>> from canonical.launchpad.webapp.interfaces import IPrimaryContext
-
-    >>> launchbag = getUtility(IOpenLaunchBag)
-
-    >>> bug_one_in_firefox = bugtaskset.get(2)
-    >>> bug_one_in_ubuntu_firefox = bugtaskset.get(17)
-
-    >>> bug_one_attachment = bug_one.attachments[0]
-
-The product 'firefox' is the IBugTarget in
-/firefox/+bug/1/attachments/1.
-
-    >>> bug_one_attachment.bug == bug_one_in_firefox.bug
-    True
-
-    >>> launchbag.clear()
-    >>> launchbag.add(bug_one_in_firefox.target)
-    >>> launchbag.add(bug_one_in_firefox)
-
-    >>> launchbag.bugtask.target.name
-    u'firefox'
-
-    >>> primary_context = IPrimaryContext(bug_one_attachment).context
-    >>> primary_context.name
-    u'firefox'
-    >>> primary_context == launchbag.bugtask.target
-    True
-
-The source package 'mozilla-firefox in ubuntu' is the IBugTarget in
-/ubuntu/+source/mozilla-firefox/+bug/1/attachments/1.
-
-    >>> bug_one_attachment.bug == bug_one_in_ubuntu_firefox.bug
-    True
-
-    >>> launchbag.clear()
-    >>> launchbag.add(bug_one_in_ubuntu_firefox.target)
-    >>> launchbag.add(bug_one_in_ubuntu_firefox)
-
-    >>> launchbag.bugtask.target.displayname
-    u'mozilla-firefox in ubuntu'
-
-    >>> primary_context = IPrimaryContext(bug_one_attachment).context
-    >>> primary_context.displayname
-    u'mozilla-firefox in ubuntu'
-    >>> primary_context == launchbag.bugtask.target
-    True
