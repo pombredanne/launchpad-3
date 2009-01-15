@@ -1702,6 +1702,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         branch, job_1, job_2 = self.makeBranchAndJobs()
         def raiseError():
             job_1.job.start()
+            job_1.job.fail()
             raise Exception('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
         done_jobs = RevisionMailJob.runAll([job_1, job_2])

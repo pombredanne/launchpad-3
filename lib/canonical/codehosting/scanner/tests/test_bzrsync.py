@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IRevisionSet)
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
-    RepositoryFormat)
+    IRevisionMailJobSource, RepositoryFormat)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import (
@@ -681,6 +681,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         stub.test_emails = []
         self.uncommitRevision()
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        getUtility(IRevisionMailJobSource).runAll()
         self.assertEqual(len(stub.test_emails), 1)
         [uncommit_email] = stub.test_emails
         expected = '1 revision was removed from the branch.'
@@ -702,8 +703,9 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         author = self.factory.getUniqueString()
         self.commitRevision('second', committer=author)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        getUtility(IRevisionMailJobSource).runAll()
         self.assertEqual(len(stub.test_emails), 2)
-        [uncommit_email, recommit_email] = stub.test_emails
+        [recommit_email, uncommit_email] = stub.test_emails
         uncommit_email_body = uncommit_email[2]
         expected = '1 revision was removed from the branch.'
         self.assertTextIn(expected, uncommit_email_body)

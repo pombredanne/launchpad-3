@@ -20,6 +20,7 @@ class TestSendbranchmail(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_sendbranchmail(self):
+        """Ensure sendbranchmail runs and sends email."""
         branch = self.factory.makeBranch()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,

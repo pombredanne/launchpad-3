@@ -1673,6 +1673,11 @@ class BranchDiffJob(object):
     def run(self):
         """See IBranchDiffJob."""
         self.job.start()
+        diff = self.performDiff()
+        self.job.complete()
+        return diff
+
+    def performDiff(self):
         bzr_branch = self.branch.getBzrBranch()
         from_revision_id = self._get_revision_id(
             bzr_branch, self.from_revision_spec)
@@ -1680,7 +1685,6 @@ class BranchDiffJob(object):
             bzr_branch, self.to_revision_spec)
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
-        self.job.complete()
         return static_diff
 
 
@@ -1721,6 +1725,7 @@ class RevisionMailJob(BranchDiffJob):
 
     @staticmethod
     def iterReady():
+        """See `IRevisionMailJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             (BranchJob),
@@ -1744,7 +1749,6 @@ class RevisionMailJob(BranchDiffJob):
                 job.run()
             except:
                 info = sys.exc_info()
-                job.job.fail()
                 reporter = getUtility(IErrorReportingUtility)
                 reporter.raising(info)
                 continue
@@ -1777,14 +1781,14 @@ class RevisionMailJob(BranchDiffJob):
     def getMailer(self):
         """Return a BranchMailer for this job."""
         if self.perform_diff and self.to_revision_spec is not None:
-            diff = BranchDiffJob.run(self)
+            diff = self.performDiff()
             transaction.commit()
-            diff = diff.diff.text
+            diff_text = diff.diff.text
         else:
-            diff = None
+            diff_text = None
         return BranchMailer.forRevision(
             self.branch, self.revno, self.from_address, self.body,
-            diff, self.subject)
+            diff_text, self.subject)
 
     def run(self):
         """See `IRevisionMailJob`."""
