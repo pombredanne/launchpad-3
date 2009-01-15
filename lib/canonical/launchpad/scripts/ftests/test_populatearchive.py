@@ -18,6 +18,8 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchiveSet, IBuildSet, IDistributionSet,
     PackagePublishingStatus)
 from canonical.launchpad.interfaces.archivearch import IArchiveArchSet
+from canonical.launchpad.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet, PackageCopyStatus)
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
@@ -449,6 +451,30 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = self.runScript(
             exception_type=SoyuzScriptError,
             exception_text="error: processor families not specified.")
+
+    def testCopyRequestStatus(self):
+        """Make sure that the copy request status was updated upon completion.
+
+        Once a package copy request completes its status should be
+        PackageCopyStatus.COMPLETE
+        """
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+        # Verify that we have the right source packages in the sample data.
+        self._verifyPackagesInSampleData(hoary)
+
+        # Restrict the builds to be created to the 'hppa' architecture
+        # only. This should result in zero builds.
+        extra_args = ['-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, exists_after=True)
+
+        # Make sure the right source packages were cloned.
+        self._verifyClonedSourcePackages(copy_archive, hoary)
+
+        [pcr] = getUtility(
+            IPackageCopyRequestSet).getByTargetArchive(copy_archive)
+        self.assertTrue(pcr.status == PackageCopyStatus.COMPLETE)
 
     def testMultipleArchTags(self):
         """Try copy archive population with multiple architecture tags.

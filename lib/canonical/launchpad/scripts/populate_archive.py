@@ -165,9 +165,10 @@ class ArchivePopulator(SoyuzScript):
             merge_copy = True
 
         the_destination.archive = copy_archive
+
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
-        getUtility(IPackageCopyRequestSet).new(
+        pcr = getUtility(IPackageCopyRequestSet).new(
             the_origin, the_destination, registrant,
             copy_binaries=include_binaries, reason=unicode(reason))
 
@@ -184,6 +185,9 @@ class ArchivePopulator(SoyuzScript):
         self._createMissingBuilds(
             the_destination.distroseries, the_destination.archive,
             proc_families)
+
+        # Mark the package copy request as completed.
+        pcr.markAsCompleted()
 
     def mainTask(self):
         """Main function entry point."""
