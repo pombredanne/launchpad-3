@@ -1258,10 +1258,9 @@ beside the mugshot. */
   max-width: 40em;
 }
 #home-page h2 {
-  font-size: 1.5em;
-  font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
   width: 100%;
   text-align: center;
+  text-decoration: underline;
 }
 #home-page img {
   vertical-align: middle;
