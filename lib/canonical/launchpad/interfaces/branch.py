@@ -91,7 +91,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -432,12 +433,10 @@ class BranchTypeError(Exception):
     """
 
 
-class NoSuchBranch(Exception):
+class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
-    def __init__(self, unique_name):
-        self.unique_name = unique_name
-        Exception.__init__(self, "No such branch: %s" % (unique_name,))
+    _message_prefix = "No such branch"
 
 
 class BadBranchSearchContext(Exception):
@@ -877,6 +876,18 @@ class IBranch(IHasOwner):
         "development focus, then the result should be lp:product.  If "
         "the branch is related to a series, then lp:product/series. "
         "Otherwise the result is lp:~user/product/branch-name.")
+
+    def addToLaunchBag(launchbag):
+        """Add information about this branch to `launchbag'.
+
+        Use this when traversing to this branch in the web UI.
+
+        In particular, add information about the branch's container to the
+        launchbag. If the branch has a product, add that; if it has a source
+        package, add lots of information about that.
+
+        :param launchbag: `ILaunchBag`.
+        """
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.

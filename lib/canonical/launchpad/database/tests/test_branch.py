@@ -31,6 +31,7 @@ from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
@@ -52,6 +53,7 @@ from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
@@ -206,6 +208,38 @@ class TestBranch(TestCaseWithFactory):
                 distroseries.distribution.name, distroseries.name,
                 sourcepackagename.name),
             branch.container.name)
+
+    def makeLaunchBag(self):
+        return getUtility(IOpenLaunchBag)
+
+    def test_addToLaunchBag_product(self):
+        # Branches are not added directly to the launchbag. Instead,
+        # information about their container is added.
+        branch = self.factory.makeBranch()
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertEqual(branch.product, launchbag.product)
+
+    def test_addToLaunchBag_personal(self):
+        # Junk branches may also be added to the launchbag.
+        branch = self.factory.makeBranch(product=None)
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertIs(None, launchbag.product)
+
+    def test_addToLaunchBag_package(self):
+        # Package branches can be added to the launchbag.
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertEqual(distroseries, launchbag.distroseries)
+        self.assertEqual(distroseries.distribution, launchbag.distribution)
+        sourcepackage = SourcePackage(sourcepackagename, distroseries)
+        self.assertEqual(sourcepackage, launchbag.sourcepackage)
+        self.assertIs(None, branch.product)
 
 
 class TestGetByUniqueName(TestCaseWithFactory):
@@ -1039,20 +1073,6 @@ class BranchDateLastModified(TestCaseWithFactory):
         bug = getUtility(IBugSet).createBug(params)
 
         bug.addBranch(branch, branch.owner)
-        self.assertTrue(branch.date_last_modified > date_created,
-                        "Date last modified was not updated.")
-
-    def test_specBranchLinkUpdates(self):
-        """Linking a branch to a spec updates the last modified time."""
-        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.factory.makeBranch(date_created=date_created)
-        self.assertEqual(branch.date_last_modified, date_created)
-
-        spec = getUtility(ISpecificationSet).new(
-            name='some-spec', title='Some spec', product=branch.product,
-            owner=branch.owner, summary='', specurl=None,
-            definition_status=SpecificationDefinitionStatus.NEW)
-        spec.linkBranch(branch, branch.owner)
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 

@@ -282,6 +282,17 @@ class Branch(SQLBase):
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
+    def addToLaunchBag(self, launchbag):
+        """See `IBranch`."""
+        launchbag.add(self.product)
+        if self.distroseries is not None:
+            from canonical.launchpad.database.sourcepackage import (
+                SourcePackage)
+            launchbag.add(self.distroseries)
+            launchbag.add(self.distroseries.distribution)
+            launchbag.add(
+                SourcePackage(self.sourcepackagename, self.distroseries))
+
     def getStackedBranches(self):
         """See `IBranch`."""
         store = Store.of(self)
@@ -1169,10 +1180,15 @@ class BranchSet:
         """Given a path within a branch, return the branch and the path."""
         namespace_set = getUtility(IBranchNamespaceSet)
         parsed = namespace_set.parseBranchPath(path)
+        parsed_path = None
         for parsed_path, branch_name, suffix in parsed:
             branch = self._getBranchInNamespace(parsed_path, branch_name)
             if branch is not None:
                 return branch, suffix
+
+        if parsed_path is None:
+            raise NoSuchBranch(path)
+
         # This will raise an interesting error if any of the given objects
         # don't exist.
         namespace_set.interpret(
