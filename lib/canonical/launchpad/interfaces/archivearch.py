@@ -11,11 +11,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int, Object
+from zope.schema import Int
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.processor import IProcessorFamily
+from canonical.lazr.fields import Reference
 
 
 class IArchiveArch(Interface):
@@ -23,13 +24,13 @@ class IArchiveArch(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    archive = Object(
+    archive = Reference(
         title=_("Archive"), schema=IArchive,
         required=True, readonly=True,
         description=_(
             "The archive associated with the processor family at hand."))
 
-    processorfamily = Object(
+    processorfamily = Reference(
         title=_("Processor family"), schema=IProcessorFamily,
         required=True, readonly=True,
         description=_(

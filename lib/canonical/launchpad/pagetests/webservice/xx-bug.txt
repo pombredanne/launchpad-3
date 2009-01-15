@@ -662,8 +662,26 @@ the same time.
   resource_type_link: u'http://.../#bug_attachment-page-resource'
   start: 0
   total_size: 1
-  ---
   ...
+  ---
+
+Once an attachment is uploaded, it is not possible to change it.
+
+  >>> response = webservice.put(
+  ...     attachment['data_link'], 'text/text', 'abcdefg')
+  >>> print response.getOutput()
+  HTTP/1.1 405 Method Not Allowed
+  ...
+
+  >>> data_response = webservice.get(attachment['data_link'])
+  >>> data = None
+  >>> conn = urlopen(data_response.getHeader('Location'))
+  >>> try:
+  ...     data = conn.read()
+  ... finally:
+  ...     conn.close()
+  >>> data
+  '12345'
 
 == Searching for bugs ==
 
