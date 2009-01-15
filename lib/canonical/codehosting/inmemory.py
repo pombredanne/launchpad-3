@@ -107,7 +107,10 @@ class FakeSourcePackage:
 
     @property
     def distribution(self):
-        return self.distroseries.distribution
+        if self.distroseries is not None:
+            return self.distroseries.distribution
+        else:
+            return None
 
 
 class FakeBranch(FakeDatabaseObject):
