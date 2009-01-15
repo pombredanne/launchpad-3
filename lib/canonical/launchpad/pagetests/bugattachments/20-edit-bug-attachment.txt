@@ -1,15 +1,17 @@
 We can also edit the attachment details, let's navigate to that page.
 
   >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> user_browser.getLink(
-  ...   url='/firefox/+bug/1/attachments/1'
-  ...   ).click()
-
+  >>> user_browser.getLink(url='/bugs/1/+attachment/1').click()
   >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/attachments/1'
+  'http://bugs.launchpad.dev/bugs/1/+attachment/1'
 
   >>> 'Change bug attachment information' in user_browser.contents
   True
+
+There's also an option to cancel, which takes you back to the bug page.
+
+  >>> user_browser.getLink('Cancel')
+  <Link text='Cancel' url='http://bugs.launchpad.dev/bugs/1'>
 
 After editing the attachment details (we leave some leading and trailing
 whitespace to test that's correctly stripped)...
@@ -29,19 +31,13 @@ whitespace to test that's correctly stripped)...
 And if we edit it to be a patch the content type will be automatically
 changed to be text/plain.
 
-  >>> user_browser.getLink(
-  ...   url='/firefox/+bug/1/attachments/1'
-  ...   ).click()
-
+  >>> user_browser.getLink(url='/bugs/1/+attachment/1').click()
   >>> user_browser.getControl('This attachment is a patch').selected = True
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
 
-  >>> user_browser.getLink(
-  ...   url='/firefox/+bug/1/attachments/1'
-  ...   ).click()
-
+  >>> user_browser.getLink(url='/bugs/1/+attachment/1').click()
   >>> user_browser.getControl('Content Type').value
   'text/plain'

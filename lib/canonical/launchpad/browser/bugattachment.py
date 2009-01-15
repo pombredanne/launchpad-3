@@ -34,7 +34,7 @@ class BugAttachmentEditView(LaunchpadFormView):
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
-        self.current_bugtask = getUtility(ILaunchBag).bugtask
+        self.next_url = self.cancel_url = canonical_url(context.bug)
 
     @property
     def initial_values(self):
@@ -63,8 +63,6 @@ class BugAttachmentEditView(LaunchpadFormView):
         if self.context.libraryfile.mimetype != data['contenttype']:
             self.updateContentType(data['contenttype'])
 
-        self.next_url = canonical_url(self.current_bugtask)
-
     @action('Delete Attachment', name='delete')
     def delete_action(self, action, data):
         self.request.response.addInfoNotification(structured(
@@ -73,7 +71,6 @@ class BugAttachmentEditView(LaunchpadFormView):
             ' automatically removed from the server.',
             url=self.context.libraryfile.http_url, name=self.context.title))
         self.context.removeFromBug()
-        self.next_url = canonical_url(self.current_bugtask)
 
     def updateContentType(self, new_content_type):
         """Update the attachment content type."""
