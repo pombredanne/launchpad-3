@@ -153,8 +153,7 @@ class Branch(SQLBase):
             if self.distroseries is None:
                 return PersonContainer(self.owner)
             else:
-                return PackageContainer(
-                    self.distroseries, self.sourcepackagename)
+                return PackageContainer(self.sourcepackage)
         else:
             return ProductContainer(self.product)
 
