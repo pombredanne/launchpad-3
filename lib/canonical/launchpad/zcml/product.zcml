@@ -44,11 +44,17 @@
       />
 
     <require
-      permission="launchpad.Commercial"
-      interface="canonical.launchpad.interfaces.product.IProductCommercialRestricted"
-      set_schema="canonical.launchpad.interfaces.product.IProductCommercialRestricted"
-      set_attributes="active"
+      permission="zope.Public"
+      attributes="qualifies_for_free_hosting"
       />
+
+    <require
+      permission="launchpad.Commercial"
+      attributes="reviewer_whiteboard is_permitted license_reviewed license_approved"
+      set_schema="canonical.launchpad.interfaces.product.IProductCommercialRestricted"
+      set_attributes="active private_bugs "
+      />
+
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->
     <require

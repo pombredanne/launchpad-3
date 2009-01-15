@@ -120,14 +120,6 @@ class License(DBEnumeratedType):
 class IProductEditRestricted(Interface):
     """`IProduct` properties which require launchpad.Edit permission."""
 
-    qualifies_for_free_hosting = exported(
-            Bool(
-                title=_("Qualifies for free hosting"),
-                readonly=True,
-                description=_(
-                    "Whether the project's licensing qualifies it for free "
-                    "use of launchpad.")))
-
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
@@ -135,6 +127,14 @@ class IProductEditRestricted(Interface):
 
 class IProductCommercialRestricted(Interface):
     """`IProduct` properties which require launchpad.Commercial permission."""
+
+    qualifies_for_free_hosting = exported(
+            Bool(
+                title=_("Qualifies for free hosting"),
+                readonly=True,
+                description=_(
+                    "Whether the project's licensing qualifies it for free "
+                    "use of launchpad.")))
 
     reviewer_whiteboard = exported(
         Text(
