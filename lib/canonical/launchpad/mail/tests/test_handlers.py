@@ -545,6 +545,13 @@ class TestVoteEmailCommand(TestCase):
         command = VoteEmailCommand('vote', ['-1'])
         self.assertVoteAndTag(CodeReviewVote.DISAPPROVE, None, command)
 
+    def test_getVoteNeedsFixingAlias(self):
+        """Test the needs_fixing aliases of needsfixing and needs-fixing."""
+        command = VoteEmailCommand('vote', ['needsfixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
+        command = VoteEmailCommand('vote', ['needs-fixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
+
 
 class TestUpdateStatusEmailCommand(TestCaseWithFactory):
     """Test the UpdateStatusEmailCommand."""

@@ -94,6 +94,8 @@ class VoteEmailCommand(CodeReviewEmailCommand):
         '0': CodeReviewVote.ABSTAIN,
         '-0': CodeReviewVote.ABSTAIN,
         '-1': CodeReviewVote.DISAPPROVE,
+        'needsfixing': CodeReviewVote.NEEDS_FIXING,
+        'needs-fixing': CodeReviewVote.NEEDS_FIXING,
         }
 
     def execute(self, context):
