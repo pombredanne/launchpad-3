@@ -61,7 +61,7 @@ class ArchivePopulator(SoyuzScript):
     def populateArchive(
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
-        include_binaries, proc_families):
+        include_binaries, proc_families, merge_copy_flag):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -82,6 +82,8 @@ class ArchivePopulator(SoyuzScript):
 
         :param include_binaries: whether binaries should be copied as well.
         :param proc_families: processor families for which to create builds.
+        :param merge_copy_flag: whether this is a repeated population of an
+            existing copy archive.
         """
         def loadProcessorFamilies(proc_family_names):
             """Load processor families for specified family names."""
@@ -155,6 +157,9 @@ class ArchivePopulator(SoyuzScript):
             if not specified(reason):
                 raise SoyuzScriptError(
                     "error: reason for copy archive creation not specified.")
+            if merge_copy_flag:
+                raise SoyuzScriptError(
+                    "error: merge copy requested for non-existing archive.")
             # First load the processor families for the specified family names
             # from the database. This will fail if an invalid processor family
             # name was specified on the command line; that's why it should be
@@ -168,6 +173,12 @@ class ArchivePopulator(SoyuzScript):
             # families specified by the user.
             set_archive_architectures(copy_archive, proc_families)
         else:
+            # Archive name clash! Creation requested for existing archive with
+            # the same name and distribution.
+            if not merge_copy_flag:
+                raise SoyuzScriptError(
+                    "error: archive '%s' already exists for '%s'."
+                    % (to_archive, the_destination.distribution.name))
             # The copy archive exists already, get the associated processor
             # families.
             def get_family(archivearch):
@@ -247,7 +258,7 @@ class ArchivePopulator(SoyuzScript):
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
-            opts.include_binaries, opts.proc_families)
+            opts.include_binaries, opts.proc_families, opts.merge_copy_flag)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -298,6 +309,11 @@ class ArchivePopulator(SoyuzScript):
         self.parser.add_option(
             "--reason", dest="reason",
             help="The reason for this packages copy operation.")
+
+        self.parser.add_option(
+            "--merge-copy", dest="merge_copy_flag",
+            default=False, action="store_true",
+            help='Repeated population of an existing copy archive.')
 
     def _createMissingBuilds(
         self, distroseries, archive, proc_families):
