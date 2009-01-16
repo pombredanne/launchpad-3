@@ -57,7 +57,7 @@ class TestPackageLocation(TestCaseWithFactory):
         """`PackageLocation` for PPA archives."""
         location = self.getPackageLocation(purpose=ArchivePurpose.PPA,
                                            person_name='cprov',
-                                           ppa_name="ppa")
+                                           archive_name="ppa")
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -94,7 +94,7 @@ class TestPackageLocation(TestCaseWithFactory):
             self.getPackageLocation,
             purpose=ArchivePurpose.PPA,
             person_name='beeblebrox',
-            ppa_name="ppa")
+            archive_name="ppa")
 
     def testSetupLocationUnknownPPA(self):
         """`PackageLocationError` is raised on unknown PPA."""
@@ -103,7 +103,7 @@ class TestPackageLocation(TestCaseWithFactory):
             self.getPackageLocation,
             purpose=ArchivePurpose.PPA,
             person_name='kiko',
-            ppa_name="ppa")
+            archive_name="ppa")
 
     def testSetupLocationPPANotMatchingDistribution(self):
         """`PackageLocationError` is raised when PPA does not match the
@@ -114,7 +114,7 @@ class TestPackageLocation(TestCaseWithFactory):
             distribution_name='ubuntutest',
             purpose=ArchivePurpose.PPA,
             person_name='cprov',
-            ppa_name="ppa")
+            archive_name="ppa")
 
     def testComparison(self):
         """Check if PackageLocation objects can be compared."""
@@ -150,7 +150,7 @@ class TestPackageLocation(TestCaseWithFactory):
 
         location_cprov_ppa = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PPA,
-            person_name='cprov', ppa_name="ppa")
+            person_name='cprov', archive_name="ppa")
         self.assertNotEqual(location_cprov_ppa, location_ubuntutest)
 
         location_ubuntu_partner = self.getPackageLocation(
@@ -183,7 +183,7 @@ class TestPackageLocation(TestCaseWithFactory):
 
         location_cprov_ppa = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PPA,
-            person_name='cprov', ppa_name="ppa")
+            person_name='cprov', archive_name="ppa")
         self.assertEqual(
             str(location_cprov_ppa),
             'cprov: hoary-RELEASE')
