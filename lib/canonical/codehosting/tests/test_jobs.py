@@ -67,13 +67,14 @@ class TestJobRunner(TestCaseWithFactory):
             raise LeaseHeld()
         job_2.job.acquireLease = raise_lease_held
         runner = JobRunner.fromReady(RevisionMailJob)
+        reporter = getUtility(IErrorReportingUtility)
+        last_oops = reporter.getLastOopsReport()
         runner.runAll()
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual(JobStatus.WAITING, job_2.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
         self.assertEqual([job_2], runner.incomplete_jobs)
-        reporter = getUtility(IErrorReportingUtility)
-        self.assertIs(None, reporter.getLastOopsReport())
+        self.assertEqual(last_oops.id, reporter.getLastOopsReport().id)
 
     def test_runAll_reports_oopses(self):
         """When an error is encountered, report an oops and continue."""
