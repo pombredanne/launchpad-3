@@ -40,7 +40,7 @@ class PackageDiffStatus(DBEnumeratedType):
         This diff request was successfully completed.
         """)
 
-    FAILED = DBItem(4, """
+    FAILED = DBItem(2, """
         Failed
 
         This diff request has failed.

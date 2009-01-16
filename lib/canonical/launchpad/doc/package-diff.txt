@@ -71,8 +71,8 @@ Its main attributes are:
     >>> print package_diff.to_source.title
     pmount - 0.1-2
 
-Since the PackageDiff was not yet performed, both, 'date_fulfilled'
-and 'diff_content' attributes are empty and its 'status' is PENDING.
+The PackageDiff record is not yet 'performed', so 'status' is PENDING
+and both 'date_fullfiled' and 'diff_content' fields are empty.
 
     >>> print package_diff.date_fulfilled
     None

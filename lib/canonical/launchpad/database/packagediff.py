@@ -236,8 +236,7 @@ class PackageDiffSet:
         result = store.find(
             PackageDiff, PackageDiff.status == PackageDiffStatus.PENDING)
         result.order_by(PackageDiff.id)
-        result = result.config(limit=limit)
-        return result
+        return result.config(limit=limit)
 
     def getDiffsToReleases(self, sprs):
         """See `IPackageDiffSet`."""
