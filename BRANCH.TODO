@@ -37,5 +37,10 @@
 Known Issues
 ~~~~~~~~~~~~
 
-See bugs #312498, #317572 and #317573.
+The page at: https://bugs.launchpad.dev/firefox/+bug/5 triggers a
+zope.pagetemplate, which then fails because it gets a macro from
+z3c.pt.
+
+See bugs #312498, #317572, #317573, #317893, #317953, #317965 and
+#317967.
 

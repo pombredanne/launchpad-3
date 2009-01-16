@@ -3,10 +3,11 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="privacy"
+  tal:define="link context/menu:context/admin;
+	      private context/private"
   tal:attributes="
-    class python: path('context/private') and 'aside private' or 'aside public'
+    class python: private and 'aside private' or 'aside public'
   "
-  tal:define="link context/menu:context/admin"
 >
   <div tal:define="public_private
     python:context.private and '&gt;strong&lt;private&gt;/strong&lt;' or 'public'"
