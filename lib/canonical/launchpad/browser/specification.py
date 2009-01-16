@@ -387,6 +387,7 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Mark superseded'
         return Link('+supersede', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
         text = 'Link to bug report'
         return Link('+linkbug', text, icon='add')
