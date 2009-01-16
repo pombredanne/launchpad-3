@@ -9,7 +9,7 @@
   tal:define="link context/menu:context/admin"
 >
   <div tal:define="public_private
-    python:context.private and '<strong>private</strong>' or 'public'"
+    python:context.private and '&gt;strong&lt;private&gt;/strong&lt;' or 'public'"
   >
     <a
       tal:condition="link/enabled"
