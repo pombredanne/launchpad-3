@@ -12,7 +12,8 @@ from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from warnings import warn
 from zope.interface import implements
-from storm.locals import Desc, ReferenceSet
+from storm.locals import And, Desc, ReferenceSet
+from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -95,12 +96,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datepublishedsync = UtcDateTimeCol(
         dbName='date_published_sync', default=None)
 
-    releases = ReferenceSet('ProductSeries.id', 'Milestone.productseries',
-                            'Milestone.id', 'ProductRelease.milestone',
-                            order_by=Desc('datereleased'))
-
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
+
+    @property
+    def releases(self):
+        store = Store.of(self)
+        result = store.find(
+            ProductRelease,
+            And(Milestone.productseries == ProductSeries.id,
+                ProductRelease.milestone == Milestone.id))
+        return result.order_by(Desc('datereleased'))
 
     @property
     def release_files(self):

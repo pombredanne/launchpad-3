@@ -152,12 +152,20 @@ and the all_milestones_collection_link.
     >>> response = webservice.get(firefox['active_milestones_collection_link'])
     >>> active_milestones = response.jsonBody()
     >>> print_self_link_of_entries(active_milestones)
+    http://.../firefox/+milestone/0.9
+    http://.../firefox/+milestone/0.9.1
+    http://.../firefox/+milestone/0.9.2
     http://.../firefox/+milestone/1.0
+    http://.../firefox/+milestone/1.0.0
 
     >>> response = webservice.get(firefox['all_milestones_collection_link'])
     >>> all_milestones = response.jsonBody()
     >>> print_self_link_of_entries(all_milestones)
+    http://.../firefox/+milestone/0.9
+    http://.../firefox/+milestone/0.9.1
+    http://.../firefox/+milestone/0.9.2
     http://.../firefox/+milestone/1.0
+    http://.../firefox/+milestone/1.0.0
 
 The project group can be accessed through the project_group_link.
 
@@ -507,6 +515,7 @@ Invalid data will return a Bad Request error.
     >>> response = webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
     ...     name='buggy', date_targeted=u'2005-10-36',
+    ...     code_name='Samurai Monkey',
     ...     description='Very buggy.')
     >>> print response
     HTTP/1.1 400 Bad Request
@@ -520,45 +529,46 @@ Project releases are available at their canonical URL on the API virtual host.
     >>> firefox_1_0_0 = webservice.get('/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
     changelog: u''
-    code_name: u'First Stable Release'
     date_created: u'2005-06-06T08:59:51.930201+00:00'
     date_released: u'2004-06-28T00:00:00+00:00'
-    description: u''
     display_name: u'Mozilla Firefox 1.0.0'
     files_collection_link: u'http://.../firefox/1.0/1.0.0/files'
+    milestone_link: u'http://.../firefox/+milestone/1.0.0'
     owner_link: u'http://.../~name12'
     project_link: u'http://.../firefox'
-    project_series_link: u'http://.../firefox/1.0'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/1.0/1.0.0'
-    summary: u'After four years of work...'
     title: u'Mozilla Firefox 1.0.0 "First Stable Release"'
     version: u'1.0.0'
 
-The addRelease method is called by sending "ws.op=addRelease"
-as a request variable along with the parameters. The
-webservice.named_post() method simplifies this for us.
+The createProductRelease method is called by sending
+"ws.op=createProductRelease" as a request variable along
+with the parameters.  The webservice.named_post() method
+simplifies this for us.
 
     >>> response = webservice.named_post(
-    ...     firefox_1_0['self_link'], 'addRelease', {},
-    ...     version='rc1', code_name='Samurai Monkey',
-    ...     summary='Best version ever.', description='Ready to launch.',
+    ...     milestone['self_link'], 'createProductRelease', {},
     ...     changelog='Added 5,000 features.')
     >>> print response
     HTTP/1.1 201 Created
     ...
-    Location: http://api.launchpad.dev/beta/firefox/1.0/rc1
+    Location: http://api.launchpad.dev/beta/firefox/1.0/alpha1
     >>> release = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print release['version']
-    rc1
-    >>> print release['code_name']
-    Samurai Monkey
-    >>> print release['summary']
-    Best version ever.
-    >>> print release['description']
-    Ready to launch.
+    alpha1
     >>> print release['changelog']
     Added 5,000 features.
+
+Only one product release can be created per milestone.
+
+    >>> response = webservice.named_post(
+    ...     milestone['self_link'], 'createProductRelease', {},
+    ...     changelog='Added 5,000 features.')
+    >>> print response
+    HTTP/1.1 500 Internal Server Error
+    ...
+        assert self.product_release is None
+    AssertionError
 
 
 == Project release entries ==
@@ -566,8 +576,11 @@ webservice.named_post() method simplifies this for us.
     >>> releases = webservice.get(
     ...     '/firefox/1.0/releases').jsonBody()
     >>> print_self_link_of_entries(releases)
-    http://.../firefox/1.0/1.0.0
-    http://.../firefox/1.0/rc1
+    http://.../alsa-utils/trunk/1.0.8
+    http://.../alsa-utils/trunk/1.0.9a
+    http://.../evolution/trunk/2.1.6
+    http://.../firefox/1.0/alpha1
+    http://.../netapplet/trunk/1.0
 
 
 == Project release file collection ==
@@ -602,12 +615,15 @@ host.
     >>> releases = webservice.get(
     ...     '/firefox/1.0/releases').jsonBody()
     >>> print_self_link_of_entries(releases)
-    http://api.launchpad.dev/beta/firefox/1.0/1.0.0
-    http://.../firefox/1.0/rc1
+    http://.../alsa-utils/trunk/1.0.8
+    http://.../alsa-utils/trunk/1.0.9a
+    http://.../evolution/trunk/2.1.6
+    http://.../firefox/1.0/alpha1
+    http://.../netapplet/trunk/1.0
 
 They can be deleted with the 'delete' operation.
 
-    >>> results = webservice.named_post('/firefox/1.0/rc1', 'delete')
+    >>> results = webservice.named_post('/firefox/1.0/alpha1', 'delete')
     >>> print results
     HTTP/1.1 200 Ok
     ...

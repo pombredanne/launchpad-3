@@ -241,36 +241,28 @@ class IProductReleasePublic(Interface):
                       schema=IPerson, required=True)
             )
 
-    productseries = exported(
-        Choice(
-            title=_('Release series'), readonly=True,
-            vocabulary='FilteredProductSeries'),
-        exported_as='project_series')
+    productseries = Choice(
+        title=_('Release series'), readonly=True,
+        vocabulary='FilteredProductSeries')
 
-    codename = exported(
-        TextLine(title=u'Code name', required=False,
+    codename = TextLine(title=u'Code name', required=False, readonly=True,
                  description=u'The release code-name. Famously, one Gnome '
                  'release was code-named "that, and a pair of testicles", '
                  "but you don't have to be as brave with your own release "
-                 'codenames.'),
-        exported_as='code_name')
+                 'codenames.')
 
-    summary = exported(
-        Text(
-            title=_("Summary"), required=False,
+    summary = Text(
+            title=_("Summary"), required=False, readonly=True,
             description=_('A brief summary of the release highlights, to '
                           'be shown at the top of the release page, and in '
                           'listings.'))
-        )
 
-    description = exported(
-        Text(
-            title=_("Description"), required=False,
+    description = Text(
+            title=_("Description"), required=False, readonly=True,
             description=_('A detailed description of the new features '
                           '(though the changelog below might repeat some of '
                           'this information). The description here will be '
                           'shown on the project release home page.'))
-        )
 
     changelog = exported(
         Text(
@@ -290,7 +282,7 @@ class IProductReleasePublic(Interface):
         exported_as="display_name")
 
     title = exported(
-        Text(title=u'Constructed title for a project release.')
+        Text(title=u'Constructed title for a project release.', readonly=True)
         )
 
     product = exported(
