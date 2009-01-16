@@ -40,7 +40,8 @@ from canonical.launchpad.interfaces import (
     IWebServiceApplication)
 from canonical.launchpad.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
-from canonical.launchpad.interfaces.hwdb import IHWDeviceSet, IHWDriverSet
+from canonical.launchpad.interfaces.hwdb import (
+    IHWDeviceSet, IHWDriverSet, IHWVendorIDSet)
 from canonical.lazr.rest import ServiceRootResource
 
 
@@ -254,6 +255,10 @@ class HWDBApplication:
     def drivers(self, package_name=None, name=None):
         """See `IHWDBApplication`."""
         return getUtility(IHWDriverSet).search(package_name, name)
+
+    def vendorIDs(self, bus):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWVendorIDSet).idsForBus(bus)
 
 
 class WebServiceApplication(ServiceRootResource):

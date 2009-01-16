@@ -145,36 +145,6 @@ class IBranchFileSystem(Interface):
     information about a user's branches, and to update their status.
     """
 
-    def getBranchInformation(loginID, personName, productName, branchName):
-        """Return the database ID and permissions for a branch.
-
-        :param loginID: The login ID for the person asking for the branch
-            information. This is used for branch privacy checks.
-        :param personName: The owner of the branch.
-        :param productName: The product that the branch belongs to. '+junk' is
-            allowed.
-        :param branchName: The name of the branch.
-
-        :returns: (branch_id, permissions), where 'permissions' is 'w' if the
-            user represented by 'loginID' can write to the branch, and 'r' if
-            they cannot. If the branch doesn't exist or is not visible to the
-            person asking, return ('', '').
-        """
-        # XXX: JonathanLange 2008-08-05 spec=package-branches: Delete this
-        # method after the 2.1.12 rollout.
-
-    def getDefaultStackedOnBranch(login_id, product_name):
-        """Return the URL for the default stacked-on branch of a product.
-
-        :param login_id: The login ID for the person asking for the branch
-            information. This is used for branch privacy checks.
-        :param product_name: The name of a `Product`.
-        :return: An absolute path to a branch on Launchpad. If there is no
-            default stacked-on branch configured, return the empty string.
-        """
-        # XXX: JonathanLange 2008-08-05 spec=package-branches: Delete this
-        # method after the 2.1.12 rollout.
-
     def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.
 

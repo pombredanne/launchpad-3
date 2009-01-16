@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+    get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -39,7 +39,7 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for address in contactEmailAddresses(recipient.person):
+            for address in get_contact_email_addresses(recipient.person):
                 recipients[address] = recipient
 
     for notification in bug_notifications:
