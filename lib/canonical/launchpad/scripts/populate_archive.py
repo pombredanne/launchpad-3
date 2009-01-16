@@ -157,7 +157,7 @@ class ArchivePopulator(SoyuzScript):
             if not specified(reason):
                 raise SoyuzScriptError(
                     "error: reason for copy archive creation not specified.")
-            if merge_copy_flag == True:
+            if merge_copy_flag:
                 raise SoyuzScriptError(
                     "error: merge copy requested for non-existing archive.")
             # First load the processor families for the specified family names
@@ -175,7 +175,7 @@ class ArchivePopulator(SoyuzScript):
         else:
             # Archive name clash! Creation requested for existing archive with
             # the same name and distribution.
-            if merge_copy_flag == False:
+            if not merge_copy_flag:
                 raise SoyuzScriptError(
                     "error: archive '%s' already exists for '%s'."
                     % (to_archive, the_destination.distribution.name))
