@@ -252,7 +252,7 @@ class Bug(SQLBase):
         return sorted(result, key=bugtask_sort_key)
 
     @property
-    def first_bugtask(self):
+    def default_bugtask(self):
         """See `IBug`."""
         return Store.of(self).find(
             BugTask, bug=self).order_by(BugTask.id).first()

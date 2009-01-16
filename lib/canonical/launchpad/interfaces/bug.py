@@ -200,7 +200,7 @@ class IBug(ICanBeMentored):
             value_type=Reference(schema=IBugTask),
             readonly=True),
         exported_as='bug_tasks')
-    first_bugtask = Reference(
+    default_bugtask = Reference(
         title=_("The first bug task to have been filed."),
         schema=IBugTask)
     affected_pillars = Attribute(

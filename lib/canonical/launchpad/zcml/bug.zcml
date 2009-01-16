@@ -14,7 +14,7 @@
     <!-- Bug -->
     <class class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks first_bugtask
+        <allow attributes="id private bugtasks default_bugtask
                            affected_pillars permits_expiration can_expire
                            subscriptions syncUpdate  date_last_updated
                            getDirectSubscribers getDirectSubscriptions
