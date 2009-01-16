@@ -11,6 +11,7 @@ __metaclass__ = type
 import _pythonpath
 from zope.component import getUtility
 
+from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces.branch import IRevisionMailJobSource
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
@@ -19,8 +20,9 @@ class RunRevisionMailJobs(LaunchpadCronScript):
     """Run pending branch mail jobs."""
 
     def main(self):
-        jobs = getUtility(IRevisionMailJobSource).runAll()
-        print 'Ran %d RevisionMailJobs.' % len(jobs)
+        runner = JobRunner.fromReady(getUtility(IRevisionMailJobSource))
+        runner.runAll()
+        print 'Ran %d RevisionMailJobs.' % len(runner.completed_jobs)
 
 
 if __name__ == '__main__':

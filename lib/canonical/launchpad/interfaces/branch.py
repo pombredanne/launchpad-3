@@ -1495,9 +1495,6 @@ class IRevisionMailJobSource(Interface):
     def iterReady():
         """Iterate through ready IRevisionMailJobs."""
 
-    def runAll():
-        """Run all ready IRevisionMailJobs."""
-
 
 def bazaar_identity(branch, associated_series, is_dev_focus):
     """Return the shortest lp: style branch identity."""

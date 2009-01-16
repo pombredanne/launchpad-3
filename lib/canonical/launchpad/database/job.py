@@ -18,7 +18,7 @@ from sqlobject import IntCol, StringCol
 from storm.expr import Select, And, Or
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.job import IJob, JobStatus
+from canonical.launchpad.interfaces.job import IJob, JobStatus, LeaseHeld
 
 
 UTC = pytz.timezone('UTC')
@@ -31,12 +31,6 @@ class InvalidTransition(Exception):
         Exception.__init__(
             self, 'Transition from %s to %s is invalid.' %
             (current_status, requested_status))
-
-
-class LeaseHeld(Exception):
-
-    def __init__(self):
-        Exception.__init__(self, 'Lease is already held.')
 
 
 class Job(SQLBase):
@@ -81,6 +75,7 @@ class Job(SQLBase):
     status = property(lambda x: x._status)
 
     def acquireLease(self, duration=300):
+        """See `IJob`."""
         if (self.lease_expires is not None
             and self.lease_expires >= datetime.datetime.now(UTC)):
             raise LeaseHeld
@@ -89,24 +84,24 @@ class Job(SQLBase):
         self.lease_expires = expiry
 
     def start(self):
-        """Mark the job as started."""
+        """See `IJob`."""
         self._set_status(JobStatus.RUNNING)
         self.date_started = datetime.datetime.now(UTC)
         self.date_finished = None
         self.attempt_count += 1
 
     def complete(self):
-        """Mark the job as completed."""
+        """See `IJob`."""
         self._set_status(JobStatus.COMPLETED)
         self.date_finished = datetime.datetime.now(UTC)
 
     def fail(self):
-        """Mark the job as failed."""
+        """See `IJob`."""
         self._set_status(JobStatus.FAILED)
         self.date_finished = datetime.datetime.now(UTC)
 
     def queue(self):
-        """Mark the job as queued for processing."""
+        """See `IJob`."""
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
 

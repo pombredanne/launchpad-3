@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IJob',
     'JobStatus',
+    'LeaseHeld',
     ]
 
 
@@ -15,6 +16,12 @@ from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Text
 
 from canonical.launchpad import _
+
+
+class LeaseHeld(Exception):
+
+    def __init__(self):
+        Exception.__init__(self, 'Lease is already held.')
 
 
 class JobStatus(DBEnumeratedType):
@@ -67,3 +74,21 @@ class IJob(Interface):
 
     attempt_count = Int(title=_(
         'The number of attempts to perform this job that have been made.'))
+
+    def acquireLease(duration=300):
+        """Acquire the lease for this Job, or raise LeaseHeld."""
+
+    def start():
+        """Mark the job as started."""
+
+    def complete():
+        """Mark the job as completed."""
+
+    def fail():
+        """Indicate that the job has failed permanently.
+
+        Only running jobs can fail.
+        """
+
+    def queue():
+        """Mark the job as queued for processing."""

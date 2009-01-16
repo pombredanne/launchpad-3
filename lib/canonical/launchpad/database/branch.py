@@ -1672,12 +1672,6 @@ class BranchDiffJob(object):
 
     def run(self):
         """See IBranchDiffJob."""
-        self.job.start()
-        diff = self.performDiff()
-        self.job.complete()
-        return diff
-
-    def performDiff(self):
         bzr_branch = self.branch.getBzrBranch()
         from_revision_id = self._get_revision_id(
             bzr_branch, self.from_revision_spec)
@@ -1734,27 +1728,6 @@ class RevisionMailJob(BranchDiffJob):
                 Job.id.is_in(Job.ready_jobs)))
         return (RevisionMailJob(job) for job in jobs)
 
-    @classmethod
-    def runAll(klass, jobs=None):
-        """See `IRevisionMailJobSource`."""
-        done_jobs = []
-        if jobs is None:
-            jobs = klass.iterReady()
-        for job in jobs:
-            try:
-                job.job.acquireLease()
-            except LeaseHeld:
-                continue
-            try:
-                job.run()
-            except Exception:
-                info = sys.exc_info()
-                reporter = getUtility(IErrorReportingUtility)
-                reporter.raising(info)
-                continue
-            done_jobs.append(job)
-        return done_jobs
-
     @property
     def revno(self):
         revno = self.metadata['revno']
@@ -1781,7 +1754,7 @@ class RevisionMailJob(BranchDiffJob):
     def getMailer(self):
         """Return a BranchMailer for this job."""
         if self.perform_diff and self.to_revision_spec is not None:
-            diff = self.performDiff()
+            diff = BranchDiffJob.run(self)
             transaction.commit()
             diff_text = diff.diff.text
         else:
@@ -1792,11 +1765,4 @@ class RevisionMailJob(BranchDiffJob):
 
     def run(self):
         """See `IRevisionMailJob`."""
-        self.job.start()
-        try:
-            self.getMailer().sendAll()
-        except:
-            self.job.fail()
-            raise
-        else:
-            self.job.complete()
+        self.getMailer().sendAll()

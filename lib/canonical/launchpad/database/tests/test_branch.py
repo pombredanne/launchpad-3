@@ -1521,15 +1521,6 @@ class TestBranchDiffJob(TestCaseWithFactory):
         static_diff2 = job2.run()
         self.assertTrue(static_diff1 is static_diff2)
 
-    def test_run_sets_status_completed(self):
-        """Ensure status is set to completed when a job runs to completion."""
-        self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit')
-        job = BranchDiffJob.create(branch, '0', '1')
-        job.run()
-        self.assertEqual(JobStatus.COMPLETED, job.job.status)
-
     def create_rev1_diff(self):
         """Create a StaticDiff for use by test methods.
 
@@ -1666,53 +1657,6 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job.job.complete()
         self.assertEqual([], list(RevisionMailJob.iterReady()))
 
-    def makeBranchAndJobs(self):
-        branch = self.factory.makeBranch()
-        branch.subscribe(branch.registrant,
-            BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
-        job_1 = RevisionMailJob.create(
-            branch, 0, 'from@example.org', 'body', False, 'foo')
-        job_2 = RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', False, 'bar')
-        return branch, job_1, job_2
-
-    def test_runAll(self):
-        branch, job_1, job_2 = self.makeBranchAndJobs()
-        done_jobs = RevisionMailJob.runAll()
-        self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
-        self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
-        (mail1, mail2) = pop_notifications()
-        self.assertEqual(
-            set(['foo', 'bar']), set([mail1['Subject'], mail2['Subject']]))
-        self.assertEqual([job_1, job_2], done_jobs)
-
-    def test_runAll_skips_lease_failures(self):
-        branch, job_1, job_2 = self.makeBranchAndJobs()
-        def raise_lease_held():
-            raise LeaseHeld()
-        job_2.job.acquireLease = raise_lease_held
-        done_jobs = RevisionMailJob.runAll()
-        self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
-        self.assertEqual(JobStatus.WAITING, job_2.job.status)
-        self.assertEqual([job_1], done_jobs)
-
-    def test_runAll_reports_oopses(self):
-        branch, job_1, job_2 = self.makeBranchAndJobs()
-        def raiseError():
-            job_1.job.start()
-            job_1.job.fail()
-            raise Exception('Fake exception.  Foobar, I say!')
-        job_1.run = raiseError
-        done_jobs = RevisionMailJob.runAll([job_1, job_2])
-        self.assertEqual([job_2], done_jobs)
-        self.assertEqual([], list(RevisionMailJob.iterReady()))
-        self.assertEqual(JobStatus.FAILED, job_1.job.status)
-        self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
-        reporter = getUtility(IErrorReportingUtility)
-        oops = reporter.getLastOopsReport()
-        self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
 
 
 def test_suite():
