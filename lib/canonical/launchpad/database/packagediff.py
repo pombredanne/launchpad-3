@@ -232,11 +232,12 @@ class PackageDiffSet:
         return PackageDiff.get(diff_id)
 
     def getPendingDiffs(self, limit=None):
-        query = """
-            date_fulfilled IS NULL
-        """
-        return PackageDiff.select(
-            query, limit=limit, orderBy=['id'])
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(
+            PackageDiff, PackageDiff.status == PackageDiffStatus.PENDING)
+        result.order_by(PackageDiff.id)
+        result = result.config(limit=limit)
+        return result
 
     def getDiffsToReleases(self, sprs):
         """See `IPackageDiffSet`."""
