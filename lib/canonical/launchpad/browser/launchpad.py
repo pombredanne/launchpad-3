@@ -634,7 +634,14 @@ class LaunchpadRootNavigation(Navigation):
                     status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
-                return person
+                # Check to see if this is a team, and if so, whether the
+                # logged in user is allowed to view the team, by virtue of
+                # team membership or Launchpad administration.
+                if (person is None or
+                    not person.is_team or
+                    check_permission('launchpad.View', person)):
+                    return person
+                raise NotFound(self.context, name)
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
