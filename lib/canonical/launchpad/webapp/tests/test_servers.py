@@ -9,7 +9,8 @@ from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
 from canonical.launchpad.webapp.servers import (
-    BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
+    ApplicationServerSettingRequestFactory, BugsBrowserRequest,
+    BugsPublication, LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
     WEBSERVICE_PATH_OVERRIDE, WebServiceClientRequest, WebServicePublication,
@@ -56,6 +57,34 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
         new_request = request.retry()
         new_request.setInWSGIEnvironment('key', 'second value')
         self.assertEqual(new_request._orig_env['key'], 'second value')
+
+
+class TestApplicationServerSettingRequestFactory(unittest.TestCase):
+    """Tests for the ApplicationServerSettingRequestFactory."""
+
+    def test___call___should_set_HTTPS_env_on(self):
+        """Ensure that the factory sets the HTTPS variable in the request
+        when the protocol is https.
+        """
+        factory = ApplicationServerSettingRequestFactory(
+            LaunchpadBrowserRequest, 'launchpad.dev', 'https', 443)
+        request = factory(StringIO.StringIO(), {'HTTP_HOST': 'launchpad.dev'})
+        self.assertEquals(
+            request.get('HTTPS'), 'on', "factory didn't set the HTTPS env")
+        # This is a sanity check ensuring that effect of this works as 
+        # expected with the Zope request implementation.
+        self.assertEquals(request.getURL(), 'https://launchpad.dev')
+
+    def test___call___should_not_set_HTTPS(self):
+        """Ensure that the factory doesn't put an HTTPS variable in the 
+        request when the protocol is http.
+        """
+        factory = ApplicationServerSettingRequestFactory(
+            LaunchpadBrowserRequest, 'launchpad.dev', 'http', 80)
+        request = factory(StringIO.StringIO(), {})
+        self.assertEquals(
+            request.get('HTTPS'), None, 
+            "factory should not have set HTTPS env")
 
 
 class TestVhostWebserviceFactory(unittest.TestCase):
