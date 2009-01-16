@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, IBranchSet)
+    BranchLifecycleStatus, IBranchSet, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespace, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import (
@@ -26,7 +26,9 @@ from canonical.launchpad.interfaces.distribution import (
 from canonical.launchpad.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
-from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, NoSuchProduct)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet, NoSuchSourcePackageName)
 from canonical.launchpad.webapp.interfaces import (
@@ -238,6 +240,27 @@ class BranchNamespaceSet:
         data = self._realize(names)
         return self.get(**data)
 
+    def traverse(self, segments):
+        """See `IBranchNamespaceSet`."""
+        person_name = segments.next()
+        person = self._findPerson(person_name)
+        pillar_name = segments.next()
+        pillar = self._findPillar(pillar_name)
+        if pillar is None or IProduct.providedBy(pillar):
+            namespace = self.get(person, product=pillar)
+        else:
+            distroseries_name = segments.next()
+            distroseries = self._findDistroSeries(pillar, distroseries_name)
+            sourcepackagename_name = segments.next()
+            sourcepackagename = self._findSourcePackageName(
+                sourcepackagename_name)
+            namespace = self.get(
+                person, distroseries=distroseries,
+                sourcepackagename=sourcepackagename)
+        branch_name = segments.next()
+        return self._findOrRaise(
+            NoSuchBranch, branch_name, namespace.getByName)
+
     def _findOrRaise(self, error, name, finder, *args):
         if name is None:
             return None
@@ -251,6 +274,12 @@ class BranchNamespaceSet:
     def _findPerson(self, person_name):
         return self._findOrRaise(
             NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
+
+    def _findPillar(self, pillar_name):
+        if pillar_name == '+junk':
+            return None
+        return self._findOrRaise(
+            NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
 
     def _findProduct(self, product_name):
         if product_name == '+junk':

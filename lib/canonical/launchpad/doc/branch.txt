@@ -473,7 +473,7 @@ Let's get a branch with some revisions in it.
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByName('name12')
-    >>> junk = sample_person.getBranch('+junk', 'junk.dev')
+    >>> junk = branchset.getByUniqueName('~name12/+junk/junk.dev')
     >>> print junk.unique_name
     ~name12/+junk/junk.dev
 
