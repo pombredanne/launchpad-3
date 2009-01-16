@@ -42,6 +42,8 @@ __all__ = [
     'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
     'RepositoryFormat',
+    'IRevisionMailJob',
+    'IRevisionMailJobSource',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
@@ -71,7 +73,8 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat7)
 from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
-from zope.schema import Bool, Int, Choice, Object, Text, TextLine, Datetime
+from zope.schema import (
+    Bool, Bytes, Int, Choice, Object, Text, TextLine, Datetime)
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
@@ -88,7 +91,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -429,12 +433,10 @@ class BranchTypeError(Exception):
     """
 
 
-class NoSuchBranch(Exception):
+class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
-    def __init__(self, unique_name):
-        self.unique_name = unique_name
-        Exception.__init__(self, "No such branch: %s" % (unique_name,))
+    _message_prefix = "No such branch"
 
 
 class BadBranchSearchContext(Exception):
@@ -874,6 +876,18 @@ class IBranch(IHasOwner):
         "development focus, then the result should be lp:product.  If "
         "the branch is related to a series, then lp:product/series. "
         "Otherwise the result is lp:~user/product/branch-name.")
+
+    def addToLaunchBag(launchbag):
+        """Add information about this branch to `launchbag'.
+
+        Use this when traversing to this branch in the web UI.
+
+        In particular, add information about the branch's container to the
+        launchbag. If the branch has a product, add that; if it has a source
+        package, add lots of information about that.
+
+        :param launchbag: `ILaunchBag`.
+        """
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.
@@ -1464,6 +1478,30 @@ class IBranchDiffJobSource(Interface):
         :param from_revision_spec: The revision spec to diff from.
         :param to_revision_spec: The revision spec to diff to.
         """
+
+
+class IRevisionMailJob(Interface):
+    """A Job to send email a revision change in a branch."""
+
+    revno = Int(title=u'The revno to send mail about.')
+
+    from_address = Bytes(title=u'The address to send mail from.')
+
+    perform_diff = Text(title=u'Determine whether diff should be performed.')
+
+    body = Text(title=u'The main text of the email to send.')
+
+    subject = Text(title=u'The subject of the email to send.')
+
+    def run():
+        """Send the mail as specified by this job."""
+
+
+class IRevisionMailJobSource(Interface):
+    """A utility to create and retrieve RevisionMailJobs."""
+
+    def create(db_branch, revno, email_from, message, perform_diff, subject):
+        """Create and return a new object that implements IRevisionMailJob."""
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):

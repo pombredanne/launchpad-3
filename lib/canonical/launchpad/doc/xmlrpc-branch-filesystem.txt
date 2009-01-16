@@ -29,21 +29,3 @@ the IBranchFileSystem class.
     ...     private_root.branchfilesystem, TestRequest())
     >>> verifyObject(IBranchFileSystem, branchfs_api)
     True
-
-The IBranchFileSystem interface defines some methods, for which
-see the unit tests.  One of these is the 'getBranchesForUser'.
-
-    >>> branchfs_api.getBranchInformation(
-    ...     12, 'vcs-imports', 'evolution', 'doesntexist')
-    ('', '')
-
-This method can be accessed over XMLRPC.
-
-    >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
-    >>> branchfs = xmlrpclib.ServerProxy(
-    ...     'http://xmlrpc-private.launchpad.dev:8087/branchfilesystem',
-    ...     transport=XMLRPCTestTransport())
-    >>> branchfs.getBranchInformation(
-    ...     12, 'vcs-imports', 'evolution', 'doesntexist')
-    ['', '']

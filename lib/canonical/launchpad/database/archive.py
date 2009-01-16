@@ -1163,8 +1163,6 @@ class ArchiveSet:
     def new(self, purpose, owner, name=None, distribution=None,
             description=None):
         """See `IArchiveSet`."""
-        # XXX, al-maisan, 2008-11-19, bug #299856: copy archives are to be
-        # created with the "publish" flag turned off.
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
@@ -1177,6 +1175,17 @@ class ArchiveSet:
             publish = False
         else:
             publish = True
+
+        # For non-PPA archives we enforce unique names within the context of a
+        # distribution.
+        if purpose != ArchivePurpose.PPA:
+            archive = Archive.selectOne(
+                "Archive.distribution = %s AND Archive.name = %s" %
+                sqlvalues(distribution, name))
+            if archive is not None:
+                raise AssertionError(
+                    "archive '%s' exists already in '%s'." %
+                    (name, distribution.name))
 
         return Archive(
             owner=owner, distribution=distribution, name=name,

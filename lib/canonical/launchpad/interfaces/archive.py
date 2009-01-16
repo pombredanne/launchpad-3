@@ -850,6 +850,7 @@ class IArchiveSet(Interface):
             description;
 
         :return: an `IArchive` object.
+        :raises AssertionError if name is already taken within distribution.
         """
 
     def get(archive_id):

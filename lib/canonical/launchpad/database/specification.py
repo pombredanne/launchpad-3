@@ -37,7 +37,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist)
+    get_contact_email_addresses, shortlist)
 
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
@@ -316,7 +316,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
             subscription.person for subscription in self.subscriptions]
         addresses = set()
         for person in related_people + subscribers:
-            addresses.update(contactEmailAddresses(person))
+            addresses.update(get_contact_email_addresses(person))
         return sorted(addresses)
 
     # emergent properties
@@ -645,7 +645,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         branch_link = self.getBranchLink(branch)
         if branch_link is not None:
             return branch_link
-        branch.date_last_modified = UTC_NOW
         branch_link = SpecificationBranch(
             specification=self, branch=branch, summary=summary,
             registrant=registrant)

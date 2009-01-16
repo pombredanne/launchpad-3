@@ -122,7 +122,7 @@ The summary is now shown.
 
     >>> open_page_and_print_tag('page-summary')
     Related branches: 1 (1 registered, 1 owned, 1 subscribed)
-    0 active reviews, 0 approved merges
+    0 active proposals, 0 approved merges, 0 requested reviews
 
 Now we'll create another branch, and unsubscribe the owner from it.
 
@@ -133,4 +133,5 @@ Now we'll create another branch, and unsubscribe the owner from it.
 
     >>> open_page_and_print_tag('page-summary')
     Related branches: 2 (2 registered, 2 owned, 1 subscribed)
-    0 active reviews, 0 approved merges
+    0 active proposals, 0 approved merges, 0 requested reviews
+
