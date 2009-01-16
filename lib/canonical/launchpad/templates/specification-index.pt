@@ -11,9 +11,6 @@
 >
   <body>
 
-
-
-
 <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
@@ -166,7 +163,7 @@
             <div tal:define="link context_menu/linksprint"
                  tal:condition="link/enabled"
                  tal:content="structure link/render"
-            >Link to a bug
+            >Propose for Sprint
             </div>
           </td>
         </tr>
@@ -176,11 +173,13 @@
       The blueprint summary will go here.
     </tal:desc>
     <ul class="menu">
-      <li class="link">
-        <a
-          tal:condition="context/specurl"
-          tal:attributes="href context/specurl"
+      <li class="link"
+          tal:condition="context/specurl">
+        <a tal:attributes="href context/specurl"
         ><strong>Read the full specification &raquo;</strong></a>
+      </li>
+      <li tal:condition="context/required:launchpad.AnyPerson"
+          class="link">
         <a tal:condition="not:context/specurl" href="+edit"
         >Set the URL for this specification</a>
       </li>

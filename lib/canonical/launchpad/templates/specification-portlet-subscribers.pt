@@ -8,6 +8,16 @@
      metal:define-macro="custom"
      class="portlet">
   <div class="section">
+    <div tal:define="link context/menu:context/retarget"
+         tal:condition="link/enabled"
+         tal:content="structure link/render"
+    >Retarget</div>
+    <div tal:define="link context/menu:context/supersede"
+         tal:condition="link/enabled"
+         tal:content="structure link/render"
+    >Mark superseded</div>
+  </div>
+  <div class="section">
     <h2>Registered by</h2>
     <dl>
        <dt>

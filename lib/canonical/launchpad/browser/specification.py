@@ -406,7 +406,7 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def retarget(self):
-        text = 'Retarget'
+        text = 'Re-target blueprint'
         return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
