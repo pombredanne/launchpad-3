@@ -19,6 +19,7 @@ from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestJob(TestCase):
+    """Ensure Job behaves as intended."""
 
     layer = LaunchpadZopelessLayer
 
@@ -149,42 +150,50 @@ class TestJob(TestCase):
 
 
 class TestReadiness(TestCase):
+    """Test the implementation of readiness."""
 
     layer = LaunchpadZopelessLayer
 
     def test_ready_jobs(self):
+        """Job.ready_jobs should include new jobs."""
         job = Job()
         self.assertEqual(
             [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_started(self):
+        """Job.ready_jobs should not jobs that have been started."""
         job = Job(_status=JobStatus.RUNNING)
         self.assertEqual(
             [], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_lease_expired(self):
+        """Job.ready_jobs should include jobs with expired leases."""
         UNIX_EPOCH = datetime.datetime.fromtimestamp(0, pytz.timezone('UTC'))
         job = Job(lease_expires=UNIX_EPOCH)
         self.assertEqual(
             [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_lease_in_future(self):
+        """Job.ready_jobs should not include jobs with active leases."""
         future = datetime.datetime.fromtimestamp(
             time.time() + 1000, pytz.timezone('UTC'))
         job = Job(lease_expires=future)
         self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_acquireLease(self):
+        """Job.acquireLease should set job.lease_expires."""
         job = Job()
         job.acquireLease()
         self.assertIsNot(None, job.lease_expires)
 
     def test_acquireHeldLease(self):
+        """Job.acquireLease should raise LeaseHeld if repeated."""
         job = Job()
         job.acquireLease()
         self.assertRaises(LeaseHeld, job.acquireLease)
 
     def test_acquireStaleLease(self):
+        """Job.acquireLease should work when a lease is expired."""
         job = Job()
         job.acquireLease(-1)
         job.acquireLease()

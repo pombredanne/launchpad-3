@@ -37,6 +37,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.codehosting.jobs import JobRunner
 from canonical.codehosting.scanner.bzrsync import (
     BranchMergeDetectionHandler, BzrSync, get_revision_message,
     InvalidStackedBranchURL)
@@ -681,7 +682,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         stub.test_emails = []
         self.uncommitRevision()
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        getUtility(IRevisionMailJobSource).runAll()
+        JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         self.assertEqual(len(stub.test_emails), 1)
         [uncommit_email] = stub.test_emails
         expected = '1 revision was removed from the branch.'
@@ -703,7 +704,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         author = self.factory.getUniqueString()
         self.commitRevision('second', committer=author)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        getUtility(IRevisionMailJobSource).runAll()
+        JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         self.assertEqual(len(stub.test_emails), 2)
         [recommit_email, uncommit_email] = stub.test_emails
         uncommit_email_body = uncommit_email[2]

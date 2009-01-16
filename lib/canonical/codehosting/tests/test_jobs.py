@@ -23,10 +23,12 @@ from canonical.launchpad.testing import TestCaseWithFactory
 
 
 class TestJobRunner(TestCaseWithFactory):
+    """Ensure JobRunner behaves as expected."""
 
     layer = LaunchpadFunctionalLayer
 
     def makeBranchAndJobs(self):
+        """Test fixture.  Create a branch and two jobs that use it."""
         branch = self.factory.makeBranch()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
@@ -47,6 +49,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual([job_1], runner.completed_jobs)
 
     def test_runAll(self):
+        """Ensure runAll works in the normal case."""
         branch, job_1, job_2 = self.makeBranchAndJobs()
         runner = JobRunner([job_1, job_2])
         runner.runAll()
@@ -58,6 +61,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual([job_1, job_2], runner.completed_jobs)
 
     def test_runAll_skips_lease_failures(self):
+        """Ensure runAll skips jobs whose leases can't be acquired."""
         branch, job_1, job_2 = self.makeBranchAndJobs()
         def raise_lease_held():
             raise LeaseHeld()
@@ -68,8 +72,11 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.WAITING, job_2.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
         self.assertEqual([job_2], runner.incomplete_jobs)
+        reporter = getUtility(IErrorReportingUtility)
+        self.assertIs(None, reporter.getLastOopsReport())
 
     def test_runAll_reports_oopses(self):
+        """When an error is encountered, report an oops and continue."""
         branch, job_1, job_2 = self.makeBranchAndJobs()
         def raiseError():
             raise Exception('Fake exception.  Foobar, I say!')

@@ -20,6 +20,7 @@ from canonical.launchpad import _
 
 
 class LeaseHeld(Exception):
+    """Raised when attempting to acquire a list that is already held."""
 
     def __init__(self):
         Exception.__init__(self, 'Lease is already held.')
