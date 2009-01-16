@@ -37,13 +37,5 @@
 Known Issues
 ~~~~~~~~~~~~
 
-Going to https://bugs.launchpad.dev/firefox/+bug/5 causes a traceback::
-	  
-    Traceback (most recent call last):
-    ...
-    * Module compiler.transformer, line 129, in parsesuite
-          return self.transform(parser.suite(text))
-    IndentationError: expected an indented block (line 215)
-    
-See also bugs #312597, #312498, #317572 and #317573.
+See bugs #312498, #317572 and #317573.
 
