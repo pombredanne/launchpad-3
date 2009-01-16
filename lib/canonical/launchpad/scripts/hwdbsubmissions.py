@@ -1293,7 +1293,7 @@ class HALDevice:
           parent and by their USB vendor/product IDs, which are 0:0.
         """
         bus = self.raw_bus
-        if bus in (None, 'usb', 'ssb', 'scsi_host'):
+        if bus in (None, 'scsi_host', 'ssb', 'usb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
@@ -1313,8 +1313,8 @@ class HALDevice:
             # represent separate devices.
             #
             # info.bus == 'scsi_host' is used by the HAL version in
-            # Intrepid to real and "fake" SCSI host controllers.
-            # (ON Hardy, these nodes have no info.bus property)
+            # Intrepid for real and "fake" SCSI host controllers.
+            # (On Hardy, these nodes have no info.bus property.)
             # HAL nodes with this bus value are sub-nodes for the
             # "SCSI aspect" of another HAL node which represents the
             # real device.
