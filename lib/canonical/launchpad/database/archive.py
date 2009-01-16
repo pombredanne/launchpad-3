@@ -1068,13 +1068,7 @@ class Archive(SQLBase):
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
         if token is None:
-            token = create_unique_token_for_table(
-                20, ArchiveAuthToken, "token")
-        if not isinstance(token, unicode):
-            # Storm barfs if the string is not unicode so see if it
-            # converts.  If it doesn't, never mind, it would have blown
-            # up anyway.
-            token = unicode(token)
+            token = create_unique_token_for_table(20, ArchiveAuthToken.token)
         archive_auth_token = ArchiveAuthToken()
         archive_auth_token.archive = self
         archive_auth_token.person = person
