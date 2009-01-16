@@ -315,11 +315,10 @@ class ArchiveViewBase:
     @property
     def source_count_text(self):
         """Return the correct form of the source counter notice."""
-        num_sources_published = self.context.number_of_sources_published
-        if num_sources_published == 1:
-            return '%s source package' % num_sources_published
+        if self.context.number_of_sources == 1:
+            return '%s source package' % self.context.number_of_sources
         else:
-            return '%s source packages' % num_sources_published
+            return '%s source packages' % self.context.number_of_sources
 
     @property
     def binary_count_text(self):

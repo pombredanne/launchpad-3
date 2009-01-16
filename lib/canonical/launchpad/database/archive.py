@@ -428,11 +428,6 @@ class Archive(SQLBase):
     @property
     def number_of_sources(self):
         """See `IArchive`."""
-        return self.getPublishedSources().count()
-
-    @property
-    def number_of_sources_published(self):
-        """See `IArchive`."""
         return self.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED).count()
 
@@ -623,7 +618,7 @@ class Archive(SQLBase):
         # indexes related to each publication. We assume it is around 1K
         # but that's over-estimated.
         cruft = (
-            self.number_of_sources_published + self.number_of_binaries) * 1024
+            self.number_of_sources + self.number_of_binaries) * 1024
         return size + cruft
 
     def allowUpdatesToReleasePocket(self):
