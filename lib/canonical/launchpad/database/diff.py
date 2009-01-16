@@ -7,9 +7,7 @@ __all__ = ['Diff', 'StaticDiff',]
 
 from cStringIO import StringIO
 
-from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.revisionspec import RevisionSpec
 from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
 from zope.interface import classProvides, implements

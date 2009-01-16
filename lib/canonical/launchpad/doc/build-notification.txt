@@ -4,7 +4,7 @@ IBuild instance implements the 'notify' method which sends a status
 report about the current record to the
 ISourcePackageRelease.creator.preferred email.
 
-We rely on contactEmailAddresses() to DTRT, either use the
+We rely on get_contact_email_addresses() to DTRT, either use the
 Team.contactaddress of the Launchpad Buildd Celebrity or the
 preferredemail of its members.
 

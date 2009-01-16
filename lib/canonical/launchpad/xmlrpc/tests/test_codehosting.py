@@ -24,8 +24,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -487,10 +486,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.factory = frontend.getLaunchpadObjectFactory()
         self.branch_set = frontend.getBranchSet()
 
-    def assertFaultEqual(self, faultCode, faultString, fault):
-        """Assert that `fault` has the passed-in attributes."""
-        self.assertEqual(fault.faultCode, faultCode)
-        self.assertEqual(fault.faultString, faultString)
+    def assertFaultEqual(self, expected_fault, observed_fault):
+        """Assert that `expected_fault` equals `observed_fault`."""
+        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
+        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
+        self.assertEqual(
+            expected_fault.faultString, observed_fault.faultString)
 
     def test_createBranch(self):
         # createBranch creates a branch with the supplied details and the
@@ -513,10 +514,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'invalid')
         fault = self.branchfs.createBranch(requester.id, path)
         login(ANONYMOUS)
-        self.assertFaultEqual(
-            faults.InvalidPath.error_code,
-            "Could not translate '%s'. Can only translate absolute paths."
-            % path, fault)
+        self.assertFaultEqual(faults.InvalidPath(path), fault)
 
     def test_createBranch_junk(self):
         # createBranch can create +junk branches.
@@ -540,9 +538,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         fault = self.branchfs.createBranch(
             owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE,
-            BranchCreationNoTeamOwnedJunkBranches.error_message, fault)
+        expected_fault = faults.PermissionDenied(
+            BranchCreationNoTeamOwnedJunkBranches.error_message)
+        self.assertFaultEqual(expected_fault, fault)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -551,8 +549,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "Project 'no-such-product' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~%s/no-such-product/%s' % (owner.name, name)))
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_other_user(self):
         # Creating a branch under another user's directory fails.
@@ -565,8 +562,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             creator.id,
             escape('/~%s/%s/%s' % (other_person.name, product.name, name)))
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_bad_name(self):
         # Creating a branch with an invalid name fails.
@@ -578,8 +574,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_bad_user(self):
         # Creating a branch under a non-existent user fails.
@@ -589,8 +584,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/%s/%s' % (product.name, name)))
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_bad_user_bad_product(self):
         # If both the user and the product are not found, then the missing
@@ -601,8 +595,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/no-product/%s' % (name,)))
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_not_branch(self):
         # Trying to create a branch at a path that's not valid for branches
@@ -611,8 +604,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape('/~%s' % owner.name)
         fault = self.branchfs.createBranch(owner.id, path)
         message = "Cannot create branch at '%s'" % path
-        self.assertFaultEqual(
-            PERMISSION_DENIED_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_source_package(self):
         # createBranch can take the path to a source package branch and create
@@ -649,8 +641,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_invalid_distroseries(self):
         # If createBranch is called with the path to a non-existent
@@ -664,8 +655,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution series: 'ningnangnong'."
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_createBranch_invalid_sourcepackagename(self):
         # If createBranch is called with the path to an invalid source
@@ -678,200 +668,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, message, fault)
-
-    def test_getBranchInformation_owned(self):
-        # When we get the branch information for one of our own hosted
-        # branches, we get the database id of the branch, and a flag saying
-        # that we can write to that branch.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeBranch(BranchType.HOSTED, owner=requester)
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(WRITABLE, permissions)
-
-    def test_getBranchInformation_team_owned(self):
-        # When we get the branch information for a hosted branch owned by one
-        # of our teams, we get the database id of the branch, and a flag
-        # saying that we can write to that branch.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(requester)
-        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(WRITABLE, permissions)
-
-    def test_getBranchInformation_team_unowned(self):
-        # We only have read-only access to hosted branches owned by other
-        # teams.
-        requester = self.factory.makePerson()
-        team = self.factory.makeTeam(self.factory.makePerson())
-        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
-
-    def test_getBranchInformation_nonexistent(self):
-        # When we get the branch information for a non-existent branch, we get
-        # a tuple of two empty strings (the empty string being an
-        # approximation of 'None').
-        requester_id = self.factory.getUniqueInteger()
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'some-name', 'some-product', 'doesnt-exist')
-        login(ANONYMOUS)
-        self.assertEqual('', branch_id)
-        self.assertEqual('', permissions)
-
-    def test_getBranchInformation_unowned(self):
-        # When we get the branch information for a branch that we don't own,
-        # we get the database id and a flag saying that we can only read that
-        # branch.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeBranch()
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
-
-    def test_getBranchInformation_mirrored(self):
-        # Mirrored branches cannot be written to by the smartserver or SFTP
-        # server.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeBranch(BranchType.MIRRORED, owner=requester)
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def test_getBranchInformation_imported(self):
-        # Imported branches cannot be written to by the smartserver or SFTP
-        # server.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeBranch(BranchType.IMPORTED, owner=requester)
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def test_getBranchInformation_remote(self):
-        # Remote branches are not accessible by the smartserver or SFTP
-        # server.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeBranch(BranchType.REMOTE, owner=requester)
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(('', ''), branch_info)
-
-    def test_getBranchInformation_private(self):
-        # When we get the branch information for a private branch that is
-        # hidden to us, it is an if the branch doesn't exist at all.
-        requester = self.factory.makePerson()
-        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
-        branch_info = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(('', ''), branch_info)
-
-    def test_getBranchInformationAsLaunchpadServices(self):
-        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
-        # branches.
-        branch = self.factory.makeBranch()
-        branch_info = self.branchfs.getBranchInformation(
-            LAUNCHPAD_SERVICES, branch.owner.name, branch.product.name,
-            branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def test_getBranchInformationForPrivateAsLaunchpadServices(self):
-        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
-        # branches, even private ones.
-        requester = self.factory.makePerson()
-        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
-        branch_info = self.branchfs.getBranchInformation(
-            LAUNCHPAD_SERVICES, branch.owner.name, branch.product.name,
-            branch.name)
-        login(ANONYMOUS)
-        self.assertEqual((branch.id, READ_ONLY), branch_info)
-
-    def _makeProductWithDevFocus(self, private=False):
-        """Make a stacking-enabled product with a development focus.
-
-        :param private: Whether the development focus branch should be
-            private.
-        :return: The new Product and the new Branch.
-        """
-        product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(product=product, private=private)
-        self.factory.enableDefaultStackingForProduct(product, branch)
-        self.assertEqual(product.default_stacked_on_branch, branch)
-        return product, branch
-
-    def test_getDefaultStackedOnBranch_invisible(self):
-        # When the default stacked-on branch for a product is not visible to
-        # the requesting user, then we return the empty string.
-        requester = self.factory.makePerson()
-        product, branch = self._makeProductWithDevFocus(private=True)
-        stacked_on_url = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, product.name)
-        self.assertEqual('', stacked_on_url)
-
-    def test_getDefaultStackedOnBranch_private(self):
-        # When the default stacked-on branch for a product is private but
-        # visible to the requesting user, we return the URL to the branch
-        # relative to the host.
-        product, branch = self._makeProductWithDevFocus(private=True)
-        # We want to know who owns it and what its name is. We are a test and
-        # should be allowed to know such things.
-        branch = removeSecurityProxy(branch)
-        unique_name = branch.unique_name
-        stacked_on_url = self.branchfs.getDefaultStackedOnBranch(
-            branch.owner.id, product.name)
-        self.assertEqual('/' + unique_name, stacked_on_url)
-
-    def test_getDefaultStackedOnBranch_junk(self):
-        # getDefaultStackedOnBranch returns the empty string for '+junk'.
-        requester = self.factory.makePerson()
-        branch = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, '+junk')
-        self.assertEqual('', branch)
-
-    def test_getDefaultStackedOnBranch_none_set(self):
-        # getDefaultStackedOnBranch returns the empty string when there is no
-        # branch set.
-        requester = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        branch = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, product.name)
-        self.assertEqual('', branch)
-
-    def test_getDefaultStackedOnBranch_no_product(self):
-        # getDefaultStackedOnBranch raises a Fault if there is no such
-        # product.
-        requester = self.factory.makePerson()
-        product = 'no-such-product'
-        fault = self.branchfs.getDefaultStackedOnBranch(requester.id, product)
-        self.assertFaultEqual(
-            NOT_FOUND_FAULT_CODE, 'Project %r does not exist.' % (product,),
-            fault)
-
-    def test_getDefaultStackedOnBranch(self):
-        # getDefaultStackedOnBranch returns the relative URL of the default
-        # stacked-on branch for the named product.
-        requester = self.factory.makePerson()
-        product, branch = self._makeProductWithDevFocus(private=False)
-        branch_location = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, product.name)
-        login(ANONYMOUS)
-        self.assertEqual('/' + branch.unique_name, branch_location)
+        self.assertFaultEqual(faults.NotFound(message), fault)
 
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
@@ -900,16 +697,34 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""
         fault = self.branchfs.translatePath(requester.id, path)
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        self.assertFaultEqual(faults.PathTranslationError(path), fault)
 
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
-        fault = self.branchfs.translatePath(requester.id, path)
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+            requester = requester.id
+        fault = self.branchfs.translatePath(requester, path)
+        self.assertFaultEqual(faults.PathTranslationError(path), fault)
+
+    def assertPermissionDenied(self, requester, path):
+        """Assert that looking at the given path gives permission denied."""
+        if requester not in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+            requester = requester.id
+        fault = self.branchfs.translatePath(requester, path)
+        self.assertFaultEqual(faults.PermissionDenied(), fault)
+
+    def _makeProductWithDevFocus(self, private=False):
+        """Make a stacking-enabled product with a development focus.
+
+        :param private: Whether the development focus branch should be
+            private.
+        :return: The new Product and the new Branch.
+        """
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product, private=private)
+        self.factory.enableDefaultStackingForProduct(product, branch)
+        self.assertEqual(product.default_stacked_on_branch, branch)
+        return product, branch
 
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path. When
@@ -923,10 +738,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
         fault = self.branchfs.translatePath(requester.id, path)
-        self.assertFaultEqual(
-            faults.InvalidPath.error_code,
-            "Could not translate '%s'. Can only translate absolute paths."
-            % path, fault)
+        self.assertFaultEqual(faults.InvalidPath(path), fault)
 
     def test_translatePath_branch(self):
         requester = self.factory.makePerson()
@@ -1012,11 +824,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
             translation)
 
-    def test_translatePath_invisible_branch(self):
+    def test_translatePath_cant_see_private_branch(self):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        self.assertNotFound(requester, path)
+        self.assertPermissionDenied(requester, path)
 
     def test_translatePath_remote_branch(self):
         requester = self.factory.makePerson()
@@ -1029,6 +841,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/%s' % branch.unique_name)
         translation = self.branchfs.translatePath(LAUNCHPAD_SERVICES, path)
         login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_anonymous_cant_see_private_branch(self):
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
+        path = escape(u'/%s' % branch.unique_name)
+        self.assertPermissionDenied(ANONYMOUS, path)
+
+    def test_translatePath_anonymous_public_branch(self):
+        branch = self.factory.makeBranch()
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(ANONYMOUS, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)

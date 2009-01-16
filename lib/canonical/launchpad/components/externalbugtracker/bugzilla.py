@@ -449,7 +449,32 @@ class BugzillaLPPlugin(Bugzilla):
 
         return bug_ids
 
-    def initializeRemoteBugDB(self, bug_ids):
+    def getProductsForRemoteBugs(self, bug_ids):
+        """Return the products to which a set of remote bugs belong.
+
+        :param bug_ids: A list of bug IDs or aliases.
+        :returns: A dict of (bug_id_or_alias, product) mappings. If a
+            bug ID specified in `bug_ids` is invalid, it will be ignored.
+        """
+        # Fetch from the server those bugs that we haven't already
+        # fetched.
+        self.initializeRemoteBugDB(bug_ids)
+
+        bug_products = {}
+        for bug_id in bug_ids:
+            # If one of the bugs we're trying to get the product for
+            # doesn't exist, just skip it.
+            try:
+                actual_bug_id = self._getActualBugId(bug_id)
+            except BugNotFound:
+                continue
+
+            bug_dict = self._bugs[actual_bug_id]
+            bug_products[bug_id] = bug_dict['product']
+
+        return bug_products
+
+    def initializeRemoteBugDB(self, bug_ids, products=None):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
         # data.
@@ -467,6 +492,10 @@ class BugzillaLPPlugin(Bugzilla):
             'ids': bug_ids_to_retrieve,
             'permissive': True,
             }
+
+        if products is not None:
+            request_args['products'] = products
+
         response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 

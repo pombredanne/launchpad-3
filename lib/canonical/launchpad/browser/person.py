@@ -100,6 +100,8 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -182,7 +184,6 @@ from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 
-from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
@@ -2619,12 +2620,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return self.userIsActiveMember()
 
-    def obfuscatedEmail(self):
-        if self.context.preferredemail is not None:
-            return obfuscateEmail(self.context.preferredemail.email)
-        else:
-            return None
-
     @cachedproperty
     def email_address_visibility(self):
         """The EmailAddressVisibleState of this person or team.
@@ -2670,22 +2665,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             return 'This email address is not disclosed to others.'
         else:
             return None
-
-    def htmlEmail(self):
-        if self.context.preferredemail is not None:
-            return convertToHtmlCode(self.context.preferredemail.email)
-        else:
-            return None
-
-    def htmlJabberIDs(self):
-        """Return the person's Jabber IDs somewhat obfuscated.
-
-        The IDs are encoded using HTML hexadecimal entities to hinder
-        email harvesting. (Jabber IDs are sometime valid email accounts,
-        gmail for example.)
-        """
-        return [convertToHtmlCode(jabber.jabberid)
-                for jabber in self.context.jabberids]
 
     def showSSHKeys(self):
         """Return a data structure used for display of raw SSH keys"""
@@ -3508,16 +3487,6 @@ class PersonEditView(BasePersonEditView):
     def cancel_url(self):
         """The URL that the 'Cancel' link should return to."""
         return canonical_url(self.context)
-
-    def htmlJabberIDs(self):
-        """Return the person's Jabber IDs somewhat obfuscated.
-
-        The IDs are encoded using HTML hexadecimal entities to hinder
-        email harvesting. (Jabber IDs are sometime valid email accounts,
-        gmail for example.)
-        """
-        return [convertToHtmlCode(jabber.jabberid)
-                for jabber in self.context.jabberids]
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
@@ -5087,6 +5056,12 @@ class IEmailToPerson(Interface):
 
     message = Text(
         title=_('Message'), required=True, readonly=False)
+
+    @invariant
+    def subject_and_message_are_not_empty(data):
+        """Raise an Invalid error if the message or subject is empty."""
+        if '' in (data.message.strip(), data.subject.strip()):
+            raise Invalid('You must provide a subject and a message.')
 
 
 class ContactViaWebNotificationRecipientSet:

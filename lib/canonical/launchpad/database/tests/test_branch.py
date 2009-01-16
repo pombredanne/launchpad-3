@@ -20,8 +20,9 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
-    BranchSet, BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation)
+    BranchDiffJob, BranchJob, BranchJobType, BranchSet, BranchSubscription,
+    ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
+    DeletionCallable, DeletionOperation, RevisionMailJob)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.bugbranch import BugBranch
@@ -38,14 +39,20 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
+    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchDiffJob,
+    IBranchJob, NoSuchBranch, IRevisionMailJob)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.tests.mail_helpers import pop_notifications
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -1440,6 +1447,200 @@ class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
             expert, celebs.bazaar_experts.teamowner)
 
         self.assertEqual(self.all_branches, self._getBranches(expert))
+
+
+class TestBranchJob(TestCaseWithFactory):
+    """Tests for BranchJob."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchJob implements IBranchJob."""
+        branch = self.factory.makeBranch()
+        verifyObject(
+            IBranchJob, BranchJob(branch, BranchJobType.STATIC_DIFF, {}))
+
+    def test_destroySelf_destroys_job(self):
+        """Ensure that BranchJob.destroySelf destroys the Job as well."""
+        branch = self.factory.makeBranch()
+        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
+        job_id = branch_job.job.id
+        branch_job.destroySelf()
+        self.assertRaises(SQLObjectNotFound, BranchJob.get, job_id)
+
+
+class TestBranchDiffJob(TestCaseWithFactory):
+    """Tests for BranchDiffJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        verifyObject(
+            IBranchDiffJob, BranchDiffJob.create(1, '0', '1'))
+
+    def test_run_revision_ids(self):
+        """Ensure that run calculates revision ids."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit', rev_id='rev1')
+        job = BranchDiffJob.create(branch, '0', '1')
+        static_diff = job.run()
+        self.assertEqual('null:', static_diff.from_revision_id)
+        self.assertEqual('rev1', static_diff.to_revision_id)
+
+    def test_run_diff_content(self):
+        """Ensure that run generates expected diff."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        open('file', 'wb').write('foo\n')
+        tree.add('file')
+        tree.commit('First commit')
+        open('file', 'wb').write('bar\n')
+        tree.commit('Next commit')
+        job = BranchDiffJob.create(branch, '1', '2')
+        static_diff = job.run()
+        transaction.commit()
+        content_lines = static_diff.diff.text.splitlines()
+        self.assertEqual(
+            content_lines[3:], ['@@ -1,1 +1,1 @@', '-foo', '+bar', ''],
+            content_lines[3:])
+        self.assertEqual(7, len(content_lines))
+
+    def test_run_is_idempotent(self):
+        """Ensure running an equivalent job emits the same diff."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        job1 = BranchDiffJob.create(branch, '0', '1')
+        static_diff1 = job1.run()
+        job2 = BranchDiffJob.create(branch, '0', '1')
+        static_diff2 = job2.run()
+        self.assertTrue(static_diff1 is static_diff2)
+
+    def test_run_sets_status_completed(self):
+        """Ensure status is set to completed when a job runs to completion."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        job = BranchDiffJob.create(branch, '0', '1')
+        job.run()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+
+    def create_rev1_diff(self):
+        """Create a StaticDiff for use by test methods.
+
+        This diff contains an add of a file called hello.txt, with contents
+        "Hello World\n".
+        """
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        first_revision = 'rev-1'
+        tree_transport = tree.bzrdir.root_transport
+        tree_transport.put_bytes("hello.txt", "Hello World\n")
+        tree.add('hello.txt')
+        tree.commit('rev1', timestamp=1e9, timezone=0)
+        job = BranchDiffJob.create(branch, '0', '1')
+        diff = job.run()
+        transaction.commit()
+        return diff
+
+    def test_diff_contents(self):
+        """Ensure the diff contents match expectations."""
+        diff = self.create_rev1_diff()
+        expected = (
+            "=== added file 'hello.txt'" '\n'
+            "--- hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "@@ -0,0 +1,1 @@" '\n'
+            "+Hello World" '\n'
+            '\n')
+        self.assertEqual(diff.diff.text, expected)
+
+    def test_diff_is_bytes(self):
+        """Diffs should be bytestrings.
+
+        Diffs have no single encoding, because they may encompass files in
+        multiple encodings.  Therefore, we consider them binary, to avoid
+        lossy decoding.
+        """
+        diff = self.create_rev1_diff()
+        self.assertIsInstance(diff.diff.text, str)
+
+
+class TestRevisionMailJob(TestCaseWithFactory):
+    """Tests for BranchDiffJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', False, 'subject')
+        verifyObject(IRevisionMailJob, job)
+
+    def test_run_sends_mail(self):
+        """Ensure RevisionMailJob.run sends mail with correct values."""
+        branch = self.factory.makeBranch()
+        branch.subscribe(branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', False, 'subject')
+        job.run()
+        (mail,) = pop_notifications()
+        self.assertEqual('0', mail['X-Launchpad-Branch-Revision-Number'])
+        self.assertEqual('from@example.com', mail['from'])
+        self.assertEqual('subject', mail['subject'])
+        self.assertEqual(
+            'hello\n'
+            '\n--\n\n'
+            'http://code.launchpad.dev/~person-name2/product-name8/branch4\n'
+            '\nYou are subscribed to branch '
+            'lp://dev/~person-name2/product-name8/branch4.\n'
+            'To unsubscribe from this branch go to'
+            ' http://code.launchpad.dev/~person-name2/product-name8/branch4/'
+            '+edit-subscription.\n',
+            mail.get_payload(decode=True))
+
+    def test_revno_string(self):
+        """Ensure that revnos can be strings."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 'removed', 'from@example.com', 'hello', False, 'subject')
+        self.assertEqual('removed', job.revno)
+
+    def test_revno_long(self):
+        "Ensure that the revno is a long, not an int."
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.com', 'hello', False, 'subject')
+        self.assertIsInstance(job.revno, long)
+
+    def test_perform_diff_performs_diff(self):
+        """Ensure that a diff is generated when perform_diff is True."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.bzrdir.root_transport.put_bytes('foo', 'bar\n')
+        tree.add('foo')
+        tree.commit('First commit')
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.com', 'hello', True, 'subject')
+        mailer = job.getMailer()
+        self.assertIn('+bar\n', mailer.diff)
+
+    def test_perform_diff_ignored_for_revno_0(self):
+        """For the null revision, no diff is generated."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', True, 'subject')
+        self.assertIs(None, job.from_revision_spec)
+        self.assertIs(None, job.to_revision_spec)
+        mailer = job.getMailer()
+        self.assertIs(None, mailer.diff)
 
 
 def test_suite():

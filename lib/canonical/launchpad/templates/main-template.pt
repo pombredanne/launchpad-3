@@ -109,6 +109,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${yui}/plugin/plugin.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget.js"></script>
 
       <script type="text/javascript"
@@ -319,7 +321,7 @@
           >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
         <div id="lp-arcana">
-            &copy;&nbsp;2004-2008&nbsp;<a
+            &copy;&nbsp;2004-2009&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           |
           <a href="/legal">Terms of use</a>
