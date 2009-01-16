@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from storm.expr import Desc, Join, LeftJoin
 from storm.references import Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
@@ -590,6 +591,25 @@ class BranchMergeProposalGetter:
         return BranchMergeProposal.select(
             BranchMergeProposalGetter._generateVisibilityClause(
                 builder.query, visible_by_user))
+
+    @staticmethod
+    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+        """See `IBranchMergeProposalGetter`."""
+        store = Store.of(context)
+        tables = [
+            BranchMergeProposal,
+            Join(CodeReviewVoteReference,
+                 CodeReviewVoteReference.branch_merge_proposalID == \
+                 BranchMergeProposal.id),
+            LeftJoin(CodeReviewComment,
+                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+        result = store.using(*tables).find(
+            BranchMergeProposal,
+            BranchMergeProposal.queue_status.is_in(status),
+            CodeReviewVoteReference.reviewer == context)
+        result.order_by(Desc(CodeReviewComment.vote))
+
+        return result
 
     @staticmethod
     def _generateVisibilityClause(query, visible_by_user):

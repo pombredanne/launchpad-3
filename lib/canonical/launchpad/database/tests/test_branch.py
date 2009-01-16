@@ -22,7 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
     BranchDiffJob, BranchJob, BranchJobType, BranchSet, BranchSubscription,
     ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
-    DeletionCallable, DeletionOperation)
+    DeletionCallable, DeletionOperation, RevisionMailJob)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.bugbranch import BugBranch
@@ -31,6 +31,7 @@ from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
@@ -40,15 +41,19 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchDiffJob,
-    IBranchJob, NoSuchBranch)
+    IBranchJob, NoSuchBranch, IRevisionMailJob)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.tests.mail_helpers import pop_notifications
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
@@ -203,6 +208,38 @@ class TestBranch(TestCaseWithFactory):
                 distroseries.distribution.name, distroseries.name,
                 sourcepackagename.name),
             branch.container.name)
+
+    def makeLaunchBag(self):
+        return getUtility(IOpenLaunchBag)
+
+    def test_addToLaunchBag_product(self):
+        # Branches are not added directly to the launchbag. Instead,
+        # information about their container is added.
+        branch = self.factory.makeBranch()
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertEqual(branch.product, launchbag.product)
+
+    def test_addToLaunchBag_personal(self):
+        # Junk branches may also be added to the launchbag.
+        branch = self.factory.makeBranch(product=None)
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertIs(None, launchbag.product)
+
+    def test_addToLaunchBag_package(self):
+        # Package branches can be added to the launchbag.
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        launchbag = self.makeLaunchBag()
+        branch.addToLaunchBag(launchbag)
+        self.assertEqual(distroseries, launchbag.distroseries)
+        self.assertEqual(distroseries.distribution, launchbag.distribution)
+        sourcepackage = SourcePackage(sourcepackagename, distroseries)
+        self.assertEqual(sourcepackage, launchbag.sourcepackage)
+        self.assertIs(None, branch.product)
 
 
 class TestGetByUniqueName(TestCaseWithFactory):
@@ -1039,20 +1076,6 @@ class BranchDateLastModified(TestCaseWithFactory):
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
-    def test_specBranchLinkUpdates(self):
-        """Linking a branch to a spec updates the last modified time."""
-        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.factory.makeBranch(date_created=date_created)
-        self.assertEqual(branch.date_last_modified, date_created)
-
-        spec = getUtility(ISpecificationSet).new(
-            name='some-spec', title='Some spec', product=branch.product,
-            owner=branch.owner, summary='', specurl=None,
-            definition_status=SpecificationDefinitionStatus.NEW)
-        spec.linkBranch(branch, branch.owner)
-        self.assertTrue(branch.date_last_modified > date_created,
-                        "Date last modified was not updated.")
-
     def test_updateScannedDetails_with_null_revision(self):
         # If updateScannedDetails is called with a null revision, it
         # effectively means that there is an empty branch, so we can't use the
@@ -1523,6 +1546,121 @@ class TestBranchDiffJob(TestCaseWithFactory):
         job = BranchDiffJob.create(branch, '0', '1')
         job.run()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
+
+    def create_rev1_diff(self):
+        """Create a StaticDiff for use by test methods.
+
+        This diff contains an add of a file called hello.txt, with contents
+        "Hello World\n".
+        """
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        first_revision = 'rev-1'
+        tree_transport = tree.bzrdir.root_transport
+        tree_transport.put_bytes("hello.txt", "Hello World\n")
+        tree.add('hello.txt')
+        tree.commit('rev1', timestamp=1e9, timezone=0)
+        job = BranchDiffJob.create(branch, '0', '1')
+        diff = job.run()
+        transaction.commit()
+        return diff
+
+    def test_diff_contents(self):
+        """Ensure the diff contents match expectations."""
+        diff = self.create_rev1_diff()
+        expected = (
+            "=== added file 'hello.txt'" '\n'
+            "--- hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "@@ -0,0 +1,1 @@" '\n'
+            "+Hello World" '\n'
+            '\n')
+        self.assertEqual(diff.diff.text, expected)
+
+    def test_diff_is_bytes(self):
+        """Diffs should be bytestrings.
+
+        Diffs have no single encoding, because they may encompass files in
+        multiple encodings.  Therefore, we consider them binary, to avoid
+        lossy decoding.
+        """
+        diff = self.create_rev1_diff()
+        self.assertIsInstance(diff.diff.text, str)
+
+
+class TestRevisionMailJob(TestCaseWithFactory):
+    """Tests for BranchDiffJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', False, 'subject')
+        verifyObject(IRevisionMailJob, job)
+
+    def test_run_sends_mail(self):
+        """Ensure RevisionMailJob.run sends mail with correct values."""
+        branch = self.factory.makeBranch()
+        branch.subscribe(branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', False, 'subject')
+        job.run()
+        (mail,) = pop_notifications()
+        self.assertEqual('0', mail['X-Launchpad-Branch-Revision-Number'])
+        self.assertEqual('from@example.com', mail['from'])
+        self.assertEqual('subject', mail['subject'])
+        self.assertEqual(
+            'hello\n'
+            '\n--\n\n'
+            'http://code.launchpad.dev/~person-name2/product-name8/branch4\n'
+            '\nYou are subscribed to branch '
+            'lp://dev/~person-name2/product-name8/branch4.\n'
+            'To unsubscribe from this branch go to'
+            ' http://code.launchpad.dev/~person-name2/product-name8/branch4/'
+            '+edit-subscription.\n',
+            mail.get_payload(decode=True))
+
+    def test_revno_string(self):
+        """Ensure that revnos can be strings."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 'removed', 'from@example.com', 'hello', False, 'subject')
+        self.assertEqual('removed', job.revno)
+
+    def test_revno_long(self):
+        "Ensure that the revno is a long, not an int."
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.com', 'hello', False, 'subject')
+        self.assertIsInstance(job.revno, long)
+
+    def test_perform_diff_performs_diff(self):
+        """Ensure that a diff is generated when perform_diff is True."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.bzrdir.root_transport.put_bytes('foo', 'bar\n')
+        tree.add('foo')
+        tree.commit('First commit')
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.com', 'hello', True, 'subject')
+        mailer = job.getMailer()
+        self.assertIn('+bar\n', mailer.diff)
+
+    def test_perform_diff_ignored_for_revno_0(self):
+        """For the null revision, no diff is generated."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', True, 'subject')
+        self.assertIs(None, job.from_revision_spec)
+        self.assertIs(None, job.to_revision_spec)
+        mailer = job.getMailer()
+        self.assertIs(None, mailer.diff)
 
 
 def test_suite():

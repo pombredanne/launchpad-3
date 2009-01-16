@@ -2096,17 +2096,23 @@ Every archive has a "publish" flag that governs whether it should be
 published or not. Upon creation that flag is false for copy archives but
 true for all other archive types.
 
-    >>> gentoo = getUtility(IDistributionSet)['gentoo']
-    >>> gentoo_primary = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.PRIMARY,
-    ...     distribution=gentoo, name='gentoo-primary')
-    >>> gentoo_primary.publish
+    >>> uber = getUtility(IDistributionSet).new(
+    ... 'uberdistro', 'The uberdistro', 'The mother of all distros',
+    ... 'All you would want from a distro', 'zero', 'uberdistro.org',
+    ... sabdfl, cprov)
+
+The primary archive for the Überdistro was created by the
+IDistributionSet.new() method. Let's check its publish flag.
+
+    >>> uber_primary = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     uber, ArchivePurpose.PRIMARY)
+    >>> uber_primary.publish
     True
 
-    >>> gentoo_partner = getUtility(IArchiveSet).new(
+    >>> uber_partner = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.PARTNER,
-    ...     distribution=gentoo, name='gentoo-partner')
-    >>> gentoo_partner.publish
+    ...     distribution=uber, name='uber-partner')
+    >>> uber_partner.publish
     True
 
 The 'sandbox archive' is a PPA that was newly created above.
@@ -2116,8 +2122,34 @@ The 'sandbox archive' is a PPA that was newly created above.
     >>> sandbox_archive.publish
     True
 
-    >>> gentoo_copy = getUtility(IArchiveSet).new(
+    >>> uber_copy = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.COPY,
-    ...     distribution=gentoo, name='gentoo-copy')
-    >>> gentoo_copy.publish
+    ...     distribution=uber, name='uber-copy')
+    >>> uber_copy.publish
     False
+
+== The name uniqueness constraints for archives ==
+
+The names of PPAs must be unique per owner and distribution.
+
+The names of archives other than PPAs must be unique for a given
+distribution. Trying to create an archive with the same name and
+distribution but with a different owner will fail.
+
+    >>> copycat_archive = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
+    ...     distribution=uber, name='uber-copy')
+    Traceback (most recent call last):
+    ...
+    AssertionError: archive 'uber-copy' exists ... in 'uberdistro'.
+
+The same constraint is enforced for other archive types e.g. for partner
+archives.
+
+    >>> copycat_archive = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PARTNER,
+    ...     distribution=uber, name='uber-partner')
+    Traceback (most recent call last):
+    ...
+    AssertionError: archive 'uber-partner' exists ... in 'uberdistro'.
+

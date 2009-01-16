@@ -70,7 +70,7 @@ class TeamPrivacyAdapter:
 
     @property
     def is_private(self):
-        """Return True if the bug is private, otherwise False."""
+        """Return True if the team is private, otherwise False."""
         return self.context.visibility != PersonVisibility.PUBLIC
 
 
