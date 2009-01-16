@@ -64,9 +64,8 @@ details:
     >>> print anon_browser.title
     Copy archive intrepid-security-rebuild for Joe Bloggs
 
-Copy archives only have minor differences in presentation from PPAs in
-their presentation. In particular, the source.list entries are not
-displayed:
+Copy archives only have minor differences from PPAs in their presentation.
+In particular, the source.list entries are not displayed:
 
     >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     None
