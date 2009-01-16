@@ -163,6 +163,7 @@ not even have a package upload, so will return False:
     False
 
 First lets create a package upload for this build:
+XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingPocket)

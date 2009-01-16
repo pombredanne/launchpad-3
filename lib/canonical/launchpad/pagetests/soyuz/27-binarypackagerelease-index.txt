@@ -18,6 +18,7 @@ Let's find a build that produced some binaries:
 
 Next, we'll manually create a suitable package upload record for our
 build:
+XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
   >>> from canonical.launchpad.database.queue import PackageUploadBuild
   >>> from canonical.launchpad.interfaces.build import IBuildSet

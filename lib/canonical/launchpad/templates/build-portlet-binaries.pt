@@ -8,7 +8,7 @@
 
   <div class="portletBody portletContent">
     <tal:non_ppa_build condition="not: context/archive/purpose/enumvalue:PPA">
-      <tal:upload_accepted condition="view/has_done_upload">
+      <tal:upload_done condition="view/has_done_upload">
         <ul>
           <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
             <a tal:attributes="href binpkg/fmt:url"
@@ -17,8 +17,8 @@
             </a>
           </li>
         </ul>
-      </tal:upload_accepted>
-      <tal:upload_not_accepted condition="not: view/has_done_upload">
+      </tal:upload_done>
+      <tal:upload_not_done condition="not: view/has_done_upload">
         <p>Binaries awaiting acceptance:</p>
         <ul>
           <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
@@ -27,7 +27,7 @@
             </span>
           </li>
         </ul>
-      </tal:upload_not_accepted>
+      </tal:upload_not_done>
     </tal:non_ppa_build>
 
     <ul tal:condition="context/archive/purpose/enumvalue:PPA">
