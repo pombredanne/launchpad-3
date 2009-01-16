@@ -19,7 +19,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IMessage, IQuestionMessage, QuestionAction, QuestionStatus)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class QuestionMessage(SQLBase):
@@ -27,7 +27,7 @@ class QuestionMessage(SQLBase):
 
     implements(IQuestionMessage)
 
-    decorates(IMessage, context='message')
+    delegates(IMessage, context='message')
 
     _table = 'QuestionMessage'
 
@@ -43,5 +43,5 @@ class QuestionMessage(SQLBase):
 
     def __iter__(self):
         """See IMessage."""
-        # Decorates do not proxy __ methods, because of the name mangling.
+        # Delegates do not proxy __ methods, because of the name mangling.
         return iter(self.chunks)

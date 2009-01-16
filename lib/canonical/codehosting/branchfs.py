@@ -45,6 +45,8 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
+    'branch_id_to_path',
+    'get_lp_server',
     'get_puller_server',
     'get_scanner_server',
     'LaunchpadInternalServer',
@@ -65,7 +67,6 @@ from twisted.python import failure
 
 from zope.interface import implements, Interface
 
-from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
@@ -74,8 +75,7 @@ from canonical.codehosting.transport import (
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -99,6 +99,19 @@ class NotABranchPath(TranslationError):
 
 class UnknownTransportType(Exception):
     """Raised when we don't know the transport type."""
+
+
+def branch_id_to_path(branch_id):
+    """Convert the given branch ID into NN/NN/NN/NN form, where NN is a two
+    digit hexadecimal number.
+
+    Some filesystems are not capable of dealing with large numbers of inodes.
+    The codehosting system has tens of thousands of branches and thus splits
+    the branches into several directories. The Launchpad id is used in order
+    to determine the splitting.
+    """
+    h = "%08x" % int(branch_id)
+    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
 
 def get_path_segments(path, maximum_segments=-1):
@@ -311,7 +324,8 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
         def path_not_translated(failure):
-            trap_fault(failure, faults.PathTranslationError.error_code)
+            trap_fault(
+                failure, faults.PathTranslationError, faults.PermissionDenied)
             raise NoSuchFile(virtual_url_fragment)
 
         def unknown_transport_type(failure):
@@ -473,7 +487,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = self._authserver.createBranch(virtual_url_fragment)
 
         def translate_fault(failure):
-            # We turn NOT_FOUND_FAULT_CODE into a PermissionDenied, even
+            # We turn faults.NotFound into a PermissionDenied, even
             # though one might think that it would make sense to raise
             # NoSuchFile. Sadly, raising that makes the client do "clever"
             # things like say "Parent directory of
@@ -481,7 +495,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # exist. You may supply --create-prefix to create all leading
             # parent directories", which is just misleading.
             fault = trap_fault(
-                failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+                failure, faults.NotFound, faults.PermissionDenied)
             raise PermissionDenied(virtual_url_fragment, fault.faultString)
 
         return deferred.addErrback(translate_fault)

@@ -18,8 +18,6 @@ __all__ = [
     'expand_numbers',
     'ExportedFolder',
     'FacetMenu',
-    'GeneralFormView',
-    'GeneralFormViewFactory',
     'GetitemNavigation',
     'LaunchpadEditFormView',
     'LaunchpadFormView',
@@ -46,9 +44,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.generalform import (
-    GeneralFormView, GeneralFormViewFactory
-    )
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
     safe_action)

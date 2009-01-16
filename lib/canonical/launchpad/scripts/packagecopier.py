@@ -206,7 +206,28 @@ def check_archive_conflicts(source, archive, pocket, include_binaries):
             raise CannotCopy(
                 "binaries conflicting with the existing ones")
 
-def check_copy(source, archive, series, pocket, include_binaries):
+def check_privacy_mismatch(source, archive):
+    """Whether or not source files match the archive privacy.
+
+    Public source files can be copied to any archive, it does not
+    represent a 'privacy mismatch'.
+
+    On the other hand, private source files can be copied to private
+    archives where builders will fetch it directly from the repository
+    and not from the restricted librarian.
+    """
+    if archive.private:
+        return False
+
+    for source_file in source.sourcepackagerelease.files:
+        if source_file.libraryfile.restricted:
+            return True
+
+    return False
+
+
+def check_copy(source, archive, series, pocket, include_binaries,
+               deny_privacy_mismatch=True):
     """Check if the source can be copied to the given location.
 
     Check possible conflicting publications in the destination archive.
@@ -222,10 +243,16 @@ def check_copy(source, archive, series, pocket, include_binaries):
     :param pocket: destination `PackagePublishingPocket`.
     :param include_binaries: boolean indicating whether or not binaries
         are considered in the copy.
+    :param deny_privacy_mismatch: boolean indicating whether or not private
+        sources can be copied to public archives. Defaults to True, only
+        set as False in the UnembargoPackage context.
 
     :raise CannotCopy when a copy is not allowed to be performed
         containing the reason of the error.
     """
+    if deny_privacy_mismatch and check_privacy_mismatch(source, archive):
+        raise CannotCopy("Cannot copy private source into public archives.")
+
     if include_binaries:
         if len(source.getBuiltBinaries()) == 0:
             raise CannotCopy("source has no binaries to be copied")
@@ -283,6 +310,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             if not include_binaries:
                 source_copy.createMissingBuilds()
                 continue
+        else:
+            source_copy = source_in_destination[0]
 
         # Copy missing suitable binaries.
         for binary in source.getBuiltBinaries():
@@ -302,7 +331,11 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             if binary_in_destination.count() == 0:
                 binary_copy = binary.copyTo(
                         destination_series, pocket, archive)
-                copies.append(binary_copy)
+                copies.extend(binary_copy)
+
+        # Always ensure the needed builds exist in the copy destination
+        # after copying the binaries.
+        source_copy.createMissingBuilds()
 
     return copies
 
@@ -323,6 +356,7 @@ class PackageCopier(SoyuzScript):
 
     usage = '%prog -s warty mozilla-firefox --to-suite hoary'
     description = 'MOVE or COPY a published package to another suite.'
+    deny_privacy_mismatch = True
 
     def add_my_options(self):
 
@@ -415,7 +449,7 @@ class PackageCopier(SoyuzScript):
             check_copy(
                 source_pub, self.destination.archive,
                 self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries)
+                self.options.include_binaries, self.deny_privacy_mismatch)
         except CannotCopy, reason:
             self.logger.error(
                 "%s (%s)" % (source_pub.displayname, reason))
@@ -485,6 +519,7 @@ class UnembargoSecurityPackage(PackageCopier):
     description = ("Unembargo packages in a private PPA by copying to the "
                    "specified location and re-uploading any files to the "
                    "unrestricted librarian.")
+    deny_privacy_mismatch = False
 
     def add_my_options(self):
         """Add -d, -s, dry-run and confirmation options."""
@@ -498,7 +533,7 @@ class UnembargoSecurityPackage(PackageCopier):
 
     def setUpCopierOptions(self):
         """Set up options needed by PackageCopier.
-        
+
         :return: False if there is a problem with the options.
         """
         # Set up the options for PackageCopier that are needed in addition

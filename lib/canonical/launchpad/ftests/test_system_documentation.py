@@ -27,8 +27,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    AppServerLayer, DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    AppServerLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -283,6 +283,9 @@ def mailingListXMLRPCInternalSetUp(test):
         def isLaunchpadMember(self, address):
             return super(ImpedenceMatchingView, self).isLaunchpadMember(
                 address)
+        @mailinglists_helper.fault_catcher
+        def isTeamPublic(self, team_name):
+            return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
     # Expose in the doctest's globals, the view as the thing with the
     # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
@@ -722,9 +725,9 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'externalbugtracker-python.txt':
+    'externalbugtracker-roundup-python-bugs.txt':
             LayeredDocFileSuite(
-                '../doc/externalbugtracker-python.txt',
+                '../doc/externalbugtracker-roundup-python-bugs.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer

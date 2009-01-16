@@ -6,8 +6,16 @@
 
   <!-- Archive -->
   <class class="canonical.launchpad.database.Archive">
-    <allow interface="canonical.launchpad.interfaces.IArchive"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.archive.IArchivePublic"/>
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.archive.IArchiveView"
+      />
+    <require
+      permission="launchpad.Append"
+      interface="canonical.launchpad.interfaces.archive.IArchiveAppend"
+      />
     <require
       permission="launchpad.Edit"
       set_attributes="description whiteboard"

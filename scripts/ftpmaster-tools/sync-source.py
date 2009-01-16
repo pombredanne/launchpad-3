@@ -411,7 +411,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     filehandle.close()
 
 
-def read_current_source(distro_series, valid_components="", arguments=None):
+def read_current_source(distro_series, valid_component=None, arguments=None):
     """Returns a dictionary of packages in 'suite'.
 
     The dictionary contains their version as the attribute.
@@ -419,7 +419,6 @@ def read_current_source(distro_series, valid_components="", arguments=None):
     components to restrict the search to.
     """
     S = {}
-    valid_components = dak_utils.split_args(valid_components)
 
     # XXX cprov 2007-07-10: This searches all pockets of the
     #     distro_series which is not what we want.
@@ -438,10 +437,11 @@ def read_current_source(distro_series, valid_components="", arguments=None):
         version = sp.sourcepackagerelease.version
         pkg = sp.sourcepackagerelease.sourcepackagename.name
 
-        if valid_components and sp.component.name not in valid_components:
+        if (valid_component is not None and
+            component != valid_component.name):
             dak_utils.warn(
-                "%s/%s: skipping because %s is not in %s" % (
-                pkg, version, component, valid_components))
+                "%s/%s: skipping because it is not in %s component" % (
+                pkg, version, component))
             continue
 
         if not S.has_key(pkg):

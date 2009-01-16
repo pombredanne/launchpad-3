@@ -70,7 +70,7 @@ database_changes=$(echo $files | sed '/database.*\(patch-\|current\)/!d')
 echo "= Launchpad lint ="
 echo ""
 echo "Checking for conflicts. and issues in doctests and templates."
-echo "Running xmllint, pyflakes, and pylint."
+echo "Running jslint, xmllint, pyflakes, and pylint."
 
 echo "$rules"
 
@@ -230,6 +230,18 @@ if [ ! -z "$doctestfiles" ]; then
         echo ""
         echo "== Pyflakes Doctest notices =="
         group_lines_by_file "$pyflakes_doctest_notices"
+    fi
+fi
+
+
+jsfiles=`echo "$files" | grep -E 'js$'`
+if [ ! -z "$jsfiles" ]; then
+    jslint_notices=`$utilitiesdir/../sourcecode/lazr-js/tools/jslint.py 2>&1`
+    if [ ! -z "$jslint_notices" ]; then
+        echo ""
+        echo ""
+        echo "== JSLint notices =="
+        echo "$jslint_notices"
     fi
 fi
 

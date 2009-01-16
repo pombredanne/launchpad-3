@@ -4,17 +4,20 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 import unittest
 
 from mechanize import LinkNotFoundError
+import pytz
 
 from zope.component import getMultiAdapter
 
 from canonical.config import config
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import time_counter, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.testing import login_person
 from canonical.testing import LaunchpadFunctionalLayer
 
 class TestProductCodeIndexView(TestCaseWithFactory):
@@ -97,6 +100,43 @@ class TestProductCodeIndexView(TestCaseWithFactory):
             (product, LaunchpadTestRequest()), name='+code-index')
         view.initialize()
         self.assertNotIn(branch, view.initial_branches)
+
+    def test_committer_count_with_revision_authors(self):
+        # Test that the code pathing for calling committer_count with
+        # valid revision authors is truly tested.
+        cthulu = self.factory.makePerson(email='cthulu@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch()
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        self.factory.makeRevisionsForBranch(
+            branch, author='cthulu@example.com',
+            date_generator=date_generator)
+
+        view = getMultiAdapter(
+            (product, LaunchpadTestRequest()), name='+code-index')
+        view.initialize()
+        self.assertEqual(view.committer_count, 1)
+
+    def test_committers_count_private_branch(self):
+        # Test that calling committer_count will return the proper value
+        # for a private branch.
+        fsm = self.factory.makePerson(email='flyingpasta@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            private=True, owner=fsm)
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        login_person(fsm)
+        self.factory.makeRevisionsForBranch(
+            branch, author='flyingpasta@example.com',
+            date_generator=date_generator)
+
+        view = getMultiAdapter(
+            (product, LaunchpadTestRequest()), name='+code-index')
+        view.initialize()
+        self.assertEqual(view.committer_count, 1)
+
 
 
 def test_suite():

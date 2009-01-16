@@ -16,7 +16,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -28,7 +27,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
-from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -221,7 +219,7 @@ class LoginOrRegister:
             return
 
         # XXX matsubara 2006-05-08 bug=43675: This class should inherit from
-        # GeneralFormView, that way we could take advantage of Zope's widget
+        # LaunchpadFormView, that way we could take advantage of Zope's widget
         # validation, instead of checking manually for password validity.
         if not valid_password(password):
             self.login_error = _(
@@ -238,13 +236,12 @@ class LoginOrRegister:
                 'Use the "Forgotten your password" link to reactivate it.')
         elif (principal is not None
             and principal.person.account_status == AccountStatus.SUSPENDED):
-            question_link = canonical_url(
-                getUtility(ILaunchpadCelebrities).launchpad,
-                rootsite='answers', view_name='+addquestion')
+            email_link = (
+                'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
             self.login_error = _(
                 'The email address belongs to a suspended account. '
                 'Contact a <a href="%s">Launchpad admin</a> '
-                'about this issue.' % question_link)
+                'about this issue.' % email_link)
         elif principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:

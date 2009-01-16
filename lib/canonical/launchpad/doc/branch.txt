@@ -174,7 +174,7 @@ team, however.
     ...     url=None)
     Traceback (most recent call last):
       ...
-    BranchCreationNoTeamOwnedJunkBranches: Cannot create team-owned junk ...
+    BranchCreationNoTeamOwnedJunkBranches: ...
 
 The ~vcs-imports celebrity team is exempt from this restriction to
 allow the creation of code import branches without an associated
@@ -345,18 +345,6 @@ returned.
     123
 
 
-== Branches and products ==
-
-Branch not associated to a product are called "junk" branch and treated for
-navigation purposes as if they were associated to a magic product named
-"+junk".
-
-    >>> factory.makeBranch(product=None).product_name
-    '+junk'
-    >>> factory.makeBranch(product=product).product_name
-    u'product'
-
-
 == Branch names ==
 
 Branches have a display name that is the Branch.title if it's provided, and the
@@ -485,7 +473,7 @@ Let's get a branch with some revisions in it.
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByName('name12')
-    >>> junk = sample_person.getBranch('+junk', 'junk.dev')
+    >>> junk = branchset.getByUniqueName('~name12/+junk/junk.dev')
     >>> print junk.unique_name
     ~name12/+junk/junk.dev
 

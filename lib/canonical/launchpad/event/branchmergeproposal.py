@@ -47,3 +47,7 @@ class ReviewerNominatedEvent(ObjectEvent):
 class NewCodeReviewCommentEvent(ObjectEvent):
     """A new comment has been added to the merge proposal."""
     implements(INewCodeReviewCommentEvent)
+
+    def __init__(self, code_review_comment, original_email):
+        ObjectEvent.__init__(self, code_review_comment)
+        self.email = original_email

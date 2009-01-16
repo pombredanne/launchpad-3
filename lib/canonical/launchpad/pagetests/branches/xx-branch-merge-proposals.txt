@@ -675,3 +675,31 @@ they'll get a 404.
     Traceback (most recent call last):
     ...
     NotFound: ...
+
+== Displaying a review diff ==
+
+Create merge proposal with a review diff, and go to its index page.
+
+    >>> import transaction
+    >>> from canonical.launchpad.database.diff import StaticDiff
+    >>> login('admin@canonical.com')
+    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff')
+    >>> transaction.commit()
+    >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
+    >>> url = canonical_url(bmp)
+    >>> logout()
+    >>> def get_review_diff():
+    ...    nopriv_browser.open(url)
+    ...    return find_tag_by_id(nopriv_browser.contents, 'review-diff')
+
+The text of the review diff is in the page.
+    >>> print extract_text(get_review_diff())
+    Review Diff
+    Fake Diff
+
+If no diff is present, nothing is shown.
+    >>> login('admin@canonical.com')
+    >>> bmp.review_diff = None
+    >>> logout()
+    >>> print get_review_diff()
+    None

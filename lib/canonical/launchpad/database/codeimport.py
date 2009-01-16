@@ -29,10 +29,9 @@ from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    BranchCreationException, BranchType, CodeImportJobState,
-    CodeImportReviewStatus, IBranchSet, ICodeImport, ICodeImportEventSet,
-    ICodeImportSet, ILaunchpadCelebrities, NotFoundError,
-    RevisionControlSystems)
+    BranchType, CodeImportJobState, CodeImportReviewStatus, IBranchSet,
+    ICodeImport, ICodeImportEventSet, ICodeImportSet, ILaunchpadCelebrities,
+    NotFoundError, RevisionControlSystems)
 from canonical.launchpad.mailout.codeimport import code_import_updated
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -194,10 +193,6 @@ class CodeImportSet:
         # Create the branch for the CodeImport.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         branch_set = getUtility(IBranchSet)
-        if branch_set.getBranch(vcs_imports, product, branch_name):
-            raise BranchCreationException(
-                "A branch already exists for the %s project owned by "
-                "vcs-imports with the name %s" % (product.name, branch_name))
         import_branch = branch_set.new(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=vcs_imports, owner=vcs_imports,

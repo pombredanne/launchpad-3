@@ -338,7 +338,7 @@ queues in a particular component.
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+queue-admin/name12.partner
 
-    >>> show_components_for_admin(name12) 
+    >>> show_components_for_admin(name12)
     Queue Administration Rights ...~name12 main None
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 partner None
@@ -356,63 +356,149 @@ deleteQueueAdmin removes that permission.
 
 And we can see that it's gone:
 
-    >>> show_components_for_admin(name12) 
+    >>> show_components_for_admin(name12)
     Queue Administration Rights ...~name12 main None
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
 
+= Getting Build counts for an IArchive =
+
+IArchive exposes the getBuildCounters() method, enabling this data to be
+used and displayed via XHR.
+
+    >>> build_counters = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getBuildCounters').jsonBody()
+    >>> for key, val in build_counters.items():
+    ...     print "%s: %s" % (key, val)
+    failed: 5
+    superseded: 3
+    total: 18
+    pending: 2
+    succeeded: 8
+
+The optional param exclude_needsbuild is also provided:
+
+    >>> build_counters = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getBuildCounters',
+    ...     include_needsbuild=False).jsonBody()
+    >>> for key, val in build_counters.items():
+    ...     print "%s: %s" % (key, val)
+    failed: 5
+    superseded: 3
+    total: 17
+    pending: 1
+    succeeded: 8
 
 == Package copying/synchronisation ==
 
 IArchive contains 2 custom operations to copy packages from another archive.
-These are syncSource() and syncSources().
+These are syncSource() and syncSources(). Both are wrappers of the
+`PackageCopier` infrastructure, see more information in
+scripts/packagecopier.py.
 
-syncSource() copies a single package with a specific version from another
-archive.
+For testing purpose we will create some publications.
 
-    >>> print webservice.named_post(
-    ...     ubuntu['main_archive_link'], 'syncSource', {},
-    ...     source_name='cdrkit', version='1.0',
-    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
-    HTTP/1.1 400 Bad Request
-    ...
-    CannotCopy: cdrkit 1.0 in breezy-autotest
-        (same version already has published binaries in the destination archive)
-    <BLANKLINE>
+    >>> login('foo.bar@canonical.com')
 
-That one failed because cdrkit is already published in the same context in
-the main archive.  Let's add some more test publications that we can copy
-around:
-
-    >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
+
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+
     >>> main_archive = ubuntu_distro.main_archive
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
     >>> hoary = ubuntu_distro.getSeries('hoary')
     >>> test_publisher.addFakeChroots(hoary)
     >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
+
+'package1' (with two versions) and 'package2' publications in the
+ubuntu primary archive.
+
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.0", archive=main_archive)
+
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.1", archive=main_archive)
+
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package2", version="1.0", archive=main_archive)
+
+A test publication in Celso's PPA.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.0", archive=cprov.archive)
+
+Colin is a valid member of the team who owns the ubuntu primary archive.
+
+    >>> cjwatson = getUtility(IPersonSet).getByName('kamion')
+    >>> cjwatson.inTeam(main_archive.owner)
+    True
+
+Setup done, let's log out and continue with the tests.
+
     >>> logout()
 
-Now copy "package1" version 1.0 from the main archive into cprov's PPA:
+syncSource() copies a single package with a specific version from another
+archive.  It will prevent unauthorised changes to an archive.  Here we are
+using user_webservice, which has no privileges, and trying to copy to
+the Ubuntu main archive:
 
-    >>> print webservice.named_post(
+    >>> print user_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='package3', version='1.0',
+    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
+    ...     to_series="hoary")
+    HTTP/1.1 401 Unauthorized
+    ...
+
+When accessed via Colin's key that can perform writes, the API will
+respond positively.
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+
+    >>> admin_webservice = webservice_for_person(
+    ...     cjwatson, permission=OAuthPermission.WRITE_PUBLIC)
+
+    >>> print admin_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='package3', version='1.0',
+    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
+    ...     to_series="hoary")
+    HTTP/1.1 200 Ok
+    ...
+
+Now copy "package1" version 1.0 from the main archive into cprov's
+PPA. The 'admin_write' key created for Colin isn't allowed to modify
+Celso's PPA.
+
+    >>> print admin_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSource', {},
     ...     source_name='package1', version='1.0',
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
+    ...     to_series="hoary")
+    HTTP/1.1 401 Unauthorized
+    ...
+
+Only a key created by Celso with write permissions will allow this
+operation.
+
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov, permission=OAuthPermission.WRITE_PUBLIC)
+
+    >>> print cprov_webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSource', {},
+    ...     source_name='package1', version='1.0',
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="hoary")
     HTTP/1.1 200 Ok
     ...
 
@@ -422,11 +508,11 @@ once.  The latest versions that are found in the from_archive are
 exists then nothing is copied.  The list of packages that were copied is
 returned from the function call.
 
-    >>> print webservice.named_post(
+    >>> print cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
+    ...     to_series="warty")
     HTTP/1.1 200 Ok
     ...
     ["package1", "package2"]
@@ -434,12 +520,92 @@ returned from the function call.
 If there's nothing to copy at all, an error is returned.  Repeating the copy
 above will give this effect.
 
-    >>> print webservice.named_post(
+    >>> already_copied = cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="breezy-autotest")
+    ...     to_series="warty")
+    >>> print already_copied
     HTTP/1.1 400 Bad Request
     ...
     CannotCopy: Packages already copied.
+    <BLANKLINE>
+
+Within the web application, the CannotCopy exception means that there
+was an oversight in the code that called syncSources()--that method
+shouldn't have been called in the first place. The CannotCopy
+exception therefore results in an OOPS. But within the web service,
+syncSources is invoked directly by the client, and any problems are
+the client's fault. Therefore, there's no need to record an OOPS.
+
+    >>> 'X-Lazr-Oopsid' in already_copied.getOutput()
+    False
+
+Keys with not enough permissions in Celso's PPA context are not
+allowed to call the method at all.
+
+    >>> print user_webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="warty")
+    HTTP/1.1 401 Unauthorized
+    ...
+
+    >>> print admin_webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="warty")
+    HTTP/1.1 401 Unauthorized
+    ...
+
+
+=== Copy privacy mismatch ===
+
+A CannotCopy error, giving the reason "Cannot copy private source into
+public archives." is raised if such operation is requested.
+
+Let's make Celso's PPA private and create a private source publication.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> cprov.archive.buildd_secret = 'boing'
+    >>> cprov.archive.private = True
+
+    >>> private_publication = test_publisher.getPubSource(
+    ...     sourcename="private", version="1.0", archive=cprov.archive)
+
+    >>> logout()
+
+Now we need a webservice with rights to read private data in order to
+be able to access Celso's private PPA.
+
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov, permission=OAuthPermission.WRITE_PRIVATE)
+
+When we try to copy the private source to the primary archive, which
+is public, the 'privacy mismatch' error is raised. The behaviour is
+the same for `syncSource` or `syncSources` operations.
+
+    >>> print cprov_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='private', version="1.0", to_pocket='release',
+    ...     from_archive=cprov_archive['self_link'],
+    ...     to_series="hoary")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: private 1.0 in hoary
+    (Cannot copy private source into public archives.)
+    <BLANKLINE>
+
+    >>> print cprov_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSources', {},
+    ...     source_names=['private'], to_pocket='release',
+    ...     from_archive=cprov_archive['self_link'],
+    ...     to_series="hoary")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: private 1.0 in hoary
+    (Cannot copy private source into public archives.)
     <BLANKLINE>

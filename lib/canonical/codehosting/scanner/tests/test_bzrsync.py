@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.codehosting.scanner.bzrsync import (
-    BranchMergeDetectionHandler, BzrSync, get_diff, get_revision_message,
+    BranchMergeDetectionHandler, BzrSync, get_revision_message,
     InvalidStackedBranchURL)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
@@ -89,7 +89,7 @@ class FakeTransportServer:
 
     def tearDown(self):
         """Deactivate the transport URL."""
-        self._chroot_server.tearDown
+        self._chroot_server.tearDown()
         unregister_transport(self._url_prefix, self._transportFactory)
 
     def _transportFactory(self, url):
@@ -744,15 +744,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         sync = self.makeBzrSync(self.db_branch)
 
         revision = self.bzr_branch.repository.get_revision(first_revision)
-        diff = get_diff(self.bzr_branch, revision)
-        expected = (
-            "=== added file 'hello.txt'" '\n'
-            "--- a/hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
-            "+++ b/hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
-            "@@ -0,0 +1,1 @@" '\n'
-            "+Hello World" '\n'
-            '\n')
-        self.assertEqualDiff(diff, expected)
         expected = (
             u"-"*60 + '\n'
             "revno: 1" '\n'
@@ -768,8 +759,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
         expected_diff = (
             "=== modified file 'hello.txt'" '\n'
-            "--- a/hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
-            "+++ b/hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
+            "--- hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
             "@@ -1,1 +1,3 @@" '\n'
             " Hello World" '\n'
             "+" '\n'
@@ -787,9 +778,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             "  hello.txt" '\n' % self.bzr_branch.nick)
         revision = self.bzr_branch.repository.get_revision(second_revision)
         self.bzr_branch.lock_read()
-        diff = get_diff(self.bzr_branch, revision)
         self.bzr_branch.unlock()
-        self.assertEqualDiff(diff, expected_diff)
         message = get_revision_message(self.bzr_branch, revision)
         self.assertEqualDiff(message, expected_message)
 
@@ -814,41 +803,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             u"  Non ASCII: \xe9" '\n' % self.bzr_branch.nick)
         self.assertEqualDiff(message, expected)
 
-    def test_diff_encoding(self):
-        """Test handling of diff of files which are not utf-8."""
-        # Since bzr does not know the encoding used for file contents, which
-        # may even be no encoding at all (different part of the file using
-        # different encodings), it generates diffs using utf-8 for file names
-        # and raw 8 bit text for file contents.
-        rev_id = 'rev-1'
-        # Adding a file whose content is a mixture of latin-1 and utf-8. It
-        # would be nice to use a non-ASCII file name, but getting it into the
-        # branch through the filesystem would make the test dependent on the
-        # value of sys.getfilesystemencoding().
-        self.writeToFile(filename='un elephant',
-                         contents='\xc7a trompe \xc3\xa9norm\xc3\xa9ment.\n')
-        # XXX DavidAllouche 2007-04-26:
-        # The binary file is not really needed here, but it triggers a
-        # crasher bug with bzr-0.15 and earlier.
-        self.writeToFile(filename='binary', contents=chr(0))
-        self.commitRevision(rev_id=rev_id, timestamp=1000000000.0, timezone=0)
-        sync = self.makeBzrSync(self.db_branch)
-        revision = self.bzr_branch.repository.get_revision(rev_id)
-        diff = get_diff(self.bzr_branch, revision)
-        # The diff must be a unicode object, characters that could not be
-        # decoded as utf-8 replaced by the unicode substitution character.
-        expected = (
-            u"=== added file 'binary'" '\n'
-            u"Binary files a/binary\t1970-01-01 00:00:00 +0000"
-            u" and b/binary\t2001-09-09 01:46:40 +0000 differ" '\n'
-            u"=== added file 'un elephant'" '\n'
-            u"--- a/un elephant\t1970-01-01 00:00:00 +0000" '\n'
-            u"+++ b/un elephant\t2001-09-09 01:46:40 +0000" '\n'
-            u"@@ -0,0 +1,1 @@" '\n'
-            # \ufffd is the substitution character.
-            u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
-        self.assertEqualDiff(diff, expected)
-
     def test_only_nodiff_subscribers_means_no_diff_generated(self):
         self.layer.switchDbUser('launchpad')
         subscriptions = self.db_branch.getSubscriptionsByLevel(
@@ -866,7 +820,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         sync = self.makeBzrSync(self.db_branch)
         sync.syncBranchAndClose()
         self.assertEqual(1, len(sync._branch_mailer.pending_emails))
-        self.assertEqual('', sync._branch_mailer.pending_emails[0][1])
+        self.assertFalse(sync._branch_mailer.pending_emails[0].perform_diff)
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
@@ -1133,7 +1087,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         # The proposal should stay in the same state.
         self.assertEqual(current_proposal_status, proposal.queue_status)
 
-    def test_autoMergeProposals_not_merged_proposal_target_scanned_first(self):
+    def test_autoMergeProposals_not_merged_with_updated_source(self):
         # If there is a merge proposal where the tip of the source is not in
         # the ancestry of the target it is not marked as merged.
 

@@ -21,17 +21,18 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class BranchMergeProposalListingItem:
     """A branch merge proposal that knows summary values for comments."""
 
-    decorates(IBranchMergeProposal, 'context')
+    delegates(IBranchMergeProposal, 'context')
 
-    def __init__(self, branch_merge_proposal, summary):
+    def __init__(self, branch_merge_proposal, summary, proposal_reviewer):
         self.context = branch_merge_proposal
         self.summary = summary
+        self.proposal_reviewer = proposal_reviewer
 
     @property
     def vote_summary(self):
@@ -52,6 +53,11 @@ class BranchMergeProposalListingItem:
             votes.append('<em>None</em>')
 
         return ', '.join(votes)
+
+    @property
+    def reviewer_vote(self):
+        """A vote from the specified reviewer."""
+        return self.context.getUsersVoteReference(self.proposal_reviewer)
 
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
@@ -79,7 +85,8 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     def _createItem(self, proposal):
         """Create the listing item for the proposal."""
         summary = self._vote_summaries[proposal]
-        return BranchMergeProposalListingItem(proposal, summary)
+        return BranchMergeProposalListingItem(proposal, summary,
+            proposal_reviewer=self.view.getUserFromContext())
 
     @property
     def proposals(self):
@@ -109,6 +116,10 @@ class BranchMergeProposalListingView(LaunchpadView):
     def proposals(self):
         """The batch navigator for the proposals."""
         return BranchMergeProposalListingBatchNavigator(self)
+
+    def getUserFromContext(self):
+        """Get the relevant user from the context."""
+        return None
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""

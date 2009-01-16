@@ -1398,12 +1398,12 @@ INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) 
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (28, 13, 38, NULL, NULL, true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (29, 14, 39, NULL, NULL, true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (30, 15, 40, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -1536,7 +1536,7 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386', NULL, false, NULL);
-
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (8, 1, 'gnome-bugs', 'T''other Gnome GBugGTracker', 'This is the Gnome Bugzilla celebrity bug tracker.', 'http://bugzilla.gnome.org/', 16, NULL, '2008-10-08 13:31:00', NULL, false, true);
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 

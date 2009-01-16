@@ -444,12 +444,14 @@ class IBranchMergeProposal(Interface):
             unspecified, the root message is used.
         """
 
-    def createCommentFromMessage(message, vote, review_type):
+    def createCommentFromMessage(message, vote, review_type,
+                                 original_email=None):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
+        :param original_email: Optional original email message.
         """
 
     def deleteProposal():
@@ -468,6 +470,23 @@ class IBranchMergeProposalGetter(Interface):
 
     def getProposalsForContext(context, status=None, visible_by_user=None):
         """Return BranchMergeProposals associated with the context.
+
+        :param context: Either a 'Person' or 'Product'.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        :param visible_by_user: If a person is not supplied, only merge
+            proposals based on public branches are returned.  If a person is
+            supplied, merge proposals based on both public branches, and the
+            private branches that the person is entitled to see are returned.
+            Private branches are only visible to the owner and subscribers of
+            the branch, and to LP admins.
+        :raises BadBranchMergeProposalSearchContext: If the context is not
+            understood.
+        """
+
+    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+        """Returen BranchMergeProposals associated with a reviewer.
 
         :param context: Either a 'Person' or 'Product'.
         :param status: An iterable of queue_status of the proposals to return.

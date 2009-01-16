@@ -6,42 +6,36 @@ __all__ = [
     'PackagingAddView',
     ]
 
-from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IPackagingUtil, ILaunchBag
-from canonical.launchpad.webapp import canonical_url, GeneralFormView
+from canonical.launchpad.interfaces.packaging import (
+    IPackaging, IPackagingUtil)
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 
-class PackagingAddView(GeneralFormView):
 
-    def initialize(self):
-        self.top_of_page_errors = []
+class PackagingAddView(LaunchpadFormView):
+    schema = IPackaging
+    label = 'Add distribution packaging record'
+    field_names = ['distroseries', 'sourcepackagename', 'packaging']
 
-    def validate(self, form_values):
+    def validate(self, data):
         productseries = self.context
-        sourcepackagename = form_values['sourcepackagename']
-        distroseries = form_values['distroseries']
-        packaging = form_values['packaging']
+        sourcepackagename = data['sourcepackagename']
+        distroseries = data['distroseries']
+        packaging = data['packaging']
 
-        util = getUtility(IPackagingUtil)
-        if util.packagingEntryExists(
+        if getUtility(IPackagingUtil).packagingEntryExists(
             productseries, sourcepackagename, distroseries):
-            self.top_of_page_errors.append(_(
+            self.addError(_(
                 "This series is already packaged in %s" %
                 distroseries.displayname))
-            raise WidgetsError(self.top_of_page_errors)
 
-    def process(self, distroseries, sourcepackagename, packaging):
-        # get the user
-        user = getUtility(ILaunchBag).user
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
         productseries = self.context
-
-        # Invoke utility to create a packaging entry
-        util = getUtility(IPackagingUtil)
-        util.createPackaging(
-            productseries, sourcepackagename, distroseries,
-            packaging, owner=user)
-
-    def nextURL(self):
-        return canonical_url(self.context)
+        getUtility(IPackagingUtil).createPackaging(
+            productseries, data['sourcepackagename'], data['distroseries'],
+            data['packaging'], owner=self.user)
+        self.next_url = canonical_url(self.context)

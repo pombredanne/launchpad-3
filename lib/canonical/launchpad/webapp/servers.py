@@ -1,4 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -34,7 +35,7 @@ from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.server.http.commonaccesslogger import CommonAccessLogger
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -133,6 +134,9 @@ class StepsToGo:
     def __init__(self, request):
         self.request = request
 
+    def __iter__(self):
+        return self
+
     def consume(self):
         """Remove the next path step and return it.
 
@@ -146,6 +150,8 @@ class StepsToGo:
         self.request._traversed_names.append(nextstep)
         self.request.setTraversalStack(stack)
         return nextstep
+
+    next = consume
 
     def startswith(self, *args):
         """Return whether the steps to go start with the names given."""
@@ -1277,8 +1283,11 @@ def website_request_to_web_service_request(website_request):
     browser requests.
     """
     body = website_request.bodyStream.getCacheStream().read()
-    web_service_request = WebServiceClientRequest(
-        body, website_request._environ)
+    environ = dict(website_request._environ)
+    # Zope picks up on SERVER_URL when setting the _app_server attribute
+    # of the new request.
+    environ['SERVER_URL'] = website_request.getApplicationURL()
+    web_service_request = WebServiceClientRequest(body, environ)
     web_service_request.setVirtualHostRoot(names=["api", "beta"])
     web_service_request.setPublication(WebServicePublication(None))
     return web_service_request

@@ -16,7 +16,6 @@ import urlparse
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import BzrBranchFormat4
-from bzrlib.diff import show_diff_trees
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
@@ -30,14 +29,13 @@ from canonical.launchpad.interfaces import (
     IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
+    IRevisionMailJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.mailout.branch import (
-    send_branch_revision_notifications)
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -75,29 +73,6 @@ def set_bug_branch_status(bug, branch, status):
     if bug_branch.status != BugBranchStatus.BESTFIX:
         bug_branch.status = status
     return bug_branch
-
-
-def get_diff(bzr_branch, bzr_revision):
-    """Return the diff for `bzr_revision` on `bzr_branch`.
-
-    :param bzr_branch: A `bzrlib.branch.Branch` object.
-    :param bzr_revision: A Bazaar `Revision` object.
-    :return: A byte string that is the diff of the changes introduced by
-        `bzr_revision` on `bzr_branch`.
-    """
-    repo = bzr_branch.repository
-    if bzr_revision.parent_ids:
-        ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
-        tree_new, tree_old = repo.revision_trees(ids)
-    else:
-        # can't get both trees at once, so one at a time
-        tree_new = repo.revision_tree(bzr_revision.revision_id)
-        tree_old = repo.revision_tree(NULL_REVISION)
-
-    diff_content = StringIO()
-    show_diff_trees(tree_old, tree_new, diff_content)
-    raw_diff = diff_content.getvalue()
-    return raw_diff.decode('utf8', 'replace')
 
 
 def get_revision_message(bzr_branch, bzr_revision):
@@ -269,7 +244,10 @@ class BranchMailer:
                 contents = ('%d revisions were removed from the branch.'
                             % number_removed)
             # No diff is associated with the removed email.
-            self.pending_emails.append((contents, '', None, 'removed'))
+            job = getUtility(IRevisionMailJobSource).create(
+                self.db_branch, revno='removed', from_address=self.email_from,
+                body=contents, perform_diff=False, subject=None)
+            self.pending_emails.append(job)
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
         """Generate an email for a revision for later sending.
@@ -283,10 +261,6 @@ class BranchMailer:
         if (not self.initial_scan
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
-            if self.generate_diffs:
-                revision_diff = get_diff(bzr_branch, bzr_revision)
-            else:
-                revision_diff = ''
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.
@@ -302,8 +276,11 @@ class BranchMailer:
                     first_line = first_line[:offset] + '...'
             subject = '[Branch %s] Rev %s: %s' % (
                 self.db_branch.unique_name, sequence, first_line)
-            self.pending_emails.append(
-                (message, revision_diff, subject, sequence))
+            job = getUtility(IRevisionMailJobSource).create(
+                self.db_branch, revno=sequence, from_address=self.email_from,
+                    body=message, perform_diff=self.generate_diffs,
+                    subject=subject)
+            self.pending_emails.append(job)
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
@@ -336,14 +313,14 @@ class BranchMailer:
             message = ('First scan of the branch detected %s'
                        ' in the revision history of the branch.' %
                        revisions)
-            send_branch_revision_notifications(
-                self.db_branch, self.email_from, message, '', None, 'initial')
-        else:
-            for message, diff, subject, revno in self.pending_emails:
-                send_branch_revision_notifications(
-                    self.db_branch, self.email_from, message, diff,
-                    subject, revno)
 
+            job = getUtility(IRevisionMailJobSource).create(
+                self.db_branch, 'initial', self.email_from, message, False,
+                None)
+            job.run()
+        else:
+            for job in self.pending_emails:
+                job.run()
         self.trans_manager.commit()
 
 

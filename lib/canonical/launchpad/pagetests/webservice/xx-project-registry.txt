@@ -236,6 +236,22 @@ webservice.patch() method.
     >>> firefox['registrant_link']
     u'http://.../~name12'
 
+Similarly the date_created attribute cannot be modified.
+
+    >>> original_date_created = firefox['date_created']
+    >>> patch = {
+    ...     u'date_created': u'2000-01-01T01:01:01+00:00Z'
+    ...     }
+    >>> print webservice.patch(
+    ...     '/firefox', 'application/json', dumps(patch))
+    HTTP/1.1 400 Bad Request
+    ...
+    date_created: You tried to modify a read-only attribute.
+
+    >>> firefox = webservice.get('/firefox').jsonBody()
+    >>> firefox['date_created'] == original_date_created
+    True
+
 
 == Project collection ==
 

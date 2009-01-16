@@ -60,10 +60,11 @@ from canonical.launchpad.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.karma import IKarmaActionSet
+from canonical.launchpad.interfaces.hwdb import IHWDBApplication
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm, IBazaarApplication, IHWDBApplication,
-    ILaunchpadCelebrities, IRosettaApplication, IStructuralHeaderPresentation,
+    IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
+    IRosettaApplication, IStructuralHeaderPresentation,
     IStructuralObjectPresentation)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
@@ -633,7 +634,14 @@ class LaunchpadRootNavigation(Navigation):
                     status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
-                return person
+                # Check to see if this is a team, and if so, whether the
+                # logged in user is allowed to view the team, by virtue of
+                # team membership or Launchpad administration.
+                if (person is None or
+                    not person.is_team or
+                    check_permission('launchpad.View', person)):
+                    return person
+                raise NotFound(self.context, name)
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -752,6 +760,8 @@ class ObjectForTemplate:
 
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
+
+    export_subdirectories = True
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')

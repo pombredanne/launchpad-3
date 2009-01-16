@@ -50,6 +50,9 @@ Let's check the complex properties of a build object.
     >>> firefox_build.is_virtualized
     False
 
+    >>> firefox_build.arch_tag
+    u'i386'
+
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
@@ -388,7 +391,8 @@ collection of builds.
 
 We can find builds given a source package release and architecture tag.
 
-    >>> bs.getBuildBySRAndArchtag(20,'i386').count()
+    >>> i386_builds = bs.getBuildBySRAndArchtag(20, 'i386')
+    >>> i386_builds.count()
     4
 
 IHasBuildRecords uses a base method provided by IBuildSet,
@@ -446,6 +450,26 @@ primary archive.
     >>> [(build.archive.purpose.name, build.title) for build in
     ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
+
+`IBuildSet` also provides getStatusSummaryForBuilds which summarizes the
+build status of a set of builds:
+
+First we'll define a helper to print the build summary:
+
+    >>> def print_build_summary(summary):
+    ...     print "%s\n%s\nRelevant builds:\n%s" % (
+    ...         summary['status'].title,
+    ...         summary['status'].description,
+    ...         "\n".join(
+    ...             " - %s" % build.title for build in summary['builds'])
+    ...     )
+
+    >>> build_summary = bs.getStatusSummaryForBuilds(i386_builds)
+    >>> print_build_summary(build_summary)
+    Need building
+    There are some builds waiting to be built.
+    Relevant builds:
+     - i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
 
 == IHadBuildRecords.getBuildRecords() Implementations ==

@@ -7,17 +7,21 @@ Everything in here should be submitted upstream.
 
 __metaclass__ = type
 __all__ = [
-    'get_branch_stacked_on_url',
+    'DenyingServer',
     'ensure_base',
+    'get_branch_stacked_on_url',
     'HttpAsLocalTransport',
+    'ProgressUIFactory',
     ]
 
 from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib import config
 from bzrlib.errors import NoSuchFile, NotStacked, UnstackableBranchFormat
+from bzrlib.progress import ProgressBarStack
 from bzrlib.remote import RemoteBzrDir
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
+from bzrlib.ui import SilentUIFactory
 
 from canonical.launchpad.webapp.uri import URI
 
@@ -110,3 +114,55 @@ class HttpAsLocalTransport(LocalTransport):
     def unregister(cls):
         """Unregister this transport."""
         unregister_transport('http://', cls)
+
+
+class DenyingServer:
+    """Temporarily prevent creation of transports for certain URL schemes."""
+
+    _is_set_up = False
+
+    def __init__(self, schemes):
+        """Set up the instance.
+
+        :param schemes: The schemes to disallow creation of transports for.
+        """
+        self.schemes = schemes
+
+    def setUp(self):
+        """Prevent transports being created for specified schemes."""
+        for scheme in self.schemes:
+            register_transport(scheme, self._deny)
+        self._is_set_up = True
+
+    def tearDown(self):
+        """Re-enable creation of transports for specified schemes."""
+        if not self._is_set_up:
+            return
+        self._is_set_up = False
+        for scheme in self.schemes:
+            unregister_transport(scheme, self._deny)
+
+    def _deny(self, url):
+        """Prevent creation of transport for 'url'."""
+        raise AssertionError(
+            "Creation of transport for %r is currently forbidden" % url)
+
+
+class ProgressUIFactory(SilentUIFactory):
+    """A UI Factory that installs a progress bar of your choice."""
+
+    def __init__(self, progress_bar_factory):
+        """Construct a ProgressUIFactory.
+
+        :param progress_bar_factory: A callable that returns a
+            ProgressBar.  It must take up to 8 arguments.
+        """
+        super(ProgressUIFactory, self).__init__()
+        self._progress_bar_factory = progress_bar_factory
+
+    def nested_progress_bar(self):
+        """See `bzrlib.ui.UIFactory.nested_progress_bar`."""
+        if self._progress_bar_stack is None:
+            self._progress_bar_stack = ProgressBarStack(
+                klass=self._progress_bar_factory)
+        return self._progress_bar_stack.get_nested()

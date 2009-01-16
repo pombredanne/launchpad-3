@@ -13,6 +13,15 @@ and an external bug, see bugwatch.txt.
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.timezone('UTC'))
 
+    >>> def print_watches(bugtracker):
+    ...     watches = sorted(
+    ...         bugtracker.getBugWatchesNeedingUpdate(23),
+    ...         key=lambda watch: (watch.remotebug, watch.bug.id))
+    ...
+    ...     for bug_watch in watches:
+    ...         print "Remote bug: %s LP bug: %s" % (
+    ...             bug_watch.remotebug, bug_watch.bug.id)
+
 We must be an admin to modify bug watches later on.
 
     >>> login('foo.bar@canonical.com')
@@ -47,11 +56,46 @@ remote bug.
 The watches needing updating should the ones with old statuses, 2000 and 42:
 
     >>> flush_database_updates()
-    >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate(23):
-    ...     print bug_watch.remotebug, bug_watch.bug.id
-    2000 1
-    42 2
-    42 1
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 2000 LP bug: 1
+    Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
+
+getBugWatchesNeedingUpdate() will also return bug watches that have
+un-pushed bug comments that need pushing to remote bug trackers,
+regardless of whether they have been checked recently or not. We'll add
+a comment to the bug watch against remote bug 123543 to demonstrate
+this.
+
+    >>> import transaction
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> message = factory.makeMessage(
+    ...     'Unpushed comment', '... is unpushed')
+
+    >>> print bug_watches[1].remotebug
+    123543
+
+    >>> bug_message = bug_watches[1].addComment(None, message)
+    >>> transaction.commit()
+
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 123543 LP bug: 1
+    Remote bug: 2000   LP bug: 1
+    Remote bug: 42     LP bug: 1
+    Remote bug: 42     LP bug: 2
+
+Once the comment has been pushed to the remote bug the bug watch will no
+longer appear in the set returned by getBugWatchesNeedingUpdate().
+
+    >>> bug_message.remote_comment_id = '1'
+    >>> transaction.commit()
+
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 2000 LP bug: 1
+    Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
 
 
 == Auto-creating bug trackers ==
@@ -266,9 +310,12 @@ bug messages which have been imported for a given bug tracker.
     ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
     ...         print '- message subject: %s' % bug_message.message.subject
 
-The Mozilla Bugzilla has no imported bug messages:
+The Mozilla Bugzilla has only one imported bug message.
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
 
 We will forge some BugMessage records before trying again:
 
@@ -283,6 +330,9 @@ We will forge some BugMessage records before trying again:
     >>> flush_database_updates()
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
     * bug: 1
     - remote bug: 2000
     - message subject: You are Number 1.

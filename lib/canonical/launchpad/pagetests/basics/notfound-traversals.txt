@@ -103,7 +103,6 @@ status is returned.
 
 >>> check("/codeofconduct")
 >>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+sign", auth=True)
 >>> check("/codeofconduct/1.0/+download")
 
 >>> check("/projectgroups", auth=True)
@@ -497,6 +496,7 @@ Check redirects of Unicode URLs works
 Icing resources.
 
 >>> from canonical.launchpad.versioninfo import revno
+>>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
 >>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,

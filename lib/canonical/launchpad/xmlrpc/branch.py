@@ -18,10 +18,12 @@ from zope.interface import Interface, implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
-    IBranchSet, IBugSet,
-    ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+    IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
@@ -220,13 +222,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             branch, suffix, series = branch_set.getByLPPath(strip_path)
             if not check_permission('launchpad.View', branch):
                 if series is None:
-                    raise faults.NoSuchBranch(strip_path)
+                    raise NoSuchBranch(strip_path)
                 else:
                     raise faults.NoBranchForSeries(series)
-        except faults.NoSuchBranch:
+        except NoSuchBranch:
             return self._getUniqueNameResultDict(strip_path)
-        except faults.NoSuchProduct, e:
-            pillar = getUtility(IPillarNameSet).getByName(e.product_name)
+        except NoSuchProduct, e:
+            product_name = e.name
+            pillar = getUtility(IPillarNameSet).getByName(product_name)
             if pillar:
                 if IProject.providedBy(pillar):
                     pillar_type = 'project group'
@@ -236,9 +239,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                     raise AssertionError(
                         "pillar of unknown type %s" % pillar)
                 return faults.NoDefaultBranchForPillar(
-                    e.product_name, pillar_type)
+                    product_name, pillar_type)
             else:
-                return e
+                return faults.NoSuchProduct(product_name)
+        except NoSuchPerson, e:
+            return faults.NoSuchPersonWithName(e.name)
         except faults.LaunchpadFault, e:
             return e
         return self._getResultDict(branch, suffix)
