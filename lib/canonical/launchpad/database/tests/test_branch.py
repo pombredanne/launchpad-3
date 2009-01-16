@@ -14,7 +14,6 @@ from sqlobject import SQLObjectNotFound
 import transaction
 
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -29,7 +28,6 @@ from canonical.launchpad.database.branchmergeproposal import (
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
-from canonical.launchpad.database.job import LeaseHeld
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
@@ -48,7 +46,6 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (

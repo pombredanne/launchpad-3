@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213,E0211
 
 """Interfaces including and related to IJob."""
 

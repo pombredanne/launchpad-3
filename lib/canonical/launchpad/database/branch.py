@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import sys
 
 import transaction
 
@@ -21,7 +20,6 @@ import pytz
 import simplejson
 
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import classProvides, implements
 
@@ -77,7 +75,7 @@ from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import (
     validate_public_person)
 from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.database.job import Job, LeaseHeld
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
