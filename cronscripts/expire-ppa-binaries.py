@@ -27,7 +27,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
     """
 
     def main(self):
-        self.logger.debug('Starting the PPA binary expiration')
+        self.logger.info('Starting the PPA binary expiration')
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -73,7 +73,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
         """)
 
         self.txn.commit()
-        self.logger.debug('Finished the package cache update')
+        self.logger.info('Finished the package cache update')
 
 if __name__ == '__main__':
     script = PPABinaryExpirer(
