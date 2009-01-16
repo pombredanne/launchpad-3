@@ -62,13 +62,11 @@ class TestJobRunner(TestCaseWithFactory):
 
     def test_runAll_skips_lease_failures(self):
         """Ensure runAll skips jobs whose leases can't be acquired."""
-        branch, job_1, job_2 = self.makeBranchAndJobs()
-        def raise_lease_held():
-            raise LeaseHeld()
-        job_2.job.acquireLease = raise_lease_held
-        runner = JobRunner.fromReady(RevisionMailJob)
         reporter = getUtility(IErrorReportingUtility)
         last_oops = reporter.getLastOopsReport()
+        branch, job_1, job_2 = self.makeBranchAndJobs()
+        job_2.job.acquireLease()
+        runner = JobRunner([job_1, job_2])
         runner.runAll()
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual(JobStatus.WAITING, job_2.job.status)

@@ -8,6 +8,7 @@ __all__ = 'JobRunner'
 
 import sys
 
+import transaction
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 
@@ -30,16 +31,24 @@ class JobRunner(object):
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
         job.job.acquireLease()
+        # Commit transaction to clear the row lock.
+        transaction.commit()
         try:
             job.job.start()
             job.run()
         except Exception:
+            # Commit transaction to update the DB time.
+            transaction.commit()
             job.job.fail()
             self.incomplete_jobs.append(job)
             raise
         else:
+            # Commit transaction to update the DB time.
+            transaction.commit()
             job.job.complete()
             self.completed_jobs.append(job)
+        # Commit transaction to update job status.
+        transaction.commit()
 
     def runAll(self):
         """Run all the Jobs for this JobRunner."""
