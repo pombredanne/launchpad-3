@@ -679,6 +679,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
     def test_import_uncommit(self):
         self.commitRevision()
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         stub.test_emails = []
         self.uncommitRevision()
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
@@ -697,6 +698,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         # and another email with the diff and log message.
         self.commitRevision('first')
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         stub.test_emails = []
         self.uncommitRevision()
         self.writeToFile(filename="hello.txt",
