@@ -390,6 +390,34 @@ The optional param exclude_needsbuild is also provided:
     pending: 1
     succeeded: 8
 
+
+== Getting repository size information for a IArchive ==
+
+Via IArchive.getRepositorySizeSummary() method a user may retrieve all
+the relevant repository size information at once. It's specially handy
+for XHR calls.
+
+It returns a dictionary with the following keys and correspondent
+attribute values.
+
+ * 'number_of_sources';
+ * 'sources_size';
+ * 'number_of_binaries';
+ * 'binary_size';
+ * 'estimated_size'.
+
+    >>> repository_size_summary = webservice.named_get(
+    ...     ubuntu['main_archive_link'],
+    ...     'getRepositorySizeSummary').jsonBody()
+    >>> for key, val in sorted(repository_size_summary.items()):
+    ...     print key, val
+    binaries_size      727
+    estimated_size     10437980
+    number_of_binaries 11
+    number_of_sources  14
+    sources_size       10411653
+
+
 == Package copying/synchronisation ==
 
 IArchive contains 2 custom operations to copy packages from another archive.

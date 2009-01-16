@@ -812,6 +812,27 @@ decreases.
     >>> cprov_archive.number_of_binaries
     2
 
+All the archive counter information can be obtained in a single call
+via getRepositorySizeSummary() method. It's mainly intended for API calls.
+
+It returns a dictionary containing the following keys and
+correspondent values of this attributes in IArchive.
+
+ * 'number_of_sources';
+ * 'sources_size';
+ * 'number_of_binaries';
+ * 'binary_size';
+ * 'estimated_size'.
+
+    >>> size_summary = cprov_archive.getRepositorySizeSummary()
+    >>> for key, value in sorted(size_summary.items()):
+    ...     print key, value
+    binaries_size      3
+    estimated_size     9927498
+    number_of_binaries 2
+    number_of_sources  2
+    sources_size       9923399
+
 
 == Sources available for deletions ==
 

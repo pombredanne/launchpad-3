@@ -828,7 +828,7 @@ class Archive(SQLBase):
         # there may be a number of corresponding buildstate counts.
         # So for each buildstate count in the result set...
         for buildstate, count in result:
-            # ...go through the count map checking which counts this 
+            # ...go through the count map checking which counts this
             # buildstate belongs to and add it to the aggregated
             # count.
             for count_type, build_states in count_map.items():
@@ -843,6 +843,16 @@ class Archive(SQLBase):
         return publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
             source_ids,
             archive=self)
+
+    def getRepositorySizeSummary(self):
+        """See `IArchive`."""
+        return {
+            'number_of_sources': self.number_of_sources,
+            'sources_size': self.sources_size,
+            'number_of_binaries': self.number_of_binaries,
+            'binaries_size': self.binaries_size,
+            'estimated_size': self.estimated_size,
+            }
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
@@ -1016,7 +1026,7 @@ class Archive(SQLBase):
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):
         """Private helper function to copy sources to this archive.
-        
+
         It takes a list of SourcePackagePublishingHistory but the other args
         are strings.
         """
