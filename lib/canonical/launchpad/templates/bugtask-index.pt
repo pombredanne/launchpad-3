@@ -38,54 +38,17 @@
         Bug title
       </h1>
       <script tal:condition="view/user">
-        YUI().use('lazr.editor', 'dump', function (Y) {
-            var widget = new Y.EditableText({
-                contentBox: '#bug-title',
+        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+            Y.on('domready', function () {
+                var widget = new Y.EditableText({
+                    contentBox: '#bug-title',
+                });
+                widget.editor.plug({
+                    fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
+                      name: 'title',
+                      url: LP.client.cache.bug['self_link']}});
+                widget.render();
             });
-            widget.editor.subscribe('ieditor:save', function (e) {
-              Y.log('Received save event.');
-
-              //XXX That API should be better.
-
-              //This takes care of validation and updating the value
-              widget.editor._defSave(e);
-              //Check the validation result
-              if (widget.editor.get('in_error')) {
-                  //Validation error, bail out.
-                  Y.log('validation failed', 'error');
-                  return;
-              }
-              //Prevents the default animation from running.
-              e.preventDefault();
-
-              //Check that the value was actually changed.
-              //That should probably also be done by the widget.
-              var value = widget.editor.get('value');
-              if (value === LP.client.cache.bug['title']) {
-                //Nothing to update, hide the editor. This unfortunately
-                //trigger the red flash. That shouldn't happen since it's not
-                //really an error.
-                widget._afterCancel();
-                Y.log("Value didn't change.");
-                return
-              }
-
-              //Actually save the value.
-              var client =  new LP.client.Launchpad();
-              var new_title = {title: value};
-              Y.log('PATCH: ' + Y.dump(new_title));
-              client.patch(LP.client.cache.bug.self_link, new_title, {
-                on: {
-                  success: function () {
-                      Y.log('success');
-                      widget._afterSave(e);
-                  },
-                  failure: function (ioId, o) {
-                      Y.log('failure:' + o.responseText, 'error');
-                      widget._afterCancel(e);
-                  }}});
-            });
-            widget.render();
         });
       </script>
 
