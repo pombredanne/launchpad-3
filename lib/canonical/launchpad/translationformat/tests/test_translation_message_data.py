@@ -67,7 +67,7 @@ class TranslationMessageDataTestCase(TestCase):
             data.addTranslation(0, 'ralugnis')
         except TranslationFormatSyntaxError, error:
             self.assertEqual(
-                error.render(),
+                error.represent("(no message!)"),
                 "Message has more than one translation for plural form 0.")
 
 
