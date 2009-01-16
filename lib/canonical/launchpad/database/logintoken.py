@@ -9,7 +9,8 @@ import random
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
+from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
+from storm.expr import And
 
 from canonical.config import config
 
@@ -25,6 +26,8 @@ from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 class LoginToken(SQLBase):
@@ -50,12 +53,16 @@ class LoginToken(SQLBase):
         """See ILoginToken."""
         self.date_consumed = UTC_NOW
 
+        # Find all the unconsumed tokens that we need to consume. We
+        # don't bother with consumed tokens for performance reasons.
         if self.fingerprint is not None:
             tokens = LoginTokenSet().searchByFingerprintRequesterAndType(
-                self.fingerprint, self.requester, self.tokentype)
+                self.fingerprint, self.requester, self.tokentype,
+                consumed=False)
         else:
             tokens = LoginTokenSet().searchByEmailRequesterAndType(
-                self.email, self.requester, self.tokentype)
+                self.email, self.requester, self.tokentype,
+                consumed=False)
 
         for token in tokens:
             token.date_consumed = UTC_NOW
@@ -261,14 +268,27 @@ class LoginTokenSet:
         except SQLObjectNotFound:
             return default
 
-    def searchByEmailRequesterAndType(self, email, requester, type):
+    def searchByEmailRequesterAndType(self, email, requester, type,
+                                      consumed=None):
         """See ILoginTokenSet."""
-        requester_id = None
-        if requester is not None:
-            requester_id = requester.id
-        return LoginToken.select(AND(LoginToken.q.email==email,
-                                     LoginToken.q.requesterID==requester_id,
-                                     LoginToken.q.tokentype==type))
+        conditions = And(
+            LoginToken.email == email,
+            LoginToken.requester == requester,
+            LoginToken.tokentype == type)
+
+        if consumed is True:
+            conditions = And(conditions, LoginToken.date_consumed != None)
+        elif consumed is False:
+            conditions = And(conditions, LoginToken.date_consumed == None)
+        else:
+            assert consumed is None, (
+                "consumed should be one of {True, False, None}. Got '%s'."
+                % consumed)
+
+        # It's important to always use the MASTER_FLAVOR store here
+        # because we don't want replication lag to cause a 404 error.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        return store.find(LoginToken, conditions)
 
     def deleteByEmailRequesterAndType(self, email, requester, type):
         """See ILoginTokenSet."""
@@ -277,11 +297,26 @@ class LoginTokenSet:
             token.destroySelf()
 
     def searchByFingerprintRequesterAndType(self, fingerprint, requester,
-                                            type):
+                                            type, consumed=None):
         """See ILoginTokenSet."""
-        return LoginToken.select(AND(LoginToken.q.fingerprint==fingerprint,
-                                     LoginToken.q.requesterID==requester.id,
-                                     LoginToken.q.tokentype==type))
+        conditions = And(
+            LoginToken.fingerprint == fingerprint,
+            LoginToken.requester == requester,
+            LoginToken.tokentype == type)
+
+        if consumed is True:
+            conditions = And(conditions, LoginToken.date_consumed != None)
+        elif consumed is False:
+            conditions = And(conditions, LoginToken.date_consumed == None)
+        else:
+            assert consumed is None, (
+                "consumed should be one of {True, False, None}. Got '%s'."
+                % consumed)
+
+        # It's important to always use the MASTER_FLAVOR store here
+        # because we don't want replication lag to cause a 404 error.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        return store.find(LoginToken, conditions)
 
     def getPendingGPGKeys(self, requesterid=None):
         """See ILoginTokenSet."""
