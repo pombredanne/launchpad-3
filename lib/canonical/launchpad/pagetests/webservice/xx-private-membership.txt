@@ -31,3 +31,29 @@ Salgado can, though, because he's a Launchpad admin.
       u'http://.../#team_membership-page-resource'),
      (u'start', 0),
      (u'total_size', 1)]
+
+Similarly, when a public team is a sub-team of a private team, non-members
+cannot see the private team in the public team's super_team's attribute.
+
+    >>> admin_browser.open('http://launchpad.dev/~myteam/+addmember')
+    >>> admin_browser.getControl('New member').value = 'guadamen'
+    >>> admin_browser.getControl('Add Member').click()
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+invitation/myteam')
+    >>> admin_browser.getControl('Accept').click()
+
+    >>> team = user_webservice.get('/~guadamen').jsonBody()
+    >>> super_teams = user_webservice.get(
+    ...     team['super_teams_collection_link']).jsonBody()
+    >>> print super_teams['entries']
+    []
+
+But a user with the proper permissions can see the private super team.
+
+    >>> team = webservice.get('/~guadamen').jsonBody()
+    >>> super_teams = webservice.get(
+    ...     team['super_teams_collection_link']).jsonBody()
+    >>> print len(super_teams['entries'])
+    1
+    >>> print super_teams['entries'][0]['self_link']
+    http://api.launchpad.dev/beta/~myteam
