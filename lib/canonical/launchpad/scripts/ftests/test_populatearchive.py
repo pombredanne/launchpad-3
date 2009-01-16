@@ -344,7 +344,7 @@ class TestPopulateArchiveScript(TestCase):
         warty = getUtility(IDistributionSet)['ubuntu']['warty']
         archive_set = getUtility(IArchiveSet)
         ppa = archive_set.getPPAByDistributionAndOwnerName(
-            warty.distribution, 'cprov')
+            warty.distribution, 'cprov', 'ppa')
 
         # Verify that we have the right source packages in the sample data.
         packages = self._getPendingPackageNames(ppa, warty)
