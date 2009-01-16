@@ -449,9 +449,8 @@ class BugWithoutContextView:
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
-        bugtasks = sorted(
-            self.context.bugtasks, key=operator.attrgetter('id'))
-        self.request.response.redirect(canonical_url(bugtasks[0]))
+        self.request.response.redirect(
+            canonical_url(self.context.default_bugtask))
 
 
 class BugEditViewBase(LaunchpadEditFormView):
