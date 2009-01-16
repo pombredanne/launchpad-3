@@ -512,6 +512,13 @@ Adding a new task.
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
+The first task is available as first_bugtask. Launchpad often views
+bugs in the context of a bugtask, and the default choice is the first
+or oldest bugtask.
+
+    >>> print firefox_bug.first_bugtask.bugtargetdisplayname
+    Mozilla Firefox
+
 Changing bug visibility.
 
     >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
