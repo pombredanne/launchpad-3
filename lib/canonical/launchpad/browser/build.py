@@ -142,17 +142,17 @@ class BuildView(LaunchpadView):
             and self.context.can_be_retried)
 
     @property
-    def has_accepted_upload(self):
-        """Return True if this build has an accepted package upload."""
+    def has_done_upload(self):
+        """Return True if this build's package upload is done."""
         package_upload = self.context.package_upload
 
         if package_upload is None:
             return False
 
-        if package_upload.status == PackageUploadStatus.ACCEPTED:
+        if package_upload.status == PackageUploadStatus.DONE:
             return True
-        else:
-            return False
+
+        return False
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""

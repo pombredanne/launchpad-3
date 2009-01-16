@@ -10,9 +10,33 @@ Let's find a build that produced some binaries:
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
   >>> browser.getLink("Next").click()
-  >>> browser.getLink(
+  >>> build_link = browser.getLink(
   ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
-  ...     'warty RELEASE').click()
+  ...     'warty RELEASE')
+  >>> build_link.url
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/2'
+
+Next, we'll manually create a suitable package upload record for our
+build:
+
+  >>> from canonical.launchpad.database.queue import PackageUploadBuild
+  >>> from canonical.launchpad.interfaces.build import IBuildSet
+  >>> from canonical.launchpad.interfaces.publishing import (
+  ...     PackagePublishingPocket)
+  >>> from zope.component import getUtility
+
+  >>> login('foo.bar@canonical.com')
+  >>> build = getUtility(IBuildSet).getByBuildID(2)
+  >>> package_upload = build.distroseries.createQueueEntry(
+  ...     PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
+  ...     build.archive)
+  >>> package_upload_build = PackageUploadBuild(
+  ...     packageupload =package_upload,
+  ...     build=build)
+  >>> package_upload.setDone()
+  >>> logout()
+
+  >>> build_link.click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/2'
 

@@ -152,14 +152,14 @@ retry it.
 See pagetests/soyuz/xx-build-record.txt for further information about
 the build-retry permission system.
 
-=== BuildView.has_accepted_uploads property ===
+=== BuildView.has_done_upload property ===
 
-The build view provides the property BuildView.has_accepted_uploads
+The build view provides the property BuildView.has_done_upload
 that returns whether the build has a package upload that has been
-accepted. The builds that we are using for testing do not even have
-a package upload, so will return False:
+accepted and processed. The builds that we are using for testing do
+not even have a package upload, so will return False:
 
-    >>> cprov_failed_build_view.has_accepted_upload
+    >>> cprov_failed_build_view.has_done_upload
     False
 
 First lets create a package upload for this build:
@@ -181,17 +181,18 @@ The status of the package upload will, by default, be NEW:
     NEW
 
 Now, even though our build has a package upload, because the status is
-not ACCEPTED, has_accepted_uploads is still False:
+not DONE, has_done_upload is still False:
 
-    >>> cprov_failed_build_view.has_accepted_upload
+    >>> cprov_failed_build_view.has_done_upload
     False
 
-But once the upload has been accepted, has_accepted_upload is True:
+But once the upload has been accepted and processed, has_done_upload
+is True:
 
     >>> login('foo.bar@canonical.com')
-    >>> package_upload.setAccepted()
+    >>> package_upload.setDone()
     >>> login("no-priv@canonical.com")
 
-    >>> cprov_failed_build_view.has_accepted_upload
+    >>> cprov_failed_build_view.has_done_upload
     True
 

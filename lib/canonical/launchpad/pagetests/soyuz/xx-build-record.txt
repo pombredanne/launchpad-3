@@ -104,7 +104,7 @@ has been accepted:
     >>> package_upload_build = PackageUploadBuild(
     ...     packageupload =package_upload,
     ...     build=build)
-    >>> package_upload.setAccepted()
+    >>> package_upload.setDone()
     >>> logout()
 
 After reloading the page:
