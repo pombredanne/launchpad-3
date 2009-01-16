@@ -3,22 +3,18 @@
 """Tests for Job-running facilities."""
 
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 
-from canonical.testing import (DatabaseFunctionalLayer,
-LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing import (LaunchpadFunctionalLayer)
 
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.database import RevisionMailJob
 from canonical.launchpad.interfaces import (
-    BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
-    CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
-    IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
-    SpecificationDefinitionStatus)
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.job import JobStatus, LeaseHeld
