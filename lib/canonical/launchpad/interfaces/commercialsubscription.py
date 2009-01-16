@@ -26,8 +26,7 @@ class ICommercialSubscription(Interface):
     If the product has a license which does not qualify for free
     hosting, a subscription needs to be purchased.
     """
-    # Mark commercial subscriptions  as exported entries for the Launchpad
-    # API.
+    # Mark commercial subscriptions as exported entries for the Launchpad API.
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
@@ -38,7 +37,8 @@ class ICommercialSubscription(Interface):
             required=True,
             readonly=True,
             vocabulary='Product',
-            schema=Interface,   # Really IProduct.  Set properly below.
+            # Really IProduct.  Set properly below.
+            schema=Interface,
             description=_(
                 "Project for which this commercial subscription is "
                 "applied.")))

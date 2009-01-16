@@ -17,18 +17,6 @@
         />
   </class>
 
-<!--
-  <class class="canonical.launchpad.database.CommercialSubscription">
-    <allow
-      interface="canonical.launchpad.interfaces.ICommercialSubscription" />
-    <require
-      permission="launchpad.Edit"
-      set_attributes="date_expires date_starts purchaser registrant
-                      sales_system_id is_active"
-      />
-  </class>
--->
-
   <browser:url
     for="canonical.launchpad.interfaces.ICommercialSubscription"
     path_expression="string:+commercialsubscription/${id}"

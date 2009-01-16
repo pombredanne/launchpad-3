@@ -129,12 +129,12 @@ class IProductCommercialRestricted(Interface):
     """`IProduct` properties which require launchpad.Commercial permission."""
 
     qualifies_for_free_hosting = exported(
-            Bool(
-                title=_("Qualifies for free hosting"),
-                readonly=True,
-                description=_(
-                    "Whether the project's licensing qualifies it for free "
-                    "use of launchpad.")))
+        Bool(
+            title=_("Qualifies for free hosting"),
+            readonly=True,
+            description=_(
+                "Whether the project's licensing qualifies it for free "
+                "use of launchpad.")))
 
     reviewer_whiteboard = exported(
         Text(
@@ -145,28 +145,28 @@ class IProductCommercialRestricted(Interface):
                 "(Admins & Commercial Admins).")))
 
     is_permitted = exported(
-            Bool(
-                title=_("Is Permitted"),
-                readonly=True,
-                description=_(
-                    "Whether the project's licensing qualifies for free "
-                    "hosting or the project has an up-to-date "
-                    "subscription.")))
+        Bool(
+            title=_("Is Permitted"),
+            readonly=True,
+            description=_(
+                "Whether the project's licensing qualifies for free "
+                "hosting or the project has an up-to-date "
+                "subscription.")))
 
     license_reviewed = exported(
         Bool(
             title=_('License reviewed'),
-            description=_("Whether or not this project's license has been"
+            description=_("Whether or not this project's license has been "
                           "reviewed. Editable only by reviewers (Admins & "
                           "Commercial Admins).")))
 
     license_approved = exported(
-            Bool(
-                title=_("License approved"),
-                description=_(
-                    "Whether a license is manually approved for free "
-                    "hosting after automatic approval fails.  May only "
-                    "be applied to licenses of 'Other/Open Source'.")))
+        Bool(
+            title=_("License approved"),
+            description=_(
+                "Whether a license is manually approved for free "
+                "hosting after automatic approval fails.  May only "
+                "be applied to licenses of 'Other/Open Source'.")))
 
 
 class IProductPublic(
@@ -369,13 +369,13 @@ class IProductPublic(
 
     autoupdate = Bool(
         title=_('Automatic update'),
-        description=_("Whether or not this project's attributes are"
+        description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
     private_bugs = Bool(title=_('Private bugs'),
                         description=_(
                             "Whether or not bugs reported into this project "
-                            "are private by default"))
+                            "are private by default."))
     licenses = exported(
         Set(title=_('Licenses'),
             value_type=Choice(vocabulary=License)))
@@ -541,7 +541,6 @@ IProductRelease['product'].schema = IProduct
 
 
 class IProductSet(Interface):
-    """The collection of products."""
     export_as_webservice_collection(IProduct)
 
     title = Attribute("The set of Products registered in the Launchpad")

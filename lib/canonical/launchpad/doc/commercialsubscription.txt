@@ -491,7 +491,7 @@ Anonymous users cannot access 'forReview'.
     ...
     Unauthorized:... 'forReview', 'launchpad.Commercial'...
 
-The no-priv user cannot access 'forReview'.
+No Privileges Person cannot access 'forReview'.
 
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.Commercial', product_set)

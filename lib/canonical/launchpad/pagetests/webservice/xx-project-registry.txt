@@ -912,10 +912,11 @@ can delete files.
 
 == Commercial subscriptions ==
 
-If a project has a commerical-use subscription then it can be
+If a project has a commercial-use subscription then it can be
 retrieved through the API.
 
-    >>> # Do some housekeeping not using the API.
+    >>> # Do some housekeeping not using the API to setup the Mega
+    >>> # Money Maker with a commercial subscription.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
