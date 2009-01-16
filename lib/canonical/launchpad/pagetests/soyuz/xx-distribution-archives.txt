@@ -65,8 +65,18 @@ details:
     Copy archive intrepid-security-rebuild for Joe Bloggs
 
 Copy archives only have minor differences from PPAs in their presentation.
-In particular, the source.list entries are not displayed:
+In particular, the source.list entries are not displayed for a copy
+archive:
 
     >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     None
+
+Whereas, for a PPA which uses the same template, the sources list is
+present:
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    <pre id="sources-list-entries">
+    ...
+    deb-src ...</pre>
 
