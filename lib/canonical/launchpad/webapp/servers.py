@@ -180,8 +180,7 @@ class ApplicationServerSettingRequestFactory:
         # Make sure that HTTPS variable is set so that request.getURL() is
         # sane
         if self.protocol == 'https':
-            if environ.get('HTTPS', '').lower() != 'on':
-                environ['HTTPS'] = 'on'
+            environ['HTTPS'] = 'on'
         request = self.requestfactory(body_instream, environ, response)
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request

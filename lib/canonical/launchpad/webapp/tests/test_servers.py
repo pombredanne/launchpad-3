@@ -63,9 +63,8 @@ class TestApplicationServerSettingRequestFactory(unittest.TestCase):
     """Tests for the ApplicationServerSettingRequestFactory."""
 
     def test___call___should_set_HTTPS_env_on(self):
-        """Ensure that the factory sets the HTTPS variable in the request
-        when the protocol is https.
-        """
+        # Ensure that the factory sets the HTTPS variable in the request
+        # when the protocol is https.
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'https', 443)
         request = factory(StringIO.StringIO(), {'HTTP_HOST': 'launchpad.dev'})
@@ -76,9 +75,8 @@ class TestApplicationServerSettingRequestFactory(unittest.TestCase):
         self.assertEquals(request.getURL(), 'https://launchpad.dev')
 
     def test___call___should_not_set_HTTPS(self):
-        """Ensure that the factory doesn't put an HTTPS variable in the 
-        request when the protocol is http.
-        """
+        # Ensure that the factory doesn't put an HTTPS variable in the 
+        # request when the protocol is http.
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'http', 80)
         request = factory(StringIO.StringIO(), {})
