@@ -387,6 +387,14 @@ class BugTaskNavigation(Navigation):
             if attachment is not None and attachment.bug == self.context.bug:
                 return redirection(canonical_url(attachment), status=301)
 
+    @stepthrough('+attachment')
+    def traverse_attachment(self, name):
+        """traverse to an attachment by id."""
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context.bug:
+                return attachment
+
     @stepthrough('comments')
     def traverse_comments(self, name):
         """Traverse to a comment by id."""

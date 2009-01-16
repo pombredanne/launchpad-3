@@ -5,16 +5,19 @@ __metaclass__ = type
 __all__ = [
     'BugAttachmentSetNavigation',
     'BugAttachmentEditView',
+    'BugAttachmentURL',
     ]
 
 from cStringIO import StringIO
 
+from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.interfaces import (
     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     IBugAttachmentEditForm, ILaunchBag)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -23,6 +26,30 @@ from canonical.launchpad.webapp.menu import structured
 class BugAttachmentSetNavigation(GetitemNavigation):
 
     usedfor = IBugAttachmentSet
+
+
+class BugAttachmentURL:
+    """Bug URL creation rules."""
+    implements(ICanonicalUrlData)
+
+    rootsite = 'bugs'
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        """Always relative to a bugtask."""
+        bugtask = getUtility(ILaunchBag).bugtask
+        if bugtask is None:
+            return self.context.bug.default_bugtask
+        else:
+            return bugtask
+
+    @property
+    def path(self):
+        """Return the path component of the URL."""
+        return u"+attachment/%d" % self.context.id
 
 
 class BugAttachmentEditView(LaunchpadFormView):
