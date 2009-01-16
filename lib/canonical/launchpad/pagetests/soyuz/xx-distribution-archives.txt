@@ -14,6 +14,19 @@ First create a copy archive for us to see:
     >>> copy_archive.owner.displayname = "Joe Bloggs"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
+
+And add some published packages so that this archive is considered
+an active one:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> stp = SoyuzTestPublisher()
+    >>> hoary = ubuntu['hoary']
+    >>> unused = stp.setUpDefaultDistroSeries(distroseries=hoary)
+    >>> stp.addFakeChroots(distroseries=hoary)
+    >>> pub_src = stp.getPubSource(archive=copy_archive, architecturehintlist='any')
+    >>> pub_bins = stp.getPubBinaries(pub_source=pub_src)
+
     >>> logout()
     >>> import transaction
     >>> transaction.commit()
@@ -50,3 +63,11 @@ details:
     >>> link.click()
     >>> print anon_browser.title
     Copy archive intrepid-security-rebuild for Joe Bloggs
+
+Copy archives only have minor differences in presentation from PPAs in
+their presentation. In particular, the source.list entries are not
+displayed:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    None
+
