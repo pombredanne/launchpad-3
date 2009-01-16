@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BranchMergeProposalExists',
     'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
@@ -36,6 +37,10 @@ class InvalidBranchMergeProposal(Exception):
 
     The text of the exception is the rule violation.
     """
+
+
+class BranchMergeProposalExists(InvalidBranchMergeProposal):
+    """Raised if there is already a matching BranchMergeProposal."""
 
 
 class UserNotBranchReviewer(Exception):
@@ -168,7 +173,8 @@ class IBranchMergeProposal(Interface):
     queue_status = exported(
         Choice(
             title=_('Status'),
-            vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
+            vocabulary=BranchMergeProposalStatus, required=True,
+            readonly=True,
             description=_("The current state of the proposal.")))
 
     reviewer = exported(

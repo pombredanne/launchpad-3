@@ -15,7 +15,8 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter, UserNotBranchReviewer)
+    BranchMergeProposalExists, IBranchMergeProposalGetter,
+    UserNotBranchReviewer)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
@@ -367,8 +368,14 @@ class CodeHandler:
             transaction.commit()
         else:
             review_diff = None
-        bmp = source.addLandingTarget(submitter, target, needs_review=True,
-                                      review_diff=review_diff)
+        try:
+            bmp = source.addLandingTarget(submitter, target,
+                                          needs_review=True,
+                                          review_diff=review_diff)
+        except BranchMergeProposalExists:
+            # TODO: send response email
+            pass
+
         if comment_text.strip() == '':
             comment = None
         else:
