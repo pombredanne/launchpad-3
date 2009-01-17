@@ -33,4 +33,4 @@ os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
 
 # We want to have full access to Launchpad's Bazaar plugins throughout the
 # codehosting package.
-load_plugins()
+load_plugins([get_bzr_plugins_path()])
