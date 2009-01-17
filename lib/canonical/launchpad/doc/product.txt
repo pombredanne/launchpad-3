@@ -587,7 +587,6 @@ If we change the development_focus, primary_translatable changes as well.
 The series for a product are returned as a sorted list, with the
 exception that the current development focus is first.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> firefox_view = create_initialized_view(firefox, '+index')
     >>> sorted_series = firefox_view.sorted_series_list
     >>> for series in sorted_series:
