@@ -157,10 +157,25 @@ class Branch(SQLBase):
             if self.distroseries is None:
                 return PersonContainer(self.owner)
             else:
-                return PackageContainer(
-                    self.distroseries, self.sourcepackagename)
+                return PackageContainer(self.sourcepackage)
         else:
             return ProductContainer(self.product)
+
+    @property
+    def distribution(self):
+        """See `IBranch`."""
+        if self.distroseries is None:
+            return None
+        return self.distroseries.distribution
+
+    @property
+    def sourcepackage(self):
+        """See `IBranch`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        if self.distroseries is None:
+            return None
+        return SourcePackage(self.sourcepackagename, self.distroseries)
 
     @property
     def revision_history(self):
@@ -286,12 +301,9 @@ class Branch(SQLBase):
         """See `IBranch`."""
         launchbag.add(self.product)
         if self.distroseries is not None:
-            from canonical.launchpad.database.sourcepackage import (
-                SourcePackage)
             launchbag.add(self.distroseries)
-            launchbag.add(self.distroseries.distribution)
-            launchbag.add(
-                SourcePackage(self.sourcepackagename, self.distroseries))
+            launchbag.add(self.distribution)
+            launchbag.add(self.sourcepackage)
 
     def getStackedBranches(self):
         """See `IBranch`."""
@@ -352,21 +364,11 @@ class Branch(SQLBase):
         """
         return BzrBranch.open(self.warehouse_url)
 
-    def _getContainerName(self):
-        if self.product is not None:
-            return self.product.name
-        if (self.distroseries is not None
-            and self.sourcepackagename is not None):
-            return '%s/%s/%s' % (
-                self.distroseries.distribution.name,
-                self.distroseries.name, self.sourcepackagename.name)
-        return '+junk'
-
     @property
     def unique_name(self):
         """See `IBranch`."""
         return u'~%s/%s/%s' % (
-            self.owner.name, self._getContainerName(), self.name)
+            self.owner.name, self.container.name, self.name)
 
     @property
     def displayname(self):

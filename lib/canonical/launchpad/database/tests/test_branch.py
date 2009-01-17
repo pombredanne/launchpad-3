@@ -183,7 +183,7 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         self.assertEqual(
             '~%s/%s/%s/%s/%s' % (
-                branch.owner.name, branch.distroseries.distribution.name,
+                branch.owner.name, branch.distribution.name,
                 branch.distroseries.name, branch.sourcepackagename.name,
                 branch.name),
             branch.unique_name)
@@ -200,8 +200,8 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         self.assertEqual(
             '%s/%s/%s' % (
-                branch.distroseries.distribution.name,
-                branch.distroseries.name, branch.sourcepackagename.name),
+                branch.distribution.name, branch.distroseries.name,
+                branch.sourcepackagename.name),
             branch.container.name)
 
     def makeLaunchBag(self):
@@ -228,12 +228,45 @@ class TestBranch(TestCaseWithFactory):
         launchbag = self.makeLaunchBag()
         branch.addToLaunchBag(launchbag)
         self.assertEqual(branch.distroseries, launchbag.distroseries)
-        self.assertEqual(
-            branch.distroseries.distribution, launchbag.distribution)
-        sourcepackage = SourcePackage(
-            branch.sourcepackagename, branch.distroseries)
-        self.assertEqual(sourcepackage, launchbag.sourcepackage)
+        self.assertEqual(branch.distribution, launchbag.distribution)
+        self.assertEqual(branch.sourcepackage, launchbag.sourcepackage)
         self.assertIs(None, branch.product)
+
+    def test_distribution_personal(self):
+        # The distribution property of a branch is None for personal branches.
+        branch = self.factory.makePersonalBranch()
+        self.assertIs(None, branch.distribution)
+
+    def test_distribution_product(self):
+        # The distribution property of a branch is None for product branches.
+        branch = self.factory.makeProductBranch()
+        self.assertIs(None, branch.distribution)
+
+    def test_distribution_package(self):
+        # The distribution property of a branch is the distribution of the
+        # distroseries for package branches.
+        branch = self.factory.makePackageBranch()
+        self.assertEqual(
+            branch.distroseries.distribution, branch.distribution)
+
+    def test_sourcepackage_personal(self):
+        # The sourcepackage property of a branch is None for personal
+        # branches.
+        branch = self.factory.makePersonalBranch()
+        self.assertIs(None, branch.sourcepackage)
+
+    def test_sourcepackage_product(self):
+        # The sourcepackage property of a branch is None for product branches.
+        branch = self.factory.makeProductBranch()
+        self.assertIs(None, branch.sourcepackage)
+
+    def test_sourcepackage_package(self):
+        # The sourcepackage property of a branch is the ISourcePackage built
+        # from the distroseries and sourcepackagename of the branch.
+        branch = self.factory.makePackageBranch()
+        self.assertEqual(
+            SourcePackage(branch.sourcepackagename, branch.distroseries),
+            branch.sourcepackage)
 
 
 class TestGetByUniqueName(TestCaseWithFactory):

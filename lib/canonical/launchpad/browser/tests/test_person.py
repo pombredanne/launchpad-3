@@ -107,7 +107,7 @@ class TestBranchTraversal(TestCaseWithFactory):
 
     def test_redirect_on_package_branch_aliases(self):
         branch = self.factory.makePackageBranch(owner=self.person)
-        distro = removeSecurityProxy(branch.distroseries.distribution)
+        distro = removeSecurityProxy(branch.distribution)
         distro.setAliases(['foo'])
         self.assertRedirects(
             ['foo', branch.distroseries.name, branch.sourcepackagename.name,
@@ -143,7 +143,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     def test_package_branch(self):
         branch = self.factory.makePackageBranch(owner=self.person)
         segments = [
-            branch.distroseries.distribution.name,
+            branch.distribution.name,
             branch.distroseries.name,
             branch.sourcepackagename.name,
             branch.name]
