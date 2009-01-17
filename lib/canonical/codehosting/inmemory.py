@@ -105,6 +105,13 @@ class FakeSourcePackage:
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
 
+    @property
+    def distribution(self):
+        if self.distroseries is not None:
+            return self.distroseries.distribution
+        else:
+            return None
+
 
 class FakeBranch(FakeDatabaseObject):
     """Fake branch object."""

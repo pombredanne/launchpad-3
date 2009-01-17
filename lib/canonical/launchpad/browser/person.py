@@ -307,9 +307,8 @@ class BranchTraversalMixin:
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))
 
-        if branch.distroseries is not None:
-            distro = branch.distroseries.distribution
-            if distro.name != pillar_name:
+        if branch.distribution is not None:
+            if branch.distribution.name != pillar_name:
                 # This branch was accessed through one of its product's
                 # aliases, so we must redirect to its canonical URL.
                 return self.redirectSubTree(canonical_url(branch))

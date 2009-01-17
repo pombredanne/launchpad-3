@@ -618,7 +618,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_name = self.factory.getUniqueString()
         unique_name = '/~%s/%s/%s/%s/%s' % (
             owner.name,
-            sourcepackage.distroseries.distribution.name,
+            sourcepackage.distribution.name,
             sourcepackage.distroseries.name,
             sourcepackage.sourcepackagename.name,
             branch_name)
