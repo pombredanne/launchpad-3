@@ -23,7 +23,7 @@ We can create a new token for name12 to access cprov's PPA like this:
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> name12 = getUtility(IPersonSet).getByName("name12")
 
-    >>> new_token = cprov.archive.newAuthToken(name12, "testtoken")
+    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -34,7 +34,7 @@ access) on the context archive are allowed to create tokens.
 Users cannot create their own access tokens either.  Log in as name12:
 
     >>> login("test@canonical.com")
-    >>> new_token = cprov.archive.newAuthToken(name12, "testtoken")
+    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -51,7 +51,7 @@ By default the tokens are 20 characters long.
 
 We can also specify our own token for testing purposes:
 
-    >>> new_token = cprov.archive.newAuthToken(name12, "testtoken")
+    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
 
 The new token is returned and reflects the data:
 

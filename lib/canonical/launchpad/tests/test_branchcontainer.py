@@ -18,14 +18,9 @@ class TestPackageContainer(TestCaseWithFactory):
 
     def test_name(self):
         # The name of a package context is distro/series/sourcepackage
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        context = PackageContainer(distroseries, sourcepackagename)
-        self.assertEqual(
-            '%s/%s/%s' % (
-                distroseries.distribution.name,
-                distroseries.name,
-                sourcepackagename.name), context.name)
+        sourcepackage = self.factory.makeSourcePackage()
+        context = PackageContainer(sourcepackage)
+        self.assertEqual(sourcepackage.path, context.name)
 
 
 class TestPersonContainer(TestCaseWithFactory):
