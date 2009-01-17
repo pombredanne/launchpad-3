@@ -694,6 +694,8 @@ class SortSeriesMixin:
     @property
     def sorted_active_series_list(self):
         """Like `sorted_series_list()` but filters out OBSOLETE series."""
+        # Callback for the filter which only allows series that have not been
+        # marked obsolete.
         def check_active(series):
             return series.status != DistroSeriesStatus.OBSOLETE
         return self._sorted_filtered_list(check_active)
