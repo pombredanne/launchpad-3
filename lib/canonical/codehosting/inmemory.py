@@ -98,6 +98,14 @@ class ObjectSet:
         return self._find(name=name)
 
 
+class FakeSourcePackage:
+    """Fake ISourcePackage."""
+
+    def __init__(self, sourcepackagename, distroseries):
+        self.sourcepackagename = sourcepackagename
+        self.distroseries = distroseries
+
+
 class FakeBranch(FakeDatabaseObject):
     """Fake branch object."""
 
@@ -247,8 +255,7 @@ class FakeObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
-                   registrant=None, distroseries=None,
-                   sourcepackagename=None):
+                   registrant=None, sourcepackage=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -261,6 +268,12 @@ class FakeObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if registrant is None:
             registrant = self.makePerson()
+        if sourcepackage is None:
+            sourcepackagename = None
+            distroseries = None
+        else:
+            sourcepackagename = sourcepackage.sourcepackagename
+            distroseries = sourcepackage.distroseries
         IBranch['name'].validate(unicode(name))
         branch = FakeBranch(
             branch_type, name=name, owner=owner, url=url,
@@ -269,6 +282,20 @@ class FakeObjectFactory(ObjectFactory):
             sourcepackagename=sourcepackagename)
         self._branch_set._add(branch)
         return branch
+
+    def makeAnyBranch(self, **kwargs):
+        return self.makeProductBranch(**kwargs)
+
+    def makePersonalBranch(self, owner=None, **kwargs):
+        if owner is None:
+            owner = self.makePerson()
+        return self.makeBranch(
+            owner=owner, product=None, sourcepackage=None, **kwargs)
+
+    def makeProductBranch(self, product=None, **kwargs):
+        if product is None:
+            product = self.makeProduct()
+        return self.makeBranch(product=product, sourcepackage=None, **kwargs)
 
     def makeDistribution(self):
         distro = FakeDistribution(self.getUniqueString())
@@ -286,6 +313,13 @@ class FakeObjectFactory(ObjectFactory):
         sourcepackagename = FakeSourcePackageName(self.getUniqueString())
         self._sourcepackagename_set._add(sourcepackagename)
         return sourcepackagename
+
+    def makeSourcePackage(self, distroseries=None, sourcepackagename=None):
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        return FakeSourcePackage(sourcepackagename, distroseries)
 
     def makeTeam(self, owner):
         team = FakeTeam(name=self.getUniqueString(), members=[owner])
@@ -433,7 +467,7 @@ class FakeBranchFilesystem:
             return faults.PermissionDenied(
                 ('%s cannot create branches owned by %s'
                  % (registrant.displayname, owner.displayname)))
-        product = distroseries = sourcepackagename = None
+        product = sourcepackage = None
         if data['product'] == '+junk':
             if owner.isTeam():
                 return faults.PermissionDenied(
@@ -461,15 +495,15 @@ class FakeBranchFilesystem:
                 return faults.NotFound(
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
+            sourcepackage = FakeSourcePackage(sourcepackagename, distroseries)
         else:
             return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         try:
             return self._factory.makeBranch(
                 owner=owner, name=branch_name, product=product,
-                distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                registrant=registrant, branch_type=BranchType.HOSTED).id
+                sourcepackage=sourcepackage, registrant=registrant,
+                branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
             return faults.PermissionDenied(str(e))
 
