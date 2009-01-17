@@ -142,9 +142,11 @@
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
-      <div id="package_counters" class="discreet">
-        <p>Package counters and estimated archive size temporarily
-           unavailable.</p>
+      <div id="package_counters">
+        <p class="discreet">
+           Package counters and estimated archive size temporarily
+           unavailable.
+        </p>
       </div>
 
       <div class="actions" style="clear:right;float:right;">
