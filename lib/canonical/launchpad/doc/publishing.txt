@@ -918,31 +918,26 @@ For testing purposes we will create a `PackageDiff` for Celso's
     >>> print iceweasel_diff.title
     0.1-1 (in Ubuntu) to 1.0
 
-getPackageDiffsForSources() only returns fulfilled `PackageDiff`s, which is
-not the case of the just created ones.
-
-    >>> cprov_diffs.count()
-    0
-
-Once we make the `PackageDiff` records 'fulfilled', by storing a
-'diff_content', they show up in the getPackageDiffsForSources()
-results.
-
-    >>> from canonical.launchpad.interfaces.librarian import (
-    ...     ILibraryFileAliasSet)
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.database.sqlbase import flush_database_updates
-
-    >>> naked_diff = removeSecurityProxy(pmount_diff)
-    >>> naked_diff.diff_content = getUtility(ILibraryFileAliasSet)[1]
-
-    >>> naked_diff = removeSecurityProxy(iceweasel_diff)
-    >>> naked_diff.diff_content = getUtility(ILibraryFileAliasSet)[1]
-
     >>> flush_database_updates()
+
+The `PackageDiff` are availble via getPackageDiffsForSources() even if
+they are not completed yet.
 
     >>> cprov_diffs.count()
     2
+
+Let's fulfill the file related with the 'pmount' diff.
+
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
+
+    >>> diff_file = getUtility(ILibraryFileAliasSet)[1]
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_diff = removeSecurityProxy(pmount_diff)
+    >>> naked_diff.diff_content = diff_file
+    >>> flush_database_updates()
 
 getPackageDiffsForSources() returns a list of 4-element tuple, ordered
 by ascending publishing id and descending `PackageDiff` creation date,
@@ -969,6 +964,24 @@ containing:
     >>> print content.md5
     01234567890123456789012345678900
 
+All elements of the result are present, even if they do not correspond
+to actual objects in the database, which is the case of pending diff
+requests. On pending diffs, `LibraryFileAlias` and
+`LibraryFileContent` elements are None.
+
+    >>> source_pub, diff, file, content = iceweasel_diff
+
+    >>> print source_pub.displayname
+    iceweasel 1.0 in warty
+
+    >>> print diff.title
+    0.1-1 (in Ubuntu) to 1.0
+
+    >>> print file
+    None
+
+    >>> print content
+    None
 
 getChangesFilesForSources(), provided by IPublishingSet, allows
 call sites to retrieve all changesfiles related to a set of source
@@ -1376,13 +1389,13 @@ And then grab the build summaries for firefox and foo:
     ...         ubuntu.main_archive)
     >>> print_build_summaries(build_summaries)
     Source ID: 18
-    Successfully built
+    FULLYBUILT
     All builds were built successfully.
     Relevant builds:
      - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
      - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Source ID: 22
-    Failed to build
+    FAILEDTOBUILD
     There were build failures.
     Relevant builds:
      - i386 build of foobar 1.0 in ubuntu warty RELEASE
