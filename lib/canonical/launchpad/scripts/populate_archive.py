@@ -32,7 +32,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 def specified(option):
     """Return False if option was not supplied or is an empty string.
-    
+
     Return True otherwise.
     """
     if option is None:
@@ -133,7 +133,7 @@ class ArchivePopulator(SoyuzScript):
         # Use a PPA if specified and existent.
         if from_user is not None:
             origin_archive = archive_set.getPPAByDistributionAndOwnerName(
-                the_origin.distribution, from_user)
+                the_origin.distribution, from_user, from_archive)
             if origin_archive is not None:
                 the_origin.archive = origin_archive
             else:
