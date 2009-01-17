@@ -19,10 +19,15 @@
           <script type="text/javascript"
                   tal:attributes="src string:${lp_js}/soyuz/update_archive_build_statuses.js">
           </script>
+          <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/update_archive_repository_size.js">
+          </script>
+
         </tal:archive_js>
       </tal:devmode>
       <script type="text/javascript">
-          YUI().use('node', 'soyuz.update_archive_build_statuses');
+          YUI().use('node', 'soyuz.update_archive_build_statuses', 'soyuz.update_archive_repository_size');
+
       </script>
     </metal:block>
 
@@ -137,9 +142,10 @@
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
-      <p id="package_counters" class="discreet">
-        Package counters and estimated archive size temporarily unavailable.
-      </p>
+      <div id="package_counters" class="discreet">
+        <p>Package counters and estimated archive size temporarily
+           unavailable.</p>
+      </div>
 
       <div class="actions" style="clear:right;float:right;">
         <tal:builds
