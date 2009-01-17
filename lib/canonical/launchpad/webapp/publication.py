@@ -1,46 +1,54 @@
 # (c) Canonical Ltd. 2004-2006, all rights reserved.
 
 __metaclass__ = type
+__all__ = [
+    'LoginRoot',
+    'LaunchpadBrowserPublication'
+    ]
+
 
 import gc
 import os
-from datetime import datetime
 import thread
 import threading
-from time import strftime
 import traceback
 import urllib
 
 from cProfile import Profile
+from datetime import datetime
+from time import strftime
 
 import tickcount
+import transaction
 
 from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError, IntegrityError
 from storm.zope.interfaces import IZStorm
-import transaction
+
+import zope.app.publication.browser
 
 from zope.app import zapi  # used to get at the adapters service
-import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
-
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
 from zope.publisher.publish import mapply
-
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
+
+import canonical.launchpad.layers as layers
+import canonical.launchpad.webapp.adapter as da
 
 from canonical.config import config
 from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
-import canonical.launchpad.layers as layers
-import canonical.launchpad.webapp.adapter as da
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
@@ -51,12 +59,8 @@ from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-__all__ = [
-    'LoginRoot',
-    'LaunchpadBrowserPublication'
-    ]
-
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
+
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -180,9 +184,6 @@ class LaunchpadBrowserPublication(
         return principal
 
     def maybeRestrictToTeam(self, request):
-
-        from canonical.launchpad.interfaces import (
-            IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
         restrict_to_team = config.launchpad.restrict_to_team
         if not restrict_to_team:
             return
@@ -311,8 +312,7 @@ class LaunchpadBrowserPublication(
         view = removeSecurityProxy(ob)
         # It's possible that the view is a bounded method.
         view = getattr(view, 'im_self', view)
-        context = removeSecurityProxy(
-            getattr(view, 'context', None))
+        context = removeSecurityProxy(getattr(view, 'context', None))
         if context is None:
             pageid = ''
         else:

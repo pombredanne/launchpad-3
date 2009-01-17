@@ -3,7 +3,7 @@
 Source package publishing details are available via a custom operation on
 archives, getPublishedSources().
 
-    >>> cprov_archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
 
@@ -56,7 +56,7 @@ Each source publication exposes a number of properties:
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
-    archive_link: u'http://.../~cprov/+archive'
+    archive_link: u'http://.../~cprov/+archive/ppa'
     component_name: u'main'
     datecreated: u'2007-07-09T12:00:00+00:00'
     datemadepending: None
@@ -71,7 +71,7 @@ Each source publication exposes a number of properties:
     resource_type_link: u'http://.../#source_package_publishing_history'
     scheduleddeletiondate: None
     section_name: u'editors'
-    self_link: u'http://.../~cprov/+archive/+sourcepub/28'
+    self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/28'
     source_package_name: u'iceweasel'
     source_package_version: u'1.0'
     status: u'Published'
@@ -122,7 +122,7 @@ cprov's ppa:
     >>> src_link = cprov_srcs['entries'][0]['self_link']
 
 The src_link will be of the form: 
-u'http://api.launchpad.dev/beta/~cprov/+archive/+sourcepub/27'
+u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+sourcepub/27'
 so:
 
     >>> source_id = int(src_link.split('/')[-1])
@@ -150,6 +150,6 @@ The results contain an entry for each source ID, with the summary status
 and a list of all the relevant builds for the summary:
 
     >>> print_build_summaries(build_summaries)
-    Source ID 27: Failed to build ([u'i386'])
-    Source ID 28: Successfully built ([u'i386'])
+    Source ID 27: FAILEDTOBUILD ([u'i386'])
+    Source ID 28: FULLYBUILT ([u'i386'])
 

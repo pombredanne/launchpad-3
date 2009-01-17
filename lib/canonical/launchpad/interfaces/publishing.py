@@ -828,6 +828,9 @@ class IPublishingSet(Interface):
         way the extra information will be cached and the callsites can group
         package-diffs in any convenient form.
 
+        `LibraryFileAlias` and `LibraryFileContent` elements might be None in
+        case the `PackageDiff` is not completed yet.
+
         The result is ordered by:
 
          1. Ascending `SourcePackagePublishingHistory.id`,

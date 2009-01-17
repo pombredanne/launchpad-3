@@ -75,7 +75,7 @@ class LaunchBag:
         if not principals:
             return None
         elif len(principals) > 1:
-            raise ValueError, 'Too many principals'
+            raise ValueError('Too many principals')
         else:
             try:
                 person = IPerson(principals[0])
