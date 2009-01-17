@@ -315,18 +315,20 @@ class ArchiveViewBase:
     @property
     def source_count_text(self):
         """Return the correct form of the source counter notice."""
-        if self.context.number_of_sources == 1:
-            return '%s source package' % self.context.number_of_sources
+        number_of_sources = self.context.number_of_sources
+        if number_of_sources == 1:
+            return '%s source package' % number_of_sources
         else:
-            return '%s source packages' % self.context.number_of_sources
+            return '%s source packages' % number_of_sources
 
     @property
     def binary_count_text(self):
         """Return the correct form of the binary counter notice."""
-        if self.context.number_of_binaries == 1:
-            return '%s binary package' % self.context.number_of_binaries
+        number_of_binaries = self.context.number_of_binaries
+        if number_of_binaries == 1:
+            return '%s binary package' % number_of_binaries
         else:
-            return '%s binary packages' % self.context.number_of_binaries
+            return '%s binary packages' % number_of_binaries
 
     @cachedproperty
     def simplified_status_vocabulary(self):
