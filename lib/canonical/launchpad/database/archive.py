@@ -847,16 +847,6 @@ class Archive(SQLBase):
             source_ids,
             archive=self)
 
-    def getRepositorySizeSummary(self):
-        """See `IArchive`."""
-        return {
-            'number_of_sources': self.number_of_sources,
-            'sources_size': self.sources_size,
-            'number_of_binaries': self.number_of_binaries,
-            'binaries_size': self.binaries_size,
-            'estimated_size': self.estimated_size,
-            }
-
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."

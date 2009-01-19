@@ -669,22 +669,6 @@ class IArchiveView(Interface):
             given ids that belong in the archive.
         """
 
-    @export_read_operation()
-    def getRepositorySizeSummary():
-        """Return all relevant repository size informations.
-
-        I returns dictionary containing the following keys and correspondent
-        attribute values in this IArchive context.
-
-         * 'number_of_sources';
-         * 'sources_size';
-         * 'number_of_binaries';
-         * 'binary_size';
-         * 'estimated_size'.
-
-        :return: a dictionary with relevant archive size infotmation.
-        """
-
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
