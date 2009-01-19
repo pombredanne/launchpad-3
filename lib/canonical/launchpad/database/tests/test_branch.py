@@ -389,8 +389,7 @@ class TestGetByPath(TestCaseWithFactory):
             owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        #self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
-        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
+        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
 
     def test_missing_suffixed_package_branch(self):
         owner = self.factory.makePerson()
@@ -401,10 +400,8 @@ class TestGetByPath(TestCaseWithFactory):
             sourcepackagename=sourcepackagename)
         suffix = self.makeRelativePath()
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        #self.assertRaises(
-        #    NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
         self.assertRaises(
-            NoSuchProduct, self.getByPath, branch_name + '/' + suffix)
+            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
 
     def test_no_preceding_tilde(self):
         self.assertRaises(
