@@ -166,22 +166,20 @@
     :archive: targeted IArchive.
   </tal:comment>
 
-  <div>
-    <ul id="package_counters">
-      <li id="source_counter">
-         <tal:source_count_text replace="archive/@@+index/source_count_text" />
-         (<tal:sources_size
-            replace="archive/sources_size/fmt:bytes" />)</li>
-      <li id="binary_counter">
-         <tal:binary_count_text replace="archive/@@+index/binary_count_text" />
-         (<tal:binaries_size
-            replace="archive/binaries_size/fmt:bytes" />)</li>
-      <li id="total_size">
-         Estimated archive size:
-         <tal:estimated_size
-           replace="archive/estimated_size/fmt:bytes" /></li>
-    </ul>
-  </div>
+  <ul>
+    <li id="source_counter">
+       <tal:source_count_text replace="archive/@@+index/source_count_text" />
+       (<tal:sources_size
+          replace="archive/sources_size/fmt:bytes" />)</li>
+    <li id="binary_counter">
+       <tal:binary_count_text replace="archive/@@+index/binary_count_text" />
+       (<tal:binaries_size
+          replace="archive/binaries_size/fmt:bytes" />)</li>
+    <li id="total_size">
+       Estimated archive size:
+       <tal:estimated_size
+         replace="archive/estimated_size/fmt:bytes" /></li>
+  </ul>
 
 </metal:package_counters>
 
