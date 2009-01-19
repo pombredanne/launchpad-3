@@ -338,8 +338,16 @@ class ArchiveContextMenu(ContextMenu):
         return Link('+edit-dependencies', text, icon='edit')
 
 
-class ArchiveViewBase:
+class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
+
+    def initialize(self):
+        """Setup shared infrastructure for the PPA pages.
+
+        Setup status filter widget and the series filter widget.
+        """
+        self.setupStatusFilterWidget()
+        self.setupSeriesFilterWidget()
 
     @cachedproperty
     def is_active(self):
@@ -432,26 +440,6 @@ class ArchiveViewBase:
         """Return a dict representation of the build counters."""
         return self.context.getBuildCounters()
 
-
-class ArchiveView(ArchiveViewBase, LaunchpadView):
-    """Default Archive view class.
-
-    Implements useful actions and collects useful sets for the page template.
-    """
-
-    __used_for__ = IArchive
-
-    def initialize(self):
-        """Setup infrastructure for the PPA index page.
-
-        Setup sources list entries widget, package filter widget and the
-        search result list.
-        """
-        self.setupSourcesListEntries()
-        self.setupStatusFilterWidget()
-        self.setupSeriesFilterWidget()
-        self.setupPackageBatchResult()
-
     def setupStatusFilterWidget(self):
         """Build a customized publishing status select widget.
 
@@ -493,14 +481,6 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         return self.series_filter_widget.renderValue(
             self.selected_series_filter.value)
 
-    def setupSourcesListEntries(self):
-        """Setup of the sources list entries widget."""
-        entries = SourcesListEntries(
-            self.context.distribution, self.archive_url,
-            self.context.series_with_sources)
-        self.sources_list_entries = SourcesListEntriesView(
-            entries, self.request)
-
     @property
     def search_requested(self):
         """Whether or not the search form was used."""
@@ -517,6 +497,32 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
             status=self.selected_status_filter.value.collection,
             distroseries=self.selected_series_filter.value)
 
+
+class ArchiveView(ArchiveViewBase):
+    """Default Archive view class.
+
+    Implements useful actions and collects useful sets for the page template.
+    """
+
+    __used_for__ = IArchive
+
+    def initialize(self):
+        """Setup infrastructure for the PPA index page.
+
+        Setup sources list entries widget and the search result list.
+        """
+        super(ArchiveView, self).initialize()
+        self.setupSourcesListEntries()
+        self.setupPackageBatchResult()
+
+    def setupSourcesListEntries(self):
+        """Setup of the sources list entries widget."""
+        entries = SourcesListEntries(
+            self.context.distribution, self.archive_url,
+            self.context.series_with_sources)
+        self.sources_list_entries = SourcesListEntriesView(
+            entries, self.request)
+
     def setupPackageBatchResult(self):
         """Setup of the package search results."""
         self.batchnav = BatchNavigator(
@@ -530,6 +536,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         return(getUtility(
                 IPackageCopyRequestSet).getByTargetArchive(self.context))
 
+
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     """Base class to implement a source selection widget for PPAs."""
 
@@ -540,6 +547,11 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
 
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
     custom_widget('status_filter', LaunchpadDropdownWidget)
+
+    def initialize(self):
+        """Ensure both parent classes initialize methods are called."""
+        ArchiveViewBase.initialize(self)
+        LaunchpadFormView.initialize(self)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
