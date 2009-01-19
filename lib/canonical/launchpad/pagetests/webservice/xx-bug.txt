@@ -224,6 +224,7 @@ data in a bug task is derived from the bug.
   resource_type_link: u'http://.../#bug_task'
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
+  target_link: u'http://api.../debian/+source/mozilla-firefox'
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
 
   >>> bugtask_path = bug_one_bugtasks[0]['self_link']
@@ -327,6 +328,12 @@ If an error occurs during a request that sets both 'status' and
   New
   >>> print task['importance']
   Low
+
+We can patch the bug task's target.
+
+  >>> patch = {'target': webservice.getAbsoluteUrl(
+  ...     '/debian/+source/alsa-utils')}
+  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
 
 
 == Bug subscriptions ==

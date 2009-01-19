@@ -863,6 +863,25 @@ class BugTask(SQLBase, BugTaskMixin):
 
         self.assignee = assignee
 
+    def transitionToTarget(self, target):
+        """See `IBugTask`."""
+        if IUpstreamBugTask.providedBy(self):
+            if IProduct.providedBy(target):
+                self.product = target
+            else:
+                raise Exception(
+                    "Illegal target. Upstream bug tasks may only "
+                    "be retargeted to another project.") # TODO : proper exception
+        else:
+            if (IDistributionSourcePackage.providedBy(target) and
+                target.sourcepackagename == self.target.sourcepackagename):
+                self.distribution = target.distribution
+                self.sourcepackagename = target.sourcepackagename
+            else:
+                raise Exception(
+                    "Illegal target. Distribution bug tasks may only "
+                    "be retargeted to package in the same distribution.") # TODO : proper exception
+
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
         if newtarget is None:
