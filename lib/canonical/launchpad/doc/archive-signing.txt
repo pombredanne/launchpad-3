@@ -224,7 +224,7 @@ The generated key UID follows "Launchpad %(ppa.title)s" format.
 
     >>> [uid] = retrieved_key.uids
     >>> print uid.name
-    Launchpad PPA for Celso Providelo
+    Launchpad PPA for Celso áéíóú Providelo
 
 The secret key is securily stored in the designed configuration
 path. So only the IGPGHandler itself can access it.
