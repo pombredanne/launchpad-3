@@ -136,14 +136,8 @@
 
       <tal:active_archive condition="archive_active">
 
-      <!--Disabled section due to performance issues. -->
-      <tal:contents tal:define="archive context"
-                    tal:condition="python: False">
-        <metal:package-counters
-          use-macro="context/@@+macros/package-counters" />
-      </tal:contents>
       <div id="package_counters">
-        <p class="discreet">
+        <p class="discreet" style="line-height: 3em;">
            Package counters and estimated archive size temporarily
            unavailable.
         </p>
