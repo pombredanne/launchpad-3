@@ -402,7 +402,7 @@ class TestPopulateArchiveScript(TestCase):
         # Then populate the same copy archive from the 2nd snapshot.
         # This results in the copying of the fresher and of the new package.
         extra_args = [
-            '--merge-copy', '-a', 'hppa', '--from-archive', second_stage.name]
+            '--merge-copy', '--from-archive', second_stage.name]
 
         # An empty 'reason' string is passed to runScript() i.e. the latter
         # will not pass a '--reason' command line argument to the script which
@@ -411,20 +411,6 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = self.runScript(
             extra_args=extra_args, copy_archive_name=copy_archive.name,
             reason='')
-        self._verifyClonedSourcePackages(
-            copy_archive, hoary,
-            # The set of packages that were superseded in the target archive.
-            obsolete=set(['alsa-utils 1.0.9a-4ubuntu1 in hoary']),
-            # The set of packages that are new/fresher in the source archive.
-            new=set(['alsa-utils 2.0 in hoary',
-                     'new-in-second-round 1.0 in hoary'])
-            )
-
-        # Finally populate the same copy archive from ubuntu/hoary directly.
-        # No new packages will be copied.
-        extra_args = ['--merge-copy', '-a', 'hppa']
-        copy_archive = self.runScript(
-            extra_args=extra_args, copy_archive_name=copy_archive.name)
         self._verifyClonedSourcePackages(
             copy_archive, hoary,
             # The set of packages that were superseded in the target archive.
@@ -478,6 +464,28 @@ class TestPopulateArchiveScript(TestCase):
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Invalid processor family: 'wintel'")
+
+    def testFamiliesForExistingArchives(self):
+        """Try specifying processor family names for existing archive.
+
+        The user is not supposed to specify processor families on the command
+        line for existing copy archives. The processor families will be read
+        from the database instead. Please see also the end of the
+        testMultipleArchTags test.
+
+        This test should provoke a `SoyuzScriptError` exception.
+        """
+        extra_args = ['-a', 'x86', '-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, exists_before=False)
+
+        extra_args = ['--merge-copy', '-a', 'x86', '-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, copy_archive_name=copy_archive.name,
+            exception_type=SoyuzScriptError,
+            exception_text=(
+                'error: cannot specify processor families for *existing* '
+                'archive.'))
 
     def testMissingCreationReason(self):
         """Try copy archive population without a copy archive creation reason.
