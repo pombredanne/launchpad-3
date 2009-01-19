@@ -1,9 +1,9 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 
 """Facilities for running Jobs."""
 
 
-__all__ = 'JobRunner'
+__all__ = ['JobRunner']
 
 
 import sys

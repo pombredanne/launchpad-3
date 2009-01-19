@@ -1,5 +1,5 @@
 #! /usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """Test the sendbranchmail script"""
 

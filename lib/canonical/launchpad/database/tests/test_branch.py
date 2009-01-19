@@ -56,8 +56,7 @@ from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
 
-from canonical.testing import (DatabaseFunctionalLayer,
-LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestCodeImport(TestCase):
@@ -1562,7 +1561,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 class TestRevisionMailJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """Ensure that BranchDiffJob implements IBranchDiffJob."""
