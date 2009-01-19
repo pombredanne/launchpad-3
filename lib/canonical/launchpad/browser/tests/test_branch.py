@@ -240,7 +240,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
 
 
 class TestBranchBzrIdentity(TestCaseWithFactory):
-    """Test the BranchReviewerEditView view."""
+    """Test the bzr_identity on the PersonBranchesView."""
 
     layer = DatabaseFunctionalLayer
 
