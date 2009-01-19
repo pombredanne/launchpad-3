@@ -27,7 +27,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 
-from storm.expr import Desc, In
+from storm.expr import Desc, In, LeftJoin
 from storm.store import Store
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
@@ -944,7 +944,7 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def getBuildsForSourceIds(self, source_publication_ids):
+    def getBuildsForSourceIds(self, source_publication_ids, archive=None):
         """See `IPublishingSet`."""
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory
@@ -952,6 +952,13 @@ class PublishingSet:
         from canonical.launchpad.database.build import Build
         from canonical.launchpad.database.distroarchseries import (
             DistroArchSeries)
+
+        # If an archive was passed in as a parameter, add an extra expression
+        # to filter by archive:
+        extra_exprs = []
+        if archive is not None:
+            extra_exprs.append(
+                SourcePackagePublishingHistory.archive == archive)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
@@ -962,7 +969,8 @@ class PublishingSet:
                 DistroArchSeries.distroseriesID,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            In(SourcePackagePublishingHistory.id, source_publication_ids),
+            *extra_exprs)
 
         result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1096,15 +1104,20 @@ class PublishingSet:
         """See `PublishingSet`."""
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        origin = (
+            SourcePackagePublishingHistory,
+            PackageDiff,
+            LeftJoin(LibraryFileAlias,
+                     LibraryFileAlias.id == PackageDiff.diff_contentID),
+            LeftJoin(LibraryFileContent,
+                     LibraryFileContent.id == LibraryFileAlias.contentID),
+            )
+        result_set = store.using(*origin).find(
             (SourcePackagePublishingHistory, PackageDiff,
              LibraryFileAlias, LibraryFileContent),
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 PackageDiff.to_sourceID,
-            PackageDiff.diff_contentID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id,
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
         result_set.order_by(
@@ -1146,14 +1159,16 @@ class PublishingSet:
         result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
 
-    def getBuildStatusSummariesForSourceIds(self, source_ids):
+    def getBuildStatusSummariesForSourceIdsAndArchive(self,
+                                                      source_ids,
+                                                      archive):
         """See `IPublishingSet`."""
         # source_ids can be None or an empty sequence.
         if not source_ids:
             return {}
 
         # Get the builds for all the requested sources.
-        result_set = self.getBuildsForSourceIds(source_ids)
+        result_set = self.getBuildsForSourceIds(source_ids, archive=archive)
 
         # Populate the list of builds for each id in a dict.
         source_builds = {}

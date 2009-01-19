@@ -153,16 +153,16 @@ The Launchpad Admins team has no contact address, so subscribing it to
 a spec will cause email notifications to be sent to each of its members.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> person_set = getUtility(IPersonSet)
     >>> admins = person_set.getByName('admins')
     >>> admins_contact_email_addresses = sorted(
-    ...     contactEmailAddresses(admins))
+    ...     get_contact_email_addresses(admins))
     >>> ubuntu_team = person_set.getByName('ubuntu-team')
     >>> ubuntu_team_contact_email_addresses = sorted(
-    ...     contactEmailAddresses(ubuntu_team))
+    ...     get_contact_email_addresses(ubuntu_team))
     >>> logout()
 
     >>> browser.open("http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan")

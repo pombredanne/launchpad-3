@@ -161,6 +161,39 @@ We will use Celso's PPA for testing these mechanisms.
     >>> print cprov.archive.title
     PPA for Celso Providelo
 
+Non-primary archives by default use primary Release, Security and Updates
+pockets and all its available components.
+
+    >>> from canonical.launchpad.components.archivedependencies import (
+    ...     default_component_dependency_name,  default_pocket_dependency)
+
+    >>> print default_pocket_dependency
+    Updates
+
+    >>> print default_component_dependency_name
+    multiverse
+
+The default values get applied to their corresponding dependency maps
+and then will expand to distinct values that will be used to produce
+the building 'sources_list' contents.
+
+    >>> for pocket in pocket_dependencies[default_pocket_dependency]:
+    ...     print pocket
+    Release
+    Security
+    Updates
+
+    >>> for component_name in component_dependencies[
+    ...     default_component_dependency_name]:
+    ...     print component_name
+    main
+    restricted
+    universe
+    multiverse
+
+We will create a testing source publication and probe its build
+environment.
+
     >>> pub_source = test_publisher.getPubSource(
     ...     version='1.1', archive=cprov.archive)
     >>> [a_build] = pub_source.createMissingBuilds()
@@ -212,7 +245,7 @@ returned 'sources_list' content.
     	main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
 Similarly, populated PPA dependencies are listed in the building
 'sources_list'.
@@ -233,8 +266,8 @@ Similarly, populated PPA dependencies are listed in the building
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
-    deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
 
 The authentication information gets added for private PPA
 dependencies.
@@ -243,7 +276,7 @@ dependencies.
     >>> sabdfl.archive.private = True
 
     >>> print_building_sources_list(a_build)
-    deb http://buildd:not-so-secret@private-ppa.launchpad.dev/sabdfl/ubuntu
+    deb http://buildd:not-so-secret@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
     	hoary main
     deb http://ftpmaster.internal/ubuntu hoary
     	main restricted universe multiverse
@@ -251,71 +284,11 @@ dependencies.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
 Good enough, let's delete the archive dependency on Mark's PPA.
 
     >>> cprov.archive.removeArchiveDependency(sabdfl.archive)
-
-
-== Private PPA dependencies ==
-
-When we make Celso's PPA private, it will be referred via the
-private-ppa url including the buildd authentication information.
-
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
-
-Additionally to the existing public PPA dependencies, only the RELEASE and
-SECURITY ubuntu pockets will be considered, respecting the
-corresponding ubuntu component override if available.
-
-The default component override value is 'universe' and it's used when
-we can't find any suitable ancestry in the primary archive.
-
-    >>> from canonical.launchpad.components.archivedependencies import (
-    ...     get_primary_current_component)
-
-    >>> print get_primary_current_component(a_build)
-    universe
-
-    >>> print_building_sources_list(a_build)
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
-    	hoary main
-    deb http://ftpmaster.internal/ubuntu hoary main universe
-    deb http://ftpmaster.internal/ubuntu hoary-security main universe
-
-The system immediately recognizes and respects an ancestry tagetted to
-the main component.
-
-    >>> primary_pub = test_publisher.getPubSource(version='1.0')
-    >>> print get_primary_current_component(a_build)
-    main
-
-    >>> print_building_sources_list(a_build)
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
-    	hoary main
-    deb http://ftpmaster.internal/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary-security main
-
-The same thing happens when the ancestry component is overridden.
-
-    >>> override = primary_pub.changeOverride(
-    ...     new_component=getUtility(IComponentSet)['restricted'])
-
-    >>> print get_primary_current_component(a_build)
-    restricted
-
-    >>> print_building_sources_list(a_build)
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
-    	hoary main
-    deb http://ftpmaster.internal/ubuntu hoary main restricted
-    deb http://ftpmaster.internal/ubuntu hoary-security main restricted
-
-Revert Celso's PPA to its original public state.
-
-    >>> cprov.archive.buildd_secret = ''
-    >>> cprov.archive.private = False
 
 
 == Overriding default primary archive dependencies ==
@@ -338,7 +311,7 @@ dependencies.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
 The default build behaviour will remain unchanged when we override the
 default primary archive dependencies with exactly the same values.
@@ -354,7 +327,7 @@ default primary archive dependencies with exactly the same values.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -367,12 +340,18 @@ the primary archive.
     >>> security_dependency = cprov.archive.addArchiveDependency(
     ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
 
+    >>> from canonical.launchpad.components.archivedependencies import (
+    ...     get_primary_current_component)
+
+    >>> print get_primary_current_component(a_build)
+    universe
+
     >>> print_building_sources_list(a_build)
     deb http://ftpmaster.internal/ubuntu hoary
-        main restricted
+        main universe
     deb http://ftpmaster.internal/ubuntu hoary-security
-        main restricted
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+        main universe
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -386,7 +365,7 @@ original ubuntu release.
 
     >>> print_building_sources_list(a_build)
     deb http://ftpmaster.internal/ubuntu hoary main restricted
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -406,7 +385,7 @@ environment.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -425,6 +404,6 @@ Similarly an extension of the BACKPORTS environment can be set.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)

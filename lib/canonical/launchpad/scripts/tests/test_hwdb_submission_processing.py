@@ -913,7 +913,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         """Test of HALDevice.is_real_device: ignored values of info.bus.
 
         A HAL device is considered to not be a real device, if its
-        info.bus proerty is 'usb' or 'ssb'.
+        info.bus proerty is 'usb', 'ssb' or 'scsi_host'.
         """
         UDI_SSB = '/org/freedesktop/Hal/devices/ssb__null__0'
         devices = [
@@ -929,6 +929,13 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'udi': UDI_SSB,
                 'properties': {
                     'info.bus': ('ssb', 'str'),
+                    },
+                },
+            {
+                'id': 3,
+                'udi': self.UDI_SATA_CONTROLLER_SCSI,
+                'properties': {
+                    'info.bus': ('scsi_host', 'str'),
                     },
                 },
             ]
@@ -950,6 +957,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         device = parser.hal_devices[UDI_SSB]
         self.failIf(device.is_real_device,
                     'Device with info.bus=ssb treated as a real device')
+        device = parser.hal_devices[self.UDI_SATA_CONTROLLER_SCSI]
+        self.failIf(device.is_real_device,
+                    'Device with info.bus=scsi_host treated as a real device')
 
         self.renameInfoBusToInfoSubsystem(devices)
         parser.buildDeviceList(parsed_data)
@@ -959,6 +969,10 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         device = parser.hal_devices[UDI_SSB]
         self.failIf(device.is_real_device,
                     'Device with info.subsystem=ssb treated as a real device')
+        device = parser.hal_devices[self.UDI_SATA_CONTROLLER_SCSI]
+        self.failIf(
+            device.is_real_device,
+            'Device with info.subsystem=scsi_host treated as a real device')
 
     def runTestHALDeviceRealDeviceScsiDevicesPciController(
         self, devices, bus_property_name):

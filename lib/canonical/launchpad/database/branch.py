@@ -6,17 +6,25 @@ __all__ = [
     'Branch',
     'BranchSet',
     'DEFAULT_BRANCH_LISTING_SORT',
+    'RevisionMailJob',
     ]
 
 from datetime import datetime
 
+import transaction
+
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
+from bzrlib.revisionspec import RevisionSpec
 import pytz
+import simplejson
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
+from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.delegates import delegates
 from storm.expr import And, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
@@ -50,8 +58,9 @@ from canonical.launchpad.interfaces import (
     IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
-    user_has_special_branch_access)
+    bazaar_identity, IBranchDiffJob, IBranchDiffJobSource,
+    IBranchJob, IBranchNavigationMenu, IRevisionMailJob,
+    IRevisionMailJobSource, NoSuchBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -62,8 +71,11 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import (
     validate_public_person)
+from canonical.launchpad.database.diff import StaticDiff
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
@@ -145,10 +157,25 @@ class Branch(SQLBase):
             if self.distroseries is None:
                 return PersonContainer(self.owner)
             else:
-                return PackageContainer(
-                    self.distroseries, self.sourcepackagename)
+                return PackageContainer(self.sourcepackage)
         else:
             return ProductContainer(self.product)
+
+    @property
+    def distribution(self):
+        """See `IBranch`."""
+        if self.distroseries is None:
+            return None
+        return self.distroseries.distribution
+
+    @property
+    def sourcepackage(self):
+        """See `IBranch`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        if self.distroseries is None:
+            return None
+        return SourcePackage(self.sourcepackagename, self.distroseries)
 
     @property
     def revision_history(self):
@@ -270,6 +297,14 @@ class Branch(SQLBase):
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
+    def addToLaunchBag(self, launchbag):
+        """See `IBranch`."""
+        launchbag.add(self.product)
+        if self.distroseries is not None:
+            launchbag.add(self.distroseries)
+            launchbag.add(self.distribution)
+            launchbag.add(self.sourcepackage)
+
     def getStackedBranches(self):
         """See `IBranch`."""
         store = Store.of(self)
@@ -322,21 +357,18 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
 
-    def _getContainerName(self):
-        if self.product is not None:
-            return self.product.name
-        if (self.distroseries is not None
-            and self.sourcepackagename is not None):
-            return '%s/%s/%s' % (
-                self.distroseries.distribution.name,
-                self.distroseries.name, self.sourcepackagename.name)
-        return '+junk'
+    def getBzrBranch(self):
+        """Return the BzrBranch for this database Branch.
+
+        This provides the mirrored copy of the branch.
+        """
+        return BzrBranch.open(self.warehouse_url)
 
     @property
     def unique_name(self):
         """See `IBranch`."""
         return u'~%s/%s/%s' % (
-            self.owner.name, self._getContainerName(), self.name)
+            self.owner.name, self.container.name, self.name)
 
     @property
     def displayname(self):
@@ -1150,10 +1182,15 @@ class BranchSet:
         """Given a path within a branch, return the branch and the path."""
         namespace_set = getUtility(IBranchNamespaceSet)
         parsed = namespace_set.parseBranchPath(path)
+        parsed_path = None
         for parsed_path, branch_name, suffix in parsed:
             branch = self._getBranchInNamespace(parsed_path, branch_name)
             if branch is not None:
                 return branch, suffix
+
+        if parsed_path is None:
+            raise NoSuchBranch(path)
+
         # This will raise an interesting error if any of the given objects
         # don't exist.
         namespace_set.interpret(
@@ -1557,3 +1594,176 @@ class BranchQueryBuilder:
         return query
 
 
+class BranchJobType(DBEnumeratedType):
+    """Values that ICodeImportJob.state can take."""
+
+    STATIC_DIFF = DBItem(0, """
+        Static Diff
+
+        This job runs against a branch to produce a diff that cannot change.
+        """)
+
+    REVISION_MAIL = DBItem(1, """
+        Revision Mail
+
+        This job runs against a branch to send emails about revisions.
+        """)
+
+
+class BranchJob(SQLBase):
+    """Base class for jobs related to branches."""
+
+    implements(IBranchJob)
+
+    _table = 'BranchJob'
+
+    job = ForeignKey(foreignKey='Job', notNull=True)
+
+    branch = ForeignKey(foreignKey='Branch', notNull=True)
+
+    job_type = EnumCol(enum=BranchJobType, notNull=True)
+
+    _json_data = StringCol(dbName='json_data')
+
+    @property
+    def metadata(self):
+        return simplejson.loads(self._json_data)
+
+    def __init__(self, branch, job_type, metadata):
+        """Constructor.
+
+        :param branch: The database branch this job relates to.
+        :param job_type: The BranchJobType of this job.
+        :param metadata: The type-specific variables, as a JSON-compatible
+            dict.
+        """
+        json_data = simplejson.dumps(metadata)
+        SQLBase.__init__(
+            self, job=Job(), branch=branch, job_type=job_type,
+            _json_data=json_data)
+
+    def destroySelf(self):
+        """See `IBranchJob`."""
+        SQLBase.destroySelf(self)
+        self.job.destroySelf()
+
+
+class BranchDiffJob(object):
+    """A Job that calculates the a diff related to a Branch."""
+
+    implements(IBranchDiffJob)
+
+    classProvides(IBranchDiffJobSource)
+
+    delegates(IBranchJob)
+
+    def __init__(self, branch_job):
+        self.context = branch_job
+
+    @classmethod
+    def create(klass, branch, from_revision_spec, to_revision_spec):
+        """See `IBranchDiffJobSource`."""
+        metadata = klass.getMetadata(from_revision_spec, to_revision_spec)
+        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
+        return klass(branch_job)
+
+    @staticmethod
+    def getMetadata(from_revision_spec, to_revision_spec):
+        return {
+            'from_revision_spec': from_revision_spec,
+            'to_revision_spec': to_revision_spec,
+        }
+
+    @property
+    def from_revision_spec(self):
+        return self.metadata['from_revision_spec']
+
+    @property
+    def to_revision_spec(self):
+        return self.metadata['to_revision_spec']
+
+    def _get_revision_id(self, bzr_branch, spec_string):
+        spec = RevisionSpec.from_string(spec_string)
+        return spec.as_revision_id(bzr_branch)
+
+    def run(self):
+        """See IBranchDiffJob."""
+        self.job.start()
+        bzr_branch = self.branch.getBzrBranch()
+        from_revision_id = self._get_revision_id(
+            bzr_branch, self.from_revision_spec)
+        to_revision_id = self._get_revision_id(
+            bzr_branch, self.to_revision_spec)
+        static_diff = StaticDiff.acquire(
+            from_revision_id, to_revision_id, bzr_branch.repository)
+        self.job.complete()
+        return static_diff
+
+
+class RevisionMailJob(BranchDiffJob):
+    """A Job that calculates the a diff related to a Branch."""
+
+    implements(IRevisionMailJob)
+
+    classProvides(IRevisionMailJobSource)
+
+    @classmethod
+    def create(
+        klass, branch, revno, from_address, body, perform_diff, subject):
+        """See `IRevisionMailJobSource`."""
+        metadata = {
+            'revno': revno,
+            'from_address': from_address,
+            'body': body,
+            'perform_diff': perform_diff,
+            'subject': subject,
+        }
+        if isinstance(revno, int) and revno > 0:
+            from_revision_spec = str(revno - 1)
+            to_revision_spec = str(revno)
+        else:
+            from_revision_spec = None
+            to_revision_spec = None
+        metadata.update(BranchDiffJob.getMetadata(from_revision_spec,
+                        to_revision_spec))
+        branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
+        return klass(branch_job)
+
+    @property
+    def revno(self):
+        revno = self.metadata['revno']
+        if isinstance(revno, int):
+            revno = long(revno)
+        return revno
+
+    @property
+    def from_address(self):
+        return str(self.metadata['from_address'])
+
+    @property
+    def perform_diff(self):
+        return self.metadata['perform_diff']
+
+    @property
+    def body(self):
+        return self.metadata['body']
+
+    @property
+    def subject(self):
+        return self.metadata['subject']
+
+    def getMailer(self):
+        """Return a BranchMailer for this job."""
+        if self.perform_diff and self.to_revision_spec is not None:
+            diff = BranchDiffJob.run(self)
+            transaction.commit()
+            diff = diff.diff.text
+        else:
+            diff = None
+        return BranchMailer.forRevision(
+            self.branch, self.revno, self.from_address, self.body,
+            diff, self.subject)
+
+    def run(self):
+        """See `IRevisionMailJob`."""
+        self.getMailer().sendAll()

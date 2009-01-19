@@ -471,6 +471,13 @@ class IPOTemplateSubset(Interface):
             'The `IProductSeries` associated with this subset.'),
         schema=IProductSeries)
 
+    iscurrent = Bool(
+        title=_("Filter for iscurrent flag."),
+        description=_(
+            "The filter for the iscurrent flag that this subset should "
+            "apply. The filter is disabled if it is None"),
+        required=False)
+
     title = TextLine(
         title=_('The translation file title.'), required=True, readonly=True)
 
@@ -541,12 +548,12 @@ class IPOTemplateSet(Interface):
         """Return an iterator over all POTemplate sorted by modification."""
 
     def getSubset(distroseries=None, sourcepackagename=None,
-                  productseries=None):
+                  productseries=None, iscurrent=None):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
     def getSubsetFromImporterSourcePackageName(
-        distroseries, sourcepackagename):
+        distroseries, sourcepackagename, iscurrent=None):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
 

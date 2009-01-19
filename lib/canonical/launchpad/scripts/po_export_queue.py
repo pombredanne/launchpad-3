@@ -77,7 +77,7 @@ class ExportResult:
         else:
             raise AssertionError('On success, an exported URL is expected.')
 
-        recipients = list(helpers.contactEmailAddresses(person))
+        recipients = list(helpers.get_contact_email_addresses(person))
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(

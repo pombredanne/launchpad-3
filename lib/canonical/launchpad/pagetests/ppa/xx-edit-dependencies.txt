@@ -15,19 +15,19 @@ edit dependencies, even if they try the URL directly.
     LinkNotFoundError
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/+edit-dependencies')
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> user_browser.getLink('Edit dependencies').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/~cprov/+archive/+edit-dependencies')
+    ...    'http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
@@ -37,17 +37,17 @@ page for Celso's PPA.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
-    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> cprov_browser.getLink('Edit dependencies').click()
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/+edit-dependencies
+    http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> cprov_browser.title
     'Edit dependencies for PPA for Celso Providelo'
 
-    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> admin_browser.getLink('Edit dependencies').click()
     >>> print admin_browser.url
-    http://launchpad.dev/~cprov/+archive/+edit-dependencies
+    http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> admin_browser.title
     'Edit dependencies for PPA for Celso Providelo'
 
@@ -150,7 +150,7 @@ Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
 The dependencies are presented in a separated section (bellow the
 sources.list widget).
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'archive-dependencies'))
     PPA dependencies
@@ -193,7 +193,7 @@ dependencies is refreshed.
 Once the dependencies are removed, the 'dependency-section' (including
 the warning message) are omitted from the PPA overview page
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> print find_tag_by_id(user_browser.contents, 'archive-dependencies')
     None
 
@@ -357,6 +357,12 @@ contains a extra dependency.
     ( ) Proposed (default dependencies and proposed updates).
     ( ) Backports (default dependencies and unsupported updates).
 
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    ( ) Use all Ubuntu components available.
+    (*) Use the same components used for each source in the Ubuntu
+        primary archive.
+
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for No Privileges Person
 
@@ -397,6 +403,12 @@ processed.
     ( ) Default (security dependencies and recommended updates).
     ( ) Proposed (default dependencies and proposed updates).
     ( ) Backports (default dependencies and unsupported updates).
+
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    (*) Use all Ubuntu components available.
+    ( ) Use the same components used for each source in the Ubuntu
+        primary archive.
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth

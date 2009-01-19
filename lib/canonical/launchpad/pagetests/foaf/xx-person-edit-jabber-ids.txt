@@ -50,26 +50,6 @@ also be entered.
     no-priv@gmail.org
     no-priv@jabber.org
 
-== IDs are obfuscated ==
-
-The registered Jabber IDs are displayed on the profile overview page.
-They are obfuscated a little to minizime the risk of email harvesters getting
-them (since some Jabber accounts are also valid email accounts.)
-
-The Jabber ID is written using numerical HTML entities, so the user can
-still read them but the email harvester will need to resolve these to
-get at the email.
-
-    >>> anon_browser.open('http://launchpad.dev/~no-priv')
-    >>> main_content = find_main_content(anon_browser.contents)
-    >>> jabber_ids = extract_text(
-    ...     main_content.find('th', text='Jabber:').findNext('td'))
-    >>> 'no-priv@jabber.org' in jabber_ids
-    False
-    >>> from BeautifulSoup import BeautifulSoup as soup
-    >>> print soup(jabber_ids, convertEntities=soup.HTML_ENTITIES)
-    no-priv@gmail.org,  no-priv@jabber.org
-
 == Removing an ID ==
 
 To remove an existing Jabber ID, the user simply check the 'Remove'

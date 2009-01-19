@@ -131,3 +131,15 @@ Sort by importance:
     2 Blackhole Trash folder
     Low Confirmed
 
+Sort by the number of affected users:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "by number of users affected"]
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+    Low Confirmed
+    2 Blackhole Trash folder
+    Low Confirmed
+    3 Bug Title Test
+    Unknown New

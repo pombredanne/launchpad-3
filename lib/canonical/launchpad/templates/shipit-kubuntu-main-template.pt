@@ -71,7 +71,7 @@
   <body>
 
     <div metal:fill-slot="footer" id="footer" class="footer ">
-      &copy; 2004-2008 <a href="http://www.canonical.com">Canonical Ltd</a>.<br />
+      &copy; 2004-2009 <a href="http://www.canonical.com">Canonical Ltd</a>.<br />
       Kubuntu, ShipIt and Canonical are registered trademarks of Canonical Ltd.
       <a href="http://www.ubuntu.com/getubuntu/shipit-faq">ShipIt FAQ</a>
     </div>

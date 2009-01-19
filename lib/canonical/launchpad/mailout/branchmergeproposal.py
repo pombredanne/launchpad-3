@@ -54,7 +54,7 @@ class BMPMailer(BranchMailer):
                  from_address, delta=None, message_id=None,
                  requested_reviews=None, comment=None, review_diff=None):
         BranchMailer.__init__(self, subject, template_name, recipients,
-            from_address, delta, message_id)
+            from_address, delta, message_id=message_id)
         self.merge_proposal = merge_proposal
         if requested_reviews is None:
             requested_reviews = []
@@ -129,10 +129,6 @@ class BMPMailer(BranchMailer):
     def _getHeaders(self, email):
         """Return the mail headers to use."""
         headers = BranchMailer._getHeaders(self, email)
-        reason, rationale = self._recipients.getReason(email)
-        headers['X-Launchpad-Branch'] = reason.branch.unique_name
-        if reason.branch.product is not None:
-            headers['X-Launchpad-Project'] = reason.branch.product.name
         if self.merge_proposal.root_message_id is not None:
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
