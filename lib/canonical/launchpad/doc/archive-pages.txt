@@ -80,16 +80,16 @@ vocabulary for selecting a series filter:
     Breezy Badger Autotest
     Warty
 
-An ArchiveView provides a getPublishingRecords() method that can be used
+An ArchiveView provides a sources property that can be used
 to get all the publishing records for an archive:
 
-    >>> for publishing in ppa_archive_view.getPublishingRecords():
+    >>> for publishing in ppa_archive_view.sources:
     ...     print publishing.source_package_name
     cdrkit
     iceweasel
     pmount
 
-The getPublishingRecords() method can also filter by distroseries when
+The sources property can also filter by distroseries when
 appropriate:
 
     >>> filtered_view = create_initialized_view(
@@ -97,7 +97,7 @@ appropriate:
     ...     name="+index",
     ...     method='GET',
     ...     form={'field.series_filter': 'warty'})
-    >>> for publishing in filtered_view.getPublishingRecords():
+    >>> for publishing in filtered_view.sources:
     ...     print publishing.source_package_name
     iceweasel
     pmount
@@ -105,7 +105,7 @@ appropriate:
 
 == ArchiveSourceSelectionFormView ==
 
-The ArchiveSourceSelectionFormView defines two members that subclasses
+The ArchiveSourceSelectionFormView defines one method that subclasses
 must define to use.
 
     >>> from canonical.launchpad.browser.archive import (
@@ -123,11 +123,6 @@ must define to use.
     ...
     NotImplementedError: Default status_filter should be defined by
     callsites.
-
-    >>> bad_view.getSources()
-    Traceback (most recent call last):
-    ...
-    NotImplementedError: Source lookup should be implemented by callsites.
 
 
 == ArchivePackageDeletionView ==

@@ -354,7 +354,7 @@ class ArchiveViewBase(LaunchpadView):
         """Whether or not this PPA already have publications in it."""
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
-        return self.context.getPublishedSources().count() > 0
+        return self.sources.count() > 0
 
     @property
     def source_count_text(self):
@@ -483,13 +483,17 @@ class ArchiveViewBase(LaunchpadView):
 
     @property
     def search_requested(self):
+        # TODO: there's a bug here... field.series_filter might have been
+        # used. Fix and test.
         """Whether or not the search form was used."""
         return self.request.get('field.name_filter') is not None
 
-    def getPublishingRecords(self):
-        """Return the publishing records results.
+    @cachedproperty
+    def sources(self):
+        """Return the source results for display on the current page.
 
-        It requests 'self.selected_status_filter' to be set.
+        It expects 'self.selected_status_filter' and 
+        'self.selected_series_filter' to be set.
         """
         name_filter = self.request.get('field.name_filter')
         return self.context.getPublishedSources(
@@ -526,7 +530,7 @@ class ArchiveView(ArchiveViewBase):
     def setupPackageBatchResult(self):
         """Setup of the package search results."""
         self.batchnav = BatchNavigator(
-            self.getPublishingRecords(), self.request)
+            self.sources, self.request)
         results = list(self.batchnav.currentBatch())
         self.search_results = ArchiveSourcePublications(results)
 
@@ -644,34 +648,14 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
                  description=_('Select one or more sources to be submitted '
                                'to an action.')))
 
-    @property
-    def sources(self):
-        """Query undeleted source publishing records.
-
-        Consider the 'name_filter' form value.
-        """
-        if self.widgets['name_filter'].hasInput():
-            name_filter = self.widgets['name_filter'].getInputValue()
-        else:
-            name_filter = None
-
-        if self.widgets['status_filter'].hasInput():
-            status_filter = self.widgets['status_filter'].getInputValue()
-        else:
-            status_filter = self.widgets['status_filter'].context.default
-
-        return self.getSources(
-            name=name_filter, status=status_filter.collection)
-
     @cachedproperty
     def has_sources(self):
         """Whether or not the PPA has published source packages."""
-        available_sources = self.getSources()
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
-        return available_sources.count() > 0
+        return self.available_sources_size > 0
 
-    @property
+    @property # TODO: why not cached??
     def available_sources_size(self):
         """Number of available sources."""
         return self.sources.count()
@@ -686,12 +670,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         """Return the default status_filter value."""
         raise NotImplementedError(
             'Default status_filter should be defined by callsites.')
-
-    def getSources(self, name=None, status=None):
-        """Source lookup method, should be implemented by callsites."""
-        raise NotImplementedError(
-            'Source lookup should be implemented by callsites.')
-
 
 
 class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
@@ -713,13 +691,22 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         """Present records in any status by default."""
         return self.simplified_status_vocabulary.getTermByToken('any')
 
-    def getSources(self, name=None, status=None):
-        """Return all undeleted sources in the context PPA.
+    @cachedproperty
+    def sources(self):
+        """Return the deletion publishing records results.
 
-        Filters the results using the given 'name'.
-        See `IArchive.getSourcesForDeletion`.
+        This overrides ArchiveViewBase.sources to use a
+        different method on the context specific to deletion records.
+
+        It expects 'self.selected_status_filter' and 
+        'self.selected_series_filter' to be set.
         """
-        return self.context.getSourcesForDeletion(name=name, status=status)
+        name_filter = self.request.get('field.name_filter')
+        return self.context.getSourcesForDeletion(
+            name=name_filter,
+            status=self.selected_status_filter.value.collection,
+            distroseries=self.selected_series_filter.value)
+
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
@@ -807,14 +794,6 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     def default_status_filter(self):
         """Present published records by default."""
         return self.simplified_status_vocabulary.getTermByToken('published')
-
-    def getSources(self, name=None, status=None):
-        """Return all sources ever published in the context PPA.
-
-        Filters the results using the given 'name'.
-        See `IArchive.getPublishedSources`.
-        """
-        return self.context.getPublishedSources(name=name, status=status)
 
     def setUpFields(self):
         """Override `ArchiveSourceSelectionFormView`.
