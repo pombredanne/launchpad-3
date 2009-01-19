@@ -93,7 +93,7 @@ is a part of:
     >>> for trans in translators.getByTranslator(carlos):
     ...     print trans.language.code
     ...     print trans.translationgroup.name
-    ...     print trans.documentation_url
+    ...     print trans.style_guide_url
     es
     testing-translation-team
     None
@@ -101,7 +101,7 @@ is a part of:
     >>> for trans in translators.getByTranslator(no_priv):
     ...     print trans.language.code
     ...     print trans.translationgroup.name
-    ...     print trans.documentation_url
+    ...     print trans.style_guide_url
     cy
     foo-translators
     None

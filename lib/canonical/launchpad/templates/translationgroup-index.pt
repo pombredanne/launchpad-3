@@ -55,10 +55,10 @@
                     <td class="translator_info">
                         <a tal:content="translator/person/browsername"
                             tal:attributes="href translator/person/fmt:url" />
-                        <a tal:condition="translator/documentation_url"
-                            tal:attributes="href translator/documentation_url"
+                        <a tal:condition="translator/style_guide_url"
+                            tal:attributes="href translator/style_guide_url"
                              ><img src="/@@/link" alt="Doc"
-                           tal:attributes="title translator/documentation_url"
+                           tal:attributes="title translator/style_guide_url"
                               /></a>
                     </td>
                     <td><a tal:attributes="href translator/code"><img

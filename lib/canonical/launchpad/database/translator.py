@@ -37,19 +37,19 @@ class Translator(SQLBase):
         dbName='translator', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    documentation_url = StringCol(notNull=False, default=None)
+    style_guide_url = StringCol(notNull=False, default=None)
 
 
 class TranslatorSet:
     implements(ITranslatorSet)
 
     def new(self, translationgroup, language,
-            translator, documentation_url=None):
+            translator, style_guide_url=None):
         return Translator(
             translationgroup=translationgroup,
             language=language,
             translator=translator,
-            documentation_url=documentation_url)
+            style_guide_url=style_guide_url)
 
     def getByTranslator(self, translator):
         """See ITranslatorSet."""

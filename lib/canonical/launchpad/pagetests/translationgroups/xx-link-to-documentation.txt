@@ -7,7 +7,7 @@ evolution do not have such a link.
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/'
     ...     '+pots/evolution-2.2/es/+translate')
-    >>> print first_tag_by_class(anon_browser.contents, 'documentation_url')
+    >>> print first_tag_by_class(anon_browser.contents, 'style_guide_url')
     None
 
 Carlos is the owner of the testing-translation-team group and can change
@@ -42,11 +42,11 @@ Back on the translations page, the link is now present, too.
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/'
     ...     '+pots/evolution-2.2/es/+translate')
-    >>> documentation_url = first_tag_by_class(
-    ...     anon_browser.contents, 'documentation_url')
-    >>> print extract_text(documentation_url)
+    >>> style_guide_url = first_tag_by_class(
+    ...     anon_browser.contents, 'style_guide_url')
+    >>> print extract_text(style_guide_url)
     Documentation
-    >>> print documentation_url['href']
+    >>> print style_guide_url['href']
     http://www.ubuntu.com/
 
 Carlos appoints Sample Person as a translator for Esperanto.

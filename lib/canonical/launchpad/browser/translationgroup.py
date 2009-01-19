@@ -55,7 +55,7 @@ class TranslationGroupView:
                            'person': item.translator,
                            'code': item.language.code,
                            'datecreated': item.datecreated,
-                           'documentation_url': item.documentation_url,
+                           'style_guide_url': item.style_guide_url,
                            })
         result.sort(key=operator.itemgetter('lang'))
         return result
@@ -65,7 +65,7 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
     """View class for the "appoint a translator" page"""
 
     schema = ITranslator
-    field_names = ['language', 'translator', 'documentation_url']
+    field_names = ['language', 'translator', 'style_guide_url']
 
     @action("Add", name="add")
     def add_action(self, action, data):
@@ -78,9 +78,9 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         """
         language = data.get('language')
         translator = data.get('translator')
-        documentation_url = data.get('documentation_url')
+        style_guide_url = data.get('style_guide_url')
         getUtility(ITranslatorSet).new(
-            self.context, language, translator, documentation_url)
+            self.context, language, translator, style_guide_url)
 
     def validate(self, data):
         """Do not allow new translators for already existing languages."""

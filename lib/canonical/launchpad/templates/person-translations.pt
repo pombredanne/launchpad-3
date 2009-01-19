@@ -104,9 +104,9 @@
             <td><a tal:attributes="href translator/translationgroup/fmt:url"
            tal:content="translator/translationgroup/title"></a></td>
            <td tal:content="translator/language/englishname">Esperanto</td>
-           <td><a tal:condition="translator/documentation_url"
-                  tal:content="translator/documentation_url"
-                  tal:attributes="href translator/documentation_url"
+           <td><a tal:condition="translator/style_guide_url"
+                  tal:content="translator/style_guide_url"
+                  tal:attributes="href translator/style_guide_url"
                 >Documentation URL</a>
            <a tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
            ><img src="/@@/edit" /></a></td>

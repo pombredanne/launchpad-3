@@ -27,12 +27,12 @@ class IEditTranslator(Interface):
     Currently this is just the documentation URL.
     """
 
-    documentation_url = URIField(
-        title=_('Documentation URL'), required=False,
+    style_guide_url = URIField(
+        title=_('Style guide URL'), required=False,
         allowed_schemes=['http', 'https', 'ftp'],
         allow_userinfo=False,
-        description=_("The URL of the documentation on how to do "
-                      "translation work here. "
+        description=_("The URL of the style guide followed by this "
+                      "particular translation team. "
                       "Includes the http://, https://, or ftp://."))
 
 
@@ -82,7 +82,7 @@ class ITranslatorSet(IAddFormCustomization):
 
     title = Attribute('Title')
 
-    def new(translationgroup, language, translator, documentation_url):
+    def new(translationgroup, language, translator, style_guide_url):
         """Create a new `ITranslator` for a `TranslationGroup`."""
 
     def getByTranslator(translator):

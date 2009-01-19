@@ -180,14 +180,14 @@ class POFileView(LaunchpadView):
                 translator = group.query_translator(language)
                 if translator is None:
                     team = None
-                    documentation_url = None
+                    style_guide_url = None
                 else:
                     team = translator.translator
-                    documentation_url = translator.documentation_url
+                    style_guide_url = translator.style_guide_url
                 managers.append({
                     'group': group,
                     'team': team,
-                    'documentation_url': documentation_url,
+                    'style_guide_url': style_guide_url,
                     })
             groups.add(group)
         return managers

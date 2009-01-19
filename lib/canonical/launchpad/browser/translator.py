@@ -35,7 +35,7 @@ class TranslatorAdminView(LaunchpadEditFormView):
     """View class to administer ITranslator objects"""
 
     schema = ITranslator
-    field_names = ['language', 'translator', 'documentation_url']
+    field_names = ['language', 'translator', 'style_guide_url']
 
     @action("Change")
     def change_action(self, action, data):
