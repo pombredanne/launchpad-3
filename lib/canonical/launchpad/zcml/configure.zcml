@@ -52,6 +52,7 @@
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="codereviewcomment.zcml" />
+    <include file="commercialsubscription.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
