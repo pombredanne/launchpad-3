@@ -1538,6 +1538,7 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (8, 1, 'gnome-bugs', 'T''other Gnome GBugGTracker', 'This is the Gnome Bugzilla celebrity bug tracker.', 'http://bugzilla.gnome.org/', 16, NULL, '2008-10-08 13:31:00', NULL, false, true);
 
+
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 
@@ -4265,14 +4266,17 @@ ALTER TABLE messagechunk ENABLE TRIGGER ALL;
 
 ALTER TABLE milestone DISABLE TRIGGER ALL;
 
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (1, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (2, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (3, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (4, '1.0.0', NULL, NULL, true, 2, NULL, '2009-01-12 20:19:31.797646', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.
-', 'First Stable Release');
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (5, '0.8', NULL, NULL, true, 4, NULL, '2009-01-12 20:19:31.797646', '
-', NULL);
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (6, '0.9', NULL, NULL, true, 1, NULL, '2009-01-12 20:19:31.797646', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (9, 4, '0.9.2', NULL, NULL, true, 1, NULL, '2009-01-16 15:41:26.669173', 'This was a security fix release for 0.9.
+Security fixes
+
+    * 250180 - [Windows] Disallow access to insecure shell: protocol.
+', 'One (secure) Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (10, 4, '0.9.1', NULL, NULL, true, 1, NULL, '2009-01-16 15:41:26.669173', 'This was a bugfix release to patch up problems with the new extension system.
+', 'One Tree Hill (v2)');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (11, 4, '0.9', NULL, NULL, true, 1, NULL, '2009-01-16 15:41:26.669173', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.
 What''s New
 
 Here''s what''s new in this release of Firefox:
@@ -4309,20 +4313,17 @@ For Linux/GTK2 Users
       Help us nail down crashes by submitting talkback reports with this crash reporting tool.
 
 ', 'One Tree Hill');
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (7, '0.9.1', NULL, NULL, true, 1, NULL, '2009-01-12 20:19:31.797646', 'This was a bugfix release to patch up problems with the new extension system.
-', 'One Tree Hill (v2)');
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (8, '0.9.2', NULL, NULL, true, 1, NULL, '2009-01-12 20:19:31.797646', 'This was a security fix release for 0.9.
-Security fixes
-
-    * 250180 - [Windows] Disallow access to insecure shell: protocol.
-', 'One (secure) Tree Hill');
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (9, '2.1.6', NULL, NULL, true, 3, NULL, '2009-01-12 20:19:31.797646', '
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (12, 4, '1.0.0', NULL, NULL, true, 2, NULL, '2009-01-16 15:41:26.669173', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.
+', 'First Stable Release');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (13, 5, '2.1.6', NULL, NULL, true, 3, NULL, '2009-01-16 15:41:26.669173', '
 ', NULL);
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (10, '1.0', NULL, NULL, true, 5, NULL, '2009-01-12 20:19:31.797646', '
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (14, 8, '0.8', NULL, NULL, true, 4, NULL, '2009-01-16 15:41:26.669173', '
 ', NULL);
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (11, '1.0.8', NULL, NULL, true, 8, NULL, '2009-01-12 20:19:31.797646', '
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (15, 11, '1.0', NULL, NULL, true, 5, NULL, '2009-01-16 15:41:26.669173', '
 ', NULL);
-INSERT INTO milestone (id, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (12, '1.0.9a', NULL, NULL, true, 8, NULL, '2009-01-12 20:19:31.797646', '
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (16, 15, '1.0.9a', NULL, NULL, true, 8, NULL, '2009-01-16 15:41:26.669173', '
+', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distroseries, date_created, description, codename) VALUES (17, 15, '1.0.8', NULL, NULL, true, 8, NULL, '2009-01-16 15:41:26.669173', '
 ', NULL);
 
 
@@ -7602,11 +7603,11 @@ ALTER TABLE productlicense ENABLE TRIGGER ALL;
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
 
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (1, '2004-06-28 00:00:00', '', 12, '2005-06-06 08:59:51.930201', 4);
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (2, '2004-06-28 00:00:00', NULL, 12, '2005-06-06 08:59:51.924844', 5);
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (3, '2004-10-15 18:27:09.878302', NULL, 16, '2005-06-06 08:59:51.929023', 6);
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (4, '2004-10-15 18:31:19.164989', NULL, 16, '2005-06-06 08:59:51.927785', 7);
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (5, '2004-10-15 18:32:35.717695', NULL, 16, '2005-06-06 08:59:51.926792', 8);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (1, '2004-06-28 00:00:00', '', 12, '2005-06-06 08:59:51.930201', 12);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (2, '2004-06-28 00:00:00', NULL, 12, '2005-06-06 08:59:51.924844', 14);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (3, '2004-10-15 18:27:09.878302', NULL, 16, '2005-06-06 08:59:51.929023', 11);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (4, '2004-10-15 18:31:19.164989', NULL, 16, '2005-06-06 08:59:51.927785', 10);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (5, '2004-10-15 18:32:35.717695', NULL, 16, '2005-06-06 08:59:51.926792', 9);
 INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (6, '2005-02-28 00:00:00', 'Bugzilla bugs fixed (see http://bugzilla.ximian.com/show_bug.cgi):
 
  * Addressbook
@@ -7725,10 +7726,10 @@ Updated translations:
    - ja (Takeshi AIHANA)
    - en_GB (David Lodge)
    - en_CA (Adam Weinberger)
-   - lt (Zygimantas Berucka)', 12, '2005-06-06 08:59:51.919766', 9);
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (7, '2005-03-10 16:20:00', NULL, 12, '2005-06-06 08:59:51.925908', 10);
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (8, '2005-02-03 08:50:00', NULL, 1, '2005-09-15 09:15:49.327457', 11);
-INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (9, '2005-06-10 10:40:00', NULL, 1, '2005-09-15 09:16:00.235886', 12);
+   - lt (Zygimantas Berucka)', 12, '2005-06-06 08:59:51.919766', 13);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (7, '2005-03-10 16:20:00', NULL, 12, '2005-06-06 08:59:51.925908', 15);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (8, '2005-02-03 08:50:00', NULL, 1, '2005-09-15 09:15:49.327457', 17);
+INSERT INTO productrelease (id, datereleased, changelog, owner, datecreated, milestone) VALUES (9, '2005-06-10 10:40:00', NULL, 1, '2005-09-15 09:16:00.235886', 16);
 
 
 ALTER TABLE productrelease ENABLE TRIGGER ALL;

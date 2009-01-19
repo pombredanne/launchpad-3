@@ -104,7 +104,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         store = Store.of(self)
         result = store.find(
             ProductRelease,
-            And(Milestone.productseries == ProductSeries.id,
+            And(Milestone.productseries == self,
                 ProductRelease.milestone == Milestone.id))
         return result.order_by(Desc('datereleased'))
 
@@ -423,7 +423,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IProductSeries."""
         return Milestone(
             name=name, dateexpected=dateexpected, description=description,
-            productseries=self, code_name=code_name)
+            product=self.product, productseries=self, code_name=code_name)
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

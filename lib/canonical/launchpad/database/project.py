@@ -363,10 +363,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = """
             SELECT Milestone.name, min(Milestone.dateexpected),
                 bool_or(Milestone.visible)
-                FROM Milestone, ProductSeries, Product
+                FROM Milestone, Product
                 WHERE Product.project = %s
-                    AND ProductSeries.product = Product.id
-                    AND Milestone.productseries = ProductSeries.id
+                    AND Milestone.product = product.id
                     AND Product.active
                 GROUP BY Milestone.name
                 %s

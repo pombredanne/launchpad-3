@@ -20,21 +20,6 @@ BEGIN;
 -- which causes a problem when merging them with Milestones, which
 -- are unique on the name and product.
 ALTER TABLE Milestone
-DROP CONSTRAINT milestone_name_product_key;
-
-ALTER TABLE Specification
-DROP CONSTRAINT specification_product_milestone_fk;
-
-ALTER TABLE BugTask
-DROP CONSTRAINT bugtask__product__milestone__fk;
-
-ALTER TABLE Milestone
-DROP COLUMN product;
-
-ALTER TABLE Milestone
-ADD UNIQUE (name, productseries);
-
-ALTER TABLE Milestone
 ADD COLUMN codename TEXT;
 
 -- Link milestones and releases with matching names and productseries.
@@ -55,17 +40,20 @@ WHERE ProductRelease.milestone = Milestone.id;
 
 -- Create new milestones for releases that don't match.
 INSERT INTO Milestone (
+    product,
     productseries,
     name,
     description,
     codename)
 SELECT
+    series.product,
     release.productseries,
     lower(release.version),
     coalesce(release.summary, '')
         || E'\n' || coalesce(release.description, ''),
     codename
 FROM ProductRelease release
+    JOIN ProductSeries series ON series.id = release.productseries
 WHERE milestone IS NULL;
 
 -- Link releases to the newly created milestones.
@@ -105,4 +93,5 @@ ALTER TABLE ProductRelease
 DROP COLUMN productseries;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+
 COMMIT;

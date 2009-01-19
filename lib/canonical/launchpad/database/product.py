@@ -20,7 +20,7 @@ from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 from storm.store import Store
-from storm.expr import And, Desc, Join
+from storm.expr import Join
 from storm.exceptions import NotOneError
 from zope.interface import implements
 from zope.component import getUtility
@@ -527,10 +527,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         origin = [
             ProductRelease,
             Join(Milestone, ProductRelease.milestone == Milestone.id),
-            Join(ProductSeries, Milestone.productseries == ProductSeries.id),
             ]
         result = store.using(*origin)
-        result = result.find(ProductRelease, ProductSeries.product == self.id)
+        result = result.find(ProductRelease, Milestone.product == self)
         return result.order_by(Milestone.name)
 
     @property
@@ -555,23 +554,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def all_milestones(self):
         """See `IProduct`."""
-        store = Store.of(self)
-        result = store.find(
-            Milestone,
-            And(Milestone.productseries == ProductSeries.id,
-                ProductSeries.product == self))
-        return result.order_by(Desc(Milestone.dateexpected), Milestone.name)
+        return Milestone.selectBy(
+            product=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See `IProduct`."""
-        store = Store.of(self)
-        result = store.find(
-            Milestone,
-            And(Milestone.productseries == ProductSeries.id,
-                ProductSeries.product == self,
-                Milestone.visible == True))
-        return result.order_by(Desc(Milestone.dateexpected), Milestone.name)
+        return Milestone.selectBy(
+            product=self, visible=True, orderBy=['-dateexpected', 'name'])
 
     @property
     def sourcepackages(self):
@@ -639,16 +629,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        store = Store.of(self)
-        result = store.find(
-            Milestone,
-            And(Milestone.productseries == ProductSeries.id,
-                ProductSeries.product == self.id,
-                Milestone.name == name))
-        try:
-            return result.one()
-        except NotOneError:
-            return None
+        return Milestone.selectOne("""
+            product = %s AND
+            name = %s
+            """ % sqlvalues(self.id, name))
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""

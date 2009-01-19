@@ -1312,9 +1312,8 @@ class BugTaskSet:
             if IProjectMilestone.providedBy(params.milestone):
                 where_cond = """
                     IN (SELECT Milestone.id
-                        FROM Milestone, ProductSeries, Product
-                        WHERE ProductSeries.product = Product.id
-                            AND Milestone.productseries = ProductSeries.id
+                        FROM Milestone, Product
+                        WHERE Milestone.product = Product.id
                             AND Product.project = %s
                             AND Milestone.name = %s)
                 """ % sqlvalues(params.milestone.target,
