@@ -61,12 +61,12 @@ Attempting to link to the same blueprint again gives an error.
 
 == From the blueprint page ==
 
-The main blueprint page has an action 'Link to branch'.  This allows
+The main blueprint page has an action 'Link a related branch'.  This allows
 the user to specify a branch to link to the blueprint.
 
     >>> browser.open(
     ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
-    >>> browser.getLink('Link to branch').click()
+    >>> browser.getLink('Link a related branch').click()
 
 There is a link back to the blueprint page, in case you change your mind.
 
@@ -79,13 +79,15 @@ There is a link back to the blueprint page, in case you change your mind.
 
 The blueprint page shows the linked branches in a portlet.
 
-    >>> print extract_text(find_portlet(browser.contents, 'Branches'))
-    Branches
-    release-0.8: Mozilla Firefox 0.8
+    >>> user_browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'branch_links'))
+    Related branches
+    ~sabdfl/firefox/release-0.8
 
 Again, attempting to link to the same branch gives an error.
 
-    >>> browser.getLink('Link to branch').click()
+    >>> browser.getLink('Link to another branch').click()
     >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.8'
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
@@ -108,13 +110,6 @@ used to edit the summary of the branch link:
     >>> browser.getControl('Summary').value = 'New summary'
     >>> browser.getControl('Update').click()
 
-The new summary now appears in the branches portlet:
-
-    >>> print extract_text(find_portlet(browser.contents, 'Branches'))
-    Branches
-    release-0.8: Mozilla Firefox 0.8
-      New summary
-
 
 == Deleting a Branch Link ==
 
@@ -128,8 +123,9 @@ Users can delete the branch link from the branch link page:
 
 The branch is now no longer listed in the portlet:
 
-    >>> print find_portlet(browser.contents, 'Branches')
-    None
+    >>> user_browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
+    >>> find_tag_by_id(user_browser.contents, 'branch_links')
 
 
 == Inline editing from the branch page ==
