@@ -937,8 +937,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         properties = devices[0]['properties']
         parser = SubmissionParser(self.log)
 
-        for tested_bus in ('net', 'scsi_generic', 'scsi_host', 'sound',
-                           'ssb', 'usb'):
+        ignored_buses = (
+            'net', 'scsi_generic', 'scsi_host', 'sound',  'ssb', 'usb',)
+        for tested_bus in ignored_buses:
             properties['info.bus'] = (tested_bus, 'str')
             parser.buildDeviceList(parsed_data)
             device = parser.hal_devices[self.UDI_USB_HUB_IF0]
@@ -948,8 +949,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 % tested_bus)
 
         del properties['info.bus']
-        for tested_bus in ('net', 'scsi_generic', 'scsi_host', 'sound',
-                           'ssb', 'usb'):
+        for tested_bus in ignored_buses:
             properties['info.subsystem'] = (tested_bus, 'str')
             parser.buildDeviceList(parsed_data)
             device = parser.hal_devices[self.UDI_USB_HUB_IF0]

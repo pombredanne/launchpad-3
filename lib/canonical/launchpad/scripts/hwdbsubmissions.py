@@ -1291,44 +1291,49 @@ class HALDevice:
           sub-device with info.bus='usb_device' for its "output aspect".
           These sub-devices can be identified by the device class their
           parent and by their USB vendor/product IDs, which are 0:0.
+
+        Several info.bus/info.subsystem values always relate to HAL nodes
+        which describe only "aspects" of physical devcies which are
+        represented by other HAL nodes:
+
+          - bus is None for a number of "virtual components", like
+            /org/freedesktop/Hal/devices/computer_alsa_timer or
+            /org/freedesktop/Hal/devices/computer_oss_sequencer, so
+            we ignore them. (The real sound devices appear with
+            other UDIs in HAL.)
+
+            XXX Abel Deuring 20080425: This ignores a few components
+            like laptop batteries or the CPU, where info.bus is None.
+            Since these components are not the most important ones
+            for the HWDB, we'll ignore them for now. Bug 237038.
+
+          - info.bus == 'net' is used by the HAL version in
+            Intrepid for the "output aspects" of network devices.
+
+            info.bus == 'scsi_generic' is used by the HAL version in
+            Intrepid for a HAL node representing the generic
+            interface of a SCSI device.
+
+            info.bus == 'scsi_host' is used by the HAL version in
+            Intrepid for real and "fake" SCSI host controllers.
+            (On Hardy, these nodes have no info.bus property.)
+            HAL nodes with this bus value are sub-nodes for the
+            "SCSI aspect" of another HAL node which represents the
+            real device.
+
+            info.bus == 'sound' is used by the HAL version in
+            Intrepid for "aspects" of sound devices.
+
+            info.bus == 'ssb' is used for "aspects" of Broadcom
+            Ethernet and WLAN devices, but like 'usb', they do not
+            represent separate devices.
+
+            info.bus == 'usb' is used for end points of USB devices;
+            the root node of a USB device has info.bus == 'usb_device'.
         """
         bus = self.raw_bus
         if bus in (None, 'net', 'scsi_generic', 'scsi_host',
                    'sound', 'ssb', 'usb'):
-            # bus is None for a number of "virtual components", like
-            # /org/freedesktop/Hal/devices/computer_alsa_timer or
-            # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
-            # we ignore them. (The real sound devices appear with
-            # other UDIs in HAL.)
-            #
-            # XXX Abel Deuring 20080425: This ignores a few components
-            # like laptop batteries or the CPU, where info.bus is None.
-            # Since these components are not the most important ones
-            # for the HWDB, we'll ignore them for now. Bug 237038.
-            #
-            # info.bus == 'net' is used by the HAL version in
-            # Intrepid for the "output aspects" of network devices.
-            #
-            # info.bus == 'scsi_generic' is used by the HAL version in
-            # Intrepid for a HAL node representing the generic
-            # interface of a SCSI device.
-            #
-            # info.bus == 'scsi_host' is used by the HAL version in
-            # Intrepid for real and "fake" SCSI host controllers.
-            # (On Hardy, these nodes have no info.bus property.)
-            # HAL nodes with this bus value are sub-nodes for the
-            # "SCSI aspect" of another HAL node which represents the
-            # real device.
-            #
-            # info.bus == 'sound' is used by the HAL version in
-            # Intrepid for "aspects" of sound devices.
-            #
-            # info.bus == 'ssb' is used for "aspects" of Broadcom
-            # Ethernet and WLAN devices, but like 'usb', they do not
-            # represent separate devices.
-            #
-            # info.bus == 'usb' is used for end points of USB devices;
-            # the root node of a USB device has info.bus == 'usb_device'.
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
