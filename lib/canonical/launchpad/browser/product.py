@@ -141,6 +141,10 @@ class ProductNavigation(
     def traverse_announcement(self, name):
         return self.context.getAnnouncement(name)
 
+    @stepthrough('+commercialsubscription')
+    def traverse_commercialsubscription(self, name):
+        return self.context.commercial_subscription
+
     def traverse(self, name):
         return self.context.getSeries(name)
 

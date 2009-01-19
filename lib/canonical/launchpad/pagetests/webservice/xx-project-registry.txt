@@ -108,6 +108,8 @@ Projects are available at their canonical URL on the API virtual host.
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
     bug_tracker_link: None
+    commercial_subscription_is_due: True
+    commercial_subscription_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
     development_focus_link: u'http://.../firefox/trunk'
@@ -117,16 +119,68 @@ Projects are available at their canonical URL on the API virtual host.
     freshmeat_project: None
     homepage_url: None
     icon_link: u'http://.../firefox/icon'
+    is_permitted: False
+    license_approved: False
     license_info: None
+    license_reviewed: False
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
+    qualifies_for_free_hosting: False
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     resource_type_link: u'http://.../#project'
+    reviewer_whiteboard: None
+    screenshots_url: None
+    self_link: u'http://.../firefox'
+    series_collection_link: u'http://.../firefox/series'
+    sourceforge_project: None
+    summary: u'The Mozilla Firefox web browser'
+    title: u'Mozilla Firefox'
+    wiki_url: None
+
+Some entries for projects are only available to admins.  Here we see
+several that are not available to non-privileged users marked as
+'redacted'.
+
+    >>> firefox = user_webservice.get('/firefox').jsonBody()
+    >>> pprint_entry(firefox)
+    active: True
+    active_milestones_collection_link: u'http://.../firefox/active_milestones'
+    all_milestones_collection_link: u'http://.../firefox/all_milestones'
+    branches_collection_link: u'http://.../firefox/branches'
+    brand_link: u'http://.../firefox/brand'
+    bug_reporting_guidelines: None
+    bug_tracker_link: None
+    commercial_subscription_is_due: True
+    commercial_subscription_link: None
+    date_created: u'2004-09-24T20:58:02.185708+00:00'
+    description: u'The Mozilla Firefox web browser'
+    development_focus_link: u'http://.../firefox/trunk'
+    display_name: u'Mozilla Firefox'
+    download_url: None
+    driver_link: None
+    freshmeat_project: None
+    homepage_url: None
+    icon_link: u'http://.../firefox/icon'
+    is_permitted:...redacted...
+    license_approved:...redacted...
+    license_info: None
+    license_reviewed:...redacted...
+    licenses: []
+    logo_link: u'http://.../firefox/logo'
+    name: u'firefox'
+    owner_link: u'http://.../~name12'
+    programming_language: None
+    project_group_link: u'http://.../mozilla'
+    qualifies_for_free_hosting: False
+    registrant_link: u'http://.../~name12'
+    releases_collection_link: u'http://.../firefox/releases'
+    resource_type_link: u'http://.../#project'
+    reviewer_whiteboard:...redacted...
     screenshots_url: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
@@ -316,6 +370,110 @@ The latest projects registered can be retrieved.
     Mega Money Maker
     Redfish
 
+There is a method for doing a query about attributes related to
+project licensing.  We can find all projects with unreviewed
+licenses.
+
+    >>> unreviewed = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     license_reviewed=False).jsonBody()
+
+    >>> entries = sorted(
+    ...    unreviewed['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    APTonCD
+    Arch mirrors
+    Bazaar
+    Bazaar
+    Derby
+
+Or those that are reviewed.
+
+    >>> reviewed = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     license_reviewed=True).jsonBody()
+
+    >>> entries = sorted(
+    ...    reviewed['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    Launchpad Translations
+    alsa-utils
+    python gnome2 dev
+    unassigned syncs
+
+We can also find all projects with no licensing information.
+
+    >>> no_licenses = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     has_zero_license=True).jsonBody()
+
+    >>> entries = sorted(
+    ...    no_licenses['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    APTonCD
+    Arch mirrors
+    Bazaar
+    Bazaar
+    Derby
+
+We can find projects based on creation date.
+
+    >>> old = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     created_before="2006-01-01").jsonBody()
+
+    >>> entries = sorted(
+    ...    old['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    Arch mirrors
+    Bazaar
+    Evolution
+    GNOME Terminal
+    Gnome Applets
+
+Similarly we can find new projects.
+
+    >>> new = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     created_after="2006-01-01").jsonBody()
+
+    >>> entries = sorted(
+    ...    new['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    APTonCD
+    Bazaar
+    Derby
+    Jokosher
+    Launchpad
+
+All of the projects of a given license can be found.
+
+    >>> proprietary = webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     licenses=["Other/Proprietary"]).jsonBody()
+
+    >>> entries = sorted(
+    ...    proprietary['entries'], key=itemgetter('display_name'))
+    >>> for project in entries:
+    ...     print project['display_name']
+    Mega Money Maker
+
+The use of "licensing_search" is restricted to commercial admins.
+Attempting to access it as a normal users results in an exception.
+
+    >>> proprietary = user_webservice.named_get(
+    ...     "/projects", "licensing_search",
+    ...     licenses=["Other/Proprietary"]).jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: HTTP/1.1 401 Unauthorized
+    ...
+
 The project collection has a method for creating a new project.
 
     >>> def create_project(name, display_name, title, summary,
@@ -324,6 +482,7 @@ The project collection has a method for creating a new project.
     ...                    download_url=None, freshmeat_project=None,
     ...                    sourceforge_project=None, programming_lang=None,
     ...                    licenses=(), license_info=None,
+    ...                    license_reviewed=False,
     ...                    registrant=None):
     ...     return webservice.named_post(
     ...         "/projects", "new_project",
@@ -335,6 +494,7 @@ The project collection has a method for creating a new project.
     ...         sourceforge_project=sourceforge_project,
     ...         programming_lang=programming_lang,
     ...         licenses=licenses, license_info=license_info,
+    ...         license_reviewed=license_reviewed,
     ...         registrant=registrant)
 
 Verify a project does not exist and then create it.
@@ -365,6 +525,8 @@ Verify a project does not exist and then create it.
     My Shiny New Project
     >>> print sorted(new_project['licenses'])
     [u'GNU GPL v2', u'Zope Public License']
+    >>> print new_project['license_reviewed']
+    False
     >>> print new_project['homepage_url']
     None
 
@@ -547,7 +709,7 @@ webservice.named_post() method simplifies this for us.
     >>> print response
     HTTP/1.1 201 Created
     ...
-    Location: http://api.launchpad.dev/beta/firefox/1.0/rc1
+    Location: http://.../firefox/1.0/rc1
     >>> release = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print release['version']
     rc1
@@ -602,7 +764,7 @@ host.
     >>> releases = webservice.get(
     ...     '/firefox/1.0/releases').jsonBody()
     >>> print_self_link_of_entries(releases)
-    http://api.launchpad.dev/beta/firefox/1.0/1.0.0
+    http://...firefox/1.0/1.0.0
     http://.../firefox/1.0/rc1
 
 They can be deleted with the 'delete' operation.
@@ -691,7 +853,7 @@ API 'add_file' method.
     >>> print response
     HTTP/1.1 201 Created
     ...
-    Location: http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt
+    Location: http://...firefox/1.0/1.0.0/+file/filename.txt
     <BLANKLINE>
 
 Firefox 1.0/1.0.0 now has one file.
@@ -699,7 +861,7 @@ Firefox 1.0/1.0.0 now has one file.
     >>> files_url = '/firefox/1.0/1.0.0/files'
     >>> ff_100_files = webservice.get(files_url).jsonBody()
     >>> print_self_link_of_entries(ff_100_files)
-    http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt
+    http://...firefox/1.0/1.0.0/+file/filename.txt
 
 The file type and description are optional.  If no signature is
 available then it must be explicitly set to None.
@@ -712,7 +874,7 @@ available then it must be explicitly set to None.
     >>> print response
     HTTP/1.1 201 Created
     ...
-    Location: http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename2.txt
+    Location: http://...firefox/1.0/1.0.0/+file/filename2.txt
     <BLANKLINE>
 
 Firefox 1.0/1.0.0 now has two files.
@@ -720,8 +882,8 @@ Firefox 1.0/1.0.0 now has two files.
     >>> files_url = '/firefox/1.0/1.0.0/files'
     >>> ff_100_files = webservice.get(files_url).jsonBody()
     >>> print_self_link_of_entries(ff_100_files)
-    http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt
-    http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename2.txt
+    http://...firefox/1.0/1.0.0/+file/filename.txt
+    http://...firefox/1.0/1.0.0/+file/filename2.txt
 
 The file redirects to the librarian when accessed.
 
@@ -746,3 +908,34 @@ can delete files.
     >>> ff_100_files = webservice.get(files_url).jsonBody()
     >>> print_self_link_of_entries(ff_100_files)
     http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename2.txt
+
+
+== Commercial subscriptions ==
+
+If a project has a commercial-use subscription then it can be
+retrieved through the API.
+
+    >>> # Do some housekeeping not using the API to setup the Mega
+    >>> # Money Maker with a commercial subscription.
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('bac@canonical.com')
+    >>> product_set = getUtility(IProductSet)
+    >>> mmm = product_set.getByName('mega-money-maker')
+    >>> print mmm.commercial_subscription
+    None
+
+    >>> owner = mmm.owner
+    >>> mmm.redeemSubscriptionVoucher('mmm_voucher', owner, owner, 12,
+    ...     'notes')
+    >>> print mmm.commercial_subscription.product.name
+    mega-money-maker
+    >>> logout()
+
+    >>> mmm = webservice.get("/mega-money-maker").jsonBody()
+    >>> print mmm['display_name']
+    Mega Money Maker
+
+    >>> print mmm['commercial_subscription_link']
+    http://.../mega-money-maker/+commercialsubscription/1
