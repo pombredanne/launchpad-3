@@ -133,7 +133,7 @@ class TestPopulateArchiveScript(TestCase):
 
     def runScript(
         self, archive_name=None, suite='hoary', user='salgado',
-        exists_before=False, exists_after=False, exception_type=None,
+        exists_before=None, exists_after=None, exception_type=None,
         exception_text=None, extra_args=None, copy_archive_name=None,
         reason=None):
         """Run the script to test.
@@ -182,10 +182,13 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, archive_name)
 
-        if exists_before:
-            self.assertTrue(copy_archive is not None)
-        else:
-            self.assertTrue(copy_archive is None)
+        # Enforce these assertions only if the 'exists_before' flag was
+        # specified in first place.
+        if exists_before is not None:
+            if exists_before:
+                self.assertTrue(copy_archive is not None)
+            else:
+                self.assertTrue(copy_archive is None)
 
         # Command line arguments required for the invocation of the
         # 'populate-archive.py' script.
@@ -222,10 +225,13 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, archive_name)
 
-        if exists_after:
-            self.assertTrue(copy_archive is not None)
-        else:
-            self.assertTrue(copy_archive is None)
+        # Enforce these assertions only if the 'exists_after' flag was
+        # specified in first place.
+        if exists_after is not None:
+            if exists_after:
+                self.assertTrue(copy_archive is not None)
+            else:
+                self.assertTrue(copy_archive is None)
 
         return copy_archive
 
@@ -338,7 +344,7 @@ class TestPopulateArchiveScript(TestCase):
         warty = getUtility(IDistributionSet)['ubuntu']['warty']
         archive_set = getUtility(IArchiveSet)
         ppa = archive_set.getPPAByDistributionAndOwnerName(
-            warty.distribution, 'cprov')
+            warty.distribution, 'cprov', 'ppa')
 
         # Verify that we have the right source packages in the sample data.
         packages = self._getPendingPackageNames(ppa, warty)
@@ -395,15 +401,16 @@ class TestPopulateArchiveScript(TestCase):
 
         # Then populate the same copy archive from the 2nd snapshot.
         # This results in the copying of the fresher and of the new package.
-        extra_args = ['-a', 'hppa', '--from-archive', second_stage.name]
+        extra_args = [
+            '--merge-copy', '-a', 'hppa', '--from-archive', second_stage.name]
 
         # An empty 'reason' string is passed to runScript() i.e. the latter
         # will not pass a '--reason' command line argument to the script which
         # is OK since this is a repeated population of an *existing* COPY
         # archive.
         copy_archive = self.runScript(
-            extra_args=extra_args, exists_before=True, exists_after=True,
-            copy_archive_name=copy_archive.name, reason='')
+            extra_args=extra_args, copy_archive_name=copy_archive.name,
+            reason='')
         self._verifyClonedSourcePackages(
             copy_archive, hoary,
             # The set of packages that were superseded in the target archive.
@@ -415,10 +422,9 @@ class TestPopulateArchiveScript(TestCase):
 
         # Finally populate the same copy archive from ubuntu/hoary directly.
         # No new packages will be copied.
-        extra_args = ['-a', 'hppa']
+        extra_args = ['--merge-copy', '-a', 'hppa']
         copy_archive = self.runScript(
-            extra_args=extra_args, exists_before=True, exists_after=True,
-            copy_archive_name=copy_archive.name)
+            extra_args=extra_args, copy_archive_name=copy_archive.name)
         self._verifyClonedSourcePackages(
             copy_archive, hoary,
             # The set of packages that were superseded in the target archive.
@@ -491,6 +497,40 @@ class TestPopulateArchiveScript(TestCase):
             exception_type=SoyuzScriptError,
             exception_text=(
                 'error: reason for copy archive creation not specified.'))
+
+    def testMergecopyToMissingArchive(self):
+        """Try merge copy to non-existent archive.
+
+        This test should provoke a `SoyuzScriptError` exception because the
+        copy archive does not exist yet and we specified the '--merge-copy'
+        command line option. The latter specifies the repeated population of
+        *existing* archives.
+        """
+        extra_args = ['--merge-copy', '-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args,
+            exception_type=SoyuzScriptError,
+            exception_text=(
+                'error: merge copy requested for non-existing archive.'))
+
+    def testArchiveNameClash(self):
+        """Try creating an archive with same name and distribution twice.
+
+        This test should provoke a `SoyuzScriptError` exception because there
+        is a uniqueness constraint based on (distribution, name) for all
+        non-PPA archives i.e. we do not allow the creation of a second archive
+        with the same name and distribution.
+        """
+        extra_args = ['-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, exists_after=True,
+            copy_archive_name='hello-1')
+        extra_args = ['-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args,
+            copy_archive_name='hello-1', exception_type=SoyuzScriptError,
+            exception_text=(
+                "error: archive 'hello-1' already exists for 'ubuntu'."))
 
     def testMissingProcessorFamily(self):
         """Try copy archive population without a sngle processor family name.

@@ -78,7 +78,7 @@ registered as an utility.
 
 The 'get' method on the branch set fetches branches by ID.
 
-    >>> branch = factory.makeBranch(name='foobar')
+    >>> branch = factory.makeAnyBranch(name='foobar')
     >>> print branchset.get(branch.id).name
     foobar
 
@@ -211,10 +211,10 @@ queries the global state of the system, we just test the difference
 creating a branch makes to avoid gratuitous fragility in the test.
 
     >>> before_count = branchset.count()
-    >>> new_branch = factory.makeBranch()
+    >>> new_branch = factory.makeAnyBranch()
     >>> branchset.count() - before_count
     1
-    >>> new_branch = factory.makeBranch(private=True)
+    >>> new_branch = factory.makeAnyBranch(private=True)
     >>> branchset.count() - before_count
     1
 
@@ -277,7 +277,7 @@ definite order.
 
     >>> def make_new_scanned_branch(name, owner=user, branch_type=None):
     ...     """Create """
-    ...     new_branch = factory.makeBranch(
+    ...     new_branch = factory.makeProductBranch(
     ...         branch_type=branch_type, owner=owner, product=product,
     ...         name=name, date_created=time_generator.next())
     ...     new_branch.last_scanned = new_branch.date_created
@@ -310,7 +310,7 @@ definite order.
 It is possible to find a branch by URL. Either using the pull URL:
 
     >>> new_url = factory.getUniqueURL()
-    >>> new_mirrored_branch = factory.makeBranch(
+    >>> new_mirrored_branch = factory.makeAnyBranch(
     ...     branch_type=BranchType.MIRRORED, url=new_url)
     >>> branchset.getByUrl(new_url) == new_mirrored_branch
     True
@@ -322,7 +322,7 @@ Or using the Supermirror URL of the same branch:
     ...     new_mirrored_branch.unique_name)
     >>> branchset.getByUrl(new_branch_supermirror) == new_mirrored_branch
     True
-    >>> new_junk_branch = factory.makeBranch(product=None)
+    >>> new_junk_branch = factory.makePersonalBranch()
     >>> junkcode_supermirror = (
     ...     u'http://bazaar.launchpad.dev/' +
     ...     new_junk_branch.unique_name)
@@ -350,10 +350,11 @@ returned.
 Branches have a display name that is the Branch.title if it's provided, and the
 unique_name otherwise.
 
-    >>> titled_branch = factory.makeBranch(title=factory.getUniqueString())
+    >>> titled_branch = factory.makeAnyBranch(
+    ...     title=factory.getUniqueString())
     >>> titled_branch.displayname == titled_branch.title
     True
-    >>> untitled_branch = factory.makeBranch(title=None)
+    >>> untitled_branch = factory.makeAnyBranch(title=None)
     >>> untitled_branch.displayname == untitled_branch.unique_name
     True
 
@@ -366,7 +367,7 @@ so that the branch owner can be informed of merge proposals or code review
 messages relating to their branches.
 
     >>> owner = factory.makePerson()
-    >>> branch = factory.makeBranch(owner=owner)
+    >>> branch = factory.makeAnyBranch(owner=owner)
     >>> subscriptions = list(branch.subscriptions)
     >>> print len(subscriptions)
     1
@@ -387,7 +388,7 @@ BranchSubscriptionNotificationLevel.
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel, IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')
     >>> subscription = branch.subscribe(
     ...     subscriber,
@@ -436,7 +437,7 @@ The settings for a subscription can be changed by re-subscribing.
 We can get the subscribers for a branch based on their level of
 subscription.
 
-    >>> branch2 = factory.makeBranch(
+    >>> branch2 = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed2')
 
     >>> def print_names(persons):
@@ -799,19 +800,19 @@ finally name).
     >>> person = factory.makePerson(name="person")
     >>> product_a = factory.makeProduct(name='a')
     >>> product_b = factory.makeProduct(name='b')
-    >>> branch_for_a_called_b = factory.makeBranch(
+    >>> branch_for_a_called_b = factory.makeProductBranch(
     ...     owner=person, product=product_a, name='b')
-    >>> mature_branch_for_b_called_a = factory.makeBranch(
+    >>> mature_branch_for_b_called_a = factory.makeProductBranch(
     ...     owner=person, product=product_b, name='a',
     ...     lifecycle_status=BranchLifecycleStatus.MATURE)
-    >>> branch_for_b_called_b = factory.makeBranch(
+    >>> branch_for_b_called_b = factory.makeProductBranch(
     ...     owner=person, product=product_b, name='b')
-    >>> branch_for_b_called_c = factory.makeBranch(
+    >>> branch_for_b_called_c = factory.makeProductBranch(
     ...     owner=person, product=product_b, name='c')
-    >>> junk_branch = factory.makeBranch(
-    ...     owner=person, product=None, name='junk')
+    >>> junk_branch = factory.makePersonalBranch(
+    ...     owner=person, name='junk')
     >>> other = factory.makePerson(name='other')
-    >>> other_branch_for_b_called_a = factory.makeBranch(
+    >>> other_branch_for_b_called_a = factory.makeProductBranch(
     ...     owner=other, product=product_b, name='a',
     ...     lifecycle_status=BranchLifecycleStatus.MATURE)
     >>> subscription = other_branch_for_b_called_a.subscribe(

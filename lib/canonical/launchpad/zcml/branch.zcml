@@ -30,7 +30,7 @@
                     requestMirror startMirroring mirrorComplete mirrorFailed
                     branch_format repository_format control_format stacked_on
                     createBranchRevisionFromIDs distroseries sourcepackagename
-                    addToLaunchBag"
+                    addToLaunchBag distribution sourcepackage"
                     />
     <require
         permission="launchpad.Edit"

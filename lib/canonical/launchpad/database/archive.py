@@ -237,14 +237,16 @@ class Archive(SQLBase):
             else:
                 url = config.personalpackagearchive.base_url
             return urlappend(
-                url, self.owner.name + '/' + self.distribution.name)
+                url, "/".join(
+                    (self.owner.name, self.name, self.distribution.name)))
 
         try:
             postfix = archive_postfixes[self.purpose]
         except KeyError:
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
-        return urlappend(config.archivepublisher.base_url,
+        return urlappend(
+            config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
     def getPubConfig(self):
@@ -260,7 +262,8 @@ class Archive(SQLBase):
             else:
                 pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
-                pubconf.distroroot, self.owner.name, self.distribution.name)
+                pubconf.distroroot, self.owner.name, self.name,
+                self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
@@ -1068,13 +1071,7 @@ class Archive(SQLBase):
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
         if token is None:
-            token = create_unique_token_for_table(
-                20, ArchiveAuthToken, "token")
-        if not isinstance(token, unicode):
-            # Storm barfs if the string is not unicode so see if it
-            # converts.  If it doesn't, never mind, it would have blown
-            # up anyway.
-            token = unicode(token)
+            token = create_unique_token_for_table(20, ArchiveAuthToken.token)
         archive_auth_token = ArchiveAuthToken()
         archive_auth_token.archive = self
         archive_auth_token.person = person
@@ -1094,14 +1091,17 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
 
-    def getPPAByDistributionAndOwnerName(self, distribution, name):
+    def getPPAByDistributionAndOwnerName(self, distribution, person_name,
+                                         ppa_name):
         """See `IArchiveSet`"""
         query = """
             Archive.purpose = %s AND
             Archive.distribution = %s AND
             Person.id = Archive.owner AND
+            Archive.name = %s AND
             Person.name = %s
-        """ % sqlvalues(ArchivePurpose.PPA, distribution, name)
+        """ % sqlvalues(
+                ArchivePurpose.PPA, distribution, ppa_name, person_name)
 
         return Archive.selectOne(query, clauseTables=['Person'])
 
@@ -1112,7 +1112,7 @@ class ArchiveSet:
 
          * PRIMARY: 'primary';
          * PARTNER: 'partner';
-         * PPA: 'default'.
+         * PPA: 'ppa'.
 
         :param purpose: queried `ArchivePurpose`.
 
@@ -1123,7 +1123,7 @@ class ArchiveSet:
         """
         name_by_purpose = {
             ArchivePurpose.PRIMARY: 'primary',
-            ArchivePurpose.PPA: 'default',
+            ArchivePurpose.PPA: 'ppa',
             ArchivePurpose.PARTNER: 'partner',
             }
 

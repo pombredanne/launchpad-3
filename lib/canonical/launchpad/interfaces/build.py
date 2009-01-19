@@ -201,14 +201,14 @@ class IBuild(Interface):
     current_component = Attribute(
         "Component where the ISourcePackageRelease related to "
         "this build was published.")
-    title = Attribute("Build Title")
+    title = exported(Text(title=_("Build Title"), required=False))
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
     distroseries = Attribute("Direct parent needed by CanonicalURL")
     buildqueue_record = Attribute("Corespondent BuildQueue record")
     was_built = Attribute("Whether or not modified by the builddfarm.")
     arch_tag = exported(
-        Text(title=_("Architecturue tag"), required=False))
+        Text(title=_("Architecture tag"), required=False))
     distribution = Attribute("Shortcut for its distribution.")
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")
@@ -332,18 +332,22 @@ class BuildSetStatus(EnumeratedType):
     'needs build' and 'dependency wait'. We sometimes provide a summary
     status of a set of builds.
     """
-
+    # Until access to the name, title and description of exported types
+    # is available through the API, set the title of these statuses
+    # to match the name. This enables the result of API calls (which is
+    # currently the title) to be used programatically (for example, as a
+    # css class name).
     NEEDSBUILD = Item(
-        title='Need building',
+        title='NEEDSBUILD',# "Need building",
         description='There are some builds waiting to be built.')
 
-    FULLYBUILT = Item(title="Successfully built",
+    FULLYBUILT = Item(title='FULLYBUILT', # "Successfully built",
                       description="All builds were built successfully.")
 
-    FAILEDTOBUILD = Item(title="Failed to build",
+    FAILEDTOBUILD = Item(title='FAILEDTOBUILD', # "Failed to build",
                          description="There were build failures.")
 
-    BUILDING = Item(title="Currently building",
+    BUILDING = Item(title='BUILDING', # "Currently building",
                     description="There are some builds currently building.")
 
 

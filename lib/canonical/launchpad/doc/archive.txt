@@ -17,7 +17,7 @@ records to disk, including configuration and indexes.
     >>> print cprov_archive.distribution.name
     ubuntu
     >>> print cprov_archive.name
-    default
+    ppa
     >>> print cprov_archive.purpose.name
     PPA
     >>> cprov_archive.enabled
@@ -106,7 +106,7 @@ Useful properties:
     PPA for Celso Providelo
 
     >>> print cprov_archive.archive_url
-    http://ppa.launchpad.dev/cprov/ubuntu
+    http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
 Inquire what Distribution Series this archive has published sources to:
 
@@ -631,13 +631,13 @@ Now print the build summaries for firefox and foo_bar:
     ...         [firefox_source_pub.id, foo_pub.id])
     >>> print_build_summaries(build_summaries)
     Source ID: 18
-    Successfully built
+    FULLYBUILT
     All builds were built successfully.
     Relevant builds:
      - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
      - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Source ID: 22
-    Failed to build
+    FAILEDTOBUILD
     There were build failures.
     Relevant builds:
      - i386 build of foobar 1.0 in ubuntu warty RELEASE
@@ -987,13 +987,13 @@ Then, the archive topology will follow:
 <PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
 
     >>> pubconfig.archiveroot
-    u'/var/tmp/ppa.test/cprov/ubuntutest'
+    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest'
 
     >>> pubconfig.poolroot
-    u'/var/tmp/ppa.test/cprov/ubuntutest/pool'
+    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/pool'
 
     >>> pubconfig.distsroot
-    u'/var/tmp/ppa.test/cprov/ubuntutest/dists'
+    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists'
 
 Path not used in *personal* archives publication workflow are set to
 None, so they won't get created:
@@ -1334,10 +1334,10 @@ A new Archive can be created by passing a name and an owner
     >>> sandbox_archive.owner == name16
     True
 
-PPAs are created with the name attribute set to 'default'.
+PPAs are created with the name attribute set to 'ppa' by default.
 
     >>> print sandbox_archive.name
-    default
+    ppa
 
 We can take the opportunity to check if the default 'authorized_size'
 corresponds to what we state in our policy, 1024 MiB:
@@ -1403,7 +1403,7 @@ use to retrieve files from it.
     http://ftpmaster.internal/ubuntutest-partner
 
     >>> print sandbox_archive.archive_url
-    http://ppa.launchpad.dev/name16/ubuntu
+    http://ppa.launchpad.dev/name16/ppa/ubuntu
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
@@ -1413,13 +1413,13 @@ If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
     >>> print naked_cprov_archive.archive_url
-    http://ppa.launchpad.dev/cprov/ubuntu
+    http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
     >>> naked_cprov_archive.private = True
     >>> naked_cprov_archive.syncUpdate()
 
     >>> print naked_cprov_archive.archive_url
-    http://private-ppa.launchpad.dev/cprov/ubuntu
+    http://private-ppa.launchpad.dev/cprov/ppa/ubuntu
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
@@ -1447,17 +1447,17 @@ to publish to the RELEASE pocket no matter what state the distroseries is in.
     False
 
 getPPAByDistributionAndOwnerName method allow PPA lookups based on a
-distribution and a person name. This method is used in
+distribution, person name and the PPA name. This method is used in
 `PackageLocation` to provide a homogeneous way to refer to a Location
 (archive, distribution, distroseries, pocket).
 
     >>> cprov_archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'cprov')
+    ...     ubuntu, 'cprov', 'ppa')
     True
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'sabdfl')
+    ...     ubuntu, 'sabdfl', 'ppa')
     True
 
 Iteration over the own utility is performed against all archives,

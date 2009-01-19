@@ -48,7 +48,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
 
     def testNormalBranch(self):
         # A branch from a normal location is fine.
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             url="http://example.com/good/mirror")
         view = BranchView(branch, LaunchpadTestRequest())
@@ -59,7 +59,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsAnonymous(self):
         # A branch location with a defined private host is hidden from
         # anonymous browsers.
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         view = BranchView(branch, LaunchpadTestRequest())
@@ -72,7 +72,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         # owner.
         owner = self.factory.makePerson(
             email="eric@example.com", password="test")
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
@@ -92,7 +92,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             email="eric@example.com", password="test")
         other = self.factory.makePerson(
             email="other@example.com", password="test")
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
@@ -183,7 +183,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
     def test_initial_reviewer_not_set(self):
         # If the reviewer is not set, the field is populated with the owner of
         # the branch.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         self.assertIs(None, branch.reviewer)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
         self.assertEqual(
@@ -192,7 +192,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
 
     def test_initial_reviewer_set(self):
         # If the reviewer has been set, it is shown as the initial value.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         login_person(branch.owner)
         branch.reviewer = self.factory.makePerson()
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
@@ -202,7 +202,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
 
     def test_set_reviewer(self):
         # Test setting the reviewer.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         reviewer = self.factory.makePerson()
         login_person(branch.owner)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
@@ -215,7 +215,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
     def test_set_reviewer_as_owner_clears_reviewer(self):
         # If the reviewer is set to be the branch owner, the review field is
         # cleared in the database.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         login_person(branch.owner)
         branch.reviewer = self.factory.makePerson()
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
@@ -230,7 +230,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         # then the underlying object hasn't really been changed, so the last
         # modified is not updated.
         modified_date = datetime(2007, 1, 1, tzinfo=pytz.UTC)
-        branch = self.factory.makeBranch(date_created=modified_date)
+        branch = self.factory.makeAnyBranch(date_created=modified_date)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
         view.save_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
