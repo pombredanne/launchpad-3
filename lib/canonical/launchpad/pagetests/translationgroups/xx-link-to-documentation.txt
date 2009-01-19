@@ -22,7 +22,7 @@ translators.
 
 This way he can also set the documentation URL.
 
-    >>> carlos_browser.getControl('Documentation URL').value = (
+    >>> carlos_browser.getControl('Style guide URL').value = (
     ...     'http://www.ubuntu.com/')
     >>> carlos_browser.getControl('Change').click()
     >>> print carlos_browser.url
@@ -77,7 +77,7 @@ the documentation url through the edit view.
     ...     '+groups/testing-translation-team/eo/+edit')
     >>> print test_browser.title
     Edit Esperanto translator for Just a testing team
-    >>> test_browser.getControl('Documentation URL').value = (
+    >>> test_browser.getControl('Style guide URL').value = (
     ...     'http://www.launchpad.net/')
     >>> test_browser.getControl('Change').click()
     >>> print test_browser.url
