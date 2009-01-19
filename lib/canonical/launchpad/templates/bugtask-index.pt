@@ -37,20 +37,6 @@
       <h1 tal:replace="structure view/bug_title_edit_widget">
         Bug title
       </h1>
-      <script tal:condition="view/user">
-        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
-            Y.on('domready', function () {
-                var widget = new Y.EditableText({
-                    contentBox: '#bug-title',
-                });
-                widget.editor.plug({
-                    fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                      name: 'title',
-                      url: LP.client.cache.bug['self_link']}});
-                widget.render();
-            });
-        });
-      </script>
 
       <tal:block condition="view/reportBugInContext" />
 

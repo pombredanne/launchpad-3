@@ -13,6 +13,7 @@ from textwrap import dedent
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class InlineTextLineEditorWidget:
@@ -20,13 +21,19 @@ class InlineTextLineEditorWidget:
 
     last_id = 0
 
-    def __init__(self, value, edit_url, id=None, title="Edit"):
+    def __init__(self, context, attribute, edit_url, id=None, title="Edit"):
         """Create a widget wrapper.
 
-        :param value: The initial value for the widget.
-        :param edit_url: The non-AJAXy URL where this value can be edited.
+        :param context: The object that is being edited.
+        :param attribute: The name of the attribute being edited.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.
+        :param id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param title: The string to use as the link title. Defaults to 'Edit'.
         """
-        self.value = value
+        self.context = context
+        self.attribute = attribute
         self.edit_url = edit_url
         if id is None:
             self.id = self._generate_id()
@@ -47,15 +54,27 @@ class InlineTextLineEditorWidget:
             'edit_url': self.edit_url,
             'id': self.id,
             'title': self.title,
-            'value': cgi.escape(self.value),
+            'value': cgi.escape(getattr(self.context, self.attribute)),
+            'context_url': canonical_url(self.context),
+            'attribute': self.attribute,
             }
         if getUtility(ILaunchBag).user:
             params['activation_script'] = dedent(u"""\
                 <script>
-                    YUI().use('lazr.editor', function (Y) {
+                YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+                    Y.on('domready', function () {
+                        var widget = new Y.EditableText({
+                            contentBox: '#%(id)s',
+                        });
+                        widget.editor.plug({
+                            fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
+                              name: '%(attribute)s',
+                              url: '%(context_url)s'}});
+                        widget.render();
                     });
+                });
                 </script>
-                """)
+                """ % params)
         return dedent(u"""\
             <h1 id="%(id)s"><span class="yui-editable_text-text">%(value)s</span>
                 <a href="%(edit_url)s" class="yui-editable_text-trigger"

@@ -458,7 +458,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self._redirecting_to_bug_list = False
 
         self.bug_title_edit_widget = InlineTextLineEditorWidget(
-            bug.title, canonical_url(self.context, view_name='+edit'),
+            bug, 'title', canonical_url(self.context, view_name='+edit'),
             id="bug-title", title="Edit this summary")
 
         if self.user is None:
