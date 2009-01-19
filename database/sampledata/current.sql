@@ -10137,7 +10137,7 @@ ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;
 
 ALTER TABLE translator DISABLE TRIGGER ALL;
 
-INSERT INTO translator (id, translationgroup, language, translator, datecreated, documentation_url) VALUES (1, 1, 387, 53, '2005-07-13 13:14:19.748396', NULL);
+INSERT INTO translator (id, translationgroup, language, translator, datecreated) VALUES (1, 1, 387, 53, '2005-07-13 13:14:19.748396');
 
 
 ALTER TABLE translator ENABLE TRIGGER ALL;

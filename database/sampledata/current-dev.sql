@@ -9184,7 +9184,7 @@ ALTER TABLE temporaryblobstorage ENABLE TRIGGER ALL;
 
 ALTER TABLE translationgroup DISABLE TRIGGER ALL;
 
-INSERT INTO translationgroup (id, name, title, summary, datecreated, owner) VALUES (1, 'testing-translation-team', 'Just a testing team', 'This team is to test the translation restrictions', '2005-07-12 14:30:24.162667', 13);
+INSERT INTO translationgroup (id, name, title, summary, datecreated, owner, translation_guide_url) VALUES (1, 'testing-translation-team', 'Just a testing team', 'This team is to test the translation restrictions', '2005-07-12 14:30:24.162667', 13, NULL);
 
 
 ALTER TABLE translationgroup ENABLE TRIGGER ALL;
@@ -10133,7 +10133,7 @@ ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;
 
 ALTER TABLE translator DISABLE TRIGGER ALL;
 
-INSERT INTO translator (id, translationgroup, language, translator, datecreated) VALUES (1, 1, 387, 53, '2005-07-13 13:14:19.748396');
+INSERT INTO translator (id, translationgroup, language, translator, datecreated, style_guide_url) VALUES (1, 1, 387, 53, '2005-07-13 13:14:19.748396', NULL);
 
 
 ALTER TABLE translator ENABLE TRIGGER ALL;
