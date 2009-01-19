@@ -301,13 +301,13 @@ class TestCodeHandler(TestCaseWithFactory):
         source_branch_url=None, target_branch_url=None):
         if source_branch_url is None:
             if source_branch is None:
-                source_branch = self.factory.makeBranch()
+                source_branch = self.factory.makeAnyBranch()
             source_branch_url = (
                 config.codehosting.supermirror_root +
                 source_branch.unique_name)
         if target_branch_url is None:
             if target_branch is None:
-                target_branch = self.factory.makeBranch()
+                target_branch = self.factory.makeAnyBranch()
             target_branch_url = (
                 config.codehosting.supermirror_root +
                 target_branch.unique_name)
@@ -318,8 +318,8 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_acquireBranchesForProposal(self):
         """Ensure CodeHandler._acquireBranchesForProposal works."""
-        target_branch = self.factory.makeBranch()
-        source_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeAnyBranch()
+        source_branch = self.factory.makeAnyBranch()
         md = self.makeMergeDirective(source_branch, target_branch)
         submitter = self.factory.makePerson()
         self.switchDbUser(config.processmail.dbuser)
@@ -331,7 +331,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_acquireBranchesForProposalRemoteTarget(self):
         """CodeHandler._acquireBranchesForProposal fails on remote targets."""
-        source_branch = self.factory.makeBranch()
+        source_branch = self.factory.makeAnyBranch()
         md = self.makeMergeDirective(
             source_branch, target_branch_url='http://example.com')
         submitter = self.factory.makePerson()
@@ -347,7 +347,7 @@ class TestCodeHandler(TestCaseWithFactory):
         If there's no existing remote branch, it creates one, using
         the suffix of the url as a branch name seed.
         """
-        target_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeProductBranch()
         source_branch_url = 'http://example.com/suffix'
         md = self.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
@@ -372,13 +372,13 @@ class TestCodeHandler(TestCaseWithFactory):
         name seed.  If there is already a branch with that name, it appends
         a numeric suffix.
         """
-        target_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeProductBranch()
         source_branch_url = 'http://example.com/suffix'
         md = self.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
         branches = getUtility(IBranchSet)
         submitter = self.factory.makePerson()
-        duplicate_branch = self.factory.makeBranch(
+        duplicate_branch = self.factory.makeProductBranch(
             product=target_branch.product, name='suffix', owner=submitter)
         self.switchDbUser(config.processmail.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
@@ -433,8 +433,9 @@ class TestCodeHandler(TestCaseWithFactory):
         :param body: The message body to use for the email.
         :return: message, source_branch, target_branch
         """
-        target_branch = self.factory.makeBranch()
-        source_branch = self.factory.makeBranch(product=target_branch.product)
+        target_branch = self.factory.makeProductBranch()
+        source_branch = self.factory.makeProductBranch(
+            product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.factory.makeSignedMessage(body=body,
             subject='My subject', attachment_contents=''.join(md.to_lines()))

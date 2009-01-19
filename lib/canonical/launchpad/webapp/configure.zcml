@@ -299,6 +299,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.ITeam"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.TeamFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IProduct"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"

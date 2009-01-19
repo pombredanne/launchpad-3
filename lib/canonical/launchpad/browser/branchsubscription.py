@@ -207,7 +207,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
-    """The view for editting branch subscriptions.
+    """The view for editing branch subscriptions.
 
     Used when traversed to the branch subscription itself rather than
     through the branch action item to edit the user's own subscription.

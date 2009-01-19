@@ -22,29 +22,27 @@ def create_token(token_length):
 
     :param token_length: Specifies how long you want the token.
     """
+    # Since tokens are, in general, user-visible, vowels are not included
+    # below to prevent them from having curse/offensive words.
     characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
     token = ''.join(
         random.choice(characters) for count in range(token_length))
-    return token
+    return unicode(token)
 
 
-def create_unique_token_for_table(token_length, table, column):
+def create_unique_token_for_table(token_length, column):
     """Create a new unique token in a table.
 
     Generates a token and makes sure it does not already exist in
     the table and column specified.
 
     :param token_length: The length for the token string
-    :param table: The table to use
-    :param column: The column containing the token in 'table'
+    :param column: Database column where the token will be stored.
 
     :return: A new token string
     """
-    token = create_token(token_length)
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    new_row = store.find(table, "%s='%s'" % (column, token)).one()
-    while new_row is not None:
+    token = create_token(token_length)
+    while store.find(column.cls, column==token).one() is not None:
         token = create_token(token_length)
-        new_row = store.find(table, "%s='%s'" % (column, token)).one()
     return token
-

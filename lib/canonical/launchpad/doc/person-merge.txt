@@ -130,15 +130,18 @@ Translators'
 
 Check that the branches have been renamed properly.
 
-    >>> sample.getBranch(None, 'peoplemerge') == peoplemerge
+    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    ...     get_branch_namespace)
+    >>> sample_junk = get_branch_namespace(sample)
+    >>> sample_junk.getByName('peoplemerge') == peoplemerge
     True
-    >>> sample.getBranch(None, 'peoplemerge-0') == peoplemerge0
+    >>> sample_junk.getByName('peoplemerge-0') == peoplemerge0
     True
-    >>> sample.getBranch(None, 'peoplemerge-1') == peoplemerge1
+    >>> sample_junk.getByName('peoplemerge-1') == peoplemerge1
     True
-    >>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge2
+    >>> sample_junk.getByName('peoplemerge-2') == peoplemerge2
     True
-    >>> sample.getBranch(None, 'peoplemerge-1-1') == peoplemerge11
+    >>> sample_junk.getByName('peoplemerge-1-1') == peoplemerge11
     True
 
 The Karma that was previously assigned to marilize is now assigned to name12
