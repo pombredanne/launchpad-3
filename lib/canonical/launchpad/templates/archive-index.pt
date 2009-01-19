@@ -138,6 +138,12 @@
 
       <div id="package_counters">
         <p class="discreet" style="line-height: 3em;">
+           <tal:comment replace="nothing">
+              XXX cprov 20090119: preload the spinner image, so it
+              won't have to be loaded when the section is updated in
+              JS. Fix this with CSS sprites when we have a chance.
+           </tal:comment>
+           <img src="/@@/spinner" style="display: none;"/>
            Package counters and estimated archive size temporarily
            unavailable.
         </p>
