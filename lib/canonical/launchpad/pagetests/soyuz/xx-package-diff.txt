@@ -99,11 +99,14 @@ later.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.interfaces.packagediff import (
+    ...     PackageDiffStatus)
     >>> from canonical.librarian.interfaces import ILibrarianClient
 
     >>> def perform_fake_diff(diff, filename):
     ...     naked_diff = removeSecurityProxy(diff)
     ...     naked_diff.date_fulfilled = UTC_NOW
+    ...     naked_diff.status = PackageDiffStatus.COMPLETED
     ...     naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
     ...         filename, 3, StringIO('Foo'), 'application/gzipped-patch')
     ...     syncUpdate(diff)
@@ -195,7 +198,9 @@ are. They are presented in the expandable area right below the
 corresponding source row in the PPA overview page.
 
     >>> anon_browser.open('http://launchpad.dev/~name16/+archive')
+    >>> login('foo.bar@canonical.com')
     >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
+    >>> logout()
     >>> biscuit_row_id = 'pub%s' % biscuit_ppa.id
     >>> biscuit_row = find_tag_by_id(
     ...     anon_browser.contents, biscuit_row_id)

@@ -249,10 +249,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """Test PPA uploads to a named PPA location.
 
         PPA uploads can be to a named PPA, but right now only to one
-        called "default".  When we switch off the old-style paths, uploading
+        called "ppa".  When we switch off the old-style paths, uploading
         to any named ppa will be possible.
         """
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/default/ubuntu")
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         queue_root = self.uploadprocessor.last_processed_upload.queue_root
@@ -270,8 +270,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.setupBreezy(name="farty")
         # Allow PPA builds.
         self.breezy['i386'].supports_virtualized = True
-        upload_dir = self.queueUpload(
-            "bar_1.0-1", "~name16/default/ubuntu/farty")
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu/farty")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         queue_root = self.uploadprocessor.last_processed_upload.queue_root

@@ -3,7 +3,7 @@
 From Launchpad's front page, you can access the tour.
 
     >>> browser.open('http://launchpad.dev/')
-    >>> tour_link = browser.getLink('Take a tour')
+    >>> tour_link = browser.getLink('Take the tour')
     >>> print tour_link.url
     http://launchpad.dev/+tour
     >>> tour_link.click()

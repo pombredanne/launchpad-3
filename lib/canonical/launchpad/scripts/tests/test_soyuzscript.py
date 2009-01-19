@@ -23,7 +23,7 @@ class TestSoyuzScript(unittest.TestCase):
 
     def getSoyuz(self, version=None, component=None, arch=None,
                  suite=None, distribution_name='ubuntu',
-                 ppa=None, partner=False, ppa_name='default'):
+                 ppa=None, partner=False, ppa_name='ppa'):
         """Return a SoyuzScript instance.
 
         Allow tests to use a set of default options and pass an

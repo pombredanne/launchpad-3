@@ -214,6 +214,18 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
     >>> print signing_key.can_encrypt
     False
 
+The generated key UID follows "Launchpad %(ppa.title)s" format.
+
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> gpghandler = getUtility(IGPGHandler)
+
+    >>> retrieved_key = gpghandler.retrieveKey(
+    ...    signing_key.fingerprint)
+
+    >>> [uid] = retrieved_key.uids
+    >>> print uid.name
+    Launchpad PPA for Celso Providelo
+
 The secret key is securily stored in the designed configuration
 path. So only the IGPGHandler itself can access it.
 
@@ -235,8 +247,6 @@ If called against a PPA which already has a 'signing_key'
 Let's reset the gpg local key ring, so we can check that the public
 key is available in the keyserver.
 
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-    >>> gpghandler = getUtility(IGPGHandler)
     >>> gpghandler.resetLocalState()
 
     >>> retrieved_key = gpghandler.retrieveKey(
@@ -258,7 +268,7 @@ the expected file.
     Traceback (most recent call last):
     ...
     AssertionError: Release file doesn't exist in the repository:
-    /var/tmp/ppa.test/cprov/default/ubuntutest/dists/hoary/Release
+    /var/tmp/ppa.test/cprov/ppa/ubuntutest/dists/hoary/Release
 
 It produces a detached signature for the repository Release current
 file contents.

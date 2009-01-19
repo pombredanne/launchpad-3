@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
     IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
     MailingListStatus, PersonalStanding, PostedMessageStatus)
+from canonical.launchpad.interfaces.person import PersonVisibility
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -175,6 +176,13 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                  members[address][1], members[address][2])
                 for address in sorted(members)]
         return response
+
+    def isTeamPublic(self, team_name):
+        """See `IMailingListAPIView.`."""
+        team = getUtility(IPersonSet).getByName(team_name)
+        if team is None:
+            return faults.NoSuchPersonWithName(team_name)
+        return team.visibility == PersonVisibility.PUBLIC
 
     def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""

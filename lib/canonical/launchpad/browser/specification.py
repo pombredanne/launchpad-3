@@ -51,8 +51,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
+from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.specification import (
     INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
@@ -71,7 +71,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, action, canonical_url, enabled_with_permission,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
@@ -251,21 +251,8 @@ class SpecificationNavigation(Navigation):
 
     @stepto('+branch')
     def traverse_branch(self):
-        person_name = self.request.stepstogo.consume()
-        product_name = self.request.stepstogo.consume()
-        branch_name = self.request.stepstogo.consume()
-        if person_name is None or product_name is None or branch_name is None:
-            raise NotFoundError
-
-        person = getUtility(IPersonSet).getByName(person_name)
-        if person is None:
-            raise NotFoundError
-
-        branch = person.getBranch(product_name, branch_name)
-
-        if not branch:
-            raise NotFoundError
-
+        branch = getUtility(IBranchNamespaceSet).traverse(
+            iter(self.request.stepstogo))
         return self.context.getBranchLink(branch)
 
     def traverse(self, name):

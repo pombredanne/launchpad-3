@@ -23,6 +23,7 @@ __all__ = [
     'generate_entry_adapter',
     'generate_entry_interface',
     'generate_operation_adapter',
+    'mutator_for',
     'operation_parameters',
     'operation_returns_entry',
     'operation_returns_collection_of',
@@ -36,7 +37,7 @@ from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
-from zope.interface.interface import TAGGED_DATA, InterfaceClass
+from zope.interface.interface import fromFunction, InterfaceClass, TAGGED_DATA
 from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
 from zope.schema.interfaces import IField, IText
@@ -48,7 +49,7 @@ from zope.security.checker import CheckerPublic
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
-from canonical.lazr.decorates import Passthrough
+from lazr.delegates import Passthrough
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
@@ -290,7 +291,8 @@ def annotate_exported_methods(interface):
         annotations = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if annotations is None:
             continue
-
+        if annotations.get('type') is None:
+            continue
         # Method is exported under its own name by default.
         if 'as' not in annotations:
             annotations['as'] = method.__name__
@@ -361,6 +363,45 @@ class call_with(_method_annotator):
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
         annotations['call_with'] = self.params
+
+
+class mutator_for(_method_annotator):
+    """Decorator indicating that an exported method mutates a field.
+
+    The method can be invoked through POST, or by setting a value for
+    the given field as part of a PUT or PATCH request.
+    """
+    def __init__(self, field):
+        """Specify the field for which this method is a mutator."""
+        self.field = field
+
+    def annotate_method(self, method, annotations):
+        """See `_method_annotator`.
+
+        Store information about the mutator method with the field.
+        """
+
+        if not self.field.readonly:
+            raise TypeError("Only a read-only field can have a mutator "
+                            "method.")
+
+        # The mutator method must take only one argument, not counting
+        # arguments with values fixed by call_with().
+        signature = fromFunction(method).getSignatureInfo()
+        free_params = (set(signature['required']) -
+                       set(annotations.get('call_with', {}).keys()))
+        if len(free_params) != 1:
+            raise TypeError("A mutator method must take one and only one "
+                            "non-fixed argument. %s takes %d." %
+                            (method.__name__, len(free_params)))
+
+        field_annotations = self.field.queryTaggedValue(
+            LAZR_WEBSERVICE_EXPORTED)
+        if 'mutated_by' in field_annotations:
+            raise TypeError("A field can only have one mutator method; "
+                            "%s makes two." % method.__name__ )
+        field_annotations['mutated_by'] = method
+        field_annotations['mutated_by_annotations'] = annotations
 
 
 class export_operation_as(_method_annotator):
@@ -550,7 +591,9 @@ def generate_entry_interface(interface):
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        attrs[tag['as']] = copy_field(field, __name__=tag['as'])
+        readonly = field.readonly and tag.get('mutated_by', None) is None
+        attrs[tag['as']] = copy_field(field, __name__=tag['as'],
+                                      readonly=readonly)
 
     entry_interface = InterfaceClass(
         "%sEntry" % interface.__name__, bases=(IEntry, ), attrs=attrs,
@@ -577,7 +620,14 @@ def generate_entry_adapter(content_interface, webservice_interface):
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        class_dict[tag['as']] = Passthrough(name, 'context')
+        mutator = tag.get('mutated_by', None)
+        if mutator is None:
+            property = Passthrough(name, 'context')
+        else:
+            annotations = tag['mutated_by_annotations']
+            property = PropertyWithMutator(
+                name, 'context', mutator, annotations)
+        class_dict[tag['as']] = property
 
     classname = "%sAdapter" % webservice_interface.__name__[1:]
     factory = type(classname, bases=(Entry,), dict=class_dict)
@@ -587,6 +637,33 @@ def generate_entry_adapter(content_interface, webservice_interface):
     protect_schema(
         factory, webservice_interface, write_permission=CheckerPublic)
     return factory
+
+
+def params_with_dereferenced_user(params):
+    """Make a copy of the given parameters with REQUEST_USER dereferenced."""
+    params = params.copy()
+    for name, value in params.items():
+        if value is REQUEST_USER:
+            params[name] = getUtility(ILaunchBag).user
+    return params
+
+
+class PropertyWithMutator(Passthrough):
+    """A property with a mutator method."""
+
+    def __init__(self, name, context, mutator, annotations):
+        super(PropertyWithMutator, self).__init__(name, context)
+        self.mutator = mutator.__name__
+        self.annotations = annotations
+
+    def __set__(self, obj, new_value):
+        """Call the mutator method to set the value."""
+        params = params_with_dereferenced_user(
+            self.annotations.get('call_with', {}))
+        # Error checking code in mutator_for() guarantees that there
+        # is one and only one non-fixed parameter for the mutator
+        # method.
+        getattr(obj.context, self.mutator)(new_value, **params)
 
 
 class CollectionEntrySchema:
@@ -621,11 +698,7 @@ class BaseCollectionAdapter(Collection):
     def find(self):
         """See `ICollection`."""
         method = getattr(self.context, self.method_name)
-        params = self.params.copy()
-        # Handle the REQUEST_USER marker.
-        for name, value in self.params.items():
-            if value is REQUEST_USER:
-                params[name] = getUtility(ILaunchBag).user
+        params = params_with_dereferenced_user(self.params)
         return method(**params)
 
 
@@ -671,10 +744,8 @@ class BaseResourceOperationAdapter(ResourceOperation):
             params[name] = value
 
         # Handle fixed parameters.
-        for name, value in self._export_info['call_with'].items():
-            if value is REQUEST_USER:
-                value = getUtility(ILaunchBag).user
-            params[name] = value
+        params.update(params_with_dereferenced_user(
+                self._export_info['call_with']))
         return params
 
     def call(self, **kwargs):
@@ -741,4 +812,3 @@ def generate_operation_adapter(method):
     protect_schema(factory, provides)
 
     return factory
-

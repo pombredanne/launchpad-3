@@ -9,7 +9,6 @@ __all__ = [
     'OAuthRequestToken',
     'OAuthRequestTokenSet']
 
-import random
 import pytz
 import time
 from datetime import datetime, timedelta
@@ -23,6 +22,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+
+from canonical.launchpad.components.tokens import (
+    create_token, create_unique_token_for_table)
 
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.product import IProduct
@@ -276,14 +278,8 @@ def create_token_key_and_secret(table):
     The key will have a length of 20 and we'll make sure it's not yet in the
     given table.  The secret will have a length of 80.
     """
-    characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
     key_length = 20
-    key = ''.join(
-        random.choice(characters) for count in range(key_length))
-    while table.selectOneBy(key=key) is not None:
-        key = ''.join(
-            random.choice(characters) for count in range(key_length))
+    key = create_unique_token_for_table(key_length, getattr(table, "key"))
     secret_length = 80
-    secret = ''.join(
-        random.choice(characters) for count in range(secret_length))
+    secret = create_token(secret_length)
     return key, secret

@@ -115,22 +115,23 @@ If there are no branches, it will say so nicely.
 Let's add a branch.
 
     >>> login(ANONYMOUS)
-    >>> b1 = factory.makeBranch(owner=eric)
+    >>> b1 = factory.makeAnyBranch(owner=eric)
     >>> logout()
 
 The summary is now shown.
 
     >>> open_page_and_print_tag('page-summary')
     Related branches: 1 (1 registered, 1 owned, 1 subscribed)
-    0 active reviews, 0 approved merges
+    0 active proposals, 0 approved merges, 0 requested reviews
 
 Now we'll create another branch, and unsubscribe the owner from it.
 
     >>> login(ANONYMOUS)
-    >>> b2 = factory.makeBranch(owner=eric)
+    >>> b2 = factory.makeAnyBranch(owner=eric)
     >>> ignored = b2.unsubscribe(eric)
     >>> logout()
 
     >>> open_page_and_print_tag('page-summary')
     Related branches: 2 (2 registered, 2 owned, 1 subscribed)
-    0 active reviews, 0 approved merges
+    0 active proposals, 0 approved merges, 0 requested reviews
+

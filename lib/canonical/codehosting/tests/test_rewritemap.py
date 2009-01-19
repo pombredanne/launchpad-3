@@ -7,9 +7,7 @@ __metaclass__ = type
 from StringIO import StringIO
 from unittest import TestLoader
 
-from zope.security.proxy import removeSecurityProxy
-
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.codehosting import rewritemap
@@ -45,31 +43,32 @@ class TestRewriteMapScript(TestCase):
 
     def testFileGeneration(self):
         # A simple smoke test for the rewritemap cronscript.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         self.assertInRewriteMap(branch)
 
     def testFileGenerationJunkProduct(self):
         # Like test_file_generation, but demonstrating a +junk product.
-        branch = self.factory.makeBranch(product=None)
+        branch = self.factory.makePersonalBranch()
         self.assertInRewriteMap(branch)
 
     def testPrivateBranchNotWritten(self):
         # Private branches do not have entries in the rewrite file.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeAnyBranch(private=True)
         self.assertNotInRewriteMap(branch)
 
     def testPrivateStackedBranch(self):
         # Branches stacked on private branches don't have entries in the
         # rewrite file.
-        stacked_on_branch = self.factory.makeBranch(private=True)
-        stacked_branch = self.factory.makeBranch(stacked_on=stacked_on_branch)
+        stacked_on_branch = self.factory.makeAnyBranch(private=True)
+        stacked_branch = self.factory.makeAnyBranch(
+            stacked_on=stacked_on_branch)
         branch_name = stacked_branch.unique_name
         branch_id = stacked_branch.id
         self.assertNotInRewriteMap(stacked_branch)
 
     def testRemoteBranchNotWritten(self):
         # Remote branches do not have entries in the rewrite file.
-        branch = self.factory.makeBranch(BranchType.REMOTE)
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         self.assertNotInRewriteMap(branch)
 
 

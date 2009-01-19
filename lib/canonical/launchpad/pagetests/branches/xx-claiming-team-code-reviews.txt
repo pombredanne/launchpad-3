@@ -11,9 +11,10 @@ link shown in the reviewer table for the team.
     ...     displayname="Eric the Viking")
     >>> vikings = factory.makeTeam(
     ...     owner=eric, displayname="Vikings", name="vikings")
-    >>> trunk = factory.makeBranch(owner=vikings)
+    >>> trunk = factory.makeProductBranch(owner=vikings)
     >>> trunk.product.development_focus.user_branch = trunk
-    >>> branch = factory.makeBranch(owner=eric, product=trunk.product)
+    >>> branch = factory.makeProductBranch(
+    ...     owner=eric, product=trunk.product)
     >>> branch_url = canonical_url(branch)
     >>> logout()
 

@@ -144,14 +144,8 @@
       </thead>
       <tbody>
         <tal:question repeat="question questions/batch">
-          <tal:user condition="view/user">
-            <tal:description
-              define="global description question/description/fmt:shorten/300" />
-          </tal:user>
-          <tal:not-user condition="not:view/user">
-            <tal:description
-              define="global description question/description/fmt:obfuscate-email/fmt:shorten/300" />
-          </tal:not-user>
+          <tal:description
+            define="global description question/description/fmt:obfuscate-email/fmt:shorten/300" />
 
         <tr xml:lang="en" lang="en" dir="ltr"
             tal:attributes="title description;

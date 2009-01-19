@@ -20,14 +20,7 @@ from logging import getLogger
 import os
 import re
 import sys
-
-try:
-    import xml.elementtree.cElementTree as etree
-except ImportError:
-    try:
-        import cElementTree as etree
-    except ImportError:
-        import elementtree.ElementTree as etree
+import cElementTree as etree
 
 import pytz
 
@@ -41,6 +34,7 @@ from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
     IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
     IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.errorlog import (
@@ -1298,8 +1292,8 @@ class HALDevice:
           These sub-devices can be identified by the device class their
           parent and by their USB vendor/product IDs, which are 0:0.
         """
-        bus = self.getProperty('info.bus')
-        if bus in (None, 'usb', 'ssb'):
+        bus = self.raw_bus
+        if bus in (None, 'scsi_host', 'ssb', 'usb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
@@ -1317,6 +1311,13 @@ class HALDevice:
             # info.bus == 'ssb' is used for "aspects" of Broadcom
             # Ethernet and WLAN devices, but like 'usb', they do not
             # represent separate devices.
+            #
+            # info.bus == 'scsi_host' is used by the HAL version in
+            # Intrepid for real and "fake" SCSI host controllers.
+            # (On Hardy, these nodes have no info.bus property.)
+            # HAL nodes with this bus value are sub-nodes for the
+            # "SCSI aspect" of another HAL node which represents the
+            # real device.
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
@@ -1722,6 +1723,7 @@ class ProcessingLoop(object):
         self.valid_submissions = 0
         self.invalid_submissions = 0
         self.finished = False
+        self.janitor = getUtility(ILaunchpadCelebrities).janitor
 
     def _validateSubmission(self, submission):
         submission.status = HWSubmissionProcessingStatus.PROCESSED
@@ -1742,8 +1744,14 @@ class ProcessingLoop(object):
         # a limit for an SQL query, convert it into an integer.
         chunk_size = int(chunk_size)
         submissions = getUtility(IHWSubmissionSet).getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
-        if submissions.count() < chunk_size:
+            HWSubmissionProcessingStatus.SUBMITTED,
+            user=self.janitor
+            )[:chunk_size]
+        # Listify the submissions, since we'll have to loop over each
+        # one anyway. This saves a COUNT query for getting the number of
+        # submissions
+        submissions = list(submissions)
+        if len(submissions) < chunk_size:
             self.finished = True
         for submission in submissions:
             try:

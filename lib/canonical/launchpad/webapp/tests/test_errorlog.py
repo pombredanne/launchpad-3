@@ -24,9 +24,11 @@ from zope.testing.loggingsupport import InstalledHandler
 from canonical.config import config
 from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.lazr.rest.declarations import webservice_error
 
 
 UTC = pytz.timezone('UTC')
@@ -428,6 +430,42 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
         self.assertEqual(lines[15], 'xmlrpc args=(1, 2)\n')
+
+    def test_raising_with_webservice_request(self):
+        # Test ErrorReportingUtility.raising() with a WebServiceRequest
+        # request. Only some exceptions result in OOPSes.
+        request = TestRequest()
+        directlyProvides(request, WebServiceLayer)
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        # Exceptions that don't use webservice_error result in OOPSes.
+        try:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
+            utility.raising(sys.exc_info(), request, now=now)
+            self.assertNotEqual(request.oopsid, None)
+
+        # Exceptions with a webservice_error in the 500 range result
+        # in OOPSes.
+        class InternalServerError(Exception):
+            webservice_error(500)
+        try:
+            raise InternalServerError("")
+        except InternalServerError:
+            utility.raising(sys.exc_info(), request, now=now)
+            self.assertNotEqual(request.oopsid, None)
+
+        # Exceptions with any other webservice_error do not result
+        # in OOPSes.
+        class BadDataError(Exception):
+            webservice_error(400)
+        try:
+            raise BadDataError("")
+        except BadDataError:
+            utility.raising(sys.exc_info(), request, now=now)
+            self.assertEqual(request.oopsid, None)
+
 
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""

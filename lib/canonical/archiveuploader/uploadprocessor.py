@@ -454,7 +454,7 @@ class UploadProcessor:
                 raise PPAUploadPathError(
                     "Could not find person '%s'" % person_name)
 
-            # For now, only a ppa_name of "default" is allowed.  If it's
+            # For now, only a ppa_name of "ppa" is allowed.  If it's
             # anything else we assume it's a distroseries name,
             # unless there's >3 parts in which case the upload path
             # is invalid.
@@ -463,11 +463,11 @@ class UploadProcessor:
             # paths, this check can disappear and distroseries
             # overrides will always appear in the 4th part.
 
-            if parts[1] == "default" and len(parts) >= 3:
+            if parts[1] == "ppa" and len(parts) >= 3:
                 # ppa_name and distro have been specified.
                 distribution_name = parts[2]
 
-            if parts[1] == "default" and len(parts) == 2:
+            if parts[1] == "ppa" and len(parts) == 2:
                 # ppa_name but no distro supplied, bail out.
                 raise UploadPathError(
                     "Path mismatch '%s'. "
@@ -476,7 +476,7 @@ class UploadProcessor:
                     "uploads."
                     % (relative_path))
 
-            if parts[1] != "default":
+            if parts[1] != "ppa":
                 distribution_name = parts[1]
 
             distribution = getUtility(IDistributionSet).getByName(
@@ -500,9 +500,9 @@ class UploadProcessor:
                     % (archive.title, archive.distribution.name))
 
             if len(parts) > 2:
-                if parts[1] != "default":
+                if parts[1] != "ppa":
                     suite_name = parts[2]
-                if parts[1] == "default" and len(parts) > 3:
+                if parts[1] == "ppa" and len(parts) > 3:
                     # parts[1] is the ppa name, so get the suite name
                     # again from the last part of the path.
                     suite_name = parts[3]

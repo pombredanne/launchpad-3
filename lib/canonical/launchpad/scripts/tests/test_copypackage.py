@@ -14,6 +14,7 @@ from canonical.archiveuploader.tests.test_uploadprocessor import (
 from canonical.config import config
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError)
+from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -443,6 +444,125 @@ class TestCopyPackage(TestCase):
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
         self.assertEqual(len(copied_source.getBuilds()), 0)
 
+    def _setupArchitectureGrowingScenario(self, architecturehintlist="all"):
+        """Prepare distroseries with different sets of architectures.
+
+        Ubuntu/warty has i386 and hppa, but only i386 is supported.
+        Ubuntu/hoary has i386 and hppa and both are supported.
+
+        Also create source and binary(ies) publication set called 'boing'
+        according to the given 'architecturehintlist'.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        # Ubuntu/warty only supports i386.
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+        active_warty_architectures = [
+            arch.architecturetag for arch in warty.architectures
+            if arch.getChroot()]
+        self.assertEqual(
+            active_warty_architectures, ['i386'])
+
+        # Setup ubuntu/hoary supporting i386 and hppa architetures.
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
+        active_hoary_architectures = [
+            arch.architecturetag for arch in hoary.architectures]
+        self.assertEqual(
+            sorted(active_hoary_architectures), ['hppa', 'i386'])
+
+        # We will create an architecture-specific source and its binaries
+        # for i386 in ubuntu/warty. They will be copied over.
+        ppa_source = test_publisher.getPubSource(
+            sourcename='boing', version='1.0', distroseries=warty,
+            architecturehintlist=architecturehintlist,
+            status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def testCopyArchitectureIndependentBinaries(self):
+        """Architecture independent binaries are propagated in the detination.
+
+        In the case when the destination distroseries supports more
+        architectures than the source (distroseries), `copy-package`
+        correctly identifies it and propagates architecture independent
+        binaries to the new architectures.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        self._setupArchitectureGrowingScenario()
+
+        # In terms of supported architectures, both warty & hoary supports
+        # i386 and hppa. We will create hoary/amd64 so we can verify if
+        # architecture independent binaries copied from warty will also
+        # end up in the new architecture.
+        amd64_family = ProcessorFamily.selectOneBy(name='amd64')
+        hoary = ubuntu.getSeries('hoary')
+        hoary_amd64 = hoary.newArch('amd64', amd64_family, True, hoary.owner)
+
+        # Copy the source and binaries from warty to hoary.
+        copy_helper = self.getCopier(
+            sourcename='boing', include_binaries=True,
+            from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 4)
+
+        # The source and the only existing binary were correctly copied.
+        # No build was created, but the architecture independent binary
+        # was propagated to the new architecture (hoary/amd64).
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary)
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+
+        self.assertEqual(len(copied_source.getBuilds()), 0)
+
+        architectures_with_binaries = [
+            binary.distroarchseries.architecturetag
+            for binary in copied_source.getPublishedBinaries()]
+        self.assertEqual(
+            architectures_with_binaries, ['amd64', 'hppa', 'i386'])
+
+    def testCopyCreatesMissingBuilds(self):
+        """Copying source and binaries also create missing builds.
+
+        When source and binaries are copied to a distroseries which supports
+        more architectures than the one where they were built, copy-package
+        should create builds for the new architectures.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        self._setupArchitectureGrowingScenario(architecturehintlist="any")
+
+        copy_helper = self.getCopier(
+            sourcename='boing', include_binaries=True,
+            from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        # Copy the source and the i386 binary from warty to hoary.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
+
+        # The source and the only existing binary were correctly copied.
+        hoary = ubuntu.getSeries('hoary')
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary)
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+
+        [copied_binary] = copied_source.getPublishedBinaries()
+        self.assertEqual(
+            copied_binary.displayname, 'foo-bin 1.0 in hoary i386')
+
+        # A new build was created in the hoary context for the *extra*
+        # architecture (hppa).
+        [new_build] = copied_source.getBuilds()
+        self.assertEqual(
+            new_build.title,
+            'hppa build of boing 1.0 in ubuntu hoary RELEASE')
+
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.
 
@@ -716,7 +836,7 @@ class TestCopyPackage(TestCase):
 
         self.assertRaisesWithContent(
             PackageLocationError,
-            "Could not find a PPA for slatibartfast named default",
+            "Could not find a PPA for slatibartfast named ppa",
             copy_helper.mainTask)
 
     def testCrossPartnerCopiesFails(self):
@@ -761,6 +881,44 @@ class TestCopyPackage(TestCase):
             SoyuzScriptError,
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
+
+    def testCopyFromPrivateToPublicPPAs(self):
+        """Check if copying private sources into public archives is denied.
+
+        Private source files can only be published in private archives,
+        because builders do not have access to the restricted librarian.
+
+        Builders only fetch the sources files from the repository itself
+        for private PPAs. If we copy a restricted file into a public PPA
+        builders will not be able to fetch it.
+        """
+        # Set up a private PPA.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        cprov.archive.buildd_secret = "secret"
+        cprov.archive.private = True
+
+        # Create a source and binary private publication.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.0', distroseries=hoary)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary)
+
+        # Run the copy package script storing the logged information.
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='cprov', include_binaries=True,
+            from_suite='hoary', to_suite='hoary')
+        copy_helper.logger = TestLogger()
+        copied = copy_helper.mainTask()
+
+        # Nothing was copied and an error message was printed explaining why.
+        self.assertEqual(len(copied), 0)
+        self.assertEqual(
+            copy_helper.logger.lines[-1],
+            'foo 1.0 in hoary '
+            '(Cannot copy private source into public archives.)')
 
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
@@ -838,7 +996,7 @@ class TestCopyPackage(TestCase):
         # Now we can invoke the unembargo script and check its results.
         test_args = [
             "--ppa", "cprov",
-            "--ppa-name", "default",
+            "--ppa-name", "ppa",
             "-s", "%s" % ppa_source.distroseries.name + "-security",
             "foo"
             ]
@@ -923,11 +1081,14 @@ class TestCopyPackage(TestCase):
         and security pockets.
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
         cprov = getUtility(IPersonSet).getByName("cprov")
 
+        warty = ubuntu.getSeries('warty')
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
+
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
 
         def create_source(version, archive, pocket):
             source = test_publisher.getPubSource(
