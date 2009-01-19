@@ -77,6 +77,10 @@
 
     <link rel="stylesheet" type="text/css"
         tal:attributes="href
+        string:${icingroot}/lazr/build/lazr/assets/skins/sam/lazr.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
         string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
         />
 
@@ -115,6 +119,8 @@
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
       <script type="text/javascript"
@@ -166,7 +172,7 @@
   </head>
   <body
     id="document"
-    tal:attributes="class string:tab-${view/menu:selectedfacetname} ${view/macro:pagetype}"
+    tal:attributes="class string:tab-${view/menu:selectedfacetname} ${view/macro:pagetype} yui-skin-sam"
   >
     <div id="locationbar">
       <tal:login replace="structure context/@@login_status" />
