@@ -96,6 +96,14 @@
       facet="overview"
       name="+ppa-row"
       />
+    <browser:page
+      name="+portlet-privacy"
+      template="../templates/archive-portlet-privacy.pt"
+      />
+    <browser:page
+      template="../templates/archive-repository-size.pt"
+      name="+repository-size"
+      />
   </browser:pages>
 
   <browser:pages
@@ -110,10 +118,6 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      />
-    <browser:page
-      name="+portlet-privacy"
-      template="../templates/archive-portlet-privacy.pt"
       />
   </browser:pages>
 
