@@ -15,7 +15,9 @@ from storm.locals import And
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.database import Branch
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
@@ -155,6 +157,8 @@ class PackageNamespace(_BaseNamespace):
     implements(IBranchNamespace)
 
     def __init__(self, person, sourcepackage):
+        if not config.codehosting.package_branches_enabled:
+            raise Unauthorized("Package branches are disabled.")
         self.owner = person
         self.sourcepackage = sourcepackage
 
