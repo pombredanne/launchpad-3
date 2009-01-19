@@ -29,7 +29,8 @@
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
                     branch_format repository_format control_format stacked_on
-                    createBranchRevisionFromIDs distroseries sourcepackagename"
+                    createBranchRevisionFromIDs distroseries sourcepackagename
+                    addToLaunchBag distribution sourcepackage"
                     />
     <require
         permission="launchpad.Edit"

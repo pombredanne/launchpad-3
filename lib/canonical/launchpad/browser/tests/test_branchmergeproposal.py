@@ -163,8 +163,8 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.target_branch = self.factory.makeBranch()
-        self.source_branch = self.factory.makeBranch(
+        self.target_branch = self.factory.makeProductBranch()
+        self.source_branch = self.factory.makeProductBranch(
             product=self.target_branch.product)
         self.user = self.factory.makePerson()
         login_person(self.user)
