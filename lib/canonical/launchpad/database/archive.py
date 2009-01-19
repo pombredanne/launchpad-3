@@ -21,6 +21,7 @@ from zope.interface import alsoProvides, implements
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -31,6 +32,8 @@ from canonical.launchpad.components.tokens import (
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
+from canonical.launchpad.database.archivesubscriber import (
+    ArchiveSubscriber, ArchiveSubscriberStatus)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -1081,6 +1084,27 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(archive_auth_token)
         return archive_auth_token
+
+    def newSubscription(self, subscriber, registrant, date_expires=None,
+                        description=None):
+        """See `IArchive`."""
+        # XXX 2009-01-19 Julian
+        # This method is currently a stub.  It needs a lot more work to
+        # figure out what to do in the case of overlapping
+        # subscriptions, and also to add the ArchiveAuthTokens for the
+        # subscriber (which may also be a team and thus require
+        # expanding to make one token per member).
+        subscription = ArchiveSubscriber()
+        subscription.archive = self
+        subscription.registrant = registrant
+        subscription.subscriber = subscriber
+        subscription.date_expires = date_expires
+        subscription.description = description
+        subscription.status = ArchiveSubscriberStatus.ACTIVE
+        subscription.date_created = UTC_NOW
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.add(subscription)
+        return subscription
 
 
 class ArchiveSet:

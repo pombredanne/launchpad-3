@@ -16,6 +16,8 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthToken, IArchiveAuthTokenSet)
+from canonical.launchpad.interfaces.archivesubscription import (
+    IArchiveSubscription)
 from canonical.launchpad.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -1837,7 +1839,7 @@ class AppendArchive(ViewArchive):
 
 
 class ViewArchiveAuthToken(AuthorizationBase):
-    """Restrict editing of archive tokens.
+    """Restrict viewing of archive tokens.
     
     The user just needs to be mentioned in the token, have append privilege
     to the archive or be an admin.
@@ -1860,6 +1862,38 @@ class EditArchiveAuthToken(AuthorizationBase):
     """
     permission = "launchpad.Edit"
     usedfor = IArchiveAuthToken
+
+    def checkAuthenticated(self, user):
+        auth_append = AppendArchive(self.obj.archive)
+        if auth_append.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class ViewArchiveSubscriber(AuthorizationBase):
+    """Restrict viewing of archive subscribers.
+
+    The user should be the subscriber, have append privilege to the
+    archive or be an admin.
+    """
+    permission = "launchpad.View"
+    usedfor = IArchiveSubscription
+
+    def checkAuthenticated(self, user):
+        if user.inTeam(self.obj.subscriber):
+            return True
+        auth_edit = EditArchiveSubscriber(self.obj)
+        return auth_edit.checkAuthenticated(user)
+
+
+class EditArchiveSubscriber(AuthorizationBase):
+    """Restrict editing of archive subscribers.
+
+    The user should have append privilege to the archive or be an admin.
+    """
+    permission = "launchpad.Edit"
+    usedfor = IArchiveSubscription
 
     def checkAuthenticated(self, user):
         auth_append = AppendArchive(self.obj.archive)

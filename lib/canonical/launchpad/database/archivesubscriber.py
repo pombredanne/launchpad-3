@@ -12,10 +12,13 @@ import pytz
 
 from storm.locals import DateTime, Int, Reference, Storm, Unicode
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriber)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class ArchiveSubscriber(Storm):
@@ -49,3 +52,22 @@ class ArchiveSubscriber(Storm):
 
     cancelled_by_id = Int(name='cancelled_by', allow_none=True)
     cancelled_by = Reference(cancelled_by_id, 'Person.id')
+
+
+class ArchiveSubscriberSet:
+    """See `IArchiveSubscriberSet`."""
+
+    def getBySubscriber(self, subscriber):
+        """See `IArchiveSubscriberSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchiveSubscriber,
+            ArchiveSubscriber.subscriber == subscriber)
+
+    def getByArchive(self, archive):
+        """See `IArchiveSubscriberSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchiveSubscriber,
+            ArchiveSubscriber.archive == archive)
+

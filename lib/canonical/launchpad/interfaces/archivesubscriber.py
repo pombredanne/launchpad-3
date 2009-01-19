@@ -41,8 +41,8 @@ class ArchiveSubscriberStatus(DBEnumeratedType):
         """)
 
 
-class IArchiveSubscriber(Interface):
-    """An interface for archive subscribers."""
+class IArchiveSubscriberView(Interface):
+    """An interface for launchpad.View ops on archive subscribers."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -80,20 +80,27 @@ class IArchiveSubscriber(Interface):
         description=_("The timestamp when the subscription was cancelled."))
 
 
+class IArchiveSubscriberEdit(Interface):
+    """An interface for launchpad.Edit ops on archive subscribers."""
+
+
+class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
+    """An interface for archive subscribers."""
+
+
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
-    def new(archive, registrant, subscriber, status=None, date_created=None,
-            date_expires=None, description=None):
-        """Make a new token.
 
-        :param archive: An IArchive for the new token
-        :param registrant: An IPerson who is creating this token
-        :param subscriber: An IPerson whom this token is for
-        :param status: Optional `ArchiveAuthTokenStatus`, defaults to ACTIVE
-        :param date_created: Optional, defaults to now
-        :param date_expires: Optional, defaults to None
-        :param description: Optional, defaults to None
+    def getBySubscriber(subscriber):
+        """Return all the subscriptions for a person.
 
-        :return: An object conforming to  IArchiveAuthToken
+        :param subscriber: An `IPerson` for whom to return all
+            `ArchiveSubscriber` records.
         """
 
+    def getByArchive(archive):
+        """Return all the subscripions for an archive.
+
+        :param archive: An `IArchive` for which to return all
+            `ArchiveSubscriber` records.
+        """
