@@ -19,6 +19,7 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView, BranchView)
+from canonical.launchpad.browser.person import PersonBranchesView
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
@@ -236,6 +237,27 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         self.assertIs(None, branch.reviewer)
         # Last modified has not been updated.
         self.assertEqual(modified_date, branch.date_last_modified)
+
+
+class TestBranchBzrIdentity(TestCaseWithFactory):
+    """Test the BranchReviewerEditView view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_dev_focus_identity(self):
+        # A branch that is a development focus branch, should show using the
+        # short name on the listing.
+        product = self.factory.makeProduct(name="fooix")
+        branch = self.factory.makeProductBranch(product=product)
+        # To avoid dealing with admins, just log in the product owner to set
+        # the development focus branch.
+        login_person(product.owner)
+        product.development_focus.user_branch = branch
+        view = PersonBranchesView(branch.owner, LaunchpadTestRequest())
+        view.initialize()
+        navigator = view.branches()
+        [decorated_branch] = navigator.branches()
+        self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
 
 
 def test_suite():
