@@ -126,19 +126,18 @@ HWDevice.drivers returns the list of drivers associtaed with this device.
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
-    id: 2
-    license: None
-    name: u'usb'
-    package_name: u'linux-image-2.6.24-19-generic'
-    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
     id: 5
     license: None
     name: u'hub'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/5'
-
+    id: 2
+    license: None
+    name: u'usb'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
 
 
 === Drivers and Driver Queries ===
