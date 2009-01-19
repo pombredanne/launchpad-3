@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
     IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
     PersonCreationRationale, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
@@ -758,11 +759,12 @@ class TestBugTracker:
     It exposes two bug watches, one of them is guaranteed to trigger an error.
     """
     baseurl = 'http://example.com/'
+    bugtrackertype = BugTrackerType.BUGZILLA
 
     def __init__(self, test_bug_one, test_bug_two):
         self.test_bug_one = test_bug_one
         self.test_bug_two = test_bug_two
-    
+
     def getBugWatchesNeedingUpdate(self, hours):
         """Returns a sequence of teo bug watches for testing."""
         return TestResultSequence([
@@ -831,9 +833,9 @@ class TestBugWatchUpdater(BugWatchUpdater):
         self.bugtracker = bug_tracker
         super(TestBugWatchUpdater, self).updateBugTracker(bug_tracker)
 
-    def _getExternalBugTracker(self, bug_tracker):
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """See `BugWatchUpdater`."""
-        return TestExternalBugTracker(bug_tracker.baseurl)
+        return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
     def _getBugWatch(self, bug_watch_id):
         """Returns a mock bug watch object.

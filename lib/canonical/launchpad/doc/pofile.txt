@@ -394,8 +394,10 @@ But the unprivileged account should not.
 And if he tries to update translations, the system blocks such
 breakage.
 
-    >>> translation_message = pofile_es.getCurrentTranslationMessage(
-    ...     u'evolution addressbook')
+    >>> potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
+    ...     singular_text=u'evolution addressbook')
+    >>> translation_message = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es.language, pofile_es.variant)
     >>> is_imported = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message.potmsgset.updateTranslation(

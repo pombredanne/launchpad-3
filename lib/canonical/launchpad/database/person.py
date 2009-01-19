@@ -66,7 +66,7 @@ from canonical.launchpad.database.translationrelicensingagreement import (
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet,
@@ -1146,6 +1146,7 @@ class Person(
         """See `IPerson`."""
         # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
+
         clauses = ["""
             SELECT DISTINCT Product.id
             FROM Product, TeamParticipation
@@ -1426,7 +1427,7 @@ class Person(
         assert self.is_team
         to_addrs = set()
         for person in self.getDirectAdministrators():
-            to_addrs.update(contactEmailAddresses(person))
+            to_addrs.update(get_contact_email_addresses(person))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,

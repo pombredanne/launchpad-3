@@ -94,9 +94,9 @@ When Celso's PPA becomes private ...
 Only Celso (or anyone who participates on the PPA owner team) has
 access to the PPA publications.
 
-    >>> response = webservice.named_get(
+    >>> cprov_srcs_response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources')
-    >>> print response.getOutput()
+    >>> print cprov_srcs_response.getOutput()
     HTTP/1.1 200 Ok
     ...
 
@@ -107,3 +107,49 @@ Any other user attempt would result in a 401 error.
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
     ...
+
+== IArchive.getBuildSummariesForSourceIds() ==
+
+A summary of the build statuses for source packages in an archive is
+available via a custom operation on IArchive,
+getBuildSummariesForSourceIds().
+
+First, we grab the ids of two source package publishing records from
+cprov's ppa:
+
+    >>> source_ids = []
+    >>> cprov_srcs = cprov_srcs_response.jsonBody()
+    >>> src_link = cprov_srcs['entries'][0]['self_link']
+
+The src_link will be of the form: 
+u'http://api.launchpad.dev/beta/~cprov/+archive/+sourcepub/27'
+so:
+
+    >>> source_id = int(src_link.split('/')[-1])
+    >>> source_ids.append(source_id)
+    >>> src_link = cprov_srcs['entries'][1]['self_link']
+    >>> source_id = int(src_link.split('/')[-1])
+    >>> source_ids.append(source_id)
+
+Now use the source ids to call the getBuildSummariesForSourceIds web
+service:
+
+    >>> build_summaries = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getBuildSummariesForSourceIds',
+    ...     source_ids=source_ids).jsonBody()
+
+Create a helper function to print the results:
+
+    >>> def print_build_summaries(summaries):
+    ...     for id, summary in summaries.items():
+    ...         arch_tags = [build['arch_tag'] for build in summary['builds']]
+    ...         print "Source ID %s: %s (%s)" % (id, summary['status'],
+    ...                                          arch_tags)
+
+The results contain an entry for each source ID, with the summary status
+and a list of all the relevant builds for the summary:
+
+    >>> print_build_summaries(build_summaries)
+    Source ID 27: Failed to build ([u'i386'])
+    Source ID 28: Successfully built ([u'i386'])
+

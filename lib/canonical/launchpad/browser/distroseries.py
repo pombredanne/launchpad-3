@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """View classes related to `IDistroSeries`."""
 
@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, NotFoundError)
+    ILaunchBag, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -341,6 +341,36 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    def checkTranslationsViewable(self):
+        """Check that these translations are visible to the current user.
+
+        Launchpad admins, Translations admins, and users with admin
+        rights on the `DistroSeries` are always allowed.  For others
+        this delegates to `IDistroSeries.checkTranslationsViewable`,
+        which raises `TranslationUnavailable` if the translations are
+        set to be hidden.
+
+        :return: Returns normally if this series' translations are
+            viewable to the current user.
+        :raise TranslationUnavailable: if this series' translations are
+            hidden and the user is not one of the limited caste that is
+            allowed to access them.
+        """
+        if check_permission('launchpad.Admin', self.context):
+            # Anyone with admin rights on this series passes.  This
+            # includes Launchpad admins.
+            return
+
+        user = self.user
+        experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if user is not None and user.inTeam(experts):
+            # Translations admins also pass.
+            return
+
+        # Everyone else passes only if translations are viewable to the
+        # public.
+        self.context.checkTranslationsViewable()
 
     def distroserieslanguages(self):
         """Produces a list containing a DistroSeriesLanguage object for

@@ -21,7 +21,6 @@ from bzrlib.transport import get_transport, Server
 from twisted.python.filepath import FilePath
 from twisted.python.util import sibpath
 
-from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
@@ -101,7 +100,7 @@ class CodeHostingTac(TacTestSetup):
     @property
     def tacfile(self):
         return os.path.abspath(
-            os.path.join(get_rocketfuel_root(), 'daemons/sftp.tac'))
+            os.path.join(config.root, 'daemons', 'sftp.tac'))
 
     @property
     def logfile(self):

@@ -31,7 +31,10 @@ __all__ = [
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
+    'IBranchDiffJob',
+    'IBranchDiffJobSource',
     'IBranchBatchNavigator',
+    'IBranchJob',
     'IBranchListingFilter',
     'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
@@ -68,7 +71,7 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat7)
 from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
-from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
+from zope.schema import Bool, Int, Choice, Object, Text, TextLine, Datetime
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
@@ -82,6 +85,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -1420,6 +1424,46 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
+
+
+class IBranchJob(Interface):
+    """A job related to a branch."""
+
+    branch = Object(
+        title=_('Branch to use for this diff'), required=True,
+        schema=IBranch)
+
+    job = Object(schema=IJob, required=True)
+
+    metadata = Attribute('A dict of data about the job.')
+
+    def destroySelf():
+        """Destroy this object."""
+
+
+class IBranchDiffJob(Interface):
+    """A job to create a static diff from a branch."""
+
+    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
+
+    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
+
+    def run():
+        """Acquire the static diff this job requires.
+
+        :return: the generated StaticDiff.
+        """
+
+
+class IBranchDiffJobSource(Interface):
+
+    def create(branch, from_revision_spec, to_revision_spec):
+        """Construct a new object that implements IBranchDiffJob.
+
+        :param branch: The database branch to diff.
+        :param from_revision_spec: The revision spec to diff from.
+        :param to_revision_spec: The revision spec to diff to.
+        """
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):
