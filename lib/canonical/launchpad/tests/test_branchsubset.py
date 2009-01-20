@@ -17,7 +17,7 @@ class TestProductBranchSubset(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeSubset(self, product):
-        return ProductBranchSubset(product)
+        return IBranchSubset(product)
 
     def test_provides_interface(self):
         product = self.factory.makeProduct()
@@ -44,8 +44,7 @@ class TestAdapter(TestCaseWithFactory):
     def test_product(self):
         product = self.factory.makeProduct()
         subset = IBranchSubset(product)
-        # XXX: Assert that it adapted to the right sort of object. Maybe we
-        # should check type here?
+        self.assertIsInstance(subset, ProductBranchSubset)
         self.assertEqual(product.name, subset.name)
 
 
