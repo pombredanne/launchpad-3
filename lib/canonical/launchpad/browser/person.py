@@ -5229,8 +5229,9 @@ class ContactViaWebNotificationRecipientSet:
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
-                'the "Contact this team" link on the ' '%s team page '
-                'to each\nmember directly' % person_or_team.displayname)
+                'the "Contact this team" link on the %s\n'
+                'team page to each member directly' %
+                person_or_team.displayname)
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         return (reason, header)
 
