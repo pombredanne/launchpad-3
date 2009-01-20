@@ -1085,11 +1085,12 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
         """Make a new `POTMsgSet` in the given template."""
-        if sequence is None:
-            sequence = self.getUniqueInteger()
         if singular is None and plural is None:
             singular = self.getUniqueString()
-        return potemplate.createMessageSetFromText(singular, plural)
+        potmsgset = potemplate.createMessageSetFromText(singular, plural)
+        if sequence is not None:
+            potmsgset.setSequence(potemplate, sequence)
+        return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, reviewer=None,

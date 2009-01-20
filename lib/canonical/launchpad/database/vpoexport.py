@@ -116,6 +116,24 @@ class VPOExportSet:
 
         return self._select(where=where)
 
+    def get_pofile_changed_rows(self, pofile):
+        """See `IVPOExportSet`."""
+        where = """
+            potemplate = %s AND
+            language = %s AND
+            sequence <> 0 AND
+            is_current IS TRUE AND
+            is_imported IS FALSE
+            """ % sqlvalues(pofile.potemplate, pofile.language)
+
+        if pofile.variant:
+            where += ' AND variant = %s' % sqlvalues(
+                pofile.variant.encode('UTF-8'))
+        else:
+            where += ' AND variant is NULL'
+
+        return self._select(where=where)
+
     def get_distroseries_pofiles(self, series, date=None, component=None,
                                  languagepack=None):
         """See `IVPOExport`.

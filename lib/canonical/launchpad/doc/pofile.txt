@@ -1189,9 +1189,12 @@ another.
     >>> evolution_ja = evolution_22.getPOFileByLang('ja')
 
 Getting the translation file data is just a matter of adapting the
-object to the ITranslationFileData interface.
+object to the ITranslationFileData interface. Since there are 
+multiple adapters for differnt purposes, this adapter is named.
 
-    >>> translation_file_data = ITranslationFileData(evolution_ja)
+    >>> from zope.component import getAdapter
+    >>> translation_file_data = getAdapter(
+    ...     evolution_ja, ITranslationFileData, 'all_messages')
 
 We get an updated header based on some metadata in our database
 instead of the imported one stored in POFile.header.
@@ -1233,6 +1236,18 @@ And the PO Revision Date matches when was the PO file last changed.
     >>> print evolution_ja.date_changed
     2005-10-11 23:08:01.899322+00:00
 
+
+== POFileToChangedFromPackagedAdapter ==
+
+Another adapter to the ITranslationFileData interface includes only those
+messages that were changed from their packaged version. The class is called
+POFileToChangedFromPackagedAdapter and it is registered as a named adapter,
+too.
+
+    >>> translation_file_data = getAdapter(
+    ...     evolution_ja, ITranslationFileData, 'changed_messages')
+    >>> ITranslationFileData.providedBy(translation_file_data)
+    True
 
 = POFile Security tests =
 
