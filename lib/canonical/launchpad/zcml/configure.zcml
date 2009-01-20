@@ -9,6 +9,7 @@
     <include file="announcement.zcml" />
     <include file="archivearch.zcml" />
     <include file="archiveauthtoken.zcml" />
+    <include file="archivesubscriber.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />

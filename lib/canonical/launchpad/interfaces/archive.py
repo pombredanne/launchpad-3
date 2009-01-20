@@ -763,6 +763,24 @@ class IArchiveAppend(Interface):
         :return: A new IArchiveAuthToken
         """
 
+    def newSubscription(subscriber, registrant, date_expires=None,
+                        description=None):
+        """Create a new subscribtion to this archive.
+
+        Create an `ArchiveSubscriber` record which allows an `IPerson` to
+        access a private repository.
+
+        :param subscriber: An `IPerson` who is allowed to access the
+        repository for this archive.
+        :param registrant: An `IPerson` who created this subscription.
+        :param date_expires: When the subscription should expire; None if
+            it should not expire (default).
+        :param description: An option textual description of the subscription
+            being created.
+
+        :return: The `IArchiveSubscriber` that was created.
+        """
+
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveView):
     """Main Archive interface."""
