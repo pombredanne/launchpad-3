@@ -619,7 +619,7 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.http_url
+            buildlog_url = canonical_url(self) + "/+files/" + self.buildlog.filename
             builder_url = canonical_url(self.builder)
 
         if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
