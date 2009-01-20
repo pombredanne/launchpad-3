@@ -28,6 +28,7 @@ class ProductBranchSubset:
 
     @property
     def count(self):
+        # XXX: Is 'count' the best name for this? - jml
         return self.getBranches().count()
 
     def getBranches(self):

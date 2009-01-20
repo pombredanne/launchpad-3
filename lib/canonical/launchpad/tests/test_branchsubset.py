@@ -51,7 +51,6 @@ class TestProductBranchSubset(TestCaseWithFactory):
     def test_count_empty(self):
         product = self.factory.makeProduct()
         subset = self.makeSubset(product)
-        # XXX: Is 'count' the best name for this? - jml
         self.assertEqual(0, subset.count)
 
     def test_count_non_empty(self):
@@ -99,7 +98,6 @@ class TestPersonBranchSubset(TestCaseWithFactory):
     def test_count_empty(self):
         person = self.factory.makePerson()
         subset = self.makeSubset(person)
-        # XXX: Is 'count' the best name for this? - jml
         self.assertEqual(0, subset.count)
 
     def test_count_non_empty(self):
