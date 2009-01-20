@@ -14,8 +14,7 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiveauthtoken import (
-    IArchiveAuthToken, IArchiveAuthTokenSet)
+from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriber)
 from canonical.launchpad.interfaces.branch import (
