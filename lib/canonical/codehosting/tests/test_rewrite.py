@@ -102,9 +102,8 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
         self.assertEqual(expected, output)
-        # XXX MichaelHudson, bug=309240: The script currently logs to stderr,
-        # which it shouldn't do.
-        #self.assertEqual('', err)
+        # The script produces logging output, but not to stderr.
+        self.assertEqual('', err)
 
 
 def test_suite():
