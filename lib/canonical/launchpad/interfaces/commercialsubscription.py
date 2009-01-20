@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to ICommercialSubscription."""
@@ -9,8 +9,12 @@ __all__ = [
     'ICommercialSubscription',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Text, TextLine
+from zope.interface import Interface
+from zope.schema import Bool, Datetime, Int, Text, TextLine
+
+from canonical.lazr.fields import ReferenceChoice
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -22,35 +26,59 @@ class ICommercialSubscription(Interface):
     If the product has a license which does not qualify for free
     hosting, a subscription needs to be purchased.
     """
-    product = Attribute("Product which has commercial subscription")
+    # Mark commercial subscriptions as exported entries for the Launchpad API.
+    export_as_webservice_entry()
 
-    date_created = Datetime(
-        title=_('Date Created'),
-        description=_("The date the first subscription was applied."))
+    id = Int(title=_('ID'), readonly=True, required=True)
 
-    date_last_modified = Datetime(
-        title=_('Date Modified'),
-        description=_("The date the subscription was modified."))
+    product = exported(
+        ReferenceChoice(
+            title=_("Product which has commercial subscription"),
+            required=True,
+            readonly=True,
+            vocabulary='Product',
+            # Really IProduct.  Set properly below.
+            schema=Interface,
+            description=_(
+                "Project for which this commercial subscription is "
+                "applied.")))
 
-    date_starts = Datetime(
-        title=_('Beginning of Subscription'),
-        description=_("The date the subscription starts."))
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'),
+            readonly=True,
+            description=_("The date the first subscription was applied.")))
 
-    date_expires = Datetime(
-        title=_('Expiration Date'),
-        description=_("The expiration date of the subscription."))
+    date_last_modified = exported(
+        Datetime(
+            title=_('Date Modified'),
+            description=_("The date the subscription was modified.")))
 
-    registrant = PublicPersonChoice(
-        title=_('Registrant'),
-        required=True,
-        vocabulary='ValidPerson',
-        description=_("Person who redeemed the voucher."))
+    date_starts = exported(
+        Datetime(
+            title=_('Beginning of Subscription'),
+            description=_("The date the subscription starts.")))
 
-    purchaser = PublicPersonChoice(
-        title=_('Registrant'),
-        required=True,
-        vocabulary='ValidPerson',
-        description=_("Person who purchased the voucher."))
+    date_expires = exported(
+        Datetime(
+            title=_('Expiration Date'),
+            description=_("The expiration date of the subscription.")))
+
+    registrant = exported(
+        PublicPersonChoice(
+            title=_('Registrant'),
+            required=True,
+            readonly=True,
+            vocabulary='ValidPerson',
+            description=_("Person who redeemed the voucher.")))
+
+    purchaser = exported(
+        PublicPersonChoice(
+            title=_('Purchaser'),
+            required=True,
+            readonly=True,
+            vocabulary='ValidPerson',
+            description=_("Person who purchased the voucher.")))
 
     sales_system_id = TextLine(
         title=_('Voucher'),
@@ -60,17 +88,13 @@ class ICommercialSubscription(Interface):
         title=_("Whiteboard"), required=False,
         description=_("Notes on this project subscription."))
 
-    is_active = Bool(
-        title=_('Active'),
-        description=_("Whether this subscription is active."))
+    is_active = exported(
+        Bool(
+            title=_('Active'),
+            readonly=True,
+            description=_("Whether this subscription is active.")))
 
 
-#class ICommercialSubscriptionList(Interface):
-#    """The controls for a voucher listing."""
-#    sourcepackagename = Choice(
-#        title=_("Source Package Name"), required=False,
-#        description=_("The source package in which the bug occurs. "
-#        "Leave blank if you are not sure."),
-#        vocabulary='SourcePackageName')
-#    distribution = Choice(
-#        title=_("Distribution"), required=False, vocabulary='Distribution')
+# Fix circular dependency issues.
+from canonical.launchpad.interfaces.product import IProduct
+ICommercialSubscription['product'].schema = IProduct

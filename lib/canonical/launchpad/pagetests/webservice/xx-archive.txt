@@ -1,20 +1,19 @@
 = Archives =
 
 For archives we publish a subset of their attributes.
-This works for PPAs:
 
-    >>> cprov_archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
     >>> print cprov_archive['self_link']
-    http://.../~cprov/+archive
+    http://.../~cprov/+archive/ppa
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
     description: u'packages to help my friends.'
     distribution_link: u'http://.../ubuntu'
-    name: u'default'
+    name: u'ppa'
     owner_link: u'http://.../~cprov'
     resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+archive'
+    self_link: u'http://.../~cprov/+archive/ppa'
     title: u'PPA for Celso Providelo'
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
@@ -561,3 +560,51 @@ allowed to call the method at all.
     ...
 
 
+=== Copy privacy mismatch ===
+
+A CannotCopy error, giving the reason "Cannot copy private source into
+public archives." is raised if such operation is requested.
+
+Let's make Celso's PPA private and create a private source publication.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> cprov.archive.buildd_secret = 'boing'
+    >>> cprov.archive.private = True
+
+    >>> private_publication = test_publisher.getPubSource(
+    ...     sourcename="private", version="1.0", archive=cprov.archive)
+
+    >>> logout()
+
+Now we need a webservice with rights to read private data in order to
+be able to access Celso's private PPA.
+
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov, permission=OAuthPermission.WRITE_PRIVATE)
+
+When we try to copy the private source to the primary archive, which
+is public, the 'privacy mismatch' error is raised. The behaviour is
+the same for `syncSource` or `syncSources` operations.
+
+    >>> print cprov_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='private', version="1.0", to_pocket='release',
+    ...     from_archive=cprov_archive['self_link'],
+    ...     to_series="hoary")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: private 1.0 in hoary
+    (Cannot copy private source into public archives.)
+    <BLANKLINE>
+
+    >>> print cprov_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSources', {},
+    ...     source_names=['private'], to_pocket='release',
+    ...     from_archive=cprov_archive['self_link'],
+    ...     to_series="hoary")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: private 1.0 in hoary
+    (Cannot copy private source into public archives.)
+    <BLANKLINE>

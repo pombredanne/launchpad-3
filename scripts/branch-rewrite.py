@@ -1,6 +1,13 @@
 #!/usr/bin/python2.4 -u
 # pylint: disable-msg=W0403
 
+"""Script intended to run as a :prg: RewriteMap.
+
+See http://httpd.apache.org/docs/2.2/mod/mod_rewrite.html#rewritemap for the
+documentation of the very simple 'protocol' Apache uses to talk to us, and
+canonical.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
+"""
+
 import _pythonpath
 
 import sys
@@ -11,9 +18,6 @@ from canonical.codehosting.rewrite import BranchRewriter
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
 
-# XXX MichaelHudson, bug=309240: This script currently logs to stderr, which
-# will end up in Apache's error.log.  It should instead log to a file
-# specified in the config, and unhandled exceptions should log an oops.
 
 class BranchRewriteScript(LaunchpadScript):
 
@@ -21,6 +25,18 @@ class BranchRewriteScript(LaunchpadScript):
         LaunchpadScript.__init__(self, name)
         proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
         self.rewriter = BranchRewriter(self.logger, BlockingProxy(proxy))
+
+    def add_my_options(self):
+        """Make the logging go to a file by default.
+
+        Because this script is run by Apache, logging to stderr results in our
+        log output ending up in Apache's error.log, which is not so useful.
+        We hack the OptionParser to set the default (which will be applied;
+        Apache doesn't pass any arguments to the script it starts up) to a
+        value from the config.
+        """
+        log_file_location = config.codehosting.rewrite_script_log_file
+        self.parser.defaults['log_file'] = log_file_location
 
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=None):
@@ -41,7 +57,7 @@ class BranchRewriteScript(LaunchpadScript):
             except KeyboardInterrupt:
                 sys.exit()
             except:
-                self.logger.exception('Oops.')
+                self.logger.exception('Exception occurred:')
                 print "NULL"
 
 

@@ -30,6 +30,18 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
+def specified(option):
+    """Return False if option was not supplied or is an empty string.
+
+    Return True otherwise.
+    """
+    if option is None:
+        return False
+    if isinstance(option, basestring) and option.strip() == '':
+        return False
+    return True
+
+
 class ArchivePopulator(SoyuzScript):
     """
     Create a copy archive and populate it with packages.
@@ -49,7 +61,7 @@ class ArchivePopulator(SoyuzScript):
     def populateArchive(
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
-        include_binaries, proc_families):
+        include_binaries, proc_family_names, merge_copy_flag):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -69,7 +81,10 @@ class ArchivePopulator(SoyuzScript):
         :param reason: reason for the package copy operation.
 
         :param include_binaries: whether binaries should be copied as well.
-        :param proc_families: processor families for which to create builds.
+        :param proc_family_names: processor families for which to create
+            builds.
+        :param merge_copy_flag: whether this is a repeated population of an
+            existing copy archive.
         """
         def loadProcessorFamilies(proc_family_names):
             """Load processor families for specified family names."""
@@ -119,7 +134,7 @@ class ArchivePopulator(SoyuzScript):
         # Use a PPA if specified and existent.
         if from_user is not None:
             origin_archive = archive_set.getPPAByDistributionAndOwnerName(
-                the_origin.distribution, from_user)
+                the_origin.distribution, from_user, from_archive)
             if origin_archive is not None:
                 the_origin.archive = origin_archive
             else:
@@ -140,11 +155,24 @@ class ArchivePopulator(SoyuzScript):
         merge_copy = False
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
+            if not specified(reason):
+                raise SoyuzScriptError(
+                    "error: reason for copy archive creation not specified.")
+            if merge_copy_flag:
+                raise SoyuzScriptError(
+                    "error: merge copy requested for non-existing archive.")
+            # The processor families should only be specified if the
+            # destination copy archive does not exist yet and needs to be
+            # created.
+            if not specified(proc_family_names):
+                raise SoyuzScriptError(
+                    "error: processor families not specified.")
+
             # First load the processor families for the specified family names
             # from the database. This will fail if an invalid processor family
             # name was specified on the command line; that's why it should be
             # done before creating the copy archive.
-            proc_families = loadProcessorFamilies(self.options.proc_families)
+            proc_families = loadProcessorFamilies(proc_family_names)
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, to_archive,
                 the_destination.distribution, reason)
@@ -153,6 +181,21 @@ class ArchivePopulator(SoyuzScript):
             # families specified by the user.
             set_archive_architectures(copy_archive, proc_families)
         else:
+            # Archive name clash! Creation requested for existing archive with
+            # the same name and distribution.
+            if not merge_copy_flag:
+                raise SoyuzScriptError(
+                    "error: archive '%s' already exists for '%s'."
+                    % (to_archive, the_destination.distribution.name))
+            # The user is not supposed to specify processor families on the
+            # command line for existing copy archives. The processor families
+            # specified when the archive was created will be read from the
+            # database instead.
+            if specified(proc_family_names):
+                raise SoyuzScriptError(
+                    "error: cannot specify processor families for *existing* "
+                    "archive.")
+
             # The copy archive exists already, get the associated processor
             # families.
             def get_family(archivearch):
@@ -165,15 +208,20 @@ class ArchivePopulator(SoyuzScript):
             merge_copy = True
 
         the_destination.archive = copy_archive
+
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
-        getUtility(IPackageCopyRequestSet).new(
+        pcr = getUtility(IPackageCopyRequestSet).new(
             the_origin, the_destination, registrant,
             copy_binaries=include_binaries, reason=unicode(reason))
 
         # Clone the source packages. We currently do not support the copying
         # of binary packages. It's a forthcoming feature.
         pkg_cloner = getUtility(IPackageCloner)
+
+        # Mark the package copy request as being "in progress".
+        pcr.markAsInprogress()
+        self.txn.commit()
 
         if merge_copy == True:
             pkg_cloner.mergeCopy(the_origin, the_destination)
@@ -185,44 +233,34 @@ class ArchivePopulator(SoyuzScript):
             the_destination.distroseries, the_destination.archive,
             proc_families)
 
+        # Mark the package copy request as completed.
+        pcr.markAsCompleted()
+
     def mainTask(self):
         """Main function entry point."""
-        def not_specified(option):
-            return (option is None or option == '')
-        def specified(option):
-            return not (option is None or option == '')
-
         opts = self.options
 
-        if not_specified(opts.proc_families):
-            raise SoyuzScriptError(
-                "error: processor families not specified.")
-
-        if not_specified(opts.from_distribution):
+        if not specified(opts.from_distribution):
             raise SoyuzScriptError(
                 "error: origin distribution not specified.")
 
-        if not_specified(opts.to_distribution):
+        if not specified(opts.to_distribution):
             raise SoyuzScriptError(
                 "error: destination distribution not specified.")
 
-        if not_specified(opts.to_user):
+        if not specified(opts.to_user):
             raise SoyuzScriptError("error: copy archive owner not specified.")
-        if not_specified(opts.to_archive):
+        if not specified(opts.to_archive):
             raise SoyuzScriptError(
                 "error: destination copy archive not specified.")
         if not valid_name(opts.to_archive):
             raise SoyuzScriptError(
                 "Invalid destination archive name: '%s'" % opts.to_archive)
-        if not_specified(opts.reason):
-            raise SoyuzScriptError(
-                "error: reason for copy operation not specified.")
-
         if opts.include_binaries == True:
             raise SoyuzScriptError(
                 "error: copying of binary packages is not supported yet.")
 
-        if (specified(opts.from_user) and not_specified(opts.from_archive)):
+        if (specified(opts.from_user) and not specified(opts.from_archive)):
             opts.from_archive = 'ppa'
 
         if specified(opts.from_archive) and not valid_name(opts.from_archive):
@@ -233,7 +271,7 @@ class ArchivePopulator(SoyuzScript):
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
-            opts.include_binaries, opts.proc_families)
+            opts.include_binaries, opts.proc_families, opts.merge_copy_flag)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -284,6 +322,11 @@ class ArchivePopulator(SoyuzScript):
         self.parser.add_option(
             "--reason", dest="reason",
             help="The reason for this packages copy operation.")
+
+        self.parser.add_option(
+            "--merge-copy", dest="merge_copy_flag",
+            default=False, action="store_true",
+            help='Repeated population of an existing copy archive.')
 
     def _createMissingBuilds(
         self, distroseries, archive, proc_families):

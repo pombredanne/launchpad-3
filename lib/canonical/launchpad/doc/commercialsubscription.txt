@@ -8,7 +8,7 @@ which does not qualify for free hosting, has an unexpired subscription.
     >>> from canonical.launchpad.interfaces import (
     ...     ICommercialSubscription, IProductSet)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS)
+    >>> login('no-priv@canonical.com')
 
 An open source project should not have a commercial subscription,
 indicated by 'None'.
@@ -477,3 +477,55 @@ The license_info_is_empty parameter only accepts True, False, or None.
     Traceback (most recent call last):
     ...
     AssertionError...
+
+The use of 'forReview' is limited to users with launchpad.Commercial permission.
+
+Anonymous users cannot access 'forReview'.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.Commercial', product_set)
+    False
+    >>> gnome = product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+
+No Privileges Person cannot access 'forReview'.
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    False
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+
+The commercial-member, a member of the Commercial admins team, can
+access 'forReview'.
+
+    >>> login('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev
+
+An admin can access 'forReview'.
+
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev
