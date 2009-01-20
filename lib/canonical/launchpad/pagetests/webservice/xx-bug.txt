@@ -329,11 +329,64 @@ If an error occurs during a request that sets both 'status' and
   >>> print task['importance']
   Low
 
-We can patch the bug task's target.
+We can change the task's target.
 
-  >>> patch = {'target': webservice.getAbsoluteUrl(
-  ...     '/debian/+source/alsa-utils')}
-  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/debian/+source/alsa-utils'))
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> task = webservice.get(
+  ...     task['self_link'].replace(
+  ...         'mozilla-firefox', 'alsa-utils')).jsonBody()
+  >>> print task['target_link']
+  http://api.../debian/+source/alsa-utils
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+  >>> product_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/jokosher/+bug/14')).jsonBody()
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'].replace('jokosher', 'bzr'),
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Upstream bug tasks may only be re-targeted to
+  another project.
+  <BLANKLINE>
 
 
 == Bug subscriptions ==

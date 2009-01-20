@@ -24,6 +24,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -321,6 +322,9 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+class IllegalTarget(Exception):
+    """Exception raised when trying to set an illegal bug task target."""
+    webservice_error(400) #Bad request.
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -591,7 +595,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         value is set to None, date_assigned is also set to None.
         """
 
-    @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
     @export_write_operation()

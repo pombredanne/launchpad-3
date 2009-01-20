@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
     IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask,
+    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
 from canonical.launchpad.interfaces.distribution import (
@@ -869,18 +869,17 @@ class BugTask(SQLBase, BugTaskMixin):
             if IProduct.providedBy(target):
                 self.product = target
             else:
-                raise Exception(
-                    "Illegal target. Upstream bug tasks may only "
-                    "be retargeted to another project.") # TODO : proper exception
+                raise IllegalTarget(
+                    "Upstream bug tasks may only be re-targeted "
+                    "to another project.")
         else:
             if (IDistributionSourcePackage.providedBy(target) and
-                target.sourcepackagename == self.target.sourcepackagename):
-                self.distribution = target.distribution
+                target.distribution == self.target.distribution):
                 self.sourcepackagename = target.sourcepackagename
             else:
-                raise Exception(
-                    "Illegal target. Distribution bug tasks may only "
-                    "be retargeted to package in the same distribution.") # TODO : proper exception
+                raise IllegalTarget(
+                    "Distribution bug tasks may only be re-targeted "
+                    "to a package in the same distribution.")
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
