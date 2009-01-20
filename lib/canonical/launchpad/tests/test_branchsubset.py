@@ -20,6 +20,18 @@ class TestProductBranchSubset(TestCaseWithFactory):
         self.assertProvides(
             ProductBranchSubset(self.factory.makeProduct()), IBranchSubset)
 
+    def test_name(self):
+        # The name of a product subset is the name of the product.
+        product = self.factory.makeProduct()
+        self.assertEqual(product.name, ProductBranchSubset(product).name)
+
+    def test_displayname(self):
+        # The display name of a product subset is the display name of the
+        # product.
+        product = self.factory.makeProduct()
+        self.assertEqual(
+            product.displayname, ProductBranchSubset(product).displayname)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

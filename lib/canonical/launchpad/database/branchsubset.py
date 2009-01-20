@@ -17,4 +17,5 @@ class ProductBranchSubset:
     implements(IBranchSubset)
 
     def __init__(self, product):
-        pass
+        self.name = product.name
+        self.displayname = product.displayname
