@@ -21,7 +21,7 @@ class TestBranchNavigationMenu(TestCaseWithFactory):
 
     def test_simple_branch(self):
         """Menu's branch should be the branch that the menu is created with"""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         menu = BranchNavigationMenu(branch)
         self.assertEqual(branch, menu.branch)
 

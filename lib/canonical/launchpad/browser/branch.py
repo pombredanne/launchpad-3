@@ -956,7 +956,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 registrant=self.user,
                 owner=data['owner'],
-                author=None, # Until BranchSet.new modified to remove it.
                 product=data['product'],
                 url=data.get('url'),
                 title=data['title'],

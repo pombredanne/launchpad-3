@@ -228,7 +228,7 @@ For branches, fmt:link links to the branch page.
     >>> from canonical.launchpad.testing import login_person
     >>> eric = factory.makePerson(name='eric')
     >>> fooix = factory.makeProduct(name='fooix')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=eric, product=fooix, name='bar', title='The branch title')
     >>> print test_tales("branch/fmt:link", branch=branch)
     <a href=".../~eric/fooix/bar"
@@ -288,7 +288,7 @@ title might be interpreted by the browser.
 Branch subscriptions show the person and branch name.  For users
 without adequate permissions, a link is not generated.
 
-    >>> branch = factory.makeBranch(title='My Branch')
+    >>> branch = factory.makeAnyBranch(title='My Branch')
     >>> person = factory.makePerson(displayname='My Person')
     >>> subscription = factory.makeBranchSubscription(
     ...     branch=branch, person=person)
@@ -328,7 +328,7 @@ Merge proposals also have a link formatter, which displays branch titles:
 === Bug branches ===
 
     >>> login('test@canonical.com')
-    >>> branch = factory.makeBranch()
+    >>> branch = factory.makeAnyBranch()
     >>> bug = factory.makeBug()
     >>> bugbranch = bug.addBranch(branch, branch.owner)
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
@@ -365,7 +365,7 @@ to support the branch deletion code.
 === Blueprint branches ===
 
     >>> specification = factory.makeSpecification()
-    >>> branch = factory.makeBranch()
+    >>> branch = factory.makeAnyBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)

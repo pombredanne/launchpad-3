@@ -17,6 +17,9 @@
         <th tal:condition="context/show_column/date_reviewed|nothing">
           Date Reviewed
         </th>
+        <th tal:condition="context/show_column/review|nothing">
+          Review
+        </th>
         <th tal:condition="context/show_column/vote_summary|nothing">
           Activity
         </th>
@@ -45,6 +48,28 @@
             2005-02-12 13:45 EST
           </span>
           <tal:date replace="proposal/date_reviewed/fmt:approximatedate"/>
+        </td>
+        <td tal:condition="context/show_column/review|nothing">
+          <tal:review-vote define="comment proposal/reviewer_vote/comment|nothing">
+            <tal:voted-already condition="comment">
+
+              <span tal:attributes="class string:vote${comment/vote/name}"
+                    tal:content="comment/vote/title">
+                Approve
+              </span>
+            </tal:voted-already>
+            <tal:vote-pending condition="not: comment">
+              <span class="votePENDING">Pending</span>
+            </tal:vote-pending>
+            <tal:reviewer-not-team
+                define="reviewer context/view/getUserFromContext"
+                condition="not: reviewer/is_team">
+              <tal:vote-tags
+                  define="review_type proposal/reviewer_vote/review_type"
+                  condition="review_type"
+                  replace="review_type"/>
+            </tal:reviewer-not-team>
+          </tal:review-vote>
         </td>
         <td tal:condition="context/show_column/vote_summary|nothing"
             tal:content="structure proposal/vote_summary">
