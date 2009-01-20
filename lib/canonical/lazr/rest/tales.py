@@ -17,7 +17,7 @@ from zope.app.zapi import getGlobalSiteManager
 from zope.component import queryAdapter
 from zope.interface.interfaces import IInterface
 from zope.schema import getFields
-from zope.schema.interfaces import IBytes, IChoice, IObject
+from zope.schema.interfaces import IBytes, IChoice, IDate, IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
@@ -418,6 +418,16 @@ class WadlFieldAPI(RESTUtilityBase):
     def path(self):
         """The JSONPath path to this field within a JSON document."""
         return "$['%s']" % self.name
+
+    @property
+    def type(self):
+        """The XSD type of this field."""
+        if IDatetime.providedBy(self.field):
+            return 'xsd:dateTime'
+        elif IDate.providedBy(self.field):
+            return 'xsd:date'
+        else:
+            return None
 
     @property
     def is_link(self):
