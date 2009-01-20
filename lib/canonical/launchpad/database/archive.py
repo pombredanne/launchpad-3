@@ -33,7 +33,7 @@ from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.archivesubscriber import (
-    ArchiveSubscriber, ArchiveSubscriberStatus)
+    ArchiveSubscriber)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -55,6 +55,8 @@ from canonical.launchpad.interfaces.archive import (
     SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    ArchiveSubscriberStatus)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet

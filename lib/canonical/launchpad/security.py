@@ -16,8 +16,8 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthToken, IArchiveAuthTokenSet)
-from canonical.launchpad.interfaces.archivesubscription import (
-    IArchiveSubscription)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriber)
 from canonical.launchpad.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -1878,7 +1878,7 @@ class ViewArchiveSubscriber(AuthorizationBase):
     archive or be an admin.
     """
     permission = "launchpad.View"
-    usedfor = IArchiveSubscription
+    usedfor = IArchiveSubscriber
 
     def checkAuthenticated(self, user):
         if user.inTeam(self.obj.subscriber):
@@ -1893,7 +1893,7 @@ class EditArchiveSubscriber(AuthorizationBase):
     The user should have append privilege to the archive or be an admin.
     """
     permission = "launchpad.Edit"
-    usedfor = IArchiveSubscription
+    usedfor = IArchiveSubscriber
 
     def checkAuthenticated(self, user):
         auth_append = AppendArchive(self.obj.archive)
