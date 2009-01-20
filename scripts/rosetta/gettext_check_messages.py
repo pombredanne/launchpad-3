@@ -122,7 +122,7 @@ class GettextCheckMessages(LaunchpadScript):
             # was previously masking.  If that one passes checks, we can
             # activate it instead.  Disabling the current message
             # "unmasks" the imported one.
-            error = self._check_message_for_errors(imported)
+            error = self._check_message_for_error(imported)
             if error is not None:
                 imported = None
 
