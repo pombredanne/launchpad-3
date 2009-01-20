@@ -1443,6 +1443,9 @@ class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
     """Tests the visible_by_user checks for getBranchesForContext."""
     layer = DatabaseFunctionalLayer
 
+    # XXX: JonathanLange 2009-01-20 spec=package-branches: These tests should
+    # be removed as part of the migration to IBranchSubset.
+
     def setUp(self):
         # Use an admin user to set branch privacy easily.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
