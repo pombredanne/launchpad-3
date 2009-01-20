@@ -6,17 +6,18 @@
 __metaclass__ = type
 
 __all__ = [
+    'ArchiveSubscriberStatus',
     'IArchiveSubscriber',
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, Text
+from zope.schema import Datetime, Choice, Int, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Choice, Reference
+from canonical.lazr.fields import Reference
 
 
 class ArchiveSubscriberStatus(DBEnumeratedType):
@@ -78,6 +79,10 @@ class IArchiveSubscriberView(Interface):
     date_cancelled = Datetime(
         title=_("Date of Cancellation"), required=False,
         description=_("The timestamp when the subscription was cancelled."))
+
+    cancelled_by = Reference(
+        IPerson, title=_("Cancelled By"), required=False,
+        description=_("The person who cancelled the subscription."))
 
 
 class IArchiveSubscriberEdit(Interface):
