@@ -445,14 +445,24 @@ class ArchiveViewBase(LaunchpadView):
 
         See `status_vocabulary`.
         """
-        status_filter = self.request.get('field.status_filter', 'published')
-        self.selected_status_filter = (
-            self.simplified_status_vocabulary.getTermByToken(status_filter))
+        requested_status_filter = self.request.get('field.status_filter')
+
+        # If the request included a status filter, try to use it:
+        self.selected_status_filter = None
+        if requested_status_filter is not None:
+            self.selected_status_filter = (
+                self.simplified_status_vocabulary.getTermByToken(
+                    requested_status_filter))
+
+        # If the request didn't include a status, or it was invalid, use
+        # the default:
+        if self.selected_status_filter is None:
+            self.selected_status_filter = self.default_status_filter
 
         field = Choice(
             __name__='status_filter', title=_("Status Filter"),
             vocabulary=self.simplified_status_vocabulary, required=True)
-        setUpWidget(self, 'status_filter',  field, IInputWidget)
+        setUpWidget(self, 'status_filter', field, IInputWidget)
 
     @property
     def plain_status_filter_widget(self):
@@ -500,6 +510,14 @@ class ArchiveViewBase(LaunchpadView):
             name=name_filter,
             status=self.selected_status_filter.value.collection,
             distroseries=self.selected_series_filter.value)
+
+    @property
+    def default_status_filter(self):
+        """Return the default status_filter value.
+
+        Subclasses of ArchiveViewBase can override this when required.
+        """
+        return self.simplified_status_vocabulary.getTermByToken('published')
 
 
 class ArchiveView(ArchiveViewBase):
@@ -664,12 +682,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     def has_undisplayed_sources(self):
         """Whether or not some sources are not displayed in the widget."""
         return self.available_sources_size > self.max_sources_presented
-
-    @property
-    def default_status_filter(self):
-        """Return the default status_filter value."""
-        raise NotImplementedError(
-            'Default status_filter should be defined by callsites.')
 
 
 class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
