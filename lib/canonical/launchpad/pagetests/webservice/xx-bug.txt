@@ -777,6 +777,15 @@ project group.
     total_size: 0
     ---
 
+The same search can be performed directly on the milestone too.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     webservice.getAbsoluteUrl('/mozilla/+milestone/1.0'),
+    ...     'searchTasks').jsonBody())
+    start: None
+    total_size: 0
+    ---
+
 Search results can be ordered using the same string values used by
 the advanced search interface.
 
