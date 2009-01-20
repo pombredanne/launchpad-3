@@ -496,9 +496,16 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
+        _unused = pop_notifications()
         transaction.commit()
-        self.assertRaises(BranchMergeProposalExists,
-            code_handler.processMergeProposal, message)
+        _unused = code_handler.processMergeProposal(message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(),
+            'The branch %s is already proposed for merging into %s' % (
+            source_branch.bzr_identity, target_branch.bzr_identity))
 
 
 class TestVoteEmailCommand(TestCase):
