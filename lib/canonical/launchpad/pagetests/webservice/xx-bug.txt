@@ -683,6 +683,23 @@ Once an attachment is uploaded, it is not possible to change it.
   >>> data
   '12345'
 
+But we can remove the attachment altogether.
+
+  >>> response = webservice.named_post(
+  ...     attachment['self_link'], 'removeFromBug')
+  >>> print response.getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> pprint_collection(attachments)
+  resource_type_link: u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'
+  start: None
+  total_size: 0
+  ---
+
+
 == Searching for bugs ==
 
 Bug targets expose the searchTasks method, which provides a search interface
