@@ -11,7 +11,7 @@ __all__ = [
 from datetime import datetime, timedelta
 
 import pytz
-from storm.locals import And, Desc, Min, Select, Store
+from storm.locals import And, Desc, Store
 from zope.interface import implements
 
 from canonical.launchpad.database.branch import Branch

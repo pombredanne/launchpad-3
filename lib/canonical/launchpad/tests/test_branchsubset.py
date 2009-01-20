@@ -145,7 +145,6 @@ class BranchSubsetTestsMixin:
         self.assertEqual([rev2], list(subset.getRevisions(day_limit)))
 
 
-
 class TestProductBranchSubset(TestCaseWithFactory, BranchSubsetTestsMixin):
 
     layer = DatabaseFunctionalLayer

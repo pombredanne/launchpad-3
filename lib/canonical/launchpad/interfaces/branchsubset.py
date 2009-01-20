@@ -25,7 +25,6 @@ class IBranchSubset(Interface):
 # - lifecycle_status
 
 # XXX: revision support
-# - Add 'revisions' property or 'getRecentRevisions' method
 # - Add recent revision count
 # - Add recent committer count
 
