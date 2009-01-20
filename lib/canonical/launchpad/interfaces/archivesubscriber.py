@@ -83,6 +83,15 @@ class IArchiveSubscriberView(Interface):
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
 
+    def cancel(cancelled_by):
+        """Cancel a subscription.
+        
+        :param cancelled_by: An `IPerson` who is cancelling the subscription.
+
+        Sets cancelled_by to the supplied person and date_cancelled to
+        the current date/time.
+        """
+
 
 class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
