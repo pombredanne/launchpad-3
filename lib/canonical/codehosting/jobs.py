@@ -13,6 +13,7 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 
 from canonical.launchpad.interfaces.job import LeaseHeld
+from canonical.launchpad.webapp import errorlog
 
 
 class JobRunner(object):
@@ -59,5 +60,4 @@ class JobRunner(object):
                 self.incomplete_jobs.append(job)
             except Exception:
                 info = sys.exc_info()
-                reporter = getUtility(IErrorReportingUtility)
-                reporter.raising(info)
+                errorlog.globalErrorUtility.raising(info)

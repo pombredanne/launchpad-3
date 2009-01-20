@@ -5,10 +5,7 @@
 
 from unittest import TestLoader
 
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
-
-from canonical.testing import (LaunchpadFunctionalLayer)
+from canonical.testing import (LaunchpadZopelessLayer)
 
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.database import RevisionMailJob
@@ -20,12 +17,13 @@ from canonical.launchpad.interfaces.branchsubscription import (
 from canonical.launchpad.interfaces.job import JobStatus, LeaseHeld
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp import errorlog
 
 
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def makeBranchAndJobs(self):
         """Test fixture.  Create a branch and two jobs that use it."""
@@ -38,6 +36,8 @@ class TestJobRunner(TestCaseWithFactory):
             branch, 0, 'from@example.org', 'body', False, 'foo')
         job_2 = RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', False, 'bar')
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser('codejobrunner')
         return branch, job_1, job_2
 
     def test_runJob(self):
@@ -62,8 +62,7 @@ class TestJobRunner(TestCaseWithFactory):
 
     def test_runAll_skips_lease_failures(self):
         """Ensure runAll skips jobs whose leases can't be acquired."""
-        reporter = getUtility(IErrorReportingUtility)
-        last_oops = reporter.getLastOopsReport()
+        last_oops = errorlog.globalErrorUtility.getLastOopsReport()
         branch, job_1, job_2 = self.makeBranchAndJobs()
         job_2.job.acquireLease()
         runner = JobRunner([job_1, job_2])
@@ -72,7 +71,8 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.WAITING, job_2.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
         self.assertEqual([job_2], runner.incomplete_jobs)
-        self.assertEqual(last_oops.id, reporter.getLastOopsReport().id)
+        new_last_oops = errorlog.globalErrorUtility.getLastOopsReport()
+        self.assertEqual(last_oops.id, new_last_oops.id)
 
     def test_runAll_reports_oopses(self):
         """When an error is encountered, report an oops and continue."""
@@ -87,7 +87,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual([], list(RevisionMailJob.iterReady()))
         self.assertEqual(JobStatus.FAILED, job_1.job.status)
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
-        reporter = getUtility(IErrorReportingUtility)
+        reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
 
