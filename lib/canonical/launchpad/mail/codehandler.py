@@ -29,6 +29,7 @@ from canonical.launchpad.mail.commands import (
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_error_message, get_main_body,
     get_person_or_team, IncomingEmailError, parse_commands)
+from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
@@ -372,18 +373,20 @@ class CodeHandler:
             bmp = source.addLandingTarget(submitter, target,
                                           needs_review=True,
                                           review_diff=review_diff)
+
+            if comment_text.strip() == '':
+                comment = None
+            else:
+                comment = bmp.createComment(
+                    submitter, message['Subject'], comment_text)
+            return bmp, comment
+
         except BranchMergeProposalExists:
             body = get_error_message(
                 'branchmergeproposal-exists.txt',
                 source_branch='',
                 target_branch='')
-            simple_send_mail('merge@code.launchpad.net',
-                [message.get('from')],
+            simple_sendmail('merge@code.launchpad.net',
+                str([message.get('from')]),
                 'Error Creating Merge Proposal', body)
 
-        if comment_text.strip() == '':
-            comment = None
-        else:
-            comment = bmp.createComment(
-                submitter, message['Subject'], comment_text)
-        return bmp, comment

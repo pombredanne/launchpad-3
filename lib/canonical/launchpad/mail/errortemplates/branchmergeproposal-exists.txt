@@ -1,2 +1,2 @@
-The branch %{source_branch}s is already proposed for merging into %{target_branch}s
+The branch %(source_branch)s is already proposed for merging into %(target_branch)s
 

@@ -18,6 +18,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalExists)
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -427,14 +429,18 @@ class TestCodeHandler(TestCaseWithFactory):
             code_handler.findMergeDirectiveAndComment, message)
         transaction.commit()
 
-    def makeMergeDirectiveEmail(self, body='Hi!\n'):
+    def makeMergeDirectiveEmail(self, body='Hi!\n', source_branch=None,
+                                target_branch=None):
         """Create an email with a merge directive attached.
 
         :param body: The message body to use for the email.
         :return: message, source_branch, target_branch
         """
-        target_branch = self.factory.makeBranch()
-        source_branch = self.factory.makeBranch(product=target_branch.product)
+        if not target_branch:
+            target_branch = self.factory.makeBranch()
+        if not source_branch:
+            source_branch = self.factory.makeBranch(
+                product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.factory.makeSignedMessage(body=body,
             subject='My subject', attachment_contents=''.join(md.to_lines()))
@@ -479,6 +485,20 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler.process(message, 'merge@code.launchpad.net', None)
         self.assertEqual(target, source.landing_targets[0].target_branch)
         transaction.commit()
+
+    def test_processMergeProposalExists(self):
+        """processMergeProposal raises BranchMergeProposalExists
+
+        If there is already a merge proposal with the same target and source
+        branches of the merge directive, BranchMergeProposalExists is raised.
+        """
+        message, source_branch, target_branch = self.makeMergeDirectiveEmail()
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        bmp, comment = code_handler.processMergeProposal(message)
+        transaction.commit()
+        self.assertRaises(BranchMergeProposalExists,
+            code_handler.processMergeProposal, message)
 
 
 class TestVoteEmailCommand(TestCase):
