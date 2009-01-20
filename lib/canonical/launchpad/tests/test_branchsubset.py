@@ -6,7 +6,8 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.database.branchsubset import ProductBranchSubset
+from canonical.launchpad.database.branchsubset import (
+    PersonBranchSubset, ProductBranchSubset)
 from canonical.launchpad.interfaces.branchsubset import IBranchSubset
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -37,6 +38,31 @@ class TestProductBranchSubset(TestCaseWithFactory):
             product.displayname, self.makeSubset(product).displayname)
 
 
+class TestPersonBranchSubset(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeSubset(self, person):
+        return IBranchSubset(person)
+
+    def test_provides_interface(self):
+        person = self.factory.makePerson()
+        self.assertProvides(
+            self.makeSubset(person), IBranchSubset)
+
+    def test_name(self):
+        # The name of a person subset is the name of the person.
+        person = self.factory.makePerson()
+        self.assertEqual(person.name, self.makeSubset(person).name)
+
+    def test_displayname(self):
+        # The display name of a person subset is the display name of the
+        # person.
+        person = self.factory.makePerson()
+        self.assertEqual(
+            person.displayname, self.makeSubset(person).displayname)
+
+
 class TestAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -46,6 +72,12 @@ class TestAdapter(TestCaseWithFactory):
         subset = IBranchSubset(product)
         self.assertIsInstance(subset, ProductBranchSubset)
         self.assertEqual(product.name, subset.name)
+
+    def test_person(self):
+        person = self.factory.makePerson()
+        subset = IBranchSubset(person)
+        self.assertIsInstance(subset, PersonBranchSubset)
+        self.assertEqual(person.name, subset.name)
 
 
 def test_suite():

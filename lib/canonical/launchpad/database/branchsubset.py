@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'PersonBranchSubset',
     'ProductBranchSubset',
     ]
 
@@ -19,3 +20,12 @@ class ProductBranchSubset:
     def __init__(self, product):
         self.name = product.name
         self.displayname = product.displayname
+
+
+class PersonBranchSubset:
+
+    implements(IBranchSubset)
+
+    def __init__(self, person):
+        self.name = person.name
+        self.displayname = person.displayname

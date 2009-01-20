@@ -11,10 +11,11 @@ from zope.interface import Interface
 
 
 class IBranchSubset(Interface):
+    # XXX: Write tests to guarantee that adapted objects are being secured via
+    # this interface.
     pass
 
-# XXX: Add name
-# XXX: Add display name.
+
 # XXX: Add 'branches' or __iter__ feature
 # XXX: filter by "visible to user"
 # XXX: Add 'revisions' property or 'getRecentRevisions' method

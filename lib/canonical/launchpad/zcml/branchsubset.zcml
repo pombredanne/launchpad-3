@@ -10,4 +10,10 @@
       factory="canonical.launchpad.database.branchsubset.ProductBranchSubset"
       />
 
+  <adapter
+      for="canonical.launchpad.interfaces.IPerson"
+      provides="canonical.launchpad.interfaces.branchsubset.IBranchSubset"
+      factory="canonical.launchpad.database.branchsubset.PersonBranchSubset"
+      />
+
 </configure>
