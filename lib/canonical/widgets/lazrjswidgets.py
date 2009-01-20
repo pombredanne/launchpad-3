@@ -55,23 +55,22 @@ class InlineTextLineEditorWidget:
             'id': self.id,
             'title': self.title,
             'value': cgi.escape(getattr(self.context, self.attribute)),
-            'context_url': canonical_url(self.context),
+            'context_url': canonical_url(
+                self.context, path_only_if_possible=True),
             'attribute': self.attribute,
             }
         if getUtility(ILaunchBag).user:
             params['activation_script'] = dedent(u"""\
                 <script>
                 YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
-                    Y.on('domready', function () {
-                        var widget = new Y.EditableText({
-                            contentBox: '#%(id)s',
-                        });
-                        widget.editor.plug({
-                            fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                              name: '%(attribute)s',
-                              url: '%(context_url)s'}});
-                        widget.render();
+                    var widget = new Y.EditableText({
+                        contentBox: '#%(id)s',
                     });
+                    widget.editor.plug({
+                        fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
+                          name: '%(attribute)s',
+                          url: '%(context_url)s'}});
+                    widget.render();
                 });
                 </script>
                 """ % params)
