@@ -31,13 +31,19 @@ __all__ = [
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
+    'IBranchDiffJob',
+    'IBranchDiffJobSource',
     'IBranchBatchNavigator',
+    'IBranchJob',
     'IBranchListingFilter',
     'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
+    'NoSuchBranch',
     'RepositoryFormat',
+    'IRevisionMailJob',
+    'IRevisionMailJobSource',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
@@ -67,7 +73,8 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat7)
 from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
-from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
+from zope.schema import (
+    Bool, Bytes, Int, Choice, Object, Text, TextLine, Datetime)
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
@@ -81,9 +88,11 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -424,6 +433,12 @@ class BranchTypeError(Exception):
     """
 
 
+class NoSuchBranch(NameLookupFailed):
+    """Raised when we try to load a branch that does not exist."""
+
+    _message_prefix = "No such branch"
+
+
 class BadBranchSearchContext(Exception):
     """The context is not valid for a branch search."""
 
@@ -667,8 +682,20 @@ class IBranch(IHasOwner):
             "The source package that this is a branch of. Source package "
             "branches always belong to a distribution series."))
 
+    distribution = Attribute(
+        "The IDistribution that this branch belongs to. None if not a "
+        "package branch.")
+
+    sourcepackage = Attribute(
+        "The ISourcePackage that this branch belongs to. None if not a "
+        "package branch.")
+
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
+
+    # XXX: JonathanLange 2008-12-08 spec=package-branches: decorates blows up
+    # if we call this 'context'!
+    container = Attribute("The context that this branch belongs to.")
 
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
@@ -682,11 +709,6 @@ class IBranch(IHasOwner):
             schema=Interface,
             description=_("The project this branch belongs to.")),
         exported_as='project')
-
-    # XXX: JonathanLange 2008-12-01 spec=package-branches: This needs to be
-    # removed and replaced with the name of the container. It's only used for
-    # URL traversal, so maybe we can work out a smarter way of doing that.
-    product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
     unique_name = exported(
@@ -862,6 +884,18 @@ class IBranch(IHasOwner):
         "development focus, then the result should be lp:product.  If "
         "the branch is related to a series, then lp:product/series. "
         "Otherwise the result is lp:~user/product/branch-name.")
+
+    def addToLaunchBag(launchbag):
+        """Add information about this branch to `launchbag'.
+
+        Use this when traversing to this branch in the web UI.
+
+        In particular, add information about the branch's container to the
+        launchbag. If the branch has a product, add that; if it has a source
+        package, add lots of information about that.
+
+        :param launchbag: `ILaunchBag`.
+        """
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.
@@ -1041,7 +1075,7 @@ class IBranchSet(Interface):
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            author=None, summary=None, whiteboard=None, date_created=None,
+            summary=None, whiteboard=None, date_created=None,
             distroseries=None, sourcepackagename=None):
         """Create a new branch.
 
@@ -1053,10 +1087,10 @@ class IBranchSet(Interface):
         special case of the ~vcs-imports celebrity.
         """
 
-    def getByUniqueName(unique_name, default=None):
+    def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
-        Return the default value if no match was found.
+        Return None if no match was found.
         """
 
     def getRewriteMap():
@@ -1412,6 +1446,70 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
+
+
+class IBranchJob(Interface):
+    """A job related to a branch."""
+
+    branch = Object(
+        title=_('Branch to use for this diff'), required=True,
+        schema=IBranch)
+
+    job = Object(schema=IJob, required=True)
+
+    metadata = Attribute('A dict of data about the job.')
+
+    def destroySelf():
+        """Destroy this object."""
+
+
+class IBranchDiffJob(Interface):
+    """A job to create a static diff from a branch."""
+
+    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
+
+    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
+
+    def run():
+        """Acquire the static diff this job requires.
+
+        :return: the generated StaticDiff.
+        """
+
+
+class IBranchDiffJobSource(Interface):
+
+    def create(branch, from_revision_spec, to_revision_spec):
+        """Construct a new object that implements IBranchDiffJob.
+
+        :param branch: The database branch to diff.
+        :param from_revision_spec: The revision spec to diff from.
+        :param to_revision_spec: The revision spec to diff to.
+        """
+
+
+class IRevisionMailJob(Interface):
+    """A Job to send email a revision change in a branch."""
+
+    revno = Int(title=u'The revno to send mail about.')
+
+    from_address = Bytes(title=u'The address to send mail from.')
+
+    perform_diff = Text(title=u'Determine whether diff should be performed.')
+
+    body = Text(title=u'The main text of the email to send.')
+
+    subject = Text(title=u'The subject of the email to send.')
+
+    def run():
+        """Send the mail as specified by this job."""
+
+
+class IRevisionMailJobSource(Interface):
+    """A utility to create and retrieve RevisionMailJobs."""
+
+    def create(db_branch, revno, email_from, message, perform_diff, subject):
+        """Create and return a new object that implements IRevisionMailJob."""
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):

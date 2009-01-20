@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchNamespaceSet',
     'get_namespace',
     'PackageNamespace',
     'PersonalNamespace',
@@ -14,13 +15,28 @@ from storm.locals import And
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.database import Branch
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, IBranchSet)
-from canonical.launchpad.interfaces.branchnamespace import IBranchNamespace
+    BranchLifecycleStatus, IBranchSet, NoSuchBranch)
+from canonical.launchpad.interfaces.branchnamespace import (
+    IBranchNamespace, InvalidNamespace)
+from canonical.launchpad.interfaces.distribution import (
+    IDistributionSet, NoSuchDistribution)
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeriesSet, NoSuchDistroSeries)
+from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, NoSuchProduct)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet, NoSuchSourcePackageName)
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.xmlrpc.codehosting import iter_split
 
 
 class _BaseNamespace:
@@ -34,8 +50,13 @@ class _BaseNamespace:
         """See `IBranchNamespace`."""
         owner = self.owner
         product = getattr(self, 'product', None)
-        distroseries = getattr(self, 'distroseries', None)
-        sourcepackagename = getattr(self, 'sourcepackagename', None)
+        sourcepackage = getattr(self, 'sourcepackage', None)
+        if sourcepackage is None:
+            distroseries = None
+            sourcepackagename = None
+        else:
+            distroseries = sourcepackage.distroseries
+            sourcepackagename = sourcepackage.sourcepackagename
         return getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
@@ -135,23 +156,22 @@ class PackageNamespace(_BaseNamespace):
 
     implements(IBranchNamespace)
 
-    def __init__(self, person, distroseries, sourcepackagename):
+    def __init__(self, person, sourcepackage):
+        if not config.codehosting.package_branches_enabled:
+            raise Unauthorized("Package branches are disabled.")
         self.owner = person
-        self.distroseries = distroseries
-        self.sourcepackagename = sourcepackagename
+        self.sourcepackage = sourcepackage
 
     def _getBranchesClause(self):
         return And(
             Branch.owner == self.owner,
-            Branch.distroseries == self.distroseries,
-            Branch.sourcepackagename == self.sourcepackagename)
+            Branch.distroseries == self.sourcepackage.distroseries,
+            Branch.sourcepackagename == self.sourcepackage.sourcepackagename)
 
     @property
     def name(self):
         """See `IBranchNamespace`."""
-        return '~%s/%s/%s/%s' % (
-            self.owner.name, self.distroseries.distribution.name,
-            self.distroseries.name, self.sourcepackagename.name)
+        return '~%s/%s' % (self.owner.name, self.sourcepackage.path)
 
 
 class BranchNamespaceSet:
@@ -170,6 +190,139 @@ class BranchNamespaceSet:
             assert sourcepackagename is not None, (
                 "distroseries implies sourcepackagename. Got %r, %r"
                 % (distroseries, sourcepackagename))
-            return PackageNamespace(person, distroseries, sourcepackagename)
+            return PackageNamespace(
+                person, SourcePackage(sourcepackagename, distroseries))
         else:
             return PersonalNamespace(person)
+
+    def parse(self, namespace_name):
+        """See `IBranchNamespaceSet`."""
+        data = dict(
+            person=None, product=None, distribution=None, distroseries=None,
+            sourcepackagename=None)
+        tokens = namespace_name.split('/')
+        if len(tokens) == 2:
+            data['person'] = tokens[0]
+            data['product'] = tokens[1]
+        elif len(tokens) == 4:
+            data['person'] = tokens[0]
+            data['distribution'] = tokens[1]
+            data['distroseries'] = tokens[2]
+            data['sourcepackagename'] = tokens[3]
+        else:
+            raise InvalidNamespace(namespace_name)
+        if not data['person'].startswith('~'):
+            raise InvalidNamespace(namespace_name)
+        data['person'] = data['person'][1:]
+        return data
+
+    def parseBranchPath(self, namespace_path):
+        """See `IBranchNamespaceSet`."""
+        found = False
+        for branch_path, trailing_path in iter_split(namespace_path, '/'):
+            try:
+                branch_path, branch = branch_path.rsplit('/', 1)
+            except ValueError:
+                continue
+            try:
+                parsed = self.parse(branch_path)
+            except InvalidNamespace:
+                continue
+            else:
+                found = True
+                yield parsed, branch, trailing_path
+        if not found:
+            raise InvalidNamespace(namespace_path)
+
+    def lookup(self, namespace_name):
+        """See `IBranchNamespaceSet`."""
+        names = self.parse(namespace_name)
+        return self.interpret(**names)
+
+    def interpret(self, person=None, product=None, distribution=None,
+                  distroseries=None, sourcepackagename=None):
+        """See `IBranchNamespaceSet`."""
+        names = dict(
+            person=person, product=product, distribution=distribution,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        data = self._realize(names)
+        return self.get(**data)
+
+    def traverse(self, segments):
+        """See `IBranchNamespaceSet`."""
+        person_name = segments.next()
+        person = self._findPerson(person_name)
+        pillar_name = segments.next()
+        pillar = self._findPillar(pillar_name)
+        if pillar is None or IProduct.providedBy(pillar):
+            namespace = self.get(person, product=pillar)
+        else:
+            distroseries_name = segments.next()
+            distroseries = self._findDistroSeries(pillar, distroseries_name)
+            sourcepackagename_name = segments.next()
+            sourcepackagename = self._findSourcePackageName(
+                sourcepackagename_name)
+            namespace = self.get(
+                person, distroseries=distroseries,
+                sourcepackagename=sourcepackagename)
+        branch_name = segments.next()
+        return self._findOrRaise(
+            NoSuchBranch, branch_name, namespace.getByName)
+
+    def _findOrRaise(self, error, name, finder, *args):
+        if name is None:
+            return None
+        args = list(args)
+        args.append(name)
+        result = finder(*args)
+        if result is None:
+            raise error(name)
+        return result
+
+    def _findPerson(self, person_name):
+        return self._findOrRaise(
+            NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
+
+    def _findPillar(self, pillar_name):
+        if pillar_name == '+junk':
+            return None
+        return self._findOrRaise(
+            NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
+
+    def _findProduct(self, product_name):
+        if product_name == '+junk':
+            return None
+        return self._findOrRaise(
+            NoSuchProduct, product_name,
+            getUtility(IProductSet).getByName)
+
+    def _findDistribution(self, distribution_name):
+        return self._findOrRaise(
+            NoSuchDistribution, distribution_name,
+            getUtility(IDistributionSet).getByName)
+
+    def _findDistroSeries(self, distribution, distroseries_name):
+        return self._findOrRaise(
+            NoSuchDistroSeries, distroseries_name,
+            getUtility(IDistroSeriesSet).queryByName, distribution)
+
+    def _findSourcePackageName(self, sourcepackagename_name):
+        return self._findOrRaise(
+            NoSuchSourcePackageName, sourcepackagename_name,
+            getUtility(ISourcePackageNameSet).queryByName)
+
+    def _realize(self, names):
+        """Turn a dict of object names into a dict of objects.
+
+        Takes the results of `IBranchNamespaceSet.parse` and turns them into a
+        dict where the values are Launchpad objects.
+        """
+        data = {}
+        data['person'] = self._findPerson(names['person'])
+        data['product'] = self._findProduct(names['product'])
+        distribution = self._findDistribution(names['distribution'])
+        data['distroseries'] = self._findDistroSeries(
+            distribution, names['distroseries'])
+        data['sourcepackagename'] = self._findSourcePackageName(
+            names['sourcepackagename'])
+        return data

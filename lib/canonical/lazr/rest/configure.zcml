@@ -17,6 +17,12 @@
         factory="canonical.launchpad.webapp.servers.website_request_to_web_service_request"
         />
 
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserRequest"
+        provides="canonical.lazr.interfaces.rest.IJSONRequestCache"
+        factory="canonical.lazr.rest.jsoncache.JSONRequestCache"
+        />
+
     <!-- TALES namespace for web service functions available through the
          website. -->
     <adapter
@@ -25,6 +31,14 @@
         factory="canonical.lazr.rest.tales.WebLayerAPI"
         name="webservice"
         />
+
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserRequest"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WebServiceRequestAPI"
+        name="webservicerequest"
+        />
+
 
     <!-- TALES namespaces for WADL generation -->
     <adapter
@@ -177,6 +191,13 @@
              zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
         factory="canonical.lazr.rest.marshallers.BytesFieldMarshaller"
+        />
+
+     <adapter
+        for="zope.schema.interfaces.IASCII
+             zope.publisher.interfaces.http.IHTTPRequest"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.TextFieldMarshaller"
         />
 
     <adapter

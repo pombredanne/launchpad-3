@@ -1223,12 +1223,10 @@ class PackageRemover(SoyuzScript):
 
         Can raise SoyuzScriptError.
         """
-        if len(self.args) != 1:
+        if len(self.args) == 0:
             raise SoyuzScriptError(
-                "Exactly one non-option argument must be given, "
-                "the packagename.")
-
-        packagename = self.args[0]
+                "At least one non-option argument must be given, "
+                "a package name to be removed.")
 
         if self.options.user is None:
             raise SoyuzScriptError("Launchpad username must be given.")
@@ -1242,14 +1240,16 @@ class PackageRemover(SoyuzScript):
                 "Invalid launchpad usename: %s" % self.options.user)
 
         removables = []
-        if self.options.binaryonly:
-            removables.extend(self.findLatestPublishedBinaries(packagename))
-        elif self.options.sourceonly:
-            removables.append(self.findLatestPublishedSource(packagename))
-        else:
-            source_pub = self.findLatestPublishedSource(packagename)
-            removables.append(source_pub)
-            removables.extend(source_pub.getPublishedBinaries())
+        for packagename in self.args:
+            if self.options.binaryonly:
+                removables.extend(
+                    self.findLatestPublishedBinaries(packagename))
+            elif self.options.sourceonly:
+                removables.append(self.findLatestPublishedSource(packagename))
+            else:
+                source_pub = self.findLatestPublishedSource(packagename)
+                removables.append(source_pub)
+                removables.extend(source_pub.getPublishedBinaries())
 
         self.logger.info("Removing candidates:")
         for removable in removables:

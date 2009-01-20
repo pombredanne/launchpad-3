@@ -33,9 +33,6 @@
         attributes="createComment createCommentFromMessage"
     />
   </class>
-  <class class="canonical.launchpad.mailout.branchmergeproposal.RecipientReason">
-      <allow attributes="getReason branch mail_header" />
-  </class>
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal

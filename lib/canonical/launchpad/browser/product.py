@@ -141,6 +141,10 @@ class ProductNavigation(
     def traverse_announcement(self, name):
         return self.context.getAnnouncement(name)
 
+    @stepthrough('+commercialsubscription')
+    def traverse_commercialsubscription(self, name):
+        return self.context.commercial_subscription
+
     def traverse(self, name):
         return self.context.getSeries(name)
 
@@ -1518,7 +1522,7 @@ class ProductAddView(ProductAddViewBase):
             self.form_fields = self.form_fields.omit('owner',
                                                      'license_reviewed')
 
-    @action(_('Add'), name='add')
+    @action(_('Publish this Project'), name='add')
     def add_action(self, action, data):
         if self.user is None:
             raise zope.security.interfaces.Unauthorized(

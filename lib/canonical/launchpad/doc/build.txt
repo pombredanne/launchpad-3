@@ -50,6 +50,9 @@ Let's check the complex properties of a build object.
     >>> firefox_build.is_virtualized
     False
 
+    >>> firefox_build.arch_tag
+    u'i386'
+
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
@@ -463,7 +466,7 @@ First we'll define a helper to print the build summary:
 
     >>> build_summary = bs.getStatusSummaryForBuilds(i386_builds)
     >>> print_build_summary(build_summary)
-    Need building
+    NEEDSBUILD
     There are some builds waiting to be built.
     Relevant builds:
      - i386 build of pmount 0.1-1 in ubuntu warty RELEASE

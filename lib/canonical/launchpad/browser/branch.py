@@ -19,6 +19,7 @@ __all__ = [
     'BranchNavigation',
     'BranchNavigationMenu',
     'BranchInProductView',
+    'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
@@ -80,7 +81,8 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, IPrimaryContext)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
@@ -91,8 +93,31 @@ def quote(text):
     return cgi.escape(text, quote=True)
 
 
+class BranchURL:
+    """Branch URL creation rules."""
+
+    implements(ICanonicalUrlData)
+
+    rootsite = 'code'
+
+    def __init__(self, branch):
+        self.branch = branch
+
+    @property
+    def inside(self):
+        return self.branch.owner
+
+    @property
+    def path(self):
+        return '%s/%s' % (self.branch.container.name, self.branch.name)
+
+
 class BranchPrimaryContext:
     """The primary context is the product if there is one."""
+
+    # XXX: JonathanLange 2008-12-08 spec=package-branches: Not sure what
+    # should happen to this class, given that IBranchContainer does something
+    # fairly similar.
 
     implements(IPrimaryContext)
 
@@ -931,7 +956,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 registrant=self.user,
                 owner=data['owner'],
-                author=None, # Until BranchSet.new modified to remove it.
                 product=data['product'],
                 url=data.get('url'),
                 title=data['title'],

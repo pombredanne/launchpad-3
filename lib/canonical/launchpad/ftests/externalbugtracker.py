@@ -374,7 +374,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'is_open': True,
             'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
             'priority': 'P1',
-            'product': 'HeartOfGold',
+            'product': 'Marvin',
             'resolution': 'FIXED',
             'severity': 'normal',
             'status': 'RESOLVED',
@@ -571,7 +571,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""
-        bug_ids = arguments['ids']
+        bug_ids = arguments.get('ids')
+        products = arguments.get('products')
+
+        assert bug_ids is not None or products is not None, (
+            "One of ('ids', 'products') should be specified")
+
         bugs_to_return = []
         bugs = dict(self.bugs)
 
@@ -589,6 +594,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             changed_since_timetuple = time.strptime(
                 str(changed_since), '%Y%m%dT%H:%M:%S')
             changed_since = datetime(*changed_since_timetuple[:6])
+
+        # If we have some products but no bug_ids we just get all the
+        # bug IDs for those products and stuff them in the bug_ids list
+        # for processing below.
+        if bug_ids is None:
+            bug_ids = [
+                bug_id for bug_id, bug in self.bugs.items()
+                    if bug['product'] in products]
 
         for id in bug_ids:
             # If the ID is an int, look up the bug directly. We copy the
@@ -608,6 +621,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             # last_change_time is < changed_since.
             if (changed_since is not None and
                 bug_dict['last_change_time'] < changed_since):
+                continue
+
+            # If the bug doesn't belong to one of the products in the
+            # products list, ignore it.
+            if (products is not None and
+                bug_dict['product'] not in products):
                 continue
 
             # Update the DateTime fields of the bug dict so that they
@@ -1132,7 +1151,7 @@ class TestRoundup(Roundup):
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
-        if self.isPython():
+        if self.host == 'bugs.python.org':
             return open(
                 file_path + '/' + 'python_example_ticket_export.csv', 'r')
         else:

@@ -299,6 +299,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.ITeam"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.TeamFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IProduct"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
@@ -441,6 +448,11 @@
     <subscriber
         for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
         handler="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        />
+
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
+        handler="canonical.launchpad.rest.me.cache_me_link_when_principal_identified"
         />
 
     <subscriber

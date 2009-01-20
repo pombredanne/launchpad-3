@@ -35,7 +35,7 @@ access 'Copy package' page from any PPA.
     LinkNotFoundError
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/+copy-packages')
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+copy-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ... 'launchpad.AnyPerson')
@@ -48,7 +48,7 @@ PPA in order to be able to copy packages.
     >>> jblack_browser = setupBrowser(
     ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
@@ -76,7 +76,7 @@ provided link.
 Now, that James has his own PPA, he navigates back to Celso's PPA
 copy package interface can see packages to be copied.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -570,7 +570,7 @@ really deleted.
 
     >>> jblack_browser.getLink('Personal Package Archive').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl('Search', index=0).click()
+    >>> jblack_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
@@ -642,8 +642,8 @@ allowed if they are the same.
     ...     print msg
     Packages copied to PPA for James Blackwell:
     pmount 0.1-1 in warty
-    pmount-bin 0.1-1 in warty i386
     pmount-bin 0.1-1 in warty hppa
+    pmount-bin 0.1-1 in warty i386
 
 James sees the just-copied 'pmount' source in warty pending
 publication.
@@ -917,9 +917,8 @@ deleted files will be re-published in his archive.
     ...     print msg
     Packages copied to PPA for James Blackwell:
     pmount 0.1-1 in hoary
-    pmount-bin 0.1-1 in hoary i386
     pmount-bin 0.1-1 in hoary hppa
-
+    pmount-bin 0.1-1 in hoary i386
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -1001,8 +1000,8 @@ foo_2.0 version to his PPA.
     ...     print msg
     Packages copied to PPA for James Blackwell:
     foo 2.0 in hoary
-    foo-bin 2.0 in hoary i386
     foo-bin 2.0 in hoary hppa
+    foo-bin 2.0 in hoary i386
 
 James tries to copy some of Celso's packages that are older than
 the ones in his own PPA. He is not allowed to copy these older
@@ -1051,8 +1050,8 @@ do not enforce coherent version ordering across suites.
     ...     print msg
     Packages copied to PPA for James Blackwell:
     foo 1.1 in warty
-    foo-bin 1.1 in warty i386
     foo-bin 1.1 in warty hppa
+    foo-bin 1.1 in warty i386
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> print_ppa_packages(jblack_browser.contents)

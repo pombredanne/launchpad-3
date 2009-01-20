@@ -232,6 +232,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             return None
 
     @property
+    def path(self):
+        """See `ISourcePackage`."""
+        return '/'.join([
+            self.distribution.name,
+            self.distroseries.name,
+            self.sourcepackagename.name])
+
+    @property
     def displayname(self):
         return "%s %s %s" % (
             self.distribution.displayname,

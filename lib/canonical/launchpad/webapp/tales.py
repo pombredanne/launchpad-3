@@ -31,9 +31,12 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IHasIcon, IHasLogo,
-    IHasMugshot, IPerson, IPersonSet, IProduct, IProject, ISprint,
-    LicenseStatus, NotFoundError)
+    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
+    ISprint, LicenseStatus, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -904,6 +907,31 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             url, image_html, cgi.escape(person.browsername))
 
 
+class TeamFormatterAPI(PersonFormatterAPI):
+    """Adapter for `ITeam` objects to a formatted string."""
+
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).url(view_name)
+
+    def api_url(self, context):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).api_url(context)
+
+    def link(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return '&lt;redacted&gt;'
+        return super(TeamFormatterAPI, self).link(view_name, rootsite)
+
+
 class CustomizableFormatter(ObjectFormatterAPI):
     """A ObjectFormatterAPI that is easy to customize.
 
@@ -1707,8 +1735,9 @@ class PageTemplateContextsAPI:
         underscores, and use this to look up a string, unicode or
         function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles, emit a
-        warning that this page has no title, and return the default page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit
+        a warning that this page has no title, and return the default page
+        title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
@@ -2297,7 +2326,9 @@ class FormattersAPI:
         """, re.VERBOSE)
 
     def obfuscate_email(self):
-        """Obfuscate an email address as '<email address hidden>'.
+        """Obfuscate an email address if there's no authenticated user.
+
+        The email address is obfuscated as <email address hidden>.
 
         This formatter is intended to hide possible email addresses from
         unauthenticated users who view this text on the Web. Run this before
@@ -2310,6 +2341,8 @@ class FormattersAPI:
         mailto:person@domain.dom and http://person:password@domain.dom both
         match, though the http match is in fact not an email address.
         """
+        if getUtility(ILaunchBag).user is not None:
+            return self._stringtoformat
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
         text = text.replace(

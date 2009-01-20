@@ -20,14 +20,7 @@ from logging import getLogger
 import os
 import re
 import sys
-
-try:
-    import xml.elementtree.cElementTree as etree
-except ImportError:
-    try:
-        import cElementTree as etree
-    except ImportError:
-        import elementtree.ElementTree as etree
+import cElementTree as etree
 
 import pytz
 
@@ -41,6 +34,7 @@ from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
     IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
     IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.errorlog import (
@@ -1297,26 +1291,49 @@ class HALDevice:
           sub-device with info.bus='usb_device' for its "output aspect".
           These sub-devices can be identified by the device class their
           parent and by their USB vendor/product IDs, which are 0:0.
+
+        Several info.bus/info.subsystem values always relate to HAL nodes
+        which describe only "aspects" of physical devcies which are
+        represented by other HAL nodes:
+
+          - bus is None for a number of "virtual components", like
+            /org/freedesktop/Hal/devices/computer_alsa_timer or
+            /org/freedesktop/Hal/devices/computer_oss_sequencer, so
+            we ignore them. (The real sound devices appear with
+            other UDIs in HAL.)
+
+            XXX Abel Deuring 20080425: This ignores a few components
+            like laptop batteries or the CPU, where info.bus is None.
+            Since these components are not the most important ones
+            for the HWDB, we'll ignore them for now. Bug 237038.
+
+          - info.bus == 'net' is used by the HAL version in
+            Intrepid for the "output aspects" of network devices.
+
+            info.bus == 'scsi_generic' is used by the HAL version in
+            Intrepid for a HAL node representing the generic
+            interface of a SCSI device.
+
+            info.bus == 'scsi_host' is used by the HAL version in
+            Intrepid for real and "fake" SCSI host controllers.
+            (On Hardy, these nodes have no info.bus property.)
+            HAL nodes with this bus value are sub-nodes for the
+            "SCSI aspect" of another HAL node which represents the
+            real device.
+
+            info.bus == 'sound' is used by the HAL version in
+            Intrepid for "aspects" of sound devices.
+
+            info.bus == 'ssb' is used for "aspects" of Broadcom
+            Ethernet and WLAN devices, but like 'usb', they do not
+            represent separate devices.
+
+            info.bus == 'usb' is used for end points of USB devices;
+            the root node of a USB device has info.bus == 'usb_device'.
         """
-        bus = self.getProperty('info.bus')
-        if bus in (None, 'usb', 'ssb'):
-            # bus is None for a number of "virtual components", like
-            # /org/freedesktop/Hal/devices/computer_alsa_timer or
-            # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
-            # we ignore them. (The real sound devices appear with
-            # other UDIs in HAL.)
-            #
-            # XXX Abel Deuring 20080425: This ignores a few components
-            # like laptop batteries or the CPU, where info.bus is None.
-            # Since these components are not the most important ones
-            # for the HWDB, we'll ignore them for now. Bug 237038.
-            #
-            # info.bus == 'usb' is used for end points of USB devices;
-            # the root node of a USB device has info.bus == 'usb_device'.
-            #
-            # info.bus == 'ssb' is used for "aspects" of Broadcom
-            # Ethernet and WLAN devices, but like 'usb', they do not
-            # represent separate devices.
+        bus = self.raw_bus
+        if bus in (None, 'net', 'scsi_generic', 'scsi_host',
+                   'sound', 'ssb', 'usb'):
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
@@ -1384,8 +1401,26 @@ class HALDevice:
 
         Devices are identifed by (bus, vendor_id, product_id).
         At present we cannot generate reliable vendor and/or product
-        IDs for devices where
-        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc').
+        IDs for devices with the following values of the HAL
+        property info.bus resp. info.subsystem.
+
+        info.bus == 'backlight' is used by the HAL version in
+        Intrepid for the LC display. Useful vendor and product names
+        are not available.
+
+        info.bus == 'input' is used by the HAL version in
+        Intrepid for quite different devices like keyboards, mice,
+        special laptop switches and buttons, sometimes with odd
+        product names like "Video Bus".
+
+        info.bus == 'misc' and info.bus == 'unknown' are obviously
+        not very useful, except for the computer itself, which has
+        the bus 'unknown'.
+
+        info.bus in ('mmc', 'mmc_host') is used for SD/MMC cards resp.
+        the "output aspect" of card readers. We do not not have at
+        present enough background information to properly extract a
+        vendor and product ID from these cards.
 
         info.bus == 'platform' is used for devices like the i8042
         which controls keyboard and mouse; HAL has no vendor
@@ -1396,13 +1431,11 @@ class HALDevice:
         AT DMA controller or the keyboard. Like for the bus
         'platform', HAL does not provide any vendor data.
 
-        info.bus == 'mmc' is used for SD/MMC cards. We do not not
-        have at present enough background information to properly
-        extract a vendor and product ID from these cards.
-
-        info.bus == 'misc' and info.bus == 'unknown' are obviously
-        not very useful, except for the computer itself, which has
-        the bus 'unknown'.
+        info.bus == 'power_supply' is used by the HAL version in
+        Intrepid for AC adapters an laptop batteries. We don't have
+        at present enough information about possible problems with
+        missing vendor/product information in order to store the
+        data reliably in the HWDB.
 
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
@@ -1431,7 +1464,8 @@ class HALDevice:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
-        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc', 'misc'):
+        if bus in ('backlight', 'ieee1394', 'input', 'misc', 'mmc',
+                   'mmc_host', 'pcmcia', 'platform', 'pnp', 'power_supply'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;
@@ -1722,6 +1756,7 @@ class ProcessingLoop(object):
         self.valid_submissions = 0
         self.invalid_submissions = 0
         self.finished = False
+        self.janitor = getUtility(ILaunchpadCelebrities).janitor
 
     def _validateSubmission(self, submission):
         submission.status = HWSubmissionProcessingStatus.PROCESSED
@@ -1742,8 +1777,14 @@ class ProcessingLoop(object):
         # a limit for an SQL query, convert it into an integer.
         chunk_size = int(chunk_size)
         submissions = getUtility(IHWSubmissionSet).getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
-        if submissions.count() < chunk_size:
+            HWSubmissionProcessingStatus.SUBMITTED,
+            user=self.janitor
+            )[:chunk_size]
+        # Listify the submissions, since we'll have to loop over each
+        # one anyway. This saves a COUNT query for getting the number of
+        # submissions
+        submissions = list(submissions)
+        if len(submissions) < chunk_size:
             self.finished = True
         for submission in submissions:
             try:

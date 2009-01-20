@@ -17,6 +17,24 @@ request is querying the master or slave database.
     ...     """)
     >>> config.push('empty_slave', config_overlay)
 
+We should confirm that the empty database is as empty as we hope it is.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    >>> from canonical.launchpad.database.person import Person
+    >>> slave_store = getUtility(IStoreSelector).get(
+    ...     MAIN_STORE, SLAVE_FLAVOR)
+    >>> master_store = getUtility(IStoreSelector).get(
+    ...     MAIN_STORE, MASTER_FLAVOR)
+    >>> slave_store.find(Person).count()
+    0
+    >>> master_store.find(Person).count() > 0
+    True
+
+This helper parses the output of the +whichdb view (which unfortunately
+needs to be created externally to this pagetest).
+
     >>> def whichdb(browser):
     ...     dbname = extract_text(find_tag_by_id(browser.contents, 'dbname'))
     ...     if dbname == 'launchpad_ftest':
@@ -113,7 +131,38 @@ on the slaves allowing them to catch up.
     >>> print whichdb(anon_browser)
     MASTER
     >>> dbpolicy._test_lag = None
-    
+
+
+A 404 error page is shown when code raises a LookupError. If a slave
+database is being used, this might have been caused by replication lag
+if the missing data was only recently created. To fix this surprising
+error, requests are always retried using the master database before
+returning a 404 error to the user.
+
+    >>> anon_browser.handleErrors = True
+    >>> anon_browser.raiseHttpErrors = False
+
+    # Confirm requests are going to the SLAVE
+    >>> anon_browser.open('http://launchpad.dev/+whichdb')
+    >>> print whichdb(anon_browser)
+    SLAVE
+
+    # The slave database contains no data, but we don't get
+    # a 404 page - the request is retried against the MASTER.
+    >>> anon_browser.open('http://launchpad.dev/~stub')
+    >>> anon_browser.headers['Status']
+    '200 Ok'
+
+    # 404s are still returned though if the data doesn't exist in the
+    # MASTER database either.
+    >>> anon_browser.open('http://launchpad.dev/~does-not-exist')
+    >>> anon_browser.headers['Status']
+    '404 Not Found'
+
+    # This session is still using the SLAVE though by default.
+    >>> anon_browser.open('http://launchpad.dev/+whichdb')
+    >>> print whichdb(anon_browser)
+    SLAVE
 
 Reset our config to avoid affecting other tests.
 

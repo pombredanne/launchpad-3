@@ -10,7 +10,6 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BranchType, CreateBugParams, EmailAddressAlreadyTaken,
     IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, IProductSet,
@@ -24,37 +23,23 @@ from canonical.launchpad.database import (
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
 from canonical.launchpad.validators.person import PrivatePersonLinkageError
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestPerson(TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
-        self.person_set = getUtility(IPersonSet)
-        self.myteam = self.person_set.getByName('myteam')
-        self.otherteam = self.person_set.getByName('otherteam')
-        self.guadamen = self.person_set.getByName('guadamen')
-        self.product_set = getUtility(IProductSet)
-        self.bzr = self.product_set.getByName('bzr')
+        person_set = getUtility(IPersonSet)
+        self.myteam = person_set.getByName('myteam')
+        self.otherteam = person_set.getByName('otherteam')
+        self.guadamen = person_set.getByName('guadamen')
+        product_set = getUtility(IProductSet)
+        self.bzr = product_set.getByName('bzr')
         self.now = datetime.now(pytz.timezone('UTC'))
-
-    def test_getBranch_looks_up_products_by_aliases(self):
-        """When looking up a person's branch using IPerson.getBranch() it's
-        possible to use either the product's name or any of its aliases.
-        """
-        foobar = self.person_set.getByName('name16')
-        branch = self.factory.makeBranch(owner=foobar, product=self.bzr)
-        self.assertEquals(
-            foobar.getBranch(self.bzr.name, branch.name), branch)
-        self.bzr.setAliases(['bazaar-ng'])
-        self.assertEquals(
-            foobar.getBranch('bazaar-ng', branch.name), branch)
-
-    def test_getBranch_returns_None_if_pillar_is_not_product(self):
-        foobar = self.person_set.getByName('name16')
-        self.failUnless(foobar.getBranch('ubuntu', 'some-branch') is None)
-        self.failUnless(foobar.getBranch('mozilla', 'some-branch') is None)
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
@@ -187,7 +172,6 @@ class TestPerson(TestCaseWithFactory):
             name='namefoo',
             registrant=self.otherteam,
             owner=self.otherteam,
-            author=self.otherteam,
             product=self.bzr,
             url=None)
         try:

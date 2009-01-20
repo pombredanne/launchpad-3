@@ -10,7 +10,6 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
@@ -199,7 +198,7 @@ class TestCase(unittest.TestCase):
         except excClass, e:
             return e
         else:
-            if getattr(excClass,'__name__', None) is not None:
+            if getattr(excClass, '__name__', None) is not None:
                 excName = excClass.__name__
             else:
                 # probably a tuple
@@ -311,6 +310,39 @@ class TestCaseWithFactory(TestCase):
         if url is not None:
             browser.open(url)
         return browser
+
+    def create_branch_and_tree(self, tree_location='.'):
+        """Create a database branch, bzr branch and bzr checkout.
+
+        :return: a `Branch` and a workingtree.
+        """
+        from bzrlib.bzrdir import BzrDir
+        from bzrlib.transport import get_transport
+        db_branch = self.factory.makeAnyBranch()
+        transport = get_transport(db_branch.warehouse_url)
+        transport.clone('../..').ensure_base()
+        transport.clone('..').ensure_base()
+        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        return db_branch, bzr_branch.create_checkout(tree_location)
+
+    def useBzrBranches(self):
+        """Prepare for using bzr branches."""
+        from canonical.codehosting.scanner.tests.test_bzrsync import (
+            FakeTransportServer)
+        from bzrlib.transport import get_transport
+        self.useTempDir()
+        server = FakeTransportServer(get_transport('.'))
+        server.setUp()
+        self.addCleanup(server.tearDown)
+        # Avoid leaking local user configuration into tests.
+        old_bzr_home = os.environ.get('BZR_HOME')
+        def restore_bzr_home():
+            if old_bzr_home is None:
+                del os.environ['BZR_HOME']
+            else:
+                os.environ['BZR_HOME'] = old_bzr_home
+        os.environ['BZR_HOME'] = os.getcwd()
+        self.addCleanup(restore_bzr_home)
 
 
 def capture_events(callable_obj, *args, **kwargs):

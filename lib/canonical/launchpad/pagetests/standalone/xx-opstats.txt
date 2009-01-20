@@ -49,6 +49,7 @@ are adjusted after the request has been served:
     6XXs: 0
     http requests: 0
     requests: 0
+    retries: 0
     soft timeouts: 0
     timeouts: 0
     xml-rpc faults: 0
@@ -69,6 +70,11 @@ are adjusted after the request has been served:
 
 == Number of 404s ==
 
+Note that retries is incremented too. As per the standard Launchpad
+database policy, this request first uses the slave DB. The requested
+information is not found in there, so a retry is attempted against the
+master DB in case the information is missing due to replication lag.
+
     >>> output = http("GET http://launchpad.dev/non-existant HTTP/1.1\n")
     >>> output.getStatus()
     404
@@ -77,6 +83,7 @@ are adjusted after the request has been served:
     4XXs: 1
     http requests: 1
     requests: 1
+    retries: 1
 
 == Number of 500 Internal Server Errors (unhandled exceptions) ==
 

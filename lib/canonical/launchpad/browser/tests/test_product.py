@@ -17,6 +17,7 @@ from canonical.launchpad.testing import time_counter, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.testing import login_person
 from canonical.testing import LaunchpadFunctionalLayer
 
 class TestProductCodeIndexView(TestCaseWithFactory):
@@ -30,7 +31,8 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         email = self.factory.getUniqueEmailAddress()
         owner = self.factory.makePerson(email=email)
         product = self.factory.makeProduct(owner=owner)
-        branch = self.factory.makeBranch(product=product, **branch_args)
+        branch = self.factory.makeProductBranch(
+            product=product, **branch_args)
         login(email)
         product.development_focus.user_branch = branch
         return product, branch
@@ -81,7 +83,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             private=True)
         url = canonical_url(product, rootsite='code')
-        self.factory.makeBranch(product=product)
+        self.factory.makeProductBranch(product=product)
         # This is just "assertNotRaises"
         self.getUserBrowser(canonical_url(product, rootsite='code'))
 
@@ -116,6 +118,26 @@ class TestProductCodeIndexView(TestCaseWithFactory):
             (product, LaunchpadTestRequest()), name='+code-index')
         view.initialize()
         self.assertEqual(view.committer_count, 1)
+
+    def test_committers_count_private_branch(self):
+        # Test that calling committer_count will return the proper value
+        # for a private branch.
+        fsm = self.factory.makePerson(email='flyingpasta@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            private=True, owner=fsm)
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        login_person(fsm)
+        self.factory.makeRevisionsForBranch(
+            branch, author='flyingpasta@example.com',
+            date_generator=date_generator)
+
+        view = getMultiAdapter(
+            (product, LaunchpadTestRequest()), name='+code-index')
+        view.initialize()
+        self.assertEqual(view.committer_count, 1)
+
 
 
 def test_suite():

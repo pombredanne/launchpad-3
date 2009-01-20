@@ -9,7 +9,7 @@ import signal
 import subprocess
 import unittest
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.rewrite import BranchRewriter
 from canonical.config import config
@@ -33,7 +33,7 @@ class TestBranchRewriter(TestCase):
         # Requests for /$branch_name/.bzr/... are redirected to where the
         # branches are served from by ID.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         line = rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
         self.assertEqual(
             'http://bazaar-internal.launchpad.dev/%s/.bzr/README'
@@ -44,10 +44,32 @@ class TestBranchRewriter(TestCase):
         # Requests for /$branch_name/... that are not to .bzr directories are
         # redirected to codebrowse.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
         self.assertEqual(
             'http://localhost:8080/%s/changes' % branch.unique_name,
+            output)
+
+    def test_translateLine_private(self):
+        # All requests for /$branch_name/... for private branches are
+        # rewritten to https, which is then handled directly by codebrowse.
+        rewriter = self.makeRewriter()
+        branch = self.factory.makeBranch(private=True)
+        output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
+        self.assertEqual(
+            'https://bazaar.launchpad.dev/%s/changes' % branch.unique_name,
+            output)
+        output = rewriter.rewriteLine("/%s/.bzr" % branch.unique_name)
+        self.assertEqual(
+            'https://bazaar.launchpad.dev/%s/.bzr' % branch.unique_name,
+            output)
+
+    def test_translateLine_static(self):
+        # Requests to /static are rewritten to codebrowse urls.
+        rewriter = self.makeRewriter()
+        output = rewriter.rewriteLine("/static/foo")
+        self.assertEqual(
+            'http://localhost:8080/static/foo',
             output)
 
     def test_translateLine_not_found(self):
@@ -64,7 +86,7 @@ class TestBranchRewriterScript(TestCaseWithFactory):
     layer = ZopelessAppServerLayer
 
     def test_script(self):
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         input = "/%s/.bzr/README\n" % branch.unique_name
         expected = (
             "http://bazaar-internal.launchpad.dev/%s/.bzr/README\n"
