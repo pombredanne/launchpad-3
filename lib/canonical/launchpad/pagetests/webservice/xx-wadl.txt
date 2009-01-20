@@ -862,7 +862,8 @@ is kept in the <resource_type> tag.
     >>> methods = sorted(
     ...     entry_type.findall(wadl_tag('method')), key=sort_by_id)
     >>> (get, patch, put, transitionToAssignee,
-    ...     transitionToImportance, transitionToStatus) = methods
+    ...     transitionToImportance, transitionToStatus,
+    ...     transitionToTarget) = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
@@ -880,6 +881,7 @@ XML id. Here that's not a problem; we have one custom POST method
      ('POST', 'bug_task-transitionToAssignee'),
      ('POST', 'bug_task-transitionToImportance'),
      ('POST', 'bug_task-transitionToStatus'),
+     ('POST', 'bug_task-transitionToTarget'),
      ('PUT', 'bug_task-put')]
 
 
