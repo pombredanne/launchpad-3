@@ -8,8 +8,11 @@ __all__ = [
     'ProductBranchSubset',
     ]
 
+from storm.locals import Store
+
 from zope.interface import implements
 
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.interfaces.branchsubset import IBranchSubset
 
 
@@ -18,8 +21,13 @@ class ProductBranchSubset:
     implements(IBranchSubset)
 
     def __init__(self, product):
+        self._store = Store.of(product)
+        self._product = product
         self.name = product.name
         self.displayname = product.displayname
+
+    def getBranches(self):
+        return self._store.find(Branch, Branch.product == self._product)
 
 
 class PersonBranchSubset:
@@ -27,5 +35,10 @@ class PersonBranchSubset:
     implements(IBranchSubset)
 
     def __init__(self, person):
+        self._store = Store.of(person)
+        self._person = person
         self.name = person.name
         self.displayname = person.displayname
+
+    def getBranches(self):
+        return self._store.find(Branch, Branch.owner == self._person)

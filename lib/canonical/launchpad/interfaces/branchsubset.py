@@ -26,9 +26,10 @@ class IBranchSubset(Interface):
 # XXX: Add person_owner_count
 # XXX: Possibly add a group-by-namespaces feature
 # XXX: filter by lifecyle
-# XXX: make sure we can get canonical_url of container
-# XXX: make adapters for IProduct, IPerson, ISourcePackage
+# XXX: make sure we can get canonical_url of container if it exists.
+# XXX: make adapter for ISourcePackage
 # XXX: somehow deal with sort
 # XXX: registered by person
 # XXX: owned by person
 # XXX: subscribed by person
+# XXX: find existing tests for all of this crap and migrate / delete it.

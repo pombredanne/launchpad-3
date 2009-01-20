@@ -37,6 +37,17 @@ class TestProductBranchSubset(TestCaseWithFactory):
         self.assertEqual(
             product.displayname, self.makeSubset(product).displayname)
 
+    def test_getBranches_empty(self):
+        product = self.factory.makeProduct()
+        subset = self.makeSubset(product)
+        self.assertEqual([], list(subset.getBranches()))
+
+    def test_getBranches_non_empty(self):
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        subset = self.makeSubset(product)
+        self.assertEqual([branch], list(subset.getBranches()))
+
 
 class TestPersonBranchSubset(TestCaseWithFactory):
 
@@ -61,6 +72,17 @@ class TestPersonBranchSubset(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertEqual(
             person.displayname, self.makeSubset(person).displayname)
+
+    def test_getBranches_empty(self):
+        person = self.factory.makePerson()
+        subset = self.makeSubset(person)
+        self.assertEqual([], list(subset.getBranches()))
+
+    def test_getBranches_non_empty(self):
+        person = self.factory.makePerson()
+        branch = self.factory.makePersonalBranch(owner=person)
+        subset = self.makeSubset(person)
+        self.assertEqual([branch], list(subset.getBranches()))
 
 
 class TestAdapter(TestCaseWithFactory):
