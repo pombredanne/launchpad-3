@@ -154,8 +154,6 @@ class PackageCloner:
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
-        self._cleanup()
-
     def _print_diagnostics(self, store):
         """Prints diagnostic output, used for debugging."""
         rset = store.execute("""
@@ -250,14 +248,6 @@ class PackageCloner:
                 " AND secsrc.component = %s" % quote(origin.component))
         store.execute(find_origin_only_packages)
 
-    def _cleanup(self):
-        """Tidy up after a package set delta operation.
-
-        Drop the table with package set delta data.
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.execute("DROP TABLE tmp_merge_copy_data CASCADE")
-
     def _init_packageset_delta(self, destination):
         """Set up a temp table with data about target archive packages.
 
@@ -272,10 +262,11 @@ class PackageCloner:
         (additionally considering the distroseries, pocket and component).
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        # Create the temporary table that will hold the data required to
-        # perform the merge copy.
+        # Use a temporary table to hold the data needed for the package set
+        # delta computation. This will prevent multiple, parallel delta
+        # calculations from interfering with each other.
         store.execute("""
-            CREATE TABLE tmp_merge_copy_data (
+            CREATE TEMP TABLE tmp_merge_copy_data (
                 -- Source archive package data, only set for packages that
                 -- will be copied.
                 s_sspph integer,

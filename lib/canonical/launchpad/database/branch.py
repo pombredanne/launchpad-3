@@ -92,7 +92,7 @@ class Branch(SQLBase):
 
     implements(IBranch, IBranchNavigationMenu)
     _table = 'Branch'
-    _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
+    _defaultOrder = ['product', '-lifecycle_status', 'owner', 'name']
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
 
@@ -116,9 +116,6 @@ class Branch(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    author = ForeignKey(
-        dbName='author', foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -995,7 +992,7 @@ class BranchSet:
 
     def new(self, branch_type, name, registrant, owner, product=None,
             url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            author=None, summary=None, whiteboard=None, date_created=None,
+            summary=None, whiteboard=None, date_created=None,
             branch_format=None, repository_format=None, control_format=None,
             distroseries=None, sourcepackagename=None):
         """See `IBranchSet`."""
@@ -1024,7 +1021,7 @@ class BranchSet:
 
         branch = Branch(
             registrant=registrant,
-            name=name, owner=owner, author=author, product=product, url=url,
+            name=name, owner=owner, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
@@ -1312,7 +1309,7 @@ class BranchSet:
         results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=['-last_scanned', '-id'],
-            prejoins=['author', 'product'])
+            prejoins=['owner', 'product'])
         if branch_count is not None:
             results = results.limit(branch_count)
         return results
@@ -1331,7 +1328,7 @@ class BranchSet:
         results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=['-last_scanned', '-id'],
-            prejoins=['author', 'product'])
+            prejoins=['owner', 'product'])
         if branch_count is not None:
             results = results.limit(branch_count)
         return results
@@ -1349,7 +1346,7 @@ class BranchSet:
         results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=['-date_created', '-id'],
-            prejoins=['author', 'product'])
+            prejoins=['owner', 'product'])
         if branch_count is not None:
             results = results.limit(branch_count)
         return results
