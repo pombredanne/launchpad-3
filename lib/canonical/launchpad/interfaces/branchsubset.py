@@ -43,6 +43,7 @@ class IBranchSubset(Interface):
 # - source package
 # - registered by person
 # - subscribed by person
+# - project
 # - global set (i.e. IBranchSet)
 
 # XXX: Possibly add a group-by-namespaces feature
