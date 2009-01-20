@@ -1064,6 +1064,13 @@ We can limit the results to a specific architecture.
 
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
+HWDevice.drivers is the set of drivers that are associated via
+HWDeviceDriverLink (see below) with this device.
+
+    >>> for driver in sata_controller.drivers:
+    ...     print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic ahci
+
 
 == HWDeviceNameVariant ==
 
