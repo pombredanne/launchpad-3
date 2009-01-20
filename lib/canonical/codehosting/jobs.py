@@ -9,8 +9,6 @@ __all__ = ['JobRunner']
 import sys
 
 import transaction
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 
 from canonical.launchpad.interfaces.job import LeaseHeld
 from canonical.launchpad.webapp import errorlog
