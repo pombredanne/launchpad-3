@@ -96,6 +96,9 @@ class TestAdapter(TestCaseWithFactory):
         self.assertEqual(product.name, subset.name)
 
     def test_person(self):
+        # The default IBranchSubset for a person is all of the branches owned
+        # by that person.
+        # XXX: Is this a good idea? - jml
         person = self.factory.makePerson()
         subset = IBranchSubset(person)
         self.assertIsInstance(subset, PersonBranchSubset)
