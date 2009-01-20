@@ -14,12 +14,7 @@ RewriteLock /var/tmp/rewrite-lock
   ProxyPass / http://localhost:8087/ retry=1
 </VirtualHost>
 
-<VirtualHost 127.0.0.88:80>
-  ServerName codebrowse.launchpad.dev
-  RedirectMatch permanent /(.*) http://bazaar.launchpad.dev/$1
-</VirtualHost>
-
-<VirtualHost 127.0.0.88:80>
+<VirtualHost 127.0.0.99:80>
   ServerName bazaar.launchpad.dev
   LogLevel debug
 
@@ -33,10 +28,9 @@ RewriteLock /var/tmp/rewrite-lock
   RewriteEngine On
   RewriteMap branch-rewrite prg:%BRANCH_REWRITE%
 
-  # Requests to the root are redirected to the Launchpad homepage.
   RewriteRule ^/$ http://launchpad.dev [L]
 
-  RewriteRule ^(/~.*)$ ${branch-rewrite:$1} [L,P]
+  RewriteRule ^(/.*)$ ${branch-rewrite:$1} [L,P]
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/static/
   <Directory /var/tmp/bazaar.launchpad.dev/static/>
@@ -44,6 +38,34 @@ RewriteLock /var/tmp/rewrite-lock
     AllowOverride None
     Options Indexes
   </Directory>
+
+  <Location />
+    ProxyPassReverse http://localhost:8080/
+  </Location>
+</VirtualHost>
+
+<VirtualHost 127.0.0.99:443>
+  ServerName bazaar.launchpad.dev
+  LogLevel debug
+
+  SSLEngine On
+  SSLProxyEngine On
+  SSLCertificateFile /etc/apache2/ssl/launchpad.crt
+  SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
+
+  ProxyRequests off
+  <Proxy *>
+    Order deny,allow
+    Allow from localhost 127.0.0.0/255.0.0.0
+  </Proxy>
+  ProxyTimeout 20
+
+  RewriteEngine On
+
+  RequestHeader add X-Forwarded-Scheme https
+
+  RewriteRule ^/$ http://launchpad.dev [L]
+  RewriteRule ^/(.*)$ http://localhost:8080/$1 [L,P]
 
   <Location />
     ProxyPassReverse http://localhost:8080/

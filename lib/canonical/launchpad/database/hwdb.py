@@ -544,6 +544,16 @@ class HWDevice(SQLBase):
             device=self, distribution=distribution, driver=driver,
             architecture=architecture)
 
+    @property
+    def drivers(self):
+        """See `IHWDevice.`"""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(HWDriver,
+                                HWDeviceDriverLink.driver == HWDriver.id,
+                                HWDeviceDriverLink.device == self)
+        result_set.order_by((HWDriver.package_name, HWDriver.name))
+        return result_set
+
 
 class HWDeviceSet:
     """See `IHWDeviceSet`."""
