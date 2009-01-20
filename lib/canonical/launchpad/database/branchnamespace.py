@@ -250,22 +250,30 @@ class BranchNamespaceSet:
 
     def traverse(self, segments):
         """See `IBranchNamespaceSet`."""
-        person_name = segments.next()
+        traversed_segments = []
+        def get_next_segment():
+            try:
+                result = segments.next()
+            except StopIteration:
+                raise InvalidNamespace('/'.join(traversed_segments))
+            traversed_segments.append(result)
+            return result
+        person_name = get_next_segment()
         person = self._findPerson(person_name)
-        pillar_name = segments.next()
+        pillar_name = get_next_segment()
         pillar = self._findPillar(pillar_name)
         if pillar is None or IProduct.providedBy(pillar):
             namespace = self.get(person, product=pillar)
         else:
-            distroseries_name = segments.next()
+            distroseries_name = get_next_segment()
             distroseries = self._findDistroSeries(pillar, distroseries_name)
-            sourcepackagename_name = segments.next()
+            sourcepackagename_name = get_next_segment()
             sourcepackagename = self._findSourcePackageName(
                 sourcepackagename_name)
             namespace = self.get(
                 person, distroseries=distroseries,
                 sourcepackagename=sourcepackagename)
-        branch_name = segments.next()
+        branch_name = get_next_segment()
         return self._findOrRaise(
             NoSuchBranch, branch_name, namespace.getByName)
 

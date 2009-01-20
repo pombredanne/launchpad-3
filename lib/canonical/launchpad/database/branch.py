@@ -1178,53 +1178,49 @@ class BranchSet:
     def _getByPath(self, path):
         """Given a path within a branch, return the branch and the path."""
         namespace_set = getUtility(IBranchNamespaceSet)
-        parsed = namespace_set.parseBranchPath(path)
-        parsed_path = None
-        for parsed_path, branch_name, suffix in parsed:
-            branch = self._getBranchInNamespace(parsed_path, branch_name)
-            if branch is not None:
-                return branch, suffix
-
-        if parsed_path is None:
-            raise NoSuchBranch(path)
-
-        # This will raise an interesting error if any of the given objects
-        # don't exist.
-        namespace_set.interpret(
-            person=parsed_path['person'],
-            product=parsed_path['product'],
-            distribution=parsed_path['distribution'],
-            distroseries=parsed_path['distroseries'],
-            sourcepackagename=parsed_path['sourcepackagename'])
-        raise NoSuchBranch(path)
+        if not path.startswith('~'):
+            raise InvalidNamespace(path)
+        segments = iter(path.lstrip('~').split('/'))
+        branch = namespace_set.traverse(segments)
+        return branch, '/'.join(segments)
 
     def getByLPPath(self, path):
         """See `IBranchSet`."""
+        branch = suffix = series = None
         try:
             branch, suffix = self._getByPath(path)
-        except InvalidNamespace:
-            pass
-        else:
             if suffix == '':
                 suffix = None
-            return branch, suffix, None
+        except NoSuchBranch:
+            raise
+        except InvalidNamespace:
+            # If the first element doesn't start with a tilde, then maybe
+            # 'path' is a shorthand notation for a branch.
+            branch, series = self._getDefaultProductBranch(path)
+        return branch, suffix, series
 
-        path_segments = path.split('/')
-        if len(path_segments) < 3:
-            branch, series = self._getDefaultProductBranch(*path_segments)
+    def _getDefaultProductBranch(self, path):
+        """Return the branch with the shortcut 'path'.
+
+        :param path: A shortcut to a branch.
+        :raise InvalidBranchIdentifier: if 'path' has too many segments to be
+            a shortcut.
+        :raise InvalidProductIdentifier: if 'path' starts with an invalid
+            name for a product.
+        :raise NoSuchProduct: if 'path' starts with a non-existent product.
+        :raise NoSuchSeries: if 'path' refers to a product series and that
+            series does not exist.
+        :raise NoBranchForSeries: if 'path' refers to a product series that
+            exists, but does not have a branch.
+        :return: The branch.
+        """
+        segments = path.split('/')
+        if len(segments) == 1:
+            product_name, series_name = segments[0], None
+        elif len(segments) == 2:
+            product_name, series_name = tuple(segments)
         else:
             raise faults.InvalidBranchIdentifier(path)
-        return branch, None, series
-
-    def _getDefaultProductBranch(self, product_name, series_name=None):
-        """Return the branch for a product.
-
-        :param product_name: The name of the branch's product.
-        :param series_name: The name of the branch's series.  If not supplied,
-            the product development focus will be used.
-        :return: The branch.
-        :raise: A subclass of LaunchpadFault.
-        """
         if not valid_name(product_name):
             raise faults.InvalidProductIdentifier(product_name)
         product = getUtility(IProductSet).getByName(product_name)
