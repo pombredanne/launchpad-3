@@ -16,10 +16,8 @@ class IBranchSubset(Interface):
     pass
 
 
-# XXX: Add 'branches' or __iter__ feature
 # XXX: filter by "visible to user"
 # XXX: Add 'revisions' property or 'getRecentRevisions' method
-# XXX: Add branch count
 # XXX: Add recent revision count
 # XXX: Add recent committer count
 # XXX: Add team_owner_count

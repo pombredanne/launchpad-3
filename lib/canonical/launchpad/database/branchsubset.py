@@ -26,6 +26,10 @@ class ProductBranchSubset:
         self.name = product.name
         self.displayname = product.displayname
 
+    @property
+    def count(self):
+        return self.getBranches().count()
+
     def getBranches(self):
         return self._store.find(Branch, Branch.product == self._product)
 
@@ -39,6 +43,10 @@ class PersonBranchSubset:
         self._person = person
         self.name = person.name
         self.displayname = person.displayname
+
+    @property
+    def count(self):
+        return self.getBranches().count()
 
     def getBranches(self):
         return self._store.find(Branch, Branch.owner == self._person)

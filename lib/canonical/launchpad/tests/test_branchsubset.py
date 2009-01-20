@@ -48,6 +48,18 @@ class TestProductBranchSubset(TestCaseWithFactory):
         subset = self.makeSubset(product)
         self.assertEqual([branch], list(subset.getBranches()))
 
+    def test_count_empty(self):
+        product = self.factory.makeProduct()
+        subset = self.makeSubset(product)
+        # XXX: Is 'count' the best name for this? - jml
+        self.assertEqual(0, subset.count)
+
+    def test_count_non_empty(self):
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        subset = self.makeSubset(product)
+        self.assertEqual(1, subset.count)
+
 
 class TestPersonBranchSubset(TestCaseWithFactory):
 
@@ -83,6 +95,18 @@ class TestPersonBranchSubset(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch(owner=person)
         subset = self.makeSubset(person)
         self.assertEqual([branch], list(subset.getBranches()))
+
+    def test_count_empty(self):
+        person = self.factory.makePerson()
+        subset = self.makeSubset(person)
+        # XXX: Is 'count' the best name for this? - jml
+        self.assertEqual(0, subset.count)
+
+    def test_count_non_empty(self):
+        person = self.factory.makePerson()
+        branch = self.factory.makePersonalBranch(owner=person)
+        subset = self.makeSubset(person)
+        self.assertEqual(1, subset.count)
 
 
 class TestAdapter(TestCaseWithFactory):
