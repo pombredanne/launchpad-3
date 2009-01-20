@@ -81,7 +81,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
@@ -1681,7 +1681,6 @@ class BranchDiffJob(object):
 
     def run(self):
         """See IBranchDiffJob."""
-        self.job.start()
         bzr_branch = self.branch.getBzrBranch()
         from_revision_id = self._get_revision_id(
             bzr_branch, self.from_revision_spec)
@@ -1689,7 +1688,6 @@ class BranchDiffJob(object):
             bzr_branch, self.to_revision_spec)
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
-        self.job.complete()
         return static_diff
 
 
@@ -1699,6 +1697,12 @@ class RevisionMailJob(BranchDiffJob):
     implements(IRevisionMailJob)
 
     classProvides(IRevisionMailJobSource)
+
+    def __eq__(self, other):
+        return (self.context == other.context)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     @classmethod
     def create(
@@ -1721,6 +1725,17 @@ class RevisionMailJob(BranchDiffJob):
                         to_revision_spec))
         branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
         return klass(branch_job)
+
+    @staticmethod
+    def iterReady():
+        """See `IRevisionMailJobSource`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.find(
+            (BranchJob),
+            And(BranchJob.job_type == BranchJobType.REVISION_MAIL,
+                BranchJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs)))
+        return (RevisionMailJob(job) for job in jobs)
 
     @property
     def revno(self):
@@ -1750,12 +1765,12 @@ class RevisionMailJob(BranchDiffJob):
         if self.perform_diff and self.to_revision_spec is not None:
             diff = BranchDiffJob.run(self)
             transaction.commit()
-            diff = diff.diff.text
+            diff_text = diff.diff.text
         else:
-            diff = None
+            diff_text = None
         return BranchMailer.forRevision(
             self.branch, self.revno, self.from_address, self.body,
-            diff, self.subject)
+            diff_text, self.subject)
 
     def run(self):
         """See `IRevisionMailJob`."""
