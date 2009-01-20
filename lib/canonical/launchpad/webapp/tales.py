@@ -1010,24 +1010,11 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink'}
-
-    def traverse(self, name, furtherPath):
-        """Special case traversal to support multiple link formats."""
-        for link_name, func in (('project-link', self.projectLink),
-                           ('title-link', self.titleLink),
-                           ('bzr-link', self.bzrLink)):
-            if name == link_name:
-                extra_path = '/'.join(reversed(furtherPath))
-                del furtherPath[:]
-                return func(extra_path)
-        return ObjectFormatterAPI.traverse(self, name, furtherPath)
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        url = canonical_url(branch)
-        url = self.url(view_name)
         if branch.title is not None:
             title = branch.title
         else:
@@ -1038,7 +1025,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             'name': branch.name,
             'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
-            'url': url,
+            'url': self.url(view_name),
             }
 
     def link(self, view_name):
