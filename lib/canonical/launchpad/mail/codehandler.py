@@ -373,8 +373,13 @@ class CodeHandler:
                                           needs_review=True,
                                           review_diff=review_diff)
         except BranchMergeProposalExists:
-            # TODO: send response email
-            pass
+            body = get_error_message(
+                'branchmergeproposal-exists.txt',
+                source_branch='',
+                target_branch='')
+            simple_send_mail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
 
         if comment_text.strip() == '':
             comment = None
