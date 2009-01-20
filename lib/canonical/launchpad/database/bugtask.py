@@ -864,7 +864,13 @@ class BugTask(SQLBase, BugTaskMixin):
         self.assignee = assignee
 
     def transitionToTarget(self, target):
-        """See `IBugTask`."""
+        """See `IBugTask`.
+
+        This method allows changing the target of some bug
+        tasks. The rules it follows are similar to the ones
+        enforced implicitly by the code in
+        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
+        """
         if IUpstreamBugTask.providedBy(self):
             if IProduct.providedBy(target):
                 self.product = target
