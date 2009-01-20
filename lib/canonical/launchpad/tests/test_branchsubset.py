@@ -13,98 +13,85 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
-class TestProductBranchSubset(TestCaseWithFactory):
+class BranchSubsetTestsMixin:
 
     layer = DatabaseFunctionalLayer
 
-    def makeSubset(self, product):
-        return IBranchSubset(product)
+    def makeComponent(self):
+        raise NotImplementedError(self.makeComponent)
+
+    def makeSubset(self, component):
+        raise NotImplementedError(self.makeSubset)
+
+    def makeBranchInSubset(self, component):
+        raise NotImplementedError(self.makeBranchInSubset)
 
     def test_provides_interface(self):
-        product = self.factory.makeProduct()
+        component = self.makeComponent()
         self.assertProvides(
-            self.makeSubset(product), IBranchSubset)
+            self.makeSubset(component), IBranchSubset)
 
     def test_name(self):
-        # The name of a product subset is the name of the product.
-        product = self.factory.makeProduct()
-        self.assertEqual(product.name, self.makeSubset(product).name)
+        # The name of a component subset is the name of the component.
+        component = self.makeComponent()
+        self.assertEqual(component.name, self.makeSubset(component).name)
 
     def test_displayname(self):
-        # The display name of a product subset is the display name of the
-        # product.
-        product = self.factory.makeProduct()
+        # The display name of a component subset is the display name of the
+        # component.
+        component = self.makeComponent()
         self.assertEqual(
-            product.displayname, self.makeSubset(product).displayname)
+            component.displayname, self.makeSubset(component).displayname)
 
     def test_getBranches_empty(self):
-        product = self.factory.makeProduct()
-        subset = self.makeSubset(product)
+        component = self.makeComponent()
+        subset = self.makeSubset(component)
         self.assertEqual([], list(subset.getBranches()))
 
     def test_getBranches_non_empty(self):
-        product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(product=product)
-        subset = self.makeSubset(product)
+        component = self.makeComponent()
+        branch = self.makeBranchInSubset(component)
+        subset = self.makeSubset(component)
         self.assertEqual([branch], list(subset.getBranches()))
 
     def test_count_empty(self):
-        product = self.factory.makeProduct()
-        subset = self.makeSubset(product)
+        component = self.makeComponent()
+        subset = self.makeSubset(component)
         self.assertEqual(0, subset.count)
 
     def test_count_non_empty(self):
-        product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(product=product)
-        subset = self.makeSubset(product)
+        component = self.makeComponent()
+        branch = self.makeBranchInSubset(component)
+        subset = self.makeSubset(component)
         self.assertEqual(1, subset.count)
 
 
-class TestPersonBranchSubset(TestCaseWithFactory):
+class TestProductBranchSubset(TestCaseWithFactory, BranchSubsetTestsMixin):
 
     layer = DatabaseFunctionalLayer
+
+    def makeComponent(self):
+        return self.factory.makeProduct()
+
+    def makeSubset(self, component):
+        return IBranchSubset(component)
+
+    def makeBranchInSubset(self, component):
+        return self.factory.makeProductBranch(product=component)
+
+
+class TestPersonBranchSubset(TestCaseWithFactory, BranchSubsetTestsMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeComponent(self):
+        return self.factory.makePerson()
 
     def makeSubset(self, person):
         return IBranchSubset(person)
 
-    def test_provides_interface(self):
-        person = self.factory.makePerson()
-        self.assertProvides(
-            self.makeSubset(person), IBranchSubset)
-
-    def test_name(self):
-        # The name of a person subset is the name of the person.
-        person = self.factory.makePerson()
-        self.assertEqual(person.name, self.makeSubset(person).name)
-
-    def test_displayname(self):
-        # The display name of a person subset is the display name of the
-        # person.
-        person = self.factory.makePerson()
-        self.assertEqual(
-            person.displayname, self.makeSubset(person).displayname)
-
-    def test_getBranches_empty(self):
-        person = self.factory.makePerson()
-        subset = self.makeSubset(person)
-        self.assertEqual([], list(subset.getBranches()))
-
-    def test_getBranches_non_empty(self):
-        person = self.factory.makePerson()
-        branch = self.factory.makePersonalBranch(owner=person)
-        subset = self.makeSubset(person)
-        self.assertEqual([branch], list(subset.getBranches()))
-
-    def test_count_empty(self):
-        person = self.factory.makePerson()
-        subset = self.makeSubset(person)
-        self.assertEqual(0, subset.count)
-
-    def test_count_non_empty(self):
-        person = self.factory.makePerson()
-        branch = self.factory.makePersonalBranch(owner=person)
-        subset = self.makeSubset(person)
-        self.assertEqual(1, subset.count)
+    def makeBranchInSubset(self, component):
+        return self.factory.makePersonalBranch(owner=component)
 
 
 class TestAdapter(TestCaseWithFactory):
