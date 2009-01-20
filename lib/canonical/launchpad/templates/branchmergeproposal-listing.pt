@@ -50,8 +50,8 @@
           <tal:date replace="proposal/date_reviewed/fmt:approximatedate"/>
         </td>
         <td tal:condition="context/show_column/review|nothing">
-          <tal:review-vote define="comment proposal/reviewer_vote/comment">
-            <tal:voted-already condition="comment|nothing">
+          <tal:review-vote define="comment proposal/reviewer_vote/comment|nothing">
+            <tal:voted-already condition="comment">
 
               <span tal:attributes="class string:vote${comment/vote/name}"
                     tal:content="comment/vote/title">
@@ -61,10 +61,14 @@
             <tal:vote-pending condition="not: comment">
               <span class="votePENDING">Pending</span>
             </tal:vote-pending>
-            <tal:vote-tags
-              define="review_type proposal/reviewer_vote/review_type"
-              condition="review_type"
-              replace="review_type"/>
+            <tal:reviewer-not-team
+                define="reviewer context/view/getUserFromContext"
+                condition="not: reviewer/is_team">
+              <tal:vote-tags
+                  define="review_type proposal/reviewer_vote/review_type"
+                  condition="review_type"
+                  replace="review_type"/>
+            </tal:reviewer-not-team>
           </tal:review-vote>
         </td>
         <td tal:condition="context/show_column/vote_summary|nothing"
