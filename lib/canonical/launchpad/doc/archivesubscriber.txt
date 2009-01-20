@@ -3,8 +3,8 @@
 This content class represents a subscription by a person to an IArchive.
 The subscription represents that person's ability to download items from
 the archive's repository.  The subscription is granted by a person who
-has upload permission to the archive and once created is only viewable by
-other uploaders and the person in the subscription.
+has upload permission to the archive.  Once created the subscription is only
+viewable by other uploaders and the person in the subscription.
 
 See also archiveauthtoken.txt.
 
@@ -44,7 +44,7 @@ If we log in as cprov it will work:
 
     >>> login("celso.providelo@canonical.com")
     >>> new_sub = cprov.archive.newSubscription(
-    ...     name12, cprov, description=u"my new subscription")
+    ...     name12, cprov, description=u"subscription for name12")
 
 The new subscription is returned and reflects the data:
 
@@ -58,7 +58,7 @@ The new subscription is returned and reflects the data:
     cprov
 
     >>> print new_sub.description
-    my new subscription
+    subscription for name12
 
     >>> print new_sub.status.name
     ACTIVE
@@ -111,7 +111,8 @@ And retrieve the subscription by subscriber and archive:
 == Amending Subscriptions ==
 
 Some of the properties of subscriptions can change after they are created.
-To so this, the changer needs to have launchpad.Edit or be an admin.
+To do this, the changer needs to have launchpad.Edit on the subscription,
+or be an admin.
 
 Trying to set the properties as the subscribed person will fail:
 
@@ -129,6 +130,7 @@ Log in as someone with launchpad.Edit and it will work:
 Other properties that might get modified later are status and description.
 We can also do this as an admin.
 
+    >>> login("admin@canonical.com")
     >>> new_sub.description = u"changed by admin"
     >>> from canonical.launchpad.interfaces.archivesubscriber import (
     ...     ArchiveSubscriberStatus)
