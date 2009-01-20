@@ -37,6 +37,18 @@ class TestProductBranchSubset(TestCaseWithFactory):
             product.displayname, self.makeSubset(product).displayname)
 
 
+class TestAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        subset = IBranchSubset(product)
+        # XXX: Assert that it adapted to the right sort of object. Maybe we
+        # should check type here?
+        self.assertEqual(product.name, subset.name)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 

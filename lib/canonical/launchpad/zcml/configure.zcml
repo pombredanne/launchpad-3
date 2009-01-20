@@ -23,6 +23,7 @@
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
     <include file="branchsubscription.zcml" />
+    <include file="branchsubset.zcml" />
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
