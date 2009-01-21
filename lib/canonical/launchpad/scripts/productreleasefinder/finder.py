@@ -109,7 +109,11 @@ class ProductReleaseFinder:
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
-            # XXX: This might match a milestone that was not intended.
+            # XXX: This might match a milestone on a product series that was
+            # not intended, since product release used to have unique
+            # names per product series, but are now dependent on the milestone
+            # name which is unique per product. The series_name method
+            # parameter can be removed.
             milestone = product.getMilestone(release_name)
             if milestone is None:
                 series = product.getSeries(series_name)
