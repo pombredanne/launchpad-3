@@ -558,11 +558,21 @@ class GettextPOExporter(GettextPOExporterBase):
             translation_file.header.comment)
         if translation_file.is_template:
             header_translation_message.flags.update(['fuzzy'])
-        return self.exportTranslationMessageData(header_translation_message)
+        exported_header = self.exportTranslationMessageData(
+            header_translation_message)
+        return exported_header.encode(translation_file.header.charset)
 
 
 class GettextPOChangedExporter(GettextPOExporterBase):
     """Support class to export changed Gettext .po files."""
+
+    exported_header = (
+        u"# IMPORTANT: This file does NOT contain a complete PO file "
+            u"structure.\n"
+        u"# DO NOT attempt to import this file back into Launchpad.\n\n"
+        u"# This file is a partial export from Launchpad.net.\n"
+        u"# See https://help.launchpad.net/Translations/PartialPOExport\n"
+        u"# for more information.")
 
     def __init__(self, context=None):
         # 'context' is ignored because it's only required by the way the
@@ -578,10 +588,5 @@ class GettextPOChangedExporter(GettextPOExporterBase):
         icomplete gettext PO file.
         :return: The header as a unicode string.
         """
-        return (
-        u"# IMPORTANT: This file does NOT contain a complete PO file structure.\n"
-        u"# DO NOT attempt to import this file back into Launchpad.\n\n"
-        u"# This file is a partial export from Launchpad.net.\n"
-        u"# See https://help.launchpad.net/Translations/PartialPOExport\n"
-        u"# for more information.")
+        return self.exported_header.encode(translation_file.header.charset)
 
