@@ -19,7 +19,7 @@ Initially only the machine in sample data is shown.
 
     >>> print_table(browser)
     Machine                            Status
-    bazaar-importer - running 0 jobs   Online
+    bazaar-importer (0 jobs running)   Online
 
 If we create some jobs that are running, then we can see the currently
 running jobs in the table.
@@ -49,13 +49,13 @@ running jobs in the table.
     >>> browser.open('http://code.launchpad.dev/+code-imports/+machines')
     >>> print_table(browser)
     Machine                            Status
-    apollo - running 2 jobs            Online
+    apollo (2 jobs running)            Online
         ~vcs-imports/.../...
             Started: ... ago      Last heartbeat: ... ago
         ~vcs-imports/.../...
             Started: ... ago      Last heartbeat: ... ago
-    bazaar-importer - running 0 jobs   Online
-    odin - running 1 job               Online
+    bazaar-importer (0 jobs running)   Online
+    odin (1 job running)               Online
         ~vcs-imports/.../...
             Started: ... ago      Last heartbeat: ... ago
     saturn                             Offline
