@@ -180,12 +180,6 @@ class TestPopulateArchiveScript(TestCase):
             def message(self, prefix, *stuff, **kw):
                 self.buffer.write('%s%s' % (prefix, ' '.join(stuff)))
 
-                if 'exc_info' in kw:
-                    exception = traceback.format_exception(*sys.exc_info())
-                    for thing in exception:
-                        for line in thing.splitlines():
-                            self.log(line)
-
         if copy_archive_name is None:
             now = int(time.time())
             if archive_name is None:
