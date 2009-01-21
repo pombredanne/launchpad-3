@@ -68,18 +68,68 @@ Let's also check a successfully built record.
     Build log: netapplet-1.0.0.tar.gz
     Finished: 2007-08-10 (took 15 seconds)
 
-Build records contain a portlet listing the resulting binaries.
+Build records contain a portlet listing the resulting binaries. If the
+binaries have not yet been accepted then there will be an additional
+notice to that effect:
 
-    >>> binary_portlet = extract_text(
-    ...     find_portlet(anon_browser.contents, 'Resulting binaries'))
-    >>> print_text(binary_portlet)
+    >>> binary_portlet = find_portlet(anon_browser.contents,
+    ...     'Resulting binaries')
+    >>> print extract_text(binary_portlet)
+    Resulting binaries
+    Binaries awaiting acceptance:
+    mozilla-firefox 0.9
+
+When the binaries have not yet been accepted, the binaries listed will
+not be links:
+
+    >>> anon_browser.getLink("mozilla-firefox 0.9").url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Next, we'll manually create a package upload record for our build that
+has been accepted:
+XXX: noodles 2009-01-16 bug 317863: move this into the STP.
+
+    >>> from canonical.launchpad.database.queue import PackageUploadBuild
+    >>> from canonical.launchpad.interfaces.build import IBuildSet
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingPocket)
+    >>> from zope.component import getUtility
+
+    >>> login('foo.bar@canonical.com')
+    >>> build = getUtility(IBuildSet).getByBuildID(30)
+    >>> package_upload = build.distroseries.createQueueEntry(
+    ...     PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
+    ...     build.archive)
+    >>> package_upload_build = PackageUploadBuild(
+    ...     packageupload =package_upload,
+    ...     build=build)
+    >>> package_upload.setDone()
+    >>> logout()
+
+After reloading the page:
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/30")
+
+The binary portlet will now include the resulting binaries:
+
+    >>> binary_portlet = find_portlet(anon_browser.contents,
+    ...     'Resulting binaries')
+    >>> print extract_text(binary_portlet)
     Resulting binaries
     mozilla-firefox 0.9
 
-Each listed binary links to the corresponding page.
+And the binary name will be a link to the publishing record, which can
+be opened:
 
-    >>> anon_browser.getLink("mozilla-firefox 0.9").url
-    'http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9'
+    >>> binary_link = anon_browser.getLink("mozilla-firefox 0.9")
+    >>> print binary_link.url
+    http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9
+    >>> binary_link.click()
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9
 
 The user can see the estimated build start time field for each job
 still in the build queue.
@@ -429,17 +479,17 @@ lp-buildd-admins) have access for retrying PPA build.
     >>> admin_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(admin_browser.contents)
-    View PPA: http://launchpad.dev/~no-priv/+archive
-    View build records: http://launchpad.dev/~no-priv/+archive/+builds
-    Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
+    View PPA: http://launchpad.dev/~no-priv/+archive/ppa
+    View build records: http://launchpad.dev/~no-priv/+archive/ppa/+builds
+    Retry build: http://launchpad.dev/~no-priv/+archive/ppa/+build/24/+retry
     Rescore build (disabled)
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(user_browser.contents)
-    View PPA: http://launchpad.dev/~no-priv/+archive
-    View build records: http://launchpad.dev/~no-priv/+archive/+builds
-    Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
+    View PPA: http://launchpad.dev/~no-priv/+archive/ppa
+    View build records: http://launchpad.dev/~no-priv/+archive/ppa/+builds
+    Retry build: http://launchpad.dev/~no-priv/+archive/ppa/+build/24/+retry
     Rescore build (disabled)
 
 PPA build pages also have some text telling the viewer that they can retry
