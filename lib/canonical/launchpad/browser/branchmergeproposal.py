@@ -338,6 +338,15 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         return result
 
     @property
+    def review_diff(self):
+        """Return a properly encoded review diff."""
+        try:
+            diff = self.context.review_diff.diff.text.decode('utf-8')
+        except:
+            diff = self.context.review_diff.diff.text.decode('windows-1252')
+        return diff
+
+    @property
     def has_bug_or_spec(self):
         """Return whether or not the merge proposal has a linked bug or spec.
         """
