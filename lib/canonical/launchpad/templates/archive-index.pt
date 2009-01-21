@@ -55,7 +55,7 @@ function informFailure(transaction_id, response) {
     retry_link.set('href', '');
     retry_link.set('innerHTML', 'Retry');
     retry_link.on(
-        "click",
+        'click',
         function (e) {
             e.preventDefault();
             dispatchUpdate();
