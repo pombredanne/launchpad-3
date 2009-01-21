@@ -225,6 +225,8 @@ def sendmail(message, to_addrs=None):
     assert 'subject' in message and bool(message['subject']), \
             'No Subject: header'
 
+    message['from'] = str(Header(message['from']))
+
     from_addr = message['from']
     if to_addrs is None:
         to_addrs = message['to'].split(',')
