@@ -326,9 +326,9 @@ after having been imported.
 
     >>> transaction.commit()
     >>> print getLatestLibrarianFile().read()
-    # Esperanto translation for ...
+    # IMPORTANT: This file does NOT contain a complete PO file structure.
+    # DO NOT attempt to import this file back into Launchpad.
     ...
-    "X-Generator: Launchpad (build ...)\n"
     <BLANKLINE>
     msgid "english2"
     msgstr "esperanto2"

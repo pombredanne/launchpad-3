@@ -9,7 +9,8 @@ http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#PO-Files
 __metaclass__ = type
 
 __all__ = [
-    'GettextPOExporter'
+    'GettextPOChangedExporter',
+    'GettextPOExporter',
     ]
 
 import os
@@ -436,33 +437,28 @@ def export_translation_message(translation_message, wrap_width=77):
         ]).strip()
 
 
-class GettextPOExporter:
-    """Support class to export Gettext .po files."""
+class GettextPOExporterBase:
+    """Base support class to export Gettext .po files.
+
+    To get a working implementation, derived classes must assign values to
+    format and supported_source_formats and must implement
+    _makeExportedHeader.
+    """
     implements(ITranslationFormatExporter)
 
-    def __init__(self, context=None):
-        # 'context' is ignored because it's only required by the way the
-        # exporters are instantiated but it isn't used by this class.
-        self.format = TranslationFileFormat.PO
-        self.supported_source_formats = [
-            TranslationFileFormat.PO,
-            TranslationFileFormat.KDEPO]
-
-    def _getHeaderAsMessage(self, translation_file):
-        """Return an `ITranslationMessageData` with the header content."""
-        header_translation_message = TranslationMessageData()
-        header_translation_message.addTranslation(
-            TranslationConstants.SINGULAR_FORM,
-            translation_file.header.getRawContent())
-        header_translation_message.comment = (
-            translation_file.header.comment)
-        if translation_file.is_template:
-            header_translation_message.flags.update(['fuzzy'])
-        return header_translation_message
+    format = None
+    supported_source_formats = []
 
     def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
+
+    def _makeExportedHeader(self, translation_file):
+        """Transform the header information into a format suitable for export.
+        
+        :return: Unicode string containing the header.
+        """
+        raise NotImplementedError
 
     def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
                                force_utf8=False):
@@ -495,11 +491,7 @@ class GettextPOExporter:
 
             if force_utf8:
                 translation_file.header.charset = 'UTF-8'
-            header_translation_message = self._getHeaderAsMessage(
-                translation_file)
-            exported_header = self.exportTranslationMessageData(
-                header_translation_message)
-            chunks = [exported_header.encode(translation_file.header.charset)]
+            chunks = [self._makeExportedHeader(translation_file)]
             for message in translation_file.messages:
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
@@ -540,4 +532,56 @@ class GettextPOExporter:
             storage.addFile(file_path, file_extension, exported_file_content)
 
         return storage.export()
+
+
+class GettextPOExporter(GettextPOExporterBase):
+    """Support class to export Gettext .po files."""
+
+    def __init__(self, context=None):
+        # 'context' is ignored because it's only required by the way the
+        # exporters are instantiated but it isn't used by this class.
+        self.format = TranslationFileFormat.PO
+        self.supported_source_formats = [
+            TranslationFileFormat.PO,
+            TranslationFileFormat.KDEPO]
+
+    def _makeExportedHeader(self, translation_file):
+        """Create a standard gettext PO header, encoded as a message.
+
+        :return: The header message as a unicode string.
+        """
+        header_translation_message = TranslationMessageData()
+        header_translation_message.addTranslation(
+            TranslationConstants.SINGULAR_FORM,
+            translation_file.header.getRawContent())
+        header_translation_message.comment = (
+            translation_file.header.comment)
+        if translation_file.is_template:
+            header_translation_message.flags.update(['fuzzy'])
+        return self.exportTranslationMessageData(header_translation_message)
+
+
+class GettextPOChangedExporter(GettextPOExporterBase):
+    """Support class to export changed Gettext .po files."""
+
+    def __init__(self, context=None):
+        # 'context' is ignored because it's only required by the way the
+        # exporters are instantiated but it isn't used by this class.
+        self.format = TranslationFileFormat.POCHANGED
+        self.supported_source_formats = [
+            TranslationFileFormat.PO,
+            TranslationFileFormat.KDEPO]
+
+    def _makeExportedHeader(self, translation_file):
+        """Create a header for changed PO files.
+        This is a reduced header containing a warning that this is an
+        icomplete gettext PO file.
+        :return: The header as a unicode string.
+        """
+        return (
+        u"# IMPORTANT: This file does NOT contain a complete PO file structure.\n"
+        u"# DO NOT attempt to import this file back into Launchpad.\n\n"
+        u"# This file is a partial export from Launchpad.net.\n"
+        u"# See https://help.launchpad.net/Translations/PartialPOExport\n"
+        u"# for more information.")
 

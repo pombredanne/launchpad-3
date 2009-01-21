@@ -70,9 +70,7 @@ class TranslationExporter:
         for exporter in subscribers([self], ITranslationFormatExporter):
             if (exporter.format == file_format or
                 (file_format == TranslationFileFormat.XPI and
-                 exporter.format == TranslationFileFormat.XPIPO)or
-                (file_format == TranslationFileFormat.POCHANGED and
-                 exporter.format == TranslationFileFormat.PO)):
+                 exporter.format == TranslationFileFormat.XPIPO)):
                 # XPIPO is a special case for XPI exports.
                 return exporter
 
