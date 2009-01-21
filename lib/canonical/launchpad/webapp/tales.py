@@ -1036,7 +1036,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             '&nbsp;%(unique_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
-        """A hyperlinked branch icon with the unique name."""
+        """A hyperlinked branch icon with the bazaar identity."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
