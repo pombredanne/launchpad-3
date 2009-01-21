@@ -347,7 +347,12 @@ Check what milestones are displayed on the advanced search form:
     ...     mozilla, '+bugs', form_values)
     >>> for value in advanced_search_view.getMilestoneWidgetValues():
     ...     print value['title']
+    Mozilla Firefox: 0.9
+    Mozilla Firefox: 0.9.1
+    Mozilla Firefox: 0.9.2
     Mozilla Firefox: 1.0
+    Mozilla Firefox: 1.0.0
+    Mozilla Thunderbird: 0.8
 
 Bug Filters Portlet
 -------------------

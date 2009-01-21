@@ -9,13 +9,21 @@ will print them out:
     ...     table = find_main_content(browser.contents).find('table')
     ...     if table is None:
     ...         return None
-    ...     return extract_text(table)
+    ...     result = []
+    ...     for tr in table.findAll('tr'):
+    ...         result.append(
+    ...             ' '.join(text.strip() for text in tr.findAll(text=True)))
+    ...     return '\n'.join(result)
 
     >>> def milestones_in_portlet(browser):
     ...     portlet = find_portlet(browser.contents, 'Active milestones')
     ...     if portlet is None:
     ...         return None
-    ...     return extract_text(portlet.find('table'))
+    ...     result = []
+    ...     for tr in portlet.find('table').findAll('tr'):
+    ...         result.append(
+    ...             ' '.join(text.strip() for text in tr.findAll(text=True)))
+    ...     return '\n'.join(result)
 
 == Milestone listings ==
 
@@ -57,21 +65,20 @@ a page in which all of their milestones are listed.
     'http://launchpad.dev/firefox/+milestones'
 
     >>> print all_milestones(anon_browser)
-    1.0
-    ...
+    0.9...
+    1.0...
 
 
 === Product Series ===
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk/+milestones')
     >>> print all_milestones(anon_browser)
-    1.0
-    ...
+    0.9...
+    1.0...
 
     >>> anon_browser.open('http://launchpad.dev/firefox/1.0/+milestones')
     >>> print all_milestones(anon_browser)
-    None
-
+    1.0.0...
 
 === Projects ===
 
@@ -86,12 +93,11 @@ The main project page has a portlet "Active milestones":
     >>> logout()
     >>> anon_browser.open('http://launchpad.dev/gnome')
     >>> print milestones_in_portlet(anon_browser)
-    2010-04-01
-    1.1
-    2010-04-02
-    1.1.
-    2011-04-01
-    1.2
+    2010-04-01  1.1
+    2010-04-02  1.1.
+    2011-04-01  1.2
+                1.0
+                2.1.6
 
 The page "All milestones" lists all milestones, including the inactive ones:
 
@@ -203,23 +209,28 @@ To make it easy to refer to the bugs, we'll give each bug a nickname:
 
 Next, we'll target each bug to the 1.0 milestone:
 
-    >>> milestone = '1.0'
-
     >>> browser.open(bug_1_url)
     >>> browser.getLink(url=bug_1_url + '/+editstatus').click()
-    >>> browser.getControl('Milestone').displayValue = [milestone]
+    >>> control = browser.getControl('Milestone')
+    >>> milestone_name = '1.0'
+    >>> import re
+    >>> milestone_regex = re.compile('^%s$' % re.escape(milestone_name))
+    >>> [milestone_id] = [
+    ...     option.name for option in control.mech_control.items
+    ...     if option.get_labels()[0].text.endswith(milestone_name)]
+    >>> control.value = [milestone_id]
     >>> browser.getControl('Save Changes').click()
 
     >>> browser.open(bug_2_url)
     >>> browser.getLink(url=bug_2_url + '/+editstatus').click()
-    >>> browser.getControl('Milestone').displayValue = [milestone]
+    >>> browser.getControl('Milestone').value = [milestone_id]
     >>> browser.getControl('Save Changes').click()
 
 Observe that both bugs are listed in the 1.0 milestone listing:
 
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('Milestone history').click()
-    >>> browser.getLink(milestone).click()
+    >>> browser.getLink(milestone_regex).click()
     >>> print browser.title
     Milestone 1.0 for Mozilla Firefox...
     >>> milestone_url = browser.url

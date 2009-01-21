@@ -69,27 +69,35 @@ class ProjectMilestoneTest(unittest.TestCase):
         A project milestone named `A` exists, if at least one product of this
         project has a milestone named `A`.
         """
-        # None of the Products of the Gnome project has yet milestones.
         gnome = getUtility(IProjectSet)['gnome']
+        product_milestones = []
         for product in gnome.products:
-            self.assertEqual(list(product.all_milestones), [])
+            product_milestones += [milestone.name
+                                   for milestone in product.all_milestones]
 
-        # Hence Gnome itself has neither any milestones.
-        self.assertEqual(list(gnome.all_milestones), [])
+        # Gnome has one entry for each unique milestone name that its
+        # products have, so it is not a 1-to-1 relationship.
+        projectgroup_milestones = [milestone.name
+                                   for milestone in gnome.all_milestones]
+        self.assertEqual(sorted(projectgroup_milestones),
+                         sorted(set(product_milestones)))
 
         # When a milestone for a Gnome product is created, gnome has a
         # milestone of the same name.
+        gnome_milestone_names = [
+            milestone.name for milestone in gnome.all_milestones]
+        self.assertEqual(gnome_milestone_names, [u'1.0', u'2.1.6'])
         self.createProductMilestone('1.1', 'evolution', None)
         gnome_milestone_names = [
             milestone.name for milestone in gnome.all_milestones]
-        self.assertEqual(gnome_milestone_names, ['1.1'])
+        self.assertEqual(gnome_milestone_names, [u'1.0', u'1.1', u'2.1.6'])
 
         # There is only one project milestone named '1.1', regardless of the
         # number of product milestones with this name.
         self.createProductMilestone('1.1', 'gnomebaker', None)
         gnome_milestone_names = [
             milestone.name for milestone in gnome.all_milestones]
-        self.assertEqual(gnome_milestone_names, ['1.1'])
+        self.assertEqual(gnome_milestone_names, [u'1.0', u'1.1', u'2.1.6'])
 
     def test_milestone_date_expected(self):
         """The dateexpected attribute.
@@ -141,14 +149,16 @@ class ProjectMilestoneTest(unittest.TestCase):
         gnome_milestone = gnome.getMilestone('1.1')
         self.assertEqual(gnome_milestone.visible, False)
 
-        # Since the milestone 1.1 is now invisible and other milestones
-        # do not exist, Project.milestones no longer returns the milestone...
+        # Since the milestone 1.1 is now invisible, it will not show
+        # up in the gnome.milestones attribute.
         self.assertEqual(
-            [milestone.name for milestone in gnome.milestones], [])
+            [milestone.name for milestone in gnome.milestones],
+            ['1.0', '2.1.6'])
 
         # ... while project.all_milestones lists invisible milestones too.
         self.assertEqual(
-            [milestone.name for milestone in gnome.all_milestones], ['1.1'])
+            [milestone.name for milestone in gnome.all_milestones],
+            ['1.0', '1.1', '2.1.6'])
 
     def test_no_foreign_milestones(self):
         """Milestones in "foreign" products.
@@ -162,7 +172,9 @@ class ProjectMilestoneTest(unittest.TestCase):
 
         self.createProductMilestone('1.1', 'firefox', None)
         gnome = getUtility(IProjectSet)['gnome']
-        self.assertEqual(list(gnome.all_milestones), [])
+        self.assertEqual(
+            [milestone.name for milestone in gnome.all_milestones],
+            [u'1.0', u'2.1.6'])
 
     def createSpecification(self, milestone_name, product_name):
         """Create a specification, assigned to a milestone, for a product."""

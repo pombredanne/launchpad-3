@@ -13,6 +13,7 @@
         <require
             permission="launchpad.Edit"
             attributes="createProductRelease" />
+        <allow interface="canonical.launchpad.interfaces.bugtarget.IHasBugs" />
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"

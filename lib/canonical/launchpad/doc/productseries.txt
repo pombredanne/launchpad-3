@@ -112,7 +112,8 @@ A product series can have any number of releases associated with it.
 These are created with the addRelease() method of IProductSeries.
 
     >>> login_person(firefox_1_0.owner)
-    >>> firefox_109 = firefox_1_0.addRelease('1.0.9', owner)
+    >>> milestone = firefox_1_0.newMilestone('1.0.9')
+    >>> firefox_109 = milestone.createProductRelease(owner)
     >>> from canonical.launchpad.interfaces.productrelease import (
     ...     IProductRelease)
     >>> verifyObject(IProductRelease, firefox_109)
@@ -130,7 +131,8 @@ as it doesn't have any IProductReleaseFiles associated with it.
 If a product release has files associated with it, though, it can't be
 deleted.
 
-    >>> firefox_1010 = firefox_1_0.addRelease('1.0.10', owner)
+    >>> milestone = firefox_1_0.newMilestone('1.0.10')
+    >>> firefox_1010 = milestone.createProductRelease(owner)
     >>> firefox_1010.addReleaseFile('test', 'test', 'text/plain', owner)
     <ProductReleaseFile...
     >>> firefox_1010.destroySelf()
