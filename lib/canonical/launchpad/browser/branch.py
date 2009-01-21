@@ -251,8 +251,7 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
-             'browse_revisions',
+    links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates', 'merge_queue',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
@@ -276,15 +275,6 @@ class BranchContextMenu(ContextMenu):
     def delete_branch(self):
         text = 'Delete branch'
         return Link('+delete', text)
-
-    def browse_code(self):
-        """Return a link to the branch's file listing on codebrowse."""
-        text = 'Browse code'
-        enabled = self.context.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.context.unique_name
-               + '/files')
-        return Link(url, text, icon='info', enabled=enabled)
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
