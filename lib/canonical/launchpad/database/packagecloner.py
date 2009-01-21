@@ -361,10 +361,10 @@ class PackageCloner:
             FROM tmp_merge_copy_data WHERE obsoleted = True;
         """)
         handle.write(
-            '\nFresher packages:\n  %s' % '  \n'.join(str(r) for r in rset))
+            '\nFresher packages:\n  %s' % '\n  '.join(str(r) for r in rset))
         rset = store.execute("""
             SELECT sourcepackagename, s_version
             FROM tmp_merge_copy_data WHERE missing = True;
         """)
         handle.write(
-            '\nNew packages:\n  %s' % '  \n'.join(str(r) for r in rset))
+            '\nNew packages:\n  %s' % '\n  '.join(str(r) for r in rset))
