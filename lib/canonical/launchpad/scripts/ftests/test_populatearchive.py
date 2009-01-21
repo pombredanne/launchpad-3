@@ -163,7 +163,8 @@ class TestPopulateArchiveScript(TestCase):
         :type copy_archive_name: `IArchive`
         :param copy_archive_name: optional copy archive instance, used for
             merge copy testing.
-        :param reason: if empty do not provide '--reason' cmd line arg
+        :param reason: if empty do not provide '--reason' cmd line arg to
+            the script
         :param output_substr: this must be part of the script's output
         """
         class FakeZopeTransactionManager:
