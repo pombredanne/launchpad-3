@@ -491,6 +491,23 @@ class IBranchMergeProposalGetter(Interface):
             understood.
         """
 
+    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+        """Returen BranchMergeProposals associated with a reviewer.
+
+        :param context: Either a 'Person' or 'Product'.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        :param visible_by_user: If a person is not supplied, only merge
+            proposals based on public branches are returned.  If a person is
+            supplied, merge proposals based on both public branches, and the
+            private branches that the person is entitled to see are returned.
+            Private branches are only visible to the owner and subscribers of
+            the branch, and to LP admins.
+        :raises BadBranchMergeProposalSearchContext: If the context is not
+            understood.
+        """
+
     def getVoteSummariesForProposals(proposals):
         """Return the vote summaries for the proposals.
 

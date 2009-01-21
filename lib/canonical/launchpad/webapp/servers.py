@@ -1,4 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -34,7 +35,7 @@ from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.server.http.commonaccesslogger import CommonAccessLogger
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -133,6 +134,9 @@ class StepsToGo:
     def __init__(self, request):
         self.request = request
 
+    def __iter__(self):
+        return self
+
     def consume(self):
         """Remove the next path step and return it.
 
@@ -146,6 +150,8 @@ class StepsToGo:
         self.request._traversed_names.append(nextstep)
         self.request.setTraversalStack(stack)
         return nextstep
+
+    next = consume
 
     def startswith(self, *args):
         """Return whether the steps to go start with the names given."""
@@ -177,6 +183,10 @@ class ApplicationServerSettingRequestFactory:
 
     def __call__(self, body_instream, environ, response=None):
         """Equivalent to the request's __init__ method."""
+        # Make sure that HTTPS variable is set so that request.getURL() is
+        # sane
+        if self.protocol == 'https':
+            environ['HTTPS'] = 'on'
         request = self.requestfactory(body_instream, environ, response)
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request

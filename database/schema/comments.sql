@@ -589,6 +589,7 @@ COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product up
 COMMENT ON COLUMN Product.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this product.';
 COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
+COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -1624,10 +1625,13 @@ then someone else sets it incorrectly, we lose the first setting.';
 -- Translator / TranslationGroup
 
 COMMENT ON TABLE TranslationGroup IS 'This represents an organised translation group that spans multiple languages. Effectively it consists of a list of people (pointers to Person), and each Person is associated with a Language. So, for each TranslationGroup we can ask the question "in this TranslationGroup, who is responsible for translating into Arabic?", for example.';
+COMMENT ON COLUMN TranslationGroup.translation_guide_url IS 'URL with documentation about general rules for translation work done by this translation group.';
+
 COMMENT ON TABLE Translator IS 'A translator is a person in a TranslationGroup who is responsible for a particular language. At the moment, there can only be one person in a TranslationGroup who is the Translator for a particular language. If you want multiple people, then create a launchpad team and assign that team to the language.';
 COMMENT ON COLUMN Translator.translationgroup IS 'The TranslationGroup for which this Translator is working.';
 COMMENT ON COLUMN Translator.language IS 'The language for which this Translator is responsible in this TranslationGroup. Note that the same person may be responsible for multiple languages, but any given language can only have one Translator within the TranslationGroup.';
 COMMENT ON COLUMN Translator.translator IS 'The Person who is responsible for this language in this translation group.';
+COMMENT ON COLUMN Translator.style_guide_url IS 'URL with translation style guide of a particular translation team.';
 
 -- PocketChroot
 COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which pocket of which distroarchseries. Any given pocket of any given distroarchseries needs a specific chroot in order to be built. This table links it all together.';

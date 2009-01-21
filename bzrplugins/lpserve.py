@@ -101,7 +101,7 @@ class cmd_launchpad_server(Command):
 
         from canonical.codehosting.branchfs import get_lp_server
         lp_server = get_lp_server(
-            branchfs_client, user_id, upload_url, mirror_url)
+            branchfs_client, int(user_id), upload_url, mirror_url)
         lp_server.setUp()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS

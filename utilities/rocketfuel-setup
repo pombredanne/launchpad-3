@@ -94,7 +94,6 @@ declare -a hostnames
 hostnames=$(cat <<EOF
     answers.launchpad.dev
     api.launchpad.dev
-    bazaar.launchpad.dev
     bazaar-internal.launchpad.dev
     beta.launchpad.dev
     blueprints.launchpad.dev
@@ -115,6 +114,14 @@ EOF
 for hostname in $hostnames; do
   dev_host;
 done
+
+grep -q "^127.0.0.99" /etc/hosts
+if [ $? -ne 0 ]; then
+  echo "
+127.0.0.99      bazaar.launchpad.dev
+" | sudo tee -a /etc/hosts > /dev/null
+  echo "bazaar.launchpad.dev added to /etc/hosts"
+fi
 
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
