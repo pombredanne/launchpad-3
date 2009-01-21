@@ -27,7 +27,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
-    rename_parameters_as, REQUEST_USER)
+    REQUEST_USER)
 
 class MilestoneNameField(ContentNameField):
 

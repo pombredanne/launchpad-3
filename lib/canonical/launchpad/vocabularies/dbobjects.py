@@ -1548,9 +1548,9 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             return self.emptySelectResults()
         if check_permission('launchpad.Commercial', user):
             product_set = getUtility(IProductSet)
-            projects = product_set.forReview(search_text=query,
-                                             licenses=[License.OTHER_PROPRIETARY],
-                                             active=True)
+            projects = product_set.forReview(
+                search_text=query, licenses=[License.OTHER_PROPRIETARY],
+                active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
             projects = self._filter_projs(projects)

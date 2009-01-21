@@ -12,7 +12,7 @@ from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from warnings import warn
 from zope.interface import implements
-from storm.locals import And, Desc, ReferenceSet
+from storm.locals import And, Desc
 from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
@@ -23,7 +23,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.validators.person import validate_public_person

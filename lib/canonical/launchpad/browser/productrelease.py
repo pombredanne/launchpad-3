@@ -19,13 +19,10 @@ from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-from canonical.widgets import SinglePopupWidget
 from canonical.launchpad.interfaces import (
     ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
-from canonical.launchpad.interfaces.productseries import IProductSeriesSet
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.product import ProductDownloadFileMixin

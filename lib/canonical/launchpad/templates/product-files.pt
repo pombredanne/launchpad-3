@@ -16,12 +16,9 @@
   <div tal:replace="structure context/@@+portlet-top-contributors" />
 </metal:portlets>
 
-<metal:heading fill-slot="pageheading">
-   <h1>Download project files</h1>
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Edit">
+  <h1>Download project files</h1>
 
   <form method="POST"
         tal:attributes="action request/URL">

@@ -17,11 +17,10 @@ import calendar
 import pytz
 import sets
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
+    StringCol)
 from storm.store import Store
 from storm.expr import Join
-from storm.exceptions import NotOneError
 from zope.interface import implements
 from zope.component import getUtility
 

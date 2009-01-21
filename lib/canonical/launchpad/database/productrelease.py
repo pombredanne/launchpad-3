@@ -10,8 +10,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
-from storm.expr import And, Desc, Join
-from storm.store import Store, EmptyResultSet
+from storm.expr import And, Desc
+from storm.store import EmptyResultSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
