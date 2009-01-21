@@ -833,12 +833,26 @@ setting the tags_combinator parameter to 'All'.
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> product_set = getUtility(IProductSet)
+    >>> milestone_set = getUtility(IMilestoneSet)
+    >>> firefox = product_set.getByName('firefox')
+    >>> firefox_1_0 = milestone_set.getByNameAndProduct(
+    ...     product=firefox, name='1.0')
+    >>> bug = factory.makeBug(product=firefox)
+    >>> bug.bugtasks[0].milestone = firefox_1_0
+    >>> logout()
+
     >>> pprint_collection(webservice.named_get(
     ...     '/mozilla', 'searchTasks',
     ...     milestone=webservice.getAbsoluteUrl(
     ...         '/mozilla/+milestone/1.0')).jsonBody())
-    start: None
-    total_size: 0
+    start: 0
+    total_size: 1
+    ...
     ---
 
 The same search can be performed directly on the milestone too.
@@ -846,8 +860,9 @@ The same search can be performed directly on the milestone too.
     >>> pprint_collection(webservice.named_get(
     ...     webservice.getAbsoluteUrl('/mozilla/+milestone/1.0'),
     ...     'searchTasks').jsonBody())
-    start: None
-    total_size: 0
+    start: 0
+    total_size: 1
+    ...
     ---
 
 Search results can be ordered using the same string values used by
