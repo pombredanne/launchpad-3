@@ -594,14 +594,6 @@ class POFile(SQLBase, POFileMixIn):
         # (iow, it's different from a published translation: this only
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
-        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (that is, we no longer create empty
-        # TranslationMessage objects for empty strings in imported files), all
-        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
-        # they will not be needed anymore.
-        not_nulls = make_plurals_sql_fragment(
-            "imported.msgstr%(form)d IS NOT NULL", "OR")
-
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -616,9 +608,8 @@ class POFile(SQLBase, POFileMixIn):
                 current.is_current IS TRUE
             WHERE
                 POTMsgSet.sequence > 0 AND
-                POTMsgSet.potemplate = %s AND
-                (%s))
-            ''' % (quote(self), quote(self.potemplate), not_nulls),
+                POTMsgSet.potemplate = %s)
+            ''' % (quote(self), quote(self.potemplate)),
             orderBy='POTmsgSet.sequence')
 
         return results
@@ -716,21 +707,13 @@ class POFile(SQLBase, POFileMixIn):
         # msgid, that's anything with a singular translation; for ones with a
         # plural form, it's the number of plural forms the language supports.
         self._appendCompletePluralFormsConditions(query)
-        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (that is, we no longer create empty
-        # TranslationMessage objects for empty strings in imported files), all
-        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
-        # they will not be needed anymore.
-        not_nulls = make_plurals_sql_fragment(
-            "imported.msgstr%(form)d IS NOT NULL", "OR")
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
             WHERE
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
-                imported.is_imported IS TRUE AND
-                (%s))''' % not_nulls)
+                imported.is_imported IS TRUE)''')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
