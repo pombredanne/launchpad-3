@@ -368,9 +368,3 @@ class PackageCloner:
         """)
         handle.write(
             '\nNew packages:\n  %s' % '  \n'.join(str(r) for r in rset))
-        rset = store.execute("""
-            SELECT
-                sourcepackagename, s_version, t_version, obsoleted,
-                missing
-            FROM tmp_merge_copy_data
-        """)
