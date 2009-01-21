@@ -683,7 +683,8 @@ Create merge proposal with a review diff, and go to its index page.
     >>> import transaction
     >>> from canonical.launchpad.database.diff import StaticDiff
     >>> login('admin@canonical.com')
-    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff')
+    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
+    ...     u'\u1010'.encode('utf-8'))
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
     >>> url = canonical_url(bmp)

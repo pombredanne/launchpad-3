@@ -24,6 +24,7 @@ __all__ = [
 
 import sha
 import sets
+from email.Encoders import encode_base64
 from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
@@ -141,6 +142,7 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
+        encode_base64(attachment)
         self.attachments.append(attachment)
 
     def makeMessage(self):
@@ -148,6 +150,9 @@ class MailController(object):
         # ASCII strings.
         # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
         # so we can provide a Unicode string and get the right encoding.
+        from_addr = str(Header(self.from_addr))
+        to_addrs = [str(Header(address)) for address in list(self.to_addrs)]
+
         for address in [self.from_addr] + list(self.to_addrs):
             if not isinstance(address, str) or not is_ascii_only(address):
                 raise AssertionError(
@@ -224,8 +229,6 @@ def sendmail(message, to_addrs=None):
     assert 'from' in message and bool(message['from']), 'No From: header'
     assert 'subject' in message and bool(message['subject']), \
             'No Subject: header'
-
-    message['from'] = str(Header(message['from']))
 
     from_addr = message['from']
     if to_addrs is None:
