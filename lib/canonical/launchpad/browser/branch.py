@@ -29,6 +29,7 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
 from zope.formlib import form
@@ -1162,6 +1163,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
+    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     @property
     def initial_values(self):
