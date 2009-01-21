@@ -1075,7 +1075,7 @@ class IBranchSet(Interface):
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            author=None, summary=None, whiteboard=None, date_created=None,
+            summary=None, whiteboard=None, date_created=None,
             distroseries=None, sourcepackagename=None):
         """Create a new branch.
 
@@ -1510,6 +1510,9 @@ class IRevisionMailJobSource(Interface):
 
     def create(db_branch, revno, email_from, message, perform_diff, subject):
         """Create and return a new object that implements IRevisionMailJob."""
+
+    def iterReady():
+        """Iterate through ready IRevisionMailJobs."""
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):

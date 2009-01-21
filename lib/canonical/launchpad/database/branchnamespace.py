@@ -15,7 +15,9 @@ from storm.locals import And
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.database import Branch
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
@@ -155,6 +157,8 @@ class PackageNamespace(_BaseNamespace):
     implements(IBranchNamespace)
 
     def __init__(self, person, sourcepackage):
+        if not config.codehosting.package_branches_enabled:
+            raise Unauthorized("Package branches are disabled.")
         self.owner = person
         self.sourcepackage = sourcepackage
 
@@ -246,22 +250,30 @@ class BranchNamespaceSet:
 
     def traverse(self, segments):
         """See `IBranchNamespaceSet`."""
-        person_name = segments.next()
+        traversed_segments = []
+        def get_next_segment():
+            try:
+                result = segments.next()
+            except StopIteration:
+                raise InvalidNamespace('/'.join(traversed_segments))
+            traversed_segments.append(result)
+            return result
+        person_name = get_next_segment()
         person = self._findPerson(person_name)
-        pillar_name = segments.next()
+        pillar_name = get_next_segment()
         pillar = self._findPillar(pillar_name)
         if pillar is None or IProduct.providedBy(pillar):
             namespace = self.get(person, product=pillar)
         else:
-            distroseries_name = segments.next()
+            distroseries_name = get_next_segment()
             distroseries = self._findDistroSeries(pillar, distroseries_name)
-            sourcepackagename_name = segments.next()
+            sourcepackagename_name = get_next_segment()
             sourcepackagename = self._findSourcePackageName(
                 sourcepackagename_name)
             namespace = self.get(
                 person, distroseries=distroseries,
                 sourcepackagename=sourcepackagename)
-        branch_name = segments.next()
+        branch_name = get_next_segment()
         return self._findOrRaise(
             NoSuchBranch, branch_name, namespace.getByName)
 

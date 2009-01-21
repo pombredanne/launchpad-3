@@ -19,7 +19,8 @@ Make a trunk branch and set as the development focus branch.
 
 Make a single proposal for albert that is needing review by robert.
 
-    >>> albert = factory.makePerson(name='albert')
+    >>> albert = factory.makePerson(
+    ...     name='albert', email="albert@example.com", password="test")
     >>> robert = factory.makePerson(name='robert')
     >>> branch = factory.makeProductBranch(
     ...     owner=albert, product=fooix, name='review')
@@ -113,4 +114,24 @@ of their reviews
     Branch Merge Proposal             Requested By    Review
     lp://dev/~albert/fooix/review ... Albert ...      Pending ui
 
+The requested reviews for a team will only ever show pending reviews, as a
+team cannot approve a review, only a person can.
 
+    >>> login('foo.bar@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=albert, name="a-team", displayname="A-Team")
+    >>> logout()
+
+    >>> browser = setupBrowser(auth='Basic albert@example.com:test')
+    >>> browser.open('http://code.launchpad.dev/~albert/fooix/review')
+    >>> browser.getLink('Ready for review').click()
+    >>> browser.getLink('Request another review').click()
+    >>> browser.getControl('Reviewer').value = 'a-team'
+    >>> browser.getControl('Review type').value = 'tag'
+    >>> browser.getControl('Request Review').click()
+
+    >>> browser.open('http://code.launchpad.dev/~a-team')
+    >>> browser.getLink('requested review').click()
+    >>> print_tag_with_id(browser.contents, 'proposal-listing')
+    Branch Merge Proposal             Requested By    Review
+    lp://dev/~albert/fooix/review ... Albert ...      Pending
