@@ -875,6 +875,12 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    def codebrowse_url(extra):
+        """XXX.
+
+        :param extra: XXX.
+        """
+
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 

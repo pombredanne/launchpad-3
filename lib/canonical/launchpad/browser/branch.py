@@ -240,9 +240,7 @@ class BranchNavigationMenu(NavigationMenu):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Source Code'
         enabled = self.branch.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.branch.unique_name
-               + '/files')
+        url = self.branch.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
 
 
@@ -280,9 +278,7 @@ class BranchContextMenu(ContextMenu):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'All revisions'
         enabled = self.context.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.context.unique_name
-               + '/changes')
+        url = self.context.codebrowse_url('changes')
         return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -388,7 +384,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return config.codehosting.codebrowse_root + self.context.unique_name
+        return self.context.codebrowse_url()
 
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""

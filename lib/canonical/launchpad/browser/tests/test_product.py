@@ -65,6 +65,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
 
         link = self.getBranchSummaryBrowseLinkForProduct(product)
         login(ANONYMOUS)
+        # XXX??
         self.assertEqual(
             link.url, config.codehosting.codebrowse_root + branch.unique_name)
 

@@ -235,8 +235,7 @@ class UnmergedRevisionsMixin:
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return (config.codehosting.codebrowse_root +
-                self.context.source_branch.unique_name)
+        return self.context.codebrowse_url()
 
 
 class BranchMergeProposalRevisionIdMixin:
