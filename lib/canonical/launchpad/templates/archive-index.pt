@@ -178,12 +178,14 @@ Y.on("domready", dispatchUpdate);
         </tal:package-copy-request-list>
       </div>
 
-      <div tal:condition="archive_active">
+      <tal:non_copy_only condition="not: context/is_copy">
+        <div tal:condition="archive_active" >
 
-        <h2>apt sources.list entries</h2>
-        <tal:entries replace="structure view/sources_list_entries" />
+          <h2>apt sources.list entries</h2>
+          <tal:entries replace="structure view/sources_list_entries" />
 
-      </div>
+        </div>
+      </tal:non_copy_only>
 
       <div id="signing-key"
            tal:define="signing_key context/signing_key"
