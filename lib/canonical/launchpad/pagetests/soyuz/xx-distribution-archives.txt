@@ -106,7 +106,7 @@ archive:
     >>> 'intrepid-private-security-rebuild' in extract_text(main_content)
     False
 
-But when logged in as the owner or admin, the private archive does display.
+But when logged in as the owner or admin, the private archive does display
 For example:
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/+archives")
