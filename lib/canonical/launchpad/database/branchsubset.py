@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'GenericBranchSubset',
     'PersonBranchSubset',
     'ProductBranchSubset',
     ]
@@ -29,6 +30,27 @@ def revision_time_limit(day_limit):
     return And(
         Revision.revision_date <= now,
         Revision.revision_date > earliest)
+
+
+class GenericBranchSubset:
+
+    def __init__(self, store, branch_filter_expr=None, name=None,
+                 displayname=None):
+        self._store = store
+        self._branch_filter_expr = branch_filter_expr
+        self.name = name
+        self.displayname = displayname
+
+    def getBranches(self):
+        expression = self._branch_filter_expr
+        if expression is None:
+            return self._store.find(Branch)
+        else:
+            return self._store.find(Branch, expression)
+
+    @property
+    def count(self):
+        return self.getBranches().count()
 
 
 class ProductBranchSubset:

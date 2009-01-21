@@ -8,13 +8,52 @@ from datetime import datetime, timedelta
 import unittest
 
 import pytz
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchsubset import (
-    PersonBranchSubset, ProductBranchSubset)
+    GenericBranchSubset, PersonBranchSubset, ProductBranchSubset)
 from canonical.launchpad.interfaces.branchsubset import IBranchSubset
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing.layers import DatabaseFunctionalLayer
+
+
+class TestGenericBranchSubset(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.store = getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR)
+
+    def test_name(self):
+        subset = GenericBranchSubset(self.store, name="foo")
+        self.assertEqual('foo', subset.name)
+
+    def test_displayname(self):
+        subset = GenericBranchSubset(self.store, displayname='Foo Bar')
+        self.assertEqual('Foo Bar', subset.displayname)
+
+    def test_getBranches_no_filter(self):
+        subset = GenericBranchSubset(self.store)
+        all_branches = self.store.find(Branch)
+        self.assertEqual(list(all_branches), list(subset.getBranches()))
+
+    def test_getBranches_product_filter(self):
+        branch = self.factory.makeProductBranch()
+        subset = GenericBranchSubset(
+            self.store, Branch.product == branch.product)
+        all_branches = self.store.find(Branch)
+        self.assertEqual([branch], list(subset.getBranches()))
+
+    def test_count(self):
+        subset = GenericBranchSubset(self.store)
+        num_all_branches = self.store.find(Branch).count()
+        self.assertEqual(num_all_branches, subset.count)
 
 
 class BranchSubsetTestsMixin:
