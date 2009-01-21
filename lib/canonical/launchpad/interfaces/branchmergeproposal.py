@@ -12,7 +12,9 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
+    'IBranchMergeProposalJob',
     'IBranchMergeProposalListingBatchNavigator',
+    'IReviewDiffJob',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -24,6 +26,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import IBranch
 from canonical.launchpad.interfaces.diff import IStaticDiff
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
@@ -458,6 +461,22 @@ class IBranchMergeProposal(Interface):
         """Delete the proposal to merge."""
 
 
+class IBranchMergeProposalJob(Interface):
+    """A Job related to a Branch Merge Proposal."""
+
+    branch_merge_proposal = Object(
+        title=_('The BranchMergeProposal this job is about'),
+        schema=IBranchMergeProposal, required=True)
+
+    job = Object(title=_('The common Job attributes'), schema=IJob,
+        required=True)
+
+    metadata = Attribute('A dict of data about the job.')
+
+    def destroySelf():
+        """Destroy this object."""
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
@@ -514,3 +533,6 @@ class IBranchMergeProposalGetter(Interface):
 for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
+
+class IReviewDiffJob(Interface):
+    """Interface for review diffs."""

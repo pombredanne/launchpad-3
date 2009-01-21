@@ -1,4 +1,3 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database class for branch merge prosals."""
@@ -12,12 +11,15 @@ __all__ = [
 
 from email.Utils import make_msgid
 
+from lazr.delegates import delegates
+import simplejson
 from storm.expr import And
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from canonical.lazr import DBEnumeratedType, DBItem
 from storm.expr import Desc, Join, LeftJoin
 from storm.references import Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
@@ -32,6 +34,8 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.codereviewvote import (
     CodeReviewVoteReference)
+from canonical.launchpad.database.diff import StaticDiff
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.event.branchmergeproposal import (
@@ -41,9 +45,10 @@ from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
-    WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
+    IReviewDiffJob, UserNotBranchReviewer, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
@@ -684,6 +689,51 @@ class BranchMergeProposalGetter:
         return result
 
 
+class BranchMergeProposalJobType(DBEnumeratedType):
+    """Values that ICodeImportJob.state can take."""
+
+    STATIC_DIFF = DBItem(0, """
+        Static Diff
+
+        This job runs against a branch to produce a diff that cannot change.
+        """)
+
+
+class BranchMergeProposalJob(SQLBase):
+    """Base class for jobs related to branch merge proposals."""
+
+    implements(IBranchMergeProposalJob)
+    delegates(IJob, context='job')
+
+    _table = 'BranchMergeProposalJob'
+
+    job = ForeignKey(foreignKey='Job', notNull=True)
+
+    branch_merge_proposal = ForeignKey(
+        foreignKey='BranchMergeProposal', notNull=True)
+
+    job_type = EnumCol(enum=BranchMergeProposalJobType, notNull=True)
+
+    _json_data = StringCol(dbName='json_data')
+
+    @property
+    def metadata(self):
+        return simplejson.loads(self._json_data)
+
+    def __init__(self, branch_merge_proposal, job_type, metadata):
+        """Constructor.
+
+        :param branch_merge_proposal: The proposal this job relates to.
+        :param job_type: The BranchMergeProposalJobType of this job.
+        :param metadata: The type-specific variables, as a JSON-compatible
+            dict.
+        """
+        json_data = simplejson.dumps(metadata)
+        SQLBase.__init__(
+            self, job=Job(), branch_merge_proposal=branch_merge_proposal,
+            job_type=job_type, _json_data=json_data)
+
+
 class BranchMergeProposalQueryBuilder:
     """A utility class to help build branch merge proposal query strings."""
 
@@ -744,3 +794,45 @@ class BranchMergeProposalQueryBuilder:
                 """ % {'tables': ', '.join(self._tables),
                        'where_clause': ' AND '.join(self._where_clauses)})
         return query
+
+
+class ReviewDiffJob(object):
+
+    implements(IReviewDiffJob)
+    delegates(IBranchMergeProposalJob)
+
+    def __init__(self, job):
+        self.context = job
+
+    @classmethod
+    def create(klass, bmp):
+        job = BranchMergeProposalJob(
+            bmp, BranchMergeProposalJobType.STATIC_DIFF, {})
+        return klass(job)
+
+    def run(self):
+        cleanups = []
+        def get_branch(branch):
+            bzr_branch = branch.getBzrBranch()
+            bzr_branch.lock_read()
+            cleanups.append(bzr_branch.unlock)
+            return bzr_branch
+        try:
+            bzr_source = get_branch(self.branch_merge_proposal.source_branch)
+            bzr_target = get_branch(self.branch_merge_proposal.target_branch)
+            lca, source_revision = self._find_revisions(bzr_source, bzr_target)
+            diff = StaticDiff.acquire(
+                lca, source_revision, bzr_source.repository)
+            self.branch_merge_proposal.review_diff = diff
+        finally:
+            for cleanup in reversed(cleanups):
+                cleanup()
+        return diff
+
+    @staticmethod
+    def _find_revisions(bzr_source, bzr_target):
+        source_revision = bzr_source.last_revision()
+        target_revision = bzr_target.last_revision()
+        graph = bzr_target.repository.get_graph(bzr_source.repository)
+        lca = graph.find_unique_lca(source_revision, target_revision)
+        return lca, source_revision

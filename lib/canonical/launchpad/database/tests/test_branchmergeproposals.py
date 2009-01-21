@@ -8,11 +8,18 @@ from datetime import datetime
 from unittest import TestCase, TestLoader
 
 from pytz import UTC
+import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer,)
+
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter, is_valid_transition)
+    BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
+    BranchMergeProposalJobType, is_valid_transition, ReviewDiffJob,)
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
@@ -21,14 +28,13 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    IBranchMergeProposalGetter)
+    IBranchMergeProposalGetter, IBranchMergeProposalJob, IReviewDiffJob)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
-
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -831,6 +837,55 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             [],
             self._get_merge_proposals(
                 november, visible_by_user=self.factory.makePerson()))
+
+
+class TestBranchMergeProposalJob(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_providesInterface(self):
+        """BranchMergeProposalJob implements expected interfaces."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = BranchMergeProposalJob(
+            bmp, BranchMergeProposalJobType.STATIC_DIFF, {})
+        job.sync()
+        verifyObject(IBranchMergeProposalJob, job)
+
+
+class TestReviewDiffJob(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = ReviewDiffJob.create(bmp)
+        verifyObject(IReviewDiffJob, job)
+        verifyObject(IBranchMergeProposalJob, job)
+
+    def test_run_makes_diff(self):
+        self.useBzrBranches()
+        target, target_tree = self.create_branch_and_tree('target')
+        target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
+        target_tree.add('foo')
+        rev1 = target_tree.commit('added foo')
+        source, source_tree = self.create_branch_and_tree('source')
+        source_tree.pull(target_tree.branch, stop_revision=rev1)
+        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\n')
+        source_tree.commit('added bar')
+        target_tree.merge_from_branch(source_tree.branch)
+        target_tree.commit('merged from source')
+        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\nqux\n')
+        source_tree.commit('added qux')
+        bmp = BranchMergeProposal(
+            source_branch=source, target_branch=target,
+            registrant=source.owner)
+        job = ReviewDiffJob.create(bmp)
+        diff = job.run()
+        self.assertIsNot(None, diff)
+        transaction.commit()
+        self.assertNotIn('+bar', diff.diff.text)
+        self.assertIn('+qux', diff.diff.text)
+        self.assertEqual(diff, bmp.review_diff)
 
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):

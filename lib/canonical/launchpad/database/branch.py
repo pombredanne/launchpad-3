@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'Branch',
+    'BranchDiffJob',
     'BranchSet',
     'DEFAULT_BRANCH_LISTING_SORT',
     'RevisionMailJob',
