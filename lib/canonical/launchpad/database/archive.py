@@ -13,7 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or
+from storm.expr import Or, And, Select
 from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
@@ -50,6 +50,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
+from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, PocketNotFound,
@@ -1376,15 +1377,26 @@ class ArchiveSet:
             admins = getUtility(ILaunchpadCelebrities).admin
             if not user.inTeam(admins):
                 # Enforce privacy-awareness for logged-in, non-admin users,
-                # so that they can only see the private bugs that they're
-                # allowed to see. See IBug.searchAsUser for example.
+                # so that they can only see the private archives that they're
+                # allowed to see.
 
-                # XXX noodles 20090121 When the data for ArchiveSubscribers
-                # is setup this can be implemented. For the moment,
-                # non-admins will only see public archives, or private
-                # archives which they own.
-                extra_exprs.append(Or(Archive.private == False,
-                                      Archive.owner == user))
+                # Create a subselect to capture all the teams that are
+                # owners of archives AND the user is a member of:
+                user_teams_subselect = Select(
+                    TeamParticipation.teamID,
+                    where=And(
+                       TeamParticipation.personID == user.id,
+                       TeamParticipation.teamID == Archive.ownerID))
+
+                # Append the extra expression to capture either public
+                # archives, or archives owned by the user, or archives
+                # owned by a team of which the user is a member:
+                extra_exprs.append(
+                    Or(
+                        Archive.private == False,
+                        Archive.ownerID == user.id,
+                        Archive.ownerID.is_in(user_teams_subselect)))
+
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
