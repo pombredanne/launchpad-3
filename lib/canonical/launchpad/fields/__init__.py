@@ -445,8 +445,8 @@ class BlacklistableContentNameField(ContentNameField):
         super(BlacklistableContentNameField, self)._validate(input)
 
         # Although this check is performed in UniqueField._validate(), we need
-        # to do it here again to avoid cheking whether or not the name is
-        # black listed when it hasn't been changed.
+        # to do it here again to avoid checking whether or not the name is
+        # blacklisted when it hasn't been changed.
         _marker = object()
         if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
