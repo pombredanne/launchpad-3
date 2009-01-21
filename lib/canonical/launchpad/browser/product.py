@@ -67,6 +67,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPillarNameSet, IProductReviewSearch, IRevisionSet,
     ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from canonical.launchpad.interfaces.productrelease import (
@@ -300,10 +301,10 @@ class ProductNavigationMenu(NavigationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-      'details',
-      'announcements',
-      'downloads',
-      ]
+        'details',
+        'announcements',
+        'downloads',
+        ]
 
     def details(self):
         text = 'Details'
@@ -659,6 +660,32 @@ class ProductSetContextMenu(ContextMenu):
 class SortSeriesMixin:
     """Provide access to helpers for series."""
 
+    def _sorted_filtered_list(self, filter=None):
+        """Return a sorted, filtered list of series.
+
+        The series list is sorted by version in reverse order.  It is also
+        filtered by calling `filter` on every series.  If the `filter`
+        function returns False, don't include the series.  With None (the
+        default, include everything).
+
+        The development focus is always first in the list.
+        """
+        series_list = []
+        for series in self.product.serieses:
+            if filter is None or filter(series):
+                series_list.append(series)
+        # It should never be possible to mark the product's development focus
+        # series as obsolete.
+        assert self.product.development_focus in series_list, (
+            'Development focus series should not have been made obsolete')
+        series_list.remove(self.product.development_focus)
+        # Now sort the list by name with newer versions before older.
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.product.development_focus)
+        return series_list
+
+
     @property
     def sorted_series_list(self):
         """Return a sorted list of series.
@@ -666,13 +693,16 @@ class SortSeriesMixin:
         The series list is sorted by version in reverse order.
         The development focus is always first in the list.
         """
-        series_list = list(self.product.serieses)
-        series_list.remove(self.product.development_focus)
-        # Now sort the list by name with newer versions before older.
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        series_list.insert(0, self.product.development_focus)
-        return series_list
+        return self._sorted_filtered_list()
+
+    @property
+    def sorted_active_series_list(self):
+        """Like `sorted_series_list()` but filters out OBSOLETE series."""
+        # Callback for the filter which only allows series that have not been
+        # marked obsolete.
+        def check_active(series):
+            return series.status != DistroSeriesStatus.OBSOLETE
+        return self._sorted_filtered_list(check_active)
 
 
 class ProductWithSeries:

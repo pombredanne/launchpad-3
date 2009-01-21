@@ -224,6 +224,7 @@ data in a bug task is derived from the bug.
   resource_type_link: u'http://.../#bug_task'
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
+  target_link: u'http://api.../debian/+source/mozilla-firefox'
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
 
   >>> bugtask_path = bug_one_bugtasks[0]['self_link']
@@ -327,6 +328,69 @@ If an error occurs during a request that sets both 'status' and
   New
   >>> print task['importance']
   Low
+
+We can change the task's target. Here we change the task's target from
+the mozilla-firefox package to alsa-utils.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/debian/+source/alsa-utils'))
+  HTTP/1.1 200 Ok
+  ...
+
+After the operation completed successfully, the task is
+now an alsa-utils task.
+
+  >>> task = webservice.get(
+  ...     task['self_link'].replace(
+  ...         'mozilla-firefox', 'alsa-utils')).jsonBody()
+  >>> print task['target_link']
+  http://api.../debian/+source/alsa-utils
+
+Just like in the web UI, we can't change a distribution task
+into an upstream task.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+We can't move a task from one distribution to another.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+We can change an upstream task to target a different project.
+
+  >>> product_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/jokosher/+bug/14')).jsonBody()
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 200 Ok
+  ...
+
+But we can't make it into a distro task.
+
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'].replace('jokosher', 'bzr'),
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Upstream bug tasks may only be re-targeted to
+  another project.
+  <BLANKLINE>
 
 
 == Bug subscriptions ==

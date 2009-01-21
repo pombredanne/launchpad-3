@@ -404,7 +404,7 @@ Say we have one branch stacked on another:
     >>> stacked_branch = factory.makeAnyBranch(
     ...     stacked_on=stacked_on_branch)
     >>> url = canonical_url(stacked_branch)
-    >>> stacked_on_name = stacked_on_branch.unique_name
+    >>> stacked_on_name = stacked_on_branch.bzr_identity
     >>> stacked_on_url = canonical_url(stacked_on_branch)
     >>> logout()
 
