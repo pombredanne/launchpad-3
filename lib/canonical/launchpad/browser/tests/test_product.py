@@ -65,9 +65,8 @@ class TestProductCodeIndexView(TestCaseWithFactory):
 
         link = self.getBranchSummaryBrowseLinkForProduct(product)
         login(ANONYMOUS)
-        # XXX??
         self.assertEqual(
-            link.url, config.codehosting.codebrowse_root + branch.unique_name)
+            link.url, branch.codebrowse_url())
 
     def test_unbrowseable_branch_does_not_have_link(self):
         # If the product's development focus branch is not browseable, there

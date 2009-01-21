@@ -32,7 +32,8 @@ from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
+from canonical.launchpad.ftests import (
+    ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
     CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
@@ -1705,6 +1706,34 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job.job.complete()
         self.assertEqual([], list(RevisionMailJob.iterReady()))
 
+
+class TestCodebrowseURL(TestCaseWithFactory):
+    """XXX."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_simple(self):
+        # XXX
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            'http://bazaar.launchpad.dev/' + branch.unique_name,
+            branch.codebrowse_url())
+
+    def test_private(self):
+        # XXX
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(private=True, owner=owner)
+        login_person(owner)
+        self.assertEqual(
+            'https://bazaar.launchpad.dev/' + branch.unique_name,
+            branch.codebrowse_url())
+
+    def test_extra_args(self):
+        # XXX
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
+            branch.codebrowse_url('a', 'b'))
 
 
 def test_suite():
