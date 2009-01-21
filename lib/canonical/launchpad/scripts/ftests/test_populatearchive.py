@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.archivearch import IArchiveArchSet
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet, PackageCopyStatus)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
@@ -598,6 +599,26 @@ class TestPopulateArchiveScript(TestCase):
         # archive at hand were stored in the database.
         rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
         self.assertEqual(get_family_names(rset), [u'hppa', u'x86'])
+
+    def testPrivateOriginArchive(self):
+        """Try copying from a private archive.
+
+        This test should provoke a `SoyuzScriptError` exception because
+        presently copy archives can only be created as public archives.
+        The copying of packages from private archives to public ones
+        thus constitutes a security breach.
+        """
+        # We will make cprov's PPA private and then attempt to copy from it.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        ppa = cprov.archive
+        ppa.buildd_secret = 'super-secret-123'
+        ppa.private = True
+
+        extra_args = ['--from-user', 'cprov', '-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, exception_type=SoyuzScriptError,
+            exception_text=(
+                "Cannot copy from private archive ('cprov/ppa')"))
 
     def _verifyClonedSourcePackages(
         self, copy_archive, series, obsolete=None, new=None):
