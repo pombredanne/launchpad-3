@@ -132,6 +132,7 @@ Projects are available at their canonical URL on the API virtual host.
     qualifies_for_free_hosting: False
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
+    remote_product: None
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard: None
     screenshots_url: None
@@ -179,6 +180,7 @@ several that are not available to non-privileged users marked as
     qualifies_for_free_hosting: False
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
+    remote_product: None
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard:...redacted...
     screenshots_url: None
