@@ -1848,6 +1848,45 @@ archive using an archive name:
     >>> print_archive_names(primary_archives)
     primary
 
+The getArchivesForDistribution() method will by default only return
+public archives:
+
+    >>> my_copy_archive = archive_set.getArchivesForDistribution(
+    ...     ubuntu, name='my-copy-archive')[0]
+    >>> my_copy_archive.buildd_secret = 'really secret'
+    >>> my_copy_archive.private = True
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY])
+    >>> print_archive_names(ubuntu_copy_archives)
+    copy-r-us
+    fine-copy
+    there-we-go
+    ultimate-copy
+
+An admin will see the private archive in the results:
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar)
+    >>> print_archive_names(ubuntu_copy_archives)
+    copy-r-us
+    fine-copy
+    my-copy-archive
+    there-we-go
+    ultimate-copy
+
+The owner of the archive will also see the private archive in the results:
+
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY],
+    ...     user=my_copy_archive.owner)
+    >>> print_archive_names(ubuntu_copy_archives)
+    copy-r-us
+    fine-copy
+    my-copy-archive
+    there-we-go
+    ultimate-copy
+
 
 == Archive Permission Checking ==
 

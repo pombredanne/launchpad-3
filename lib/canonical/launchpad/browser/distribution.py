@@ -608,8 +608,9 @@ class DistributionArchivesView(LaunchpadView):
         
         The context may be an IDistroSeries or a users archives.
         """
+        user = getUtility(ILaunchBag).user
         results = getUtility(IArchiveSet).getArchivesForDistribution(
-            self.context, purposes=[ArchivePurpose.COPY])
+            self.context, purposes=[ArchivePurpose.COPY], user=user)
         return results.order_by('date_created DESC')
 
 class DistributionPPASearchView(LaunchpadView):

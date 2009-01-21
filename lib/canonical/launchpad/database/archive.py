@@ -13,6 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import Or
 from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
@@ -1356,7 +1357,7 @@ class ArchiveSet:
         return status_and_counters
 
     def getArchivesForDistribution(self, distribution, name=None,
-                                   purposes=None):
+                                   purposes=None, user=None):
         """See `IArchiveSet`."""
         extra_exprs = []
 
@@ -1370,6 +1371,25 @@ class ArchiveSet:
 
         if name is not None:
             extra_exprs.append(Archive.name == name)
+
+        if user is not None:
+            admins = getUtility(ILaunchpadCelebrities).admin
+            if not user.inTeam(admins):
+                # Enforce privacy-awareness for logged-in, non-admin users,
+                # so that they can only see the private bugs that they're
+                # allowed to see. See IBug.searchAsUser for example.
+
+                # XXX noodles 20090121 When the data for ArchiveSubscribers
+                # is setup this can be implemented. For the moment,
+                # non-admins will only see public archives, or private
+                # archives which they own.
+                extra_exprs.append(Or(Archive.private == False,
+                                      Archive.owner == user))
+        else:
+            # Anonymous user; filter to include only public archives in
+            # the results.
+            extra_exprs.append(Archive.private == False)
+
 
         query = Store.of(distribution).find(
             Archive,
