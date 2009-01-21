@@ -40,12 +40,19 @@ class IPackageCloner(Interface):
         @param destination: the location to which the data is to be copied.
         """
 
-    def packageSetDiff(origin, destination):
+    def packageSetDiff(origin, destination, diagnostic_output=None):
         """Find packages that are obsolete or missing in target archive.
 
         @type origin: PackageLocation
         @param origin: the location with potentially new or fresher packages.
         @type destination: PackageLocation
         @param destination: the target location.
+        @type diagnostic_output: (open) file handle
+        @param diagnostic_output: an optional (open) file handle to which
+            details of the source packages that are fresher and new in the
+            origin archive will be written.
+        @return a 2-tuple (fresher, new) where each element is a sequence
+            of `SecureSourcePackagePublishingHistory` keys of packages
+            that are fresher and new in the origin archive respectively.
         """
 

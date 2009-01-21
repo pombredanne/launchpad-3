@@ -9,6 +9,7 @@ import time
 import unittest
 
 from datetime import datetime
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -23,7 +24,7 @@ from canonical.launchpad.interfaces.packagecopyrequest import (
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
-from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
@@ -135,7 +136,7 @@ class TestPopulateArchiveScript(TestCase):
         self, archive_name=None, suite='hoary', user='salgado',
         exists_before=None, exists_after=None, exception_type=None,
         exception_text=None, extra_args=None, copy_archive_name=None,
-        reason=None):
+        reason=None, output_substr=None):
         """Run the script to test.
 
         :type archive_name: `str`
@@ -162,12 +163,28 @@ class TestPopulateArchiveScript(TestCase):
         :type copy_archive_name: `IArchive`
         :param copy_archive_name: optional copy archive instance, used for
             merge copy testing.
+        :param reason: if empty do not provide '--reason' cmd line arg
+        :param output_substr: this must be part of the script's output
         """
         class FakeZopeTransactionManager:
             def commit(self):
                 pass
             def begin(self):
                 pass
+
+        class BufferLogger(FakeLogger):
+            """A logger that logs to a StringIO object."""
+            def __init__(self):
+                self.buffer = StringIO()
+
+            def message(self, prefix, *stuff, **kw):
+                self.buffer.write('%s%s' % (prefix, ' '.join(stuff)))
+
+                if 'exc_info' in kw:
+                    exception = traceback.format_exception(*sys.exc_info())
+                    for thing in exception:
+                        for line in thing.splitlines():
+                            self.log(line)
 
         if copy_archive_name is None:
             now = int(time.time())
@@ -213,7 +230,7 @@ class TestPopulateArchiveScript(TestCase):
             'populate-archive', dbuser=config.uploader.dbuser,
             test_args=script_args)
 
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         script.txn = FakeZopeTransactionManager()
 
         if exception_type is not None:
@@ -221,6 +238,11 @@ class TestPopulateArchiveScript(TestCase):
                 exception_type, exception_text, script.mainTask)
         else:
             script.mainTask()
+
+        # Does the script's output contain the specified sub-string?
+        if output_substr is not None and output_substr.strip() != '':
+            output = script.logger.buffer.getvalue()
+            self.assertTrue(output.find(output_substr) > -1)
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, archive_name)
@@ -357,6 +379,35 @@ class TestPopulateArchiveScript(TestCase):
         copies = self._getPendingPackageNames(copy_archive, warty)
         self.assertEqual(packages, copies)
 
+    def testPackagesetDelta(self):
+        """Try to calculate the delta between two source package sets."""
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+        # Verify that we have the right source packages in the sample data.
+        self._verifyPackagesInSampleData(hoary)
+
+        # Take a snapshot of ubuntu/hoary first.
+        extra_args = ['-a', 'hppa']
+        first_stage = self.runScript(
+            extra_args=extra_args, exists_after=True,
+            copy_archive_name='first-stage')
+        self._verifyClonedSourcePackages(first_stage, hoary)
+
+        # Now add a new package to ubuntu/hoary and update one.
+        self._prepareMergeCopy()
+
+        # Check which source packages are fresher or new in the second stage
+        # archive.
+        expected_output = """
+Fresher packages:
+  (u'alsa-utils', u'2.0', u'1.0.9a-4ubuntu1')
+New packages:
+  (u'new-in-second-round', u'1.0')"""
+        extra_args = ['--pkgset-delta']
+        copy_archive = self.runScript(
+            extra_args=extra_args, reason='', output_substr=expected_output,
+            copy_archive_name=first_stage.name)
+
     def testMergeCopy(self):
         """Try repeated copy archive population (merge copy).
 
@@ -378,7 +429,7 @@ class TestPopulateArchiveScript(TestCase):
         # Now add a new package to ubuntu/hoary and update one.
         self._prepareMergeCopy()
 
-        # Take another snapshot of ubuntu/hoary.
+        # Take a snapshot of the modified ubuntu/hoary primary archive.
         second_stage = self.runScript(
             extra_args=extra_args, exists_after=True,
             copy_archive_name='second-stage')

@@ -9,6 +9,8 @@ __all__ = [
     ]
 
 
+from StringIO import StringIO
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -61,7 +63,8 @@ class ArchivePopulator(SoyuzScript):
     def populateArchive(
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
-        include_binaries, proc_family_names, merge_copy_flag):
+        include_binaries, proc_family_names, merge_copy_flag,
+        pkgset_delta_flag):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -85,6 +88,8 @@ class ArchivePopulator(SoyuzScript):
             builds.
         :param merge_copy_flag: whether this is a repeated population of an
             existing copy archive.
+        :param pkgset_delta_flag: only show packages that are fresher or new
+            in the origin archive. Do not copy anything.
         """
         def loadProcessorFamilies(proc_family_names):
             """Load processor families for specified family names."""
@@ -144,15 +149,32 @@ class ArchivePopulator(SoyuzScript):
         # Build the destination package location.
         the_destination = build_location(to_distribution, to_suite, component)
 
-        registrant = getUtility(IPersonSet).getByName(to_user)
-        if registrant is None:
-            raise SoyuzScriptError("Invalid user name: '%s'" % to_user)
-
         # First try to access the destination copy archive.
         copy_archive = getUtility(IArchiveSet).getByDistroAndName(
             the_destination.distribution, to_archive)
 
-        merge_copy = False
+        the_destination.archive = copy_archive
+
+        if pkgset_delta_flag:
+            if copy_archive is None:
+                raise SoyuzScriptError(
+                    "error: package set delta requested for non-existing "
+                    " destination archive.")
+            else:
+                self._packageset_delta(the_origin, the_destination)
+                return
+
+        if not specified(to_user):
+            if merge_copy_flag:
+                what = 'package copy requestor'
+            else:
+                what = 'copy archive owner'
+            raise SoyuzScriptError("error: %s not specified." % what)
+
+        registrant = getUtility(IPersonSet).getByName(to_user)
+        if registrant is None:
+            raise SoyuzScriptError("Invalid user name: '%s'" % to_user)
+
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
             if not specified(reason):
@@ -205,9 +227,6 @@ class ArchivePopulator(SoyuzScript):
             proc_families = [
                 get_family(archivearch) for archivearch
                 in getUtility(IArchiveArchSet).getByArchive(copy_archive)]
-            merge_copy = True
-
-        the_destination.archive = copy_archive
 
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
@@ -223,7 +242,7 @@ class ArchivePopulator(SoyuzScript):
         pcr.markAsInprogress()
         self.txn.commit()
 
-        if merge_copy == True:
+        if merge_copy_flag == True:
             pkg_cloner.mergeCopy(the_origin, the_destination)
         else:
             pkg_cloner.clonePackages(the_origin, the_destination)
@@ -235,6 +254,17 @@ class ArchivePopulator(SoyuzScript):
 
         # Mark the package copy request as completed.
         pcr.markAsCompleted()
+
+    def _packageset_delta(self, origin, destination):
+        """Perform a package set delta operation between two archives.
+
+        No packages will be copied i.e. the destination archive will not be
+        changed.
+        """
+        pkg_cloner = getUtility(IPackageCloner)
+        buffer = StringIO()
+        ignore_result = pkg_cloner.packageSetDiff(origin, destination, buffer)
+        self.logger.info(buffer.getvalue())
 
     def mainTask(self):
         """Main function entry point."""
@@ -248,8 +278,6 @@ class ArchivePopulator(SoyuzScript):
             raise SoyuzScriptError(
                 "error: destination distribution not specified.")
 
-        if not specified(opts.to_user):
-            raise SoyuzScriptError("error: copy archive owner not specified.")
         if not specified(opts.to_archive):
             raise SoyuzScriptError(
                 "error: destination copy archive not specified.")
@@ -271,7 +299,8 @@ class ArchivePopulator(SoyuzScript):
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
-            opts.include_binaries, opts.proc_families, opts.merge_copy_flag)
+            opts.include_binaries, opts.proc_families, opts.merge_copy_flag,
+            opts.pkgset_delta_flag)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -327,6 +356,13 @@ class ArchivePopulator(SoyuzScript):
             "--merge-copy", dest="merge_copy_flag",
             default=False, action="store_true",
             help='Repeated population of an existing copy archive.')
+
+        self.parser.add_option(
+            "--pkgset-delta", dest="pkgset_delta_flag",
+            default=False, action="store_true",
+            help=(
+                'Only show packages that are fresher or new in origin '
+                'archive. Destination archive must exist already.'))
 
     def _createMissingBuilds(
         self, distroseries, archive, proc_families):
