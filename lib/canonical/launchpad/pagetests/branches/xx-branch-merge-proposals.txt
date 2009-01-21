@@ -696,7 +696,7 @@ Create merge proposal with a review diff, and go to its index page.
 The text of the review diff is in the page.
     >>> print extract_text(get_review_diff())
     Review Diff
-    Fake Diff
+    Fake Diffတ
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')
