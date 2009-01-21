@@ -217,12 +217,28 @@ When an OOPS is triggered by the request, its identifier is logged:
     Traceback (most recent call last):
       ...
     NotFound:...
+
+Two lines are logged. The first one doesn't have an OOPS id, since the
+request was made in the slave store, and will be retried in the master
+store.
+
+    >>> (timestamp, page_id, oops_id, duration,
+    ...  start_vss, start_rss, end_vss, end_rss) = (
+    ...     memory_profile_fh.readline().split())
+    >>> print oops_id
+    -
+    >>> print page_id
+    Unknown
+
+After being retried in the master store, an OOPS is finally logged.
+
     >>> (timestamp, page_id, oops_id, duration,
     ...  start_vss, start_rss, end_vss, end_rss) = (
     ...     memory_profile_fh.readline().split())
     >>> print oops_id
     OOPS-...
-
+    >>> print page_id
+    Unknown
 
 == Clean up ==
 
