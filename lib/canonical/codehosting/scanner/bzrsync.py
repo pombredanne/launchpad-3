@@ -317,7 +317,6 @@ class BranchMailer:
             job = getUtility(IRevisionMailJobSource).create(
                 self.db_branch, 'initial', self.email_from, message, False,
                 None)
-            job.run()
         self.trans_manager.commit()
 
 

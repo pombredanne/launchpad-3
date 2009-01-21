@@ -1706,6 +1706,5 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual([], list(RevisionMailJob.iterReady()))
 
 
-
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

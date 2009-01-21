@@ -660,6 +660,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def test_empty_branch(self):
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         self.assertEqual(len(stub.test_emails), 1)
         [initial_email] = stub.test_emails
         expected = 'First scan of the branch detected 0 revisions'
@@ -669,6 +670,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
     def test_import_revision(self):
         self.commitRevision()
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         self.assertEqual(len(stub.test_emails), 1)
         [initial_email] = stub.test_emails
         expected = ('First scan of the branch detected 1 revision'
