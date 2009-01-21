@@ -526,6 +526,7 @@ class Builder(SQLBase):
             buildqueue.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
+            archive.enabled = TRUE AND
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
