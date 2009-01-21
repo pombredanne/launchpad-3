@@ -351,7 +351,6 @@ class BranchFeed(BranchFeedBase):
 
     usedfor = IBranch
     feedname = "branch"
-    delegate_view_class = BranchView
 
     def initialize(self):
         """See `IFeed`."""
@@ -385,8 +384,6 @@ class BranchFeed(BranchFeedBase):
 
     def itemToFeedEntry(self, rev):
         """See `IFeed`."""
-        delegate_view = self.delegate_view_class(self.context, self.request)
-        delegate_view.initialize()
         title = FeedTypedData("Revision %d" % rev.sequence)
         url = self.context.codebrowse_url('revision', str(rev.sequence))
         content_view = BranchFeedContentView(rev, self.request, self,
