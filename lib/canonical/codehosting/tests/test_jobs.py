@@ -5,27 +5,27 @@
 
 from unittest import TestLoader
 
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
+from canonical.testing import (LaunchpadZopelessLayer)
 
-from canonical.testing import (LaunchpadFunctionalLayer)
-
+from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.database import RevisionMailJob
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
+from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
-from canonical.launchpad.interfaces.job import JobStatus, LeaseHeld
+from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp import errorlog
 
 
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def makeBranchAndJobs(self):
         """Test fixture.  Create a branch and two jobs that use it."""
@@ -38,6 +38,8 @@ class TestJobRunner(TestCaseWithFactory):
             branch, 0, 'from@example.org', 'body', False, 'foo')
         job_2 = RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', False, 'bar')
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.sendbranchmail.dbuser)
         return branch, job_1, job_2
 
     def test_runJob(self):
@@ -47,6 +49,28 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJob(job_1)
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
+
+    def test_runJob_generates_diff(self):
+        """Ensure that a diff is actually generated in this environment."""
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        branch.subscribe(branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        tree_transport = tree.bzrdir.root_transport
+        tree_transport.put_bytes("hello.txt", "Hello World\n")
+        tree.add('hello.txt')
+        to_revision_id = tree.commit('rev1', timestamp=1e9, timezone=0)
+        job = RevisionMailJob.create(
+            branch, 1, 'from@example.org', 'body', True, 'subject')
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.sendbranchmail.dbuser)
+        runner = JobRunner(job)
+        runner.runJob(job)
+        existing_diff = StaticDiff.selectOneBy(
+            from_revision_id='null:', to_revision_id=to_revision_id)
+        self.assertIsNot(None, existing_diff)
 
     def test_runAll(self):
         """Ensure runAll works in the normal case."""
@@ -62,8 +86,7 @@ class TestJobRunner(TestCaseWithFactory):
 
     def test_runAll_skips_lease_failures(self):
         """Ensure runAll skips jobs whose leases can't be acquired."""
-        reporter = getUtility(IErrorReportingUtility)
-        last_oops = reporter.getLastOopsReport()
+        last_oops = errorlog.globalErrorUtility.getLastOopsReport()
         branch, job_1, job_2 = self.makeBranchAndJobs()
         job_2.job.acquireLease()
         runner = JobRunner([job_1, job_2])
@@ -72,7 +95,8 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.WAITING, job_2.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
         self.assertEqual([job_2], runner.incomplete_jobs)
-        self.assertEqual(last_oops.id, reporter.getLastOopsReport().id)
+        new_last_oops = errorlog.globalErrorUtility.getLastOopsReport()
+        self.assertEqual(last_oops.id, new_last_oops.id)
 
     def test_runAll_reports_oopses(self):
         """When an error is encountered, report an oops and continue."""
@@ -87,7 +111,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual([], list(RevisionMailJob.iterReady()))
         self.assertEqual(JobStatus.FAILED, job_1.job.status)
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
-        reporter = getUtility(IErrorReportingUtility)
+        reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
 
