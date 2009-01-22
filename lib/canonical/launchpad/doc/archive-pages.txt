@@ -33,7 +33,7 @@ archive url if it is available (ie. an active archive that is not a copy)
 and None otherwise:
 
     >>> print ppa_archive_view.archive_url
-    http://ppa.launchpad.dev/cprov/ubuntu
+    http://ppa.launchpad.dev/cprov/ppa/ubuntu
     >>> print copy_archive_view.archive_url
     None
 
@@ -349,7 +349,7 @@ dependency. Each element has:
     sabdfl
 
     >>> print dependency.title
-    <a href="http://launchpad.dev/~sabdfl/+archive">PPA for Mark Shuttleworth</a>
+    <a href="http://launchpad.dev/~sabdfl/+archive/ppa">PPA for Mark Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
 first listed dependency.

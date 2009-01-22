@@ -257,8 +257,8 @@ Let's see his sources.list entries:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu breezy-autotest main
 
 and the select control that lets you update them:
 
@@ -345,20 +345,20 @@ Each data row is expandable to contain some sections containing:
 The package was copied from a PPA. The archive title will hence link
 back to the source PPA.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> admin_browser.getLink("PPA for Mark Shuttleworth").url
-    'http://launchpad.dev/~sabdfl/+archive'
+    'http://launchpad.dev/~sabdfl/+archive/ppa'
 
 This link is not present if the user does not have permission to view
 the PPA.  If we make sabdfl's PPA private and then browse back as
 an anonymous user, the link will be gone.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> anon_browser.getLink("PPA for Mark Shuttleworth")
     Traceback (most recent call last):
     ...
@@ -366,7 +366,7 @@ an anonymous user, the link will be gone.
 
 Set sabdfl's archive back to public before continuing.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
@@ -494,13 +494,13 @@ An empty PPA doesn't list any packages and it also doesn't present the
 'apt sources lines ' widget and the repository 'URL' since they would
 link to a repository that doesn't exist yet.
 
-    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
     >>> print extract_text(anon_browser.contents)
     PPA for No Privileges Person
     ...
     This archive is public
     PPA for No Privileges Person
-    URL: http://ppa.launchpad.dev/no-priv/ubuntu
+    URL: http://ppa.launchpad.dev/no-priv/ppa/ubuntu
     I am not allowed to say, I have no privs.
     This PPA does not contain any packages yet.
     ...
@@ -532,14 +532,14 @@ published source.
     >>> sources_list = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
     >>> print extract_text(sources_list)
-    deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
-    deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
+    deb http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
+    deb-src http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
 
 Also the repository URL is an actual link.
 
     >>> print anon_browser.getLink(
-    ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
-    http://ppa.launchpad.dev/no-priv/ubuntu
+    ...     "http://ppa.launchpad.dev/no-priv/ppa/ubuntu").url
+    http://ppa.launchpad.dev/no-priv/ppa/ubuntu
 
 
 == PPA signing key ==
@@ -599,7 +599,7 @@ Each PPA provides a public page where the users can browse build
 records by name and/or state. See pagetests/soyuz/23-builds-pages.txt
 for more information.
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> anon_browser.getLink("View build records").click()
 
 The only difference introduced in the PPA builds page is the fact that
@@ -619,7 +619,7 @@ status in the PPA workflow.
 Just quickly check if the singular form of this section is handled
 properly.
 
-    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
@@ -641,8 +641,8 @@ And the sources.list entries point to the right distribution release:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
 
 
 == Other Distribution PPAs ==
@@ -738,7 +738,7 @@ for each published source:
 
 Anyone can see the build status for package in Celso's PPA.
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
 
     >>> def print_build_status(contents):
     ...     rows = find_tags_by_class(contents, 'archive_package_row')
@@ -775,7 +775,7 @@ quickly 'retry' the failure.
 
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
 
     >>> cprov_browser.getLink('i386').click()
     >>> cprov_browser.getLink("Retry build").click()
@@ -838,3 +838,14 @@ PPA itself.
     >>> anon_browser.getLink('Celso Providelo').click()
     >>> print anon_browser.title
     PPA for Celso Providelo
+
+
+== Compatibility URL Redirection ==
+
+PPAs are being enhanced to allow multiple named PPAs per owner.  For a
+limited transitional period, specifying a URL without the name in it
+will redirect to the correct URL with the default PPA name, "ppa".
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> admin_browser.url
+    'http://launchpad.dev/~cprov/+archive/ppa'

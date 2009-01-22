@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Common file format classes shared across all formats."""
 
@@ -67,9 +67,10 @@ class TranslationMessageData:
             self._translations[plural_form] is not None and
             self._translations[plural_form] != translation)
         if is_duplicate:
-            raise TranslationFormatSyntaxError(
-                'Message has more than one translation for plural form %d.' %
+            error = (
+                "Message has more than one translation for plural form %d." %
                 plural_form)
+            raise TranslationFormatSyntaxError(message=error)
 
         if plural_form >= len(self.translations):
             # There is a hole in the list of translations so we fill it with

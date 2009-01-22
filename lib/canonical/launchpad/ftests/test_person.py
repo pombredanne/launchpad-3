@@ -172,7 +172,6 @@ class TestPerson(TestCaseWithFactory):
             name='namefoo',
             registrant=self.otherteam,
             owner=self.otherteam,
-            author=self.otherteam,
             product=self.bzr,
             url=None)
         try:
