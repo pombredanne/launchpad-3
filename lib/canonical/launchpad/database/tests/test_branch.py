@@ -47,7 +47,6 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
@@ -389,8 +388,7 @@ class TestGetByPath(TestCaseWithFactory):
             owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        #self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
-        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
+        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
 
     def test_missing_suffixed_package_branch(self):
         owner = self.factory.makePerson()
@@ -401,10 +399,8 @@ class TestGetByPath(TestCaseWithFactory):
             sourcepackagename=sourcepackagename)
         suffix = self.makeRelativePath()
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        #self.assertRaises(
-        #    NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
         self.assertRaises(
-            NoSuchProduct, self.getByPath, branch_name + '/' + suffix)
+            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
 
     def test_no_preceding_tilde(self):
         self.assertRaises(
@@ -1570,15 +1566,6 @@ class TestBranchDiffJob(TestCaseWithFactory):
         static_diff2 = job2.run()
         self.assertTrue(static_diff1 is static_diff2)
 
-    def test_run_sets_status_completed(self):
-        """Ensure status is set to completed when a job runs to completion."""
-        self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit')
-        job = BranchDiffJob.create(branch, '0', '1')
-        job.run()
-        self.assertEqual(JobStatus.COMPLETED, job.job.status)
-
     def create_rev1_diff(self):
         """Create a StaticDiff for use by test methods.
 
@@ -1693,6 +1680,30 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertIs(None, job.to_revision_spec)
         mailer = job.getMailer()
         self.assertIs(None, mailer.diff)
+
+    def test_iterReady_ignores_BranchDiffJobs(self):
+        """Only BranchDiffJobs should not be listed."""
+        branch = self.factory.makeBranch()
+        BranchDiffJob.create(branch, 0, 1)
+        self.assertEqual([], list(RevisionMailJob.iterReady()))
+
+    def test_iterReady_includes_ready_jobs(self):
+        """Ready jobs should be listed."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.org', 'body', False, 'subject')
+        job.job.sync()
+        job.context.sync()
+        self.assertEqual([job], list(RevisionMailJob.iterReady()))
+
+    def test_iterReady_excludes_unready_jobs(self):
+        """Unready jobs should not be listed."""
+        branch = self.factory.makeBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.org', 'body', False, 'subject')
+        job.job.start()
+        job.job.complete()
+        self.assertEqual([], list(RevisionMailJob.iterReady()))
 
 
 def test_suite():

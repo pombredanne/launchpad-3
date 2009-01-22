@@ -224,6 +224,7 @@ data in a bug task is derived from the bug.
   resource_type_link: u'http://.../#bug_task'
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
+  target_link: u'http://api.../debian/+source/mozilla-firefox'
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
 
   >>> bugtask_path = bug_one_bugtasks[0]['self_link']
@@ -327,6 +328,69 @@ If an error occurs during a request that sets both 'status' and
   New
   >>> print task['importance']
   Low
+
+We can change the task's target. Here we change the task's target from
+the mozilla-firefox package to alsa-utils.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/debian/+source/alsa-utils'))
+  HTTP/1.1 200 Ok
+  ...
+
+After the operation completed successfully, the task is
+now an alsa-utils task.
+
+  >>> task = webservice.get(
+  ...     task['self_link'].replace(
+  ...         'mozilla-firefox', 'alsa-utils')).jsonBody()
+  >>> print task['target_link']
+  http://api.../debian/+source/alsa-utils
+
+Just like in the web UI, we can't change a distribution task
+into an upstream task.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+We can't move a task from one distribution to another.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+We can change an upstream task to target a different project.
+
+  >>> product_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/jokosher/+bug/14')).jsonBody()
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 200 Ok
+  ...
+
+But we can't make it into a distro task.
+
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'].replace('jokosher', 'bzr'),
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Upstream bug tasks may only be re-targeted to
+  another project.
+  <BLANKLINE>
 
 
 == Bug subscriptions ==
@@ -683,6 +747,23 @@ Once an attachment is uploaded, it is not possible to change it.
   >>> data
   '12345'
 
+But we can remove the attachment altogether.
+
+  >>> response = webservice.named_post(
+  ...     attachment['self_link'], 'removeFromBug')
+  >>> print response.getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> pprint_collection(attachments)
+  resource_type_link: u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'
+  start: None
+  total_size: 0
+  ---
+
+
 == Searching for bugs ==
 
 Bug targets expose the searchTasks method, which provides a search interface
@@ -769,12 +850,36 @@ setting the tags_combinator parameter to 'All'.
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> product_set = getUtility(IProductSet)
+    >>> milestone_set = getUtility(IMilestoneSet)
+    >>> firefox = product_set.getByName('firefox')
+    >>> firefox_1_0 = milestone_set.getByNameAndProduct(
+    ...     product=firefox, name='1.0')
+    >>> bug = factory.makeBug(product=firefox)
+    >>> bug.bugtasks[0].milestone = firefox_1_0
+    >>> logout()
+
     >>> pprint_collection(webservice.named_get(
     ...     '/mozilla', 'searchTasks',
     ...     milestone=webservice.getAbsoluteUrl(
     ...         '/mozilla/+milestone/1.0')).jsonBody())
-    start: None
-    total_size: 0
+    start: 0
+    total_size: 1
+    ...
+    ---
+
+The same search can be performed directly on the milestone too.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     webservice.getAbsoluteUrl('/mozilla/+milestone/1.0'),
+    ...     'searchTasks').jsonBody())
+    start: 0
+    total_size: 1
+    ...
     ---
 
 Search results can be ordered using the same string values used by

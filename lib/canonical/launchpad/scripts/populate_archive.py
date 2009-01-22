@@ -48,9 +48,6 @@ class ArchivePopulator(SoyuzScript):
 
     The logic needed to create a copy archive, populate it with source
     packages and instantiate the builds required.
-
-    Please note: the destination copy archive must not exist yet. Otherwise
-    the script will abort with an error.
     """
 
     usage = __doc__
@@ -61,7 +58,7 @@ class ArchivePopulator(SoyuzScript):
     def populateArchive(
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
-        include_binaries, proc_families, merge_copy_flag):
+        include_binaries, proc_family_names, merge_copy_flag):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -81,7 +78,8 @@ class ArchivePopulator(SoyuzScript):
         :param reason: reason for the package copy operation.
 
         :param include_binaries: whether binaries should be copied as well.
-        :param proc_families: processor families for which to create builds.
+        :param proc_family_names: processor families for which to create
+            builds.
         :param merge_copy_flag: whether this is a repeated population of an
             existing copy archive.
         """
@@ -140,6 +138,14 @@ class ArchivePopulator(SoyuzScript):
                 raise SoyuzScriptError(
                     "No PPA for user: '%s'" % from_user)
 
+        if the_origin.archive.private:
+            if from_user is not None:
+                the_name = '%s/%s' % (from_user, the_origin.archive.name)
+            else:
+                the_name = the_origin.archive.name
+            raise SoyuzScriptError(
+                "Cannot copy from private archive ('%s')" % the_name)
+
         # Build the destination package location.
         the_destination = build_location(to_distribution, to_suite, component)
 
@@ -160,11 +166,18 @@ class ArchivePopulator(SoyuzScript):
             if merge_copy_flag:
                 raise SoyuzScriptError(
                     "error: merge copy requested for non-existing archive.")
+            # The processor families should only be specified if the
+            # destination copy archive does not exist yet and needs to be
+            # created.
+            if not specified(proc_family_names):
+                raise SoyuzScriptError(
+                    "error: processor families not specified.")
+
             # First load the processor families for the specified family names
             # from the database. This will fail if an invalid processor family
             # name was specified on the command line; that's why it should be
             # done before creating the copy archive.
-            proc_families = loadProcessorFamilies(self.options.proc_families)
+            proc_families = loadProcessorFamilies(proc_family_names)
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, to_archive,
                 the_destination.distribution, reason)
@@ -179,6 +192,15 @@ class ArchivePopulator(SoyuzScript):
                 raise SoyuzScriptError(
                     "error: archive '%s' already exists for '%s'."
                     % (to_archive, the_destination.distribution.name))
+            # The user is not supposed to specify processor families on the
+            # command line for existing copy archives. The processor families
+            # specified when the archive was created will be read from the
+            # database instead.
+            if specified(proc_family_names):
+                raise SoyuzScriptError(
+                    "error: cannot specify processor families for *existing* "
+                    "archive.")
+
             # The copy archive exists already, get the associated processor
             # families.
             def get_family(archivearch):
@@ -222,10 +244,6 @@ class ArchivePopulator(SoyuzScript):
     def mainTask(self):
         """Main function entry point."""
         opts = self.options
-
-        if not specified(opts.proc_families):
-            raise SoyuzScriptError(
-                "error: processor families not specified.")
 
         if not specified(opts.from_distribution):
             raise SoyuzScriptError(
