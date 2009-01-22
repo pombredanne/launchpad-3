@@ -28,12 +28,12 @@ class IEditTranslator(Interface):
     """
 
     style_guide_url = URIField(
-        title=_('Style guide URL'), required=False,
+        title=_('Translation guidelines'), required=False,
         allowed_schemes=['http', 'https', 'ftp'],
         allow_userinfo=False,
-        description=_("The URL of the style guide followed by this "
-                      "particular translation team. "
-                      "Includes the http://, https://, or ftp://."))
+        description=_("The URL of the translation team guidelines "
+                      "to be followed by this particular translation team. "
+                      "Can be any of the http://, https://, or ftp:// links."))
 
 
 class IAdminTranslator(Interface):
