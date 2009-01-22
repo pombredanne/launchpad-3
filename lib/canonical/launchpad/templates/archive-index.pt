@@ -23,16 +23,22 @@
       </tal:devmode>
       <script type="text/javascript">
 YUI().use(
-    'node', 'soyuz.update_archive_build_statuses', 'io-base', function(Y) {
+    'node', 'soyuz.update_archive_build_statuses', 'io-base',
+    'lazr.anim', function(Y) {
 
 /*
  * Update the page based on the XHR response.
  */
 function doUpdate(transaction_id, response) {
+    var container = Y.Node.create('<div>');
+    container.set('innerHTML', response.responseText);
+
     var target_node = Y.get('#package_counters');
-    target_node.set('innerHTML', response.responseText);
+    target_node.replaceChild(
+        container, target_node.query('p'));
+
     var anim = Y.lazr.anim.green_flash({
-        node: target_node
+        node: container
     });
     anim.run();
 }
@@ -43,15 +49,11 @@ function doUpdate(transaction_id, response) {
  * the operation.
  */
 function informFailure(transaction_id, response) {
-    var red_cross = Y.Node.create('<img>');
-    red_cross.set('src', '/@@/no');
-    red_cross.setStyle('paddingRight', '5px');
-
     var text = Y.Node.create('<span>');
     text.set('innerHTML', 'Failed to fetch information.');
 
     var retry_link = Y.Node.create('<a>')
-    retry_link.setStyle('paddingLeft', '5px');
+    retry_link.set('id', 'retry-repository-size-update');
     retry_link.set('href', '');
     retry_link.set('innerHTML', 'Retry');
     retry_link.on(
@@ -63,8 +65,7 @@ function informFailure(transaction_id, response) {
     );
 
     var failure_message = Y.Node.create('<p>');
-    failure_message.setStyle('lineHeight',  '3em');
-    failure_message.appendChild(red_cross);
+    failure_message.set('id', 'failure-message');
     failure_message.appendChild(text);
     failure_message.appendChild(retry_link);
 
@@ -72,7 +73,7 @@ function informFailure(transaction_id, response) {
     target_node.replaceChild(
         failure_message, target_node.query('p'));
     var anim = Y.lazr.anim.red_flash({
-        node: target_node
+        node: failure_message
         });
     anim.run();
 }
@@ -82,20 +83,14 @@ function informFailure(transaction_id, response) {
  * Communicate an update is in progress and fire the XHR.
  */
 function dispatchUpdate () {
-    var target_node = Y.get('#package_counters');
-
-    var spinner = Y.Node.create('<img>');
-    spinner.set('src', '/@@/spinner');
-    spinner.setStyle('paddingRight', '5px');
-
     var text = Y.Node.create('<span>');
     text.set('innerHTML', 'Updating archive size information ...');
 
     var in_progress_message = Y.Node.create('<p>');
-    in_progress_message.setStyle('lineHeight',  '3em');
-    in_progress_message.appendChild(spinner);
+    in_progress_message.set('id', 'in-progress-message');
     in_progress_message.appendChild(text);
 
+    var target_node = Y.get('#package_counters');
     target_node.replaceChild(
         in_progress_message, target_node.query('p'));
 
@@ -113,6 +108,25 @@ var xhr_config = {
 Y.on("domready", dispatchUpdate);
 });
       </script>
+      <style type="text/css" media="screen, print">
+div#package_counters p {
+    line-height: 3.6em;
+}
+
+div#package_counters p#failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
+
+div#package_counters p#in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+
+div#package_counters #retry-repository-size-update {
+    padding-left: 5px;
+}
+      </style>
     </metal:block>
 
     <div metal:fill-slot="main"
@@ -223,15 +237,8 @@ Y.on("domready", dispatchUpdate);
       <tal:active_archive condition="archive_active">
 
       <div id="package_counters">
-        <p class="discreet" style="line-height: 3em;">
-           <tal:comment replace="nothing">
-              XXX cprov 20090119: preload the 'spinner' and 'no'
-              image, so it won't have to be loaded when the section
-              is updated in JS. Fix this with CSS sprites when we
-              have a chance.
-           </tal:comment>
-           <img src="/@@/spinner" style="display: none;"/>
-           <img src="/@@/no" style="display: none;"/>
+        <h2>Repository disk usage</h2>
+        <p class="discreet">
            Package counters and estimated archive size temporarily
            unavailable.
         </p>
