@@ -694,9 +694,8 @@ Create merge proposal with a review diff, and go to its index page.
     ...    return find_tag_by_id(nopriv_browser.contents, 'review-diff')
 
 The text of the review diff is in the page.
-    >>> print extract_text(get_review_diff())
-    Review Diff
-    Fake Diffတ
+    >>> print repr(extract_text(get_review_diff()))
+    u'Review Diff\nFake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')
