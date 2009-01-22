@@ -10,6 +10,21 @@
   i18n:domain="launchpad"
   >
 <body>
+    <metal:block fill-slot="head_epilogue">
+      <tal:devmode condition="devmode">
+        <tal:archive_js define="lp_js string:${icingroot}/build">
+          <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js">
+          </script>
+          <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/update_archive_build_statuses.js">
+          </script>
+        </tal:archive_js>
+      </tal:devmode>
+      <script type="text/javascript">
+          YUI().use('node', 'soyuz.update_archive_build_statuses');
+      </script>
+    </metal:block>
 
     <div metal:fill-slot="main"
          tal:define="archive_active view/is_active;
@@ -74,12 +89,14 @@
         </tal:package-copy-request-list>
       </div>
 
-      <div tal:condition="archive_active">
+      <tal:non_copy_only condition="not: context/is_copy">
+        <div tal:condition="archive_active" >
 
-        <h2>apt sources.list entries</h2>
-        <tal:entries replace="structure view/sources_list_entries" />
+          <h2>apt sources.list entries</h2>
+          <tal:entries replace="structure view/sources_list_entries" />
 
-      </div>
+        </div>
+      </tal:non_copy_only>
 
       <div id="signing-key"
            tal:define="signing_key context/signing_key"

@@ -913,7 +913,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         """Test of HALDevice.is_real_device: ignored values of info.bus.
 
         A HAL device is considered to not be a real device, if its
-        info.bus proerty is 'usb' or 'ssb'.
+        info.bus proerty is 'net', 'scsi_generic', 'scsi_host', 'sound',
+        'ssb', or 'usb'.
         """
         UDI_SSB = '/org/freedesktop/Hal/devices/ssb__null__0'
         devices = [
@@ -922,13 +923,6 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'udi': self.UDI_USB_HUB_IF0,
                 'properties': {
                     'info.bus': ('usb', 'str'),
-                    },
-                },
-            {
-                'id': 2,
-                'udi': UDI_SSB,
-                'properties': {
-                    'info.bus': ('ssb', 'str'),
                     },
                 },
             ]
@@ -943,22 +937,26 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         properties = devices[0]['properties']
         parser = SubmissionParser(self.log)
 
-        parser.buildDeviceList(parsed_data)
-        device = parser.hal_devices[self.UDI_USB_HUB_IF0]
-        self.failIf(device.is_real_device,
-                    'Device with info.bus=usb treated as a real device')
-        device = parser.hal_devices[UDI_SSB]
-        self.failIf(device.is_real_device,
-                    'Device with info.bus=ssb treated as a real device')
+        ignored_buses = (
+            'net', 'scsi_generic', 'scsi_host', 'sound',  'ssb', 'usb',)
+        for tested_bus in ignored_buses:
+            properties['info.bus'] = (tested_bus, 'str')
+            parser.buildDeviceList(parsed_data)
+            device = parser.hal_devices[self.UDI_USB_HUB_IF0]
+            self.failIf(
+                device.is_real_device,
+                'Device with info.bus=%s treated as a real device'
+                % tested_bus)
 
-        self.renameInfoBusToInfoSubsystem(devices)
-        parser.buildDeviceList(parsed_data)
-        device = parser.hal_devices[self.UDI_USB_HUB_IF0]
-        self.failIf(device.is_real_device,
-                    'Device with info.subsystem=usb treated as a real device')
-        device = parser.hal_devices[UDI_SSB]
-        self.failIf(device.is_real_device,
-                    'Device with info.subsystem=ssb treated as a real device')
+        del properties['info.bus']
+        for tested_bus in ignored_buses:
+            properties['info.subsystem'] = (tested_bus, 'str')
+            parser.buildDeviceList(parsed_data)
+            device = parser.hal_devices[self.UDI_USB_HUB_IF0]
+            self.failIf(
+                device.is_real_device,
+                'Device with info.subsystem=%s treated as a real device'
+                % tested_bus)
 
     def runTestHALDeviceRealDeviceScsiDevicesPciController(
         self, devices, bus_property_name):
@@ -1271,7 +1269,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc', 'misc',
+        for bus in ('backlight', 'ieee1394', 'input', 'misc', 'mmc',
+                    'mmc_host', 'pcmcia', 'platform', 'pnp', 'power_supply',
                     'unknown'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)

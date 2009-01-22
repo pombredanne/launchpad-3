@@ -5,5 +5,5 @@ SET client_min_messages=ERROR;
 ALTER TABLE TranslationGroup ADD COLUMN translation_guide_url text;
 ALTER TABLE Translator ADD COLUMN style_guide_url text;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 20, 0);
 

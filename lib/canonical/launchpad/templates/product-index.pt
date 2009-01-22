@@ -230,7 +230,7 @@
       <div class="portlet">
         <h2>Series and milestones</h2>
         <div class="project series"
-             tal:repeat="series view/sorted_series_list">
+             tal:repeat="series view/sorted_active_series_list">
 
           <div tal:define="is_focus series/is_development_focus"
                tal:attributes="

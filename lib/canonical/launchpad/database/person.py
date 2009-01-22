@@ -66,7 +66,7 @@ from canonical.launchpad.database.translationrelicensingagreement import (
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet,
@@ -127,7 +127,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
-from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
@@ -668,12 +667,7 @@ class Person(
 
     @property
     def browsername(self):
-        """Return a name suitable for display on a web page.
-
-        Originally, this was calculated but now we just use displayname.
-        You should continue to use this method, however, as we may want to
-        change again, such as returning '$displayname ($name)'.
-        """
+        """See `IPersonPublic`."""
         return self.displayname
 
     @property
@@ -920,20 +914,6 @@ class Person(
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBranch(self, product_name, branch_name):
-        """See `IPerson`."""
-        if product_name is None or product_name == '+junk':
-            return Branch.selectOne(
-                'owner=%d AND product is NULL AND name=%s'
-                % (self.id, quote(branch_name)))
-        else:
-            pillar = getUtility(IPillarNameSet).getByName(product_name)
-            if not IProduct.providedBy(pillar):
-                # pillar is either None or not a Product.
-                return None
-            return Branch.selectOneBy(
-                owner=self, product=pillar, name=branch_name)
-
     def findPathToTeam(self, team):
         """See `IPerson`."""
         # This is our guarantee that _getDirectMemberIParticipateIn() will
@@ -1147,6 +1127,7 @@ class Person(
         """See `IPerson`."""
         # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
+
         clauses = ["""
             SELECT DISTINCT Product.id
             FROM Product, TeamParticipation
@@ -1427,7 +1408,7 @@ class Person(
         assert self.is_team
         to_addrs = set()
         for person in self.getDirectAdministrators():
-            to_addrs.update(contactEmailAddresses(person))
+            to_addrs.update(get_contact_email_addresses(person))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,

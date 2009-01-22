@@ -277,34 +277,6 @@ class IArchivePublic(IHasOwner):
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
         """
 
-    @operation_parameters(
-        include_needsbuild=Bool(
-            title=_("Include builds with state NEEDSBUILD"), required=False))
-    @export_read_operation()
-    def getBuildCounters(include_needsbuild=True):
-        """Return a dictionary containing the build counters for an archive.
-
-        This is necessary currently because the IArchive.failed_builds etc.
-        counters are not in use.
-
-        The returned dictionary contains the follwoing keys and values:
-
-         * 'total': total number of builds (includes SUPERSEDED);
-         * 'pending': number of builds in BUILDING or NEEDSBUILD state;
-         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
-           CHROOTWAIT and FAILEDTOUPLOAD state;
-         * 'succeeded': number of SUCCESSFULLYBUILT builds.
-         * 'superseded': number of SUPERSEDED builds.
-
-        :param include_needsbuild: Indicates whether to include builds with
-            the status NEEDSBUILD in the pending and total counts. This is
-            useful in situations where a build that hasn't started isn't
-            considered a build by the user.
-        :type include_needsbuild: ``bool``
-        :return: a dictionary with the 4 keys specified above.
-        :rtype: ``dict``.
-        """
-
     def allowUpdatesToReleasePocket():
         """Return whether the archive allows publishing to the release pocket.
 
@@ -652,6 +624,53 @@ class IArchiveView(Interface):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
+    @operation_parameters(
+        include_needsbuild=Bool(
+            title=_("Include builds with state NEEDSBUILD"), required=False))
+    @export_read_operation()
+    def getBuildCounters(include_needsbuild=True):
+        """Return a dictionary containing the build counters for an archive.
+
+        This is necessary currently because the IArchive.failed_builds etc.
+        counters are not in use.
+
+        The returned dictionary contains the follwoing keys and values:
+
+         * 'total': total number of builds (includes SUPERSEDED);
+         * 'pending': number of builds in BUILDING or NEEDSBUILD state;
+         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
+           CHROOTWAIT and FAILEDTOUPLOAD state;
+         * 'succeeded': number of SUCCESSFULLYBUILT builds.
+         * 'superseded': number of SUPERSEDED builds.
+
+        :param include_needsbuild: Indicates whether to include builds with
+            the status NEEDSBUILD in the pending and total counts. This is
+            useful in situations where a build that hasn't started isn't
+            considered a build by the user.
+        :type include_needsbuild: ``bool``
+        :return: a dictionary with the 4 keys specified above.
+        :rtype: ``dict``.
+        """
+
+    @operation_parameters(
+        source_ids=List(
+            title=_("A list of source publishing history record ids."),
+            value_type=TextLine()))
+    @export_read_operation()
+    def getBuildSummariesForSourceIds(source_ids):
+        """Return a dictionary containing a summary of the build statuses.
+
+        Only information for sources belonging to the current archive will
+        be returned. See 
+        `IPublishingSet`.getBuildStatusSummariesForSourceIdsAndArchive() for
+        details.
+
+        :param source_ids: A list of source publishing history record ids.
+        :type source_ids: ``list``
+        :return: A dict consisting of the overall status summaries for the
+            given ids that belong in the archive.
+        """
+
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
@@ -731,6 +750,35 @@ class IArchiveAppend(Interface):
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
+        """
+
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
+    def newSubscription(subscriber, registrant, date_expires=None,
+                        description=None):
+        """Create a new subscribtion to this archive.
+
+        Create an `ArchiveSubscriber` record which allows an `IPerson` to
+        access a private repository.
+
+        :param subscriber: An `IPerson` who is allowed to access the
+        repository for this archive.
+        :param registrant: An `IPerson` who created this subscription.
+        :param date_expires: When the subscription should expire; None if
+            it should not expire (default).
+        :param description: An option textual description of the subscription
+            being created.
+
+        :return: The `IArchiveSubscriber` that was created.
         """
 
 
@@ -821,13 +869,19 @@ class IArchiveSet(Interface):
             description;
 
         :return: an `IArchive` object.
+        :raises AssertionError if name is already taken within distribution.
         """
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
-    def getPPAByDistributionAndOwnerName(distribution, person_name):
-        """Return a single PPA the given (distribution, name) pair."""
+    def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
+        """Return a single PPA.
+        
+        :param distribution: The context IDistribution.
+        :param person_name: The context IPerson.
+        :param ppa_name: The name of the archive (PPA)
+        """
 
     def getByDistroPurpose(distribution, purpose, name=None):
         """Return the IArchive with the given distribution and purpose.

@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from storm.expr import Desc, Join, LeftJoin
 from storm.references import Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
@@ -46,7 +47,7 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.mailout.branchmergeproposal import RecipientReason
+from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -222,7 +223,7 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
-                    subscription, recipient, self, rationale)
+                    subscription, recipient, rationale, self)
         # Add in all the individuals that have been asked for a review,
         # or who have reviewed.  These people get added to the recipients
         # with the rationale of "Reviewer".
@@ -590,6 +591,25 @@ class BranchMergeProposalGetter:
         return BranchMergeProposal.select(
             BranchMergeProposalGetter._generateVisibilityClause(
                 builder.query, visible_by_user))
+
+    @staticmethod
+    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+        """See `IBranchMergeProposalGetter`."""
+        store = Store.of(context)
+        tables = [
+            BranchMergeProposal,
+            Join(CodeReviewVoteReference,
+                 CodeReviewVoteReference.branch_merge_proposalID == \
+                 BranchMergeProposal.id),
+            LeftJoin(CodeReviewComment,
+                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+        result = store.using(*tables).find(
+            BranchMergeProposal,
+            BranchMergeProposal.queue_status.is_in(status),
+            CodeReviewVoteReference.reviewer == context)
+        result.order_by(Desc(CodeReviewComment.vote))
+
+        return result
 
     @staticmethod
     def _generateVisibilityClause(query, visible_by_user):

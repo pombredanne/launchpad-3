@@ -94,16 +94,19 @@ class SalesforceXMLRPCTestTransport(Transport):
 
     def __init__(self):
         self.vouchers = [
+            # Test vouchers owned by sabdfl.
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000001',
                     'sabdfl_oid'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000002',
                     'sabdfl_oid'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000003',
                     'sabdfl_oid'),
+            # Test vouchers owned by cprov.
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000004',
                     'cprov_oid'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000005',
                     'cprov_oid'),
+            # Test vouchers owned by bac.
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000001',
                     'mTmeENb'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000002',
@@ -114,6 +117,17 @@ class SalesforceXMLRPCTestTransport(Transport):
                     'mTmeENb'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000005',
                     'mTmeENb'),
+            # Test vouchers owned by commercial-member.
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-com000000001',
+                    'rPwGRk4'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-com000000002',
+                    'rPwGRk4'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-com000000003',
+                    'rPwGRk4'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-com000000004',
+                    'rPwGRk4'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-com000000005',
+                    'rPwGRk4'),
             ]
 
 

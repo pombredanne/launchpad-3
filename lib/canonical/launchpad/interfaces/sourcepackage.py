@@ -34,6 +34,8 @@ class ISourcePackage(IBugTarget):
 
     displayname = Attribute("A displayname, constructed, for this package")
 
+    path = Attribute("A path to this package, <distro>/<series>/<package>")
+
     title = Attribute("Title")
 
     format = Attribute("Source Package Format. This is the format of the "

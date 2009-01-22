@@ -19,13 +19,14 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.librarian.utils import copy_and_close
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.packagediff import (
-    IPackageDiff, IPackageDiffSet)
+    IPackageDiff, IPackageDiffSet, PackageDiffStatus)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -83,6 +84,7 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
 
     return os.path.getsize(full_path + '.gz')
 
+
 def download_file(destination_path, libraryfile):
     """Download a file from the librarian to the destination path.
 
@@ -95,6 +97,7 @@ def download_file(destination_path, libraryfile):
     libraryfile.open()
     destination_file = open(destination_path, 'w')
     copy_and_close(libraryfile, destination_file)
+
 
 class PackageDiff(SQLBase):
     """A Package Diff request."""
@@ -119,6 +122,10 @@ class PackageDiff(SQLBase):
     diff_content = ForeignKey(
         dbName="diff_content", foreignKey='LibraryFileAlias',
         notNull=False, default=None)
+
+    status = EnumCol(
+        dbName='status', notNull=True, schema=PackageDiffStatus,
+        default=PackageDiffStatus.PENDING)
 
     @property
     def title(self):
@@ -206,6 +213,7 @@ class PackageDiff(SQLBase):
 
             # Last but not least set the "date fulfilled" time stamp.
             self.date_fulfilled = UTC_NOW
+            self.status = PackageDiffStatus.COMPLETED
         finally:
             shutil.rmtree(tmp_dir)
 
@@ -224,11 +232,11 @@ class PackageDiffSet:
         return PackageDiff.get(diff_id)
 
     def getPendingDiffs(self, limit=None):
-        query = """
-            date_fulfilled IS NULL
-        """
-        return PackageDiff.select(
-            query, limit=limit, orderBy=['id'])
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(
+            PackageDiff, PackageDiff.status == PackageDiffStatus.PENDING)
+        result.order_by(PackageDiff.id)
+        return result.config(limit=limit)
 
     def getDiffsToReleases(self, sprs):
         """See `IPackageDiffSet`."""

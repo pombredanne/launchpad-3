@@ -837,15 +837,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         This method must be used only for people, not teams.
         """
 
-    def getBranch(product_name, branch_name):
-        """The branch associated to this person and product with this name.
-
-        The product_name may be None.
-        """
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
-        # longer appropriate, given source package branches. It's used in
-        # browser/person.py, browser/specification.py.
-
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
     # @operation_parameters(team=copy_field(ITeamMembership['team']))

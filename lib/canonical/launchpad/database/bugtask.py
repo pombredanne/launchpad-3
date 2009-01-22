@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
     IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask,
+    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
 from canonical.launchpad.interfaces.distribution import (
@@ -863,6 +863,30 @@ class BugTask(SQLBase, BugTaskMixin):
 
         self.assignee = assignee
 
+    def transitionToTarget(self, target):
+        """See `IBugTask`.
+
+        This method allows changing the target of some bug
+        tasks. The rules it follows are similar to the ones
+        enforced implicitly by the code in
+        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
+        """
+        if IUpstreamBugTask.providedBy(self):
+            if IProduct.providedBy(target):
+                self.product = target
+            else:
+                raise IllegalTarget(
+                    "Upstream bug tasks may only be re-targeted "
+                    "to another project.")
+        else:
+            if (IDistributionSourcePackage.providedBy(target) and
+                target.distribution == self.target.distribution):
+                self.sourcepackagename = target.sourcepackagename
+            else:
+                raise IllegalTarget(
+                    "Distribution bug tasks may only be re-targeted "
+                    "to a package in the same distribution.")
+
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
         if newtarget is None:
@@ -1100,7 +1124,8 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed",
         "number_of_duplicates": "Bug.number_of_duplicates",
-        "message_count": "Bug.message_count"
+        "message_count": "Bug.message_count",
+        "users_affected_count": "Bug.users_affected_count",
         }
 
     _open_resolved_upstream = """
@@ -1345,15 +1370,15 @@ class BugTaskSet:
                                  "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
-            clauseTables.append('BugAttachment')
+            attachment_clause = (
+                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
             if isinstance(params.attachmenttype, any):
                 where_cond = "BugAttachment.type IN (%s)" % ", ".join(
                     sqlvalues(*params.attachmenttype.query_values))
             else:
                 where_cond = "BugAttachment.type = %s" % sqlvalues(
                     params.attachmenttype)
-            extra_clauses.append("BugAttachment.bug = BugTask.bug")
-            extra_clauses.append(where_cond)
+            extra_clauses.append(attachment_clause % where_cond)
 
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))

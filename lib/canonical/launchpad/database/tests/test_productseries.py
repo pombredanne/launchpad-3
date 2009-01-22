@@ -29,7 +29,8 @@ class TestProductSeriesForBranches(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.product = self.factory.makeProduct()
         self.branches = [
-            self.factory.makeBranch(product=self.product) for x in range(3)]
+            self.factory.makeProductBranch(product=self.product)
+            for x in range(3)]
 
     def tearDown(self):
         logout()
@@ -91,7 +92,7 @@ class TestProductSeriesForBranches(TestCase):
     def test_import_branches_also_linked(self):
         """Series with import branches are returned."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeProductBranch(
             owner=vcs_imports, product=self.product,
             branch_type=BranchType.IMPORTED)
         dev_focus = self.product.development_focus

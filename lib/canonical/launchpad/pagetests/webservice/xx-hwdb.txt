@@ -29,6 +29,7 @@ A device entry provides the attributes bus_product_id, name and variant.
     ...     pprint_entry(entry)
     bus: u'System'
     bus_product_id: u'MS-7369'
+    drivers_collection_link: u'.../+hwdb/+device/1/drivers'
     id: 1
     name: u'MS-7369'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device'
@@ -69,6 +70,7 @@ devices matching the given value are returned.
     ...     pprint_entry(entry)
     bus: u'System'
     bus_product_id: u'MS-7369'
+    drivers_collection_link: u'.../+hwdb/+device/1/drivers'
     id: 1
     name: u'MS-7369'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device'
@@ -88,6 +90,7 @@ Single device records can be accessed too.
     >>> pprint_entry(device)
     bus: u'PCI'
     bus_product_id: u'0x0455'
+    drivers_collection_link: u'.../+hwdb/+device/2/drivers'
     id: 2
     name: u'MCP65 USB Controller'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device'
@@ -111,6 +114,31 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     ...
     NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
+
+HWDevice.drivers returns the list of drivers associtaed with this device.
+
+    >>> drivers = webservice.get('/+hwdb/+device/2/drivers').jsonBody()
+    >>> for driver in drivers['entries']:
+    ...     pprint_entry(driver)
+    id: 1
+    license: None
+    name: u'ehci_hcd'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
+    id: 5
+    license: None
+    name: u'hub'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/5'
+    id: 2
+    license: None
+    name: u'usb'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
+
 
 === Drivers and Driver Queries ===
 
@@ -213,8 +241,8 @@ returned.
 
     >>> drivers = webservice.get(
     ...     '/+hwdb?ws.op=drivers&package_name=xorg').jsonBody()
-    >>> for entry in drivers['entries']:
-    ...     pprint_entry(entry)
+    >>> [nv_xorg_driver] = drivers['entries']
+    >>> pprint_entry(nv_xorg_driver)
     id: 8
     license: None
     name: u'nv'
@@ -268,8 +296,8 @@ match both values.
     >>> drivers = webservice.get(
     ...     '/+hwdb?ws.op=drivers&name=usb'
     ...     '&package_name=linux-image-2.6.24-19-generic').jsonBody()
-    >>> for entry in drivers['entries']:
-    ...     pprint_entry(entry)
+    >>> [usb_driver] = drivers['entries']
+    >>> pprint_entry(usb_driver)
     id: 2
     license: None
     name: u'usb'
@@ -302,3 +330,227 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     ...
     NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
+
+
+=== HWDB submissions and submission queries ===
+
+A single submission can be accessed via its submission key. (See below
+for the contents of devices_collection_link.)
+
+    >>> submission = webservice.get(
+    ...     '/+hwdb/+submission/sample-submission').jsonBody()
+    >>> pprint_entry(submission)
+    contactable: False
+    date_created: u'2008-09-26T17:19:18+00:00'
+    date_submitted: u'2008-09-30T08:19:00.222131+00:00'
+    devices_collection_link: u'.../+hwdb/+submission/sample-submission/devices'
+    format: u'Version 1'
+    owner_link: u'http://api.launchpad.dev/beta/~name12'
+    private: False
+    raw_submission_link:
+        u'.../+hwdb/+submission/sample-submission/raw_submission'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_submission'
+    self_link: u'.../+hwdb/+submission/sample-submission'
+    status: u'Processed'
+    submission_key: u'sample-submission'
+
+Accessing the raw submission data yields a redirect to a Librarian URL.
+
+    >>> print webservice.get(submission['raw_submission_link'])
+    HTTP/1.1 303 See Other
+    Content-Length: 0
+    Content-Type: text/plain
+    Location: http://localhost:58000/92/sample-submission-2.xml
+    <BLANKLINE>
+
+A 404 error is returned when a client tries to access a non-existent
+submission.
+
+    >>> print webservice.get('/+hwdb/+submission/nonsense')
+    HTTP/1.1 404 Not Found
+    ...
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...systemhomes.HWDBApplication object at ...>,
+    name: u'nonsense'
+    <BLANKLINE>
+
+Submissions which mention a specific device can be retrieved by
+using the getSubmissions operation.
+
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?ws.op=getSubmissions').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+We can limit the result set to submissions where the device is accessed
+by a specific driver. Device 2 is a USB controller, so will get the sample
+submission when we set the parameter driver to the usb driver...
+
+    >>> from urllib import urlencode
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'driver': usb_driver['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+...but when we set it to nv_xorg_driver, we get an empty result set.
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'driver': nv_xorg_driver['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can also limit the result set to submissions made for a specific
+distribution...
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> ubuntu = distros['entries'][0]
+    >>> ubuntu['name']
+    u'ubuntu'
+    >>> debian = distros['entries'][3]
+    >>> debian['name']
+    u'debian'
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'distribution': ubuntu['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'distribution': debian['self_link'],
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and for a specific processor architecture.
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'architecture': 'i386',
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> parameters = {
+    ...     'ws.op': 'getSubmissions',
+    ...     'architecture': 'amd64',
+    ...     }
+    >>> submissions = webservice.get(
+    ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+=== Submission Devices ===
+
+The table HWSubmissionDevice associates devices with submissions.
+(See hwdb-device-tables.txt for details.)
+
+A single HWSubmissionDevice record can be accessed via its database ID.
+
+    >>> submission_device = webservice.get(
+    ...     '/+hwdb/+submissiondevice/3').jsonBody()
+    >>> pprint_entry(submission_device)
+    device_link: u'http://api.launchpad.dev/beta/+hwdb/+device/2'
+    driver_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
+    hal_device_id: 121
+    id: 3
+    parent_link: u'http://api.launchpad.dev/beta/+hwdb/+submissiondevice/2'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_submission_device'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+submissiondevice/3'
+
+The HWSubmissionDevice records belonging to a given submission can
+are stored in HWSubmission.devices.
+
+    >>> url = '/+hwdb/+submission/sample-submission/devices?ws.size=3'
+    >>> submission_devices = webservice.get(url).jsonBody()
+    >>> for submission_device in submission_devices['entries']:
+    ...     pprint_entry(submission_device)
+    device_link: u'http://api.launchpad.dev/beta/+hwdb/+device/2'
+    driver_link: None
+    hal_device_id: 121
+    id: 2
+    parent_link: u'.../+hwdb/+submissiondevice/1'
+    resource_type_link: u'.../#h_w_submission_device'
+    self_link: u'.../+hwdb/+submissiondevice/2'
+    device_link: u'.../+hwdb/+device/5'
+    driver_link: None
+    hal_device_id: 65
+    id: 16
+    parent_link: u'.../+hwdb/+submissiondevice/1'
+    resource_type_link: u'.../#h_w_submission_device'
+    self_link: u'.../+hwdb/+submissiondevice/16'
+    device_link: u'.../+hwdb/+device/2'
+    driver_link: u'.../+hwdb/+driver/1'
+    hal_device_id: 121
+    id: 3
+    parent_link: u'.../+hwdb/+submissiondevice/2'
+    resource_type_link: u'.../#h_w_submission_device'
+    self_link: u'.../+hwdb/+submissiondevice/3'
+
+
+== Vendor ID queries ==
+
+A vendor ID can be accessed by via its database ID.
+
+    >>> vendor_id = webservice.get('+hwdb/+hwvendorid/1').jsonBody()
+    >>> pprint_entry(vendor_id)
+    bus: u'System'
+    id: 1
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_vendor_i_d'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+hwvendorid/1'
+    vendor_id: u'MSI'
+
+A 404 error is returned, when a non-existent ID is passed in the URL...
+
+    >>> print webservice.get('/+hwdb/+hwvendorid/1000000')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'1000000'
+
+...and when an otherwise invalid ID is passed.
+
+    >>> print webservice.get('/+hwdb/+hwvendorid/nonsense')
+    HTTP/1.1 404 Not Found
+    ...
+    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    ... name: u'nonsense'
+
+Known vendor IDs for a given bus can be queried with
+HWDBApplication.vendorIDs().
+
+    >>> vendor_ids = webservice.get(
+    ...     '/+hwdb?ws.op=vendorIDs&bus=USB').jsonBody()
+    >>> for vendor_id in vendor_ids['entries']:
+    ...     pprint_entry(vendor_id)
+    bus: u'USB'
+    id: 3
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_vendor_i_d'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+hwvendorid/3'
+    vendor_id: u'0x04b4'
+    bus: u'USB'
+    id: 4
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_vendor_i_d'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+hwvendorid/4'
+    vendor_id: u'0x0dda'

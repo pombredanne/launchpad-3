@@ -24,6 +24,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -321,6 +322,9 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+class IllegalTarget(Exception):
+    """Exception raised when trying to set an illegal bug task target."""
+    webservice_error(400) #Bad request.
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -446,10 +450,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                  "length of time between the creation date "
                                  "and now."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson))
-    target = Reference(
+        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+    target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
-        description=_("The software in which this bug should be fixed."))
+        readonly=True,
+        description=_("The software in which this bug should be fixed.")))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
@@ -589,6 +594,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         object, the date_assigned is set on the task. If the assignee
         value is set to None, date_assigned is also set to None.
         """
+
+    @operation_parameters(
+        target=copy_field(target))
+    @export_write_operation()
+    def transitionToTarget(target):
+        """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():
         """Update the targetnamecache field in the database.
@@ -1000,8 +1011,10 @@ class BugTaskSearchParams:
         Otherwise, return value as is, or None if it's a zero-length sequence.
         """
         if zope_isinstance(value, (list, tuple)):
-            if len(value) > 0:
+            if len(value) > 1:
                 return any(*value)
+            elif len(value) == 1:
+                return value[0]
             else:
                 return None
         else:

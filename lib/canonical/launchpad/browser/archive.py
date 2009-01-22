@@ -16,7 +16,8 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
-    'traverse_archive',
+    'traverse_distro_archive',
+    'traverse_named_ppa',
     ]
 
 
@@ -37,6 +38,8 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.browser.librarian import FileNavigationMixin
+from canonical.launchpad.components.archivedependencies import (
+    default_component_dependency_name, default_pocket_dependency)
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
@@ -65,6 +68,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.scripts.packagecopier import (
     check_copy, do_copy)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -136,7 +140,7 @@ class ArchiveBadges(HasBadgeBase):
         return "This archive is private."
 
 
-def traverse_archive(distribution, name):
+def traverse_distro_archive(distribution, name):
     """For distribution archives, traverse to the right place.
 
     This traversal only applies to distribution archives, not PPAs.
@@ -151,7 +155,25 @@ def traverse_archive(distribution, name):
         return archive
 
 
-class ArchiveURL:
+def traverse_named_ppa(person_name, ppa_name):
+    """For PPAs, traverse the the right place.
+
+    :param person_name: The person part of the URL
+    :param ppa_name: The PPA name part of the URL
+    """
+    # For now, all PPAs are assumed to be Ubuntu-related.  This will
+    # change when we start doing PPAs for other distros.
+    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    archive_set = getUtility(IArchiveSet)
+    archive = archive_set.getPPAByDistributionAndOwnerName(
+            ubuntu, person_name, ppa_name)
+    if archive is None:
+        raise NotFoundError("%s/%s", (person_name, ppa_name))
+
+    return archive
+
+
+class DistributionArchiveURL:
     """Dynamic URL declaration for `IDistributionArchive`.
 
     When dealing with distribution archives we want to present them under
@@ -171,6 +193,23 @@ class ArchiveURL:
     @property
     def path(self):
         return u"+archive/%s" % self.context.name.lower()
+
+
+class PPAURL:
+    """Dynamic URL declaration for named PPAs."""
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        return self.context.owner
+
+    @property
+    def path(self):
+        return u"+archive/%s" % self.context.name
 
 
 class ArchiveNavigation(Navigation, FileNavigationMixin):
@@ -1066,7 +1105,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
         if primary_dependency is None:
-            default_value = PackagePublishingPocket.UPDATES
+            default_value = default_pocket_dependency
         else:
             default_value = primary_dependency.pocket
 
@@ -1115,13 +1154,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
-        if primary_dependency is not None:
-            if primary_dependency.component == multiverse:
-                default_value = multiverse
-            else:
-                default_value = None
+        if primary_dependency is None:
+            default_value = getUtility(IComponentSet)[
+                default_component_dependency_name]
         else:
-            default_value = multiverse
+            default_value = primary_dependency.component
 
         terms = [all_components, follow_primary]
         primary_components_vocabulary = SimpleVocabulary(terms)
@@ -1183,17 +1220,28 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
+        # Received values.
         dependency_pocket = data.get('primary_dependencies')
         dependency_component = data.get('primary_components')
 
+        # Check if the given values correspond to the default scenario
+        # for the context archive.
+        default_component_dependency = getUtility(IComponentSet)[
+            default_component_dependency_name]
+        is_default_dependency = (
+            dependency_pocket == default_pocket_dependency and
+            dependency_component == default_component_dependency)
+
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
-        multiverse = getUtility(IComponentSet)['multiverse']
 
-        if (primary_dependency is None and
-            dependency_pocket == PackagePublishingPocket.UPDATES and
-            dependency_component == multiverse):
+        # No action is required if there is no primary_dependency
+        # override set and the given values match it.
+        if primary_dependency is None and is_default_dependency:
             return
+
+        # Similarly, no action is required if the given values match
+        # the existing primary_dependency override.
         if (primary_dependency is not None and
             primary_dependency.pocket == dependency_pocket and
             primary_dependency.component == dependency_component):
@@ -1204,8 +1252,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             self.context.removeArchiveDependency(
                 self.context.distribution.main_archive)
 
-        if (dependency_pocket == PackagePublishingPocket.UPDATES and
-            dependency_component == multiverse):
+        if is_default_dependency:
             self._messages.append(
                 '<p>Default primary dependencies restored.</p>')
             return
@@ -1245,7 +1292,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                                "This dependency is already registered.")
             return
 
-        from canonical.launchpad.webapp.authorization import check_permission
         if not check_permission('launchpad.View', dependency_candidate):
             self.setFieldError(
                 'dependency_candidate',

@@ -37,7 +37,7 @@
     </p>
     <ul id="team-policies">
       <li tal:repeat="item view/team_policies">
-        <tal:team replace="item/team/displayname"
+        <tal:team replace="structure item/team/fmt:link:mainsite"
                   condition="item/team">Team Name</tal:team>:
         <tal:team condition="not: item/team">Everyone</tal:team>
         <tal:policy replace="item/rule/title">Public</tal:policy>

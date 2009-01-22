@@ -75,8 +75,7 @@ from canonical.codehosting.transport import (
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -134,7 +133,7 @@ def get_scanner_server():
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
     branch_transport = get_readonly_transport(
-        get_transport(config.supermirror.warehouse_root_url))
+        get_transport(config.codehosting.internal_branch_by_id_root))
     return LaunchpadInternalServer(
         'lp-mirrored:///', branchfs_endpoint, branch_transport)
 
@@ -325,7 +324,8 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
         def path_not_translated(failure):
-            trap_fault(failure, faults.PathTranslationError.error_code)
+            trap_fault(
+                failure, faults.PathTranslationError, faults.PermissionDenied)
             raise NoSuchFile(virtual_url_fragment)
 
         def unknown_transport_type(failure):
@@ -487,7 +487,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = self._authserver.createBranch(virtual_url_fragment)
 
         def translate_fault(failure):
-            # We turn NOT_FOUND_FAULT_CODE into a PermissionDenied, even
+            # We turn faults.NotFound into a PermissionDenied, even
             # though one might think that it would make sense to raise
             # NoSuchFile. Sadly, raising that makes the client do "clever"
             # things like say "Parent directory of
@@ -495,7 +495,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # exist. You may supply --create-prefix to create all leading
             # parent directories", which is just misleading.
             fault = trap_fault(
-                failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+                failure, faults.NotFound, faults.PermissionDenied)
             raise PermissionDenied(virtual_url_fragment, fault.faultString)
 
         return deferred.addErrback(translate_fault)

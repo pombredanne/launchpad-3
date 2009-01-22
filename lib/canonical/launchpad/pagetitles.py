@@ -521,6 +521,8 @@ distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
 
+distributionsourcepackage_edit = ContextTitle("Edit details of %s")
+
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 

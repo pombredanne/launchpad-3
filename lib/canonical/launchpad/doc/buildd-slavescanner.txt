@@ -481,8 +481,7 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://localhost:58000/.../buildlog_ubuntu-hoary-i386.mozilla-=
-    firefox_0.9_BUILDING.txt.gz
+    * Build Log: http://launchpad.dev/.../buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
     ...
     Upload log:
     INFO    creating lockfile
@@ -1109,7 +1108,7 @@ dispatching.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
     Archive Private: False
@@ -1134,11 +1133,7 @@ password for the archive):
     >>> login(ANONYMOUS)
 
 Dispatch the build again. Celso's archive sources.list entry now has the
-buildd:secret@ part in the URL.  Also note that because it's a private
-PPA, it's missing the dependency on the updates pocket.  This is mainly
-to accommodate the security build private PPA which must not depend
-on the updates pocket.  This will be replaced in the future by a
-proper solution that allows configurable pocket dependencies.
+buildd:secret@ part in the URL.
 
 Also note that when ensurepresent() is called, it receives a URL that
 points to the private archive rather than the librarian for the private
@@ -1153,13 +1148,17 @@ that the mangling tools will run over the built packages.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://private-ppa.launchpad.dev/cprov/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
+        url=http://private-ppa.launchpad.dev/cprov/ppa/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
     URL authorisation with buildd/secret
     OkSlave BUILDING
     Archives:
-     deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu hoary main
-     deb http://ftpmaster.internal/ubuntu hoary main universe
-     deb http://ftpmaster.internal/ubuntu hoary-security main universe
+     deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+     deb http://ftpmaster.internal/ubuntu hoary
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates
+         main restricted universe multiverse
     Suite: hoary
     Archive Purpose: PRIMARY
     Archive Private: True
@@ -1246,7 +1245,7 @@ published in hoary/i386, which is not the case.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
     Archive Private: False
@@ -1274,8 +1273,8 @@ We will create the required publication in Mark's PPA and try again.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
-     deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
+     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+     deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
     Archive Private: False

@@ -171,11 +171,20 @@ start-gdb: inplace stop support_files
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
+run_all: inplace stop
 	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
+
+run_codebrowse: build
+	BZR_PLUGIN_PATH=bzrplugins PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+
+start_codebrowse: build
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/start-loggerhead.py
+
+stop_codebrowse:
+	PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
 pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the
@@ -287,9 +296,6 @@ launchpad.pot:
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
 
-sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
-	ln -s ../../loggerhead sourcecode/launchpad-loggerhead/sourcecode/loggerhead
-
 install: reload-apache
 
 copy-certificates:
@@ -298,8 +304,9 @@ copy-certificates:
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
 copy-apache-config:
-	cp configs/development/local-launchpad-apache \
-	    /etc/apache2/sites-available/local-launchpad
+	# We insert the absolute path to the branch-rewrite script
+	# into the Apache config as we copy the file into position.
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad

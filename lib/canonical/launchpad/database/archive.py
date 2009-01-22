@@ -21,13 +21,19 @@ from zope.interface import alsoProvides, implements
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
+from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
+from canonical.launchpad.database.archivesubscriber import (
+    ArchiveSubscriber)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -49,6 +55,8 @@ from canonical.launchpad.interfaces.archive import (
     SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    ArchiveSubscriberStatus)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -59,7 +67,7 @@ from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
@@ -234,14 +242,16 @@ class Archive(SQLBase):
             else:
                 url = config.personalpackagearchive.base_url
             return urlappend(
-                url, self.owner.name + '/' + self.distribution.name)
+                url, "/".join(
+                    (self.owner.name, self.name, self.distribution.name)))
 
         try:
             postfix = archive_postfixes[self.purpose]
         except KeyError:
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
-        return urlappend(config.archivepublisher.base_url,
+        return urlappend(
+            config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
     def getPubConfig(self):
@@ -257,7 +267,8 @@ class Archive(SQLBase):
             else:
                 pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
-                pubconf.distroroot, self.owner.name, self.distribution.name)
+                pubconf.distroroot, self.owner.name, self.name,
+                self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
@@ -839,6 +850,13 @@ class Archive(SQLBase):
 
         return build_counts
 
+    def getBuildSummariesForSourceIds(self, source_ids):
+        """See `IArchive`."""
+        publishing_set = getUtility(IPublishingSet)
+        return publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
+            source_ids,
+            archive=self)
+
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
@@ -1055,6 +1073,41 @@ class Archive(SQLBase):
             copy.sourcepackagerelease.sourcepackagename.name
             for copy in copies]
 
+    def newAuthToken(self, person, token=None, date_created=None):
+        """See `IArchive`."""
+        if token is None:
+            token = create_unique_token_for_table(20, ArchiveAuthToken.token)
+        archive_auth_token = ArchiveAuthToken()
+        archive_auth_token.archive = self
+        archive_auth_token.person = person
+        archive_auth_token.token = token
+        if date_created is not None:
+            archive_auth_token.date_created = date_created
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.add(archive_auth_token)
+        return archive_auth_token
+
+    def newSubscription(self, subscriber, registrant, date_expires=None,
+                        description=None):
+        """See `IArchive`."""
+        # XXX 2009-01-19 Julian
+        # This method is currently a stub.  It needs a lot more work to
+        # figure out what to do in the case of overlapping
+        # subscriptions, and also to add the ArchiveAuthTokens for the
+        # subscriber (which may also be a team and thus require
+        # expanding to make one token per member).
+        subscription = ArchiveSubscriber()
+        subscription.archive = self
+        subscription.registrant = registrant
+        subscription.subscriber = subscriber
+        subscription.date_expires = date_expires
+        subscription.description = description
+        subscription.status = ArchiveSubscriberStatus.ACTIVE
+        subscription.date_created = UTC_NOW
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.add(subscription)
+        return subscription
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1064,14 +1117,17 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
 
-    def getPPAByDistributionAndOwnerName(self, distribution, name):
+    def getPPAByDistributionAndOwnerName(self, distribution, person_name,
+                                         ppa_name):
         """See `IArchiveSet`"""
         query = """
             Archive.purpose = %s AND
             Archive.distribution = %s AND
             Person.id = Archive.owner AND
+            Archive.name = %s AND
             Person.name = %s
-        """ % sqlvalues(ArchivePurpose.PPA, distribution, name)
+        """ % sqlvalues(
+                ArchivePurpose.PPA, distribution, ppa_name, person_name)
 
         return Archive.selectOne(query, clauseTables=['Person'])
 
@@ -1082,7 +1138,7 @@ class ArchiveSet:
 
          * PRIMARY: 'primary';
          * PARTNER: 'partner';
-         * PPA: 'default'.
+         * PPA: 'ppa'.
 
         :param purpose: queried `ArchivePurpose`.
 
@@ -1093,7 +1149,7 @@ class ArchiveSet:
         """
         name_by_purpose = {
             ArchivePurpose.PRIMARY: 'primary',
-            ArchivePurpose.PPA: 'default',
+            ArchivePurpose.PPA: 'ppa',
             ArchivePurpose.PARTNER: 'partner',
             }
 
@@ -1127,8 +1183,6 @@ class ArchiveSet:
     def new(self, purpose, owner, name=None, distribution=None,
             description=None):
         """See `IArchiveSet`."""
-        # XXX, al-maisan, 2008-11-19, bug #299856: copy archives are to be
-        # created with the "publish" flag turned off.
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
@@ -1141,6 +1195,17 @@ class ArchiveSet:
             publish = False
         else:
             publish = True
+
+        # For non-PPA archives we enforce unique names within the context of a
+        # distribution.
+        if purpose != ArchivePurpose.PPA:
+            archive = Archive.selectOne(
+                "Archive.distribution = %s AND Archive.name = %s" %
+                sqlvalues(distribution, name))
+            if archive is not None:
+                raise AssertionError(
+                    "archive '%s' exists already in '%s'." %
+                    (name, distribution.name))
 
         return Archive(
             owner=owner, distribution=distribution, name=name,
