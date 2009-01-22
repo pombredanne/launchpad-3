@@ -37,6 +37,7 @@ from canonical.launchpad.interfaces import (
     IBranchSet,
     IBranchBatchNavigator,
     IBranchListingFilter,
+    IBranchMergeProposalGetter,
     IBugBranchSet,
     IProductSeriesSet,
     IRevisionSet,
@@ -57,12 +58,13 @@ class BranchListingItem(BranchBadges):
     delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
-                 show_blueprint_badge, is_dev_focus,
+                 show_blueprint_badge, show_mp_badge, is_dev_focus,
                  associated_product_series):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
+        self.show_merge_proposals = show_mp_badge
         self._now = now
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
@@ -89,6 +91,10 @@ class BranchListingItem(BranchBadges):
 
     def isBlueprintBadgeVisible(self):
         return self.show_blueprint_badge
+
+    def isMergeproposalBadgeVisible(self):
+        """Show the merge proposal badge if needed"""
+        return self.show_merge_proposals
 
     @property
     def revision_author(self):
@@ -152,6 +158,16 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return result
 
     @cachedproperty
+    def has_merge_proposals(self):
+        """Return a set of branches that should show merge proposal badges."""
+        mp_branches = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.view.context, visible_by_user=self.view.user)
+        result = set()
+        for mp_branch in mp_branches:
+            result.add(mp_branch.source_branch.id)
+        return result
+
+    @cachedproperty
     def tip_revisions(self):
         """Return a set of branch ids that should show blueprint badges."""
         revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
@@ -207,11 +223,13 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         last_commit = self.tip_revisions[branch.id]
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
+        show_mp_badge = branch.id in self.has_merge_proposals
         associated_product_series = self.getProductSeries(branch)
         is_dev_focus = (self.getDevFocusBranch(branch) == branch)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, is_dev_focus, associated_product_series)
+            show_blueprint_badge, show_mp_badge,
+            is_dev_focus, associated_product_series)
 
     def branches(self):
         """Return a list of BranchListingItems."""

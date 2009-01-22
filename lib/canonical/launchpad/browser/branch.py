@@ -138,7 +138,7 @@ class BranchHierarchy(Hierarchy):
 
 
 class BranchBadges(HasBadgeBase):
-    badges = "private", "bug", "blueprint", "warning"
+    badges = "private", "bug", "blueprint", "warning", "mergeproposal"
 
     def isBugBadgeVisible(self):
         """Show a bug badge if the branch is linked to bugs."""
