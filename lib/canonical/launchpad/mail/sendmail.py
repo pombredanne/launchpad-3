@@ -150,8 +150,9 @@ class MailController(object):
         # ASCII strings.
         # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
         # so we can provide a Unicode string and get the right encoding.
-        from_addr = str(Header(self.from_addr))
-        to_addrs = [str(Header(address)) for address in list(self.to_addrs)]
+        self.from_addr = Header(self.from_addr).encode()
+        self.to_addrs = [Header(address).encode()
+            for address in list(self.to_addrs)]
 
         for address in [self.from_addr] + list(self.to_addrs):
             if not isinstance(address, str) or not is_ascii_only(address):
