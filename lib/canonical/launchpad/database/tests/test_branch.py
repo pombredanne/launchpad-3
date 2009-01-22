@@ -1708,19 +1708,19 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
 
 class TestCodebrowseURL(TestCaseWithFactory):
-    """XXX."""
+    """Tests for `Branch.codebrowse_url`."""
 
     layer = DatabaseFunctionalLayer
 
     def test_simple(self):
-        # XXX
+        # The basic codebrowse URL for a public branch is a 'http' url.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name,
             branch.codebrowse_url())
 
     def test_private(self):
-        # XXX
+        # The codebrowse URL for a private branch is a 'https' url.
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(private=True, owner=owner)
         login_person(owner)
@@ -1729,7 +1729,7 @@ class TestCodebrowseURL(TestCaseWithFactory):
             branch.codebrowse_url())
 
     def test_extra_args(self):
-        # XXX
+        # Any arguments to codebrowse_url are appended to the URL.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
