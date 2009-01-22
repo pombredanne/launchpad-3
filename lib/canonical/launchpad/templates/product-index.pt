@@ -24,7 +24,9 @@
                 tal:content="structure link/render" />
         </div>
         <tal:mugshot replace="structure context/image:mugshot" />
-        <h1 tal:content="context/title">Name of project</h1>
+        <h1 tal:replace="structure view/title_edit_widget">
+          Name of project
+        </h1>
         <p id="project-admin-whiteboard" class="whiteboard"
            tal:condition="context/required:launchpad.Commercial">
           <span tal:content="context/reviewer_whiteboard" />

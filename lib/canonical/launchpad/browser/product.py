@@ -107,6 +107,7 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget)
+from canonical.widgets.lazrjswidgets import InlineTextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -888,6 +889,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        self.title_edit_widget = InlineTextLineEditorWidget(
+            self.context, 'title',
+            canonical_url(self.context, view_name='+edit'),
+            id="product-title", title="Edit this title")
 
     @property
     def show_license_status(self):
