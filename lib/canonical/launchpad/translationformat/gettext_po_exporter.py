@@ -455,7 +455,7 @@ class GettextPOExporterBase:
 
     def _makeExportedHeader(self, translation_file):
         """Transform the header information into a format suitable for export.
-        
+
         :return: Unicode string containing the header.
         """
         raise NotImplementedError

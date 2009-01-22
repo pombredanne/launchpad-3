@@ -31,8 +31,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationmessage import (
-    make_plurals_sql_fragment, TranslationMessage)
+from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pofile import (
