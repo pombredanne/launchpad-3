@@ -18,8 +18,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
-from canonical.launchpad.interfaces.branchmergeproposal import (
-    BranchMergeProposalExists)
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -211,7 +209,8 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processVoteColon(self):
         """Process respects the vote: command."""
-        mail = self.factory.makeSignedMessage(body=' vote: Abstain EBAILIWICK')
+        mail = self.factory.makeSignedMessage(
+            body=' vote: Abstain EBAILIWICK')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
@@ -487,7 +486,7 @@ class TestCodeHandler(TestCaseWithFactory):
         """processMergeProposal raises BranchMergeProposalExists
 
         If there is already a merge proposal with the same target and source
-        branches of the merge directive, BranchMergeProposalExists is raised.
+        branches of the merge directive, an email is sent to the user.
         """
         message, source_branch, target_branch = self.makeMergeDirectiveEmail()
         self.switchDbUser(config.processmail.dbuser)
@@ -501,7 +500,7 @@ class TestCodeHandler(TestCaseWithFactory):
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
             notification.get_payload(),
-            'The branch %s is already propos=\ned for merging into %s\n\n' % (
+            'The branch %s is already propos=\ned for merging into %s.\n\n' % (
                 source_branch.bzr_identity, target_branch.bzr_identity))
 
 

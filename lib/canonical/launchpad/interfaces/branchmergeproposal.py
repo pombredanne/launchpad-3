@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    export_as_webservice_entry, exported)
 
 
 class InvalidBranchMergeProposal(Exception):
