@@ -76,8 +76,8 @@ class InlineTextLineEditorWidget:
                     });
                     widget.editor.plug({
                         fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                          name: '%(attribute)s',
-                          url: '%(context_url)s'}});
+                          patch: '%(attribute)s',
+                          resource: '%(context_url)s'}});
                     widget.render();
                 });
                 </script>
