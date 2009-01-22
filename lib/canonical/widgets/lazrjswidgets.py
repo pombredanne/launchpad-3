@@ -11,6 +11,7 @@ import cgi
 from textwrap import dedent
 
 from zope.component import getUtility
+from zope.security.checker import canWrite
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -51,6 +52,7 @@ class InlineTextLineEditorWidget:
         """Return the HTML to include to render the widget."""
         params = {
             'activation_script': '',
+            'trigger': '',
             'edit_url': self.edit_url,
             'id': self.id,
             'title': self.title,
@@ -59,7 +61,13 @@ class InlineTextLineEditorWidget:
                 self.context, path_only_if_possible=True),
             'attribute': self.attribute,
             }
-        if getUtility(ILaunchBag).user:
+        # Only display the trigger link and the activation script if
+        # the user can write the attribute.
+        if canWrite(self.context, self.attribute):
+            params['trigger'] = dedent(u"""\
+                <a href="%(edit_url)s" class="yui-editable_text-trigger"
+                ><img src="/@@/edit" alt="[edit]" title="%(title)s" /></a>
+                """ % params)
             params['activation_script'] = dedent(u"""\
                 <script>
                 YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
@@ -75,9 +83,9 @@ class InlineTextLineEditorWidget:
                 </script>
                 """ % params)
         return dedent(u"""\
-            <h1 id="%(id)s"><span class="yui-editable_text-text">%(value)s</span>
-                <a href="%(edit_url)s" class="yui-editable_text-trigger"
-                ><img src="/@@/edit" alt="[edit]" title="%(title)s" /></a>
+            <h1 id="%(id)s"><span
+                class="yui-editable_text-text">%(value)s</span>
+                %(trigger)s
             </h1>
             %(activation_script)s
             """ % params)
