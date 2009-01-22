@@ -325,15 +325,8 @@ class TestCaseWithFactory(TestCase):
         bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
         return db_branch, bzr_branch.create_checkout(tree_location)
 
-    def useBzrBranches(self):
-        """Prepare for using bzr branches."""
-        from canonical.codehosting.scanner.tests.test_bzrsync import (
-            FakeTransportServer)
-        from bzrlib.transport import get_transport
+    def useTempBzrHome(self):
         self.useTempDir()
-        server = FakeTransportServer(get_transport('.'))
-        server.setUp()
-        self.addCleanup(server.tearDown)
         # Avoid leaking local user configuration into tests.
         old_bzr_home = os.environ.get('BZR_HOME')
         def restore_bzr_home():
@@ -343,6 +336,16 @@ class TestCaseWithFactory(TestCase):
                 os.environ['BZR_HOME'] = old_bzr_home
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
+
+    def useBzrBranches(self):
+        """Prepare for using bzr branches."""
+        from canonical.codehosting.scanner.tests.test_bzrsync import (
+            FakeTransportServer)
+        from bzrlib.transport import get_transport
+        self.useTempBzrHome()
+        server = FakeTransportServer(get_transport('.'))
+        server.setUp()
+        self.addCleanup(server.tearDown)
 
 
 def capture_events(callable_obj, *args, **kwargs):

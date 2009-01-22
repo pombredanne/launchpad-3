@@ -131,6 +131,7 @@ def is_lock_directory(absolute_path):
 def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    import pdb; pdb.set_trace()
     branchfs_endpoint = BlockingProxy(proxy)
     branch_transport = get_readonly_transport(
         get_transport(config.codehosting.internal_branch_by_id_root))

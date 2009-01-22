@@ -847,7 +847,7 @@ class TestBranchMergeProposalJob(TestCaseWithFactory):
         """BranchMergeProposalJob implements expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = BranchMergeProposalJob(
-            bmp, BranchMergeProposalJobType.STATIC_DIFF, {})
+            bmp, BranchMergeProposalJobType.REVIEW_DIFF, {})
         job.sync()
         verifyObject(IBranchMergeProposalJob, job)
 
@@ -886,6 +886,22 @@ class TestReviewDiffJob(TestCaseWithFactory):
         self.assertNotIn('+bar', diff.diff.text)
         self.assertIn('+qux', diff.diff.text)
         self.assertEqual(diff, bmp.review_diff)
+
+    def test_iterReady_includes_ready_jobs(self):
+        """Ready jobs should be listed."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = ReviewDiffJob.create(bmp)
+        job.job.sync()
+        job.context.sync()
+        self.assertEqual([job], list(ReviewDiffJob.iterReady()))
+
+    def test_iterReady_excludes_unready_jobs(self):
+        """Unready jobs should not be listed."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = ReviewDiffJob.create(bmp)
+        job.job.start()
+        job.job.complete()
+        self.assertEqual([], list(ReviewDiffJob.iterReady()))
 
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):

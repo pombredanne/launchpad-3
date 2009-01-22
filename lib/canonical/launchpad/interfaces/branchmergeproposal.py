@@ -536,3 +536,13 @@ for name in ['supersedes', 'superseded_by']:
 
 class IReviewDiffJob(Interface):
     """Interface for review diffs."""
+
+    def run():
+        """Perform the diff specified by this job."""
+
+
+class IReviewDiffJobSource(Interface):
+    """Interface for acquiring ReviewDiffJobs."""
+
+    def iterReady():
+        """Iterate through all ready ReviewDiffJobs."""

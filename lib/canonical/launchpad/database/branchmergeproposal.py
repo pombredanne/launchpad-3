@@ -6,7 +6,9 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
+    'BranchMergeProposalJob',
     'is_valid_transition',
+    'ReviewDiffJob',
     ]
 
 from email.Utils import make_msgid
@@ -54,6 +56,8 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 VALID_TRANSITION_GRAPH = {
@@ -692,10 +696,10 @@ class BranchMergeProposalGetter:
 class BranchMergeProposalJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
 
-    STATIC_DIFF = DBItem(0, """
-        Static Diff
+    REVIEW_DIFF = DBItem(0, """
+        Review Diff
 
-        This job runs against a branch to produce a diff that cannot change.
+        This job generates the review diff for a BranchMergeProposal.
         """)
 
 
@@ -796,18 +800,42 @@ class BranchMergeProposalQueryBuilder:
         return query
 
 
-class ReviewDiffJob(object):
+class BranchMergeProposalJobDerived(object):
+
+    delegates(IBranchMergeProposalJob)
+
+    @classmethod
+    def iterReady(klass):
+        """Iterate through all ready ReviewDiffJobs."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.find(
+            (BranchMergeProposalJob),
+            And(BranchMergeProposalJob.job_type == klass.class_job_type,
+                BranchMergeProposalJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs)))
+        return (klass(job) for job in jobs)
+
+
+class ReviewDiffJob(BranchMergeProposalJobDerived):
+    """See `IReviewDiffJob`."""
 
     implements(IReviewDiffJob)
-    delegates(IBranchMergeProposalJob)
+
+    class_job_type = BranchMergeProposalJobType.REVIEW_DIFF
 
     def __init__(self, job):
         self.context = job
 
+    def __eq__(self, job):
+        return (self.__class__ is job.__class__ and self.job == job.job)
+
+    def __ne__(self, job):
+        return not (self == job)
+
     @classmethod
     def create(klass, bmp):
         job = BranchMergeProposalJob(
-            bmp, BranchMergeProposalJobType.STATIC_DIFF, {})
+            bmp, klass.class_job_type, {})
         return klass(job)
 
     def run(self):
