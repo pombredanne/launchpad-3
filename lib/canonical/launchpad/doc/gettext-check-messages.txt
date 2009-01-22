@@ -1,0 +1,53 @@
+= Checking messages against gettext =
+
+Before accepting a translation message, Launchpad runs it through
+gettext to check for certain errors.  For example, if the message is
+marked as a C format string in the template, using the c-format flag,
+the set of % conversion specifiers in the translation should be
+compatible with those of the original English string in the template.
+Other languages such as Python have similar format string capabilities
+with corresponding flags.
+
+But sometimes it is possible for invalid messages to make it into the
+database.  It may be due to a bug in Launchpad, or it could be due to a
+gettext update that notices incompatibilities that earlier versions
+didn't.
+
+The gettext_check_message script goes through a given set of messages
+and re-does the gettext check.
+
+    >>> from canonical.database.sqlbase import quote
+    >>> from canonical.launchpad.scripts.gettext_check_messages import (
+    ...     GettextCheckMessages)
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+
+    >>> class InstrumentedGettextCheckMessages(GettextCheckMessages):
+    ...     _commit_interval = 3
+    ...     def _get_time(self):
+    ...         return self._check_count
+
+    >>> logout()
+    >>> login('foo.bar@canonical.com')
+
+    >>> nl_file = factory.makePOFile('nl')
+    >>> template = nl_file.potemplate
+    >>> potmsgset = factory.makePOTMsgSet(
+    ...     potemplate=template, singular=u'n', plural=u'ns')
+    >>> message1 = factory.makeTranslationMessage(
+    ...     pofile=nl_file, potmsgset=potmsgset, translator=template.owner,
+    ...     reviewer=template.owner, translations=[u'%d p', u'%d ps'])
+
+    >>> checker = InstrumentedGettextCheckMessages(
+    ...     'script', test_args=['-vv', "-w id=%s" % quote(message1.id)])
+    >>> checker.logger = FakeLogger()
+    >>> checker.main()
+    DEBUG Checking messages matching: id=...
+    DEBUG Checking message ...
+    DEBUG Commit point.
+    INFO Done.
+    INFO Messages checked: 1
+    INFO Validation errors: 0
+    INFO Messages disabled: 0
+    INFO Messages unmasked: 0
+    INFO Commit points: ...
+

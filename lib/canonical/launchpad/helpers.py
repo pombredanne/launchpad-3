@@ -278,8 +278,8 @@ def validate_translation(original, translation, flags):
     if len(original) > 1:
         # It has plural forms.
         msg.set_msgid_plural(original[1])
-        for (form, text) in enumerate(translation):
-            msg.set_msgstr_plural(form, text)
+        for form in range(len(translation)):
+            msg.set_msgstr_plural(form, translation[form])
     elif len(translation):
         msg.set_msgstr(translation[0])
 
