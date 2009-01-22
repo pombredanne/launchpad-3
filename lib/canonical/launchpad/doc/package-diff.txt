@@ -623,9 +623,9 @@ the diff was properly generated.
     +I am evil.
     <BLANKLINE>
 
-'debdiff' application may fail to process the given pair of sources,
-usually due to hardlink within the source package or other very rare
-(thus unknown yet) condition.
+The 'debdiff' application may fail to process the given pair of
+sources, usually due to hardlink within the source package or other
+very rare (thus unknown yet) conditions.
 
 Anyway, the package-diff request infrastructure copes fine with
 'debdiff' failures. When it happens the request is simply marked as
