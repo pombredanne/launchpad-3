@@ -335,8 +335,6 @@ class Branch(SQLBase):
 
     def codebrowse_url(self, *extras):
         """See `IBranch`."""
-        ## if not self.code_is_browseable:
-        ##     raise AssertionError("XXX")
         if self.private:
             root = config.codehosting.secure_codebrowse_root
         else:
