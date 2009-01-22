@@ -51,7 +51,7 @@ class TranslationFileFormat(DBEnumeratedType):
         """)
 
     POCHANGED = DBItem(6, """
-        PO format with filtered content
+        Changes from packaged translations in partial PO format
 
         Gettext's standard text file format but contains only those msgids
         that were changed since the packaged version was imported.

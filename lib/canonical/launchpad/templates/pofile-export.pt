@@ -35,9 +35,15 @@
           </label>
         </div>
         <p>
-          If the file is not available immediately, Launchpad will e-mail
+          Please see the
+          <a href="https://help.launchpad.net/Translations/PartialPOExport"
+             target="_blank">Help Page</a>
+          for information on the use of the partial PO format.
+        </p>
+        <p>
+          Once the file is ready for download, Launchpad will e-mail
           <code tal:content="view/user/preferredemail/email">user@domain</code>
-          with a link to the file once it is ready.
+          with a link to the file.
         </p>
         <div class="actions">
           <input type="submit" value="Confirm Download" />
