@@ -159,7 +159,11 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     @cachedproperty
     def has_merge_proposals(self):
-        """Return a set of branches that should show merge proposal badges."""
+        """Return a set of branches that should show merge proposal badges.
+
+        Branches have merge proposals badges if they've been proposed for
+        merging into another branch (source branches)
+        """
         mp_branches = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.view.context, visible_by_user=self.view.user)
         result = set()
