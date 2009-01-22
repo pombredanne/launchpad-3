@@ -643,7 +643,7 @@ An attachment can be added to the bug:
   HTTP/1.1 201 Created
   Content-Length: 0
   Content-Type: text/plain
-  Location: http://.../firefox/+bug/1/+attachment/1
+  Location: http://.../bugs/1/+attachment/1
 
 Now, bug 1 has one attachment:
 
@@ -655,10 +655,10 @@ Now, bug 1 has one attachment:
   total_size: 1
   ---
   bug_link: u'http://.../bugs/1'
-  data_link: u'http://.../firefox/+bug/1/+attachment/1/data'
+  data_link: u'http://.../bugs/1/+attachment/1/data'
   message_link: u'http://.../firefox/+bug/1/comments/2'
   resource_type_link: u'http://.../#bug_attachment'
-  self_link: u'http://.../firefox/+bug/1/+attachment/1'
+  self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
   ---
@@ -668,10 +668,10 @@ The attachment can be fetched directly:
   >>> [attachment] = attachments['entries']
   >>> pprint_entry(webservice.get(attachment['self_link']).jsonBody())
   bug_link: u'http://.../bugs/1'
-  data_link: u'http://.../firefox/+bug/1/+attachment/1/data'
+  data_link: u'http://.../bugs/1/+attachment/1/data'
   message_link: u'http://.../firefox/+bug/1/comments/2'
   resource_type_link: u'http://.../#bug_attachment'
-  self_link: u'http://.../firefox/+bug/1/+attachment/1'
+  self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
 
