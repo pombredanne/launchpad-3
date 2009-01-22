@@ -627,15 +627,6 @@ For a public branch without revisions, the link is disabled.
     >>> print branch.code_is_browseable
     False
 
-Private branches are not browseable at all.
-
-    >>> branch = branchset.getByUniqueName(
-    ...     '~landscape-developers/landscape/trunk')
-    >>> print branch.private
-    True
-    >>> print branch.code_is_browseable
-    False
-
 
 == Branch push and branch URLs ==
 
@@ -644,6 +635,8 @@ pull or branch from.  These methods don't check any visibility constraints
 for the person passed into the methods, that job is left to the views.
 The branch location is shown using the lp: Bazaar lookup names.
 
+    >>> branch = branchset.getByUniqueName(
+    ...     '~landscape-developers/landscape/trunk')
     >>> print branch.unique_name
     ~landscape-developers/landscape/trunk
     >>> branch.private
