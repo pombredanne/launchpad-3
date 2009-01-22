@@ -235,7 +235,7 @@ class UnmergedRevisionsMixin:
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return self.context.codebrowse_url()
+        return self.context.source_branch.codebrowse_url()
 
 
 class BranchMergeProposalRevisionIdMixin:
