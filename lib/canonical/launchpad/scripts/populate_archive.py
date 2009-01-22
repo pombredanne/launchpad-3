@@ -9,8 +9,6 @@ __all__ = [
     ]
 
 
-from StringIO import StringIO
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -64,7 +62,7 @@ class ArchivePopulator(SoyuzScript):
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
         include_binaries, proc_family_names, merge_copy_flag,
-        pkgset_delta_flag):
+        packageset_delta_flag):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -88,8 +86,8 @@ class ArchivePopulator(SoyuzScript):
             builds.
         :param merge_copy_flag: whether this is a repeated population of an
             existing copy archive.
-        :param pkgset_delta_flag: only show packages that are fresher or new
-            in the origin archive. Do not copy anything.
+        :param packageset_delta_flag: only show packages that are fresher or
+            new in the origin archive. Do not copy anything.
         """
         def loadProcessorFamilies(proc_family_names):
             """Load processor families for specified family names."""
@@ -155,7 +153,7 @@ class ArchivePopulator(SoyuzScript):
 
         the_destination.archive = copy_archive
 
-        if pkgset_delta_flag:
+        if packageset_delta_flag:
             if copy_archive is None:
                 raise SoyuzScriptError(
                     "error: package set delta requested for non-existing "
@@ -242,7 +240,7 @@ class ArchivePopulator(SoyuzScript):
         pcr.markAsInprogress()
         self.txn.commit()
 
-        if merge_copy_flag == True:
+        if merge_copy_flag:
             pkg_cloner.mergeCopy(the_origin, the_destination)
         else:
             pkg_cloner.clonePackages(the_origin, the_destination)
@@ -262,9 +260,8 @@ class ArchivePopulator(SoyuzScript):
         changed.
         """
         pkg_cloner = getUtility(IPackageCloner)
-        buffer = StringIO()
-        ignore_result = pkg_cloner.packageSetDiff(origin, destination, buffer)
-        self.logger.info(buffer.getvalue())
+        ignore_result = pkg_cloner.packageSetDiff(
+            origin, destination, self.logger)
 
     def mainTask(self):
         """Main function entry point."""
@@ -284,7 +281,7 @@ class ArchivePopulator(SoyuzScript):
         if not valid_name(opts.to_archive):
             raise SoyuzScriptError(
                 "Invalid destination archive name: '%s'" % opts.to_archive)
-        if opts.include_binaries == True:
+        if opts.include_binaries:
             raise SoyuzScriptError(
                 "error: copying of binary packages is not supported yet.")
 
@@ -300,7 +297,7 @@ class ArchivePopulator(SoyuzScript):
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
             opts.include_binaries, opts.proc_families, opts.merge_copy_flag,
-            opts.pkgset_delta_flag)
+            opts.packageset_delta_flag)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -358,7 +355,7 @@ class ArchivePopulator(SoyuzScript):
             help='Repeated population of an existing copy archive.')
 
         self.parser.add_option(
-            "--pkgset-delta", dest="pkgset_delta_flag",
+            "--package-set-delta", dest="packageset_delta_flag",
             default=False, action="store_true",
             help=(
                 'Only show packages that are fresher or new in origin '

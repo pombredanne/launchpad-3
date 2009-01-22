@@ -9,7 +9,6 @@ import time
 import unittest
 
 from datetime import datetime
-from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -24,7 +23,7 @@ from canonical.launchpad.interfaces.packagecopyrequest import (
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
-from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.scripts import BufferLogger
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
@@ -173,14 +172,6 @@ class TestPopulateArchiveScript(TestCase):
             def begin(self):
                 pass
 
-        class BufferLogger(FakeLogger):
-            """A logger that logs to a StringIO object."""
-            def __init__(self):
-                self.buffer = StringIO()
-
-            def message(self, prefix, *stuff, **kw):
-                self.buffer.write('%s%s' % (prefix, ' '.join(stuff)))
-
         if copy_archive_name is None:
             now = int(time.time())
             if archive_name is None:
@@ -212,7 +203,7 @@ class TestPopulateArchiveScript(TestCase):
 
         # Empty reason string indicates that the '--reason' command line
         # argument should be ommitted.
-        if reason is not None and reason.strip() != '':
+        if reason is not None and not reason.isspace():
             script_args.extend(['--reason', reason])
         elif reason is None:
             reason = "copy archive, %s" % datetime.ctime(datetime.utcnow())
@@ -235,9 +226,9 @@ class TestPopulateArchiveScript(TestCase):
             script.mainTask()
 
         # Does the script's output contain the specified sub-string?
-        if output_substr is not None and output_substr.strip() != '':
+        if output_substr is not None and not output_substr.isspace():
             output = script.logger.buffer.getvalue()
-            self.assertTrue(output.find(output_substr) > -1)
+            self.assertTrue(output_substr in output)
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, archive_name)
@@ -393,12 +384,11 @@ class TestPopulateArchiveScript(TestCase):
 
         # Check which source packages are fresher or new in the second stage
         # archive.
-        expected_output = """
-Fresher packages:
-  (u'alsa-utils', u'2.0', u'1.0.9a-4ubuntu1')
-New packages:
-  (u'new-in-second-round', u'1.0')"""
-        extra_args = ['--pkgset-delta']
+        expected_output = (
+            "INFOFresher packages: 1INFO* alsa-utils (2.0 > 1.0.9a-4ubuntu1)"
+            "INFONew packages: 1INFO* new-in-second-round (1.0)")
+
+        extra_args = ['--package-set-delta']
         copy_archive = self.runScript(
             extra_args=extra_args, reason='', output_substr=expected_output,
             copy_archive_name=first_stage.name)

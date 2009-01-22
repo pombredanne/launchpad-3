@@ -324,7 +324,7 @@ class PackageCloner:
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
 
-    def packageSetDiff(self, origin, destination, diagnostic_output=None):
+    def packageSetDiff(self, origin, destination, logger=None):
         """Please see `IPackageCloner`."""
         # Find packages that are obsolete or missing in the target archive.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -343,28 +343,35 @@ class PackageCloner:
             SELECT s_sspph FROM tmp_merge_copy_data WHERE missing = True;
         """)
 
-        if diagnostic_output is not None:
-            self._print_diagnostics(diagnostic_output, store)
+        if logger is not None:
+            self._print_diagnostics(logger, store)
 
-        return (list(fresher_packages), list(new_packages))
+        return (
+            [package for [package] in fresher_packages],
+            [package for [package] in new_packages],
+            )
 
-    def _print_diagnostics(self, handle, store):
+    def _print_diagnostics(self, logger, store):
         """Print details of source packages that are fresher or new.
 
         Details of packages that are fresher or new in the origin archive
-        are written to the supplied (open) file handle. This data is only
+        are logged using the supplied 'logger' instance. This data is only
         available after a package set delta has been computed (see
         packageSetDiff()).
         """
-        rset = store.execute("""
+        fresher_info = sorted(list(store.execute("""
             SELECT sourcepackagename, s_version, t_version
             FROM tmp_merge_copy_data WHERE obsoleted = True;
-        """)
-        handle.write(
-            '\nFresher packages:\n  %s' % '\n  '.join(str(r) for r in rset))
-        rset = store.execute("""
+        """)))
+        logger.info('Fresher packages: %d' % len(fresher_info))
+        for info in fresher_info:
+            logger.info('* %s (%s > %s)' % info)
+        new_info = sorted(list(store.execute("""
             SELECT sourcepackagename, s_version
             FROM tmp_merge_copy_data WHERE missing = True;
-        """)
-        handle.write(
-            '\nNew packages:\n  %s' % '\n  '.join(str(r) for r in rset))
+        """)))
+        logger.info('New packages: %d' % len(new_info))
+        for info in new_info:
+            logger.info('* %s (%s)' % info)
+ 
+
