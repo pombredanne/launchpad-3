@@ -36,7 +36,7 @@ class TestBranchRewriter(TestCase):
         branch = self.factory.makeAnyBranch()
         line = rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
         self.assertEqual(
-            'http://bazaar-internal.launchpad.dev/%s/.bzr/README'
+            'file:///var/tmp/bzrsync/%s/.bzr/README'
             % branch_id_to_path(branch.id),
             line)
 
@@ -89,7 +89,7 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         input = "/%s/.bzr/README\n" % branch.unique_name
         expected = (
-            "http://bazaar-internal.launchpad.dev/%s/.bzr/README\n"
+            "file:///var/tmp/bzrsync/%s/.bzr/README\n"
             % branch_id_to_path(branch.id))
         self.layer.txn.commit()
         script_file = os.path.join(
