@@ -7,33 +7,24 @@ linking.
 For example, in our sample data, bug #1 is about the lack of SVG support
 in Mozilla Firefox. The 'svg-support' specification is exactly about SVG
 support. That is why both were linked together. The linked bug appear in
-the 'Related Bugs' portlet.
+the 'Related Bugs' section.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+spec/svg-support')
-    >>> portlet = find_portlet(anon_browser.contents, 'Related bugs')
-    >>> portlet.first('li', 'bug')
-    <li class="bug">
-    <a href=".../bugs/1">#1:
-        Firefox does not support SVG</a>
-    </li>
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bug_links'))
+    Related bugs
+    Bug #1: Firefox does not support SVG
 
 
 == Adding Links ==
 
 Linking a bug report to a specification is done by using the
-'Link to bug' link.
+'Link to a bug report' link.
 
 This link is only available to registered users:
 
-    >>> anon_browser.getLink('Link to bug').click()
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
-
     >>> user_browser.open(
-    ...     'http://launchpad.dev/firefox/+spec/svg-support')
-    >>> user_browser.getLink('Link to bug').click()
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support/+linkbug')
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support/+linkbug'
     >>> back_link = user_browser.getLink('Support Native SVG Objects')
@@ -60,7 +51,7 @@ link.
 Oops, that was actually the wrong bug. So lets remove the link. This is
 done by using the 'Remove bug link' link.
 
-    >>> user_browser.getLink('Remove bug link').click()
+    >>> user_browser.getLink('Unlink a bug').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support/+unlinkbug'
     >>> back_link = user_browser.getLink('Support Native SVG Objects')

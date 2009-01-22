@@ -221,9 +221,7 @@
     >Whiteboard text goes here.</div>
 
       <div tal:condition="view/branch_links" id="branch_links">
-
         <h2>Related branches</h2>
-
         <tal:branch repeat="branchlink view/branch_links">
         <dt>
           <tal:branchlink
@@ -239,19 +237,24 @@
            tal:content="structure link/render"
            style="padding-top:0.5em;" />
 
-      <tal:bugs condition="view/bug_links">
+      <div tal:condition="view/bug_links" id="bug_links">
         <h2>Related bugs</h2>
         <div class="actions">
           <tal:block repeat="link view/bug_links">
             <tal:link replace="structure link/bug/fmt:link"/><br/>
           </tal:block>
         </div>
-      </tal:bugs>
+      </div>
       <div class="actions">
         <div tal:define="link context_menu/linkbug"
              tal:condition="link/enabled"
              tal:content="structure link/render"
         >Link to a bug
+        </div>
+        <div tal:define="link context_menu/unlinkbug"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        >Unlink a bug
         </div>
       </div>
 
@@ -279,6 +282,11 @@
 
       <div tal:replace="structure context/@@+portlet-feedbackqueue" />
       <div class="actions">
+        <div tal:define="link context_menu/givefeedback"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        >Give Feedback
+        </div>
         <div tal:define="link context_menu/requestfeedback"
              tal:condition="link/enabled"
              tal:content="structure link/render"

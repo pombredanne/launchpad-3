@@ -378,9 +378,9 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
-        text = 'Remove bug link'
+        text = 'Unlink a bug'
         enabled = bool(self.context.bugs)
-        return Link('+unlinkbug', text, icon='add', enabled=enabled)
+        return Link('+unlinkbug', text, icon='remove', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def adddependency(self):
