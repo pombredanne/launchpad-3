@@ -479,8 +479,12 @@ class IProductPublic(
     remote_product = exported(
         TextLine(
             title=_('Remote product'),
+            readonly=True,
             description=_(
                 "The ID of this project on its remote bug tracker.")))
+
+    upstream_bug_filing_url = Attribute(
+        "The URL of bug filing form on this product's upstream bug tracker")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,

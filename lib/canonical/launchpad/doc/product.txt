@@ -663,3 +663,37 @@ branch.
     datetime.datetime(...)
     >>> print product.default_stacked_on_branch.name
     trunk
+
+
+== Getting the upstream bug filing URL for a product ==
+
+Products that don't use Launchpad for bug tracking can be linked to
+external bug trackers. In order to make it easier for users to file bugs
+on upstream bug trackers, it's possible to get the bug filing URL for a
+given product's upstream bug tracker using its `upstream_bug_filing_url`
+property.
+
+We'll link a product to an upstream bug tracker to demonstrate this.
+
+    >>> bugtracker = factory.makeBugTracker('http://example.com')
+    >>> product.bugtracker = bugtracker
+    >>> product.remote_product = u'foo'
+
+    >>> print product.upstream_bug_filing_url
+    http://example.com/enter_bug.cgi?product=foo
+
+If the product's `bugtracker` isn't specified its
+`upstream_bug_filing_url` property will be None.
+
+    >>> product.bugtracker = None
+    >>> print product.upstream_bug_filing_url
+    None
+
+Similarly, if the product's `remote_product` attribute is None and its
+bug tracker is one which requires an upstream product, the product's
+`upstream_bug_filing_url` will be None
+
+    >>> product.bugtracker = bugtracker
+    >>> product.remote_product = None
+    >>> print product.upstream_bug_filing_url
+    None
