@@ -1,38 +1,13 @@
 from windmill.authoring import WindmillTestClient
 
-
-def login(email, password):
-    """Logs in the site."""
-    client = WindmillTestClient(__name__)
-    client.click(link=u'Log in / Register')
-    client.waits.forPageLoad(timeout=u'20000')
-    client.waits.forElement(timeout=u'8000', id=u'email')
-    client.type(text=email, id=u'email')
-    client.type(text=password, id=u'password')
-    client.click(name=u'loginpage_submit_login')
-    client.waits.forPageLoad(timeout=u'20000')
-
-
-def logout():
-    """Logs out."""
-    client = WindmillTestClient(__name__)
-    client.click(name="logout")
-    client.waits.forPageLoad(timeout=u'20000')
-
-
-def setup_module(module):
-    """Run as logged in."""
-    login('no-priv@canonical.com', 'test')
-
-
-def teardown_module(module):
-    """Logs out."""
-    logout()
+from canonical.launchpad.windmill.testing import lpuser
 
 
 def test_title_inline_edit():
     """Tests that the bug title inline edit works."""
     client = WindmillTestClient(__name__)
+
+    lpuser.NO_PRIV.ensure_login(client)
 
     client.open(url='http://bugs.launchpad.dev:8085/redfish/+bug/15')
     client.waits.forPageLoad(timeout=u'20000')
