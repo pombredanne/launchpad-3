@@ -875,10 +875,11 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
-    def codebrowse_url(extra):
-        """XXX.
+    def codebrowse_url(*extras):
+        """Construct a URL for this branch in codebrowse.
 
-        :param extra: XXX.
+        :param extras: Zero or more path segments that will be joined onto the
+            end of the URL (with `bzrlib.urlutils.join`).
         """
 
     # Don't use Object -- that would cause an import loop with ICodeImport.
