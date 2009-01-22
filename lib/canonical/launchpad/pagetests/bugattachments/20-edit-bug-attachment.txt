@@ -8,10 +8,11 @@ We can also edit the attachment details, let's navigate to that page.
   >>> 'Change bug attachment information' in user_browser.contents
   True
 
-There's also an option to cancel, which takes you back to the bug page.
+There's also an option to cancel, which takes you back to the bug
+page, maintaining the firefox context.
 
   >>> user_browser.getLink('Cancel')
-  <Link text='Cancel' url='http://bugs.launchpad.dev/bugs/1'>
+  <Link text='Cancel' url='http://bugs.launchpad.dev/firefox/+bug/1'>
 
 After editing the attachment details (we leave some leading and trailing
 whitespace to test that's correctly stripped)...

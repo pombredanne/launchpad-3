@@ -39,10 +39,10 @@ class BugAttachmentURL:
 
     @property
     def inside(self):
-        """Always relative to a bugtask."""
+        """Always relative to a traversed bugtask."""
         bugtask = getUtility(ILaunchBag).bugtask
         if bugtask is None:
-            return self.context.bug.default_bugtask
+            return self.context.bug
         else:
             return bugtask
 
@@ -61,7 +61,8 @@ class BugAttachmentEditView(LaunchpadFormView):
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
-        self.next_url = self.cancel_url = canonical_url(context.bug)
+        self.next_url = self.cancel_url = (
+            canonical_url(ICanonicalUrlData(context).inside))
 
     @property
     def initial_values(self):
