@@ -38,9 +38,10 @@ from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
-    IBugTrackerSet, NotFoundError)
+from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.bugtracker import (
+    BugTrackerType, PRODUCT_FREE_BUGTRACKERTYPES, IBugTracker,
+    IBugTrackerAlias, IBugTrackerAliasSet, IBugTrackerSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
@@ -186,8 +187,25 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         return self.watches[:10]
 
+    @property
+    def requires_remote_product(self):
+        """Return True if getBugFilingLink() requires a remote product."""
+        if self.bugtrackertype not in PRODUCT_FREE_BUGTRACKERTYPES:
+            return True
+        else:
+            return False
+
     def getBugFilingLink(self, remote_product):
         """See `IBugTracker`."""
+        # Don't try to return anything if remote_product is required for
+        # this BugTrackerType and one hasn't been passed.
+        if remote_product is None and self.requires_remote_product:
+            return None
+        elif remote_product is None:
+            # Turn the remote product into an empty string so that
+            # quote() doesn't blow up later on.
+            remote_product = ''
+
         url_pattern = self._bug_filing_url_patterns.get(
             self.bugtrackertype, None)
 
