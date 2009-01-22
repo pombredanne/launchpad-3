@@ -78,7 +78,7 @@ from zope.schema import (
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from canonical.lazr.fields import ReferenceChoice
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported)
 
@@ -818,8 +818,12 @@ class IBranch(IHasOwner):
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
-    landing_targets = Attribute(
-        "The BranchMergeProposals where this branch is the source branch.")
+    landing_targets = exported(
+        CollectionField(
+            title=_('An iterator over the Bazaar branches that this branch '
+                    'is proposed for merging into.'),
+            readonly=True,
+            value_type=Reference(Interface)))
     landing_candidates = Attribute(
         "The BranchMergeProposals where this branch is the target branch. "
         "Only active merge proposals are returned (those that have not yet "
@@ -1048,6 +1052,9 @@ class IBranch(IHasOwner):
         :param reason: An error message that will be displayed on the branch
             detail page.
         """
+
+
+IBranch['landing_targets'].schema = IBranch
 
 
 class IBranchSet(Interface):
