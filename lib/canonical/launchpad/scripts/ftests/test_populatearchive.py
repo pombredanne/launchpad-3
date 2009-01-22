@@ -385,8 +385,10 @@ class TestPopulateArchiveScript(TestCase):
         # Check which source packages are fresher or new in the second stage
         # archive.
         expected_output = (
-            "INFOFresher packages: 1INFO* alsa-utils (2.0 > 1.0.9a-4ubuntu1)"
-            "INFONew packages: 1INFO* new-in-second-round (1.0)")
+            "INFO: Fresher packages: 1\n"
+            "INFO: * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
+            "INFO: New packages: 1\n"
+            "INFO: * new-in-second-round (1.0)\n")
 
         extra_args = ['--package-set-delta']
         copy_archive = self.runScript(
