@@ -265,22 +265,10 @@ exported but not all messages are equal. Some messages have been imported
 from upstream and then changed, others have been left as they are.
 This pofile has both kind of messages.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> potemplate = factory.makePOTemplate()
-    >>> pofile = removeSecurityProxy(
-    ...     factory.makePOFile('eo', potemplate=potemplate))
-    >>> def makeTranslation(pofile, english, esperanto,
-    ...                     sequence, is_imported):
-    ...     potmsgset = factory.makePOTMsgSet(pofile.potemplate, english,
-    ...         sequence=sequence)
-    ...     translation = removeSecurityProxy(
-    ...         factory.makeTranslationMessage(pofile, potmsgset,
-    ...             translations=[esperanto]))
-    ...     translation.is_imported = is_imported
-    ...     translation.is_current = True
-    >>> makeTranslation(pofile, "english1", "esperanto1", 1, True)
-    >>> makeTranslation(pofile, "english2", "esperanto2", 2, False)
-    >>> transaction.commit()
+    >>> pofile = factory.makePOFile('eo', potemplate=potemplate)
+    >>> factory.makeTranslation(pofile, 1, "english1", "esperanto1", True)
+    >>> factory.makeTranslation(pofile, 2, "english2", "esperanto2", False)
 
 To see what is being exported we need to retrieve the exported file from the
 librarian.
