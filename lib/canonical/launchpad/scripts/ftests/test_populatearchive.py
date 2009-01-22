@@ -620,6 +620,9 @@ class TestPopulateArchiveScript(TestCase):
             exception_text=(
                 "Cannot copy from private archive ('cprov/ppa')"))
 
+        ppa.private = False
+        ppa.buildd_secret = None
+
     def _verifyClonedSourcePackages(
         self, copy_archive, series, obsolete=None, new=None):
         """Verify that the expected source packages have been cloned.
