@@ -605,12 +605,11 @@ class DistributionArchivesView(LaunchpadView):
     @cachedproperty
     def archive_list(self):
         """Returns the list of archives for the given distribution.
-        
+
         The context may be an IDistroSeries or a users archives.
         """
-        user = getUtility(ILaunchBag).user
         results = getUtility(IArchiveSet).getArchivesForDistribution(
-            self.context, purposes=[ArchivePurpose.COPY], user=user)
+            self.context, purposes=[ArchivePurpose.COPY], user=self.user)
         return results.order_by('date_created DESC')
 
 class DistributionPPASearchView(LaunchpadView):
