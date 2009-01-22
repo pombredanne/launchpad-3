@@ -76,10 +76,10 @@ class BranchRewriter:
                 return "NULL"
             elif faults.check_fault(f, faults.PermissionDenied):
                 # If we get permission denied, send to codebrowse which will
-                # redirect to the https version of the codehost, which which
-                # doesn't indirect through here and does authentication via
-                # OpenID.  If we could generate a 30x response to the client
-                # from here, we'd do it, but we can't.
+                # redirect to the https version of the codehost, which doesn't
+                # indirect through here and does authentication via OpenID.
+                # If we could generate a 30x response to the client from here,
+                # we'd do it, but we can't.
                 return self._codebrowse_url(resource_location)
             else:
                 raise
