@@ -99,8 +99,8 @@ class TestBranchPopupWidget(unittest.TestCase):
         name = self.popup.getBranchNameFromURL(url)
         self.assertEqual(URI(url).path.split('/')[-1], name)
 
-    def test_makeBranch(self):
-        """makeBranch(url) creates a mirrored branch at `url`.
+    def test_makeBranchFromURL(self):
+        """makeBranchFromURL(url) creates a mirrored branch at `url`.
 
         The owner and registrant are the currently logged-in user, as given by
         getPerson(), and the product is the product in the LaunchBag.
@@ -120,7 +120,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         # used.
         url = self.factory.getUniqueURL()
         expected_name = self.popup.getBranchNameFromURL(url)
-        self.factory.makeBranch(
+        self.factory.makeProductBranch(
             name=expected_name, product=self.popup.getProduct(),
             owner=self.popup.getPerson())
         branch = self.popup.makeBranchFromURL(url)
@@ -133,7 +133,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertNotEqual('None', str(branch.next_mirror_time))
 
     def test_makeBranchNoProduct(self):
-        """makeBranch(url) returns None if there's no product in LaunchBag.
+        """makeBranchFromURL(url) returns None if there's no product.
 
         Not all contexts for branch registration have products. In particular,
         a bug can be on a source package. When we link a branch to that bug,
@@ -164,7 +164,8 @@ class TestBranchPopupWidget(unittest.TestCase):
 
     def test_toFieldValueFetchesTheExistingBranch(self):
         """_toFieldValue returns the existing branch that has that URL."""
-        expected_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        expected_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
         branch = self.popup._toFieldValue(expected_branch.url)
         self.assertEqual(expected_branch, branch)
 
@@ -204,7 +205,8 @@ class TestBranchPopupWidget(unittest.TestCase):
         popup = self.makeBranchPopup(vocab)
 
         # Make a branch on a different product.
-        branch = self.factory.makeBranch(BranchType.MIRRORED)
+        branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED)
         self.assertNotEqual(self.launch_bag.product, branch.product)
 
         # Trying to make a branch with that URL will fail.

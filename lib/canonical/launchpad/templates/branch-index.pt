@@ -178,7 +178,7 @@
       </tr>
       <tr id="stacked-on" tal:condition="context/stacked_on">
         <th>Stacked on:</th>
-        <td tal:content="structure context/stacked_on/fmt:link" />
+        <td tal:content="structure context/stacked_on/fmt:bzr-link" />
       </tr>
       </tbody>
   </table>

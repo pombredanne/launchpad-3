@@ -587,11 +587,7 @@ If we change the development_focus, primary_translatable changes as well.
 The series for a product are returned as a sorted list, with the
 exception that the current development focus is first.
 
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> request = LaunchpadTestRequest()
-    >>> firefox_view = getMultiAdapter((firefox, request), name="+index")
-    >>> firefox_view.initialize()
+    >>> firefox_view = create_initialized_view(firefox, '+index')
     >>> sorted_series = firefox_view.sorted_series_list
     >>> for series in sorted_series:
     ...     print series.name
@@ -604,13 +600,34 @@ view to see the data change reflected.
 
     >>> first_series = firefox.getSeries(sorted_series[-1].name)
     >>> firefox.development_focus = first_series
-    >>> firefox_view = getMultiAdapter((firefox, request), name="+index")
-    >>> firefox_view.initialize()
+    >>> firefox_view = create_initialized_view(firefox, '+index')
     >>> sorted_series = firefox_view.sorted_series_list
     >>> for series in sorted_series:
     ...     print series.name
     trunk
     1.0
+
+It is also possible to view just the set of sorted active series.
+
+    >>> firefox_view = create_initialized_view(firefox, '+index')
+    >>> sorted_series = firefox_view.sorted_active_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    trunk
+    1.0
+
+Once the 1.0 series is made obsolete, it no longer shows up in the set of
+sorted active series.
+
+    >>> from canonical.launchpad.interfaces.distroseries import (
+    ...     DistroSeriesStatus)
+    >>> sorted_series = firefox_view.sorted_active_series_list
+    >>> last_series = firefox.getSeries(sorted_series[-1].name)
+    >>> last_series.status = DistroSeriesStatus.OBSOLETE
+    >>> firefox_view = create_initialized_view(firefox, '+index')
+    >>> for series in firefox_view.sorted_active_series_list:
+    ...     print series.name
+    trunk
 
 
 = Stacking policy =
@@ -634,7 +651,7 @@ If a product has a development focus branch, it must have a non-NULL
 last_mirrored time to be suitable for use as a default stacked-on
 branch.
 
-    >>> branch = factory.makeBranch(name='trunk')
+    >>> branch = factory.makeProductBranch(name='trunk')
     >>> print branch.last_mirrored
     None
     >>> product.development_focus.user_branch = branch
