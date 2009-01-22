@@ -80,8 +80,8 @@
                      dev_focus context/development_focus/series_branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
-        <a tal:attributes="href string:${dev_focus/codebrowse_url}"
-           >browse the source code</a> for the development focus branch or get a 
+        <a tal:attributes="href dev_focus/codebrowse_url"
+           >browse the source code</a> for the development focus branch or get a
            copy of the branch</tal:browseable>
       <tal:not-browseable condition="not: dev_focus/code_is_browseable">
         get a copy of the development focus branch
