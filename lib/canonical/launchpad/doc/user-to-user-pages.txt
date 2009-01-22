@@ -332,8 +332,8 @@ subject and body from the same sender.
     --
     This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen team page to each
-    member directly.
+    using the "Contact this team" link on the GuadaMen
+    team page to each member directly.
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Message-IDs: 10
@@ -360,13 +360,14 @@ contact address. The mailing list will not be used.
     >>> del stub.test_emails[:]
 
 Foo Bar now contacts them again, which he can do because his quota is still
-not met.
+not met. This message includes a "%s" combination; it is not a interpolation
+instruction.
 
     >>> view = create_view(
     ...     foo_bar, guadamen, {
     ...         'field.field.from_': 'foo.bar@canonical.com',
     ...         'field.subject': 'My last question for Guadamen',
-    ...         'field.message': 'Really, can one of you help me!',
+    ...         'field.message': 'Can one of you help me with "%s" usage!',
     ...         'field.actions.send': 'Send',
     ...         })
     >>> print_notifications(view)
@@ -379,12 +380,12 @@ Foo Bar's message gets sent to each individual member of he team.
     Senders: set(['Foo Bar <foo.bar@canonical.com>'])
     Subjects: set(['My last question for Guadamen'])
     Bodies:
-    Really, can one of you help me!
+    Can one of you help me with "%s" usage!
     --
     This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen team page to each
-    member directly.
+    using the "Contact this team" link on the GuadaMen
+    team page to each member directly.
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Message-IDs: 10
@@ -498,7 +499,7 @@ contains an explanation as well.
     ...     cris, dave, {
     ...         'field.field.from_': 'cris@example.com',
     ...         'field.subject': 'Hi Dave',
-    ...         'field.message': 'Can you help me? ' * 8,
+    ...         'field.message': 'Can you help me?' ,
     ...         'field.actions.send': 'Send',
     ...         })
     >>> transaction.commit()
@@ -513,8 +514,7 @@ contains an explanation as well.
     X-Launchpad-Message-Rationale: ContactViaWeb user
     ...
     <BLANKLINE>
-    Can you help me? Can you help me? Can you help me? Can you help me? Can
-    you help me? Can you help me? Can you help me? Can you help me?
+    Can you help me?
     --
     This message was sent from Launchpad by the user
     Cris (http://launchpad.dev/~cris)
@@ -525,10 +525,32 @@ contains an explanation as well.
 
 == Message wrapping ==
 
-The message body is wrapped at 72 characters. The previous message has
-2 lines of user text and 6 lines of footer.
+The message body is wrapped at 72 characters. The footer is not wrapped, but
+a new line is started after the names of the sender and the recient to
+minimise long lines.
 
+    >>> login('test@canonical.com')
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> landscape_developers = person_set.getByName('landscape-developers')
+    >>> view = create_view(
+    ...     sample_person, landscape_developers, {
+    ...         'field.field.from_': 'test@canonical.com',
+    ...         'field.subject': 'Wrapping test ',
+    ...         'field.message': 'Can you help me? ' * 8,
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> header, body =  raw_msg.split('\n\n')
-    >>> lines = body.split('\n')
-    >>> len(lines)
-    8
+    >>> for line in body.split('\n'):
+    ...     print line, '\\'
+    Can you help me? Can you help me? Can you help me? Can you help me? Can \
+    you help me? Can you help me? Can you help me? Can you help me? \
+    --  \
+    This message was sent from Launchpad by the user \
+    Sample Person (http://launchpad.dev/~name12) \
+    using the "Contact this team" link on the Landscape Developers \
+    team page to each member directly. \
+    For more information see \
+    https://help.launchpad.net/YourAccount/ContactingPeople \
+

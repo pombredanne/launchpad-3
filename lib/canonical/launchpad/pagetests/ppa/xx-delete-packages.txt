@@ -14,7 +14,7 @@ console, even if they try the URL directly.
     LinkNotFoundError
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/+delete-packages')
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+delete-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
@@ -26,7 +26,7 @@ console, even if they try the URL directly.
     LinkNotFoundError
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/~cprov/+archive/+delete-packages')
+    ...    'http://launchpad.dev/~cprov/+archive/ppa/+delete-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
@@ -294,7 +294,7 @@ for PPAs that do not contain any published packages, instead a clear
 message is presented.
 
     >>> admin_browser.open(
-    ...    'http://launchpad.dev/~no-priv/+archive/+delete-packages')
+    ...    'http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages')
     >>> admin_browser.title
     'Delete packages from PPA for No Privileges Person'
 

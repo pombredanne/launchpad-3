@@ -453,7 +453,7 @@ We can get to the person's PPA via the archive property:
 
     >>> sabdfl_archive_link = sabdfl['archive_link']
     >>> print sabdfl_archive_link
-    http://.../~sabdfl/+archive
+    http://.../~sabdfl/+archive/ppa
 
     >>> sabdfl_archive = webservice.get(sabdfl_archive_link).jsonBody()
     >>> print sabdfl_archive['description']

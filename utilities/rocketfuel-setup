@@ -94,7 +94,6 @@ declare -a hostnames
 hostnames=$(cat <<EOF
     answers.launchpad.dev
     api.launchpad.dev
-    bazaar.launchpad.dev
     bazaar-internal.launchpad.dev
     beta.launchpad.dev
     blueprints.launchpad.dev
@@ -115,6 +114,14 @@ EOF
 for hostname in $hostnames; do
   dev_host;
 done
+
+grep -q "^127.0.0.99" /etc/hosts
+if [ $? -ne 0 ]; then
+  echo "
+127.0.0.99      bazaar.launchpad.dev
+" | sudo tee -a /etc/hosts > /dev/null
+  echo "bazaar.launchpad.dev added to /etc/hosts"
+fi
 
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
@@ -255,6 +262,23 @@ if [ $? -ne 0 ]; then
   echo "deb http://ppa.launchpad.net/bzr/ubuntu ${DISTRIB_CODENAME} main" | sudo tee -a $LPDEV_SOURCES
 fi
 
+# Get the key used to sign the launchpad-developer-dependencies in the PPA.
+LP_PPA_KEY="0A5174AF"
+sudo apt-key list | grep -q $LP_PPA_KEY
+if [ $? -ne 0 ]; then
+  echo "Retrieving LP PPA signing key."
+  gpg --recv-keys $LP_PPA_KEY
+  if [ $? -ne 0 ]; then
+    echo "Could not retrieve signing key for launchpad-developer-dependencies."
+    exit 1
+  fi
+  gpg --export -a $LP_PPA_KEY | sudo apt-key add -
+  if [ $? -ne 0 ]; then
+    echo "Could not install signing key for launchpad-developer-dependencies."
+    exit 1
+  fi
+fi
+
 sudo aptitude update
 dpkg -s launchpad-developer-dependencies | grep -q "^Status:.*installed"
 if [ $? -ne 0 ]; then
@@ -361,9 +385,11 @@ if [ ! -d ~/.bazaar ]; then
     exit 1
   fi
 fi
+
 if [ ! -e ~/.bazaar/locations.conf ]; then
   touch ~/.bazaar/locations.conf
 fi
+
 grep -q "\[${LP_PROJECT_PATH}\]" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
   cat >> ~/.bazaar/locations.conf << EOF
@@ -372,16 +398,12 @@ pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
 submit_branch = ${LP_TRUNK_PATH}
 public_branch = bzr+ssh://bazaar.launchpad.net/~${lpusername}/launchpad
 public_branch:policy = appendpath
-smtp_server = smtp.canonical.com:587
-smtp_username = canonical
-smtp_password = <find me at https://wiki.canonical.com/EmailSetup>
 push_location = lp:~${lpusername}/launchpad
 push_location:policy = appendpath
 review_list = Launchpad Reviews <launchpad-reviews@lists.canonical.com>
 merge_target = ${LP_TRUNK_PATH}
+submit_to = merge@code.launchpad.net
 EOF
-  echo "Bazaar branch configuration updated. You may need to set smtp_server in ~/.bazaar/locations.conf to something else if email to PQM does not work."
-fi
 
 grep -q "\[$LP_TRUNK_PATH\]" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
@@ -389,6 +411,22 @@ if [ $? -ne 0 ]; then
 [$LP_TRUNK_PATH]
 public_branch = bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/dev\
 " | tee -a ~/.bazaar/locations.conf > /dev/null
+fi
+
+if [ ! -e ~/.bazaar/bazaar.conf ]; then
+  touch ~/.bazaar/bazaar.conf
+fi
+grep -q "smtp_username" ~/.bazaar/bazaar.conf
+if [ $? -ne 0 ]; then
+  cat >> ~/.bazaar/bazaar.conf << EOF
+smtp_server = smtp.canonical.com:587
+smtp_username = canonical
+smtp_password = <find me at https://wiki.canonical.com/EmailSetup>
+EOF
+fi
+
+  echo "Bazaar branch configuration updated. You may need to set smtp_server in ~/.bazaar/locations.conf to something else if email to PQM does not work."
+
 fi
 
 # Setup access to the local supermirror
