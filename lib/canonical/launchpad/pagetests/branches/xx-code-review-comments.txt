@@ -55,6 +55,9 @@ We can reply to a comment.
 
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Reply').click()
+    >>> print eric_browser.getControl(name='field.comment').value
+    "my body"
+
     >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
     ... 'I wish I had time to review it properly\n\n'
     ... 'This is a longer\nmessage with several\nlines')
