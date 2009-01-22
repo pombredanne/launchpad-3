@@ -820,14 +820,16 @@ class IBranch(IHasOwner):
 
     landing_targets = exported(
         CollectionField(
-            title=_('An iterator over the Bazaar branches that this branch '
+            title=_('A collection of the Bazaar branches that this branch '
                     'is proposed for merging into.'),
             readonly=True,
             value_type=Reference(Interface)))
-    landing_candidates = Attribute(
-        "The BranchMergeProposals where this branch is the target branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
+    landing_candidates = exported(
+        CollectionField(
+            title=_('A collection of the Bazaar branches that have been '
+                    'proposed for merging in this branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
     dependent_branches = Attribute(
         "The BranchMergeProposals where this branch is the dependent branch. "
         "Only active merge proposals are returned (those that have not yet "
@@ -1055,6 +1057,7 @@ class IBranch(IHasOwner):
 
 
 IBranch['landing_targets'].schema = IBranch
+IBranch['landing_candidates'].schema = IBranch
 
 
 class IBranchSet(Interface):
