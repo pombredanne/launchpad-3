@@ -183,6 +183,10 @@ class ApplicationServerSettingRequestFactory:
 
     def __call__(self, body_instream, environ, response=None):
         """Equivalent to the request's __init__ method."""
+        # Make sure that HTTPS variable is set so that request.getURL() is
+        # sane
+        if self.protocol == 'https':
+            environ['HTTPS'] = 'on'
         request = self.requestfactory(body_instream, environ, response)
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request

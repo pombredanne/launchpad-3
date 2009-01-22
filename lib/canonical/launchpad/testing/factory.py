@@ -30,6 +30,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
@@ -435,10 +436,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description,
             owner=owner)
 
-    def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, stacked_on=None, distroseries=None,
-                   sourcepackagename=None, **optional_branch_args):
+    def makeBranch(self, branch_type=None, owner=None,
+                   name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
+                   private=False, stacked_on=None, sourcepackage=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -448,20 +449,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
-        if registrant is None:
-            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if distroseries is None and sourcepackagename is None:
+
+        if sourcepackage is None:
             if product is _DEFAULT:
                 product = self.makeProduct()
-        elif distroseries is not None and sourcepackagename is not None:
+            sourcepackagename = None
+            distroseries = None
+        else:
             assert product is _DEFAULT, (
                 "Passed source package AND product details")
             product = None
-        else:
-            raise AssertionError(
-                "Must pass both sourcepackagename and distroseries.")
+            sourcepackagename = sourcepackage.sourcepackagename
+            distroseries = sourcepackage.distroseries
+
+        if registrant is None:
+            registrant = owner
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
@@ -480,6 +484,41 @@ class LaunchpadObjectFactory(ObjectFactory):
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
+
+    def makePackageBranch(self, sourcepackage=None, **kwargs):
+        """Make a package branch on an arbitrary package.
+
+        See `makeBranch` for more information on arguments.
+        """
+        if sourcepackage is None:
+            sourcepackage = self.makeSourcePackage()
+        return self.makeBranch(sourcepackage=sourcepackage, **kwargs)
+
+    def makePersonalBranch(self, owner=None, **kwargs):
+        """Make a personal branch on an arbitrary person.
+
+        See `makeBranch` for more information on arguments.
+        """
+        if owner is None:
+            owner = self.makePerson()
+        return self.makeBranch(
+            owner=owner, product=None, sourcepackage=None, **kwargs)
+
+    def makeProductBranch(self, product=None, **kwargs):
+        """Make a product branch on an arbitrary product.
+
+        See `makeBranch` for more information on arguments.
+        """
+        if product is None:
+            product = self.makeProduct()
+        return self.makeBranch(product=product, **kwargs)
+
+    def makeAnyBranch(self, **kwargs):
+        """Make a branch without caring about its container.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeProductBranch(**kwargs)
 
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
@@ -1203,6 +1242,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
+
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
+        """Make an `ISourcePackage`."""
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        return SourcePackage(sourcepackagename, distroseries)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):

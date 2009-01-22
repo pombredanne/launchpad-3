@@ -147,9 +147,9 @@ A branch merge proposal can be in one of several states:
 When a merge proposal is initially created, it is in the "Work in
 progress" state.  The only state that is a final state is "Merged".
 
-    >>> source_branch = factory.makeBranch(owner=sample_person)
+    >>> source_branch = factory.makeProductBranch(owner=sample_person)
     >>> # Needs to be the same product to merge into.
-    >>> target_branch = factory.makeBranch(
+    >>> target_branch = factory.makeProductBranch(
     ...     owner=sample_person, product=source_branch.product)
     >>> proposal = source_branch.addLandingTarget(
     ...     sample_person, target_branch, date_created=now.next())
