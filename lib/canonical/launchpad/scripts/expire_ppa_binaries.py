@@ -9,6 +9,7 @@
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -57,7 +58,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
                      dateremoved IS NULL
                     )
             );
-        """ % (stay_of_execution, ArchivePurpose.PPA, stay_of_execution)
+        """ % (stay_of_execution, ArchivePurpose.PPA.value, stay_of_execution))
 
         self.txn.commit()
         self.logger.info('Finished PPA binary expiration')
