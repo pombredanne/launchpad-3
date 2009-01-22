@@ -24,7 +24,6 @@ __all__ = [
 from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
-import operator
 import re
 
 import pytz
@@ -558,7 +557,7 @@ class BugSecrecyEditView(BugEditViewBase):
             description=_("Private bug reports are visible only to "
                           "their subscribers."),
             default=False)
-        super(BugEditViewBase, self).setUpFields()
+        super(BugSecrecyEditView, self).setUpFields()
         self.form_fields = self.form_fields.omit('private')
         self.form_fields += formlib.form.Fields(private_field)
 
