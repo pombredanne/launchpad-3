@@ -25,7 +25,7 @@
     <a tal:define="link context_menu/delete"
        tal:condition="link/enabled"
        tal:attributes="href link/url"
-       ><img src="/@@/remove" tal:attributes="title link/text; alt link/text" />
+       ><img src="/@@/trash-icon" tal:attributes="title link/text; alt link/text" />
     </a>
 </h1>
 
