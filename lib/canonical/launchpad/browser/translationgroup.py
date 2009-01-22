@@ -98,7 +98,7 @@ class TranslationGroupEditView(LaunchpadEditFormView):
     """View class to edit ITranslationGroup details."""
 
     schema = ITranslationGroup
-    field_names = ['name', 'title', 'summary']
+    field_names = ['name', 'title', 'summary', 'translation_guide_url']
 
     @action("Change")
     def change_action(self, action, data):
@@ -129,7 +129,7 @@ class TranslationGroupAddView(LaunchpadFormView):
     """View class to add ITranslationGroup objects."""
 
     schema = ITranslationGroup
-    field_names = ['name', 'title', 'summary']
+    field_names = ['name', 'title', 'summary', 'translation_guide_url']
 
     @action("Add", name="add")
     def add_action(self, action, data):
@@ -137,8 +137,10 @@ class TranslationGroupAddView(LaunchpadFormView):
         name = data.get('name')
         title = data.get('title')
         summary = data.get('summary')
+        translation_guide_url = data.get('translation_guide_url')
         new_group = getUtility(ITranslationGroupSet).new(
-            name=name, title=title, summary=summary, owner=self.user)
+            name=name, title=title, summary=summary,
+            translation_guide_url=translation_guide_url, owner=self.user)
 
         self.next_url = canonical_url(new_group)
 

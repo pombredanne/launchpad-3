@@ -24,6 +24,12 @@
         just a single paragraph of text really, giving a summary of
         this TranslationGroup.
       </p>
+      <p id="documentation" tal:condition="context/translation_guide_url">
+        <em>Please read <a tal:attributes="
+           href context/translation_guide_url">translation instructions</a>
+          to learn about policies, recommendations and caveats for doing
+          translations in this translation group.</em>
+      </p>
       <p>
         Group owner:
         <a tal:content="context/owner/displayname"
