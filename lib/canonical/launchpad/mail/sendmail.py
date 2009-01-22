@@ -146,21 +146,19 @@ class MailController(object):
         self.attachments.append(attachment)
 
     def makeMessage(self):
-        # It's the caller's responsibility to encode the address fields to
-        # ASCII strings.
-        # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
-        # so we can provide a Unicode string and get the right encoding.
-        self.from_addr = Header(self.from_addr).encode()
-        self.to_addrs = [Header(address).encode()
+        # It's the caller's responsibility to either encode the address fields
+        # to ASCII strings or pass in Unicode strings.
+        from_addr = Header(self.from_addr).encode()
+        to_addrs = [Header(address).encode()
             for address in list(self.to_addrs)]
 
-        for address in [self.from_addr] + list(self.to_addrs):
+        for address in [from_addr] + to_addrs:
             if not isinstance(address, str) or not is_ascii_only(address):
                 raise AssertionError(
                     'Expected an ASCII str object, got: %r' % address)
 
         do_paranoid_email_content_validation(
-            from_addr=self.from_addr, to_addrs=self.to_addrs,
+            from_addr=from_addr, to_addrs=to_addrs,
             subject=self.subject, body=self.body)
         if len(self.attachments) == 0:
             msg = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
@@ -181,8 +179,8 @@ class MailController(object):
                 header_body_values = [header_body_values]
             for header_body_value in header_body_values:
                 msg[header] = header_body_value
-        msg['To'] = ','.join(self.to_addrs)
-        msg['From'] = self.from_addr
+        msg['To'] = ','.join(to_addrs)
+        msg['From'] = from_addr
         msg['Subject'] = self.subject
         return msg
 
