@@ -359,17 +359,17 @@ class PackageCloner:
         available after a package set delta has been computed (see
         packageSetDiff()).
         """
-        fresher_info = sorted(list(store.execute("""
+        fresher_info = sorted(store.execute("""
             SELECT sourcepackagename, s_version, t_version
             FROM tmp_merge_copy_data WHERE obsoleted = True;
-        """)))
+        """))
         logger.info('Fresher packages: %d' % len(fresher_info))
         for info in fresher_info:
             logger.info('* %s (%s > %s)' % info)
-        new_info = sorted(list(store.execute("""
+        new_info = sorted(store.execute("""
             SELECT sourcepackagename, s_version
             FROM tmp_merge_copy_data WHERE missing = True;
-        """)))
+        """))
         logger.info('New packages: %d' % len(new_info))
         for info in new_info:
             logger.info('* %s (%s)' % info)
