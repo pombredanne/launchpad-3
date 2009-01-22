@@ -1109,6 +1109,33 @@ class LaunchpadObjectFactory(ObjectFactory):
                                            is_imported=False,
                                            lock_timestamp=None)
 
+    def makeTranslation(self, pofile, sequence,
+                        english=None, translated=None,
+                        is_imported=False):
+        """Add a single current translation entry to the given pofile.
+        This should only be used on pristine pofiles with pristine
+        potemplates to avoid conflicts in the sequence numbers.
+        For each entry a new POTMsgSet is created.
+
+        :pofile: The pofile to add to.
+        :sequence: The sequence number for the POTMsgSet.
+        :english: The english string which becomes the msgid in the POTMsgSet.
+        :translated: The translated string which becomes the msgstr.
+        :is_imported: The is_imported flag of the translation message.
+        """
+        if english is None:
+            english = self.getUniqueString('english')
+        if translated is None:
+            translated = self.getUniqueString('translated')
+        naked_pofile = removeSecurityProxy(pofile)
+        potmsgset = self.makePOTMsgSet(naked_pofile.potemplate, english,
+            sequence=sequence)
+        translation = removeSecurityProxy(
+            self.makeTranslationMessage(naked_pofile, potmsgset,
+                translations=[translated]))
+        translation.is_imported = is_imported
+        translation.is_current = True
+
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.
 
