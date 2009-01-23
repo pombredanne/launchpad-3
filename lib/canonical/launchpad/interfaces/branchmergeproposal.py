@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BranchMergeProposalExists',
     'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
@@ -31,7 +32,7 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    export_as_webservice_entry, exported)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -39,6 +40,10 @@ class InvalidBranchMergeProposal(Exception):
 
     The text of the exception is the rule violation.
     """
+
+
+class BranchMergeProposalExists(InvalidBranchMergeProposal):
+    """Raised if there is already a matching BranchMergeProposal."""
 
 
 class UserNotBranchReviewer(Exception):
@@ -171,7 +176,8 @@ class IBranchMergeProposal(Interface):
     queue_status = exported(
         Choice(
             title=_('Status'),
-            vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
+            vocabulary=BranchMergeProposalStatus, required=True,
+            readonly=True,
             description=_("The current state of the proposal.")))
 
     reviewer = exported(

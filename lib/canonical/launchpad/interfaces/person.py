@@ -387,6 +387,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
