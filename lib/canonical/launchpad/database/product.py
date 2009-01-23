@@ -231,7 +231,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         Return None if self.remote_product is None or self.bugtracker is
         None.
         """
-        if self.bugtracker is None or self.remote_product is None:
+        if (self.bugtracker is None or (self.remote_product is None and
+            self.bugtracker.requires_remote_product)):
             return None
         else:
             return self.bugtracker.getBugFilingLink(self.remote_product)

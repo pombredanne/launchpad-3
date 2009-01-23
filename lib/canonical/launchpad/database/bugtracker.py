@@ -197,9 +197,9 @@ class BugTracker(SQLBase):
 
     def getBugFilingLink(self, remote_product):
         """See `IBugTracker`."""
-        # Don't try to return anything if remote_product is required for
-        # this BugTrackerType and one hasn't been passed.
         if remote_product is None and self.requires_remote_product:
+            # Don't try to return anything if remote_product is required
+            # for this BugTrackerType and one hasn't been passed.
             return None
         elif remote_product is None:
             # Turn the remote product into an empty string so that
