@@ -28,7 +28,8 @@
 
     <div metal:fill-slot="main"
          tal:define="archive_active view/is_active;
-                     archive_label view/archive_label">
+                     archive_label view/archive_label"
+         tal:attributes="class string:archive">
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
@@ -79,7 +80,7 @@
             use-macro="archive/@@+macros/build-status-summary" />
       </div>
 
-      <div id="archive-description">
+      <div id="description">
         <fieldset>
           <legend>Description</legend>
           <tal:archive-description condition="context/description"
