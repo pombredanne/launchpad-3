@@ -453,7 +453,7 @@ class GettextPOExporterBase:
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
 
-    def _makeExportedHeader(self, translation_file):
+    def _makeExportedHeader(self, translation_file, charset=None):
         """Transform the header information into a format suitable for export.
 
         :return: Unicode string containing the header.
@@ -511,11 +511,8 @@ class GettextPOExporterBase:
                     old_charset = translation_file.header.charset
                     translation_file.header.charset = 'UTF-8'
                     # We need to update the header too.
-                    header_translation_message = self._getHeaderAsMessage(
-                        translation_file)
-                    exported_header = self.exportTranslationMessageData(
-                        header_translation_message)
-                    chunks[0] = exported_header.encode(old_charset)
+                    chunks[0] = self._makeExportedHeader(
+                        translation_file, old_charset)
                     # Update already exported entries.
                     for index, chunk in enumerate(chunks):
                         chunks[index] = chunk.decode(
@@ -545,11 +542,13 @@ class GettextPOExporter(GettextPOExporterBase):
             TranslationFileFormat.PO,
             TranslationFileFormat.KDEPO]
 
-    def _makeExportedHeader(self, translation_file):
+    def _makeExportedHeader(self, translation_file, charset=None):
         """Create a standard gettext PO header, encoded as a message.
 
         :return: The header message as a unicode string.
         """
+        if charset is None:
+            charset = translation_file.header.charset
         header_translation_message = TranslationMessageData()
         header_translation_message.addTranslation(
             TranslationConstants.SINGULAR_FORM,
@@ -560,7 +559,7 @@ class GettextPOExporter(GettextPOExporterBase):
             header_translation_message.flags.update(['fuzzy'])
         exported_header = self.exportTranslationMessageData(
             header_translation_message)
-        return exported_header.encode(translation_file.header.charset)
+        return exported_header.encode(charset)
 
 
 class GettextPOChangedExporter(GettextPOExporterBase):
@@ -582,11 +581,13 @@ class GettextPOChangedExporter(GettextPOExporterBase):
             TranslationFileFormat.PO,
             TranslationFileFormat.KDEPO]
 
-    def _makeExportedHeader(self, translation_file):
+    def _makeExportedHeader(self, translation_file, charset=None):
         """Create a header for changed PO files.
         This is a reduced header containing a warning that this is an
         icomplete gettext PO file.
         :return: The header as a unicode string.
         """
-        return self.exported_header.encode(translation_file.header.charset)
+        if charset is None:
+            charset = translation_file.header.charset
+        return self.exported_header.encode(charset)
 
