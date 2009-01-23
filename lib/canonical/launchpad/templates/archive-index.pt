@@ -66,7 +66,8 @@
            content="context/archive_url">url</tal:no-link>
       </h2>
 
-      <p tal:condition="not: context/enabled" class="warning message">
+      <p tal:condition="not: context/enabled"
+         style="clear: right;" class="warning message">
         This archive has been disabled.
       </p>
 
