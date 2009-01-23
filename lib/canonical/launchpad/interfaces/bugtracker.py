@@ -12,7 +12,7 @@ __all__ = [
     'IBugTrackerAliasSet',
     'IBugTrackerSet',
     'IRemoteBug',
-    'PRODUCT_FREE_BUGTRACKERTYPES',
+    'SINGLE_PRODUCT_BUGTRACKERTYPES',
     ]
 
 from zope.interface import Attribute, Interface
@@ -148,7 +148,7 @@ class BugTrackerType(DBEnumeratedType):
 # blacklist approach here; if it's not in this list LP will assume that
 # a remote product is required. This saves us from presenting
 # embarrassingly useless URLs to users.
-PRODUCT_FREE_BUGTRACKERTYPES = [
+SINGLE_PRODUCT_BUGTRACKERTYPES = [
     BugTrackerType.MANTIS,
     BugTrackerType.PHPPROJECT,
     BugTrackerType.ROUNDUP,
@@ -229,9 +229,8 @@ class IBugTracker(Interface):
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
-    requires_remote_product = Attribute(
-        "This bug tracker needs to know a remote product in order to be "
-        "able to provide a bug filing link.")
+    multi_product = Attribute(
+        "This bug tracker tracks multiple remote products.")
 
     def getBugFilingLink(remote_product):
         """Return the bug filing link for a given product on the tracker.

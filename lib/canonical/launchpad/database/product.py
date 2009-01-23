@@ -226,13 +226,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def upstream_bug_filing_url(self):
-        """Return the URL of the upstream bug filing form for this product.
+        """Return the URL of the upstream bug filing form for this project.
 
-        Return None if self.remote_product is None or self.bugtracker is
-        None.
+        Return None if self.bugtracker is None or self.remote_product is
+        None and self.bugtracker is a multi-product bugtracker.
         """
         if (self.bugtracker is None or (self.remote_product is None and
-            self.bugtracker.requires_remote_product)):
+            self.bugtracker.multi_product)):
             return None
         else:
             return self.bugtracker.getBugFilingLink(self.remote_product)

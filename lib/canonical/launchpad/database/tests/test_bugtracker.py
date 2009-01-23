@@ -20,8 +20,8 @@ class TestBugTracker(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         login(ANONYMOUS)
 
-    def test_requires_remote_product_constraints_observed(self):
-        # BugTrackers of type for which requires_remote_product=True
+    def test_multi_product_constraints_observed(self):
+        # BugTrackers of type for which multi_product=True
         # should return None when no remote product is passed to
         # getBugFilingURL(). BugTracker for which
         # require_remote_product=False should still return a URL even
@@ -30,7 +30,7 @@ class TestBugTracker(TestCaseWithFactory):
             bugtracker = self.factory.makeBugTracker(bugtrackertype=type)
 
             bug_filing_url = bugtracker.getBugFilingLink(None)
-            if bugtracker.requires_remote_product:
+            if bugtracker.multi_product:
                 self.assertTrue(
                     bug_filing_url is None,
                     "getBugFilingURL() should return None for BugTrackers "

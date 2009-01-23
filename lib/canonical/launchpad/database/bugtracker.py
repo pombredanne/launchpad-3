@@ -40,7 +40,7 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.bugtracker import (
-    BugTrackerType, PRODUCT_FREE_BUGTRACKERTYPES, IBugTracker,
+    BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES, IBugTracker,
     IBugTrackerAlias, IBugTrackerAliasSet, IBugTrackerSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -188,16 +188,16 @@ class BugTracker(SQLBase):
         return self.watches[:10]
 
     @property
-    def requires_remote_product(self):
+    def multi_product(self):
         """Return True if getBugFilingLink() requires a remote product."""
-        if self.bugtrackertype not in PRODUCT_FREE_BUGTRACKERTYPES:
+        if self.bugtrackertype not in SINGLE_PRODUCT_BUGTRACKERTYPES:
             return True
         else:
             return False
 
     def getBugFilingLink(self, remote_product):
         """See `IBugTracker`."""
-        if remote_product is None and self.requires_remote_product:
+        if remote_product is None and self.multi_product:
             # Don't try to return anything if remote_product is required
             # for this BugTrackerType and one hasn't been passed.
             return None
