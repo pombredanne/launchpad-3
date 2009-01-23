@@ -42,27 +42,33 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
-from canonical.launchpad.event.branchmergeproposal import (
-    NewBranchMergeProposalEvent)
+from canonical.launchpad.database.branchcontainer import (
+    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.database.branchmergeproposal import (
      BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.diff import StaticDiff
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.event.branchmergeproposal import (
+    NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProject, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProject,
+    NotFoundError)
 from canonical.launchpad.interfaces.branch import (
-    BadBranchSearchContext, BranchCreationException, BranchCreationForbidden,
+    BadBranchSearchContext, BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
-    BranchMergeProposalExists, BranchMergeProposalStatus,
-    BranchPersonSearchRestriction, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
+    BranchMergeControlStatus, BranchMergeProposalExists,
+    BranchPersonSearchRestriction,
+    BranchType, BranchTypeError,
+    CannotDeleteBranch,
     ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchPersonSearchContext, IBranchSet, ILaunchpadCelebrities,
-    InvalidBranchMergeProposal, IPerson, IProduct, IProductSet, IProject,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError,
+    IBranchPersonSearchContext, IBranchSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchDiffJob, IBranchDiffJobSource,
@@ -71,26 +77,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.database.branchcontainer import (
-    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.interfaces.product import NoSuchProduct
-from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal)
-from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.mailout.branch import BranchMailer
-from canonical.launchpad.validators.person import (
-    validate_public_person)
-from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.database.job import Job
-    BranchMergeControlStatus, BranchPersonSearchRestriction,
-    BranchType, BranchTypeError,
-    CannotDeleteBranch, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING,
-    IBranch, IBranchPersonSearchContext,
-    IBranchSet,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
-    RepositoryFormat)
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
@@ -99,11 +86,9 @@ from canonical.launchpad.interfaces.branchsubscription import (
     CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
-from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
-from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.mailout.branch import BranchMailer
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)

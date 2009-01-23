@@ -51,7 +51,7 @@
     <require
         permission="zope.Public"
         set_attributes="date_last_modified"/>
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
