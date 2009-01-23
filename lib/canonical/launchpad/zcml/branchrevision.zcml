@@ -1,13 +1,13 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <content class="canonical.launchpad.database.BranchRevision">
+  <class class="canonical.launchpad.database.BranchRevision">
     <allow interface="canonical.launchpad.interfaces.IBranchRevision" />
-  </content>
+  </class>
 
   <!-- BranchRevisionSet -->
-  <content class="canonical.launchpad.database.BranchRevisionSet">
+  <class class="canonical.launchpad.database.BranchRevisionSet">
     <allow interface="canonical.launchpad.interfaces.IBranchRevisionSet" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.BranchRevisionSet"

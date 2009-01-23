@@ -182,17 +182,18 @@ shown.
     >>> browser.open('http://code.launchpad.dev/~landscape-developers')
     >>> browser.getLink(id="register-branch").click()
     >>> print browser.getControl('Owner').displayValue
-    ['Landscape Developers']
+    ['Landscape Developers (landscape-developers)']
 
 The user is able to change the owner of the branch to any team that
 the user is a member of, or to themselves.
 
     >>> for option in browser.getControl('Owner').displayOptions:
     ...     print option
-    Sample Person
-    Landscape Developers
-    Ubuntu Gnome Team
-    Warty Security Team
+    Sample Person (name12)
+    Landscape Developers (landscape-developers)
+    Launchpad Users (launchpad-users)
+    Ubuntu Gnome Team (name18)
+    Warty Security Team (name20)
 
 
 == Adding a branch to a person ==

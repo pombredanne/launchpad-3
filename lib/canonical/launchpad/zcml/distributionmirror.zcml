@@ -7,7 +7,7 @@
 <facet facet="overview">
 
     <!-- DistributionMirror -->
-    <content class="canonical.launchpad.database.DistributionMirror">
+    <class class="canonical.launchpad.database.DistributionMirror">
         <allow interface="canonical.launchpad.interfaces.IDistributionMirror" />
         <require
             permission="launchpad.Edit"
@@ -20,7 +20,7 @@
         <require
             permission="launchpad.Admin"
             attributes="destroySelf" />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistributionMirror"
@@ -94,9 +94,9 @@
     </browser:page>
 
     <!-- DistributionMirrorSet -->
-    <content class="canonical.launchpad.database.DistributionMirrorSet">
+    <class class="canonical.launchpad.database.DistributionMirrorSet">
         <allow interface="canonical.launchpad.interfaces.IDistributionMirrorSet"/>
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.DistributionMirrorSet"
@@ -105,37 +105,37 @@
     </securedutility>
 
     <!-- MirrorDistroArchSeries -->
-    <content class="canonical.launchpad.database.MirrorDistroArchSeries">
+    <class class="canonical.launchpad.database.MirrorDistroArchSeries">
         <allow interface="canonical.launchpad.interfaces.IMirrorDistroArchSeries" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IMirrorDistroArchSeries" />
-    </content>
+    </class>
 
     <!-- MirrorDistroSeriesSource -->
-    <content class="canonical.launchpad.database.MirrorDistroSeriesSource">
+    <class class="canonical.launchpad.database.MirrorDistroSeriesSource">
         <allow interface="canonical.launchpad.interfaces.IMirrorDistroSeriesSource" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IMirrorDistroSeriesSource" />
-    </content>
+    </class>
 
     <!-- MirrorCDImageDistroSeries -->
-    <content class="canonical.launchpad.database.MirrorCDImageDistroSeries">
+    <class class="canonical.launchpad.database.MirrorCDImageDistroSeries">
         <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroSeries" />
-    </content>
+    </class>
 
     <!-- MirrorProbeRecord -->
-    <content class="canonical.launchpad.database.MirrorProbeRecord">
+    <class class="canonical.launchpad.database.MirrorProbeRecord">
         <allow interface="canonical.launchpad.interfaces.IMirrorProbeRecord" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IMirrorProbeRecord" />
-    </content>
+    </class>
 
     <browser:menus
         module="canonical.launchpad.browser.distributionmirror"
-        classes="DistributionMirrorFacets DistributionMirrorOverviewMenu" />
+        classes="DistributionMirrorOverviewMenu" />
 
 </facet>
 </configure>

@@ -31,26 +31,35 @@
       </thead>
       <tbody>
         <tal:machine repeat="machine view/machines">
-          <tr>
-            <td><tal:hostname replace="structure machine/fmt:link"/></td>
-            <td><tal:status replace="machine/state/title"/></td>
-          </tr>
-          <tal:has-jobs define="jobs machine/current_jobs"
-                        condition="jobs">
+          <tal:vars define="jobs python:list(machine.current_jobs);
+                            job_count python:len(jobs)">
             <tr>
-              <td colspan="2">
-                <table class="simple">
-                  <tal:jobs repeat="job jobs">
-                    <tr>
-                      <td><tal:branch replace="structure job/code_import/branch/fmt:link"/></td>
-                      <td>Started: <tal:branch replace="job/date_started/fmt:approximatedate"/></td>
-                      <td>Last heartbeat: <tal:branch replace="job/heartbeat/fmt:approximatedate"/></td>
-                    </tr>
-                  </tal:jobs>
-                </table>
+              <td>
+                <tal:hostname replace="structure machine/fmt:link"/>
+                <tal:job-status condition="machine/state/enumvalue:ONLINE">
+                  (<tal:count replace="job_count"/>
+                  job<tal:s condition="python: job_count != 1">s</tal:s>
+                  running)
+                </tal:job-status>
               </td>
+              <td><tal:status replace="machine/state/title"/></td>
             </tr>
-          </tal:has-jobs>
+            <tal:has-jobs condition="jobs">
+              <tr>
+                <td colspan="2">
+                  <table class="simple">
+                    <tal:jobs repeat="job jobs">
+                      <tr>
+                        <td><tal:branch replace="structure job/code_import/branch/fmt:link"/></td>
+                        <td>Started: <tal:branch replace="job/date_started/fmt:approximatedate"/></td>
+                        <td>Last heartbeat: <tal:branch replace="job/heartbeat/fmt:approximatedate"/></td>
+                      </tr>
+                    </tal:jobs>
+                  </table>
+                </td>
+              </tr>
+            </tal:has-jobs>
+          </tal:vars>
         </tal:machine>
       </tbody>
     </table>

@@ -18,9 +18,25 @@ GET request to the entry's URL.
 Here we see that the user 'salgado' has a display name of 'Guilherme
 Salgado'.
 
-  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
   u'Guilherme Salgado'
+
+The service root resource describes a link to one special entry: the
+user account of the authenticated user. To avoid confusion when one
+program runs as different users, this is implemented as a redirect to
+that person's canonical URL.
+
+  >>> print webservice.get('/people/+me').getOutput()
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../~salgado
+
+Data is served encoded in UTF-8; a good client will automatically
+convert it into Unicode.
+
+    >>> webservice.get("/~mpo").jsonBody()['display_name']
+    u'Matti P\xf6ll\xe4'
 
 
 == Content negotiation ==
@@ -30,7 +46,7 @@ representation of an entry, or a WADL description of the entry's
 capabilities.
 
   >>> def negotiated_type(accept_header):
-  ...     return webservice.get('/beta/~salgado',
+  ...     return webservice.get('/~salgado',
   ...                           accept_header).getHeader('Content-Type')
 
   >>> negotiated_type('application/json')
@@ -68,14 +84,14 @@ argument. You can get a list of a team's active members by specifying
 the 'getMembersByStatus' operation.
 
   >>> active_members = webservice.get(
-  ...     "/beta/~admins?ws.op=getMembersByStatus&status=Approved").jsonBody()
+  ...     "/~admins?ws.op=getMembersByStatus&status=Approved").jsonBody()
   >>> sorted([m['name'] for m in active_members['entries']])
   [u'carlos', u'daf', u'debonzi', u'kinnison', u'spiv']
 
 Some entries support custom operations through POST. You can change a
 bug's status by invoking a custom operation.
 
-  >>> bugtask_path = '/beta/debian/+source/mozilla-firefox/+bug/1'
+  >>> bugtask_path = '/debian/+source/mozilla-firefox/+bug/1'
   >>> webservice.get(bugtask_path).jsonBody()['status']
   u'Confirmed'
 
@@ -90,7 +106,7 @@ bug's status by invoking a custom operation.
 Custom operations may have error handling.
 
   >>> print webservice.get(
-  ...     "/beta/~admins?ws.op=getMembersByStatus&status=NoSuchStatus")
+  ...     "/~admins?ws.op=getMembersByStatus&status=NoSuchStatus")
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value "NoSuchStatus". Acceptable values are: ...
@@ -110,10 +126,10 @@ Custom operations may have error handling.
 Trying to invoke a nonexistent custom operation yields an error.
 
   >>> print webservice.get(
-  ...     "/beta/~admins?ws.op=no_such_operation")
-  HTTP/1.1 404 Not Found
+  ...     "/~admins?ws.op=no_such_operation")
+  HTTP/1.1 400 Bad Request
   ...
-
+  No such operation: no_such_operation
 
 == Modification ==
 
@@ -124,11 +140,14 @@ should use the PATCH HTTP method. Or it may completely describe the
 entry's state, in which case the client should use PUT.
 
   >>> import simplejson
-  >>> def modify_person(person, representation, method):
+  >>> def modify_person(person, representation, method, headers=None):
   ...     "A helper function to send a PUT or PATCH request to a person."
-  ...     return webservice('/beta/~' + person, method,
+  ...     new_headers = {'Content-type': 'application/json'}
+  ...     if headers is not None:
+  ...         new_headers.update(headers)
+  ...     return webservice('/~' + person, method,
   ...                       simplejson.dumps(representation),
-  ...                       {'Content-type': 'application/json'})
+  ...                       headers)
 
 Here we use the web service to change the user 'salgado' so that their
 display name is in uppercase.
@@ -139,7 +158,7 @@ display name is in uppercase.
   Content-Length: 0
   ...
 
-  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
   u'GUILHERME SALGADO'
 
@@ -149,7 +168,7 @@ use the web service to change the person's name to 'salgado2'.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/beta/~salgado2
+  Location: http://.../~salgado2
   <BLANKLINE>
 
 At this point we can no longer manipulate the 'salgado' Person by
@@ -161,27 +180,52 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   >>> print modify_person('salgado2', {'name' : 'salgado'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/beta/~salgado
+  Location: http://.../~salgado
   <BLANKLINE>
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
-clients support PATCH, and sometimes it's easier to GET a document,
-modify it, and send it back. If you have the full document at hand,
-you can use the PUT method.
+clients support PATCH. It's possible to fake a PATCH request with
+POST, by setting the X-HTTP-Method-Override header to "PATCH". Because
+Firefox 3 mangles the Content-Type header for POST requests, you may
+also set the X-Content-Type-Override header, which will override the
+value of Content-Type.
+
+  >>> print modify_person('salgado',
+  ...     {'display_name' : 'GUILHERME SALGADO XVII'}, 'POST',
+  ...     {'X-HTTP-Method-Override' : 'PATCH',
+  ...      'Content-Type': 'not-a-valid-content/type',
+  ...      'X-Content-Type-Override': 'application/json'})
+  HTTP/1.1 200 Ok
+  ...
+
+If you try to use X-HTTP-Method-Override when the underlying HTTP
+method is not POST, you'll get an error.
+
+  >>> print modify_person('salgado',
+  ...     {}, 'GET', {'X-HTTP-Method-Override' : 'PATCH'})
+  HTTP/1.1 400 Bad Request
+  ...
+  X-HTTP-Method-Override can only be used with a POST request.
+
+
+Even if a client supports PATCH, sometimes it's easier to GET a
+document, modify it, and send it back. If you have the full document
+at hand, you can use the PUT method.
 
 We happen to have a full document from when we sent a GET request to
 the 'salgado' Person. Modifying that document and PUTting it back is
 less work than constructing a new document and sending it with PATCH.
 
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
-  u'GUILHERME SALGADO'
+  u'GUILHERME SALGADO XVII'
 
   >>> salgado['display_name'] = 'Guilherme Salgado'
   >>> print modify_person('salgado', salgado, 'PUT')
   HTTP/1.1 200 Ok
   ...
 
-  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
   u'Guilherme Salgado'
 
@@ -191,6 +235,73 @@ with a PATCH request.
 
   >>> print modify_person('salgado', salgado, 'PATCH')
   HTTP/1.1 200 Ok
+  ...
+
+
+=== Conditional PUT and PATCH ===
+
+When you GET an entry you're given an ETag; an opaque string that
+changes whenever the entry changes.
+
+  >>> response = webservice.get('/~salgado')
+  >>> etag = response._response.getHeader('ETag')
+  >>> salgado = response.jsonBody()
+
+The ETag is present in the HTTP response headers when you GET an
+entry, but it's also present in the representation of the entry
+itself.
+
+  >>> salgado['http_etag'] == etag
+  True
+
+This is so you can get the ETags for all the entries in a collection
+at once, without making a separate HTTP request for each.
+
+  >>> people = webservice.get('/people').jsonBody()
+  >>> etags = [person['http_etag'] for person in people['entries']]
+
+The ETag provided with an entry of a collection is the same as the
+ETag you'd get if you got that entry individually.
+
+  >>> first_person = people['entries'][0]
+  >>> first_person_2 = webservice.get(first_person['self_link']).jsonBody()
+  >>> first_person['http_etag'] == first_person_2['http_etag']
+  True
+
+When you make a PUT or PATCH request, you can provide the ETag as the
+If-Match header. This lets you detect changes that other people made
+to the entry, so your changes don't overwrite theirs.
+
+If the ETag you provide in If-Match matches the entry's current ETag,
+your request goes through.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     {'If-Match' : etag})
+  HTTP/1.1 200 Ok
+  ...
+
+If the ETags don't match, it's because somebody modified the entry
+after you got your copy of it. Your request will fail with status code
+412.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     {'If-Match' : '"an-old-etag"'})
+  HTTP/1.1 412 Precondition Failed
+  ...
+
+If you specify a number of ETags, and any of them match, your request
+will go through.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     {'If-Match' : '"an-old-etag", %s' % etag})
+  HTTP/1.1 200 Ok
+  ...
+
+Both PUT and PATCH requests work this way.
+
+  >>> print modify_person('salgado', salgado, 'PUT',
+  ...                     {'If-Match' : 'an-old-etag'})
+  HTTP/1.1 412 Precondition Failed
   ...
 
 
@@ -207,7 +318,7 @@ might not be acceptable as the payload of a PUT request.
 
 A document that's not a valid JSON document is also unacceptable.
 
-  >>> print webservice.patch("/beta/~salgado", "application/json", "{")
+  >>> print webservice.patch("/~salgado", "application/json", "{")
   HTTP/1.1 400 Bad Request
   ...
   Entity-body was not a well-formed JSON document.
@@ -247,7 +358,7 @@ You can't change the link to an entry's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> link = 'http://api.launchpad.dev/beta/~salgado/memberships_details'
+  >>> link = webservice.getAbsoluteUrl('/~salgado/memberships_details')
   >>> print modify_person('salgado',
   ...                     {'memberships_details_collection_link' : link },
   ...                      'PATCH')
@@ -261,6 +372,14 @@ You can't directly change an entry's URL address.
   HTTP/1.1 400 Bad Request
   ...
   self_link: You tried to modify a read-only attribute.
+
+You can't directly change an entry's ETag.
+
+  >>> print modify_person('salgado',
+  ...                    {'http_etag' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  http_etag: You tried to modify a read-only attribute.
 
 You can't change an entry's resource type.
 
@@ -307,10 +426,10 @@ In addition to changing an object's data fields, you can change its
 relationships to other objects. Here we change the owner of the
 'admins' team from 'sabdfl' to 'salgado'.
 
-  >>> admins = webservice.get('/beta/~admins').jsonBody()
+  >>> admins = webservice.get('/~admins').jsonBody()
   >>> admins['team_owner_link']
-  u'http://api.launchpad.dev/beta/~sabdfl'
-  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~salgado'
+  u'http://.../~sabdfl'
+  >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('/~salgado')
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 200 Ok
   ...
@@ -342,16 +461,16 @@ service.
 This URL would be valid, but it uses the wrong protocol (HTTPS instead
 of HTTP).
 
-  >>> admins['team_owner_link'] = u'https://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = u'https://.../~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  team_owner_link: No such object "https://api.launchpad.dev/beta/~admins".
+  team_owner_link: No such object "https://.../~admins".
 
 Even a URL that identifies an object in the web service won't work, if
 the object isn't the right kind of object. A bug can't own a team:
 
-  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
+  >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('/bugs/1')
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
@@ -360,8 +479,8 @@ the object isn't the right kind of object. A bug can't own a team:
 And a bug can't be a duplicate of a person:
 
   >>> representation = { 'duplicate_of_link' :
-  ...                    'http://api.launchpad.dev/beta/~sabdfl' }
-  >>> print webservice.patch('/beta/bugs/1', 'application/json',
+  ...                    webservice.getAbsoluteUrl('/~sabdfl') }
+  >>> print webservice.patch('/bugs/1', 'application/json',
   ...                        simplejson.dumps(representation))
   HTTP/1.1 400 Bad Request
   ...
@@ -371,7 +490,7 @@ And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
 owner.
 
-  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('/~admins')
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...

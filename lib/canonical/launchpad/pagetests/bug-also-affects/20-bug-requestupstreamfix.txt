@@ -29,6 +29,15 @@ product, though.
     >>> user_browser.getControl('Project').value
     'evolution'
 
+Just in case we change our mind, there is a cancel link that points
+back to the bug page:
+
+    >>> cancel_link = user_browser.getLink('Cancel')
+    >>> cancel_link.url
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/6'
+
+But we'll choose Thunderbird.
+
     >>> user_browser.getControl('Project').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
 

@@ -25,6 +25,12 @@ class CodeReviewVote(DBEnumeratedType):
 
     Responses from the reviews to the code author.
     """
+    sort_order = ('APPROVE',
+                  'NEEDS_FIXING',
+                  'ABSTAIN',
+                  'DISAPPROVE',
+                  'RESUBMIT',
+                  )
 
     DISAPPROVE = DBItem(1, """
         Disapprove
@@ -43,6 +49,19 @@ class CodeReviewVote(DBEnumeratedType):
         Approve
 
         Reviewer wants the proposed merge to happen.
+        """)
+
+    RESUBMIT = DBItem(4, """
+        Resubmit
+
+        Reviewer thinks that the idea might be sound but the implementation
+        needs significant rework.
+        """)
+
+    NEEDS_FIXING = DBItem(5, """
+        Needs Fixing
+
+        Reviewer thinks that some fixing is needed before they can approve it.
         """)
 
 
@@ -65,6 +84,20 @@ class ICodeReviewComment(Interface):
         title=_('Vote tag'), required=False)
 
     title = TextLine()
+
+    def getMessage():
+        """Get the message content from the message attribute.
+
+        :return: a bytestring, the message itself.
+        """
+
+    def getAttachments():
+        """Get the attachments from the original message.
+
+        :return: two lists, the first being attachments that we would display
+            (being plain text or diffs), and a second list being any other
+            attachments.
+        """
 
 
 class ICodeReviewCommentDeletion(Interface):

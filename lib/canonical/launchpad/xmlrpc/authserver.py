@@ -11,22 +11,21 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.authserver.interfaces import IUserDetailsStorageV2
-from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IAuthServer, IPersonSet
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 
 class AuthServerAPIView(LaunchpadXMLRPCView):
     """The XMLRPC API provided by the old AuthServer and used by the wikis."""
-    implements(IUserDetailsStorageV2)
+    implements(IAuthServer)
 
     def getUser(self, loginID):
-        """See `IUserDetailsStorageV2`."""
+        """See `IAuthServer`."""
         return self._getPersonDict(self._getPerson(loginID))
 
     def authUser(self, loginID, password):
-        """See `IUserDetailsStorageV2`."""
+        """See `IAuthServer`."""
 
         person = self._getPerson(loginID)
         if person is None:
@@ -39,7 +38,7 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
         return self._getPersonDict(person)
 
     def getSSHKeys(self, loginID):
-        """See `IUserDetailsStorageV2`."""
+        """See `IAuthServer`."""
         person = self._getPerson(loginID)
         if person is None:
             return []
@@ -83,7 +82,7 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
     def _getTeams(self, person):
         """Get list of teams a person is in.
 
-        Returns a list of team dicts (see IUserDetailsStorageV2).
+        Returns a list of team dicts (see IAuthServer).
         """
         teams = [
             dict(id=person.id, name=person.name,
@@ -101,12 +100,10 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
         if person is None:
             return {}
 
-        wikiname = getattr(person.ubuntuwiki, 'wikiname', '')
         return {
             'id': person.id,
             'displayname': person.displayname,
             'emailaddresses': self._getEmailAddresses(person),
-            'wikiname': wikiname,
             'name': person.name,
             'teams': self._getTeams(person),
         }

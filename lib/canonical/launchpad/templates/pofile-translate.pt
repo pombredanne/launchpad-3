@@ -10,8 +10,10 @@
   i18n:domain="launchpad"
 >
   <body>
+    <script metal:fill-slot="head_epilogue" type="text/javascript">
+        registerLaunchpadFunction(insertAllExpansionButtons);
+    </script>
     <div metal:fill-slot="main">
-
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
            tal:content="context/potemplate/title">
@@ -78,10 +80,10 @@
           <p>
             <label>
               Translating
-              <tal:comment tal:replace="nothing">
-                XXX: JeroenVermeulen 2008-06-18 bug=240897: Try doing this the
-                Zope way, with an interface.
-              </tal:comment>
+              <tal:XXX tal:replace="nothing">
+                # XXX: JeroenVermeulen 2008-06-18 bug=240897: Try doing this
+                # the Zope way, with an interface.
+              </tal:XXX>
               <select id="show_selector" name="show"
                       title="Choose which items to show">
                 <option value="all"
@@ -95,12 +97,6 @@
                   request/htmlform:show/selected/untranslated"
                   >
                   untranslated items
-                </option>
-                <option value="need_review"
-                  tal:attributes="selected
-                  request/htmlform:show/selected/need_review"
-                  >
-                  items that need review
                 </option>
                 <option value="translated"
                   tal:attributes="selected
@@ -195,6 +191,5 @@
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
     </div>
-
   </body>
 </html>

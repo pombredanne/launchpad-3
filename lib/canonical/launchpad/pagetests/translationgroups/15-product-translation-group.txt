@@ -42,7 +42,10 @@ can see that from the translations page.
 Now let's make sure we can see the page to let us change translation
 group and permissions.
 
+    >>> translations_page_url = netapplet_owner_browser.url
     >>> netapplet_owner_browser.getLink('Change translators').click()
+    >>> change_translators_url = netapplet_owner_browser.url
+
     >>> print netapplet_owner_browser.title
     Set translation group for Network Applet
 
@@ -54,6 +57,20 @@ group and permissions.
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayValue
     ['(no value)']
+
+Ordinary users cannot see the "Change translators" link or the page it
+leads to.
+
+    >>> user_browser.open(translations_page_url)
+    >>> user_browser.getLink('Change translators').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open(change_translators_url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
 
 Now let's post to the form. We should be redirected to the product page.
 

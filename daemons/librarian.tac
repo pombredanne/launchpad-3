@@ -3,9 +3,7 @@
 # Twisted Application Configuration file.
 # Use with "twistd2.4 -y <file.tac>", e.g. "twistd -noy server.tac"
 
-import os
-
-from twisted.application import service, internet, strports
+from twisted.application import service, strports
 from twisted.web import server
 
 from canonical.config import config, dbconfig
@@ -20,31 +18,7 @@ from canonical.librarian import web as fatweb
 dbconfig.setConfigSection('librarian')
 execute_zcml_for_scripts()
 
-# Our version of twisted doesn't allow easily to add command-line
-# parameters, so we use an environment variable to switch between
-# starting the restricted or standard libarian.
-restricted = 'RESTRICTED_LIBRARIAN' in os.environ
-if restricted:
-    applicationName = 'RestrictedLibrarian'
-    uploadPort = config.librarian.restricted_upload_port
-    webPort = config.librarian.restricted_download_port
-else:
-    applicationName = 'Librarian'
-    uploadPort = config.librarian.upload_port
-    webPort = config.librarian.download_port
-
-application = service.Application(applicationName)
-librarianService = service.IServiceCollection(application)
-
-# Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(librarianService)
-
 path = config.librarian_server.root
-storage = storage.LibrarianStorage(path, db.Library(restricted))
-
-f = FileUploadFactory(storage)
-strports.service(str(uploadPort), f).setServiceParent(librarianService)
-
 if config.librarian_server.upstream_host:
     upstreamHost = config.librarian_server.upstream_host
     upstreamPort = config.librarian_server.upstream_port
@@ -52,9 +26,40 @@ if config.librarian_server.upstream_host:
         upstreamHost, upstreamPort)
 else:
     upstreamHost = upstreamPort = None
-root = fatweb.LibraryFileResource(storage, upstreamHost, upstreamPort)
-root.putChild('search', fatweb.DigestSearchResource(storage))
-root.putChild('robots.txt', fatweb.robotsTxt)
-site = server.Site(root)
-site.displayTracebacks = False
-strports.service(str(webPort), site).setServiceParent(librarianService)
+
+application = service.Application('Librarian')
+librarianService = service.IServiceCollection(application)
+
+# Service that announces when the daemon is ready
+tachandler.ReadyService().setServiceParent(librarianService)
+
+def setUpListener(uploadPort, webPort, restricted):
+    """Set up a librarian listener on the given ports.
+
+    :param restricted: Should this be a restricted listener?  A restricted
+        listener will serve only files with the 'restricted' file set and all
+        files uploaded through the restricted listener will have that flag
+        set.
+    """
+    librarian_storage = storage.LibrarianStorage(
+        path, db.Library(restricted=restricted))
+    upload_factory = FileUploadFactory(librarian_storage)
+    strports.service(str(uploadPort), upload_factory).setServiceParent(
+        librarianService)
+    root = fatweb.LibraryFileResource(
+        librarian_storage, upstreamHost, upstreamPort)
+    root.putChild('search', fatweb.DigestSearchResource(librarian_storage))
+    root.putChild('robots.txt', fatweb.robotsTxt)
+    site = server.Site(root)
+    site.displayTracebacks = False
+    strports.service(str(webPort), site).setServiceParent(librarianService)
+
+# Set up the public librarian.
+uploadPort = config.librarian.upload_port
+webPort = config.librarian.download_port
+setUpListener(uploadPort, webPort, restricted=False)
+
+# Set up the restricted librarian.
+webPort = config.librarian.restricted_download_port
+uploadPort = config.librarian.restricted_upload_port
+setUpListener(uploadPort, webPort, restricted=True)

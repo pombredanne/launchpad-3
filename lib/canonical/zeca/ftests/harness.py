@@ -2,35 +2,74 @@
 
 __metaclass__ = type
 
-import os, os.path, shutil
-from canonical.config import config
-import canonical
+import os
+import shutil
 
+import canonical
+from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+
 
 keysdir = os.path.join(os.path.dirname(__file__), 'keys')
 
+
 class ZecaTestSetup(TacTestSetup):
     r"""Setup a zeca for use by functional tests
-
-    >>> from urllib import urlopen
-    >>> host = config.gpghandler.host
-    >>> port = config.gpghandler.port
 
     >>> ZecaTestSetup().setUp()
 
     Make sure the server is running
 
-    >>> urlopen('http://%s:%d/' % (host, port)).readline()
-    'Copyright 2004-2005 Canonical Ltd.\n'
+    >>> root_url = 'http://%s:%d' % (
+    ...     config.gpghandler.host, config.gpghandler.port)
+
+    We have a hamless application root page
+
+    >>> from urllib import urlopen
+
+    >>> print urlopen(root_url).read()
+    Copyright 2004-2008 Canonical Ltd.
+    <BLANKLINE>
+
+    A key index lookup form via GET.
+
+    >>> print urlopen(
+    ...    '%s/pks/lookup?op=index&search=0xDFD20543' % root_url
+    ...    ).read()
+    <html>
+    ...
+    <title>Results for Key 0xDFD20543</title>
+    ...
+
+    A key content lookup form via GET.
+
+    >>> print urlopen(
+    ...    '%s/pks/lookup?op=get&'
+    ...    'search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543' % root_url
+    ...    ).read()
+    <html>
+    ...
+    <title>Results for Key 0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543</title>
+    ...
+
+    A key submit form via POST (see doc/gpghandler.txt for more information).
+
+    >>> print urlopen('%s/pks/add' % root_url).read()
+    <html>
+    ...
+    <title>Submit a key</title>
+    ...
 
     >>> ZecaTestSetup().tearDown()
 
     And again for luck
 
     >>> ZecaTestSetup().setUp()
-    >>> urlopen('http://%s:%d/' % (host, port)).readline()
-    'Copyright 2004-2005 Canonical Ltd.\n'
+
+    >>> print urlopen(root_url).readline()
+    Copyright 2004-2008 Canonical Ltd.
+    <BLANKLINE>
+
     >>> ZecaTestSetup().tearDown()
     """
     def setUpRoot(self):

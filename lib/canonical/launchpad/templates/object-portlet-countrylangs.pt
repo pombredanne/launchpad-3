@@ -24,7 +24,7 @@
       No languages are currently registered as being spoken in <span
       tal:replace="country/name">country</span>.  If you have this
       information, please see if it has already been submitted in the
-      <a href="https://answers.launchpad.net/rosetta/">Answers</a>
+      <a tal:attributes="href view/answers_url">Answers</a>
       application, and if it hasn't, file a new question about it.
     </tal:block>
 

@@ -7,16 +7,23 @@
 __metaclass__ = type
 
 import os
+import pdb
 import re
 import simplejson
+import transaction
+import sys
 import unittest
 import urllib
+
+# pprint25 is a copy of pprint.py from Python 2.5, which is almost
+# identical to that in 2.4 except that it resolves an ordering issue
+# which makes the 2.4 version unsuitable for use in a doctest.
+import pprint25
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -25,12 +32,13 @@ from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
@@ -53,12 +61,23 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb
             pdb.set_trace()
         try:
             return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
         finally:
             self.resetCookies()
+
+    def chooseRequestClass(self, method, path, environment):
+        """See `HTTPCaller`.
+
+        This version adds the 'PATH_INFO' variable to the environment,
+        because some of our factories expects it.
+        """
+        if 'PATH_INFO' not in environment:
+            environment = dict(environment)
+            environment['PATH_INFO'] = path
+        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
+            method, path, environment)
 
     def resetCookies(self):
         self.cookies = SimpleCookie()
@@ -66,6 +85,9 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
 class WebServiceCaller:
     """A class for making calls to Launchpad web services."""
+
+    DEV_SERVER_URL = 'http://api.launchpad.dev'
+    DEFAULT_API_VERSION = 'beta'
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
                  handle_errors=True, *args, **kwargs):
@@ -93,16 +115,37 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def __call__(self, path_or_url, method='GET', data=None, headers=None):
+    def getAbsoluteUrl(self, resource_path, api_version=DEFAULT_API_VERSION):
+        """Convenience method for creating a url in tests.
+
+        :param resource_path: This is the url section to be joined to hostname
+                              and api version.
+        :param api_version: This is the first part of the absolute
+                            url after the hostname.
+        """
+        if resource_path.startswith('/'):
+            # Prevent os.path.join() from interpreting resource_path as an
+            # absolute url. This allows paths that appear consistent with urls
+            # from other *.launchpad.dev virtual hosts.
+            # For example:
+            #   /firefox = http://launchpad.dev/firefox
+            #   /firefox = http://api.launchpad.dev/beta/firefox
+            resource_path = resource_path[1:]
+        url_with_version = os.path.join(api_version, resource_path)
+        return urljoin(self.DEV_SERVER_URL, url_with_version)
+
+    def __call__(self, path_or_url, method='GET', data=None, headers=None,
+                 api_version=DEFAULT_API_VERSION):
+        path_or_url = str(path_or_url)
         if path_or_url.startswith('http:'):
-            scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+            full_url = path_or_url
         else:
-            path = path_or_url
-        path = str(path)
+            full_url = self.getAbsoluteUrl(path_or_url,
+                                           api_version=api_version)
+        scheme, netloc, path, query, fragment = urlsplit(full_url)
         # Make an HTTP request.
-        full_headers = {'Host' : 'api.launchpad.dev'}
+        full_headers = {'Host' : netloc}
         if self.consumer is not None and self.access_token is not None:
-            full_url = 'http://api.launchpad.dev/' + path
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
@@ -113,7 +156,10 @@ class WebServiceCaller:
             full_headers.update(headers)
         header_strings = ["%s: %s" % (header, str(value))
                           for header, value in full_headers.items()]
-        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path,
+        path_and_query = path
+        if len(query) != 0:
+            path_and_query += '?%s' % query
+        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path_and_query,
                                                    "\n".join(header_strings))
         if data:
             request_string += "\n" + data
@@ -122,50 +168,78 @@ class WebServiceCaller:
             request_string, handle_errors=self.handle_errors)
         return WebServiceResponseWrapper(response)
 
-    def get(self, path, media_type='application/json', headers=None):
+    def get(self, path, media_type='application/json', headers=None,
+            api_version=DEFAULT_API_VERSION):
         """Make a GET request."""
         full_headers = {'Accept': media_type}
         if headers is not None:
             full_headers.update(headers)
-        return self(path, 'GET', headers=full_headers)
+        return self(path, 'GET', headers=full_headers,
+                    api_version=api_version)
 
-    def head(self, path, headers=None):
+    def head(self, path, headers=None,
+             api_version=DEFAULT_API_VERSION):
         """Make a HEAD request."""
-        return self(path, 'HEAD', headers=headers)
+        return self(path, 'HEAD', headers=headers, api_version=api_version)
 
-    def delete(self, path, headers=None):
+    def delete(self, path, headers=None,
+               api_version=DEFAULT_API_VERSION):
         """Make a DELETE request."""
-        return self(path, 'DELETE', headers=headers)
+        return self(path, 'DELETE', headers=headers, api_version=api_version)
 
-    def put(self, path, media_type, data, headers=None):
+    def put(self, path, media_type, data, headers=None,
+            api_version=DEFAULT_API_VERSION):
         """Make a PUT request."""
         return self._make_request_with_entity_body(
-            path, 'PUT', media_type, data, headers)
+            path, 'PUT', media_type, data, headers, api_version=api_version)
 
-    def post(self, path, media_type, data, headers=None):
+    def post(self, path, media_type, data, headers=None,
+             api_version=DEFAULT_API_VERSION):
         """Make a POST request."""
         return self._make_request_with_entity_body(
-            path, 'POST', media_type, data, headers)
+            path, 'POST', media_type, data, headers, api_version=api_version)
 
-    def named_get(self, path_or_url, operation_name, headers=None, **kwargs):
+    def _convertArgs(self, operation_name, args):
+        """Encode and convert keyword arguments."""
+        args['ws.op'] = operation_name
+        # To be properly marshalled all values must be strings or converted to
+        # JSON.
+        for key, value in args.items():
+            if not isinstance(value, basestring):
+                args[key] = simplejson.dumps(value)
+        return urllib.urlencode(args)
+
+    def named_get(self, path_or_url, operation_name, headers=None,
+                  api_version=DEFAULT_API_VERSION, **kwargs):
         kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
+        data = '&'.join(['%s=%s' % (key, self._quote_value(value))
                          for key, value in kwargs.items()])
-        return self.get("%s?%s" % (path_or_url, data), data, headers)
+        return self.get("%s?%s" % (path_or_url, data), data, headers,
+                        api_version=api_version)
 
-    def named_post(self, path, operation_name, headers=None, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = urlencode(kwargs)
+    def named_post(self, path, operation_name, headers=None,
+                   api_version=DEFAULT_API_VERSION, **kwargs):
+        data = self._convertArgs(operation_name, kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
-                         headers)
+                         headers, api_version=api_version)
 
-    def patch(self, path, media_type, data, headers=None):
+    def patch(self, path, media_type, data, headers=None,
+              api_version=DEFAULT_API_VERSION):
         """Make a PATCH request."""
         return self._make_request_with_entity_body(
-            path, 'PATCH', media_type, data, headers)
+            path, 'PATCH', media_type, data, headers, api_version=api_version)
+
+    def _quote_value(self, value):
+        """Quote a value for inclusion in a named GET.
+
+        This may mean turning the value into a JSON string.
+        """
+        if not isinstance(value, basestring):
+            value = simplejson.dumps(value)
+        return urllib.quote(value)
 
     def _make_request_with_entity_body(self, path, method, media_type, data,
-                                       headers):
+                                       headers, api_version):
         """A helper method for requests that include an entity-body.
 
         This means PUT, PATCH, and POST requests.
@@ -173,7 +247,7 @@ class WebServiceCaller:
         real_headers = {'Content-type' : media_type }
         if headers is not None:
             real_headers.update(headers)
-        return self(path, method, data, real_headers)
+        return self(path, method, data, real_headers, api_version=api_version)
 
 
 class WebServiceResponseWrapper(ProxyBase):
@@ -190,7 +264,7 @@ class WebServiceResponseWrapper(ProxyBase):
             # Return a useful ValueError that displays the problematic
             # string, instead of one that just says the string wasn't
             # JSON.
-            raise ValueError(self.getBody())
+            raise ValueError(self.getOutput())
 
 
 def extract_url_parameter(url, parameter):
@@ -311,6 +385,11 @@ def print_radio_button_field(content, name):
         print radio, label
 
 
+def strip_label(label):
+    """Strip surrounding whitespace and non-breaking spaces."""
+    return label.replace('\xC2', '').replace('\xA0', '').strip()
+
+
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
 ELEMENTS_INTRODUCING_NEWLINE = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
@@ -343,7 +422,7 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content):
+def extract_text(content, extract_image_text=False):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
@@ -370,6 +449,17 @@ def extract_text(content):
                     continue
                 if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
                     result.append(u'\n')
+
+                # If extract_image_text is True and the node is an
+                # image, try to find its title or alt attributes.
+                if extract_image_text and node.name.lower() == 'img':
+                    # Title outweighs alt text for the purposes of
+                    # pagetest output.
+                    if node.get('title') is not None:
+                        result.append(node['title'])
+                    elif node.get('alt') is not None:
+                        result.append(node['alt'])
+
             # Process this node's children next.
             nodes[0:0] = list(node)
 
@@ -506,7 +596,7 @@ def print_self_link_of_entries(json_body):
 
 
 def print_ppa_packages(contents):
-    packages = find_tags_by_class(contents, 'ppa_package_row')
+    packages = find_tags_by_class(contents, 'archive_package_row')
     for pkg in packages:
         print extract_text(pkg)
     empty_section = find_tag_by_id(contents, 'empty-result')
@@ -515,14 +605,25 @@ def print_ppa_packages(contents):
 
 
 def print_location(contents):
-    """Print the hierarchy, application tabs, and main heading of the page."""
+    """Print the hierarchy, application tabs, and main heading of the page.
+
+    The hierarchy shows your position in the Launchpad structure:
+    for example, Launchpad > Ubuntu > 8.04.
+    The application tabs represent the major facets of an object:
+    for example, Overview, Bugs, and Translations.
+    The main heading is the first <h1> element in the page.
+    """
     doc = find_tag_by_id(contents, 'document')
     hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
         recursive=False)
     segments = [extract_text(step).encode('us-ascii', 'replace')
                 for step in hierarchy
                 if step.name != 'small']
-    print 'Location:', ' > '.join(segments[2:])
+    # The first segment is spurious (used for styling), and the second
+    # contains only <img alt="Launchpad"> that extract_text() doesn't
+    # pick up. So we replace the first two elements with 'Launchpad':
+    segments = ['Launchpad'] + segments[2:]
+    print 'Hierarchy:', ' > '.join(segments)
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1
@@ -538,17 +639,28 @@ def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
     for tab in location_apps.findAll('span'):
+        tab_text = extract_text(tab)
+        if tab['class'].find('active') != -1:
+            tab_text += ' (selected)'
         if tab.a:
             link = tab.a['href']
         else:
-            link = 'Not active'
-        print "* %s (%s)" % (extract_text(tab), link)
+            link = 'not linked'
+        print "* %s - %s" % (tab_text, link)
 
 
 def print_tag_with_id(contents, id):
     """A simple helper to print the extracted text of the tag."""
     tag = find_tag_by_id(contents, id)
     print extract_text(tag)
+
+
+def print_errors(contents):
+    """Print all the errors on the page."""
+    errors = find_tags_by_class(contents, 'error')
+    error_texts = [extract_text(error) for error in errors]
+    for error in error_texts:
+        print error
 
 
 def setupBrowser(auth=None):
@@ -572,15 +684,45 @@ def safe_canonical_url(*args, **kwargs):
     return str(canonical_url(*args, **kwargs))
 
 
+def webservice_for_person(person, consumer_key='launchpad-library',
+                          permission=OAuthPermission.READ_PUBLIC,
+                          context=None):
+    """Return a valid WebServiceCaller for the person.
+
+    Ues this method to create a way to test the webservice that doesn't depend
+    on sample data.
+    """
+    login(ANONYMOUS)
+    oacs = getUtility(IOAuthConsumerSet)
+    consumer = oacs.getByKey(consumer_key)
+    if consumer is None:
+        consumer = oacs.new(consumer_key)
+    request_token = consumer.newRequestToken()
+    request_token.review(person, permission, context)
+    access_token = request_token.createAccessToken()
+    logout()
+    return WebServiceCaller(consumer_key, access_token.key, port=9000)
+
+
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setUpGlobs(test):
-    # Our tests report being on a different port.
-    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+    test.globs['transaction'] = transaction
+    test.globs['http'] = UnstickyCookieHTTPCaller()
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'salgado-change-anything', port=9000)
+        'launchpad-library', 'salgado-change-anything')
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'salgado-read-nonprivate', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -603,9 +745,12 @@ def setUpGlobs(test):
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_errors'] = print_errors
     test.globs['print_location'] = print_location
     test.globs['print_location_apps'] = print_location_apps
     test.globs['print_navigation_links'] = print_navigation_links
@@ -617,6 +762,8 @@ def setUpGlobs(test):
     test.globs['print_ppa_packages'] = print_ppa_packages
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
     test.globs['print_tag_with_id'] = print_tag_with_id
+    test.globs['PageTestLayer'] = PageTestLayer
+    test.globs['stop'] = stop
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -666,8 +813,8 @@ class PageStoryTestCase(unittest.TestCase):
             result = self.defaultTestResult()
         PageTestLayer.startStory()
         try:
-            # XXX RBC 20060117 we can hook in pre and post story actions
-            # here much more tidily (and in self.debug too)
+            # XXX Robert Collins 2006-01-17: we can hook in pre and post
+            # story actions here much more tidily (and in self.debug too)
             # - probably via self.setUp and self.tearDown
             self._suite.run(result)
         finally:

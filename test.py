@@ -41,6 +41,11 @@ os.environ['STORM_CEXTENSIONS'] = '1'
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
 
+# Mailman lives in a subdirectory.
+mailman_dir = os.path.join(here, 'lib', 'mailman')
+if os.path.isdir(mailman_dir):
+    sys.path.insert(0, mailman_dir)
+
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
@@ -99,12 +104,8 @@ warnings.filterwarnings(
         'ignore', 'twisted.python.plugin', DeprecationWarning,
         )
 warnings.filterwarnings(
-        'ignore', 'The concrete concept of a view has been deprecated.',
-        DeprecationWarning
-        )
-warnings.filterwarnings(
         'ignore', 'bzrlib.*was deprecated', DeprecationWarning
-        )
+)
 
 # This warning will be triggered if the beforeTraversal hook fails. We
 # want to ensure it is not raised as an error, as this will mask the real
@@ -154,7 +155,6 @@ os.listdir = listdir
 
 
 if __name__ == '__main__':
-
     # Extract arguments so we can see them too. We need to strip
     # --resume-layer and --default stuff if found as get_options can't
     # handle it.
@@ -162,6 +162,7 @@ if __name__ == '__main__':
         args = list(sys.argv)
         args.pop(1) # --resume-layer
         args.pop(1) # The layer name
+        args.pop(1) # The resume number
         while len(args) > 1 and args[1] == '--default':
             args.pop(1) # --default
             args.pop(1) # The default value
@@ -192,4 +193,3 @@ if __name__ == '__main__':
     if main_process and options.verbose >= 3:
         profiled.report_profile_stats()
     sys.exit(result)
-

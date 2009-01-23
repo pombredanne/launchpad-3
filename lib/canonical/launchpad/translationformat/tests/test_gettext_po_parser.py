@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 import doctest
 import re
@@ -21,6 +21,29 @@ class POBasicTestCase(unittest.TestCase):
 
     def setUp(self):
         self.parser = POParser()
+
+    def testEmptyFile(self):
+        # The parser reports an empty file as an error.
+        self.assertRaises(TranslationFormatSyntaxError, self.parser.parse, '')
+
+    def testEmptyFileError(self):
+        # Trying to import an empty file produces a sensible error
+        # message.
+        try:
+            self.parser.parse('')
+            self.assertTrue(
+                False,
+                "Importing an empty file succeeded; it should have failed.")
+        except TranslationFormatSyntaxError, exception:
+            message = exception.represent("Default error message!")
+
+        self.assertEqual(message, "File contains no messages.")
+
+    def testContentlessFile(self):
+        # The parser reports a non-empty file holding no messages as an
+        # error.
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse, '# Comment')
 
     def testSingular(self):
         translation_file = self.parser.parse(
@@ -133,6 +156,21 @@ class POBasicTestCase(unittest.TestCase):
             "bar", "incorrect msgstr")
         assert messages[0].is_obsolete, "incorrect obsolescence"
         assert 'fuzzy' in messages[0].flags, "incorrect fuzziness"
+
+    def testObsoleteChangedMsgid(self):
+        # Test "previous msgid" feature in obsolete messages.  These are
+        # marked with "#~|"
+        translation_file = self.parser.parse("""
+            %s
+
+            #~| msgid "old"
+            #~ msgid "new"
+            #~ msgstr "nouveau"
+            """ % DEFAULT_HEADER)
+        messages = translation_file.messages
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].msgid_singular, "new")
+        self.assertEqual(messages[0].translations, ["nouveau"])
 
     def testMultiLineObsolete(self):
         translation_file = self.parser.parse(

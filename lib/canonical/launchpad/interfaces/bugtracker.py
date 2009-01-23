@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Choice, Int, List, Object, Text, TextLine)
+    Bool, Choice, Int, List, Object, Text, TextLine)
 from zope.schema.interfaces import IObject
 from zope.component import getUtility
 
@@ -205,11 +205,28 @@ class IBugTracker(Interface):
         CollectionField(
             title=_('The remote watches on this bug tracker.'),
             value_type=Reference(schema=IObject)))
+    has_lp_plugin = exported(
+        Bool(
+            title=_('This bug tracker has a Launchpad plugin installed.'),
+            required=False, default=False))
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
+
+    def getBugFilingLink(remote_product):
+        """Return the bug filing link for a given product on the tracker.
+
+        :param remote_product: The name of the product on which the bug
+            is to be filed. This is usually a string but can also take
+            other forms. For example, SourceForge requires a GroupID and
+            an ATID in order to be able to file a bug. These are passed
+            in as a tuple of (group_id, at_id).
+        :return: The absolute URL of the bug filing form for
+            `remote_product` on the remote tracker or None if one doesn't
+            exist for the current BugTrackerType.
+        """
 
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""

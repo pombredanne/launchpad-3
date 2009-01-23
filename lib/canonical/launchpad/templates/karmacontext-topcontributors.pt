@@ -13,13 +13,13 @@
 
 <div metal:fill-slot="main">
 
-      <h1>Top contributors</h1>
-      <p>
-        These lists are based only on things people did in Launchpad.
-        They do not yet include all areas of Launchpad (such as code branches),
-        or contributions elsewhere (such as mailing lists or IRC).
-      </p>
-      <h2>Overall</h2>
+  <h1>Top contributors</h1>
+  <p>
+    Here you can see the people who have earned most Launchpad
+    karma while working on <span id="project-name" tal:content="context/displayname">this project</span>.
+    (<a href="https://help.launchpad.net/YourAccount/Karma">What is karma?</a>)
+  </p>
+  <h2>Overall</h2>
 
   <table class="listing sortable" id="overall_top">
   <thead>

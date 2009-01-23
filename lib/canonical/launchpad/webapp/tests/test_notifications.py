@@ -8,8 +8,8 @@ import unittest
 
 from zope.testing.doctest import DocTestSuite
 from zope.interface import implements
-from zope.app.session.interfaces import ISession, ISessionData
-from zope.app.tests import ztapi, placelesssetup
+from zope.session.interfaces import ISession, ISessionData
+from zope.app.testing import ztapi, placelesssetup
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.http import IHTTPApplicationResponse
 from zope.publisher.browser import TestRequest

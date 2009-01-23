@@ -18,13 +18,14 @@ from zope.interface import Interface, implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
-    IBranchSet, IBugSet,
-    ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+    IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -65,9 +66,9 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if owner_name:
             owner = person_set.getByName(owner_name)
             if owner is None:
-                raise faults.NoSuchPersonWithName(owner_name)
+                return faults.NoSuchPersonWithName(owner_name)
             if not registrant.inTeam(owner):
-                raise faults.NotInTeam(registrant.name, owner_name)
+                return faults.NotInTeam(registrant.name, owner_name)
         else:
             owner = registrant
 
@@ -102,14 +103,6 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if not branch_name:
             branch_name = unicode_branch_url.split('/')[-1]
 
-        if author_email:
-            author = person_set.getByEmail(author_email)
-        else:
-            author = registrant
-        if author is None:
-            return faults.NoSuchPerson(
-                type="author", email_address=author_email)
-
         try:
             if branch_url:
                 branch_type = BranchType.MIRRORED
@@ -119,7 +112,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type=branch_type,
                 name=branch_name, registrant=registrant, owner=owner,
                 product=product, url=branch_url, title=branch_title,
-                summary=branch_description, author=author)
+                summary=branch_description)
             if branch_type == BranchType.MIRRORED:
                 branch.requestMirror()
         except BranchCreationForbidden:
@@ -161,9 +154,8 @@ class IPublicCodehostingAPI(Interface):
 
         :return: A dict containing a single 'urls' key that maps to a list of
             URLs. Clients should use the first URL in the list that they can
-            support.
-        :raise Fault: Various Faults can be raised if the path does not
-            resolve to a branch.
+            support.  Returns a Fault if the path does not resolve to a
+            branch.
         """
 
 
@@ -186,31 +178,50 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """Return the hostname for the codehosting server."""
         return URI(config.codehosting.supermirror_root).host
 
-    def _getSeriesBranch(self, series):
-        """Return the branch for the given series.
+    def _getResultDict(self, branch, suffix=None):
+        """Return a result dict with a list of URLs for the given branch.
 
-        :return: The branch for the given series.
-        :raise faults.NoBranchForSeries: if there is no such branch, or if the
-            branch is invisible to the user.
+        :param branch: A Branch object.
+        :param suffix: The section of the path that follows the branch
+            specification.
+        :return: {'urls': [list_of_branch_urls]}.
         """
-        branch = series.series_branch
-        if (branch is None
-            or not check_permission('launchpad.View', branch)):
-            raise faults.NoBranchForSeries(series)
-        return branch
+        if branch.branch_type == BranchType.REMOTE:
+            if branch.url is None:
+                return faults.NoUrlForBranch(branch.unique_name)
+            return dict(urls=[branch.url])
+        else:
+            return self._getUniqueNameResultDict(branch.unique_name, suffix)
 
-    def _getBranchForProject(self, project_name):
-        """Return the branch for the development focus of the given project.
+    def _getUniqueNameResultDict(self, unique_name, suffix=None):
+        result = dict(urls=[])
+        host = self._getBazaarHost()
+        path = '/' + unique_name
+        if suffix is not None:
+            path = os.path.join(path, suffix)
+        for scheme in self.supported_schemes:
+            result['urls'].append(
+                str(URI(host=host, scheme=scheme, path=path)))
+        return result
 
-        :param project_name: The name of a Launchpad project.
-        :return: The Branch object.
-        :raise faults.NoSuchProduct: If there's no project by that name.
-        """
-        if not valid_name(project_name):
-            raise faults.InvalidProductIdentifier(project_name)
-        project = getUtility(IProductSet).getByName(project_name)
-        if project is None:
-            pillar = getUtility(IPillarNameSet).getByName(project_name)
+    def resolve_lp_path(self, path):
+        """See `IPublicCodehostingAPI`."""
+        strip_path = path.strip('/')
+        if strip_path == '':
+            return faults.InvalidBranchIdentifier(path)
+        branch_set = getUtility(IBranchSet)
+        try:
+            branch, suffix, series = branch_set.getByLPPath(strip_path)
+            if not check_permission('launchpad.View', branch):
+                if series is None:
+                    raise NoSuchBranch(strip_path)
+                else:
+                    raise faults.NoBranchForSeries(series)
+        except NoSuchBranch:
+            return self._getUniqueNameResultDict(strip_path)
+        except NoSuchProduct, e:
+            product_name = e.name
+            pillar = getUtility(IPillarNameSet).getByName(product_name)
             if pillar:
                 if IProject.providedBy(pillar):
                     pillar_type = 'project group'
@@ -219,106 +230,12 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 else:
                     raise AssertionError(
                         "pillar of unknown type %s" % pillar)
-                raise faults.NoDefaultBranchForPillar(
-                    project_name, pillar_type)
+                return faults.NoDefaultBranchForPillar(
+                    product_name, pillar_type)
             else:
-                raise faults.NoSuchProduct(project_name)
-        series = project.development_focus
-        return self._getSeriesBranch(series)
-
-    def _getBranchForSeries(self, project_name, series_name):
-        """Return the branch for the given series on the given project.
-
-        :param project_name: The name of a Launchpad project.
-        :param series_name: The name of a series on that project.
-        :raise Fault: If the project or the series do not exist.
-        :return: The branch for that series.
-        """
-        project = getUtility(IProductSet).getByName(project_name)
-        if project is None:
-            raise faults.NoSuchProduct(project_name)
-        series = project.getSeries(series_name)
-        if series is None:
-            raise faults.NoSuchSeries(series_name, project)
-        return self._getSeriesBranch(series)
-
-    def _getBranch(self, unique_name):
-        """Return the branch specified by the given unique name.
-
-        :param unique_name: A string of the form "~user/project/branch".
-        :return: The corresponding Branch object if the branch exists, a
-            _NonexistentBranch stub object if the branch does not exist.
-        :raises faults.InvalidBranchIdentifier: If unique_name is invalid.
-        """
-        if unique_name[0] != '~':
-            raise faults.InvalidBranchIdentifier(unique_name)
-        branch = getUtility(IBranchSet).getByUniqueName(unique_name)
-        if check_permission('launchpad.View', branch):
-            return branch
-        else:
-            return None
-
-    def _getNonexistentBranch(self, unique_name):
-        """Return an appropriate response for a non-existent branch.
-
-        :param unique_name: A string of the form "~user/project/branch".
-        :return: A _NonexistentBranch object.
-        :raise Fault: If the user or project do not exist.
-        """
-        owner_name, project_name, branch_name = unique_name[1:].split('/')
-        owner = getUtility(IPersonSet).getByName(owner_name)
-        if owner is None:
-            raise faults.NoSuchPersonWithName(owner_name)
-        if project_name != '+junk':
-            project = getUtility(IProductSet).getByName(project_name)
-            if project is None:
-                raise faults.NoSuchProduct(project_name)
-        return _NonexistentBranch(unique_name)
-
-    def _getResultDict(self, branch, suffix=None):
-        """Return a result dict with a list of URLs for the given branch.
-
-        :param branch: A Branch object or a _NonexistentBranch object.
-        :param suffix: The section of the path that follows the branch
-            specification.
-        :return: {'urls': [list_of_branch_urls]}.
-        """
-        if branch.branch_type == BranchType.REMOTE:
-            return dict(urls=[branch.url])
-        else:
-            result = dict(urls=[])
-            host = self._getBazaarHost()
-            for scheme in self.supported_schemes:
-                path = '/' + branch.unique_name
-                if suffix is not None:
-                    path = os.path.join(path, suffix)
-                result['urls'].append(
-                    str(URI(host=host, scheme=scheme, path=path)))
-            return result
-
-    def resolve_lp_path(self, path):
-        """See `IPublicCodehostingAPI`."""
-        strip_path = path.strip('/')
-        if strip_path == '':
-            raise faults.InvalidBranchIdentifier(path)
-        path_segments = strip_path.split('/', 3)
-        suffix = None
-        if len(path_segments) == 1:
-            [project_name] = path_segments
-            result = self._getBranchForProject(project_name)
-        elif len(path_segments) == 2:
-            project_name, series_name = path_segments
-            result = self._getBranchForSeries(project_name, series_name)
-        elif len(path_segments) == 3:
-            result = self._getBranch(strip_path)
-        else:
-            suffix = path_segments.pop()
-            result = self._getBranch('/'.join(path_segments))
-
-        if result is None:
-            result = self._getNonexistentBranch(strip_path)
-
-        if isinstance(result, faults.LaunchpadFault):
-            return result
-        else:
-            return self._getResultDict(result, suffix)
+                return faults.NoSuchProduct(product_name)
+        except NoSuchPerson, e:
+            return faults.NoSuchPersonWithName(e.name)
+        except faults.LaunchpadFault, e:
+            return e
+        return self._getResultDict(branch, suffix)

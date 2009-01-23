@@ -4,19 +4,23 @@
 
 import unittest
 
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.database.message import MessageSet
+from canonical.launchpad.event.branchmergeproposal import (
+    NewCodeReviewCommentEvent)
 from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+
 
 class TestCodeReviewComment(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
-        source = self.factory.makeBranch(title='source-branch')
-        target = self.factory.makeBranch(
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        source = self.factory.makeProductBranch(title='source-branch')
+        target = self.factory.makeProductBranch(
             product=source.product, title='target-branch')
         self.bmp = source.addLandingTarget(source.owner, target)
         self.submitter = self.factory.makePerson(password='password')
@@ -41,8 +45,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(self.submitter, comment.message.owner)
         self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual(
-            'Re: Proposed merge of source-branch into target-branch',
-            comment.message.subject)
+            'Re: [Merge] %s into %s' % (
+                self.bmp.source_branch.bzr_identity,
+                self.bmp.target_branch.bzr_identity), comment.message.subject)
         self.assertEqual('Message content', comment.message.chunks[0].content)
 
     def test_createReplyComment(self):
@@ -57,7 +62,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Reply subject', reply.message.subject)
         self.assertEqual('Reply content', reply.message.chunks[0].content)
         self.assertEqual(CodeReviewVote.ABSTAIN, reply.vote)
-        self.assertEqual('My tag', reply.vote_tag)
+        self.assertEqual('my tag', reply.vote_tag)
 
     def test_createReplyCommentNoSubject(self):
         comment = self.bmp.createComment(
@@ -79,8 +84,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         new_comment = self.bmp.createComment(
             self.reviewer, 'New subject', 'New content',
             CodeReviewVote.ABSTAIN)
-        self.assertEqual(
-            self.bmp.root_comment.message, new_comment.message.parent)
+        self.assertEqual(None, new_comment.message.parent)
 
     def test_replyWithWrongMergeProposal(self):
         comment = self.bmp.createComment(
@@ -99,8 +103,84 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Creating a CodeReviewComment should trigger a notification."""
         message = self.factory.makeMessage()
         self.assertNotifies(
-            SQLObjectCreatedEvent, self.bmp.createCommentFromMessage, message,
-            None, None)
+            NewCodeReviewCommentEvent, self.bmp.createCommentFromMessage,
+            message, None, None)
+
+
+class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
+    """Test the getAttachments method of code review comments."""
+
+    # We need the librarian for storing the messages.
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        self.bmp = self.factory.makeBranchMergeProposal()
+
+    def test_getAttachments_no_attachments(self):
+        # If there are no attachments, the getAttachments should return two
+        # empty lists.
+        comment = self.bmp.createComment(
+            self.bmp.registrant, 'Subject', content='Some content')
+        self.assertEqual(([], []), comment.getAttachments())
+
+    def _makeCommentFromEmailWithAttachment(self, filename, content_type):
+        # Make an email message with an attachment, and create a code
+        # review comment from it.
+        msg = self.factory.makeEmailMessage(
+            body='This is the body of the email.',
+            attachments=[
+                (filename, content_type, 'Attachment body')])
+        message = MessageSet().fromEmail(msg.as_string())
+        return self.bmp.createCommentFromMessage(message, None, None, msg)
+
+    def test_getAttachments_text_plain_are_displayed(self):
+        # text/plain attachments are displayed.
+        comment = self._makeCommentFromEmailWithAttachment(
+            'some.txt', 'text/plain')
+        email_body, attachment = comment.message.chunks
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
+
+    def test_getAttachments_text_xdiff_are_displayed(self):
+        # text/x-diff attachments are displayed.
+        comment = self._makeCommentFromEmailWithAttachment(
+            'some.txt', 'text/x-diff')
+        email_body, attachment = comment.message.chunks
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
+
+    def test_getAttachments_text_xpatch_are_displayed(self):
+        # text/x-patch attachments are displayed.
+        comment = self._makeCommentFromEmailWithAttachment(
+            'some.txt', 'text/x-patch')
+        email_body, attachment = comment.message.chunks
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
+
+    def test_getAttachments_others(self):
+        # Attachments with other content types are not considered display
+        # attachments.
+        comment = self._makeCommentFromEmailWithAttachment(
+            'some.txt', 'application/octet-stream')
+        email_body, attachment = comment.message.chunks
+        self.assertEqual(([], [attachment.blob]), comment.getAttachments())
+
+        comment = self._makeCommentFromEmailWithAttachment(
+            'pic.jpg', 'image/jpeg')
+        email_body, attachment = comment.message.chunks
+        self.assertEqual(([], [attachment.blob]), comment.getAttachments())
+
+    def test_getAttachments_diff_or_patch_filename_overrides(self):
+        # If the filename ends with .diff or .patch, then we consider these
+        # attachments good even if attached with the wrong content type.
+        comment = self._makeCommentFromEmailWithAttachment(
+            'some.diff', 'application/octet-stream')
+        email_body, attachment = comment.message.chunks
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
+
+        comment = self._makeCommentFromEmailWithAttachment(
+            'some.patch', 'application/octet-stream')
+        email_body, attachment = comment.message.chunks
+        self.assertEqual(([attachment.blob], []), comment.getAttachments())
+
 
 
 def test_suite():

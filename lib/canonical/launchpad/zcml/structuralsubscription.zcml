@@ -5,13 +5,13 @@
     i18n_domain="launchpad">
 
     <!-- StructuralSubscription -->
-    <content class="canonical.launchpad.database.structuralsubscription.StructuralSubscription">
+    <class class="canonical.launchpad.database.structuralsubscription.StructuralSubscription">
         <allow interface="canonical.launchpad.interfaces.IStructuralSubscription" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IStructuralSubscription"
         />
-    </content>
+    </class>
 
     <browser:page
         for="canonical.launchpad.interfaces.IStructuralSubscriptionTarget"

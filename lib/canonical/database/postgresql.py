@@ -419,6 +419,135 @@ def allow_sequential_scans(cur, permission):
 
     cur.execute("SET enable_seqscan=%s" % permission_value)
 
+def all_tables_in_schema(cur, schema):
+    """Return a set of all tables in the given schema.
+   
+    :returns: A set of quoted, fully qualified table names.
+    """
+    cur.execute("""
+        SELECT nspname, relname
+        FROM pg_class, pg_namespace
+        WHERE
+            pg_class.relnamespace = pg_namespace.oid
+            AND pg_namespace.nspname = %s
+            AND pg_class.relkind = 'r'
+        """ % sqlvalues(schema))
+    return set(
+            fqn(namespace, tablename)
+            for namespace, tablename in cur.fetchall())
+
+
+def all_sequences_in_schema(cur, schema):
+    """Return a set of all sequences in the given schema.
+
+    :returns: A set of quoted, fully qualified table names.
+    """
+    cur.execute("""
+        SELECT nspname, relname
+        FROM pg_class, pg_namespace
+        WHERE
+            pg_class.relnamespace = pg_namespace.oid
+            AND pg_namespace.nspname = %s
+            AND pg_class.relkind = 'S'
+        """ % sqlvalues(schema))
+    return set(
+            fqn(namespace, sequence)
+            for namespace, sequence in cur.fetchall())
+
+
+def fqn(namespace, name):
+    """Return the fully qualified name by combining the namespace and name.
+
+    Quoting is done for the non trivial cases.
+
+    >>> print fqn('public', 'foo')
+    public.foo
+    >>> print fqn(' foo ', '$bar')
+    " foo "."$bar"
+    """
+    if re.search(r"[^a-z_]", namespace) is not None:
+        namespace = quoteIdentifier(namespace)
+    if re.search(r"[^a-z_]", name) is not None:
+        name = quoteIdentifier(name)
+    return "%s.%s" % (namespace, name)
+
+
+class ConnectionString:
+    """A libpq connection string.
+
+    Some PostgreSQL tools take libpq connection strings. Other tools
+    need the components seperated out (such as pg_dump command line
+    arguments). This class allows you to switch easily between formats.
+    
+    >>> cs = ConnectionString('user=foo dbname=launchpad_dev')
+    >>> cs.dbname
+    'launchpad_dev'
+    >>> cs.user
+    'foo'
+    >>> str(cs)
+    'dbname=launchpad_dev user=foo'
+    >>> repr(cs)
+    'dbname=launchpad_dev user=foo'
+    """
+    CONNECTION_KEYS = [
+        'dbname', 'user', 'host', 'port', 'connect_timeout', 'sslmode']
+
+    def __init__(self, conn_str):
+        for key in self.CONNECTION_KEYS:
+            match = re.search(r'%s=(\w+)' % key, conn_str)
+            if match is None:
+                setattr(self, key, None)
+            else:
+                setattr(self, key, match.group(1))
+
+    def __repr__(self):
+        params = []
+        for key in self.CONNECTION_KEYS:
+            val = getattr(self, key, None)
+            if val is not None:
+                params.append('%s=%s' % (key, val))
+        return ' '.join(params)
+
+    def asPGCommandLineArgs(self):
+        """Return a string suitable for the PostgreSQL standard tools
+        command line arguments.
+
+        >>> cs = ConnectionString('host=localhost user=slony dbname=test')
+        >>> cs.asPGCommandLineArgs()
+        '--host=localhost --username=slony test'
+
+        >>> cs = ConnectionString('port=5433 dbname=test')
+        >>> cs.asPGCommandLineArgs()
+        '--port=5433 test'
+        """
+        params = []
+        if self.host is not None:
+            params.append("--host=%s" % self.host)
+        if self.port is not None:
+            params.append("--port=%s" % self.port)
+        if self.user is not None:
+            params.append("--username=%s" % self.user)
+        if self.dbname is not None:
+            params.append(self.dbname)
+        return ' '.join(params)
+
+    def asLPCommandLineArgs(self):
+        """Return a string suitable for use by the LP tools using
+        db_options() to parse the command line.
+
+        >>> cs = ConnectionString('host=localhost user=slony dbname=test')
+        >>> cs.asLPCommandLineArgs()
+        '--host=localhost --user=slony --dbname=test'
+        """
+        params = []
+        if self.host is not None:
+            params.append("--host=%s" % self.host)
+        if self.user is not None:
+            params.append("--user=%s" % self.user)
+        if self.dbname is not None:
+            params.append("--dbname=%s" % self.dbname)
+        return ' '.join(params)
+
 
 if __name__ == '__main__':
     import psycopg

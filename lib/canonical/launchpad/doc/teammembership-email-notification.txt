@@ -49,11 +49,11 @@ generates a notification email only to Ubuntu Team administrators.
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    4
+    5
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
     Reply-To: robertc@robertcollins.net
     Subject: lifeless wants to join
     <BLANKLINE>
@@ -76,12 +76,12 @@ and each of the team's admins.
     >>> login('mark@hbd.com')
     >>> setStatus(membership, TeamMembershipStatus.DECLINED, reviewer=sabdfl)
     >>> len(stub.test_emails)
-    5
+    6
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
     Subject: lifeless declined by sabdfl
     <BLANKLINE>
     The membership status of Robert Collins (lifeless) in the team Ubuntu
@@ -115,11 +115,11 @@ The same goes for approving a proposed member.
     ...           reviewer=sabdfl, comment='This is a nice guy; I like him')
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
-    5
+    6
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
     Subject: daf approved by sabdfl
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -148,11 +148,11 @@ The same for deactivating a membership.
     ...           reviewer=sabdfl)
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
-    5
+    6
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
     Subject: daf deactivated by sabdfl
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -177,11 +177,11 @@ other's member) email address in the 'Reply-To' header of the message sent.
     >>> admins.join(ubuntu_team, requester=sabdfl)
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    4 
+    5
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
     Reply-To: mark@hbd.com
     Subject: admins wants to join
     <BLANKLINE>
@@ -207,7 +207,7 @@ member.
     >>> ubuntu_team.addMember(marilize, reviewer=cprov)
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    5
+    6
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: marilize@hbd.com
@@ -222,7 +222,7 @@ member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
     Subject: marilize joined ubuntu-team
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
@@ -273,11 +273,12 @@ team which just became a member and to the admins of the hosting team.
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
-    5
+    6
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, karl@canonical.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, karl@canonical.com, limi@plone.org,
+        mark@hbd.com
     Subject: Invitation to ubuntu-mirror-admins accepted by sabdfl
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has accepted the invitation to make Mirror
@@ -305,12 +306,12 @@ Similarly, a notification is sent if the invitation is declined.
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
-    6
+    7
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         guilherme.salgado@canonical.com, jeff.waugh@ubuntulinux.com,
-        mark@hbd.com, test@canonical.com
+        limi@plone.org, mark@hbd.com, test@canonical.com
     Subject: Invitation to landscape-developers declined by sabdfl
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
@@ -329,7 +330,7 @@ passing force_team_add=True to the addMember() method.
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    4
+    5
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: foo.bar@canonical.com
@@ -343,7 +344,8 @@ passing force_team_add=True to the addMember() method.
     The Launchpad team
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com
+    To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com,
+        limi@plone.org, mark@hbd.com
     Subject: launchpad joined ubuntu-team
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
@@ -571,11 +573,12 @@ is automatically renewed.
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
-    7
+    8
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com, mark@hbd.com
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        limi@plone.org, mark@hbd.com
     Subject: jdub renewed automatically
     <BLANKLINE>
     The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
@@ -688,11 +691,11 @@ notification.
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=sabdfl)
     >>> len(stub.test_emails)
-    5
+    6
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
     Subject: cprov made admin by sabdfl
     <BLANKLINE>
     The membership status of Celso Providelo (cprov) in the team Ubuntu Team
@@ -718,11 +721,11 @@ sent to the team administrators.
     >>> setStatus(jdub_membership, TeamMembershipStatus.APPROVED,
     ...           reviewer=jdub)
     >>> len(stub.test_emails)
-    4
+    5
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-        foo.bar@canonical.com, mark@hbd.com
+        foo.bar@canonical.com, limi@plone.org, mark@hbd.com
     Subject: Membership change: jdub in ubuntu-team
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
@@ -742,12 +745,12 @@ sense to the members of the team reading it.
     >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED,
     ...           reviewer=sabdfl)
     >>> len(stub.test_emails)
-    5
+    6
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-        foo.bar@canonical.com, karl@canonical.com, mark@hbd.com
+        foo.bar@canonical.com, karl@canonical.com, limi@plone.org, mark@hbd.com
     Subject: ubuntu-mirror-admins deactivated by sabdfl
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in

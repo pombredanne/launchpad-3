@@ -33,6 +33,7 @@ from zope.component import getUtility
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
+from canonical import lp
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -130,8 +131,8 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = config.database.dbname
-    LPDB_HOST = config.database.dbhost
+    LPDB = lp.dbname
+    LPDB_HOST = lp.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
@@ -195,7 +196,7 @@ def run_gina(options, ztm, target_section):
             log.info('Ensuring %s name' % source['Package'])
             importer_handler.ensure_sourcepackagename(source['Package'])
         log.info('done')
-        sys.exit(0)
+        return
 
     import_sourcepackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
@@ -203,7 +204,7 @@ def run_gina(options, ztm, target_section):
 
     if source_only:
         log.info('Source only mode... done')
-        sys.exit(0)
+        return
 
     for archtag in archs:
         try:

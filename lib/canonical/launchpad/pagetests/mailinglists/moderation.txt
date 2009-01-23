@@ -11,9 +11,11 @@ member in good standing (as is the default).
     >>> admin_browser.getControl(name='field.guadamen').value = ['approve']
     >>> admin_browser.getControl('Submit').click()
 
+    >>> import transaction
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.mailman.act()
+    >>> transaction.commit()
     >>> logout()
 
     # Ignore any notifications up to this point.

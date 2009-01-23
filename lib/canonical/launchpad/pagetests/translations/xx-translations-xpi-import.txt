@@ -29,11 +29,8 @@ Now, lets upload this file.
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag.renderContents()
-  Thank you for your upload. The file content will be reviewed soon by an
-  admin and then imported into Launchpad. You can track its status from the
-  <a href="http://translations.launchpad.dev/firefox/trunk/+imports">Translation
-  Import Queue</a>
+  ...     print extract_text(tag.renderContents())
+  Thank you for your upload.  It will be automatically reviewed...
 
 Lets check the import queue to edit this entry and set the name.
 
@@ -47,9 +44,10 @@ Lets check the import queue to edit this entry and set the name.
 All new entries need to get a template name to identify them in the context
 where will be imported. In this case, it's 'firefox'.
 
-  >>> browser.getControl('Template name').value = 'firefox'
+  >>> browser.getControl('File Type').value = ['POT']
+  >>> browser.getControl('Name').value = 'firefox'
   >>> browser.getControl('Translation domain').value = 'firefox'
-  >>> browser.getControl('Attach').click()
+  >>> browser.getControl('Approve').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports
   >>> browser.getControl(name='field.status_3').value

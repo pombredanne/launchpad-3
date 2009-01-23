@@ -5,19 +5,19 @@
     i18n_domain="launchpad">
 
     <!-- Section -->
-    <content class="canonical.launchpad.database.Section">
+    <class class="canonical.launchpad.database.Section">
         <allow interface="canonical.launchpad.interfaces.ISection"/>
-    </content>
+    </class>
 
     <!-- Section -->
-    <content class="canonical.launchpad.database.SectionSelection">
+    <class class="canonical.launchpad.database.SectionSelection">
         <allow interface="canonical.launchpad.interfaces.ISectionSelection"/>
-    </content>
+    </class>
 
     <!-- SectionSet -->
-    <content class="canonical.launchpad.database.SectionSet">
+    <class class="canonical.launchpad.database.SectionSet">
         <allow interface="canonical.launchpad.interfaces.ISectionSet"/>
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.SectionSet"

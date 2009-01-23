@@ -5,11 +5,9 @@ zone of a person.  It also remembers who provided that information, and
 when. This is designed to make it possible to have people provide
 location / time zone info for other people in a wiki style.
 
-    >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     ILocationRecord, IObjectWithLocation, IPersonSet)
+    ...     IObjectWithLocation, IPersonSet)
     >>> personset = getUtility(IPersonSet)
 
 A Person implements the IObjectWithLocation interface.
@@ -20,12 +18,13 @@ A Person implements the IObjectWithLocation interface.
     True
 
 A Person has a PersonLocation record, if there is any location
-information associated with them. That implements the ILocationRecord
+information associated with them. That implements the IPersonLocation
 interface.
 
+    >>> from canonical.launchpad.interfaces.location import IPersonLocation
     >>> marilize.location
     <PersonLocation...
-    >>> verifyObject(ILocationRecord, marilize.location)
+    >>> verifyObject(IPersonLocation, marilize.location)
     True
 
 In some cases, a person has a time zone, but no location.
@@ -43,7 +42,7 @@ We'll use jdub as a prolific source of location information for
 community members.
 
     >>> jdub = personset.getByName('jdub')
-    >>> login(jdub.preferredemail.email)
+    >>> login_person(jdub)
 
 First, jdub will provide information about cprov, who doesn't have any
 location data in the sampledata.
@@ -71,10 +70,10 @@ person through email.
 And once cprov provides data for himself, jdub won't be able to edit it
 any more.
 
-    >>> login(cprov.preferredemail.email)
+    >>> login_person(cprov)
     >>> cprov.setLocation(-43.2, -61.93, 'America/Sao_Paulo', cprov)
 
-    >>> login(jdub.preferredemail.email)
+    >>> login_person(jdub)
     >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
     Traceback (most recent call last):
     ...
@@ -88,7 +87,7 @@ When a user changes his own location, no notification is sent, though.
 But cprov can obviously still edit his own information. We need to deal
 with some floating point precision issues here, hence the rounding.
 
-    >>> login(cprov.preferredemail.email)
+    >>> login_person(cprov)
     >>> cprov.setLocation(-43.52, -61.93, 'America/Sao_Paulo', cprov)
     >>> abs(cprov.latitude + 43.52) < 0.001
     True
@@ -96,10 +95,24 @@ with some floating point precision issues here, hence the rounding.
 And admins can, too.
 
     >>> admin = personset.getByName('name16')
-    >>> login(admin.preferredemail.email)
+    >>> login_person(admin)
     >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', admin)
     >>> abs(cprov.longitude + 62.1) < 0.001
     True
+
+If a user had provided only his time zone but not his location, other
+people would still be able to set his location.  That's the case of
+most our existing users, who set their time zone but hadn't set their
+locations (since there was no UI for that).
+
+    >>> salgado = personset.getByName('salgado')
+    >>> login_person(salgado)
+    >>> salgado.setLocation(None, None, 'America/Sao_Paulo', salgado)
+
+    >>> login_person(jdub)
+    >>> salgado.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
+    >>> print salgado.latitude
+    -43.0
 
 We cannot store a location for a team, though.
 
@@ -137,12 +150,12 @@ mapped_participants or unmapped_participants (although its members do).
     ...         print member.name
     ubuntu-team
     >>> len(guadamen.mapped_participants)
-    1
+    2
     >>> for mapped in guadamen.mapped_participants:
     ...     if mapped.teamowner is not None:
     ...         print mapped.name
     >>> guadamen.unmapped_participants.count()
-    2
+    7
     >>> for unmapped in guadamen.unmapped_participants:
     ...     if unmapped.teamowner is not None:
     ...         print unmapped.name
@@ -154,5 +167,53 @@ access a person's .location property.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> for mapped in guadamen.mapped_participants:
     ...     mapped = removeSecurityProxy(mapped)
-    ...     if not verifyObject(ILocationRecord, mapped._location):
+    ...     if not verifyObject(IPersonLocation, mapped._location):
     ...         print 'No cached location on %s' % mapped.name
+
+
+== Location visibility ==
+
+Some people may not want their location to be disclosed to others, so
+we provide a way for them to hide their location from other users. By
+default a person's location is visible.
+
+    >>> salgado.location.visible
+    True
+    >>> salgado.location.latitude
+    -43...
+
+But it can be changed through the setLocationVisibility() method. If the
+visibility is set to False, only the person himself will be able to see
+the location data.
+
+    >>> login_person(salgado)
+    >>> salgado.setLocationVisibility(False)
+    >>> salgado.location.visible
+    False
+
+    >>> login_person(jdub)
+    >>> salgado.latitude
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+    >>> salgado.longitude
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+    >>> salgado.time_zone
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+    >>> salgado.location.latitude
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+A team's .mapped_participants will also exclude the members who made
+their location invisible.
+
+    >>> admins = personset.getByName('admins')
+    >>> salgado in admins.activemembers
+    True
+    >>> salgado in admins.mapped_participants
+    False

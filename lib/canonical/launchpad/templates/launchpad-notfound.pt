@@ -24,9 +24,9 @@
           Otherwise, complain to the maintainers of the page that linked here.
         </p>
         <p>
-          If this is blocking your work, let us know on the
-          <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
-          >launchpad-users mailing list</a> (requires subscription).
+          If this is blocking your work, let us know by sending an message to
+          <a href="mailto:feedback@launchpad.net"
+             >feedback@launchpad.net</a>.
           Include the error <abbr>ID</abbr>
           <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
           in your message.
@@ -36,7 +36,9 @@
         Check that you entered the address correctly.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
-      <ul>
+      <ul class="menu">
+        <li tal:condition="view/layer_help"
+            tal:content="structure view/layer_help" />
         <li tal:condition="view/referrer">
           <a tal:attributes="href view/referrer"
           >Return to the page you came from</a>

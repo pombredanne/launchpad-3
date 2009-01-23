@@ -2,7 +2,6 @@
 # pylint: disable-msg=E0211,E0213
 
 __all__ = [
-    'UBUNTU_WIKI_URL',
     'IWikiName',
     'IWikiNameSet',
     ]
@@ -17,9 +16,6 @@ from canonical.lazr.rest.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-
-
-UBUNTU_WIKI_URL = 'https://wiki.ubuntu.com/'
 
 
 class IWikiName(IHasOwner):
@@ -53,21 +49,8 @@ class IWikiNameSet(Interface):
         Return None if it doesn't exists.
         """
 
-    def getUbuntuWikiByPerson(person):
-        """Return the Ubuntu WikiName for the given person."""
-
-    def getOtherWikisByPerson(person):
-        """Return all WikiNames of the given person that are not the Ubuntu
-        one."""
-
-    def getAllWikisByPerson(person):
-        """Return all WikiNames of the given person."""
-
     def get(id):
         """Return the WikiName with the given id or None."""
 
     def new(person, wiki, wikiname):
         """Create a new WikiName pointing to the given Person."""
-
-    def exists(wikiname, wiki=UBUNTU_WIKI_URL):
-        """Does a given wikiname & wiki pair already exist?"""

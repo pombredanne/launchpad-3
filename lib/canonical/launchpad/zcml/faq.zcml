@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
 <facet facet="answers">
-  <content class="canonical.launchpad.database.FAQ">
+  <class class="canonical.launchpad.database.FAQ">
     <!-- IFAQ-->
     <allow interface="canonical.launchpad.interfaces.IFAQ" />
     <require
@@ -13,7 +13,7 @@
         set_attributes="title keywords content
                         last_updated_by date_last_updated"
         />
-  </content>
+  </class>
   <adapter
     for="canonical.launchpad.interfaces.IFAQ"
     provides="canonical.launchpad.interfaces.IFAQTarget"
@@ -69,11 +69,6 @@
     class="canonical.launchpad.browser.FAQEditView"
     permission="launchpad.Edit"
     template="../templates/faq-edit.pt"
-    />
-  <adapter
-    for="canonical.launchpad.interfaces.IFAQ"
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    factory="canonical.launchpad.browser.FAQStructuralObjectPresentation"
     />
   <browser:menus
     module="canonical.launchpad.browser"

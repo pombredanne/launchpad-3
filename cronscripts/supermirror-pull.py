@@ -7,8 +7,10 @@ from optparse import OptionParser
 
 from twisted.internet import defer, reactor
 from twisted.python import log as tplog
+from twisted.web.xmlrpc import Proxy
 
 from canonical.codehosting.puller import mirror, scheduler
+from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options
 from canonical.twistedsupport.loggingsupport import set_up_logging_for_script
@@ -54,7 +56,7 @@ if __name__ == '__main__':
 
     log = set_up_logging_for_script(options, 'supermirror_%s_puller' % which)
     manager = scheduler.JobScheduler(
-        scheduler.BranchStatusClient(), log, branch_type)
+        Proxy(config.codehosting.branch_puller_endpoint), log, branch_type)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()

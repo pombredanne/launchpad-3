@@ -25,6 +25,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
+from canonical.launchpad.components.archivedependencies import (
+    get_components_for_building)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
@@ -32,10 +34,10 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
-     contactEmailAddresses, filenameToContentType, get_email_template)
+     get_contact_email_addresses, filenameToContentType, get_email_template)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
@@ -145,6 +147,11 @@ class Build(SQLBase):
                                        BuildStatus.SUPERSEDED]
 
     @property
+    def arch_tag(self):
+        """See `IBuild`."""
+        return self.distroarchseries.architecturetag
+
+    @property
     def distributionsourcepackagerelease(self):
         """See `IBuild`."""
         from canonical.launchpad.database.distributionsourcepackagerelease \
@@ -232,32 +239,6 @@ class Build(SQLBase):
         self.dependencies = None
         self.createBuildQueueEntry()
 
-    @property
-    def component_dependencies(self):
-        """See `IBuild`."""
-        # XXX cprov 20080204: if a new component is opened/selected for
-        # ubuntu this dictionary will have to be updated. Ideally we
-        # should model ogre in the database, but since a new component
-        # will also require other changes in code, we will simple let this
-        # marked for future reference.
-        return {
-            'main': ['main'],
-            'restricted': ['main', 'restricted'],
-            'universe': ['main', 'universe'],
-            'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
-            'partner' : ['partner'],
-            }
-
-    @property
-    def ogre_components(self):
-        """See `IBuild`."""
-        # Builds targeted to BACKPORTS are allowed to depend on any
-        # component, exactly as if they were published in 'multiverse'.
-        if self.pocket == PackagePublishingPocket.BACKPORTS:
-            return self.component_dependencies['multiverse']
-
-        return self.component_dependencies[self.current_component.name]
-
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
 
@@ -299,6 +280,7 @@ class Build(SQLBase):
                 Build.buildstate = 0 AND
                 Build.processor = %s AND
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 ((BuildQueue.lastscore > %s) OR
                  ((BuildQueue.lastscore = %s) AND
                   (Build.id < %s)))
@@ -362,6 +344,7 @@ class Build(SQLBase):
                     Builder.id = BuildQueue.builder
             WHERE
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 Build.buildstate = %s AND
                 Builder.processor = %s
             ORDER BY
@@ -476,8 +459,9 @@ class Build(SQLBase):
         # Moreover, PARTNER and PPA component domain is single, i.e,
         # PARTNER only contains packages in 'partner' component and PPAs
         # only contains packages in 'main' component.
+        ogre_components = get_components_for_building(self)
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component not in self.ogre_components):
+            dep_candidate.component not in ogre_components):
             return False
 
         return True
@@ -565,7 +549,7 @@ class Build(SQLBase):
         # notify_owner will be disabled to avoid *spamming* Debian people.
         creator = self.sourcepackagerelease.creator
         extra_headers['X-Creator-Recipient'] = ",".join(
-            contactEmailAddresses(creator))
+            get_contact_email_addresses(creator))
 
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
@@ -581,11 +565,12 @@ class Build(SQLBase):
             self.archive == self.sourcepackagerelease.upload_archive)
 
         if package_was_not_copied and config.builddmaster.notify_owner:
-            recipients = recipients.union(contactEmailAddresses(creator))
+            recipients = recipients.union(
+                get_contact_email_addresses(creator))
             dsc_key = self.sourcepackagerelease.dscsigningkey
             if dsc_key:
                 recipients = recipients.union(
-                    contactEmailAddresses(dsc_key.owner))
+                    get_contact_email_addresses(dsc_key.owner))
 
         # Modify notification contents according the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
@@ -596,13 +581,13 @@ class Build(SQLBase):
         if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
-                contactEmailAddresses(buildd_admins))
+                get_contact_email_addresses(buildd_admins))
             archive_tag = '%s primary archive' % self.distribution.name
             subject = "[Build #%d] %s" % (self.id, self.title)
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
             recipients = recipients.union(
-                contactEmailAddresses(self.archive.owner))
+                get_contact_email_addresses(self.archive.owner))
             # For PPAs we run the risk of having no available contact_address,
             # for instance, when both, SPR.creator and Archive.owner have
             # not enabled it.
@@ -636,7 +621,8 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.http_url
+            buildlog_url = (
+                canonical_url(self) + "/+files/" + self.buildlog.filename)
             builder_url = canonical_url(self.builder)
 
         if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
@@ -686,6 +672,22 @@ class Build(SQLBase):
             restricted=restricted)
         self.upload_log = library_file
 
+    def getFileByName(self, filename):
+        """See `IBuild`."""
+        if filename.endswith('.changes'):
+            file_object = self.changesfile
+        elif filename.endswith('.txt.gz'):
+            file_object = self.buildlog
+        elif filename.endswith('_log.txt'):
+            file_object = self.upload_log
+        else:
+            raise NotFoundError(filename)
+
+        if file_object is not None and file_object.filename == filename:
+            return file_object
+
+        raise NotFoundError(filename)
+
 
 class BuildSet:
     implements(IBuildSet)
@@ -720,32 +722,57 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
+    def _handleOptionalParams(
+        self, queries, status=None, name=None, pocket=None):
+        """Construct query clauses needed/shared by all getBuild..() methods.
+
+        :param queries: container to which to add any resulting query clauses.
+        :param status: optional build state for which to add a query clause if
+            present.
+        :param name: optional source package release name for which to add a
+            query clause if present.
+        :param pocket: optional pocket for which to add a query clause if
+            present.
+        """
+        # Add query clause that filters on build state if the latter is
+        # provided.
+        if status is not None:
+            queries.append('buildstate=%s' % sqlvalues(status))
+
+        # Add query clause that filters on pocket if the latter is provided.
+        if pocket:
+            queries.append('pocket=%s' % sqlvalues(pocket))
+
+        # Add query clause that filters on source package release name if the
+        # latter is provided.
+        if name is not None:
+            queries.append('''
+                Build.sourcepackagerelease IN (
+                    SELECT DISTINCT SourcePackageRelease.id
+                    FROM    SourcePackageRelease
+                        JOIN
+                            SourcePackagename
+                        ON
+                            SourcePackageRelease.sourcepackagename = 
+                            SourcePackageName.id
+                        WHERE Sourcepackagename.name LIKE
+                        '%%' || %s || '%%')
+            ''' % quote_like(name))
+
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
                             user=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
-        if status:
-            queries.append('buildstate=%s' % sqlvalues(status))
+        self._handleOptionalParams(queries, status, name)
 
-        if name:
-            queries.append("Build.sourcepackagerelease="
-                           "Sourcepackagerelease.id")
-            queries.append("Sourcepackagerelease.sourcepackagename="
-                           "Sourcepackagename.id")
-            queries.append("Sourcepackagename.name LIKE '%%' || %s || '%%'"
-                           % quote_like(name))
-            clauseTables.append('Sourcepackagerelease')
-            clauseTables.append('Sourcepackagename')
-
+        # This code MUST match the logic in the Build security adapter,
+        # otherwise users are likely to get 403 errors, or worse.
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
         if user is not None:
-            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-                    or
-                    user.inTeam(
-                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 queries.append("""
                 (Archive.private = FALSE
                  OR %s IN (SELECT TeamParticipation.person
@@ -756,23 +783,10 @@ class BuildSet:
         else:
             queries.append("Archive.private = FALSE")
 
-        # Ordering according status
-        # * SUPERSEDED & All by -datecreated
-        # * FULLYBUILT & FAILURES by -datebuilt
-        # It should present the builds in a more natural order.
-        if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
-        else:
-            orderBy = ["-Build.datebuilt"]
-
-        # all orders fallback to id if the primary order doesn't succeed
-        orderBy.append("id")
-
-
         queries.append("builder=%s" % builder_id)
 
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy=orderBy)
+                            orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None):
@@ -780,21 +794,7 @@ class BuildSet:
         queries = []
         clauseTables = []
 
-        if status:
-            queries.append('buildstate=%s' % sqlvalues(status))
-
-        if pocket:
-            queries.append('pocket=%s' % sqlvalues(pocket))
-
-        if name:
-            queries.append("Build.sourcepackagerelease="
-                           "Sourcepackagerelease.id")
-            queries.append("Sourcepackagerelease.sourcepackagename="
-                           "Sourcepackagename.id")
-            queries.append("Sourcepackagename.name LIKE '%%' || %s || '%%'"
-                           % quote_like(name))
-            clauseTables.append('Sourcepackagerelease')
-            clauseTables.append('Sourcepackagename')
+        self._handleOptionalParams(queries, status, name, pocket)
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
@@ -843,14 +843,6 @@ class BuildSet:
             "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
-        # attempt to given status
-        if status is not None:
-            condition_clauses.append('buildstate=%s' % sqlvalues(status))
-
-        # restrict to provided pocket
-        if pocket:
-            condition_clauses.append('pocket=%s' % sqlvalues(pocket))
-
         # Ordering according status
         # * NEEDSBUILD & BUILDING by -lastscore
         # * SUPERSEDED & All by -datecreated
@@ -867,16 +859,7 @@ class BuildSet:
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        if name:
-            condition_clauses.append("Build.sourcepackagerelease="
-                                     "Sourcepackagerelease.id")
-            condition_clauses.append("Sourcepackagerelease.sourcepackagename="
-                                     "Sourcepackagename.id")
-            condition_clauses.append(
-                "Sourcepackagename.name LIKE '%%' || %s || '%%'"
-                % quote_like(name))
-            clauseTables.append('Sourcepackagerelease')
-            clauseTables.append('Sourcepackagename')
+        self._handleOptionalParams(condition_clauses, status, name, pocket)
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
@@ -955,3 +938,45 @@ class BuildSet:
         return Build.select(
             query, orderBy=["-datecreated", "id"],
             clauseTables=["Archive"])
+
+    def getStatusSummaryForBuilds(self, builds):
+        """See `IBuildSet`."""
+        # Create a small helper function to collect the builds for a given
+        # list of build states:
+        def collect_builds(*states):
+            wanted = []
+            for state in states:
+                candidates = [build for build in builds
+                                if build.buildstate == state]
+                wanted.extend(candidates)
+            return wanted
+
+        failed = collect_builds(BuildStatus.FAILEDTOBUILD,
+                                BuildStatus.MANUALDEPWAIT,
+                                BuildStatus.CHROOTWAIT,
+                                BuildStatus.FAILEDTOUPLOAD)
+        needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
+        building = collect_builds(BuildStatus.BUILDING)
+
+        # Note: the BuildStatus DBItems are used here to summarize the
+        # status of a set of builds:s
+        if len(building) != 0:
+            return {
+                'status': BuildSetStatus.BUILDING,
+                'builds': building,
+                }
+        elif len(needsbuild) != 0:
+            return {
+                'status': BuildSetStatus.NEEDSBUILD,
+                'builds': needsbuild,
+                }
+        elif len(failed) != 0:
+            return {
+                'status': BuildSetStatus.FAILEDTOBUILD,
+                'builds': failed,
+                }
+        else:
+            return {
+                'status': BuildSetStatus.FULLYBUILT,
+                'builds': builds,
+                }

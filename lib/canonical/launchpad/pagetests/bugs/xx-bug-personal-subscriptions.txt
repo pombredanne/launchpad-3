@@ -103,8 +103,8 @@ Let's unsubscribe the Launchpad team.
   Sample Person (Subscribed by Launchpad Janitor)
   Steve Alexander (Subscribed by Launchpad Janitor)
 
-On the subscribe page there's a Cancel button as well, so if we go to
-that page and press the Cancel button, we will return to the bug page.
+On the subscribe page there's a Cancel link as well, that will return
+the browser to the bug page.
 
     >>> browser.getLink('Subscribe').click()
     >>> browser.url
@@ -113,10 +113,9 @@ that page and press the Cancel button, we will return to the bug page.
   >>> subscription_widget = browser.getControl(name='field.subscription')
   >>> subscription_widget.value
   ['name16']
-  >>> cancel_button = browser.getControl('Cancel')
-  >>> cancel_button.click()
+  >>> browser.getLink('Cancel').click()
   >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
 Foo Bar wasn't subscribed to the bug.
 
@@ -168,8 +167,8 @@ dupe of bug #3, so he'll no longer get mail from bug #3.
     >>> stevea_browser.getLink('Unsubscribe').click()
     >>> stevea_browser.getControl("Continue").click()
 
-XXX, Brad Bollenbach, 2006-09-27: Printing the tag here, instead of
-tag.string, due to https://launchpad.net/bugs/62634
+# XXX: Brad Bollenbach 2006-09-27 bug=62634: Printing the tag here,
+# instead of tag.string.
 
   >>> for tag in find_tags_by_class(
   ...     stevea_browser.contents, 'informational message'):
@@ -271,3 +270,23 @@ up in the indirect subscriptions.
     From duplicates:
     Also notified:
     Mark Shuttleworth
+
+
+== Displaying subscribers (bug #273886) ==
+
+The display names of subscribers are escaped in the subscribers list.
+
+    >>> login(ANONYMOUS)
+    >>> abuser = factory.makePerson(
+    ...     name='abuser',
+    ...     displayname='<script>javascript:alert("YO")</script>')
+    >>> logout()
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+    >>> browser.getControl('Person').value = 'abuser'
+    >>> browser.getControl('Add').click()
+    >>> subscriber_list = find_tag_by_id(
+    ...     browser.contents, 'subscribers-direct')
+    >>> for subscriber in subscriber_list.findAll('div'):
+    ...     if '~abuser' in subscriber.a['href']:
+    ...         print subscriber.a.contents[2].strip()
+    &lt;script&gt;javascript:alert("YO")&lt;/script&gt;

@@ -18,8 +18,34 @@
 
   <xmlrpc:view
     for="canonical.launchpad.interfaces.IAuthServerApplication"
-    interface="canonical.authserver.interfaces.IUserDetailsStorageV2"
+    interface="canonical.launchpad.interfaces.IAuthServer"
     class="canonical.launchpad.xmlrpc.AuthServerAPIView"
+    permission="zope.Public"
+    />
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.BranchPullerApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IBranchPuller"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchPuller"
+    permission="zope.Public"
+    />
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.BranchFileSystemApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystem"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchFileSystem"
     permission="zope.Public"
     />
 
@@ -148,6 +174,30 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoBranchWithID">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoUrlForBranch">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.PathTranslationError">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidPath">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.PermissionDenied">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NotFound">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

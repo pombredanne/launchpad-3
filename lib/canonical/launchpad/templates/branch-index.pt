@@ -47,7 +47,7 @@
       <a tal:define="link context_menu/delete_branch"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/remove" /></a>
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/trash-icon" /></a>
       <a tal:define="link context_menu/edit"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
@@ -176,6 +176,10 @@
         <th>Repository format:</th>
         <td tal:content="context/repository_format/description" />
       </tr>
+      <tr id="stacked-on" tal:condition="context/stacked_on">
+        <th>Stacked on:</th>
+        <td tal:content="structure context/stacked_on/fmt:bzr-link" />
+      </tr>
       </tbody>
   </table>
   <tal:branch-errors tal:replace="structure context/@@+messages" />
@@ -274,7 +278,7 @@
                tal:condition="link/enabled"
                tal:attributes="href link/url"
                tal:content="structure link/render">
-               Edit import source or review import</a>.
+               Edit import source or review import</a>
           </p>
         </tal:can-edit>
       </tal:has-codeimport>
@@ -301,7 +305,9 @@
 
     <div id="landing-targets" tal:condition="view/landing_targets">
       <tal:landing-candidates repeat="mergeproposal view/landing_targets">
-        <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
+        <div>
+          <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
+        </div>
       </tal:landing-candidates>
     </div>
     <div tal:condition="not:view/landing_targets">
@@ -378,15 +384,14 @@
                                  revisions branch/latest_revisions">
     <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
 
-    <div>
+    <div tal:define="link context_menu/browse_revisions"
+         tal:condition="link/enabled">
       &raquo;
       <span class="actions"
-          tal:define="link context_menu/browse_revisions"
-          tal:condition="link/enabled"
           tal:content="structure link/render">
         All revisions
       </span>
-    <div>
+    </div>
 
   </tal:history-available>
 
@@ -418,55 +423,6 @@
       </div>
 
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
-
-<metal:block fill-slot="help">
-
-  <p>Launchpad is integrated with the <a
-    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
-    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
-
-  <ul>
-    <li>Mirror branches are primarily hosted somewhere else on the internet.
-      You can register a mirror branch from the page of a person or of a
-      project. Launchpad will create a mirror of this branch and pull changes
-      every day from the URL provided in the branch details.</li>
-
-    <li>Upload branches are primarily hosted on Launchpad. You can create an
-      upload branch using <code>bzr push</code> with an URL on
-      <code>sftp://bazaar.launchpad.net</code>. There is a latency of up to 10
-      minutes between the time branch data is uploaded to Launchpad and the
-      time when it is published.</li>
-   </ul>
-
-  <p>Only the registrant of a branch is allowed to edit the registry details.
-    Upload branches can only be written to by the registrant. But the
-    registrant can be a team. If you wish to allow other people to edit details
-    or upload data, you can reassign a branch to a team.</p>
-
-  <p>The URL of the branch on <code>bazaar.launchpad.net</code> is based on the
-    short name of the registrant, project and branch. If you change any of
-    those short names or assign the branch to a different project or person or
-    team, the URL will change.</p>
-
-  <p>Subscribing to a branch will make it appear in your personal branch
-    listings, and if you choose to, Launchpad will email you when the branch
-    is updated.</p>
-
-  <p>A branch that has no revisions, and is not linked to any other branches,
-    bugs or blueprints, and has no subscribers may be deleted.  If the branch
-    cannot be deleted, you can set its status to
-    &ldquo;<strong><span class="branchstatusABANDONED">Abandoned</span></strong>&rdquo;,
-    and this will stop the branch appearing by default in listing views.</p>
-
-  <p>A mirror branch cannot be converted to an upload branch, and conversely,
-    you cannot convert an upload branch to a mirror branch. However you can
-    rename a branch and create a new one in its place.</p>
-
-  <p>There is no browsable web content on <code>bazaar.launchpad.net</code>.
-    This host only serves data for use with the Bazaar version control system.
-  </p>
-
-</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 
 </body>
 </html>

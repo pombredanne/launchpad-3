@@ -201,6 +201,17 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         self.base_url = original_base_url
 
 
+class SFTracker2ExtractBugTrackerAndBugTest(SFExtractBugTrackerAndBugTest):
+    """Ensure extractBugTrackerAndBug works for new SF tracker URLs."""
+
+    bugtracker_type = BugTrackerType.SOURCEFORGE
+    bug_url = (
+        'http://sourceforge.net/tracker2/'
+        '?func=detail&aid=1568562&group_id=84122&atid=575154')
+    base_url = 'http://sourceforge.net/'
+    bug_id = '1568562'
+
+
 class XForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Ensure extractBugTrackerAndBug works with SourceForge-like URLs.
     """
@@ -295,6 +306,7 @@ def test_suite():
     suite.addTest(
         unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(SFTracker2ExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(XForgeExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))

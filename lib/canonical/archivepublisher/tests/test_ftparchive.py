@@ -27,7 +27,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 def sanitize_feisty_apt_ftparchive_output(text):
-    # See XXX barry 2007-05-18 bug=116048:
+    # See XXX BarryWarsaw 2007-05-18 bug=116048:
     #
     # This function filters feisty's apt-ftparchive output to look more like
     # dapper's output.  Specifically, it removes any lines that start with

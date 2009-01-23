@@ -12,7 +12,7 @@ Let's get a WADL representation of a resource (in this case, a
 person), and see what's inside.
 
     >>> wadl = webservice.get(
-    ...     '/beta/~salgado', 'application/vd.sun.wadl+xml').getBody()
+    ...     '/~salgado', 'application/vd.sun.wadl+xml').getBody()
 
 It's an XML document.
 
@@ -45,6 +45,9 @@ this point on.
 
     >>> tree.tag
     '{http://research.sun.com/wadl/2006/10}application'
+    >>> def wadl_tag(tag):
+    ...     """Return a WADL tag name properly namespace-qualified."""
+    ...     return '{http://research.sun.com/wadl/2006/10}%s' % tag
 
 The <application> tag for a WADL representation of an entry contains a
 single <resources> tag.
@@ -62,7 +65,7 @@ The <resources> tag describes a set of resources rooted at the
 person's URL.
 
     >>> resources.attrib['base']
-    'http://api.launchpad.dev/beta/~salgado'
+    'http://.../~salgado'
 
 The <resources> tag contains a single <resource> tag. The WADL
 description of a person describes only one resource: the person
@@ -77,7 +80,7 @@ itself.
 What are the capabilities of this resource?
 
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#person'
+    'http://.../#person'
 
 Since all person resources work the same way, the capabilities of any
 particular person resource are described by reference to a separate
@@ -96,7 +99,7 @@ The WADL description of a collection looks a lot like the WADL
 description of an entry. It's an <application> tag that contains a
 <resources> tag that contains a <resource> tag.
 
-    >>> wadl = webservice.get('/beta/people',
+    >>> wadl = webservice.get('/people',
     ...                       'application/vd.sun.wadl+xml').getBody()
     >>> wadl_schema.validate(wadl)
     True
@@ -111,7 +114,7 @@ description of an entry. It's an <application> tag that contains a
     >>> resources.tag
     '...resources'
     >>> resources.attrib['base']
-    'http://api.launchpad.dev/beta/people'
+    'http://.../people'
 
 The <resource> tag defines the capabilities of the collection resource
 by referencing another WADL document.
@@ -122,7 +125,7 @@ by referencing another WADL document.
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#people'
+    'http://.../#people'
 
 
 == Scoped collection resources ==
@@ -130,7 +133,7 @@ by referencing another WADL document.
 The WADL representation of a scoped collection is pretty similar to
 the representation of a top-level collection.
 
-    >>> wadl = webservice.get('/beta/~admins/members',
+    >>> wadl = webservice.get('/~admins/members',
     ...                       'application/vd.sun.wadl+xml').getBody()
     >>> wadl_schema.validate(wadl)
     True
@@ -145,13 +148,13 @@ the representation of a top-level collection.
     >>> resources.tag
     '...resources'
     >>> resources.attrib['base']
-    'http://api.launchpad.dev/beta/~admins/members'
+    'http://.../~admins/members'
 
     >>> resource = single_list_value(resources)
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#person-page-resource'
+    'http://.../#person-page-resource'
 
 
 == Hosted file resources ==
@@ -171,16 +174,16 @@ negotiation to get a WADL description of any hosted file resource.
 The 'salgado' user starts out with no hosted mugshot, and an ordinary
 GET to the place where the mugshot would be results in a 404 error.
 
-    >>> print webservice.get('/beta/~salgado/mugshot')
+    >>> print webservice.get('/~salgado/mugshot')
     HTTP/1.1 404 Not Found
     ...
 
 But if the client is interested in learning how to create a mugshot at
-/beta/~salgado/mugshot, it can use content negotiation to get a WADL
+/~salgado/mugshot, it can use content negotiation to get a WADL
 description of the resource-to-be.
 
     >>> wadl = webservice.get(
-    ...     '/beta/~salgado/mugshot',
+    ...     '/~salgado/mugshot',
     ...     'application/vd.sun.wadl+xml').getBody()
     >>> wadl_schema.validate(wadl)
     True
@@ -194,7 +197,7 @@ resource, the WADL representation of a hosted file resource is not
 much more than a reference to a big WADL file at the service root. To
 find out about the capabilities of the resource-to-be, the client
 needs to fetch the WADL representation of
-http://api.launchpad.dev/beta/ and look for the XML element with the
+http://.../ and look for the XML element with the
 ID "HostedFile".
 
     >>> tree.tag
@@ -204,7 +207,7 @@ ID "HostedFile".
     >>> resources.tag
     '...resources'
     >>> resources.attrib['base']
-    'http://api.launchpad.dev/beta/~salgado/mugshot'
+    'http://.../~salgado/mugshot'
 
     >>> resource = single_list_value(resources)
     >>> resource.tag
@@ -212,7 +215,7 @@ ID "HostedFile".
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#HostedFile'
+    'http://.../#HostedFile'
 
 
 == The service root ==
@@ -225,9 +228,54 @@ the service offers. It also describes the JSON representations those
 resources serve, and any custom methods invokable on those
 resources. It's a big document.
 
+Because it is so big, it is cached.  Because it only changes when the
+Launchpad software changes, it is cached to a file.  Right now, our
+webservice will return a special test file:
+canonical/launchpad/apidoc/wadl-testrunner.xml.  It was loaded on module
+import using the canonical.config.config.instance_name, so a development
+instance will use the file canonical/launchpad/apidoc/wadl-development.xml.
+
+    >>> test_wadl = webservice.get(
+    ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    >>> print test_wadl
+    <?xml version="1.0"?>
+    <wadl:application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xmlns="http://research.sun.com/wadl/2006/10"
+                      xmlns:wadl="http://research.sun.com/wadl/2006/10"
+                      xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
+    <BLANKLINE>
+      <!--This file is for testing purposes only.  See
+          canonical/launcpad/pagetests/webservice/xx-wadl.txt -->
+    <BLANKLINE>
+    </wadl:application>
+    <BLANKLINE>
+
+Let's use the real contents, though.  To do this, we need to do what
+utilities/create-lp-wadl.py does: clear out the cache on the class.
+
+    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> WebServiceApplication.cached_wadl = None
+
     >>> wadl = webservice.get(
-    ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> wadl_schema.validate(wadl)
+    ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    >>> wadl = wadl.decode('UTF-8')
+
+    >>> len(wadl) > len(test_wadl)
+    True
+
+The new output is cached on the class now.  After verifying, we'll reinstate
+the testing version so other tests have a clean slate.
+
+    >>> WebServiceApplication.cached_wadl == wadl
+    True
+    >>> WebServiceApplication.cached_wadl = test_wadl
+
+We can examine the real wadl now.
+
+    # We need to replace the nbsp entity, because the validator
+    # doesn't support embedded definition.
+    >>> wadl_schema.validate(
+    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
     True
     >>> wadl_schema.error_log
     ''
@@ -300,21 +348,44 @@ The JSON representation contains a link for each collection resource
 exposed at the top level. The WADL representation has a <param> tag
 for every link in the JSON representation.
 
-    >>> person_set_param = single_list_value([
-    ...     param for param in service_root_repr
-    ...     if param.attrib['name'] == 'people_collection_link'])
+    >>> def name_attrib(tag):
+    ...     return tag.attrib['name']
+
+    >>> params = sorted([param for param in service_root_repr], key=name_attrib)
+
+    >>> (bug_set_param, cve_set_param, distro_set_param, hwdb_param,
+    ...  me_param, person_set_param, pillar_param,
+    ...  project_group_set_param, project_set_param,
+    ...  resource_type_param) = params
     >>> person_set_param.tag
     '...param'
+    >>> person_set_param.attrib['name']
+    'people_collection_link'
     >>> person_set_param.attrib['path']
     "$['people_collection_link']"
 
-This is saying that applying the JSONPath expression
-'$['people_collection_link']' to the JSON document
-will give you something interesting: a variable we like to call
-'people_collection_link'.
+    >>> me_param.tag
+    '...param'
+    >>> me_param.attrib['name']
+    'me_link'
+    >>> me_param.attrib['path']
+    "$['me_link']"
 
-What's special about this variable? Well, it's a link to another
-resource. This is represented in WADL by giving the <param> tag a
+    >>> resource_type_param.attrib['name']
+    'resource_type_link'
+
+    >>> resource_type_param.attrib['path']
+    "$['resource_type_link']"
+
+This is saying that applying the JSONPath expression
+'$['people_collection_link']' to the JSON document will give you
+something interesting: a variable we like to call
+'people_collection_link'. Applying the JSONPath expression
+'$['people_collection_link']' will give you a variable we like to call
+'me_link'.
+
+What's special about these variables? Well, they're links to other
+resources. This is represented in WADL by giving the <param> tag a
 child <link> tag. The <link> tag explains what sort of resource is at
 the other end of the link.
 
@@ -322,15 +393,25 @@ the other end of the link.
     >>> person_set_param_link.tag
     '...link'
     >>> person_set_param_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#people'
+    'http://.../#people'
+
+    >>> me_param_link = single_list_value(me_param)
+    >>> me_param_link.tag
+    '...link'
+    >>> me_param_link.attrib['resource_type']
+    'http://.../#person'
 
 A WADL client can read this and know that if it ever finds a resource
 of type "service-root", it can send a GET request to that URL and get
 back a JSON document. By applying the JSON expression
-'["people_collection_link"]' to that document, it
-will find the URL to the list of people. The list of people has the
-characteristics described (in WADL format) at
-http://api.launchpad.dev/beta/#people.
+'["people_collection_link"]' to that document, it will find the URL to
+the list of people. By applying the JSON expression
+'["me_collection_link"]' the client can find a URL that will redirect
+to the authenticated user's account.
+
+The list of people has the characteristics described (in WADL format)
+at http://.../#people. A person has the
+characteristics described at http://.../#person.
 
 But where is the WADL client going to find a resource of type
 "service-root" in the first place? The <resources> tag will explain
@@ -339,7 +420,7 @@ everything.
     >>> resources.tag
     '...resources'
     >>> resources.attrib['base']
-    'http://api.launchpad.dev/beta/'
+    'http://.../'
 
 As with the <resources> tags shown earlier, this one contains a single
 <resource> tag.
@@ -380,7 +461,7 @@ of collection resource has one tag devoted to it in the WADL document:
      </wadl:doc>
      <method name="GET" id="BugCollection-get">
        <response>
-         <representation href="http://api.launchpad.dev/beta/#bug-page"/>
+         <representation href="http://.../#bug-page"/>
          <representation mediaType="application/vd.sun.wadl+xml"
                          id="BugCollection-wadl"/>
        </response>
@@ -413,7 +494,7 @@ tags devoted to it in the WADL document:
      <method name="GET" id="message-get">
        <response>
          <representation
-          href="http://api.launchpad.dev/beta/#message-full"/>
+          href="http://.../#message-full"/>
          <representation mediaType="application/vd.sun.wadl+xml"
                          id="message-wadl"/>
        </response>
@@ -422,14 +503,14 @@ tags devoted to it in the WADL document:
      <method name="PUT" id="message-put">
        <request>
          <representation
-          href="http://api.launchpad.dev/beta/#message-full"/>
+          href="http://.../#message-full"/>
        </request>
      </method>
 
      <method name="PATCH" id="message-patch">
        <request>
          <representation
-          href="http://api.launchpad.dev/beta/#message-diff"/>
+          href="http://.../#message-diff"/>
        </request>
     </method>
    </resource_type>
@@ -491,7 +572,8 @@ First let's look at the different collection resource types defined in the
 WADL file, and their representations.
 
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    ['bugs', 'people']
+    ['bugs', 'cves', 'distributions', 'people', 'project_groups', 'projects']
+
 
 There's one <resource_type> tag for every top-level collection on the
 site. We'll be taking a close look at the resource type for the
@@ -509,20 +591,18 @@ addition to any custom operations.  This particular collection
 resource is the top-level list of people, and it exposes a few other
 custom operations.
 
-    >>> methods = list(resource_type)
+    >>> methods = resource_type.findall(wadl_tag('method'))
     >>> sorted((method.attrib['name'], method.attrib['id'])
     ...        for method in methods)
     [('GET', 'people-find'),
      ('GET', 'people-findPerson'),
      ('GET', 'people-findTeam'),
      ('GET', 'people-get'),
-     ('GET', 'people-getAllPersons'),
-     ('GET', 'people-getAllTeams'),
      ('GET', 'people-getByEmail'),
      ('POST', 'people-newTeam')]
 
-    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams,
-    ...  getByEmail, newTeam) = sorted(methods, key=lambda i: i.attrib['id'])
+    >>> (find, findPerson, findTeam, get, getByEmail, newTeam) = sorted(
+    ...     methods, key=lambda i: i.attrib['id'])
 
 The standard GET operation is a way of getting either a page of the
 collection (see "The representation of a collection" later in this
@@ -532,7 +612,7 @@ like the one shown earlier in this test.
     >>> response = single_list_value(get)
     >>> json_rep, wadl_rep = list(response)
     >>> json_rep.attrib['href']
-    'http://api.launchpad.dev/beta/#person-page'
+    'http://.../#person-page'
 
     >>> wadl_rep.attrib['mediaType']
     'application/vd.sun.wadl+xml'
@@ -546,7 +626,8 @@ The <method> tag for a named operation will contain one or more
 <parameter> tags describing the parameters the operation accepts. The
 'newTeam' custom operation takes a number of parameters.
 
-    >>> new_team_request, new_team_response = newTeam
+    >>> new_team_request = newTeam.find(wadl_tag('request'))
+    >>> new_team_response = newTeam.find(wadl_tag('response'))
     >>> new_team_representation = single_list_value(new_team_request)
     >>> [param.attrib['name'] for param in new_team_representation]
     ['ws.op', 'display_name', 'name', 'default_membership_period',
@@ -572,12 +653,13 @@ Location header.
     >>> new_team_response_param_link = single_list_value(
     ...     new_team_response_param)
     >>> new_team_response_param_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#team'
+    'http://.../#team'
 
 The 'find' custom operation accepts one parameter in addition to
 'ws.op'.
 
-    >>> find_request, find_response = find
+    >>> find_request = find.find(wadl_tag('request'))
+    >>> find_response = find.find(wadl_tag('response'))
     >>> [param.attrib['name'] for param in find_request]
     ['ws.op', 'text']
 
@@ -589,7 +671,45 @@ The 'find' custom operation returns a collection of people.
 
     >>> find_response_representation = single_list_value(find_response)
     >>> find_response_representation.attrib['href']
-    'http://api.launchpad.dev/beta/#person-page'
+    'http://.../#person-page'
+
+
+==== Parameter data types ====
+
+Operation parameters are always transfered between client and server
+as strings. But a parameter may have a logical data type which
+indicates how to treat the string. Data types are specified using the
+primitive types from the XML Schema standard.
+
+Here's a parameter of type 'date'.
+
+    >>> project_series_resource_type = single_list_value([
+    ...     type for type in entry_resource_types
+    ...     if type.attrib['id'] == 'project_series'])
+
+    >>> new_milestone = single_list_value([
+    ...     method for method in project_series_resource_type.findall(
+    ...         wadl_tag('method'))
+    ...     if method.attrib['id'] == 'project_series-newMilestone'])
+
+    >>> new_milestone_request = new_milestone.find(wadl_tag('request'))
+    >>> new_milestone_repr = new_milestone_request.getchildren()[0]
+
+    >>> date_targeted = single_list_value(
+    ...     [param for param in new_milestone_repr
+    ...      if param.attrib.get('name') == 'date_targeted'])
+    >>> date_targeted.attrib['type']
+    'xsd:date'
+
+If no data type is provided, the WADL standard says to default to
+"xsd:string". This is the case for the vast majority of parameters.
+
+    >>> description = single_list_value(
+    ...     [param for param in new_milestone_repr
+    ...           if param.attrib.get('name') == 'description'])
+
+    >>> 'type' in description.attrib
+    False
 
 
 == An entry resource type ==
@@ -599,7 +719,8 @@ resources.
 
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    ['bug', 'bug_attachment', 'bug_subscription', ...]
+    ['archive', 'archive_permission', 'branch', 'branch_merge_proposal',
+     'bug', 'bug_attachment', 'bug_subscription', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -661,15 +782,39 @@ the parameter's value.
 So to get the bug link out of a JSON data structure you need to
 look up the element called "bug_link".
 
+Just as with operation parameters, a representation parameter may have
+an optional data type. As with operation parameters, the default is
+"xsd:string".
+
+    >>> date_closed = single_list_value(
+    ...     [param for param in full_params
+    ...      if param.attrib['name'] == 'date_closed'])
+    >>> date_closed.attrib['type']
+    'xsd:dateTime'
+
+    >>> title = single_list_value([param for param in full_params
+    ...                            if param.attrib['name'] == 'title'])
+    >>> 'type' in title.attrib
+    False
+
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> doc = full_params[2][0]
+    >>> doc = date_closed[0]
     >>> doc.tag
     '...doc'
-    >>> print doc.text
-    Date Closed: The date on which this task was
-    marked either Fix Committed or Fix Released.
+    >>> print "\n".join([node.text for node in doc])
+    Date Closed
+    The date on which this task was marked either Fix Committed or Fix
+    Released.
+
+Every entry resource has the 'http_etag' parameter, which includes the
+current value used in the 'ETag' HTTP header for the entry.
+
+    >>> [etag] = [param for param in full_params
+    ...           if param.attrib['name'] == 'http_etag']
+    >>> etag.attrib['path']
+    "$['http_etag']"
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
@@ -685,7 +830,7 @@ The link's 'resource_type' attribute tells the client about the capabilities of
 the resource at the other end of the link.
 
     >>> bug_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#bug'
+    'http://.../#bug'
 
 If the link is a link to a collection, the 'resource_type' will be a
 reference to the appropriate entry page resource type (defined
@@ -699,7 +844,7 @@ collection of bug tasks.
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#bug_task-page-resource'
+    'http://.../#bug_task-page-resource'
 
 The full representation contains all fields, even read-only ones,
 because it's describing the document you receive when you make a GET
@@ -726,6 +871,12 @@ define a second representation for use with PATCH requests.
     True
     >>> 'related_tasks_collection_link' in diff_rep_names
     False
+
+Fields that have server-side mutators are considered read-write
+fields, and show up in the PATCH representation.
+
+    >>> 'status' in diff_rep_names
+    True
 
 Most <param> tags don't tell the client much beyond where to find a
 certain parameter, but some of our parameters take values from a
@@ -759,9 +910,11 @@ is kept in the <resource_type> tag.
 
     >>> def sort_by_id(method):
     ...     return method.attrib['id']
-    >>> methods = sorted(list(entry_type), key=sort_by_id)
+    >>> methods = sorted(
+    ...     entry_type.findall(wadl_tag('method')), key=sort_by_id)
     >>> (get, patch, put, transitionToAssignee,
-    ...     transitionToImportance, transitionToStatus) = methods
+    ...     transitionToImportance, transitionToStatus,
+    ...     transitionToTarget) = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
@@ -779,6 +932,7 @@ XML id. Here that's not a problem; we have one custom POST method
      ('POST', 'bug_task-transitionToAssignee'),
      ('POST', 'bug_task-transitionToImportance'),
      ('POST', 'bug_task-transitionToStatus'),
+     ('POST', 'bug_task-transitionToTarget'),
      ('PUT', 'bug_task-put')]
 
 
@@ -790,12 +944,12 @@ representations of a bug task: the JSON one described above as
 "BugTask-full", and a WADL document--the sort of document shown in the
 very first section of this test.
 
-    >>> response = single_list_value(get)
+    >>> response = get.find(wadl_tag('response'))
     >>> response.tag
     '...response'
     >>> full, wadl = list(response)
     >>> full.attrib['href']
-    'http://api.launchpad.dev/beta/#bug_task-full'
+    'http://.../#bug_task-full'
 
     >>> wadl.attrib['id']
     'bug_task-wadl'
@@ -814,10 +968,10 @@ with a request.
     '...request'
     >>> representation = single_list_value(request)
     >>> representation.attrib['href']
-    'http://api.launchpad.dev/beta/#bug_task-full'
+    'http://.../#bug_task-full'
 
     >>> patch[0][0].attrib['href']
-    'http://api.launchpad.dev/beta/#bug_task-diff'
+    'http://.../#bug_task-diff'
 
 This is why we defined the representations separately. Now we can
 link to them instead of describing them every time.
@@ -827,15 +981,15 @@ link to them instead of describing them every time.
 
 Custom operations activated with GET may have URL parameters.
 
-    >>> get_request = single_list_value(findPerson)
+    >>> get_request = findPerson.find(wadl_tag('request'))
     >>> [param.attrib['name'] for param in get_request]
     ['ws.op', 'text']
 
 Custom operations activated with POST may have a form-encoded
 representation.
 
-    >>> post_request = single_list_value(transitionToStatus)
-    >>> post_representation = single_list_value(post_request)
+    >>> post_request = transitionToStatus.find(wadl_tag('request'))
+    >>> post_representation = post_request.find(wadl_tag('representation'))
     >>> post_representation.attrib['mediaType']
     'application/x-www-form-urlencoded'
     >>> [param.attrib['name'] for param in post_representation]
@@ -875,7 +1029,7 @@ binary file managed by the web service, such as a person's mugshot.
     ...      if param.attrib['name'] == 'mugshot_link'])
     >>> doc, mugshot_link = mugshot_param
     >>> mugshot_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#HostedFile'
+    'http://.../#HostedFile'
 
 What can the client do to this binary file resource?
 
@@ -987,7 +1141,7 @@ type BugTaskEntry.
     "$['entries'][*]['self_link']"
     >>> link = single_list_value(entry_links)
     >>> link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#bug_task'
+    'http://.../#bug_task'
 
 This tells the client that a 'collection of bug tasks' resource
 contains lots of links to 'bug task' resources.

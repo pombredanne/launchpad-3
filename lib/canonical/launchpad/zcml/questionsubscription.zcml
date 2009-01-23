@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- QuestionSubscription -->
-  <content class="canonical.launchpad.database.QuestionSubscription">
+  <class class="canonical.launchpad.database.QuestionSubscription">
     <allow
       interface="canonical.launchpad.interfaces.IQuestionSubscription"
       />
@@ -13,6 +13,6 @@
       permission="zope.Public"
       set_schema="canonical.launchpad.interfaces.IQuestionSubscription"
       />
-  </content>
+  </class>
 
 </configure>

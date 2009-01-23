@@ -386,6 +386,67 @@ content, but it's not needed.)
     u'http://.../~name16/data'
 
 
+==== ASCIILine ====
+
+ASCIILine is a subclass of Bytes but is marshalled like text.
+
+    >>> from zope.schema import ASCIILine
+    >>> field = ASCIILine(__name__='field')
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
+Unicode objects remain Unicode objects.
+
+    >>> marshaller.marshall_from_json_data(u"Test")
+    u'Test'
+
+Note that the marshaller accepts character values where bit 7 is set.
+
+    >>> marshaller.marshall_from_json_data(u'int\xe9ressant')
+    u'int\xe9ressant'
+
+Non-string alues like floats are rejected.
+
+    >>> marshaller.marshall_from_json_data(1.0)
+    Traceback (most recent call last):
+      ...
+    ValueError: got 'float', expected unicode: 1.0
+
+None is passed through.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+When coming from the request, everything is interpreted as a unicode
+string:
+
+    >>> marshaller.marshall_from_request('a string')
+    u'a string'
+    >>> marshaller.marshall_from_request(['a', 'b'])
+    u"['a', 'b']"
+    >>> marshaller.marshall_from_request('true')
+    u'True'
+    >>> marshaller.marshall_from_request('')
+    u''
+    >>> marshaller.marshall_from_request(u'int\xe9ressant')
+    u'int\xe9ressant'
+    >>> marshaller.marshall_from_request('1.0')
+    u'1.0'
+
+But again, 'null' is returned as None.
+
+    >>> print marshaller.marshall_from_request('null')
+    None
+
+Unlike a Bytes field, an ASCIILine field used in an entry is stored
+as an ordinary attribute, hence its representation name is the attribute
+name itself.
+
+    >>> marshaller.representation_name
+    'field'
+
+
 == Choice marshallers ==
 
 The marshaller for a Choice is chosen based on the Choice's
@@ -527,6 +588,8 @@ marshaller for its value_type.
     >>> from zope.schema import List, Tuple, Set
     >>> list_of_strings_field = List(value_type=Text())
     >>> tuple_of_ints_field = Tuple(value_type=Int())
+    >>> list_of_choices_field = List(
+    ...     value_type=Choice(vocabulary=BugTaskStatus))
     >>> set_of_choices_field = Set(
     ...  value_type=Choice(vocabulary='ValidPersonOrTeam')).bind(None)
 
@@ -538,6 +601,11 @@ marshaller for its value_type.
     >>> tuple_marshaller = getMultiAdapter(
     ...     (tuple_of_ints_field, request), IFieldMarshaller)
     >>> verifyObject(IFieldMarshaller, tuple_marshaller)
+    True
+
+    >>> choice_list_marshaller = getMultiAdapter(
+    ...     (list_of_choices_field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, choice_list_marshaller)
     True
 
     >>> set_marshaller = getMultiAdapter(
@@ -570,6 +638,12 @@ validate against the more specific marshaller.
       ...
     ValueError: got 'int', expected unicode: 1
 
+    >>> choice_list_marshaller.marshall_from_request(
+    ...     [u'Confirmed', u'NoSuchChoice'])
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid value "NoSuchChoice"...
+
 The return type is correctly typed to the concrete collection.
 
     >>> tuple_marshaller.marshall_from_json_data([1, 2, 3])
@@ -577,7 +651,15 @@ The return type is correctly typed to the concrete collection.
     >>> set_marshaller.marshall_from_json_data(
     ...     ['http://api.launchpad.dev/beta/~salgado',
     ...      'http://api.launchpad.dev/beta/~ubuntu-team'])
-    Set([<Person...>, <Person...>])
+    set([<Person...>, <Person...>])
+
+    >>> result = choice_list_marshaller.marshall_from_request(
+    ...     [u'Confirmed', u'New'])
+    >>> type(result)
+    <type 'list'>
+    >>> [item.title for item in result]
+    ['Confirmed', 'New']
+
 
 When coming from the request, either a list or a JSON-encoded
 representation is accepted. The normal request rules for the

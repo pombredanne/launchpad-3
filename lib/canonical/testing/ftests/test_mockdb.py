@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 import os
+import re
 import unittest
 
 import psycopg2
@@ -89,9 +90,8 @@ class MockDbTestCase(unittest.TestCase):
     def connect(self, connection_string=None):
         """Open a connection to the (possibly fake) database."""
         if connection_string is None:
-            connection_string = "dbname=%s user=launchpad host=%s" % (
-                    config.database.dbname, config.database.dbhost
-                    )
+            connection_string = "%s user=%s" % (
+                    config.database.main_master, config.launchpad.dbuser)
         if self.mode == 'direct':
             con = psycopg2.connect(connection_string)
             #con = canonical.ftests.pgsql._org_connect(connection_string)
@@ -145,9 +145,8 @@ class MockDbTestCase(unittest.TestCase):
         # Make sure we can correctly connect with different connection parms.
         for mode in self.modes():
             for dbuser in ['launchpad', 'testadmin']:
-                connection_string = "dbname=%s user=%s host=%s" % (
-                        config.database.dbname, dbuser, config.database.dbhost
-                        )
+                connection_string = "%s user=%s" % (
+                        config.database.main_master, dbuser)
                 con = self.connect(connection_string)
                 cur = con.cursor()
                 cur.execute("SHOW session authorization")
@@ -159,11 +158,11 @@ class MockDbTestCase(unittest.TestCase):
 
     @dont_retry
     def testFailedConnection(self):
-        # Ensure failed database connection are reproducable.
+        # Ensure failed database connections are reproducable.
         for mode in self.modes():
-            connection_string = (
-                    "dbname=not_a_sausage host=%s user=yourmom"
-                    % (config.database.dbhost))
+            connection_string = config.database.main_master
+            connection_string = re.sub(
+                    r"dbname=\S*", r"dbname=not_a_sausage", connection_string)
             self.assertRaises(
                     psycopg2.OperationalError, self.connect, connection_string
                     )

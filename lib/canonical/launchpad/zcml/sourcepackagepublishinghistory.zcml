@@ -7,9 +7,9 @@
 <facet facet="overview">
 
   <!-- SourcePackagePublishingHistory -->
-  <content class="canonical.launchpad.database.SourcePackagePublishingHistory">
+  <class class="canonical.launchpad.database.SourcePackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
-  </content>
+  </class>
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
@@ -28,8 +28,12 @@
       template="../templates/sourcepackagepublishinghistory-listing-summary.pt"
       />
     <browser:page
-      name="+listing-ppa-detailed"
-      template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
+      name="publishinghistory-macros"
+      template="../templates/publishinghistory-macros.pt" />
+
+    <browser:page
+      name="+listing-archive-detailed"
+      template="../templates/sourcepackagepublishinghistory-listing-archive-detailed.pt"
       />
     <browser:page
       name="+record-details"
@@ -42,26 +46,33 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.SourcePublishingRecordSelectableView">
     <browser:page
-      name="+listing-ppa-detailed-selectable"
-      template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
+      name="+listing-archive-detailed-selectable"
+      template="../templates/sourcepackagepublishinghistory-listing-archive-detailed.pt"
       />
   </browser:pages>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
+    path_expression="string:+sourcepub"
+    attribute_to_parent="archive"
+    urldata="canonical.launchpad.browser.publishing.SourcePublicationURL"
+  />
+
   <!-- SourcePackageFilePublishing -->
-  <content class="canonical.launchpad.database.SourcePackageFilePublishing">
+  <class class="canonical.launchpad.database.SourcePackageFilePublishing">
     <allow
      interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing" />
     <!-- XXX cprov 2006-06-14: Missing security adapter. -->
-  </content>
+  </class>
 
   <!-- SecureSourcePackagePublishingHistory -->
-  <content class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">
+  <class class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory"/>
     <allow interface="canonical.launchpad.interfaces.IArchiveSafePublisher" />
     <require
       permission="launchpad.Admin"
       set_schema="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory" />
-  </content>
+  </class>
 
   <!-- PublishingSet -->
   <class class="canonical.launchpad.database.publishing.PublishingSet">

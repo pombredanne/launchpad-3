@@ -23,8 +23,8 @@ from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     BinaryPackageFormat, BuildStatus, IBinaryPackageNameSet, IComponentSet,
     IDistributionSet, ILibraryFileAliasSet, IPersonSet, ISectionSet,
-    ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus, SourcePackageUrgency)
+    ISourcePackageNameSet, NotFoundError, PackagePublishingPocket,
+    PackagePublishingPriority, PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
@@ -70,11 +70,20 @@ class SoyuzTestPublisher:
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.setUpDefaultDistroSeries(self.breezy_autotest)
-        self.breezy_autotest_i386 = self.breezy_autotest.newArch(
-            'i386', ProcessorFamily.get(1), False, self.person,
-            supports_virtualized=True)
-        self.breezy_autotest_hppa = self.breezy_autotest.newArch(
-            'hppa', ProcessorFamily.get(4), False, self.person)
+        # Only create the DistroArchSeries needed if they do not exist yet.
+        # This makes it easier to experiment at the python command line
+        # (using "make harness").
+        try:
+            self.breezy_autotest_i386 = self.breezy_autotest['i386']
+        except NotFoundError:
+            self.breezy_autotest_i386 = self.breezy_autotest.newArch(
+                'i386', ProcessorFamily.get(1), False, self.person,
+                supports_virtualized=True)
+        try:
+            self.breezy_autotest_hppa = self.breezy_autotest['hppa']
+        except NotFoundError:
+            self.breezy_autotest_hppa = self.breezy_autotest.newArch(
+                'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
@@ -158,7 +167,7 @@ class SoyuzTestPublisher:
             archive=archive, dateuploaded=date_uploaded)
 
         if filename is None:
-            filename = "%s.dsc" % sourcename
+            filename = "%s_%s.dsc" % (sourcename, version)
         alias = self.addMockFile(
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
@@ -265,7 +274,8 @@ class SoyuzTestPublisher:
             filearchtag = distroarchseries.architecturetag
         else:
             filearchtag = 'all'
-        filename = '%s_%s.deb' % (binaryname, filearchtag)
+        filename = '%s_%s_%s.deb' % (binaryname, sourcepackagerelease.version,
+                                     filearchtag)
         alias = self.addMockFile(
             filename, filecontent=filecontent,
             restricted=build.archive.private)
@@ -430,7 +440,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
         pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
-        foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_name = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
 
     def testPublishingOverwriteFileInPool(self):
@@ -443,7 +453,7 @@ class TestNativePublishing(TestNativePublishingBase):
         """
         foo_path = os.path.join(self.pool_dir, 'main', 'f', 'foo')
         os.makedirs(foo_path)
-        foo_dsc_path = os.path.join(foo_path, 'foo.dsc')
+        foo_dsc_path = os.path.join(foo_path, 'foo_666.dsc')
         foo_dsc = open(foo_dsc_path, 'w')
         foo_dsc.write('Hello world')
         foo_dsc.close()
@@ -461,7 +471,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
         self.layer.commit()
 
-        foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_name = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         pub_source.sync()
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PUBLISHED)
@@ -489,7 +499,7 @@ class TestNativePublishing(TestNativePublishingBase):
             sourcename='bar', filecontent='bar is good')
         pub_source.publish(self.disk_pool, self.logger)
         self.layer.commit()
-        bar_name = "%s/main/b/bar/bar.dsc" % self.pool_dir
+        bar_name = "%s/main/b/bar/bar_666.dsc" % self.pool_dir
         self.assertEqual(open(bar_name).read().strip(), 'bar is good')
         pub_source.sync()
         self.assertEqual(
@@ -527,9 +537,9 @@ class TestNativePublishing(TestNativePublishingBase):
             pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         # check the resulted symbolic link
-        sim_universe = "%s/universe/s/sim/sim.dsc" % self.pool_dir
+        sim_universe = "%s/universe/s/sim/sim_666.dsc" % self.pool_dir
         self.assertEqual(
-            os.readlink(sim_universe), '../../../main/s/sim/sim.dsc')
+            os.readlink(sim_universe), '../../../main/s/sim/sim_666.dsc')
 
         # if the contexts don't match it raises, so the publication
         # remains pending.
@@ -555,8 +565,7 @@ class TestNativePublishing(TestNativePublishingBase):
         test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc",
-            filecontent='Am I a PPA Record ?',
+            sourcename="foo", filecontent='Am I a PPA Record ?',
             archive=cprov.archive)
         pub_source.publish(test_disk_pool, self.logger)
         self.layer.commit()
@@ -565,7 +574,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_source.sourcepackagerelease.upload_archive,
                          cprov.archive)
-        foo_name = "%s/main/f/foo/foo.dsc" % test_pool_dir
+        foo_name = "%s/main/f/foo/foo_666.dsc" % test_pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Am I a PPA Record ?')
 
         # Remove locally created dir.

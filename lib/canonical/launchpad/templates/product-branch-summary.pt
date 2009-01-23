@@ -61,27 +61,27 @@
     </tal:has-committers>
     in the last month
     </p>
-  <p id="merge-counts">
+  <p id="merge-counts"
+     tal:define="menu context/menu:branches">
     <strong class="count" tal:content="view/active_review_count">5</strong>
     <tal:link
-        define="link context/menu:branches/active_reviews"
+        define="link menu/active_reviews"
         replace="structure link/render"
         />,
     <strong class="count" tal:content="view/approved_merge_count">5</strong>
     <tal:link
-        define="link context/menu:branches/approved_merges"
+        define="link menu/approved_merges"
         replace="structure link/render"
         />
   </p>
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
          tal:define="config modules/canonical.config/config;
-                     codebrowse_root config/codehosting/codebrowse_root;
                      dev_focus context/development_focus/series_branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
-        <a tal:attributes="href string:${codebrowse_root}${dev_focus/unique_name}"
-           >browse the source code</a> for the development focus branch or get a 
+        <a tal:attributes="href dev_focus/codebrowse_url"
+           >browse the source code</a> for the development focus branch or get a
            copy of the branch</tal:browseable>
       <tal:not-browseable condition="not: dev_focus/code_is_browseable">
         get a copy of the development focus branch
@@ -89,21 +89,6 @@
        using the command:<br/>
       <tt style="padding-left:2em">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
     </div>
-
-    <tal:missing-dev-focus condition="not: view/has_development_focus_branch">
-      <tal:comment condition="nothing">
-        Only show the div with the warning and link if the user can actually
-        set the dev focus branch.
-      </tal:comment>
-      <div class="warning message"
-           tal:condition="context/required:launchpad.Edit"
-           tal:define="series_link context/development_focus/fmt:url;
-                       edit_link string:${series_link}/+linkbranchtoseries">
-        A branch has not yet been specified as the primary development focus
-        for <tal:project replace="context/displayname"/>
-        (<a tal:attributes="href edit_link">set</a>).
-      </div>
-    </tal:missing-dev-focus>
 
   </tal:has-branches>
 

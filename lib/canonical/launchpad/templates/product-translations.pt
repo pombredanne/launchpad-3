@@ -33,6 +33,14 @@
           Translation setup needed
         </h1>
       </tal:not-uses-translations>
+      <ul class="helplinks">
+        <li>
+          <a href="https://help.launchpad.net/Translations"
+             id="link-to-translations-help"
+             >Help for translations
+          </a>
+        </li>
+      </ul>
       <p>
         <strong tal:content="structure context/license_status/description">
           This project's license is open source.
@@ -50,15 +58,21 @@
         </tal:translatable>
       </tal:uses-translations>
       <tal:not-uses-translations condition="not: uses_translations">
+        <p>
+          <strong>
+            This project is not configured to use Launchpad for translations.
+          </strong>
+          <tal:admin_or_owner condition="context/required:launchpad.Edit">
+            You can change this in the
+            <a tal:attributes="href string:+edit">project settings</a>.
+          </tal:admin_or_owner>
+        </p>
         <tal:registrantoradmin
           condition="admin_user">
           <p>
             To set up <tal:product replace="context/displayname" /> for
-            translation in Launchpad, you need to
-            <tal:official condition="not: context/official_rosetta">set the
-            flag that states that <tal:product replace="context/displayname" />
-            uses Launchpad to handle Translations and</tal:official> upload a
-            translation template for one of its release series.
+            translation in Launchpad, you need to upload a translation
+            template for one of its release series.
           </p>
           <ul>
             <li tal:repeat="series context/serieses">

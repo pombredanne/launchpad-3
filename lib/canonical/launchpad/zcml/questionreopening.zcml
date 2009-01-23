@@ -5,10 +5,10 @@
   i18n_domain="launchpad">
 
   <!-- QuestionReopening -->
-  <content class="canonical.launchpad.database.QuestionReopening">
+  <class class="canonical.launchpad.database.QuestionReopening">
     <allow
       interface="canonical.launchpad.interfaces.IQuestionReopening"
       />
-  </content>
+  </class>
 
 </configure>

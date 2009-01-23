@@ -2,7 +2,6 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <html xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:lpm="http://ns.launchpad.net/lpm"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -144,7 +143,7 @@
       </metal:block></div>
       <div style="clear: both;">&nbsp;</div>
     </div>
-    <div id="footer">&copy;&nbsp;2004-2008&nbsp;<a
+    <div id="footer">&copy;&nbsp;2004-2009&nbsp;<a
         href="http://canonical.com/">Canonical&nbsp;Ltd.</a></div>
   </body>
 </html>

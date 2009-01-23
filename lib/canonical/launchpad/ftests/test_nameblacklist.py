@@ -6,7 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.foaf.nickname import is_blacklisted
 from canonical.testing import LaunchpadLayer
 
 
@@ -17,7 +16,7 @@ class TestNameBlacklist(unittest.TestCase):
         self.con = self.layer.connect()
         self.cur = self.con.cursor()
 
-        # Create a couple of blacklist entres
+        # Create a couple of blacklist entries
         self.cur.execute("""
             INSERT INTO NameBlacklist(id, regexp) VALUES (-200, '^foo')
             """)
@@ -68,14 +67,6 @@ class TestNameBlacklist(unittest.TestCase):
                 "UPDATE NameBlacklist SET regexp='nomatch2' where id=-100"
                 )
         self.failUnless(self.name_blacklist_match("foobar") is None)
-
-    def test_is_blacklisted(self):
-        # is_blacklisted is a method in canonical.foaf.nickname
-        # which corresponds to is_blacklisted_name in this test
-        # except that it also allows unicode strings.
-        self.failUnless(is_blacklisted(u"foo", self.cur))
-        self.failIf(is_blacklisted(u"bar", self.cur))
-        self.failIf(is_blacklisted(u"bar\u0434", self.cur))
 
     def test_is_blacklisted_name(self):
         # is_blacklisted_name() is just a wrapper around name_blacklist_match

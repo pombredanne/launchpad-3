@@ -185,6 +185,19 @@ Trying to request a non-existent file, will also raise a NotFound.
       ...
     NotFound:...
 
+Traversing beyond an existing file to a non-existant file raises a
+NotFound.
+
+    >>> view = MyTree(object(), FakeRequest())
+    >>> view = view.publishTraverse(view.request, 'public')
+    >>> view = view.publishTraverse(view.request, 'subdir1')
+    >>> view = view.publishTraverse(view.request, 'test1.txt')
+    >>> view = view.publishTraverse(view.request, 'nosuchpath')
+    >>> view()
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+
 
 == Clean-up ==
 

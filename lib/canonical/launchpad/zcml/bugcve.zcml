@@ -5,8 +5,8 @@
   i18n_domain="launchpad">
 
   <!-- BugCve -->
-  <content class="canonical.launchpad.database.BugCve">
+  <class class="canonical.launchpad.database.BugCve">
     <allow interface="canonical.launchpad.interfaces.IBugCve" />
-  </content>
+  </class>
 
 </configure>

@@ -4,7 +4,6 @@ __metaclass__ = type
 
 __all__ = [
     'BasePollView',
-    'poll_to_structuralheading',
     'PollAddView',
     'PollContextMenu',
     'PollEditView',
@@ -17,17 +16,17 @@ __all__ = [
 
 from zope.event import notify
 from zope.component import getUtility
-from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.app.form.browser import TextWidget
 
 from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, ContextMenu, GeneralFormView,
-    Link, Navigation, stepthrough)
-from canonical.launchpad.interfaces import (
-    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm,
-    IStructuralHeaderPresentation, PollSecrecy, validate_date_interval)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
+    Navigation, stepthrough)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.poll import (
+    IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
+    PollSecrecy)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -331,57 +330,63 @@ class PollVoteView(BasePollView):
                     "or change your vote, if you want.")
 
 
-class PollAddView(GeneralFormView):
+class PollAddView(LaunchpadFormView):
     """The view class to create a new poll in a given team."""
 
-    def validate(self, form_values):
-        """Verify that the opening date precedes the closing date."""
-        time_starts = form_values['dateopens']
-        time_ends = form_values['datecloses']
-        validate_date_interval(time_starts, time_ends)
+    schema = IPoll
+    field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
+                   "datecloses"]
 
-    def process(self, name, title, proposition, secrecy, allowspoilt,
-                dateopens, datecloses):
-        pollsubset = IPollSubset(self.context)
-        poll = pollsubset.new(
-            name, title, proposition, dateopens, datecloses,
-            secrecy, allowspoilt)
-        self._nextURL = canonical_url(poll)
+    @action("Continue", name="continue")
+    def continue_action(self, action, data):
+        # XXX: salgado, 2008-10-08: Only secret polls can be created until we
+        # fix https://launchpad.net/bugs/80596.
+        secrecy = PollSecrecy.SECRET
+        poll = IPollSubset(self.context).new(
+            data['name'], data['title'], data['proposition'],
+            data['dateopens'], data['datecloses'], secrecy,
+            data['allowspoilt'])
+        self.next_url = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))
 
 
-class PollEditView(SQLObjectEditView):
+class PollEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    schema = IPoll
+    label = "Edit poll details"
+    field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
+                   "datecloses"]
 
-    def validate(self, form_values):
-        """Verify that the opening date precedes the closing date."""
-        time_starts = form_values['dateopens']
-        time_ends = form_values['datecloses']
-        validate_date_interval(time_starts, time_ends)
-
-
-class PollOptionEditView(SQLObjectEditView):
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context.poll))
+    @action("Save", name="save")
+    def save_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
-class PollOptionAddView(AddView):
-    """The view class to create a new option in a given poll."""
+class PollOptionEditView(LaunchpadEditFormView):
+    """Edit one of a poll's options."""
 
-    _nextURL = '.'
+    schema = IPollOption
+    label = "Edit option details"
+    field_names = ["name", "title"]
+    custom_widget("title", TextWidget, width=30)
 
-    def nextURL(self):
-        return self._nextURL
+    @action("Save", name="save")
+    def save_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context.poll)
 
-    def createAndAdd(self, data):
+
+class PollOptionAddView(LaunchpadFormView):
+    """Create a new option in a given poll."""
+
+    schema = IPollOption
+    label = "Create new poll option"
+    field_names = ["name", "title"]
+    custom_widget("title", TextWidget, width=30)
+
+    @action("Create", name="create")
+    def create_action(self, action, data):
         polloption = self.context.newOption(data['name'], data['title'])
-        self._nextURL = canonical_url(self.context)
+        self.next_url = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
-
-
-def poll_to_structuralheading(poll):
-    """Adapts an `IPoll` into an `IStructuralHeaderPresentation`."""
-    return IStructuralHeaderPresentation(poll.team)

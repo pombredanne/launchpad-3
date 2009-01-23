@@ -1,186 +1,97 @@
 = Personal Home Pages =
 
-    >>> from canonical.launchpad.database import Person
+Launchpad creates profiles for people that have contributed to free
+software (e.g. in a bug import or a translation template upload). It's
+clearly stated that those people don't use Launchpad and why there's a
+profile for them.
 
-Carlos can never see name12's email addresses: he has chosen not to disclose
-them.
-
-    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~name12')
-
-    >>> name12 = Person.get(12)
-    >>> name12.preferredemail.email
-    u'test@canonical.com'
-    >>> name12.hide_email_addresses
-    True
-
-    >>> str(name12.preferredemail.email) in browser.contents
-    False
-
-Launchpad creates profiles for people that have contributed to free software
-(e.g. in a bug import or a translation template upload). It's clearly
-stated that those people don't use Launchpad and why there's a profile for
-them.
-
-    >>> browser.open('http://launchpad.dev/~limi')
+    >>> browser.open('http://launchpad.dev/~matsubara')
     >>> browser.title
-    'Alexander Limi does not use Launchpad'
+    'Diogo Matsubara does not use Launchpad'
 
     >>> content = find_main_content(browser.contents).find('p')
     >>> print extract_text(content)
-    Alexander Limi does not use Launchpad. This page was created on 2005-06-06
-    when importing bugs from http://bugzilla.ubuntu.com/.
+    Diogo Matsubara does not use Launchpad. This page was created on
+    2006-12-13 when importing the Portuguese...
 
 
 == Email address disclosure ==
 
 Mark has a registered email address, and he has chosen to disclose it to
-the world.
-
-    >>> mark = Person.get(1)
-    >>> mark.preferredemail.email
-    u'mark@hbd.com'
-    >>> mark.hide_email_addresses
-    False
-
-If you are not logged in, you will not be able to see it:
+the world. Anonymous users cannot see Mark's address
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'contact-details'))
     Email: Log in for email information.
     ...
 
-If you log in, however, you will:
+A logged in user such as Sample Person, can see Mark's addresses.
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> sample_browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
     Email: mark@hbd.com
     ...
 
 As for Sample Person, he has chosen not to disclose his email addresses.
-Anonymous users can't see them:
+unprivileged users like No Privileges Person cannot see his addresses:
 
-    >>> anon_browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
-    Email: Log in for email information.
-    ...
-
-And neither can unprivileged users:
-
-    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    >>> user_browser.open('http://launchpad.dev/~name12')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'contact-details'))
     Email: No public address provided.
     ...
 
-But good ole Foo Bar can:
+But Foo Bar can:
 
     >>> admin_browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'contact-details'))
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'contact-details'))
     Email: test@canonical.com
+    (Contact this user)
            testing@canonical.com
     ...
 
-And so can the Commercial Admins team:
 
-    >>> commercial_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
-    >>> commercial_browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(commercial_browser.contents,
-    ...                    'contact-details'))
-    Email: test@canonical.com
-           testing@canonical.com
+== Jabber IDs ==
+
+A person's jabber IDs are only show to authenticated users.
+
+    >>> user_browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'contact-details'))
+    Email:...
+    Jabber: markshuttleworth@jabber.org
     ...
 
-In the case of teams, it works similarly. No email address is disclosed
-if you're not logged in:
-
-    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
-    Contact details
-    Email: Log in for email information.
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'contact-details'))
+    Email:...
+    Jabber: &lt;email address hidden&gt;
     ...
 
-But if you are, you can:
 
-    >>> browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
-    Email: support@ubuntu.com
-    ...
+== OpenPGP keys ==
 
-That is, of course, unless the team doesn't have one:
+In order to avoid email harvesters to find a person's email addresses just by
+following the link to that person's OpenPGP keys, only authenticated users can
+see the key ID with a link to the keyserver.
 
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
-    Email: No contact address
-      (Launchpad notifications are sent to all team members)
+    >>> import re
+    >>> user_browser.open('http://launchpad.dev/~name16')
+    >>> details = find_tag_by_id(user_browser.contents, 'contact-details')
+    >>> opengpg = details.find('th', text='OpenPGP keys:').parent.parent
+    >>> print re.sub('\s+', ' ', str(opengpg))
+    <tr>...<a href="http://keyserver...> 12345678</a>...
 
-
-== OpenID login URL ==
-
-Launchpad.net can be used as an OpenID login provider.  Users may
-enter a Launchpad.net URL in order to log in to services that accept
-OpenID.
-
-The persistant OpenID URL is displayed privately in the Contact
-Details portlet.
-
-    # XXX mars 2008-03-18
-    # Remove these tests after the beta program is done.
-    # See bug #201963.
-    #
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.config import config
-    >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
-    >>> person_set = getUtility(IPersonSet)
-    >>> jdub = person_set.getByName('jdub')
-    >>> openid_testers = getUtility(IPersonSet).getByName(
-    ...     config.launchpad.openid_users)
-    >>> openid_testers is not None
-    True
-    >>> openid_testers in jdub.teams_participated_in
-    False
-    >>> logout()
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~jdub')
-    >>> portlet = extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-details'))
-    >>> print ('OpenID login:' not in portlet) or portlet
-    True
-    >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
-    >>> name16 = getUtility(IPersonSet).getByName('name16')
-    >>> openid_testers in name16.teams_participated_in
-    True
-    >>> logout()
-
-    >>> admin_browser.open('http://launchpad.dev/~name16')
-    >>> print extract_text(find_tag_by_id(
-    ...     admin_browser.contents, 'contact-details'))
-    Email: ...
-    ...
-    OpenID login: http://openid.launchpad.dev/+id/name16_oid
-    (What&rsquo;s this?)
-    ...
-
-Foo Bar can learn about OpenID from the 'What's this?' link.
-
-    >>> admin_browser.open('http://launchpad.dev/~name16')
-    >>> admin_browser.getLink(u"What&#8217;s\xa0this?").url
-    'https://help.launchpad.net/OpenID'
-
-Other users who visit the page do not see the URL.
-
-    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name16')
-    >>> portlet = extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-details'))
-    >>> print ('OpenID login:' not in portlet) or portlet
-    True
+    >>> anon_browser.open('http://launchpad.dev/~name16')
+    >>> details = find_tag_by_id(anon_browser.contents, 'contact-details')
+    >>> opengpg = details.find('th', text='OpenPGP keys:').parent.parent
+    >>> print re.sub('\s+', ' ', str(opengpg))
+    <tr>...<td> 12345678 </td>...
 
 
 == Summary Pagelets ==
@@ -222,27 +133,20 @@ Teams don't have member-since; they have created-date:
 
 === Time zones ===
 
-The user's time zone is displayed next to their contact details:
+The user's time zone is displayed next to their location details:
 
-    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-details'))
-    Email: mark@hbd.com
-    Wiki: .../MarkShuttleworth
-    IRC: mark ...
-    Jabber: ...
-    SSH Keys: ...
-    OpenID login: ...
-    Time zone: None given
+    ...     find_tag_by_id(browser.contents, 'portlet-map'))
+    Location
+    Time zone: Australia/Perth
 
 Teams don't have a time zone field.
 
     >>> browser.open('http://launchpad.dev/~guadamen')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
-    Email: No contact address ...
-    Wiki: .../Guadamen
+    >>> 'Time zone' in extract_text(
+    ...     find_tag_by_id(browser.contents, 'portlet-map'))
+    False
 
 
 == Table of contributions ==

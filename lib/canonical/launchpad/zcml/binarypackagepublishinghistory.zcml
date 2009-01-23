@@ -7,9 +7,9 @@
 <facet facet="overview">
 
   <!-- BinaryPackagePublishingHistory -->
-  <content class="canonical.launchpad.database.BinaryPackagePublishingHistory">
+  <class class="canonical.launchpad.database.BinaryPackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory" />
-  </content>
+  </class>
 
   <browser:pages
     for="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"
@@ -24,26 +24,30 @@
       template="../templates/binarypackagepublishinghistory-listing-summary.pt"
       />
     <browser:page
+      name="publishinghistory-macros"
+      template="../templates/publishinghistory-macros.pt" />
+
+    <browser:page
       name="+record-details"
       template="../templates/packagepublishing-details.pt"
       />
   </browser:pages>
 
   <!-- BinaryPackageFilePublishing -->
-  <content class="canonical.launchpad.database.BinaryPackageFilePublishing">
+  <class class="canonical.launchpad.database.BinaryPackageFilePublishing">
     <allow
      interface="canonical.launchpad.interfaces.IBinaryPackageFilePublishing"/>
     <!-- XXX cprov 2006-06-14: missing security adapter -->
-  </content>
+  </class>
 
   <!-- SecureBinaryPackagePublishingHistory -->
-  <content class="canonical.launchpad.database.SecureBinaryPackagePublishingHistory">
+  <class class="canonical.launchpad.database.SecureBinaryPackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory" />
     <allow interface="canonical.launchpad.interfaces.IArchiveSafePublisher" />
     <require
       permission="launchpad.Admin"
       set_schema="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory" />
-  </content>
+  </class>
 
 
 </facet>

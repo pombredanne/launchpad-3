@@ -5,7 +5,6 @@
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:lpm="http://ns.launchpad.net/lpm"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -25,11 +24,11 @@
       tal:content="string:@import url(${request/icing_url}/print.css);" />
     <style type="text/css" media="all"
       tal:content="string:@import url(${request/icing_url}/lp-extra.css);" />
-    <tal:comment condition="nothing">
-      XXX: We cannot use tal inside the comment below (which is only
-      interpreted by IE), so we have to use /+icing-ubuntu/ie.css rather
-      than using request/icing_url.
-    </tal:comment>
+    <tal:XXX condition="nothing">
+      # XXX: salgado 20080415 We cannot use tal inside the comment below
+      # (which is only interpreted by IE), so we have to use
+      # /+icing-ubuntu/ie.css rather than using request/icing_url.
+    </tal:XXX>
 		<!--[if lt IE 7]>
     <style type="text/css" media="all">
       @import url(/+icing-ubuntu/ie.css);</style>
@@ -128,7 +127,7 @@
         <span class="clear"></span>
       </div> <!-- /.left-corner, /.right-corner, /#squeeze, /#center -->
 
-      <div id="footer" class="column span-24">&copy; 2008 Canonical Ltd.</div>
+      <div id="footer" class="column span-24">&copy; 2009 Canonical Ltd.</div>
 
     </div> <!-- /layout -->
     <img id="bottomcap" alt=""

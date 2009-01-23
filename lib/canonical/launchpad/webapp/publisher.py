@@ -23,26 +23,29 @@ __all__ = [
     'UserAttributeCache',
     ]
 
-from zope.interface import implements
-from zope.component import getUtility, queryMultiAdapter
-from zope.app import zapi
-from zope.interface.advice import addClassAdvisor
+
 import zope.security.management
-from zope.security.checker import ProxyFactory, NamesChecker
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
+
+from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
+from zope.component import getUtility, queryMultiAdapter
+from zope.interface import implements
+from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces.http import IHTTPApplicationRequest
+from zope.security.checker import ProxyFactory, NamesChecker
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
     WebServiceLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError,
-    ILaunchpadContainer)
+    ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
+    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
+    NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -79,23 +82,55 @@ class DecoratorAdvisor:
 
 
 class stepthrough(DecoratorAdvisor):
+    """Add the decorated method to stepthrough traversals for a class.
+
+    A stepthrough method must take single argument that's the path segment for
+    the object that it's returning. A common pattern is something like:
+
+      @stepthrough('+foo')
+      def traverse_foo(self, name):
+          return getUtility(IFooSet).getByName(name)
+
+    which looks up an object in IFooSet called 'name', allowing a URL
+    traversal that looks like:
+
+      launchpad.net/.../+foo/name
+
+    See also doc/navigation.txt.
+
+    This uses Zope's class advisor stuff to make sure that the path segment
+    passed to `stepthrough` is handled by the decorated method.
+
+    That is::
+      cls.__stepthrough_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepthrough_traversals__'
 
-    def __init__(self, name, breadcrumb=None):
-        """Register a stepthrough traversal with the name stepped through.
-
-        You can optionally provide a breadcrumb function that is called
-        with the argument 'self'.  So, a method will do.
-        """
-        DecoratorAdvisor.__init__(self, name)
-        self.breadcrumb = breadcrumb
-
-    def getValueToStore(self):
-        return (self.fn, self.breadcrumb)
-
 
 class stepto(DecoratorAdvisor):
+    """Add the decorated method to stepto traversals for a class.
+
+    A stepto method must take no arguments and return an object for the URL at
+    that point.
+
+      @stepto('+foo')
+      def traverse_foo(self):
+          return getUtility(IFoo)
+
+    which looks up an object for '+foo', allowing a URL traversal that looks
+    like:
+
+      launchpad.net/.../+foo
+
+    See also doc/navigation.txt.
+
+    This uses Zope's class advisor stuff to make sure that the path segment
+    passed to `stepto` is handled by the decorated method.
+
+    That is::
+      cls.__stepto_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepto_traversals__'
 
@@ -185,11 +220,14 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
+    - striped_class<-- a tr class for an alternating row background
     """
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self._error_message = None
+        self._info_message = None
 
     def initialize(self):
         """Override this in subclasses.
@@ -230,6 +268,67 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
+
+    @cachedproperty
+    def striped_class(self):
+        """Return a generator which yields alternating CSS classes.
+
+        This is to be used for HTML tables in which the row colors should be
+        alternated.
+        """
+        def bg_stripe_generator():
+            while True:
+                yield 'white'
+                yield 'shaded'
+        return bg_stripe_generator()
+
+    def _getErrorMessage(self):
+        """Property getter for `error_message`."""
+        return self._error_message
+
+    def _setErrorMessage(self, error_message):
+        """Property setter for `error_message`.
+
+        Enforces `error_message` values that are either None or
+        implement IStructuredString.
+        """
+        if error_message != self._error_message:
+            if (error_message is None or
+                IStructuredString.providedBy(error_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._error_message = error_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for error_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(error_message))
+
+    error_message = property(_getErrorMessage, _setErrorMessage)
+
+    def _getInfoMessage(self):
+        """Property getter for `info_message`."""
+        return self._info_message
+
+    def _setInfoMessage(self, info_message):
+        """Property setter for `info_message`.
+
+        Enforces `info_message` values that are either None or
+        implement IStructuredString.
+        """
+        if info_message != self._info_message:
+            if (info_message is None or
+                IStructuredString.providedBy(info_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._info_message = info_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for info_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(info_message))
+
+    info_message = property(_getInfoMessage, _setInfoMessage)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
@@ -476,15 +575,6 @@ class LaunchpadContainer:
         return self.context == scope
 
 
-class Breadcrumb:
-    implements(IBreadcrumb)
-
-    def __init__(self, url, text, has_menu=False):
-        self.url = url
-        self.text = text
-        self.has_menu = has_menu
-
-
 class Navigation:
     """Base class for writing browser navigation components.
 
@@ -500,12 +590,6 @@ class Navigation:
 
     # Set this if you want to set a new layer before doing any traversal.
     newlayer = None
-
-    def breadcrumb(self):
-        """Return the text of the context object's breadcrumb, or None for
-        no breadcrumb.
-        """
-        return None
 
     def traverse(self, name):
         """Override this method to handle traversal.
@@ -555,24 +639,6 @@ class Navigation:
                 combined_info.update(value)
         return combined_info
 
-    def _append_breadcrumb(self, text):
-        """Add a breadcrumb to the request, at the current URL with the given
-        text.
-
-        request.getURL(1) represents the path traversed so far, but without
-        the step we're currently working out how to traverse.
-        """
-        # If self.context has a view called +menudata, it has a menu.
-        menuview = queryMultiAdapter(
-            (self.context, self.request), name="+menudata")
-        if menuview is None:
-            has_menu = False
-        else:
-            has_menu = menuview.submenuHasItems('')
-        self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text,
-                       has_menu))
-
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
 
@@ -582,6 +648,7 @@ class Navigation:
 
         Otherwise, return the object.
         """
+        # Avoid circular imports.
         if nextobj is None:
             raise NotFound(self.context, name)
         elif isinstance(nextobj, redirection):
@@ -629,12 +696,6 @@ class Navigation:
         # traversed_objects list:
         request.traversed_objects.append(self.context)
 
-        # Next, if there is a breadcrumb for the context, add it to the
-        # request's list of breadcrumbs.
-        breadcrumb_text = self.breadcrumb()
-        if breadcrumb_text is not None:
-            self._append_breadcrumb(breadcrumb_text)
-
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
@@ -657,11 +718,7 @@ class Navigation:
                 stepstogo = request.stepstogo
                 if stepstogo:
                     nextstep = stepstogo.consume()
-                    handler, breadcrumb_fn = namespace_traversals[name]
-                    if breadcrumb_fn is not None:
-                        breadcrumb_text = breadcrumb_fn(self)
-                        if breadcrumb_text is not None:
-                            self._append_breadcrumb(breadcrumb_text)
+                    handler = namespace_traversals[name]
                     try:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:

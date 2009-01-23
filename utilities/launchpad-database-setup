@@ -1,13 +1,14 @@
 #!/bin/sh
 
-if [ "$1" != $(id -un) ]; then
-	echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
-	echo "If you really want that, run it with your username as"
-	echo "an argument"
-	exit 1
+if [ -n "$1" ]; then
+    USER=$1
+    echo "Creating Launchpad database for $USER"
+else
+    echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
+    echo "If you really want that, run it with a username as "
+    echo "an argument"
+    exit 1
 fi
-
-set -e
 
 # This attempts to automate instructions provided on
 # https://launchpad.canonical.com/DatabaseSetup which are intended for
@@ -33,21 +34,16 @@ fi;
 
 sudo /etc/init.d/postgresql-$pgversion stop
 
-
-main=/var/lib/postgresql/$pgversion/main
 echo Purging postgresql data...
-sudo -u postgres sh -c "rm -rf $main/*"
+sudo pg_dropcluster $pgversion main --stop-server
 echo Re-creating postgresql database...
-sudo -u postgres /usr/lib/postgresql/$pgversion/bin/initdb \
-	--pgdata=$main \
-	--encoding=UNICODE --locale=C
-sudo -u postgres ln -s /etc/postgresql-common/root.crt $main
-sudo -u postgres ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem $main/server.crt
-sudo -u postgres ln -s /etc/ssl/private/ssl-cert-snakeoil.key $main/server.key
+# Setting locale to C to make the server run in that locale.
+LC_ALL=C sudo pg_createcluster $pgversion main --encoding UNICODE
 
 echo Applying postgresql configuration changes...
 
-sudo cp -a /etc/postgresql/$pgversion/main/pg_hba.conf /etc/postgresql/$pgversion/main/pg_hba.conf.old
+sudo cp -a /etc/postgresql/$pgversion/main/pg_hba.conf \
+    /etc/postgresql/$pgversion/main/pg_hba.conf.old
 sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
 sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
@@ -58,14 +54,16 @@ sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
  #
 -
 +# Launchpad users
-+local   all         all                                          trust
-+host    all         all         127.0.0.1       255.255.255.255  trust
++local   all         all                           trust
++host    all         all         127.0.0.1/32      trust
 
 
 
 EOF
-sudo chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old /etc/postgresql/$pgversion/main/pg_hba.conf
-sudo chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old /etc/postgresql/$pgversion/main/pg_hba.conf
+sudo chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+    /etc/postgresql/$pgversion/main/pg_hba.conf
+sudo chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+    /etc/postgresql/$pgversion/main/pg_hba.conf
 
 sudo grep -q Launchpad /etc/postgresql/$pgversion/main/postgresql.conf || \
 sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
@@ -76,22 +74,21 @@ sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 # Enable launchpad full text searching in database
 search_path='$user,public,ts2'
 add_missing_from=false
-# Force use of indexes, to assist in tuning queries
-enable_seqscan=false
+#enable_seqscan=false
+log_statement='all'
+log_line_prefix='[%t] %q%u@%d '
+fsync = off
+max_fsm_relations=2000
 
 EOF
-
-if [ -f /etc/postgresql/$pgversion/main/start.conf ]; then
-    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/$pgversion/main/start.conf
-fi
 
 sudo /etc/init.d/postgresql-$pgversion start
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
 
-echo Creating postgresql user $(id -un)
-sudo -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $(id -un)
+echo Creating postgresql user $USER
+sudo -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $USER
 
 echo
 echo Looks like everything went ok.

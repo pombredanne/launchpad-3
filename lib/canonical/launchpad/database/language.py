@@ -129,6 +129,13 @@ class LanguageSet:
 
         return language
 
+    def get(self, language_id):
+        """See `ILanguageSet`."""
+        try:
+            return Language.get(language_id)
+        except SQLObjectNotFound:
+            return None
+
     def getLanguageByCode(self, code):
         """See `ILanguageSet`."""
         assert isinstance(code, basestring), (

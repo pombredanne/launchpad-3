@@ -30,6 +30,9 @@ from canonical.launchpad.validators.person import validate_public_person
 class BaseBranchMergeQueue:
     """Common methods for both the single and multi branch queues."""
 
+    # Subclasses must implement a .branches attribute which contains the
+    # branches the queue is managing.
+
     @property
     def items(self):
         """The qeueued merge proposals for the managed branches."""

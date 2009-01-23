@@ -13,22 +13,24 @@ from canonical.database.postgresql import (
     generateResetSequencesSQL, resetSequences)
 
 
-class ConnectionWrapper(object):
+class ConnectionWrapper:
     real_connection = None
     committed = False
     last_execute = None
     dirty = False
+    auto_close = True
 
     def __init__(self, real_connection):
         assert not isinstance(real_connection, ConnectionWrapper), \
                 "Wrapped the wrapper!"
-        self.__dict__['real_connection'] = real_connection
+        self.real_connection = real_connection
+        # Set to True to stop test cleanup forcing the connection closed.
         PgTestSetup.connections.append(self)
 
     def close(self):
         if self in PgTestSetup.connections:
             PgTestSetup.connections.remove(self)
-            self.__dict__['real_connection'].close()
+            self.real_connection.close()
 
     def rollback(self, InterfaceError=psycopg2.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
@@ -42,7 +44,7 @@ class ConnectionWrapper(object):
         #   except psycopg2.InterfaceError:
         # -- SteveAlexander 2005-03-22
         try:
-            self.__dict__['real_connection'].rollback()
+            self.real_connection.rollback()
         except InterfaceError:
             pass
 
@@ -51,18 +53,21 @@ class ConnectionWrapper(object):
         # optimizations by subclasses, since if no commit has been made,
         # dropping and recreating the database might be unnecessary
         try:
-            return self.__dict__['real_connection'].commit()
+            return self.real_connection.commit()
         finally:
             ConnectionWrapper.committed = True
 
     def cursor(self):
-        return CursorWrapper(self.__dict__['real_connection'].cursor())
+        return CursorWrapper(self.real_connection.cursor())
 
     def __getattr__(self, key):
-        return getattr(self.__dict__['real_connection'], key)
+        return getattr(self.real_connection, key)
 
     def __setattr__(self, key, val):
-        return setattr(self.__dict__['real_connection'], key, val)
+        if key in ConnectionWrapper.__dict__.keys():
+            return object.__setattr__(self, key, val)
+        else:
+            return setattr(self.real_connection, key, val)
 
 
 class CursorWrapper:
@@ -80,11 +85,12 @@ class CursorWrapper:
     def __init__(self, real_cursor):
         assert not isinstance(real_cursor, CursorWrapper), \
                 "Wrapped the wrapper!"
-        self.__dict__['real_cursor'] = real_cursor
+        self.real_cursor = real_cursor
 
     def execute(self, *args, **kwargs):
         # Detect if DML has been executed. This method isn't perfect,
-        # but should be good enough.
+        # but should be good enough. In particular, it won't notice
+        # data modification made by stored procedures.
         mutating_commands = [
                 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'INTO',
                 'TRUNCATE', 'REPLACE',
@@ -97,13 +103,16 @@ class CursorWrapper:
         # Record the last query executed.
         if CursorWrapper.record_sql:
             CursorWrapper.last_executed_sql.append(args[0])
-        return self.__dict__['real_cursor'].execute(*args, **kwargs)
+        return self.real_cursor.execute(*args, **kwargs)
 
     def __getattr__(self, key):
-        return getattr(self.__dict__['real_cursor'], key)
+        return getattr(self.real_cursor, key)
 
     def __setattr__(self, key, val):
-        return setattr(self.__dict__['real_cursor'], key, val)
+        if key in CursorWrapper.__dict__.keys():
+            return object.__setattr__(self, key, val)
+        else:
+            return setattr(self.real_cursor, key, val)
 
 
 _org_connect = None
@@ -124,7 +133,7 @@ def uninstallFakeConnect():
     _org_connect = None
 
 
-class PgTestSetup(object):
+class PgTestSetup:
     connections = [] # Shared
 
     template = 'template1'
@@ -234,9 +243,9 @@ class PgTestSetup(object):
 
     def tearDown(self):
         '''Close all outstanding connections and drop the database'''
-        while self.connections:
-            con = self.connections[-1]
-            con.close() # Removes itself from self.connections
+        for con in self.connections[:]:
+            if con.auto_close:
+                con.close() # Removes itself from self.connections
         if (ConnectionWrapper.committed and ConnectionWrapper.dirty):
             PgTestSetup._reset_db = True
         ConnectionWrapper.committed = False

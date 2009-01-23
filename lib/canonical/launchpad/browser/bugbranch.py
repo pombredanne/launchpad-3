@@ -9,9 +9,11 @@ __all__ = [
     "BugBranchEditView",
     "BugBranchBranchInlineEditView",
     "BugBranchBugInlineEditView",
+    'BugBranchPrimaryContext',
     ]
 
 from zope.event import notify
+from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectDeletedEvent
@@ -19,8 +21,18 @@ from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from canonical.widgets.link import LinkWidget
+
+
+class BugBranchPrimaryContext:
+    """The primary context is the bug branch link is that of the branch."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, bug_branch):
+        self.context = IPrimaryContext(bug_branch.branch).context
 
 
 class BugBranchAddView(LaunchpadFormView):
@@ -31,34 +43,30 @@ class BugBranchAddView(LaunchpadFormView):
     # to get the read only fields rendered as input widgets.
     for_input = True
 
-    field_names = ['branch', 'status', 'whiteboard']
+    field_names = ['branch', 'whiteboard']
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         branch = data['branch']
-        status = data['status']
         whiteboard = data.get('whiteboard')
         self.context.bug.addBranch(
-            branch=branch, registrant=self.user, status=status,
-            whiteboard=whiteboard)
+            branch=branch, registrant=self.user, whiteboard=whiteboard)
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
             branch.name)
 
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the bug page."""
-
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class BugBranchEditView(LaunchpadEditFormView):
     """View to update a BugBranch."""
     schema = IBugBranch
 
-    field_names = ['branch', 'bug', 'status', 'whiteboard']
+    field_names = ['branch', 'bug', 'whiteboard']
 
     custom_widget('branch', LinkWidget)
     custom_widget('bug', LinkWidget)
@@ -84,7 +92,7 @@ class BugBranchEditView(LaunchpadEditFormView):
 class BugBranchBranchInlineEditView(BugBranchEditView):
     """Inline edit view for bug branch details."""
     schema = IBugBranch
-    field_names = ['status', 'whiteboard']
+    field_names = ['whiteboard']
     initial_focus_widget = None
 
     def initialize(self):
@@ -107,7 +115,7 @@ class BugBranchBranchInlineEditView(BugBranchEditView):
 class BugBranchBugInlineEditView(BugBranchEditView):
     """Inline edit view for bug branch details."""
     schema = IBugBranch
-    field_names = ['status', 'whiteboard']
+    field_names = ['whiteboard']
     initial_focus_widget = None
 
     @property
@@ -127,7 +135,7 @@ class BranchLinkToBugView(LaunchpadFormView):
     # to get the read only fields rendered as input widgets.
     for_input = True
 
-    field_names = ['bug', 'status', 'whiteboard']
+    field_names = ['bug', 'whiteboard']
 
     @property
     def next_url(self):
@@ -138,7 +146,7 @@ class BranchLinkToBugView(LaunchpadFormView):
         bug = data['bug']
         bug_branch = bug.addBranch(
             branch=self.context, whiteboard=data['whiteboard'],
-            status=data['status'], registrant=self.user)
+            registrant=self.user)
 
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

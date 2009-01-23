@@ -46,7 +46,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
              u'Files:',
-             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo.dsc'],
+             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc'],
             pub_source.getIndexStanza().splitlines())
 
     def testBinaryStanza(self):
@@ -78,7 +78,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Pre-Depends: master-foo',
              u'Enhances: foo-super',
              u'Breaks: old-foo',
-             u'Filename: pool/main/f/foo/foo-bin_all.deb',
+             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'Description: Foo app is great',
@@ -122,7 +122,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Architecture: all',
              u'Version: 666',
-             u'Filename: pool/main/f/foo/foo-bin_all.deb',
+             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'Description: Foo app is great',
@@ -157,7 +157,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Architecture: all',
              u'Version: 666',
-             u'Filename: pool/main/f/foo/foo-bin_all.deb',
+             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'Description: Foo app is great',

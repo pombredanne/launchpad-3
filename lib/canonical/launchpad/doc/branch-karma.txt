@@ -10,11 +10,20 @@ give karma for it.
     >>> from canonical.launchpad.database.karma import KarmaCategory
     >>> code_category = KarmaCategory.byName('code')
     >>> code_karma_actions = code_category.karmaactions
-    >>> sorted([action.title for action in code_karma_actions])
-    [u'Branch linked to a blueprint',
-     u'Branch linked to a bug',
-     u'New branch registered',
-     u'Revision added']
+    >>> for summary in sorted(
+    ...     [action.summary for action in code_karma_actions]):
+    ...     print summary
+    A new revision by the user is available through Launchpad.
+    Reviewer commented on a code review.
+    User approved a branch for merging.
+    User approved their own branch for merging.
+    User commented on a code review.
+    User linked a branch to a blueprint.
+    User linked a branch to a bug.
+    User proposed a branch for merging.
+    User registered a new branch.
+    User rejected a proposed branch merge.
+    User rejected their own proposed branch merge.
 
     >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
@@ -25,17 +34,14 @@ give karma for it.
 Karma is added for registering a branch.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> fooix = factory.makeProduct(name='fooix')
     >>> eric = factory.makePerson(name='eric', password='test')
-    >>> branch = factory.makeBranch(owner=eric, product=fooix)
+    >>> branch = factory.makeProductBranch(owner=eric, product=fooix)
     Karma added: action=branchcreated, product=fooix, person=eric
 
 However, no karma is added for junk branches.
 
-    >>> junk_branch = factory.makeBranch(
-    ...     owner=eric, product=None, explicit_junk=True)
+    >>> junk_branch = factory.makePersonalBranch(owner=eric)
 
 
 == Linking bugs and branches ==

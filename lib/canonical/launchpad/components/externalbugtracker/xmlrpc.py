@@ -63,12 +63,12 @@ class UrlLib2Transport(Transport):
 
     verbose = False
 
-    def __init__(self, endpoint):
+    def __init__(self, endpoint, cookie_jar=None):
         self.scheme, self.host = urlparse(endpoint)[:2]
         assert (
             self.scheme in ('http', 'https'),
             "Unsupported URL schene: %s" % self.scheme)
-        self.cookie_processor = HTTPCookieProcessor()
+        self.cookie_processor = HTTPCookieProcessor(cookie_jar)
         self.redirect_handler = XMLRPCRedirectHandler()
         self.opener = build_opener(
             self.cookie_processor, self.redirect_handler)

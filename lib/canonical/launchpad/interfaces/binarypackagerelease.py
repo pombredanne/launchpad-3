@@ -65,10 +65,6 @@ class IBinaryPackageRelease(Interface):
         description=_("True if there binary version was never published for "
                       "the architeture it was built for. False otherwise."))
 
-    def lastversions():
-        """Return the SUPERSEDED BinaryPackages in a DistroSeries
-           that comes from the same SourcePackage"""
-
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build
         and attach the provided library file alias (file).

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildStatus',
+    'BuildSetStatus',
     'IBuild',
     'IBuildRescoreForm',
     'IBuildSet',
@@ -15,10 +16,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, Object, TextLine, Timedelta
+from zope.schema import (Choice, Datetime, Int, Object, TextLine, Timedelta,
+    Text)
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.builder import IBuilder
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
@@ -28,7 +29,10 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-
+from canonical.lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item)
+from canonical.lazr.rest.declarations import (export_as_webservice_entry,
+    exported)
 
 class BuildStatus(DBEnumeratedType):
     """Build status type
@@ -118,6 +122,7 @@ incomplete_building_status = (
 
 class IBuild(Interface):
     """A Build interface"""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -196,13 +201,14 @@ class IBuild(Interface):
     current_component = Attribute(
         "Component where the ISourcePackageRelease related to "
         "this build was published.")
-    title = Attribute("Build Title")
+    title = exported(Text(title=_("Build Title"), required=False))
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
     distroseries = Attribute("Direct parent needed by CanonicalURL")
     buildqueue_record = Attribute("Corespondent BuildQueue record")
     was_built = Attribute("Whether or not modified by the builddfarm.")
-    build_icon = Attribute("Return the icon url correspondent to buildstate.")
+    arch_tag = exported(
+        Text(title=_("Architecture tag"), required=False))
     distribution = Attribute("Shortcut for its distribution.")
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")
@@ -229,14 +235,6 @@ class IBuild(Interface):
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "
         "no build.")
-
-    component_dependencies = Attribute(
-        "Return a dictionary which maps a component name to a list of "
-        "component names it could depend of.")
-
-    ogre_components = Attribute(
-        "The components this build is allowed to use. It returns a string "
-        "that can be used directly at the end of sources.list lines.")
 
     def retry():
         """Restore the build record to its initial state.
@@ -307,6 +305,51 @@ class IBuild(Interface):
             the binaries created in this build.
         """
 
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        archive context:
+
+         * Binary changesfile: '.changes';
+         * Build logs: '.txt.gz';
+         * Build upload logs: '_log.txt';
+
+        :param filename: exactly filename to be looked up.
+
+        :raises AssertionError if the given filename contains a unsupported
+            filename and/or extension, see the list above.
+        :raises NotFoundError if no file could not be found.
+
+        :return the corresponding `ILibraryFileAlias` if the file was found.
+        """
+
+
+class BuildSetStatus(EnumeratedType):
+    """`IBuildSet` status type
+
+    Builds exist in the database in a number of states such as 'complete',
+    'needs build' and 'dependency wait'. We sometimes provide a summary
+    status of a set of builds.
+    """
+    # Until access to the name, title and description of exported types
+    # is available through the API, set the title of these statuses
+    # to match the name. This enables the result of API calls (which is
+    # currently the title) to be used programatically (for example, as a
+    # css class name).
+    NEEDSBUILD = Item(
+        title='NEEDSBUILD',# "Need building",
+        description='There are some builds waiting to be built.')
+
+    FULLYBUILT = Item(title='FULLYBUILT', # "Successfully built",
+                      description="All builds were built successfully.")
+
+    FAILEDTOBUILD = Item(title='FAILEDTOBUILD', # "Failed to build",
+                         description="There were build failures.")
+
+    BUILDING = Item(title='BUILDING', # "Currently building",
+                    description="There are some builds currently building.")
+
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
@@ -330,7 +373,7 @@ class IBuildSet(Interface):
     def getBuildsForBuilder(builder_id, status=None, name=None):
         """Return build records touched by a builder.
 
-        If status is provided, only builders with that status will
+        If status is provided, only builds with that status will
         be returned. If name is passed, return only build which the
         sourcepackagename matches (SQL LIKE).
         """
@@ -369,6 +412,28 @@ class IBuildSet(Interface):
         :param buildstate: option build state filter.
 
         :return: a list of `IBuild` records not target to PPA archives.
+        """
+
+    def getStatusSummaryForBuilds(builds):
+        """Return a summary of the build status for the given builds.
+
+        The returned summary includes a status, a description of
+        that status and the builds related to the status.
+
+        :param builds: A list of build records.
+        :type builds: ``list``
+        :return: A dict consisting of the build status summary for the
+            given builds. For example:
+                {
+                    'status': BuildSetStatus.FULLYBUILT,
+                    'builds': [build1, build2]
+                }
+            or, an example where there are currently some builds building:
+                {
+                    'status': BuildSetStatus.BUILDING,
+                    'builds':[build3]
+                }
+        :rtype: ``dict``.
         """
 
 

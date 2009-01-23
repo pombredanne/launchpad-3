@@ -1,4 +1,4 @@
-# XXX Guilherme Salgado, 2006-01-19: 
+# XXX Guilherme Salgado, 2006-01-19:
 # Merge this test with team-polls/xx-votepoll.txt
 
   Go to a condorcet-style poll (which is still open) and check that apart
@@ -11,7 +11,7 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/~ubuntu-team/+poll/never-closes2/+vote-condorcet
+  Location: http://localhost/~ubuntu-team/+poll/never-closes2/+vote-condorcet
   <BLANKLINE>
 
   >>> print http(r"""
@@ -46,7 +46,7 @@
   ... POST /~ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
-  ... 
+  ...
   ... token=xn9FDCTp4m&showvote=Show+My+Vote&option_12=&option_13=&option_14=&option_15=""")
   HTTP/1.1 200 Ok
   ...
@@ -56,19 +56,19 @@
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>1</b>. 
+                      <b>1</b>.
                       Option 1
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>2</b>. 
+                      <b>2</b>.
                       Option 2
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>3</b>. 
+                      <b>3</b>.
                       Option 4
   <BLANKLINE>
                   </p>
@@ -81,7 +81,7 @@
   ... POST /~ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
-  ... 
+  ...
   ... token=xn9FDCTp4m&option_12=2&option_13=3&option_14=4&option_15=1&changevote=Change+Vote""")
   HTTP/1.1 200 Ok
   ...
@@ -90,25 +90,25 @@
                   <p>Your current vote is as follows:</p>
                   <p>
   <BLANKLINE>
-                      <b>1</b>. 
+                      <b>1</b>.
                       Option 4
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>2</b>. 
+                      <b>2</b>.
                       Option 1
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>3</b>. 
+                      <b>3</b>.
                       Option 2
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>4</b>. 
+                      <b>4</b>.
                       Option 3
   <BLANKLINE>
                   </p>
@@ -124,7 +124,7 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/~ubuntu-team/+poll/never-closes3/+vote-condorcet
+  Location: http://localhost/~ubuntu-team/+poll/never-closes3/+vote-condorcet
   <BLANKLINE>
 
   >>> print http(r"""
@@ -136,25 +136,25 @@
                   <p>Your current vote is as follows:</p>
                   <p>
   <BLANKLINE>
-                      <b>1</b>. 
+                      <b>1</b>.
                       Option 1
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>2</b>. 
+                      <b>2</b>.
                       Option 2
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>3</b>. 
+                      <b>3</b>.
                       Option 3
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>4</b>. 
+                      <b>4</b>.
                       Option 4
   <BLANKLINE>
                   </p>
@@ -168,32 +168,32 @@
   ... POST /~ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
-  ... 
+  ...
   ... option_16=4&option_17=2&option_18=1&option_19=3&changevote=Change+Vote""")
   HTTP/1.1 200 Ok
   ...
                   <p>Your current vote is as follows:</p>
                   <p>
   <BLANKLINE>
-                      <b>1</b>. 
+                      <b>1</b>.
                       Option 3
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>2</b>. 
+                      <b>2</b>.
                       Option 2
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>3</b>. 
+                      <b>3</b>.
                       Option 4
   <BLANKLINE>
                   </p>
                   <p>
   <BLANKLINE>
-                      <b>4</b>. 
+                      <b>4</b>.
                       Option 1
   <BLANKLINE>
                   </p>
@@ -210,7 +210,7 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/~ubuntu-team/+poll/never-closes3/+vote-condorcet
+  Location: http://localhost/~ubuntu-team/+poll/never-closes3/+vote-condorcet
   <BLANKLINE>
 
 
@@ -227,4 +227,3 @@
   ...You have not yet voted in this poll...
   ...Rank options in order...
   ...
-

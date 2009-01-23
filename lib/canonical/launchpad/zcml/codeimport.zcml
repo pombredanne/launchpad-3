@@ -7,7 +7,7 @@
 
   <!-- CodeImport -->
 
-  <content class="canonical.launchpad.database.CodeImport">
+  <class class="canonical.launchpad.database.CodeImport">
     <implements interface="canonical.launchpad.interfaces.ICodeImport" />
     <allow
       attributes="id date_created branch registrant owner assignee
@@ -18,12 +18,19 @@
                   import_job results getImportDetailsForDisplay" />
     <require
       permission="launchpad.Edit"
-      attributes="approve invalidate suspend markFailing updateFromData" />
+      attributes="updateFromData" />
 
     <!-- ICodeImport has no set_schema, because all modifications should be
       done through methods that create CodeImportEvent objects when
       appropriate. -->
-  </content>
+  </class>
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    factory="canonical.launchpad.browser.CodeImportSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
 
   <browser:navigation
       module="canonical.launchpad.browser"

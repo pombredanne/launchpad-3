@@ -1,8 +1,8 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Object, Text
+from zope.schema import Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pomsgid import IPOMsgID
@@ -56,6 +56,8 @@ class IPOTMsgSet(Interface):
     sourcecomment = Attribute("The source code comments this set has.")
 
     flagscomment = Attribute("The flags this set has.")
+
+    flags = Attribute("List of flags that apply to this message.")
 
     singular_text = Text(
         title=_("The singular text for this message."), readonly=True)
@@ -124,9 +126,9 @@ class IPOTMsgSet(Interface):
         otherwise.
         """
 
-    def updateTranslation(pofile, submitter, new_translations, is_fuzzy,
-                          is_imported, lock_timestamp, ignore_errors=False,
-                          force_edition_rights=False):
+    def updateTranslation(pofile, submitter, new_translations, is_imported,
+                          lock_timestamp, force_suggestion=False,
+                          ignore_errors=False, force_edition_rights=False):
         """Update or create a translation message using `new_translations`.
 
         :param pofile: a `POFile` to add `new_translations` to.
@@ -134,11 +136,12 @@ class IPOTMsgSet(Interface):
         :param new_translations: a dictionary of plural forms, with the
             integer plural form number as the key and the translation as the
             value.
-        :param is_fuzzy: Whether the translations are fuzzy.
         :param is_imported: indicates whether this update is imported from a
             packaged po file.
         :param lock_timestamp: The timestamp when we checked the values we
             want to update.
+        :param force_suggestion: Whether to force translation to be
+            a suggestion, even if submitted by an editor.
         :param ignore_errors: A flag that controls whether the translations
             should be stored even when an error is detected.
         :param force_edition_rights: A flag that 'forces' handling this
@@ -151,9 +154,6 @@ class IPOTMsgSet(Interface):
             no message is to be updated.  This can happen when updating a
             translation credits message without the is_imported parameter set.
         """
-
-    def flags():
-        """Return a list of flags on this set."""
 
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' or None after doing some sanitization.

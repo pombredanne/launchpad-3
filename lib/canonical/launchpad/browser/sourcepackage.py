@@ -5,22 +5,20 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageNavigation',
-    'SourcePackageSOP',
+    'SourcePackageBreadcrumbBuilder',
     'SourcePackageFacets',
+    'SourcePackageNavigation',
     'SourcePackageTranslationsExportView',
     'SourcePackageView',
     ]
 
 from apt_pkg import ParseSrcDepends
-from zope.component import getUtility
+from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
-from zope.app import zapi
 
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
@@ -35,7 +33,8 @@ from canonical.launchpad.webapp import (
     redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
 
@@ -44,9 +43,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
 
-    def breadcrumb(self):
-        return smartquote('"%s" package') % (self.context.name)
-
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
@@ -54,11 +50,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if (self.context.distroseries.hide_all_translations and
-            not check_permission('launchpad.Admin', sourcepackage_pots)):
-            raise TranslationUnavailable(
-                'Translation updates are in progress. Only administrators '
-                'may view translations for this source package.')
+        if not check_permission('launchpad.Admin', sourcepackage_pots):
+            self.context.distroseries.checkTranslationsViewable()
 
         return sourcepackage_pots
 
@@ -72,27 +65,11 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
-class SourcePackageSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.distribution.displayname + ' ' + \
-               self.context.distroseries.version + ' source package:'
-
-    def getMainHeading(self):
-        return self.context.sourcepackagename
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Versions published, earliest first.
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISourcePackage`."""
+    @property
+    def text(self):
+        return smartquote('"%s" package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -185,8 +162,8 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         # mapped in the Packaging table
         raw_field = IPackaging['productseries']
         bound_field = raw_field.bind(self.context)
-        self.productseries_widget = zapi.getViewProviding(bound_field,
-            IInputWidget, self.request)
+        self.productseries_widget = getMultiAdapter(
+            (bound_field, self.request), IInputWidget)
         self.productseries_widget.setRenderedValue(self.context.productseries)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
@@ -205,7 +182,7 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.error_message = 'Invalid series given.'
+                self.error_message = structured('Invalid series given.')
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into

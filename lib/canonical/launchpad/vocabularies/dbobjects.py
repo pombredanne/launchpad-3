@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -55,8 +55,11 @@ __all__ = [
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
+    'TranslationTemplateVocabulary',
     'UserTeamsParticipationVocabulary',
+    'UserTeamsParticipationPlusSelfVocabulary',
     'ValidPersonOrTeamVocabulary',
+    'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
     'ValidTeamVocabulary',
@@ -64,7 +67,6 @@ __all__ = [
     'person_team_participations_vocabulary_factory',
     'project_products_using_malone_vocabulary_factory',
     'project_products_vocabulary_factory',
-    'user_public_team_participations_and_self_vocabulary_factory',
     ]
 
 import cgi
@@ -72,41 +74,65 @@ from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
 from storm.expr import LeftJoin, SQL, And, Or, Not
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
     Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
     Component, Country, Distribution, DistroArchSeries, DistroSeries,
     EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, Person, PillarName, Processor, ProcessorFamily,
+    MailingList, Milestone, Person, PillarName, POTemplate,
+    Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TranslationGroup, TranslationMessage)
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTrackerType, DistroSeriesStatus, EmailAddressStatus,
-    IBranch, IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
-    IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification,
-    SpecificationFilter, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus, PersonVisibility)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.bugtask import (
+    IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
+    IUpstreamBugTask)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.language import ILanguage
+from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.milestone import (
+    IMilestoneSet, IProjectMilestone)
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, ITeam, PersonVisibility)
+from canonical.launchpad.interfaces.pillar import IPillarName
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License)
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.specification import (
+    ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
-
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-
-from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI)
 
 
 class BasePersonVocabulary:
@@ -170,16 +196,21 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
     _orderBy = ['name', 'id']
     displayname = 'Select a Branch'
 
-    def toTerm(self, obj):
+    def toTerm(self, branch):
         """The display should include the URL if there is one."""
-        return SimpleTerm(obj, obj.unique_name, obj.displayname)
+        return SimpleTerm(branch, branch.unique_name, branch.displayname)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
         branch = self._getExactMatch(token)
-        # fall back to interpreting the token as a branch URL
         if branch is None:
-            raise LookupError(token)
+            # Attempt a search, and if there is one and only one result
+            # just use that instead.
+            search_result = self.search(token)
+            if search_result.limit(2).count() == 1:
+                [branch] = list(search_result)
+            else:
+                raise LookupError(token)
         return self.toTerm(branch)
 
     def _getExactMatch(self, query):
@@ -187,6 +218,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         branch = BranchSet().getByUniqueName(query)
         if branch is not None:
             return branch
+        # Fall back to interpreting the token as a branch URL.
         return BranchSet().getByUrl(query.rstrip('/'))
 
     def searchForTerms(self, query=None):
@@ -661,6 +693,30 @@ class TranslationMessageVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(message)
 
 
+class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
+    """The set of all POTemplates for a given product or package."""
+
+    _table = POTemplate
+    _orderBy = 'name'
+
+    def __init__(self, context):
+        if context.productseries != None:
+            self._filter = AND(
+                POTemplate.iscurrent == True,
+                POTemplate.productseries == context.productseries
+            )
+        else:
+            self._filter = AND(
+                POTemplate.iscurrent == True,
+                POTemplate.distroseries == context.distroseries,
+                POTemplate.sourcepackagename == context.sourcepackagename
+            )
+        super(TranslationTemplateVocabulary, self).__init__(context)
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+
 class NonMergedPeopleAndTeamsVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people and teams.
@@ -718,7 +774,7 @@ class PersonAccountToMergeVocabulary(
 
 class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
-    """The set of valid Persons/Teams in Launchpad.
+    """The set of valid, public Persons/Teams in Launchpad.
 
     A Person is considered valid if he has a preferred email address,
     and Person.merged is None. Teams have no restrictions
@@ -736,6 +792,13 @@ class ValidPersonOrTeamVocabulary(
     # results.
     extra_clause = ""
 
+    # Subclasses should override this property to allow null searches to
+    # return all results.  If false, an empty result set is returned.
+    allow_null_search = False
+
+    # Cache table to use for checking validity.
+    cache_table_name = 'ValidPersonOrTeamCache'
+
     def __contains__(self, obj):
         return obj in self._doSearch()
 
@@ -746,15 +809,16 @@ class ValidPersonOrTeamVocabulary(
         # teams have been requested.
         if not text:
             query = """
-                Person.id = ValidPersonOrTeamCache.id
+                Person.id = %s.id
                 AND Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
+                """ % (self.cache_table_name,
+                       quote(PersonVisibility.PUBLIC))
             if self.extra_clause:
                 query += " AND %s" % self.extra_clause
             return Person.select(
-                query, clauseTables=['ValidPersonOrTeamCache'])
+                query, clauseTables=[self.cache_table_name])
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         tables = [
             Person,
@@ -820,51 +884,49 @@ class ValidPersonOrTeamVocabulary(
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
         if not text:
-            return self.emptySelectResults()
+            if self.allow_null_search:
+                text = ''
+            else:
+                return self.emptySelectResults()
 
         text = text.lower()
         return self._doSearch(text=text)
 
-
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
-    """The set of all valid teams in Launchpad."""
+    """The set of all valid, public teams in Launchpad."""
 
     displayname = 'Select a Team'
+
+    # XXX: BradCrittenden 2008-08-11 bug=255798: This method does not return
+    # only the valid teams as the name implies because it does not account for
+    # merged teams.
 
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
     extra_clause = 'Person.teamowner IS NOT NULL'
-
-    def search(self, text):
-        """Return all teams that match :text:.
-
-        Unlike ValidPersonOrTeamVocabulary, providing an empty string for text
-        does not return the empty result set.  Instead, it returns all teams.
-        """
-        if not text:
-            text = ''
-        return self._doSearch(text=text)
+    # Search with empty string returns all teams.
+    allow_null_search = True
 
     def _doSearch(self, text=""):
         """Return the teams whose fti or email address match :text:"""
+        base_query = """
+                Person.visibility = %s
+                """ % quote(PersonVisibility.PUBLIC)
+
         if self.extra_clause:
             extra_clause = " AND %s" % self.extra_clause
         else:
             extra_clause = ""
 
         if not text:
-            query = """
-                teamowner IS NOT NULL AND Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
-            query += extra_clause
+            query = base_query + extra_clause
             return Person.select(query)
 
         name_match_query = """
             Person.fti @@ ftq(%s)
-            AND Person.visibility = %s
-            AND teamowner IS NOT NULL
-            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+            AND %s
+            """ % (quote(text), base_query)
         name_match_query += extra_clause
         name_matches = Person.select(name_match_query)
 
@@ -874,9 +936,9 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         email_match_query = """
             EmailAddress.person = Person.id
             AND lower(email) LIKE %s || '%%'
-            AND Person.visibility = %s
-            AND teamowner IS NOT NULL
-            """ % (quote_like(text), quote(PersonVisibility.PUBLIC))
+            AND %s
+            """ % (quote_like(text), base_query)
+
         email_match_query += extra_clause
         email_matches = Person.select(
             email_match_query, clauseTables=['EmailAddress'])
@@ -886,6 +948,17 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         return name_matches.union(
             email_matches, orderBy=['displayname', 'name'])
 
+
+class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of all valid, public persons who are not teams in Launchpad."""
+    displayname = 'Select a Person'
+    # The extra_clause for a valid person is that it not be a team, so
+    # teamowner IS NULL.
+    extra_clause = 'Person.teamowner IS NULL'
+    # Search with empty string returns all valid people.
+    allow_null_search = True
+    # Cache table to use for checking validity.
+    cache_table_name = 'ValidPersonCache'
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
@@ -1080,18 +1153,25 @@ def person_team_participations_vocabulary_factory(context):
         person_term(team) for team in person.teams_participated_in])
 
 
-def user_public_team_participations_and_self_vocabulary_factory(context):
-    """Return a SimpleVocabulary containing the public teams that the logged
+class UserTeamsParticipationPlusSelfVocabulary(
+    UserTeamsParticipationVocabulary):
+    """A vocabulary containing the public teams that the logged
     in user participates in, along with the logged in user themselves.
     """
-    logged_in_user = getUtility(ILaunchBag).user
-    assert logged_in_user is not None
-    terms = [person_term(logged_in_user)]
-    terms.extend([
-            person_term(team)
-            for team in logged_in_user.teams_participated_in
-            if team.visibility == PersonVisibility.PUBLIC])
-    return SimpleVocabulary(terms)
+
+    def __iter__(self):
+        logged_in_user = getUtility(ILaunchBag).user
+        yield self.toTerm(logged_in_user)
+        super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
+        for person in super_class.__iter__():
+            yield person
+
+    def getTermByToken(self, token):
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user.name == token:
+            return self.getTerm(logged_in_user)
+        super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
+        return super_class.getTermByToken(token)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1366,11 +1446,36 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
+
+        # Prefetch products and distributions for rendering
+        # milestones: optimization to reduce the number of queries.
+        product_ids = set(
+            removeSecurityProxy(milestone).productID
+            for milestone in visible_milestones)
+        distro_ids = set(
+            removeSecurityProxy(milestone).distributionID
+            for milestone in visible_milestones)
+        if len(product_ids) > 0:
+            list(Product.select("id IN %s" % sqlvalues(product_ids)))
+        if len(distro_ids) > 0:
+            list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
+
         return sorted(visible_milestones, key=attrgetter('displayname'))
 
     def __iter__(self):
         for milestone in self.visible_milestones:
             yield self.toTerm(milestone)
+
+    def __contains__(self, obj):
+        if IProjectMilestone.providedBy(obj):
+            # Project milestones are pseudo content objects
+            # which aren't really a part of this vocabulary,
+            # but sometimes we want to pass them to fields
+            # that rely on this vocabulary for validation
+            # so we special-case them here just for that purpose.
+            return obj.target.getMilestone(obj.name)
+        else:
+            return SQLObjectVocabularyBase.__contains__(self, obj)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
@@ -1410,9 +1515,12 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
 
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
-    """List commercial projects a user administers.
+    """List all commercial projects.
 
-    A commercial project is one that does not qualify for free hosting.
+    A commercial project is one that does not qualify for free hosting.  For
+    normal users only commercial projects for which the user is the
+    maintainer, or in the maintainers team, will be listed.  For users with
+    launchpad.Commercial permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1422,8 +1530,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     @property
     def displayname(self):
-        return 'Select one of the commercial projects administered by %s' % (
-            self.context.displayname)
+        return 'Select a commercial project'
 
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""
@@ -1433,17 +1540,22 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             if not project.qualifies_for_free_hosting
             ]
 
-    def _doSearch(self, query):
+    def _doSearch(self, query=None):
         """Return terms where query is in the text of name
         or displayname, or matches the full text index.
         """
         user = self.context
         if user is None:
             return self.emptySelectResults()
-
-        projects = user.getOwnedProjects(match_name=query)
-        commercial_projects = self._filter_projs(projects)
-        return commercial_projects
+        if check_permission('launchpad.Commercial', user):
+            product_set = getUtility(IProductSet)
+            projects = product_set.forReview(search_text=query,
+                                             licenses=[License.OTHER_PROPRIETARY],
+                                             active=True)
+        else:
+            projects = user.getOwnedProjects(match_name=query)
+            projects = self._filter_projs(projects)
+        return projects
 
     def toTerm(self, project):
         """Return the term for this object."""
@@ -1468,14 +1580,15 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def searchForTerms(self, query=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
-        return CountableIterator(len(results), results, self.toTerm)
+        if type(results) is list:
+            num = len(results)
+        else:
+            num = results.count()
+        return CountableIterator(num, results, self.toTerm)
 
     def _commercial_projects(self):
         """Return the list of commercial project owned by this user."""
-        user = self.context
-        if user is None:
-            return self.emptySelectResults()
-        return self._filter_projs(user.getOwnedProjects())
+        return self._filter_projs(self._doSearch())
 
     def __iter__(self):
         """See `IVocabulary`."""
@@ -1484,7 +1597,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def __contains__(self, obj):
         """See `IVocabulary`."""
-        return obj in self._commercial_projects()
+        return obj in self._filter_projs([obj])
 
 
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
@@ -1563,14 +1676,21 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _all_specs(self):
         all_specs = self.context.target.specifications(
-            filter=[SpecificationFilter.ALL])
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
         return self._filter_specs(all_specs)
 
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
 
     def __contains__(self, obj):
-        return obj in self._all_specs()
+        # We don't use self._all_specs here, since it will call
+        # self._filter_specs(all_specs) which will cause all the specs
+        # to be loaded, whereas obj in all_specs will query a single object.
+        all_specs = self.context.target.specifications(
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
+        return obj in all_specs and len(self._filter_specs([obj])) > 0
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
@@ -1905,14 +2025,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
             assert obj.active, 'Inactive object %s %d' % (
                     obj.__class__.__name__, obj.id
                     )
-            if obj.product is not None:
-                obj = obj.product
-            elif obj.distribution is not None:
-                obj = obj.distribution
-            elif obj.project is not None:
-                obj = obj.project
-            else:
-                raise AssertionError('Broken PillarName')
+            obj = obj.pillar
 
         # It is a hack using the class name here, but it works
         # fine and avoids an ugly if statement.
@@ -1926,10 +2039,19 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
-    _filter = AND(OR(
-            PillarName.q.distributionID != None,
-            PillarName.q.productID != None
-            ), PillarName.q.active == True)
+    _filter = """
+        -- An active product/distro.
+        (active IS TRUE
+         AND (product IS NOT NULL OR distribution IS NOT NULL)
+        )
+        OR
+        -- Or an alias for an active product/distro.
+        (alias_for IN (
+            SELECT id FROM PillarName
+            WHERE active IS TRUE AND
+                (product IS NOT NULL OR distribution IS NOT NULL))
+        )
+        """
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):

@@ -281,6 +281,15 @@ class RedirectAwareProberFactory(ProberFactory):
     def redirect(self, url):
         self.timeoutCall.reset(self.timeout)
 
+        scheme, host, port, orig_path = _parse(self.url)
+        scheme, host, port, new_path = _parse(url)
+        if orig_path.split('/')[-1] != new_path.split('/')[-1]:
+            # Server redirected us to a file which doesn't seem to be what we
+            # requested.  It's likely to be a stupid server which redirects
+            # instead of 404ing (https://launchpad.net/bugs/204460).
+            self.failed(Failure(RedirectToDifferentFile(orig_path, new_path)))
+            return
+
         try:
             if self.redirection_count >= MAX_REDIRECTS:
                 raise InfiniteLoopDetected()
@@ -325,6 +334,18 @@ class BadResponseCode(ProberError):
 
     def __str__(self):
         return "Bad response code: %s" % self.status
+
+
+class RedirectToDifferentFile(ProberError):
+
+    def __init__(self, orig_path, new_path, *args):
+        ProberError.__init__(self, *args)
+        self.orig_path = orig_path
+        self.new_path = new_path
+
+    def __str__(self):
+        return ("Attempt to redirect to a different file; from %s to %s"
+                % (self.orig_path, self.new_path))
 
 
 class InfiniteLoopDetected(ProberError):

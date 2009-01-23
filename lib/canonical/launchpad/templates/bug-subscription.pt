@@ -6,31 +6,22 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="malone"
 >
 
 <body>
-  <metal:heading fill-slot="pageheading">
-    <div>
-      <img alt="" src="/@@/bug" />
-      <a tal:attributes="href context/bug/fmt:url"
-      >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-      <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-    </div>
-    <h1>Bug subscription</h1>
-  </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/bug/@@+portlet-subscribers" />
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-search" />
-  </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
+  <div id="maincontent">
+    <div id="nonportlets" class="readable">
+      <p tal:content="structure context/fmt:link" />
+      <h1 tal:define="subscribed view/userIsSubscribed">
+        <tal:action condition="subscribed">Unsubscribe from</tal:action>
+        <tal:action condition="not:subscribed">Subscribe to</tal:action>
+        bug #<span tal:replace="context/bug/id" />
+      </h1>
 
   <p tal:condition="not: view/userIsSubscribed">
     If you subscribe to a bug it shows up on your
@@ -58,9 +49,6 @@
     </div>
 
     <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
       <input tal:condition="not: view/userIsSubscribed"
              type="submit"
              name="subscribe"
@@ -69,8 +57,18 @@
              type="submit"
              name="unsubscribe"
              value="Continue" />
+      or <a tal:attributes="href context/fmt:url">Cancel</a>
     </div>
   </form>
+
+    </div>
+  </div>
+
+  <div id="portlets">
+    <div metal:use-macro="context/bug/@@+portlet-subscribers/custom">
+      <div metal:fill-slot="heading" />
+    </div>
+  </div>
 
 </div>
 

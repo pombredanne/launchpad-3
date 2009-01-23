@@ -60,11 +60,19 @@ A ProductSeries can also be fetched with the IProductSeriesSet utility.
     >>> print firefox_1_0.name
     1.0
 
-New ProductSeries are created using Product.newSeries.
+New ProductSeries are created using Product.newSeries. Only the product
+owner can call Product.newSeries.
 
     >>> owner = getUtility(IPersonSet).getByName('carlos')
     >>> summary = "Experimental port of Firefox to the Emacs operating system."
     >>> emacs = firefox.newSeries(owner, 'emacs', summary)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'newSeries', 'launchpad.Edit')
+
+    >>> login('test@canonical.com')
+    >>> emacs = firefox.newSeries(owner, 'emacs', summary)
+    >>> login(ANONYMOUS)
 
 A newly created series is assumed to be in the development state.
 
@@ -96,6 +104,41 @@ or None.
     >>> productseries = productseriesset.getBySVNDetails(svnrepository)
     >>> print productseries
     None
+
+
+== Release series ==
+
+A product series can have any number of releases associated with it.
+These are created with the addRelease() method of IProductSeries.
+
+    >>> login_person(firefox_1_0.owner)
+    >>> firefox_109 = firefox_1_0.addRelease('1.0.9', owner)
+    >>> from canonical.launchpad.interfaces.productrelease import (
+    ...     IProductRelease)
+    >>> verifyObject(IProductRelease, firefox_109)
+    True
+
+A product release can be deleted using its destroySelf() method, as long
+as it doesn't have any IProductReleaseFiles associated with it.
+
+    >>> firefox_109.files.count()
+    0
+    >>> firefox_109.destroySelf()
+    >>> print firefox_1_0.getRelease('1.0.9')
+    None
+
+If a product release has files associated with it, though, it can't be
+deleted.
+
+    >>> firefox_1010 = firefox_1_0.addRelease('1.0.10', owner)
+    >>> firefox_1010.addReleaseFile('test', 'test', 'text/plain', owner)
+    <ProductReleaseFile...
+    >>> firefox_1010.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+    >>> firefox_1_0.getRelease('1.0.10')
+    <ProductRelease...
 
 
 == Specification Listings ==
@@ -273,23 +316,25 @@ We test these rules below. We will create the project, product and
 series directly so that we don't have to deal with security permissions
 checks when setting and resetting the driver attributes.
 
-    >>> from canonical.launchpad.database import (
-    ...    Project, Product, ProductSeries)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('foo.bar@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> jblack = getUtility(IPersonSet).getByName('jblack')
-    >>> project = Project(name='testproj', displayname='Test Project',
+
+    >>> project = factory.makeProject(name='testproj',
+    ...     displayname='Test Project',
     ...     title='Test Project Title', homepageurl='http://foo.com/url',
-    ...     summary='summary', description='description', owner=carlos.id)
-    >>> product = Product(owner=sabdfl, name='testprod',
+    ...     summary='summary', description='description', owner=carlos)
+    >>> product = factory.makeProduct(owner=sabdfl, name='testprod',
     ...     displayname='Test Product', title='Test product title',
     ...     summary='summary', project=project)
-    >>> series = ProductSeries(owner=jblack, name='1.0', product=product,
+    >>> series = factory.makeProductSeries(owner=jblack, name='1.0', product=product,
     ...     summary='Series summary')
 
+
 First, lets see what we get for the series drivers before we have
-anything actually written.
+anything actually set.
 
 If there is a project on the product, we would expect the project owner:
 

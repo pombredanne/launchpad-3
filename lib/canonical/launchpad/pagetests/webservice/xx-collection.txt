@@ -11,60 +11,60 @@ examples.
 A collection responds to GET by serving one page of the objects in the
 collection.
 
-  >>> people_collection = webservice.get("/beta/people").jsonBody()
-  >>> people_collection['resource_type_link']
-  u'http://api.launchpad.dev/beta/#people'
-  >>> people_collection['total_size']
-  59
-  >>> people_collection['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
-  >>> people_collection.get('prev_collection_link') is None
+  >>> bugs_collection = webservice.get("/bugs").jsonBody()
+  >>> bugs_collection['resource_type_link']
+  u'http://.../#bugs'
+  >>> bugs_collection['total_size']
+  15
+  >>> bugs_collection['next_collection_link']
+  u'http://.../bugs?ws.start=5&ws.size=5'
+  >>> bugs_collection.get('prev_collection_link') is None
   True
 
   >>> from operator import itemgetter
-  >>> people_entries = sorted(
-  ...     people_collection['entries'], key=itemgetter('name'))
-  >>> len(people_entries)
+  >>> bugs_entries = sorted(
+  ...     bugs_collection['entries'], key=itemgetter('title'))
+  >>> len(bugs_entries)
   5
-  >>> people_entries[0]['display_name']
-  u'Brad Crittenden'
-  >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/~bac'
-  >>> people_entries[-1]['display_name']
-  u'Carlos Perell\xf3 Mar\xedn'
+  >>> bugs_entries[0]['title']
+  u'Copy, Cut and Delete operations should work on selections'
+  >>> bugs_entries[0]['self_link']
+  u'http://.../bugs/12'
+  >>> bugs_entries[-1]['title']
+  u'jokosher exposes personal details in its actions portlet'
 
 You can get other pages of the collection by following links:
 
-  >>> result = webservice.get("/beta/people?ws.start=5&ws.size=5")
+  >>> result = webservice.get("/bugs?ws.start=5&ws.size=5")
   >>> second_batch = result.jsonBody()
   >>> second_batch['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
+  u'http://.../bugs?ws.start=10&ws.size=5'
   >>> second_batch['prev_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=0&ws.size=5'
+  u'http://.../bugs?ws.start=0&ws.size=5'
 
-  >>> people_entries = sorted(
-  ...     second_batch['entries'], key=itemgetter('name'))
-  >>> people_entries[0]['name']
-  u'commercial-admins'
+  >>> bugs_entries = sorted(
+  ...     second_batch['entries'], key=itemgetter('title'))
+  >>> bugs_entries[0]['title']
+  u'A test bug'
 
 You can also get a larger batch than the default:
 
-  >>> big_batch = webservice.get("/beta/people?ws.size=50").jsonBody()
+  >>> big_batch = webservice.get("/bugs?ws.size=10").jsonBody()
   >>> len(big_batch['entries'])
-  50
+  10
   >>> big_batch.get('next_collection_link')
-  u'http://api.launchpad.dev/beta/people?ws.start=50&ws.size=50'
+  u'http://.../bugs?ws.start=10&ws.size=10'
 
-  >>> bigger_batch = webservice.get("/beta/people?ws.size=75").jsonBody()
+  >>> bigger_batch = webservice.get("/bugs?ws.size=20").jsonBody()
   >>> len(bigger_batch['entries'])
-  59
+  15
   >>> bigger_batch.get('next_collection_link') is None
   True
 
 But requesting a batch size higher than the maximum configured value
 results in a 400 error.
 
-    >>> print webservice.get("/beta/people?ws.start=0&ws.size=1000")
+    >>> print webservice.get("/bugs?ws.start=0&ws.size=1000")
     HTTP/1.1 400 Bad Request
     ...
     Content-Type: text/plain...
@@ -78,7 +78,7 @@ A user without permission to see items in a collection will, of
 course, not see those items. The 'salgado' user can see all bugs on the
 site.
 
-  >>> salgado_output = webservice.get("/beta/bugs?ws.size=50").jsonBody()
+  >>> salgado_output = webservice.get("/bugs?ws.size=50").jsonBody()
   >>> salgado_output['total_size']
   15
   >>> len(salgado_output['entries'])
@@ -87,7 +87,7 @@ site.
 But the 'no-priv' user can't see bug number 14, which is private.
 
   >>> nopriv_output = user_webservice.get(
-  ...     "/beta/bugs?ws.size=100").jsonBody()
+  ...     "/bugs?ws.size=100").jsonBody()
   >>> nopriv_output['total_size']
   14
   >>> len(nopriv_output['entries'])
@@ -98,7 +98,7 @@ private data, but is using an OAuth key that restricts the client to
 operating on public data.
 
   >>> public_output = public_webservice.get(
-  ...     "/beta/bugs?ws.size=50").jsonBody()
+  ...     "/bugs?ws.size=50").jsonBody()
   >>> public_output['total_size']
   15
   >>> len(public_output['entries'])
@@ -121,57 +121,58 @@ clients from seeing private data.
 
 The elements of a collection can be looked up by unique identifier:
 
-  >>> admins_team = webservice.get("/beta/~admins").jsonBody()
-  >>> for key, value in sorted(admins_team.items()):
-  ...     print "%s: %s" % (key, value)
-  admins_collection_link: http://.../~admins/admins
+  >>> from canonical.lazr.testing.webservice import pprint_entry
+  >>> admins_team = webservice.get("/~admins").jsonBody()
+  >>> pprint_entry(admins_team)
+  admins_collection_link: u'http://.../~admins/admins'
+  archive_link: None
   confirmed_email_addresses_collection_link:
-      http://.../~admins/confirmed_email_addresses
-  date_created: 2005-06-06T08:59:51.571899+00:00
-  deactivated_members_collection_link: http://.../~admins/deactivated_members
+      u'http://.../~admins/confirmed_email_addresses'
+  date_created: u'2005-06-06T08:59:51.571899+00:00'
+  deactivated_members_collection_link: u'http://.../~admins/deactivated_members'
   default_membership_period: None
   default_renewal_period: None
-  display_name: Launchpad Administrators
-  expired_members_collection_link: http://.../~admins/expired_members
+  display_name: u'Launchpad Administrators'
+  expired_members_collection_link: u'http://.../~admins/expired_members'
   hide_email_addresses: False
   homepage_content: None
-  invited_members_collection_link: http://.../~admins/invited_members
-  irc_nicknames_collection_link: http://.../~admins/irc_nicknames
+  invited_members_collection_link: u'http://.../~admins/invited_members'
+  irc_nicknames_collection_link: u'http://.../~admins/irc_nicknames'
   is_team: True
   is_valid: True
-  jabber_ids_collection_link: http://.../~admins/jabber_ids
+  jabber_ids_collection_link: u'http://.../~admins/jabber_ids'
   karma: 0
-  languages_collection_link: http://.../~admins/languages
+  languages_collection_link: u'http://.../~admins/languages'
   latitude: None
   longitude: None
-  mailing_list_auto_subscribe_policy: Ask me when I join a team
-  members_collection_link: http://.../~admins/members
-  members_details_collection_link: http://.../~admins/members_details
-  memberships_details_collection_link: http://.../~admins/memberships_details
-  mugshot_link: http://.../~admins/mugshot
-  name: admins
+  mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
+  members_collection_link: u'http://.../~admins/members'
+  members_details_collection_link: u'http://.../~admins/members_details'
+  memberships_details_collection_link: u'http://.../~admins/memberships_details'
+  mugshot_link: u'http://.../~admins/mugshot'
+  name: u'admins'
   open_membership_invitations_collection_link:
-      http://.../~admins/open_membership_invitations
-  participants_collection_link: http://.../~admins/participants
+      u'http://.../~admins/open_membership_invitations'
+  participants_collection_link: u'http://.../~admins/participants'
   preferred_email_address_link: None
-  proposed_members_collection_link: http://.../~admins/proposed_members
-  renewal_policy: invite them to apply for renewal
-  resource_type_link: http://api.launchpad.dev/beta/#team
-  self_link: http://.../~admins
-  sub_teams_collection_link: http://.../~admins/sub_teams
-  subscription_policy: Moderated Team
-  super_teams_collection_link: http://.../~admins/super_teams
-  team_description: Launchpad Administrators
-  team_owner_link: http://.../~sabdfl
+  proposed_members_collection_link: u'http://.../~admins/proposed_members'
+  renewal_policy: u'invite them to apply for renewal'
+  resource_type_link: u'http://.../#team'
+  self_link: u'http://.../~admins'
+  sub_teams_collection_link: u'http://.../~admins/sub_teams'
+  subscription_policy: u'Moderated Team'
+  super_teams_collection_link: u'http://.../~admins/super_teams'
+  team_description: u'Launchpad Administrators'
+  team_owner_link: u'http://.../~sabdfl'
   time_zone: None
-  visibility: Public
-  wiki_names_collection_link: http://.../~admins/wiki_names
+  visibility: u'Public'
+  wiki_names_collection_link: u'http://.../~admins/wiki_names'
 
 A collection may be scoped to an element:
 
-  >>> result = webservice.get("/beta/~admins/members").jsonBody()
+  >>> result = webservice.get("/~admins/members").jsonBody()
   >>> result['resource_type_link']
-  u'http://api.launchpad.dev/beta/#person-page-resource'
+  u'http://.../#person-page-resource'
   >>> team_members = sorted(
   ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)
@@ -181,7 +182,7 @@ A collection may be scoped to an element:
   >>> team_members[-1]['name']
   u'spiv'
 
-  >>> result = webservice.get("/beta/~spiv/members")
+  >>> result = webservice.get("/~spiv/members")
   >>> list(result.jsonBody()['entries'])
   []
 
@@ -197,7 +198,7 @@ people, called 'people'.
 
   >>> def search_people(text, start=0):
   ...     return webservice.get(
-  ...         "/beta/people?ws.op=find&text=%s&ws.start=%s" %
+  ...         "/people?ws.op=find&text=%s&ws.start=%s" %
   ...             (text, start)).jsonBody()
 
 A custom operation that returns a list of objects is paginated, just
@@ -207,7 +208,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.op=find&text=s&ws.start=5&ws.size=5'
+  u'http://.../people?ws.op=find&text=s&ws.start=5&ws.size=5'
   >>> sorted(p['name'] for p in s_people['entries'])
   [u'keybuk', u'salgado', u'sigurd-ubuntu', u'sjoerd', u'stevea']
 
@@ -226,7 +227,7 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/~ubuntu-team?ws.op=getMembersByStatus")
+  >>> print webservice.get("/~ubuntu-team?ws.op=getMembersByStatus")
   HTTP/1.1 400 Bad Request
   ...
   status: Required input is missing.
@@ -238,30 +239,30 @@ the collection of people.
 
   >>> def create_team(name, display_name):
   ...     return webservice.named_post(
-  ...         "/beta/people", "newTeam", {},
+  ...         "/people", "newTeam", {},
   ...         name=name, display_name=display_name)
 
-  >>> print webservice.get('/beta/~serviceteam')
+  >>> print webservice.get('/~serviceteam')
   HTTP/1.1 404 Not Found
   ...
 
   >>> print create_team("serviceteam", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceteam
+  Location: http://.../~serviceteam
   <BLANKLINE>
 
-  >>> print webservice.get('/beta/~serviceteam')
+  >>> print webservice.get('/~serviceteam')
   HTTP/1.1 200 Ok
   ...
 
   >>> print create_team("serviceteam2", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceteam2
+  Location: http://.../~serviceteam2
   <BLANKLINE>
 
-  >>> print webservice.get('/beta/~serviceteam2')
+  >>> print webservice.get('/~serviceteam2')
   HTTP/1.1 200 Ok
   ...
 
@@ -276,14 +277,14 @@ team with a name that's taken.
 A POST request has no meaning right now unless it specifies a custom
 operation.
 
-  >>> print webservice.post("/beta/people", 'text/plain', '')
+  >>> print webservice.post("/people", 'text/plain', '')
   HTTP/1.1 400 Bad Request
   ...
   No operation name given.
 
 You can't invoke a nonexistent operation:
 
-  >>> print webservice.named_post("/beta/people", "nosuchop", {})
+  >>> print webservice.named_post("/people", "nosuchop", {})
   HTTP/1.1 400 Bad Request
   ...
   No such operation: nosuchop

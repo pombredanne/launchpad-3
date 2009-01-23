@@ -2,10 +2,9 @@
 
 import optparse
 
-from os import curdir, listdir, sep, symlink
-from os.path import abspath, basename, exists, join, realpath
-from sys import stdout
-import sys
+from os import curdir, listdir, sep, symlink, unlink
+from os.path import abspath, basename, exists, islink, join, realpath
+from sys import stderr, stdout
 from urllib import unquote
 from urlparse import urlparse
 
@@ -35,12 +34,16 @@ def get_parent(branch_dir):
 
 
 def gen_missing_files(source, destination):
-    """Generate info on every file in source not in destination."""
+    """Generate info on every file in source not in destination.
+
+    Yields `(source, destination, broken)` tuples, where `broken`
+    means that the destination is a broken symbolic link.
+    """
     for name in listdir(source):
         destination_file = join(destination, name)
         if not exists(destination_file):
             source_file = join(source, name)
-            yield source_file, destination_file
+            yield source_file, destination_file, islink(destination_file)
 
 
 if __name__ == '__main__':
@@ -95,15 +98,18 @@ if __name__ == '__main__':
         realpath(join(options.parent, 'sourcecode')),
         abspath(join(options.target, 'sourcecode')))
 
-    for target, link in missing_files:
+    for target, link, broken in missing_files:
         try:
+            if broken:
+                unlink(link)
             symlink(target, link)
-        except OSError:
-            print '  Error linking %s:' % basename(link), sys.exc_value
-            continue
-        if options.verbose:
-            stdout.write('%s -> %s\n' % (
-                    sep.join(link.rsplit(sep, 3)[-3:]), target))
+        except OSError, error:
+            stderr.write(
+                '  Error linking %s: %s\n' % (basename(link), error))
+        else:
+            if options.verbose:
+                stdout.write('%s -> %s\n' % (
+                        sep.join(link.rsplit(sep, 3)[-3:]), target))
 
 
 # End

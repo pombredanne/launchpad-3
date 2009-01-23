@@ -5,13 +5,13 @@
   i18n_domain="launchpad">
 
   <!-- SprintSpecification -->
-  <content class="canonical.launchpad.database.SprintSpecification">
+  <class class="canonical.launchpad.database.SprintSpecification">
     <allow interface="canonical.launchpad.interfaces.ISprintSpecification" />
     <require
       permission="launchpad.Edit"
       set_attributes="whiteboard"
       />
-  </content>
+  </class>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintSpecification"

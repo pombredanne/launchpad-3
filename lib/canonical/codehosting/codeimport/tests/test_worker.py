@@ -19,7 +19,6 @@ from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
-from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
@@ -296,72 +295,6 @@ class TestForeignTreeStore(WorkerTest):
             self.source_details, new_temp_dir)
         self.assertUpdated(foreign_tree2)
 
-    def copyCreatingDirectories(self, transport, relpath, source_file):
-        """Copy `source_file` onto `transport`, creating prefix directories.
-        """
-        # XXX: MichaelHudson 2008-05-19 bug=231819: This method is only used
-        # when testing that the new system looks in legacy locations and can
-        # be deleted when the new system has been running for a while.
-        assert relpath.count('/') == 1, (
-            "This function is only partially implemented!")
-        dirname, filename = os.path.split(relpath)
-        transport.ensure_base()
-        transport.mkdir(dirname)
-        transport.put_bytes(relpath, open(source_file).read())
-
-    def test_fetchFromOldLocation_svn(self):
-        # fetchFromOldLocationAndUploadToNewLocation looks for a Subversion
-        # working tree in the legacy location and uploads it to the modern
-        # location.
-        # XXX: MichaelHudson 2008-05-19 bug=231819: This test and the code it
-        # is testing are to do with the new system looking in legacy locations
-        # for foreign trees and can be deleted when the new system has been
-        # running for a while.
-        store = self.makeForeignTreeStore()
-        self.build_tree_contents(
-            [('svnworking/',), ('svnworking/file', 'contents')])
-        # We would use canonical.codehosting.codeimport.tarball.create_tarball
-        # here, but it creates tarballs with paths starting with
-        # './svnworking/' and the old system created tarballs with paths
-        # starting with 'svnworking/'.
-        os.system('tar cfz svnworking.tgz svnworking')
-        self.copyCreatingDirectories(
-            store.transport, '00000001/svnworking.tgz', 'svnworking.tgz')
-        source_details = self.factory.makeCodeImportSourceDetails(
-            rcstype='svn', source_product_series_id=1)
-        os.mkdir('new_path')
-        store.fetchFromOldLocationAndUploadToNewLocation(
-            source_details, 'new_path')
-        new_tarball_name = store._getTarballName(source_details.branch_id)
-        self.assertTrue(store.transport.has(new_tarball_name))
-        self.assertDirectoryTreesEqual('svnworking', 'new_path')
-
-    def test_fetchFromOldLocation_cvs(self):
-        # fetchFromOldLocationAndUploadToNewLocation looks for a CVS working
-        # tree in the legacy location and uploads it to the modern location.
-        # XXX: MichaelHudson 2008-05-19 bug=231819: This test and the code it
-        # is testing are to do with the new system looking in legacy locations
-        # for foreign trees and can be deleted when the new system has been
-        # running for a while.
-        store = self.makeForeignTreeStore()
-        self.build_tree_contents(
-            [('cvsworking/',), ('cvsworking/file', 'contents')])
-        # We would use canonical.codehosting.codeimport.tarball.create_tarball
-        # here, but it creates tarballs with paths starting with
-        # './cvsworking/' and the old system created tarballs with paths
-        # starting with 'cvsworking/'.
-        os.system('tar cfz cvsworking.tgz cvsworking')
-        self.copyCreatingDirectories(
-            store.transport, '00000001/cvsworking.tgz', 'cvsworking.tgz')
-        source_details = self.factory.makeCodeImportSourceDetails(
-            rcstype='cvs', source_product_series_id=1)
-        os.mkdir('new_path')
-        store.fetchFromOldLocationAndUploadToNewLocation(
-            source_details, 'new_path')
-        new_tarball_name = store._getTarballName(source_details.branch_id)
-        self.assertTrue(store.transport.has(new_tarball_name))
-        self.assertDirectoryTreesEqual('cvsworking', 'new_path')
-
 
 class FakeForeignTreeStore(ForeignTreeStore):
     """A ForeignTreeStore that always fetches fake foreign trees."""
@@ -528,7 +461,7 @@ class TestActualImportMixin:
         clean_up_default_stores_for_import(self.source_details)
 
         script_path = os.path.join(
-            get_rocketfuel_root(), 'scripts', 'code-import-worker.py')
+            config.root, 'scripts', 'code-import-worker.py')
         retcode = subprocess.call(
             [script_path, '-qqq'] + self.source_details.asArguments())
         self.assertEqual(retcode, 0)

@@ -22,9 +22,6 @@
       name="+specs"
       template="../templates/hasspecifications-specs.pt" />
     <browser:page
-      name="+categorized"
-      template="../templates/specificationtarget-categorized.pt" />
-    <browser:page
       name="+documentation"
       template="../templates/specificationtarget-documentation.pt" />
     <browser:page
@@ -34,13 +31,6 @@
       name="+portlet-latestspecs"
       template="../templates/specificationtarget-portlet-latestspecs.pt" />
   </browser:pages>
-
-  <browser:page
-    name="+roadmap"
-    for="canonical.launchpad.interfaces.IHasSpecifications"
-    class="canonical.launchpad.browser.SpecificationRoadmapView"
-    permission="zope.Public"
-    template="../templates/specificationtarget-roadmap.pt" />
 
   <browser:page
     name="+register-a-blueprint-button"

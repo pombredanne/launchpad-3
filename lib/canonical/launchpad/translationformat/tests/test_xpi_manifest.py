@@ -263,6 +263,37 @@ class XpiManifestTestCase(unittest.TestCase):
         manifest = XpiManifest("locale main kh jar:/x/foo.jar!bar.jar!")
         self.failIf(not manifest.containsLocales("x/foo.jar!//bar.jar!/"))
 
+    def test_ReverseMapping(self):
+        # Test "reverse mapping" from chrome path to XPI path.
+        manifest = XpiManifest(
+            "locale browser en-US jar:locales/en-US.jar!/chrome/")
+        path = manifest.findMatchingXpiPath('browser/gui/print.dtd', 'en-US')
+        self.assertEqual(path, "jar:locales/en-US.jar!/chrome/gui/print.dtd")
+
+    def test_NoReverseMapping(self):
+        # Failed reverse lookup.
+        manifest = XpiManifest(
+            "locale browser en-US jar:locales/en-US.jar!/chrome/")
+        path = manifest.findMatchingXpiPath('manual/gui/print.dtd', 'en-US')
+        self.assertEqual(path, None)
+
+    def test_ReverseMappingWrongLocale(self):
+        # Reverse mapping fails if given the wrong locale.
+        manifest = XpiManifest(
+            "locale browser en-US jar:locales/en-US.jar!/chrome/")
+        path = manifest.findMatchingXpiPath('browser/gui/print.dtd', 'pt')
+        self.assertEqual(path, None)
+
+    def test_ReverseMappingLongestMatch(self):
+        # Reverse mapping always finds the longest match.
+        manifest = XpiManifest("""
+            locale browser en-US jar:locales/
+            locale browser en-US jar:locales/en-US.jar!/chrome/
+            locale browser en-US jar:locales/en-US.jar!/
+            """)
+        path = manifest.findMatchingXpiPath('browser/gui/print.dtd', 'en-US')
+        self.assertEqual(path, "jar:locales/en-US.jar!/chrome/gui/print.dtd")
+
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)

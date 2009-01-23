@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
     IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
     MailingListStatus, PersonalStanding, PostedMessageStatus)
+from canonical.launchpad.interfaces.person import PersonVisibility
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -46,6 +47,20 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # sequence of 2-tuples giving the team name and any initial values for
         # the mailing list.
         response = {}
+        # Handle unsynchronized lists.
+        unsynchronized = []
+        for mailing_list in list_set.unsynchronized_lists:
+            name = mailing_list.team.name
+            if mailing_list.status == MailingListStatus.CONSTRUCTING:
+                unsynchronized.append((name, 'constructing'))
+            elif mailing_list.status == MailingListStatus.UPDATING:
+                unsynchronized.append((name, 'updating'))
+            else:
+                raise AssertionError(
+                    'Mailing list is neither CONSTRUCTING nor UPDATING: %s'
+                    % name)
+        if len(unsynchronized) > 0:
+            response['unsynchronized'] = unsynchronized
         creates = []
         for mailing_list in list_set.approved_lists:
             initializer = {}
@@ -75,20 +90,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             mailing_list.startUpdating()
         if len(modified) > 0:
             response['modify'] = modified
-        # Handle unsynchronized lists.
-        unsynchronized = []
-        for mailing_list in list_set.unsynchronized_lists:
-            name = mailing_list.team.name
-            if mailing_list.status == MailingListStatus.CONSTRUCTING:
-                unsynchronized.append((name, 'constructing'))
-            elif mailing_list.status == MailingListStatus.UPDATING:
-                unsynchronized.append((name, 'updating'))
-            else:
-                raise AssertionError(
-                    'Mailing list is neither CONSTRUCTING nor UPDATING: %s'
-                    % name)
-        if len(unsynchronized) > 0:
-            response['unsynchronized'] = unsynchronized
         return response
 
     def reportStatus(self, statuses):
@@ -175,6 +176,13 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                  members[address][1], members[address][2])
                 for address in sorted(members)]
         return response
+
+    def isTeamPublic(self, team_name):
+        """See `IMailingListAPIView.`."""
+        team = getUtility(IPersonSet).getByName(team_name)
+        if team is None:
+            return faults.NoSuchPersonWithName(team_name)
+        return team.visibility == PersonVisibility.PUBLIC
 
     def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""

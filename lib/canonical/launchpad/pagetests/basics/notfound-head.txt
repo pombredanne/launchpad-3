@@ -24,7 +24,7 @@ errors (such as 404s).
 
 Register a test page that generates HTTP 500 errors.
 
-  >>> from zope.app.tests import ztapi
+  >>> from zope.app.testing import ztapi
   >>> class ErrorView(object):
   ...     """A broken view"""
   ...     def __init__(self, *args):

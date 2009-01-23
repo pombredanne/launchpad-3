@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
 
@@ -24,6 +24,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -43,6 +44,7 @@ from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -53,9 +55,8 @@ from canonical.launchpad.interfaces.bugwatch import (
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -65,7 +66,7 @@ from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
-    rename_parameters_as, webservice_error)
+    mutator_for, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -321,6 +322,9 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+class IllegalTarget(Exception):
+    """Exception raised when trying to set an illegal bug task target."""
+    webservice_error(400) #Bad request.
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -435,15 +439,22 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                "Fix Released."),
                  readonly=True,
                  required=False))
+    date_left_closed = exported(
+        Datetime(title=_("Date left closed"),
+                 description=_("The date on which this task was "
+                               "last reopened."),
+                 readonly=True,
+                 required=False))
     age = Datetime(title=_("Age"),
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson))
-    target = Reference(
-        title=_('Target'), required=True, schema=IBugTarget,
-        description=_("The software in which this bug should be fixed."))
+        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+    target = exported(Reference(
+        title=_('Target'), required=True, schema=Interface, # IBugTarget
+        readonly=True,
+        description=_("The software in which this bug should be fixed.")))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
@@ -502,20 +513,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         db queries needed.
         """
 
-    def getBugTasksByPackageName(bugtasks):
-        """Return a mapping from `ISourcePackageName` to its bug tasks.
-
-        This mapping is suitable to pass ass the bugtasks_by_package
-        cache to getConjoinedMaster().
-
-        The mapping is from a `ISourcePackageName` to all the bug tasks
-        that are targeted to such a package name, no matter which
-        distribution or distro series it is.
-
-        All the tasks that don't have a package will be available under
-        None.
-        """
-
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
@@ -535,6 +532,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @mutator_for(importance)
     @rename_parameters_as(new_importance='importance')
     @operation_parameters(new_importance=copy_field(importance))
     @call_with(user=REQUEST_USER)
@@ -565,6 +563,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         be a bug supervisor or the owner of the project.
         """
 
+    @mutator_for(status)
     @rename_parameters_as(new_status='status')
     @operation_parameters(
         new_status=copy_field(status))
@@ -584,6 +583,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @mutator_for(assignee)
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()
@@ -594,6 +594,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         object, the date_assigned is set on the task. If the assignee
         value is set to None, date_assigned is also set to None.
         """
+
+    @operation_parameters(
+        target=copy_field(target))
+    @export_write_operation()
+    def transitionToTarget(target):
+        """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():
         """Update the targetnamecache field in the database.
@@ -934,7 +940,8 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False):
+                 bug_commenter=None, omit_targeted=False,
+                 date_closed=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -962,6 +969,7 @@ class BugTaskSearchParams:
         self.bug_reporter = bug_reporter
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
+        self.date_closed = date_closed
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -985,6 +993,9 @@ class BugTaskSearchParams:
 
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
+        # Import this here to avoid circular dependencies
+        from canonical.launchpad.interfaces.sourcepackage import (
+            ISourcePackage)
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
@@ -992,6 +1003,89 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
+
+    @classmethod
+    def _anyfy(cls, value):
+        """If value is a sequence, wrap its items with the `any` combinator.
+
+        Otherwise, return value as is, or None if it's a zero-length sequence.
+        """
+        if zope_isinstance(value, (list, tuple)):
+            if len(value) > 1:
+                return any(*value)
+            elif len(value) == 1:
+                return value[0]
+            else:
+                return None
+        else:
+            return value
+
+
+    @classmethod
+    def fromSearchForm(cls, user,
+                       order_by=('-importance',), search_text=None,
+                       status=list(UNRESOLVED_BUGTASK_STATUSES),
+                       importance=None,
+                       assignee=None, bug_reporter=None, bug_supervisor=None,
+                       bug_commenter=None, bug_subscriber=None, owner=None,
+                       has_patch=None, has_cve=None, distribution=None,
+                       tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
+                       omit_duplicates=True, omit_targeted=None,
+                       status_upstream=None, milestone_assignment=None,
+                       milestone=None, component=None, nominated_for=None,
+                       sourcepackagename=None, has_no_package=None):
+        """Create and return a new instance using the parameter list."""
+        search_params = cls(user=user, orderby=order_by)
+
+        search_params.searchtext = search_text
+        search_params.status = cls._anyfy(status)
+        search_params.importance = cls._anyfy(importance)
+        search_params.assignee = assignee
+        search_params.bug_reporter = bug_reporter
+        search_params.bug_supervisor = bug_supervisor
+        search_params.bug_commenter = bug_commenter
+        search_params.subscriber = bug_subscriber
+        search_params.owner = owner
+        search_params.distribution = distribution
+        if has_patch:
+            # Import this here to avoid circular imports
+            from canonical.launchpad.interfaces.bugattachment import (
+                BugAttachmentType)
+            search_params.attachmenttype = BugAttachmentType.PATCH
+            search_params.has_patch = has_patch
+        search_params.has_cve = has_cve
+        if zope_isinstance(tags, (list, tuple)):
+            if len(tags) > 0:
+                if tags_combinator == BugTagsSearchCombinator.ALL:
+                    search_params.tag = all(*tags)
+                else:
+                    search_params.tag = any(*tags)
+        elif zope_isinstance(tags, str):
+            search_params.tag = tags
+        elif tags is None:
+            pass # tags not supplied
+        else:
+            raise AssertionError(
+                'Tags can only be supplied as a list or a string.')
+        search_params.omit_dupes = omit_duplicates
+        search_params.omit_targeted = omit_targeted
+        if status_upstream is not None:
+            if 'pending_bugwatch' in status_upstream:
+                search_params.pending_bugwatch_elsewhere = True
+            if 'resolved_upstream' in status_upstream:
+                search_params.resolved_upstream = True
+            if 'open_upstream' in status_upstream:
+                search_params.open_upstream = True
+            if 'hide_upstream' in status_upstream:
+                search_params.has_no_upstream_bugtask = True
+        search_params.milestone = cls._anyfy(milestone)
+        search_params.component = cls._anyfy(component)
+        search_params.sourcepackagename = sourcepackagename
+        if has_no_package:
+            search_params.sourcepackagename = NULL
+        search_params.nominated_for = nominated_for
+
+        return search_params
 
 
 class IBugTaskSet(Interface):
@@ -1004,6 +1098,12 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
+        """
+
+    def getBugTasks(bug_ids):
+        """Return the bugs with the given IDs and all of its bugtasks.
+
+        :return: A dictionary mapping the bugs to their bugtasks.
         """
 
     def getBugTaskBadgeProperties(bugtasks):
@@ -1147,6 +1247,9 @@ class IBugTaskSet(Interface):
             'open_unassigned': The number of open unassigned bugs.
             'open_inprogress': The number of open bugs that are In Progress.
         """
+
+    def getOpenBugTasksPerProduct(user, products):
+        """Return open bugtask count for multiple products."""
 
 
 def valid_remote_bug_url(value):

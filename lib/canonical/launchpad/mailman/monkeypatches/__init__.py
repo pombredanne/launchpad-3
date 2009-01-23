@@ -1,8 +1,10 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+"""Install Launchpad integration code into the Mailman module."""
 
 import os
+import shutil
 
-HERE = os.path.dirname(__file__)
+from lazr.config import as_host_port
 
 
 def monkey_patch(mailman_path, config):
@@ -33,14 +35,13 @@ def monkey_patch(mailman_path, config):
     # Calculate the parent directory of the canonical package.  This directory
     # will get appended to Mailman's sys.path.
     import canonical
-    from canonical.launchpad.mailman.config import (
-        configure_siteowner, configure_smtp)
+    from canonical.launchpad.mailman.config import configure_siteowner
     launchpad_top = os.path.dirname(os.path.dirname(canonical.__file__))
     # Read the email footer template for all Launchpad messages.
     from canonical.launchpad.helpers import get_email_template
     footer = get_email_template('mailinglist-footer.txt')
     # Write the mm_cfg.py file, filling in the dynamic values now.
-    host, port = configure_smtp(config.mailman.smtp)
+    host, port = as_host_port(config.mailman.smtp)
     owner_address, owner_password = configure_siteowner(
         config.mailman.build_site_list_owner)
     config_path = os.path.join(mailman_path, 'Mailman', 'mm_cfg.py')
@@ -61,9 +62,11 @@ from canonical.launchpad.mailman.monkeypatches.defaults import *
 SMTPHOST = '%(smtp_host)s'
 SMTPPORT = %(smtp_port)d
 
-# The endpoint for Launchpad XMLRPC calls.
+# Configuration options for the XMLRPCRunner.
 XMLRPC_URL = '%(xmlrpc_url)s'
 XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
+XMLRPC_SUBSCRIPTION_BATCH_SIZE = %(xmlrpc_subscription_batch_size)s
+LAUNCHPAD_SHARED_SECRET = '%(shared_secret)s'
 
 # RFC 2369 header information
 LIST_HELP_HEADER = '%(list_help_header)s'
@@ -92,6 +95,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     smtp_port=port,
     xmlrpc_url=config.mailman.xmlrpc_url,
     xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
+    xmlrpc_subscription_batch_size=config.mailman.subscription_batch_size,
     site_list_owner=owner_address,
     list_help_header=config.mailman.list_help_header,
     list_subscription_headers=config.mailman.list_subscription_headers,
@@ -99,6 +103,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     list_owner_header_template=config.mailman.list_owner_header_template,
     footer=footer,
     var_dir=config.mailman.build_var_dir,
+    shared_secret=config.mailman.shared_secret,
     )
     finally:
         config_file.close()
@@ -130,3 +135,10 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
             print >> handler_file, 'from', module, 'import *'
         finally:
             handler_file.close()
+    # Install the launchpad site templates.
+    here = os.path.dirname(__file__)
+    launchpad_template_path = os.path.join(here, 'sitetemplates')
+    site_template_path = os.path.join(mailman_path, 'templates', 'site')
+    if os.path.isdir(site_template_path):
+        shutil.rmtree(site_template_path)
+    shutil.copytree(launchpad_template_path, site_template_path)

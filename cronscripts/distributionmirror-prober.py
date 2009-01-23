@@ -29,17 +29,21 @@ class DistroMirrorProber(LaunchpadCronScript):
              '[--no-owner-notification] [--max-mirrors=N]')
 
     def _sanity_check_mirror(self, mirror):
-        """Check that the given mirror is official and has an http_base_url."""
-        assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
+        """Check that the given mirror is official and has an http_base_url.
+        """
+        assert mirror.isOfficial(), (
+            'Non-official mirrors should not be probed')
         if mirror.base_url is None:
             self.logger.warning(
                 "Mirror '%s' of distribution '%s' doesn't have a base URL; "
-                "we can't probe it." % (mirror.name, mirror.distribution.name))
+                "we can't probe it." % (
+                    mirror.name, mirror.distribution.name))
             return False
         return True
 
     def _create_probe_record(self, mirror, logfile):
-        """Create a probe record for the given mirror with the given logfile."""
+        """Create a probe record for the given mirror with the given logfile.
+        """
         logfile.seek(0)
         filename = '%s-probe-logfile.txt' % mirror.name
         log_file = getUtility(ILibraryFileAliasSet).create(
@@ -53,7 +57,7 @@ class DistroMirrorProber(LaunchpadCronScript):
             help='Probe only mirrors of the given type')
         self.parser.add_option('--force',
             dest='force', default=False, action='store_true',
-            help='Force the probing of mirrors that have been probed recently')
+            help='Force the probing of mirrors that were probed recently')
         self.parser.add_option('--no-owner-notification',
             dest='no_owner_notification', default=False, action='store_true',
             help='Do not send failure notification to mirror owners.')
@@ -91,7 +95,11 @@ class DistroMirrorProber(LaunchpadCronScript):
         # value through a lot of method/function calls, until it reaches the
         # probe() method.
         if self.options.no_remote_hosts:
-            config.distributionmirrorprober.localhost_only = True
+            localhost_only_conf = """
+                [distributionmirrorprober]
+                localhost_only: True
+                """
+            config.push('localhost_only_conf', localhost_only_conf)
 
         self.logger.info('Probing %s Mirrors' % content_type.title)
 
@@ -115,8 +123,8 @@ class DistroMirrorProber(LaunchpadCronScript):
             # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
                 self.logger.info(
-                    "Mirror '%s' of distribution '%s' can't be probed --we only "
-                    "probe Ubuntu mirrors." 
+                    "Mirror '%s' of distribution '%s' can't be probed --we "
+                    "only probe Ubuntu mirrors."
                     % (mirror.name, mirror.distribution.name))
                 continue
 

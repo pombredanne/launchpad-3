@@ -25,7 +25,6 @@ handle, and register them for some domains:
 
     >>> from canonical.launchpad.interfaces import IMailHandler
     >>> from zope.interface import implements
-    >>> from canonical.config import config
     >>> class MockHandler:
     ...     implements(IMailHandler)
     ...     def __init__(self, allow_unknown_users=False):
@@ -41,12 +40,6 @@ handle, and register them for some domains:
     >>> mail_handlers.add('foo.com', foo_handler)
     >>> mail_handlers.add('bar.com', bar_handler)
 
-We temporarily override the error mails' From address, so that they will
-pass through the authentication stage:
-
-    >>> old_error_from_address = config.malone.bugmail_error_from_address
-    >>> config.malone.bugmail_error_from_address = 'foo.bar@canonical.com'
-
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
     >>> from canonical.testing import LaunchpadZopelessLayer
@@ -61,21 +54,33 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
     ...     msg.replace_header('To', '123@%s' % domain)
     ...     msgids[domain].append("<%s>" % sendmail(msg))
 
-The test mails are now in Launchpad's mail box, so now we can call
-handleMail, so that every mail gets handled by the correct handler.
 Since the User gets authenticated using OpenPGP signatures we have to
-import the keys first.
+import the keys before handleMail is called.
 
+    >>> from canonical.config import config
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> import_public_test_keys()
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> zopeless_transaction = LaunchpadZopelessLayer.txn
+
+We temporarily override the error mails' From address, so that they will
+pass through the authentication stage:
+
+    >>> bugmail_error_from_address = """
+    ...     [malone]
+    ...     bugmail_error_from_address: foo.bar@canonical.com
+    ...     """
+    >>> config.push('bugmail_error_from_address', bugmail_error_from_address)
+
+The test mails are now in Launchpad's mail box, so now we can call
+handleMail, so that every mail gets handled by the correct handler.
+
     >>> handleMail(zopeless_transaction)
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
 
 Now we can see that each handler handled the emails sent to its domain:
 
@@ -186,7 +191,6 @@ the To and CC headers will be ignored:
 
     >>> msgid in foo_handler.handledMails
     False
-
 
 == OOPSes processing incoming mail ==
 
@@ -368,7 +372,7 @@ logged.
     >>> handleMail(transaction)
     ERROR:...:Upload to Librarian failed...
     ...
-    UploadFailed: (111, 'Connection refused')
+    UploadFailed: [...]: (111, 'Connection refused')
 
     >>> len(stub.test_emails)
     2
@@ -422,9 +426,7 @@ empty Return-Path, but there are some broken mailers out there.
 
 == Doctest cleanup ==
 
-    >>> LibrarianLayer.hide()
-    >>> config.malone.bugmail_error_from_address = old_error_from_address
+    >>> config_data = config.pop('bugmail_error_from_address')
     >>> mail_handlers.add('foo.com', None)
     >>> mail_handlers.add('bar.com', None)
     >>> mail_handlers.add('except.com', None)
-    >>> LibrarianLayer.reveal()

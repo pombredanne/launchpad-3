@@ -4,17 +4,17 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.GPGKey">
+    <class class="canonical.launchpad.database.GPGKey">
         <allow interface="canonical.launchpad.interfaces.IGPGKey"/>
         <require
             permission="launchpad.Edit"
             set_attributes="active can_encrypt" />
-    </content>
+    </class>
 
     <!-- GPGKeySet -->
-    <content class="canonical.launchpad.database.GPGKeySet">
+    <class class="canonical.launchpad.database.GPGKeySet">
         <allow interface="canonical.launchpad.interfaces.IGPGKeySet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.GPGKeySet"

@@ -8,30 +8,37 @@ import pytz
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BranchType, CreateBugParams, EmailAddressAlreadyTaken,
-    IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, InvalidEmailAddress,
-    InvalidName, IPersonSet, IProductSet, ISpecificationSet, NameAlreadyTaken,
+    IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, IProductSet,
+    ISpecificationSet, InvalidEmailAddress, InvalidName)
+from canonical.launchpad.interfaces.mailinglist import IMailingListSet
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
+from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing.systemdocs import create_initialized_view
 from canonical.launchpad.validators.person import PrivatePersonLinkageError
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
-class TestPerson(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+class TestPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        login('foo.bar@canonical.com')
-        self.person_set = getUtility(IPersonSet)
-        self.myteam = self.person_set.getByName('myteam')
-        self.otherteam = self.person_set.getByName('otherteam')
-        self.guadamen = self.person_set.getByName('guadamen')
-        self.product_set = getUtility(IProductSet)
-        self.bzr = self.product_set.getByName('bzr')
+        TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
+        person_set = getUtility(IPersonSet)
+        self.myteam = person_set.getByName('myteam')
+        self.otherteam = person_set.getByName('otherteam')
+        self.guadamen = person_set.getByName('guadamen')
+        product_set = getUtility(IProductSet)
+        self.bzr = product_set.getByName('bzr')
         self.now = datetime.now(pytz.timezone('UTC'))
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
@@ -47,7 +54,6 @@ class TestPerson(unittest.TestCase):
         sample_person = Person.byName('name12')
         login(sample_person.preferredemail.email)
         sample_person.deactivateAccount("blah!")
-        flush_database_updates()
         self.failUnlessEqual(sample_person.name, 'name12-deactivatedaccount')
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
@@ -56,7 +62,6 @@ class TestPerson(unittest.TestCase):
         # other than name12-deactivatedaccount because that is already in use.
         login(foo_bar.preferredemail.email)
         foo_bar.deactivateAccount("blah!")
-        flush_database_updates()
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
 
     def test_getDirectMemberIParticipateIn(self):
@@ -78,7 +83,6 @@ class TestPerson(unittest.TestCase):
         # warty_team.
         login(warty_team.teamowner.preferredemail.email)
         warty_team.acceptInvitationToBeMemberOf(ubuntu_team, comment="foo")
-        flush_database_updates()
         self.failUnless(warty_team in ubuntu_team.activemembers)
         self.failUnlessEqual(
             sample_person._getDirectMemberIParticipateIn(ubuntu_team),
@@ -129,7 +133,7 @@ class TestPerson(unittest.TestCase):
             )
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -143,7 +147,7 @@ class TestPerson(unittest.TestCase):
             sourcepackagename=None)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -156,7 +160,7 @@ class TestPerson(unittest.TestCase):
             purpose=ArchivePurpose.PPA)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -168,12 +172,11 @@ class TestPerson(unittest.TestCase):
             name='namefoo',
             registrant=self.otherteam,
             owner=self.otherteam,
-            author=self.otherteam,
             product=self.bzr,
             url=None)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
@@ -189,10 +192,9 @@ class TestPerson(unittest.TestCase):
         bug_params.setBugTarget(product=self.bzr)
         bug = getUtility(IBugSet).createBug(bug_params)
         bug.bugtasks[0].transitionToAssignee(self.otherteam)
-        flush_database_updates()
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
@@ -202,7 +204,7 @@ class TestPerson(unittest.TestCase):
         self.bzr.addSubscription(self.otherteam, self.guadamen)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -216,7 +218,7 @@ class TestPerson(unittest.TestCase):
         specification.subscribe(self.otherteam, self.otherteam, True)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
@@ -226,11 +228,93 @@ class TestPerson(unittest.TestCase):
         self.guadamen.addMember(self.otherteam, self.guadamen)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
                 ' teammembership.')
+
+    def test_visibility_validator_team_mailinglist_public(self):
+        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        try:
+            self.otherteam.visibility = PersonVisibility.PUBLIC
+        except ImmutableVisibilityError, exc:
+            self.assertEqual(
+                str(exc),
+                'This team cannot be made public since it has a mailing list')
+
+    def test_visibility_validator_team_mailinglist_public_view(self):
+        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        # The view should add an error notification.
+        view = create_initialized_view(self.otherteam, '+edit', {
+            'field.name': 'otherteam',
+            'field.displayname': 'Other Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.renewal_policy': 'NONE',
+            'field.visibility': 'PUBLIC',
+            'field.actions.save': 'Save',
+            })
+        self.assertEqual(len(view.request.notifications), 1)
+        self.assertEqual(
+            view.request.notifications[0].message,
+            'This team cannot be made public since it has a mailing list')
+
+    def test_visibility_validator_team_mailinglist_public_purged(self):
+        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        mailinglist.purge()
+        self.otherteam.visibility = PersonVisibility.PUBLIC
+        self.assertEqual(self.otherteam.visibility, PersonVisibility.PUBLIC)
+
+    def test_visibility_validator_team_mailinglist_private(self):
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except ImmutableVisibilityError, exc:
+            self.assertEqual(
+                str(exc),
+                'This team cannot be made private since it '
+                'is referenced by a mailing list.')
+
+    def test_visibility_validator_team_mailinglist_private_view(self):
+        # The view should add a field error.
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        view = create_initialized_view(self.otherteam, '+edit', {
+            'field.name': 'otherteam',
+            'field.displayname': 'Other Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.renewal_policy': 'NONE',
+            'field.visibility': 'PRIVATE_MEMBERSHIP',
+            'field.actions.save': 'Save',
+            })
+        self.assertEqual(len(view.errors), 1)
+        self.assertEqual(view.errors[0],
+                         'This team cannot be made private since it '
+                         'is referenced by a mailing list.')
+
+    def test_visibility_validator_team_mailinglist_private_purged(self):
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        mailinglist.purge()
+        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        self.assertEqual(self.otherteam.visibility,
+                         PersonVisibility.PRIVATE_MEMBERSHIP)
+
+
+class TestPersonSet(unittest.TestCase):
+    """Test `IPersonSet`."""
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login(ANONYMOUS)
+        self.person_set = getUtility(IPersonSet)
+
+    def test_isNameBlacklisted(self):
+        cursor().execute(
+            "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
+        self.failUnless(self.person_set.isNameBlacklisted('foo'))
+        self.failIf(self.person_set.isNameBlacklisted('bar'))
 
 
 class TestCreatePersonAndEmail(unittest.TestCase):
@@ -249,26 +333,25 @@ class TestCreatePersonAndEmail(unittest.TestCase):
             NameAlreadyTaken, self.person_set.createPersonAndEmail,
             'testing2@example.com', PersonCreationRationale.UNKNOWN,
             name='zzzz')
-        
+
     def test_duplicated_email_not_accepted(self):
         self.person_set.createPersonAndEmail(
             'testing@example.com', PersonCreationRationale.UNKNOWN)
         self.assertRaises(
             EmailAddressAlreadyTaken, self.person_set.createPersonAndEmail,
             'testing@example.com', PersonCreationRationale.UNKNOWN)
-        
+
     def test_invalid_email_not_accepted(self):
         self.assertRaises(
             InvalidEmailAddress, self.person_set.createPersonAndEmail,
             'testing@.com', PersonCreationRationale.UNKNOWN)
-        
+
     def test_invalid_name_not_accepted(self):
         self.assertRaises(
             InvalidName, self.person_set.createPersonAndEmail,
             'testing@example.com', PersonCreationRationale.UNKNOWN,
             name='/john')
-        
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

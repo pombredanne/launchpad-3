@@ -408,11 +408,41 @@ users a bad experience.
     >>> page_matches[0].url
     'http://blueprints.launchpad.dev/ubuntu/+spec/gobuntu-hardy'
 
-If no matches are found in the response, an error is raised. It is
-possible that all the matches were missing a title or summary, but there
-is also a possibility that the GSP version is incompatible. As there is
-nothing to show the user, we treat this as an error. This example does
-not have any <R> tags.
+If no matches are found in the response, and there are 20 or fewer results,
+an Empty PageMatches is returned. This happens when the results are missing
+titles and summaries. This is not considered to be a problem because the
+small number implies that Google did a poor job of indexing pages or indexed
+the wrong Launchpad server. In this example, there is only one match, but
+the results is missing a title so there is not enough information to make
+a PageMatch.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-no-meaningful-results.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="1">
+    <M>1</M>
+    ...
+    <R N="1">
+      <U>https://bugs.launchpad.net/</U>
+      <UE>https://bugs.launchpad.net/</UE>
+      <T></T>
+      <RK>0</RK>
+      <CRAWLDATE>17 hours ago</CRAWLDATE>
+      <S>This 'R'esult does not have a title.</S>
+      <LANG>en</LANG>
+      <Label>_cse_ixpjdn21yfg</Label>
+      <HAS><L/><RT/></HAS>
+    </R>...
+
+If no matches are found in the response, and there are more than 20
+possible matches, an error is raised. Unlike the previous example, there
+are lots of results; there is a possibility that the GSP version is
+incompatible. This example says it has 1000 matches, but none of the R
+tags can be parsed (because the markup was changed to use RESULT).
 
     >>> gsp_xml_file_name = path.join(
     ...     base_path, 'googlesearchservice-incompatible-result.xml')
@@ -422,7 +452,7 @@ not have any <R> tags.
     >>> print gsp_xml
     <...
     <RES SN="1" EN="1">
-    <M>1</M>
+    <M>1000</M>
     ...
     <RESULT N="1">
       <url>https://bugs.launchpad.net/</url>
@@ -520,7 +550,7 @@ is only run in one environment, so links to that site will be preserved.
     ['help.launchpad.net']
 
     >>> page_match = PageMatch(
-    ...     u'OpenId',
+    ...     u'OpenID',
     ...     'http://help.launchpad.net/OpenID',
     ...     u'Launchpad uses OpenID.')
     >>> page_match.url

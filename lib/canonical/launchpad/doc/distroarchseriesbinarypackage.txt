@@ -12,13 +12,14 @@ Distro Arch Release Binary Package
   >>> firefox_name = BinaryPackageName.selectOneBy(name="mozilla-firefox")
   >>> pmount_hoary_i386 = DistroArchSeriesBinaryPackage(hoary_i386,
   ...                                                    pmount_name)
+  >>> firefox_hoary_i386 = DistroArchSeriesBinaryPackage(hoary_i386,
+  ...                                                    firefox_name)
+
 
 First, we create a new version of pmount, and a version of
 mozilla-firefox that coincides with pmount's. We're hitch-hiking on two
 existing builds that are in sampledata!
 
-  >>> from canonical.launchpad.database.binarypackagerelease import (
-  ...     BinaryPackageRelease)
   >>> from canonical.launchpad.database.publishing import (
   ...     SecureBinaryPackagePublishingHistory)
   >>> from canonical.launchpad.database.build import Build
@@ -32,10 +33,12 @@ existing builds that are in sampledata!
   >>> binpackageformat = BinaryPackageFormat.DEB
   >>> from canonical.launchpad.interfaces import (
   ...     PackagePublishingPriority, PackagePublishingStatus,
-  ...     PackagePublishingPocket)
+  ...     PackagePublishingPocket, IDistributionSet)
   >>> priority = PackagePublishingPriority.STANDARD
 
-  >>> bpr = Build.get(9).createBinaryPackageRelease(
+XXX: noodles 2008-11-05 bug=294585: The dependency on a database id 
+needs to be removed.
+  >>> bpr = Build.get(8).createBinaryPackageRelease(
   ...   binarypackagename=firefox_name.id,
   ...   version="120.6-0",
   ...   summary="Firefox loves lollies",
@@ -74,8 +77,9 @@ existing builds that are in sampledata!
   ...   dateremoved=None,
   ...   archive=hoary_i386.main_archive)
 
-
-  >>> bpr = Build.get(8).createBinaryPackageRelease(
+XXX: noodles 2008-11-06 bug=294585: The dependency on a database id 
+needs to be removed.
+  >>> bpr = Build.get(9).createBinaryPackageRelease(
   ...   binarypackagename=pmount_name.id,
   ...   version="cr98.34",
   ...   summary="Pmount bakes cakes",
@@ -128,6 +132,24 @@ both are sane.
   u'0.1-1'
   >>> old_release.name
   u'pmount'
+
+The source package that was used to build the current release is
+available in the binary package's distro_source_package attribute.
+
+  >>> distro_source_package = firefox_hoary_i386.distro_source_package
+  >>> distro_source_package.displayname
+  u'mozilla-firefox in ubuntu'
+
+If a given binary package doesn't have a current release, then the
+distro_source_package attribute should return None.
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> deb_wdy_i386 = removeSecurityProxy(
+  ...     getUtility(IDistributionSet)['debian']['woody']['i386'])
+  >>> pmount_woody_i386 = DistroArchSeriesBinaryPackage(
+  ...     deb_wdy_i386, pmount_name)
+  >>> print pmount_woody_i386.distro_source_package
+  None
 
 Check the publishing record of packages returned by 'currentrelease' and
 '__getitem__', which are different and in 'Published' state. We compare

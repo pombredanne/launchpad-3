@@ -1,36 +1,36 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
-"""OpenId related interfaces."""
+"""OpenID related interfaces."""
 
 __metaclass__ = type
 __all__ = [
-    'IOpenIdAuthorization',
-    'IOpenIdAuthorizationSet',
+    'IOpenIDAuthorization',
+    'IOpenIDAuthorizationSet',
     'IOpenIDPersistentIdentity',
     'IOpenIDRPConfig',
     'IOpenIDRPConfigSet',
     'IOpenIDRPSummary',
     'IOpenIDRPSummarySet',
-    'ILaunchpadOpenIdStoreFactory',
+    'ILaunchpadOpenIDStoreFactory',
     'ILoginServiceAuthorizeForm',
     'ILoginServiceLoginForm',
     ]
 
 from zope.component import getUtility
-from zope.schema import Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BaseImageUpload, PasswordField, UniqueField)
+    BaseImageUpload, PasswordField, URIField, UniqueField)
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.lazr.fields import Reference
 
 
-class IOpenIdAuthorization(Interface):
+class IOpenIDAuthorization(Interface):
     id = Int(title=u'ID', required=True)
 
     personID = Int(title=u'Person', required=True, readonly=True)
@@ -46,7 +46,7 @@ class IOpenIdAuthorization(Interface):
     trust_root = TextLine(title=u'OpenID Trust Root', required=True)
 
 
-class IOpenIdAuthorizationSet(Interface):
+class IOpenIDAuthorizationSet(Interface):
     def isAuthorized(person, trust_root, client_id):
         """Check to see if the trust_root is authorized.
 
@@ -67,14 +67,14 @@ class IOpenIdAuthorizationSet(Interface):
         """
 
 
-class ILaunchpadOpenIdStoreFactory(Interface):
-    """Factory to create LaunchpadOpenIdStore instances."""
+class ILaunchpadOpenIDStoreFactory(Interface):
+    """Factory to create LaunchpadOpenIDStore instances."""
 
     def __call__():
-        """Create a LaunchpadOpenIdStore instance."""
+        """Create a LaunchpadOpenIDStore instance."""
 
 
-class TrustRootField(UniqueField):
+class TrustRootField(UniqueField, URIField):
     """An OpenID Relying Party trust root, which is unique."""
 
     attribute = 'trust_root'
@@ -93,7 +93,6 @@ class RPLogoImageUpload(BaseImageUpload):
     dimensions = (400, 100)
     exact_dimensions = False
     max_size = 100*1024
-    default_image_resource = '/@@/nyet-logo'
 
 
 sreg_fields_vocabulary = SimpleVocabulary([
@@ -116,6 +115,7 @@ class IOpenIDRPConfig(Interface):
     id = Int(title=u'ID', required=True)
     trust_root = TrustRootField(
         title=_('Trust Root'), required=True,
+        trailing_slash=True,
         description=_('The openid.trust_root value sent by the '
                       'Relying Party'))
     displayname = TextLine(
@@ -127,6 +127,7 @@ class IOpenIDRPConfig(Interface):
                       'the user should authenticate.'))
     logo = RPLogoImageUpload(
         title=_('Logo'), required=False,
+        default_image_resource='/@@/nyet-logo',
         description=_('A banner that identifies the Relying Party, '
                       'no larger than 400x100 pixels.'))
     allowed_sreg = List(
@@ -139,6 +140,12 @@ class IOpenIDRPConfig(Interface):
         description=_('The creation rationale to use for user accounts '
                       'created while logging in to this Relying Party'),
         vocabulary=PersonCreationRationale)
+    can_query_any_team = Bool(
+        title=_('Query Any Team'),
+        description=_(
+            'Teammembership of any team can be requested, including '
+            'private teams.'),
+        required=True, readonly=False)
 
 
 class IOpenIDRPConfigSet(Interface):
@@ -146,16 +153,16 @@ class IOpenIDRPConfigSet(Interface):
     def new(trust_root, displayname, description, logo=None,
             allowed_sreg=None, creation_rationale=PersonCreationRationale
             .OWNER_CREATED_UNKNOWN_TRUSTROOT):
-        """Create a new IOpenIdRPConfig"""
+        """Create a new IOpenIDRPConfig"""
 
     def get(id):
-        """Get the IOpenIdRPConfig with a particular ID."""
+        """Get the IOpenIDRPConfig with a particular ID."""
 
     def getAll():
-        """Return a sequence of all IOpenIdRPConfigs."""
+        """Return a sequence of all IOpenIDRPConfigs."""
 
     def getByTrustRoot(trust_root):
-        """Return the IOpenIdRPConfig for a particular trust root"""
+        """Return the IOpenIDRPConfig for a particular trust root"""
 
 
 class IOpenIDRPSummary(Interface):
@@ -184,10 +191,12 @@ class IOpenIDRPSummary(Interface):
 class IOpenIDRPSummarySet(Interface):
     """A set of OpenID RP Summaries."""
 
-    def getByIdentifier(identifier):
+    def getByIdentifier(identifier, only_unknown_trust_roots=False):
         """Get all the IOpenIDRPSummary objects for an OpenID identifier.
 
         :param identifier: A string used as an OpenID identifier.
+        :param only_unknown_trust_roots: if True, only records for trust roots
+            which there is no IOpenIDRPConfig entry will be returned.
         :return: An iterator of IOpenIDRPSummary objects.
         """
 
@@ -203,9 +212,23 @@ class IOpenIDRPSummarySet(Interface):
 class IOpenIDPersistentIdentity(Interface):
     """An object that represents a persistent user identity URL.
 
-    This interface is used purely for use in the UI.
+    This interface is generally needed by the UI.
     """
-    person = Attribute('The IPerson this is for')
+    account = Attribute('The `IAccount` for the user.')
+    # XXX sinzui 2008-09-04 bug=264783:
+    # Remove old_openid_identity_url and new_*.
+    old_openid_identifier = Attribute(
+        'The old openid_identifier for the `IAccount`.')
+    old_openid_identity_url = Attribute(
+        'The old OpenID identity URL for the user.')
+    new_openid_identifier = Attribute(
+        'The new openid_identifier for the `IAccount`.')
+    new_openid_identity_url = Attribute(
+        'The new OpenID identity URL for the user.')
+    openid_identity_url = Attribute(
+        'The OpenID identity URL for the user.')
+    openid_identifier = Attribute(
+        'The OpenID identifier used with the request.')
 
 
 class ILoginServiceAuthorizeForm(Interface):

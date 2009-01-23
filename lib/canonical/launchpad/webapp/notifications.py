@@ -15,7 +15,7 @@ __metaclass__ = type
 from datetime import datetime
 
 from zope.interface import implements
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
@@ -24,6 +24,8 @@ from canonical.launchpad.webapp.interfaces import (
         )
 from canonical.launchpad.webapp.menu import escape, structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.login import allowUnauthenticatedSession
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 
 SESSION_KEY = 'launchpad'
@@ -83,6 +85,9 @@ class NotificationResponse:
     >>> request = NotificationRequest()
     >>> request.response = response
     >>> response._request = request
+    >>> request.principal = None # full IRequests are zope.security
+    ... # participations, and NotificationResponse.redirect expects a
+    ... # principal, as in the full IRequest interface.
 
     >>> len(response.notifications)
     0
@@ -170,15 +175,6 @@ class NotificationResponse:
         # just return it
         if self._notifications is not None:
             return self._notifications
-        # XXX: SteveAlexander 2007-04-01:
-        #      If there is no session currently then there can be no
-        #      notifications.  However, ISession(self)[SESSION_KEY] creates
-        #      a session whether one is needed or not.
-        #      Options are to refactor the session code so that it makes a
-        #      session only when necessary, or to check for the presence of
-        #      the session cookie at call-sites like this one.
-        #      A get_session() helper would help here.
-        #      Maybe a get_or_create_session() to go with it.
         cookie_name = config.launchpad_session.cookie
         request = self._request
         response = self
@@ -216,6 +212,10 @@ class NotificationResponse:
         # We are redirecting, so we need to stuff our notifications into
         # the session
         if self._notifications is not None and len(self._notifications) > 0:
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it safe
+            # to set the session.
+            allowUnauthenticatedSession(self._request)
             session = ISession(self)[SESSION_KEY]
             session['notifications'] = self._notifications
         return super(NotificationResponse, self).redirect(location, status)

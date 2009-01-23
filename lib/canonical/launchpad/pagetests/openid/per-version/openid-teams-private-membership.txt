@@ -3,8 +3,8 @@
 The Launchpad OpenID Teams Extension provides a way for relying
 parties to check a user's team membership.  Launchpad also supports
 the concept of private membership teams.  We do not want Launchpad's
-OpenID code to disclose details of private membership teams to unknown
-RPs.
+OpenID code to disclose details of private membership teams to
+unauthorized RPs.
 
 The sample data contains a private team called "myteam", which has a
 member called "member":
@@ -23,7 +23,9 @@ member called "member":
 
 The user-specific portion of member's OpenID URL is cCGE3LA:
 
-    >>> print member.openid_identifier
+    # Only admins and the person may access an openid_identifier.
+    >>> login('foo.bar@canonical.com')
+    >>> print member.account.openid_identifier
     cCGE3LA
 
     >>> logout()
@@ -77,15 +79,12 @@ user's membership to the RP:
     ''
 
 
-== Known RPs ==
+== Trusted RPs ==
 
-XXX jamesh bug=174076:
-We need to make this more configurable, to provide more fine grained
-controls than just "can query private teams" or not.
-
-If the RP is known to Launchpad by having an OpenIDRPConfig, then it
-is allowed to query for private teams.  To test this, lets create an
-RP config:
+If the RP is known to Launchpad by having an OpenIDRPConfig and flagged
+as being able to query private team membership (the 
+IOpenIDRPConfig.can_query_any_team flag), then it is allowed to do so.
+To test this, lets create an RP config:
 
     >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
     >>> login('foo.bar@canonical.com')
@@ -116,7 +115,37 @@ The authentication request is successful:
     >>> print info.status
     success
 
-And Launchpad has informed us that "member" is a member of "myteam":
+However, even though the RP is known, it hasn't been given permission
+to query private teams:
+
+    >>> info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
+    ''
+
+So lets set the can_query_any_team flag on our RP config:
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://launchpad.dev/')
+    >>> rpconfig.can_query_any_team = True
+    >>> logout()
+
+Now if we authenticate again, Launchpad will informed us that
+"member" is a member of "myteam":
+
+    >>> endpoint = make_endpoint(
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/cCGE3LA')
+    >>> request = consumer.beginWithoutDiscovery(endpoint)
+    >>> request.message.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
+    'lp'
+    >>> request.addExtensionArg(
+    ...     LAUNCHPAD_TEAMS_NS, 'query_membership', 'myteam')
+
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> browser.getControl('Sign In', index=0).click()
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
 
     >>> info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
     'myteam'

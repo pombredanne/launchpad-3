@@ -6,16 +6,16 @@
 
 <facet facet="translations">
 
-    <content class="canonical.launchpad.database.POFile">
+    <class class="canonical.launchpad.database.POFile">
         <allow interface="canonical.launchpad.interfaces.IPOFile" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPOFile" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.POFileTranslator">
+    <class class="canonical.launchpad.database.POFileTranslator">
         <allow interface="canonical.launchpad.interfaces.IPOFileTranslator" />
-    </content>
+    </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IPOFile"
@@ -26,13 +26,6 @@
         module="canonical.launchpad.browser"
         classes="POFileNavigation"
         />
-
-    <adapter
-      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-      for="canonical.launchpad.interfaces.IPOFile"
-      factory="canonical.launchpad.browser.POFileSOP"
-      permission="zope.Public"
-      />
 
     <browser:url
         for="canonical.launchpad.interfaces.IPOFile"
@@ -63,9 +56,6 @@
 
         <!-- POFile Portlets -->
         <browser:page
-            name="+portlet-contributors"
-            template="../templates/pofile-portlet-contributors.pt" />
-        <browser:page
             name="+contributors"
             template="../templates/pofile-translate-contributors.pt" />
         <browser:page
@@ -74,9 +64,6 @@
         <browser:page
             name="+access"
             template="../templates/pofile-translate-access.pt" />
-        <browser:page
-            name="+portlet-translators"
-            template="../templates/pofile-portlet-translators.pt" />
         <browser:page
             name="+portlet-stats"
             template="../templates/pofile-portlet-stats.pt" />
@@ -128,9 +115,9 @@
         />
 
     <!-- Dummy PO File -->
-    <content class="canonical.launchpad.database.DummyPOFile">
+    <class class="canonical.launchpad.database.DummyPOFile">
         <allow interface="canonical.launchpad.interfaces.IPOFile" />
-    </content>
+    </class>
 
     <!-- POFileSet -->
     <securedutility

@@ -17,7 +17,7 @@ classes.
 
 Setup the test builder:
 
-    >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+    >>> from canonical.buildd.tests import BuilddSlaveTestSetup
     >>> BuilddSlaveTestSetup().setUp()
 
 Setup a suitable chroot for Hoary i386:
@@ -67,16 +67,52 @@ Clean up previous BuildQueue results from sampledata:
     u'bob'
     >>> lost_job.destroySelf()
 
-Setup BuilddMaster class:
+The BuilddMaster will be set up next. This involves checking the various
+builders and resetting the virtualized ones if needed. Please note that
+'frog' is a PPA builder and was reset due to a communication time-out.
 
     >>> bm.addDistroArchSeries(hoary_i386)
     >>> bm.setupBuilders(hoary_i386)
-    WARNING:root.builders.x86:frog (http://localhost:9221/) marked as failed due to: (111, 'Connection refused')
+    WARNING:root.builders.x86:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
     Traceback (most recent call last):
     ...
     error: (111, 'Connection refused')
 
-Check if there are builders available:
+The 'frog' builder was not marked as failed.
+
+    >>> frog_builder = builder_set['frog']
+    >>> frog_builder.name
+    u'frog'
+    >>> frog_builder.builderok
+    True
+
+If the specified buildd slave reset command (used inside resumeSlaveHost())
+fails, the slave will still be marked as failed.
+
+    >>> from canonical.config import config
+    >>> reset_fail_config = '''
+    ...     [builddmaster]
+    ...     vm_resume_command: /bin/false'''
+    >>> config.push('reset fail', reset_fail_config)
+    >>> frog_builder.handleTimeout(logger, 'The universe just collapsed')
+    WARNING:root:Resetting builder: http://localhost:9221/ -- The universe just collapsed
+    ...
+    WARNING:root:Failed to reset builder: http://localhost:9221/ -- Resuming failed:
+    ...
+    WARNING:root:Disabling builder: http://localhost:9221/ -- The universe just collapsed
+    ...
+    <BLANKLINE>
+
+Since we were unable to reset the 'frog' builder it was marked as 'failed'.
+
+    >>> frog_builder.builderok
+    False
+
+Restore default value for resume command.
+
+    >>> ignored_config = config.pop('reset fail')
+
+The 'bob' builder is available for build jobs.
 
     >>> bob_builder = builder_set['bob']
     >>> bob_builder.name
@@ -85,16 +121,6 @@ Check if there are builders available:
     False
     >>> bob_builder.is_available
     True
-
-Verify how the nonexistent builder was excluded, marked as failed:
-
-    >>> frog_builder = builder_set['frog']
-    >>> frog_builder.builderok
-    False
-    >>> print frog_builder.failnotes
-    (111, 'Connection refused')
-    >>> frog_builder.is_available
-    False
 
 
 == Builder dispatching API ==

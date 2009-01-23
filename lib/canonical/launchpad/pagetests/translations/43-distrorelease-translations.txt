@@ -126,17 +126,6 @@ file):
 If everything works out ok, that means that DummyPOFile has actually
 returned all untranslated entries.
 
-Now, lets also check that fuzzy entries show up as well.
-
-  >>> browser.getControl(name='show', index=1).value = ['need_review']
-  >>> browser.getControl('Change').click()
-  >>> print extract_url_parameter(browser.url, 'batch')
-  batch=10
-  >>> print extract_url_parameter(browser.url, 'show')
-  show=need_review
-  >>> "There are no messages that match this filtering." in browser.contents
-  True
-
 Finally, lets also check that translated entries show up as well.
 
   >>> browser.getControl(name='show', index=1).value = ['translated']

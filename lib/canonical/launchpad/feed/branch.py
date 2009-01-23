@@ -7,8 +7,11 @@ __metaclass__ = type
 __all__ = [
     'BranchFeed',
     'PersonBranchFeed',
+    'PersonRevisionFeed',
     'ProductBranchFeed',
+    'ProductRevisionFeed',
     'ProjectBranchFeed',
+    'ProjectRevisionFeed',
     ]
 
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -16,12 +19,18 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.browser import BranchView
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
-from canonical.launchpad.interfaces import (
-    BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
-    IPerson, IProduct, IProject)
+from canonical.launchpad.browser import BranchView
+from canonical.launchpad.interfaces.branch import (
+    BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet)
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadView, urlappend, urlparse)
+
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import (
@@ -101,8 +110,8 @@ class BranchFeedBase(FeedBase):
                                 date_created=branch.date_created,
                                 date_updated=branch.date_last_modified,
                                 date_published=branch.date_created,
-                                # XXX if author and owner are different
-                                # perhaps we should use them both?
+                                # XXX bac 2008-01-10: if author and owner are
+                                # different perhaps we should use them both?
                                 authors=[FeedPerson(branch.owner,
                                                     self.rootsite)],
                                 content=content_data)
@@ -124,6 +133,8 @@ class BranchListingFeed(BranchFeedBase):
 
         Return the branches for this context sorted by date_created in
         descending order.
+
+        Only `self.quantity` revisions are returned.
         """
         branch_query = getUtility(IBranchSet).getBranchesForContext(
             context=self.context, visible_by_user=None,
@@ -150,6 +161,167 @@ class PersonBranchFeed(BranchListingFeed):
     usedfor = IPerson
 
 
+class RevisionFeedContentView(LaunchpadView):
+    """View for a revision feed contents."""
+
+    def __init__(self, context, request, feed):
+        super(RevisionFeedContentView, self).__init__(context, request)
+        self.feed = feed
+
+    @cachedproperty
+    def branch(self):
+        return self.context.getBranch()
+
+    @cachedproperty
+    def revno(self):
+        return self.branch.getBranchRevision(revision=self.context).sequence
+
+    @property
+    def product(self):
+        return self.branch.product
+
+    def render(self):
+        """Render the view."""
+        return ViewPageTemplateFile('templates/revision.pt')(self)
+
+    @property
+    def title(self):
+        if self.revno is None:
+            revno = ""
+        else:
+            revno = "r%s " % self.revno
+        log_lines = self.context.log_body.split('\n')
+        first_line = log_lines[0]
+        if len(first_line) < 60 and len(log_lines) == 1:
+            logline = first_line
+        else:
+            logline = first_line[:60] + '...'
+        return "[%(branch)s] %(revno)s %(logline)s" % {
+            'branch': self.branch.name,
+            'revno': revno,
+            'logline': logline}
+
+
+class RevisionListingFeed(FeedBase):
+    """Abstract class for revision feeds."""
+
+    # max_age is in seconds
+    max_age = config.launchpad.max_revision_feed_cache_minutes * MINUTES
+
+    rootsite = "code"
+    feedname = "revisions"
+
+    @property
+    def logo(self):
+        """See `IFeed`."""
+        return "%s/@@/branch" % self.site_url
+
+    def _getRawItems(self):
+        """Get the raw set of items for the feed."""
+        raise NotImplementedError
+
+    def _getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
+        items = self._getRawItems()
+        # Convert the items into their feed entry representation.
+        items = [self.itemToFeedEntry(item) for item in items]
+        return items
+
+    def itemToFeedEntry(self, revision):
+        """See `IFeed`."""
+        id = "tag:launchpad.net,%s:/revision/%s" % (
+            revision.revision_date.date().isoformat(), revision.revision_id)
+        content_view = RevisionFeedContentView(revision, self.request, self)
+        content = content_view.render()
+        content_data = FeedTypedData(content=content,
+                                     content_type="html",
+                                     root_url=self.root_url)
+        title = FeedTypedData(content_view.title)
+        if revision.revision_author.person is None:
+            authors = [
+                RevisionPerson(revision.revision_author, self.rootsite)]
+        else:
+            authors = [
+                FeedPerson(revision.revision_author.person, self.rootsite)]
+
+        entry = FeedEntry(
+            title=title,
+            link_alternate=None,
+            date_created=revision.revision_date,
+            date_updated=revision.revision_date,
+            date_published=revision.date_created,
+            authors=authors,
+            id_=id,
+            content=content_data)
+        return entry
+
+
+class PersonRevisionFeed(RevisionListingFeed):
+    """Feed for a person's revisions."""
+
+    usedfor = IPerson
+
+    @property
+    def title(self):
+        """See `IFeed`."""
+        if self.context.is_team:
+            return 'Latest Revisions by members of %s' % (
+                self.context.displayname)
+        else:
+            return 'Latest Revisions by %s' % self.context.displayname
+
+    def _getRawItems(self):
+        """See `RevisionListingFeed._getRawItems`.
+
+        Return the public revisions by this person, or by people in this team.
+        """
+        query = getUtility(IRevisionSet).getPublicRevisionsForPerson(
+            self.context)
+        return list(query[:self.quantity])
+
+
+class ProjectRevisionFeedBase(RevisionListingFeed):
+    """Defines a common access method to get the revisions."""
+
+    @property
+    def title(self):
+        """See `IFeed`."""
+        return 'Latest Revisions for %s' % self.context.displayname
+
+
+class ProductRevisionFeed(ProjectRevisionFeedBase):
+    """Feed for a project's revisions."""
+
+    usedfor = IProduct
+
+    def _getRawItems(self):
+        """See `RevisionListingFeed._getRawItems`.
+
+        Return the public revisions in this product.
+        """
+        query = getUtility(IRevisionSet).getPublicRevisionsForProduct(
+            self.context)
+        return list(query[:self.quantity])
+
+
+class ProjectRevisionFeed(ProjectRevisionFeedBase):
+    """Feed for a project's revisions."""
+
+    usedfor = IProject
+
+    def _getRawItems(self):
+        """See `RevisionListingFeed._getRawItems`.
+
+        Return the public revisions in products that are part of this project.
+        """
+        query = getUtility(IRevisionSet).getPublicRevisionsForProject(
+            self.context)
+        return list(query[:self.quantity])
+
+
 class RevisionPerson:
     """See `IFeedPerson`.
 
@@ -168,6 +340,7 @@ class RevisionPerson:
         self.email = None
         self.uri = None
 
+
 class BranchFeed(BranchFeedBase):
     """Feed for single branch.
 
@@ -178,7 +351,6 @@ class BranchFeed(BranchFeedBase):
 
     usedfor = IBranch
     feedname = "branch"
-    delegate_view_class = BranchView
 
     def initialize(self):
         """See `IFeed`."""
@@ -212,11 +384,8 @@ class BranchFeed(BranchFeedBase):
 
     def itemToFeedEntry(self, rev):
         """See `IFeed`."""
-        delegate_view = self.delegate_view_class(self.context, self.request)
-        delegate_view.initialize()
         title = FeedTypedData("Revision %d" % rev.sequence)
-        url = urlappend(delegate_view.codebrowse_url,
-                        "revision/%d" % rev.sequence)
+        url = self.context.codebrowse_url('revision', str(rev.sequence))
         content_view = BranchFeedContentView(rev, self.request, self,
                                              'templates/branch-revision.pt')
         content = FeedTypedData(content=content_view.render(),

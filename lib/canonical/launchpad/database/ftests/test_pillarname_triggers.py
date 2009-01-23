@@ -99,9 +99,9 @@ class PillarNameTriggersTestCase(unittest.TestCase):
 
         # Inserting a new Product will populate PillarName
         cur.execute("""
-            INSERT INTO Product (owner, name, displayname, title, summary)
+            INSERT INTO Product (owner, registrant, name, displayname, title, summary)
             VALUES (
-                1, 'whatever', 'whatever', 'whatever', 'whatever'
+                1, 1, 'whatever', 'whatever', 'whatever', 'whatever'
                 )
             """)
         self.failUnless(is_in_sync('whatever'))
@@ -152,10 +152,10 @@ class PillarNameTriggersTestCase(unittest.TestCase):
         # Inserting a new Project will populate PillarName
         cur.execute("""
             INSERT INTO Project (
-                name, owner, displayname, title, summary, description
+                name, owner, registrant, displayname, title, summary, description
                 )
                 VALUES (
-                    'whatever', 1, 'whatever', 'whatever',
+                    'whatever', 1, 1, 'whatever', 'whatever',
                     'whatever', 'whatever'
                     )
             """)

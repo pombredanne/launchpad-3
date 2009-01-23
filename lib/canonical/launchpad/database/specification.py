@@ -31,14 +31,13 @@ from canonical.launchpad.interfaces import (
     SpecificationSort,
     )
 
-from canonical.database.sqlbase import (
-    block_implicit_flushes, quote, SQLBase, sqlvalues)
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist)
+    get_contact_email_addresses, shortlist)
 
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
@@ -317,7 +316,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
             subscription.person for subscription in self.subscriptions]
         addresses = set()
         for person in related_people + subscribers:
-            addresses.update(contactEmailAddresses(person))
+            addresses.update(get_contact_email_addresses(person))
         return sorted(addresses)
 
     # emergent properties
@@ -631,6 +630,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     @property
     def all_blocked(self):
+        """See `ISpecification`."""
         blocked = set()
         self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.definition_status,
@@ -645,7 +645,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         branch_link = self.getBranchLink(branch)
         if branch_link is not None:
             return branch_link
-        branch.date_last_modified = UTC_NOW
         branch_link = SpecificationBranch(
             specification=self, branch=branch, summary=summary,
             registrant=registrant)
@@ -782,7 +781,7 @@ class SpecificationSet(HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            # XXX: this is untested and was broken. -- kiko 2007-02-07
+            # XXX: kiko 2007-02-07: this is untested and was broken.
             query += (
                 ' AND Specification.definition_status NOT IN ( %s, %s ) ' %
                 sqlvalues(SpecificationDefinitionStatus.OBSOLETE,

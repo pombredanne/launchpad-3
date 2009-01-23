@@ -140,6 +140,7 @@ user some feedback in this regard. We need to create a new project first.
     >>> admin_browser.getControl('Title:').value = 'Test Group'
     >>> admin_browser.getControl('Project Group Summary:').value = 'Summary'
     >>> admin_browser.getControl('Description:').value = 'Description'
+    >>> admin_browser.getControl('Maintainer:').value = 'cprov'
     >>> admin_browser.getControl('Add').click()
     >>> admin_browser.url
     'http://launchpad.dev/test-group'
@@ -193,7 +194,7 @@ The user will now see the new product on the project's +filebug page, but will
 not be able to file a bug against it.
 
     >>> user_browser.reload()
-    >>> for message in find_tags_by_class(user_browser.contents, 
+    >>> for message in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
     ...     print message.renderContents()
     There are no projects registered for Test Group that use Launchpad to

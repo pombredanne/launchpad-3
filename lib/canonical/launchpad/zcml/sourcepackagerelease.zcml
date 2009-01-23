@@ -5,15 +5,9 @@
     i18n_domain="launchpad">
 
     <!-- SourcePackageRelease -->
-    <content class="canonical.launchpad.database.SourcePackageRelease">
+    <class class="canonical.launchpad.database.SourcePackageRelease">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
-    </content>
-
-    <adapter
-      for="canonical.launchpad.interfaces.ISourcePackageRelease"
-      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-      factory="canonical.launchpad.browser.sourcepackagerelease_to_structuralheading"
-      />
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.ISourcePackageRelease"
@@ -24,10 +18,6 @@
     <browser:pages
       for="canonical.launchpad.interfaces.ISourcePackageRelease"
       permission="zope.Public">
-      <browser:page
-        name="+body-summary"
-        template="../templates/sourcepackagerelease-body-summary.pt"
-        />
       <browser:page
         name="+portlet-builds"
         template="../templates/sourcepackagerelease-portlet-builds.pt"

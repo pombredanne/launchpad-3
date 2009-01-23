@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeImportMachineSetBreadcrumbBuilder',
     'CodeImportMachineSetNavigation',
     'CodeImportMachineSetView',
     'CodeImportMachineView',
@@ -23,7 +24,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     action, canonical_url, Navigation, LaunchpadFormView,
     LaunchpadView)
-from canonical.lazr import decorates
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from lazr.delegates import delegates
 
 
 class CodeImportMachineSetNavigation(Navigation):
@@ -34,9 +36,10 @@ class CodeImportMachineSetNavigation(Navigation):
         """See `Navigation`."""
         return self.context.getByHostname(hostname)
 
-    def breadcrumb(self):
-        """See `Navigation`."""
-        return u'Machines'
+
+class CodeImportMachineSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ICodeImportMachineSet`."""
+    text = u'Machines'
 
 
 class CodeImportMachineSetView(LaunchpadView):
@@ -63,7 +66,7 @@ class UpdateMachineStateForm(Interface):
 class DecoratedEvent:
     """A CodeImportEvent with cached items."""
 
-    decorates(ICodeImportEvent, 'event')
+    delegates(ICodeImportEvent, 'event')
 
     def __init__(self, event):
         self.event = event

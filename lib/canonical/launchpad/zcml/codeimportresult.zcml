@@ -7,11 +7,11 @@
 
   <!-- CodeImportResult -->
 
-  <content class="canonical.launchpad.database.CodeImportResult">
+  <class class="canonical.launchpad.database.CodeImportResult">
     <allow
       interface="canonical.launchpad.interfaces.ICodeImportResult"
       />
-  </content>
+  </class>
 
   <!-- CodeImportResultSet -->
 

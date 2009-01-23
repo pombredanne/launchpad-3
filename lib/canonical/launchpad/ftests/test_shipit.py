@@ -4,16 +4,17 @@ __metaclass__ = type
 
 import unittest
 
+from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getMultiAdapter, getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.systemhomes import ShipItApplication
 from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
-    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+    setFirstLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces import (
     ICountrySet, IPersonSet, ShipItArchitecture, ShipItDistroSeries,
@@ -47,11 +48,11 @@ class TestFraudDetection(unittest.TestCase):
     flavours_to_layers_mapping = {
         ShipItFlavour.UBUNTU: ShipItUbuntuLayer,
         ShipItFlavour.KUBUNTU: ShipItKUbuntuLayer,
-        ShipItFlavour.EDUBUNTU: ShipItEdUbuntuLayer}
+        ShipItFlavour.SERVER: ShipItUbuntuLayer}
 
-    # Currently we don't allow users to request the Ubuntu Server edition.
+    # We are not shipping Edubuntu CDs anymore.
     flavours_that_can_be_requested = [
-        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU]
+        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
 
     def _get_standard_option(self, flavour):
         return StandardShipItRequest.selectBy(flavour=flavour)[0]
@@ -84,20 +85,20 @@ class TestFraudDetection(unittest.TestCase):
                 'field.phone': '43242352',
                 'field.country': '226',
                 'ordertype': str(standardoption.id),
-                'FORM_SUBMIT': 'Request',
+                'field.actions.continue': 'Request',
                 }
-        request = LaunchpadTestRequest(form=form)
+        request = LaunchpadTestRequest(form=form, method='POST')
         # The request object on the ShipIt layers has that attribute.
         request.icing_url = '/+icing-%s' % flavour.name
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
-        view = getMultiAdapter(
-            (ShipItApplication(), request), name='myrequest')
-        if distroseries is not None:
-            view.series = distroseries
-        view.renderStandardrequestForm()
-        errors = getattr(view, 'errors', None)
-        self.assertEqual(errors, None)
+        page = 'myrequest'
+        if flavour == ShipItFlavour.SERVER:
+            page = 'myrequest-server'
+        view = getMultiAdapter((ShipItApplication(), request), name=page)
+        view.initialize(distroseries=distroseries)
+        self.assertEqual(view.errors, [])
+        self.assertEqual(view.form_wide_errors, [])
         return view.current_order
 
     def test_first_request_is_approved(self):
@@ -140,7 +141,7 @@ class TestFraudDetection(unittest.TestCase):
             'field.postcode': '12242790',
             'field.phone': '43242352',
             'field.country': '226',
-            'FORM_SUBMIT': 'Request',
+            'field.actions.continue': 'Request',
             }
         flavour = ShipItFlavour.UBUNTU
         option = self._get_standard_option(flavour)
@@ -165,19 +166,19 @@ class TestFraudDetection(unittest.TestCase):
         request2 = self._make_new_request_through_web(
             flavour, user_email='foo.bar@canonical.com', form=form,
             distroseries=ShipItDistroSeries.DAPPER)
-        self.failUnless(request2.isApproved(), flavour)
         self.failIfEqual(request.distroseries, request2.distroseries)
         self.assertEqual(
             request2.normalized_address, request.normalized_address)
+        self.failUnless(request2.isApproved(), flavour)
 
         # Now when a second request for CDs of the same release are made using
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
             flavour, user_email='tim@canonical.com', form=form)
         self.assertEqual(request.distroseries, request3.distroseries)
-        self.failUnless(request3.isDuplicatedAddress(), flavour)
         self.assertEqual(
             request3.normalized_address, request.normalized_address)
+        self.failUnless(request3.isDuplicatedAddress(), flavour)
 
         # The same happens for any subsequent requests for that release with
         # the same address.
@@ -210,118 +211,79 @@ class TestShippingRun(unittest.TestCase):
     def test_create_shipping_run_sets_requests_count(self):
         requestset = ShippingRequestSet()
         approved_request_ids = requestset.getUnshippedRequestsIDs(
-            ShippingRequestPriority.NORMAL)
+            ShippingRequestPriority.NORMAL, ShipItDistroSeries.HARDY)
         non_approved_request = requestset.getOldestPending()
         self.failIf(non_approved_request is None)
         run = requestset._create_shipping_run(
             approved_request_ids + [non_approved_request.id])
-        self.failUnless(run.requests_count == len(approved_request_ids))
+        self.failUnlessEqual(run.requests_count, len(approved_request_ids))
 
-    def test_shippingrun_creation_adds_cds_for_edubuntu_request(self):
-        """Ensure there is an Ubuntu CD for each Edubuntu CD.
 
-        Edubuntu CDs are not standalone, so we need to make sure the recipient
-        can use them by including one Ubuntu CD for each Edubuntu one in the
-        original request.
-        """
-        # If the request has only Edubuntu CDs, we'll add enough Ubuntu CDs to
-        # match the number of Edubuntu ones.
-        login(ANONYMOUS)
-        factory = LaunchpadObjectFactory()
-        request = factory.makeShipItRequest(ShipItFlavour.EDUBUNTU)
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()),
-            set([ShipItFlavour.EDUBUNTU]))
-        requestset = ShippingRequestSet()
-        run = requestset._create_shipping_run([request.id])
-        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()),
-            set([ShipItFlavour.EDUBUNTU, ShipItFlavour.UBUNTU]))
-        requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
-        requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
-        requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
-        all_requested_arches = set(
-            requested_ubuntu.keys() + requested_edubuntu.keys())
-        new_ubuntu_quantities = {}
-        for arch in all_requested_arches:
-            ubuntu_qty = getattr(
-                requested_ubuntu[arch], 'quantityapproved', 0)
-            edubuntu_qty = getattr(
-                requested_edubuntu[arch], 'quantityapproved', 0)
-            self.failUnlessEqual(
-                ubuntu_qty, edubuntu_qty,
-                "Number of Ubuntu and Edubuntu CDs is different for %s"
-                    % arch)
+class TestPeopleTrustedOnShipIt(unittest.TestCase):
+    """Tests for the 'is_trusted_on_shipit' property of IPerson."""
+    layer = LaunchpadFunctionalLayer
 
-        # If the request has Ubuntu CDs but there's less of that than
-        # Edubuntu, we'll add some more Ubuntu ones to get things even.
-        request = factory.makeShipItRequest(ShipItFlavour.EDUBUNTU)
-        request.setQuantities(
-            {ShipItFlavour.EDUBUNTU: {ShipItArchitecture.X86: 10,
-                                      ShipItArchitecture.AMD64: 2}})
-        request.setQuantities(
-            {ShipItFlavour.UBUNTU: {ShipItArchitecture.X86: 5}})
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()),
-            set([ShipItFlavour.EDUBUNTU, ShipItFlavour.UBUNTU]))
-        requestset = ShippingRequestSet()
-        run = requestset._create_shipping_run([request.id])
-        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()),
-            set([ShipItFlavour.EDUBUNTU, ShipItFlavour.UBUNTU]))
-        requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
-        requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
-        requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
-        all_requested_arches = set(
-            requested_ubuntu.keys() + requested_edubuntu.keys())
-        new_ubuntu_quantities = {}
-        for arch in all_requested_arches:
-            ubuntu_qty = getattr(
-                requested_ubuntu[arch], 'quantityapproved', 0)
-            edubuntu_qty = getattr(
-                requested_edubuntu[arch], 'quantityapproved', 0)
-            self.failUnlessEqual(
-                ubuntu_qty, edubuntu_qty,
-                "Number of Ubuntu and Edubuntu CDs is different for %s"
-                    % arch)
+    def test_person_with_karma_when_ubuntumembers_do_not_exist(self):
+        """Return True and do not record an OOPS when the 'ubuntumembers' team
+        doesn't exist.
 
-    def test_shippingrun_creation_does_nothing_for_kubuntu_request(self):
-        """Ubuntu CDs are not added for Kubuntu CD only orders.
-
-        That is because Kubuntu CDs are standalone and so we don't need to add
-        anything to the request so that the user can use the CDs. (This is not
-        the case with Edubuntu)
+        Since the person has karma, there's no need to check for membership in
+        the ubuntumembers team, so we don't care whether it exists or not.
         """
         login(ANONYMOUS)
-        factory = LaunchpadObjectFactory()
-        request = factory.makeShipItRequest(ShipItFlavour.KUBUNTU)
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()), set([ShipItFlavour.KUBUNTU]))
-        requestset = ShippingRequestSet()
-        run = requestset._create_shipping_run([request.id])
-        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()), set([ShipItFlavour.KUBUNTU]))
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnless(sabdfl.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnlessEqual(report.id, report2.id)
 
-    def test_shippingrun_creation_does_nothing_for_ubuntu_request(self):
-        """Ubuntu CDs are not added for Ubuntu CD only orders.
+    def test_person_without_karma_when_ubuntumembers_do_not_exist(self):
+        """Return False and record an OOPS when the 'ubuntumembers' team
+        doesn't exist.
 
-        That is because Ubuntu CDs are standalone and so we don't need to add
-        anything to the request so that the user can use the CDs. (This is not
-        the case with Edubuntu)
+        Note that we store the OOPS but don't raise any exception because we
+        don't want to fail the request -- instead we just move on as if the
+        user was not trusted on shipit.
         """
         login(ANONYMOUS)
-        factory = LaunchpadObjectFactory()
-        request = factory.makeShipItRequest(ShipItFlavour.UBUNTU)
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()), set([ShipItFlavour.UBUNTU]))
-        requestset = ShippingRequestSet()
-        run = requestset._create_shipping_run([request.id])
-        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
-        self.failUnlessEqual(
-            set(request.getContainedFlavours()), set([ShipItFlavour.UBUNTU]))
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIf(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIfEqual(report.id, report2.id)
+        self.failUnless(
+            report2.value.startswith("No team named 'ubuntumembers'"))
+
+    def test_person_without_karma_and_not_in_ubuntumembers(self):
+        """Return False and do not log an OOPS as the team exists."""
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        ubuntumembers = LaunchpadObjectFactory().makeTeam(
+            sabdfl, name='ubuntumembers')
+        self.failIf(salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIf(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnlessEqual(report.id, report2.id)
+
+    def test_person_without_karma_and_in_ubuntumembers(self):
+        """Return True and do not log an OOPS as the team exists."""
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        ubuntumembers = LaunchpadObjectFactory().makeTeam(
+            sabdfl, name='ubuntumembers')
+        login_person(sabdfl)
+        ubuntumembers.addMember(salgado, sabdfl)
+        self.failUnless(salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnless(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnlessEqual(report.id, report2.id)
 
 
 class TestShippingRequest(unittest.TestCase):

@@ -20,7 +20,7 @@
         <tal:not_current_coc condition="not: context/current">
           <p>
             This version of the code of conduct has been superseded; please sign
-            instead <a tal:attributes="href view/getCurrent/fmt:url">the current version</a>.
+            instead <a tal:attributes="href view/current/fmt:url">the current version</a>.
           </p>
         </tal:not_current_coc>
 
@@ -34,7 +34,7 @@
 
         <tal:user_has_gpg condition="gpgkeys">
           <tal:is_current_coc condition="context/current">
-            <div metal:use-macro="context/@@launchpad_generalform/generalform">
+            <div metal:use-macro="context/@@launchpad_form/form">
               <div metal:fill-slot="extra_info" style="max-width: 40em">
                 <p>
                   To sign the code of conduct:
@@ -57,7 +57,7 @@
                     </p>
                   </li>
                   <li>
-                    <div tal:define="filename string:UbuntuCodeOfConduct-${context/version}.txt">
+                    <div tal:define="filename string:UbuntuCodeofConduct-${context/version}.txt">
                       In a terminal, run the command:
                       <blockquote>
                       <code>gpg --clearsign <var tal:content="filename" /></code>

@@ -12,6 +12,20 @@
         <allow interface="canonical.launchpad.interfaces.IBuilderSet" />
     </securedutility>
 
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBuilder"
+      factory="canonical.launchpad.browser.BuilderBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBuilderSet"
+      factory="canonical.launchpad.browser.BuilderSetBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.IBuilderSet"
         path_expression="string:+builds"
@@ -42,32 +56,24 @@
             />
     </browser:pages>
 
-    <browser:addform
+    <browser:page
         name="+new"
         for="canonical.launchpad.interfaces.IBuilderSet"
-        schema="canonical.launchpad.interfaces.IBuilder"
-        label="Register a new build machine"
-        fields="name title description processor url owner vm_host"
-        content_factory="canonical.launchpad.database.Builder"
         class="canonical.launchpad.browser.BuilderSetAddView"
         permission="launchpad.Admin"
         template="../templates/builder-new.pt"
         facet="overview"
-        >
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
+    />
 
     <!-- Builder -->
-    <content class="canonical.launchpad.database.Builder">
+    <class class="canonical.launchpad.database.Builder">
         <allow interface="canonical.launchpad.interfaces.IBuilder"/>
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBuilder"
         />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBuilder"
@@ -159,14 +165,14 @@
         />
 
     <!-- BuildQueue -->
-    <content class="canonical.launchpad.database.BuildQueue">
+    <class class="canonical.launchpad.database.BuildQueue">
        <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
        <!-- XXX cprov 2005-10-20 bug=3580: We need a autobuild celebrity. -->
        <!-- Grant permissions to write on BuildQueue and Build. -->
        <require
             permission="zope.Public"
             set_attributes="lastscore builder buildstart logtail"/>
-    </content>
+    </class>
 
     <!-- BuildQueueSet -->
     <securedutility

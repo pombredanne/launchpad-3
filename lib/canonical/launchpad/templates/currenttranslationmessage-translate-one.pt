@@ -458,7 +458,12 @@
       </tal:suggestion_block>
       <tr class="secondary translation"
           tal:condition="view/form_is_writeable">
-        <th colspan="3">
+        <tal:comment condition="nothing">
+          Normally table cells align the baselines of their first lines of
+          text. This doesn't work here because one of the cells sometimes
+          starts with a textarea. So, we override the vertical-alignment.
+        </tal:comment>
+        <th colspan="3" style="vertical-align: top;">
           <label
             class="translation-input-label"
             tal:condition="not:view/user_is_official_translator"
@@ -507,15 +512,8 @@
               onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
             "
-            class="translate"
+            class="translate expandable"
           />
-          <input type="button" value="Add more lines" title="Lets you add more than one line"
-            tal:condition="not:translation_dictionary/is_multi_line"
-            tal:attributes="
-              name string:${translation_dictionary/html_id_translation}_new_to_textarea;
-              id string:${translation_dictionary/html_id_translation}_new_to_textarea;
-              onClick string:javascript:upgradeToTextAreaForTranslation('${translation_dictionary/html_id_translation}_new');"
-            />
           <tal:multi-line condition="translation_dictionary/is_multi_line">
             <tal:with-content
               condition="translation_dictionary/submitted_translation">
@@ -573,9 +571,9 @@
          <label class="fuzzy-checkbox">
            <input
              type="checkbox"
-             value="fuzzy"
+             value="force_suggestion"
              tal:attributes="
-               checked view/is_fuzzy;
+               checked view/force_suggestion;
                name string:${view/html_id}_${language_code}_needsreview"
              />
            <tal:block condition="not:view/is_plural">
@@ -596,28 +594,7 @@
            since we are mostly automating this to fix our issues with upstreams,
            and I'd rather not introduce more issues with them).
          </tal:comment>
-         <label class="fuzzy-checkbox">
-           <input
-             type="checkbox"
-             value="fuzzy"
-	     disabled="1"
-             tal:attributes="
-               checked view/is_fuzzy;
-               name string:msgset_${context/potmsgset/id}_${language_code}_needsreview"
-             />
-             Someone should review these translation credits
-         </label>
        </tal:locked>
-      </div>
-      <div tal:condition="not: view/user_is_official_translator">
-        <label tal:condition="view/is_fuzzy">
-          <tal:block condition="not:view/is_plural">
-            Someone should review this translation
-          </tal:block>
-          <tal:block condition="view/is_plural">
-            Someone should review these translations
-          </tal:block>
-        </label>
       </div>
     </td>
   </tr>

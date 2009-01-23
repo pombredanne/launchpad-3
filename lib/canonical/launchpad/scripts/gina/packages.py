@@ -156,7 +156,7 @@ def parse_section(v):
 
 
 def get_person_by_key(keyrings, key):
-    # XXX kiko Sun 2005-10-23: Untested, should probably be a method.
+    # XXX kiko 2005-10-23: Untested, should probably be a method.
     if key and key not in ("NOSIG", "None", "none"):
         command = ("gpg --no-options --no-default-keyring "
                    "--with-colons --fingerprint %s %s" % (key, keyrings))

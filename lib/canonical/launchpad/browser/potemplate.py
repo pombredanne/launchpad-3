@@ -11,7 +11,6 @@ __all__ = [
     'POTemplateExportView',
     'POTemplateNavigation',
     'POTemplateSetNavigation',
-    'POTemplateSOP',
     'POTemplateSubsetNavigation',
     'POTemplateSubsetURL',
     'POTemplateSubsetView',
@@ -20,6 +19,7 @@ __all__ = [
     'POTemplateViewPreferred',
     ]
 
+import cgi
 import datetime
 import operator
 import os.path
@@ -28,22 +28,19 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad import helpers, _
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.productseries import (
-    ProductSeriesSOP, ProductSeriesFacets)
+from canonical.launchpad.browser.productseries import ProductSeriesFacets
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.browser.sourcepackage import (
-    SourcePackageSOP, SourcePackageFacets)
+from canonical.launchpad.browser.sourcepackage import SourcePackageFacets
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOTemplateSubset,
     ITranslationImporter, ITranslationImportQueue, IProductSeries,
     ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
+    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    GetitemNavigation, LaunchpadView, LaunchpadEditFormView, Link, Navigation,
+    StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
@@ -148,38 +145,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         return branches_link
 
 
-class POTemplateSOP(StructuralObjectPresentation):
-
-    def __init__(self, context):
-        StructuralObjectPresentation.__init__(self, context)
-        target = context.translationtarget
-        if IProductSeries.providedBy(target):
-            self.target_sop = ProductSeriesSOP(target)
-        elif ISourcePackage.providedBy(target):
-            self.target_sop = SourcePackageSOP(target)
-        else:
-            # We don't know yet how to handle this target.
-            raise NotImplementedError
-
-    def getIntroHeading(self):
-        return self.target_sop.getIntroHeading()
-
-    def getMainHeading(self):
-        return self.target_sop.getMainHeading()
-
-    def listChildren(self, num):
-        return self.target_sop.listChildren(num)
-
-    def countChildren(self):
-        return self.parent.countChildren()
-
-    def listAltChildren(self, num):
-        return self.parent.listAltChildren(num)
-
-    def countAltChildren(self):
-        return self.parent.countAltChildren()
-
-
 class POTemplateAppMenus(ApplicationMenu):
     usedfor = IPOTemplate
     facet = 'translations'
@@ -254,7 +219,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         """
         # This inline import is needed to workaround a circular import problem
         # because canonical.launchpad.browser.pofile imports
-        # canonical.launchpad.browser.potemplate.POTemplateSOP
+        # canonical.launchpad.browser.potemplate.
         from canonical.launchpad.browser.pofile import POFileView
 
         languages = self.translatable_languages
@@ -295,8 +260,14 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 self.upload()
 
     def upload(self):
-        """Handle a form submission to change the contents of the template."""
+        """Handle a form submission to change the contents of the template.
 
+        Uploads may fail if there are already entries with the same path name
+        and uploader (importer) in the queue and the new upload cannot be
+        safely matched to any of them.  The user will be informed about the
+        failure with a warning message."""
+        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # productseries and pofile and should be unified.
         file = self.request.form.get('file')
         if not isinstance(file, FileUpload):
             if not file:
@@ -304,13 +275,12 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     "Your upload was ignored because you didn't select a "
                     "file. Please select a file and try again.")
             else:
-                # XXX: Carlos Perello Marin 2004-12-30
+                # XXX: Carlos Perello Marin 2004-12-30 bug=116:
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
                 # work and we get a unicode object instead of a file-like
                 # object in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116.
                 self.request.response.addErrorNotification(
                     "Your upload failed because there was a problem receiving"
                     " data. Please try again.")
@@ -327,48 +297,111 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         translation_import_queue = getUtility(ITranslationImportQueue)
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext in translation_importer.supported_file_extensions):
+        if ext in translation_importer.supported_file_extensions:
             # Add it to the queue.
-            translation_import_queue.addOrUpdateEntry(
+            entry = translation_import_queue.addOrUpdateEntry(
                 filename, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context)
 
-            self.request.response.addInfoNotification(
-                structured(
-                'Thank you for your upload. The file content will be imported'
-                ' soon into Launchpad. You can track its status from the'
-                ' <a href="%s/+imports">Translation Import Queue</a>' %
-                    canonical_url(self.context.translationtarget)))
+            if entry is None:
+                self.request.response.addWarningNotification(
+                    "Upload failed.  The name of the file you "
+                    "uploaded matched multiple existing "
+                    "uploads, for different templates.  This makes it "
+                    "impossible to determine which template the new "
+                    "upload was for.  Try uploading to a specific "
+                    "template: visit the page for the template that you "
+                    "want to upload to, and select the upload option "
+                    "from there.")
+            else:
+                self.request.response.addInfoNotification(
+                    structured(
+                    'Thank you for your upload.  It will be automatically '
+                    'reviewed in the next few hours.  If that is not '
+                    'enough to determine whether and where your file '
+                    'should be imported, it will be reviewed manually by an '
+                    'administrator in the coming few days.  You can track '
+                    'your upload\'s status in the '
+                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                        canonical_url(self.context.translationtarget))))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
-            num = translation_import_queue.addOrUpdateEntriesFromTarball(
-                content, True, self.user,
-                sourcepackagename=self.context.sourcepackagename,
-                distroseries=self.context.distroseries,
-                productseries=self.context.productseries,
-                potemplate=self.context)
+            (num, conflicts) = (
+                translation_import_queue.addOrUpdateEntriesFromTarball(
+                    content, True, self.user,
+                    sourcepackagename=self.context.sourcepackagename,
+                    distroseries=self.context.distroseries,
+                    productseries=self.context.productseries,
+                    potemplate=self.context))
 
             if num > 0:
+                if num == 1:
+                    plural_s = ''
+                    itthey = 'it'
+                else:
+                    plural_s = 's'
+                    itthey = 'they'
                 self.request.response.addInfoNotification(
                     structured(
-                    'Thank you for your upload. %d files from the tarball'
-                    ' will be imported soon into Launchpad. You can track its'
-                    ' status from the <a href="%s/+imports">Translation'
-                    ' Import Queue<a>' % (
-                        num, canonical_url(self.context.translationtarget)
-                        )
-                    ))
+                    'Thank you for your upload. %d file%s from the tarball '
+                    'will be automatically '
+                    'reviewed in the next few hours.  If that is not enough '
+                    'to determine whether and where your file%s should '
+                    'be imported, %s will be reviewed manually by an '
+                    'administrator in the coming few days.  You can track '
+                    'your upload\'s status in the '
+                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                        num, plural_s, plural_s, itthey,
+                        canonical_url(self.context.translationtarget))))
+                if len(conflicts) > 0:
+                    if len(conflicts) == 1:
+                        warning = (
+                            "A file could not be uploaded because its "
+                            "name matched multiple existing uploads, for "
+                            "different templates." )
+                        ul_conflicts = (
+                            "The conflicting file name was:<br /> "
+                            "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
+                    else:
+                        warning = (
+                            "%d files could not be uploaded because their "
+                            "names matched multiple existing uploads, for "
+                            "different templates." % len(conflicts))
+                        ul_conflicts = (
+                            "The conflicting file names were:<br /> "
+                            "<ul><li>%s</li></ul>" % (
+                            "</li><li>".join(map(cgi.escape, conflicts))))
+                    self.request.response.addWarningNotification(
+                        structured(
+                        warning + "  This makes it "
+                        "impossible to determine which template the new "
+                        "upload was for.  Try uploading to a specific "
+                        "template: visit the page for the template that you "
+                        "want to upload to, and select the upload option "
+                        "from there.<br />"+ ul_conflicts))
             else:
-                self.request.response.addWarningNotification(
-                    "Nothing has happened. The tarball you uploaded does not"
-                    " contain any file that the system can understand.")
+                if len(conflicts) == 0:
+                    self.request.response.addWarningNotification(
+                        "Upload ignored.  The tarball you uploaded did not "
+                        "contain any files that the system recognized as "
+                        "translation files.")
+                else:
+                    self.request.response.addWarningNotification(
+                        "Upload failed.  One or more of the files you "
+                        "uploaded had names that matched multiple existing "
+                        "uploads, for different templates.  This makes it "
+                        "impossible to determine which template the new "
+                        "upload was for.  Try uploading to a specific "
+                        "template: visit the page for the template that you "
+                        "want to upload to, and select the upload option "
+                        "from there.")
         else:
             self.request.response.addWarningNotification(
-                "Ignored your upload because the file you uploaded was not"
+                "Upload failed because the file you uploaded was not"
                 " recognised as a file that can be imported.")
 
 
@@ -376,44 +409,42 @@ class POTemplateViewPreferred(POTemplateView):
     def pofiles(self):
         return POTemplateView.pofiles(self, preferred_only=True)
 
-class POTemplateEditView(SQLObjectEditView):
+class POTemplateEditView(LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
-    def __init__(self, context, request):
-        self.old_description = context.description
-        self.old_translation_domain = context.translation_domain
-        self.user = getUtility(ILaunchBag).user
+    schema = IPOTemplate
+    field_names = ['description', 'priority', 'owner']
+    label = 'Change PO template information'
 
-        SQLObjectEditView.__init__(self, context, request)
-
-    def changed(self):
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
         context = self.context
-        if self.old_description != context.description:
+        old_description = context.description
+        old_translation_domain = context.translation_domain
+        self.updateContextFromData(data)
+        if old_description != context.description:
             self.user.assignKarma(
                 'translationtemplatedescriptionchanged',
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
-        if self.old_translation_domain != context.translation_domain:
+        if old_translation_domain != context.translation_domain:
             # We only update date_last_updated when translation_domain field
             # is changed because is the only significative change that,
             # somehow, affects the content of the potemplate.
             UTC = pytz.timezone('UTC')
             context.date_last_updated = datetime.datetime.now(UTC)
 
-        # We need this because when potemplate name changes, canonical_url
-        # for it changes as well.
-        self.request.response.redirect(canonical_url(self.context))
+        self.next_url = canonical_url(self.context)
 
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
-
-    def changed(self):
-        """Redirect to the template view page."""
-
-        # We need this because when potemplate name changes, canonical_url
-        # for it changes as well.
-        self.request.response.redirect(canonical_url(self.context))
+    field_names = [
+        'name', 'translation_domain', 'description', 'header', 'iscurrent',
+        'owner', 'productseries', 'distroseries', 'sourcepackagename',
+        'from_sourcepackagename', 'sourcepackageversion', 'binarypackagename',
+        'languagepack', 'path', 'source_file_format', 'priority',
+        'date_last_updated']
 
 
 class POTemplateExportView(BaseExportView):

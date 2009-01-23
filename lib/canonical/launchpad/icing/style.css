@@ -3,8 +3,14 @@
 /* == Contents == */
 /*
  * Guidelines
- * Stuff browsers should do but don't
+ * Things browsers should do but don't
  * Overall presentation
+  - Fonts and colors
+  - Error, warning, and informational messages
+  - Forms
+  - Tables
+   - Listing tables
+   - Summary tables
 ...
  * Application-specific styles
   - Overview
@@ -24,7 +30,7 @@
 
 .demo {background-color: #fee;}
 
-/* === Stuff browsers should do but don't === */
+/* == Things browsers should do but don't == */
 
 .clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
   content: ".";
@@ -56,12 +62,8 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
-label {
-  white-space: nowrap;
-  font-weight: bold;
-}
+label {white-space: nowrap;}
 legend {font-weight: bold;}
-legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */
   border: 1px solid #8cacbb;
   display: inline-block;
@@ -79,7 +81,7 @@ div.section {display: block; margin-bottom: 1em;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
-tr {vertical-align: top;}
+th, td {vertical-align: baseline;}
 th {text-align: right;}
 thead th, tr.thead th {text-align: center;}
 /* make <wbr> work with Opera */
@@ -89,21 +91,28 @@ thead th, tr.thead th {text-align: center;}
 /* Opera doesn't use the general tr above for the radio button table */
 table.radio-button-widget tr td {vertical-align: top;}
 
-/* === Overall presentation === */
+/* For readability, paragraphs and other potentially-long text blocks should
+have a maximum width: */
+label, p {max-width: 60em;}
 
-html {
-  position: static;
-  font-family: sans-serif;
-  font-size: 10pt;
-  color: #333;
-  background-color: #fff;
-}
-body {margin: 0; padding: 10px 20px;}
+/* == Overall presentation == */
+/* These styles apply to pages regardless of layout or application. */
 
-:link                         {color: #039;    text-decoration: none;}
+/* === Fonts and colors === */
+
+/* Launchpad uses a white background with small, mostly black, text: */
+html {background: #fff; color: #000; font: 83.33% sans-serif;}
+/* Monospace text uses the reciprocal of this percentage, so that it
+exactly obeys your preferred monospace font size: */
+code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
+
+/* Links are blue, brighter when clicked, and greyer once visited: */
+:link, :visited               {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
-:visited                      {color: #324c7f; text-decoration: none;}
+/* Links that don't open separate pages are green to denote their behavior: */
+a[onclick], .collapsible legend a               {color: #063;}
+a[onclick]:active, .collapsible legend a:active {color: #093;}
 
 h1, h2, h3, h4, h5, h6 {
   background: none;
@@ -115,10 +124,9 @@ h1, h2, h3, h4, h5, h6 {
   color: #83ad23;
   font-weight: normal;
 }
-h1 { font-size: 2.2em; }
-h2 { font-size: 1.5em; }
-h3 { font-size: 1.1em; }
-h4, h5, h6 { font-size: 1em; }
+h1 {font-size: 2em;}
+h2 {font-size: 1.2em;}
+h3, h4, h5, h6 {font-size: 1em;}
 /* H1 is only used at the top the maincontent, maybe below a short description
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
@@ -127,9 +135,12 @@ ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 90%;}
-.offline {text-align: center; margin: 2em 20px;}
-/* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
+.offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
+
+/* Blank space at the top of the page makes the location bar more noticable.
+Ideally page margins would scale non-linearly, but absolute is next best: */
+body {margin: 0; padding: 10px 20px;}
 
 /* === Error, warning, and informational messages === */
 /* Error, warning, and informational alerts are in a centered box: */
@@ -168,6 +179,12 @@ table.form .error {background: none;}
   padding-left: 18px;
 }
 
+/* Warning messages inlined in the page. */
+.inline-warning {
+    color: red;
+    font-weight: bold;
+}
+
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
 }
@@ -179,9 +196,10 @@ dd .whiteboard {
   padding-left: 1em;
 }
 
-/* --- Form controls --- */
+/* === Forms === */
 
 form {border: 0; margin: 0; padding: 0;}
+fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
   font-family: sans-serif;
   margin: 0;
@@ -195,7 +213,7 @@ input[type="submit"], input[type="text"], select, textarea {
   margin-right: 0.5em;
 }
 input.urlTextType {width: 100%;}
-.fieldRequired, .fieldOptional {color: #999; font-weight: normal;}
+.fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
 table.listing div.field>table {margin-top: 0.5em;}
@@ -208,14 +226,110 @@ margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
-table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
+table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
+table.form th {font-weight: normal;}
 table.form th, table.form td {padding-bottom: 1em;}
+table.form td td {padding-bottom: 0;}
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
  * person-pagelet-details.pt. We should move to use tables everywhere
  * and then kill this class I guess. -- kiko, 2007-12-05 */
 table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
+
+/* === Tables === */
+/* All table cells have horizontal padding between their contents: */
+th, td {padding: 0 0.5em 0 0;} /* http://launchpad.dev/ubuntu "Officers" */
+
+table.latest th, table.latest td {padding-bottom: 2em;}
+
+th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
+th.icon.left, td.icon.left {padding-right: 0;}
+th.icon.right, td.icon.right {padding-left: 0;}
+th.nowrap, td.nowrap {white-space: nowrap;}
+tfoot th, table.contributions th {text-align: left;}
+table.contributions th {font-weight: normal;}
+table.contributions td {vertical-align: middle; width: 16px; text-align: left;}
+
+/* ==== Listing tables ==== */
+
+table.listing {margin: 0; width: 100%; font-size: 90%;}
+table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
+table.listing thead, table.listing thead th, table.listing tfoot tr {
+  border: 1px solid #d2d2d2;
+  background-color: #fff;
+}
+table.listing tr.category {border-bottom: 1px solid #d2d2d2;}
+table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
+table.listing tfoot td {border: 1px solid #d2d2d2;}
+table.listing thead td {border: none;}
+tr.white {background-color: #fff;}
+tr.shaded {background-color: #f6f6f6;}
+table.listing tr.note {font-size: smaller;}
+.amount {text-align: right;}
+table.listing th, table.listing td {padding: 0.25em;}
+/* We don't want extra padding on nested tables, such as batch navigation. */
+table.listing table th, table.listing table td {padding: 0;}
+table.listing thead th {font-size: 1.125em; white-space: nowrap;}
+table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
+table.listing tr.note td {border-style: none;}
+table.listing img {vertical-align: middle;}
+table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
+table.listing table tbody, table.listing table thead,
+table.listing table thead th, table.listing tfoot tr,
+table.listing table tfoot td, table.listing table td {
+  border: none;
+}
+table.duplicate.listing * {color: #999;}
+
+table.listing table.simple {margin-left: 2em;}
+table.listing table.simple td {padding: 0.25em;}
+
+table.compressed { width: auto }
+table.compressed td { padding: 0.25em 0.5em }
+
+/* ==== Summary tables ==== */
+
+/* Tables presenting summary information have subdued headers and a little
+row spacing: */
+table.summary th, table.summary td,
+table.listing table.summary th, table.listing table.summary td {
+  padding: 0 0.5em 0.5em 0;
+}
+table.summary th {color: #555; font-weight: normal;}
+table.summary caption {font-style: italic; margin-left: 1em;}
+table.summary ul, table.summary ul li {
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* --- Sortable tables --- */
+
+table.sortable a.sortheader {
+  color:#666666;
+  font-weight: bold;
+  text-decoration: none;
+  display: block;
+}
+table.sortable img.sortarrow {
+  padding-left: 2px;
+}
+th.ascending {
+  background-image: url(/@@/arrowDown);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+th.descending {
+  background-image: url(/@@/arrowUp);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {display: none;}
+
+
 
 /* --- Action links and buttons --- */
 
@@ -283,20 +397,21 @@ img {
   border: none;
 }
 
+/* === Collapsible sections === */
+/* Some page sections are hidden by default, expanded by clicking a link. */
 /* see launchpad.js:activateCollapsibles() */
-.collapsible legend a, .collapsible legend a:visited {
-  text-decoration: none;
-  color: #000088;
-}
-img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
-.collapsible legend a span {text-decoration: underline;}
-.collapsible {
+fieldset.collapsible {
+  border: none;
   margin: 0;
   padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
 }
+.collapsible legend a, .collapsible legend a:hover {text-decoration: none;}
+img.collapseIcon {text-decoration: none; vertical-align: middle;}
+.collapsible legend a span {text-decoration: underline;}
 .collapsed {border: none; margin-bottom: 0;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
+fieldset.collapsible legend {font-weight: normal;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -355,12 +470,6 @@ hr {
   background-repeat: repeat-x;
   background-position: top center;
 }
-/* Home icon and link. */
-#globalheader a.home {
-  display: block;
-  margin: 0;
-  padding: 0;
-}
 #globalheader .sitemessage a {
   color: #FFF;
   text-decoration: underline;
@@ -371,214 +480,6 @@ hr {
   color: #FFF;
   font-size: 13px;
   padding-top: 2px;
-}
-
-ul#menuroot a#homebreadcrumb span {
-  background: url(home-low-high.gif) left top no-repeat;
-  padding-left: 16px; /* space between home icon and the word "Home" */
-}
-ul#menuroot li a#homebreadcrumb:hover span,
-ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-low-high.gif) left -20px no-repeat;
-  padding-left: 16px;
-}
-/* The location bar contains menus. */
-ul#menuroot {
-  display: inline;
-  float: left;
-  margin: 0;
-  /* Right padding needed so the rightmost arrow is within the box. It must be
-     the opposite of the negative right margin on breadcrumb items. */
-  /* Other paddings and margins set to zero to undo the generic "ul" style. */
-  padding: 0 16px 0 0;
-  margin: 0;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
-
-     0px vertical padding + 26px height = 26px, height of "#locationbar". */
-  height: 26px;
-}
-/* XXX: needs explanation */
-ul#menuroot li {
-  display: inline;
-}
-/* Style for breadcrumb items.
- *
- * XXX: background stuff needs explanation.
- *
- * Negative right margin for breadcrumbs.
- * This is part of how we make them look like arrows.
- */
-ul#menuroot a.breadcrumb {
-  position: relative;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1000px 0px;
-  display: block;
-  float: left;
-  margin-right: -16px;
-}
-/* "Your location:" text.
- *
- * The 1px negative right margin is to bring the first breadcrumb a little
- * closer to the "Your location:" text.  It makes it look visually tighter
- * because of the chevron shape of the highlights.
- */
-#yourlocation {
-  float: left;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 6px 10px;
-  margin-right: -1px;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
-
-     12px vertical padding + 14px height = 26px, height of "#locationbar". */
-  height: 14px;
-}
-/* IE6 specific rule to make the location bar look better. */
-* html #yourlocation {padding-bottom: 4px;}
-/* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a,
-#locationbar li span {
-  display: block;
-  color: #000000;
-}
-/* Unlinked items.  Same colour as the overview actions menu. */
-#locationbar li .unlinked {
-  color: #83AD23;
-}
-/* XXX: needs explanation */
-ul#menuroot a.breadcrumb em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
-  display: block;
-  background-image: url(locationbar_nodrop_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 6px 20px;
-  cursor: pointer;
-}
-* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
-/* When a breadcrumb has a submenu, show a down-arrow. */
-ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
-  background-image: url(locationbar_em_bg.gif);
-}
-/* General appearance of a dynamic menu item.
- * The area we actually see on the page is an <a> element.
- * The <li> element takes up no space.
- */
-#locationbar ul.menu li a,
-#locationbar ul.menu li .unlinked {
-  background-image: none;
-  background-color: #AFDB1F;
-  float: none;
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  height: auto;
-}
-/* General appearance of a dynamic menu item. */
-#locationbar ul.menu li {
-  margin-bottom: 0px;
-  padding-bottom: 0px;
-}
-/* Appearance of a dynamic menu or submenu.
- * Note the 3d-effect border.
- * Note the z-index so that they appear above all other content.
- */
-#locationbar ul.menu {
-  background-color: #AFDB1F;
-  position: absolute;
-  z-index: 2000;
-  margin-left: 0px;
-  border-right: 1px solid #90B51A;
-  border-bottom: 1px solid #90B51A;
-  border-top: 1px solid #DCF58B;
-  border-left: 1px solid #DCF58B;
-  padding-left: 0px;
-  padding-right: 0px;
-}
-
-/* Because the menus are misplaced on IE6, we'll hide them for now. */
-* html ul#menuroot a.container.breadcrumb em {
-  background-image: url(locationbar_nodrop_em_bg.gif);
-}
-* html #locationbar ul.menu {display: none;}
-
-/* Inhibit underlines on all dyn menu items. */
-#locationbar li a:hover {
-  text-decoration: none;
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * on mouse-over.
- * The colour #EEE is sometimes used for debugging.
- */
-#locationbar ul#rootmenu ul.menu li a:hover {
-  /* color: #EEE; */
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * when selected and potentially opened.
- * This works, but has the > that makes IE unhappy.
- * #locationbar ul.menu li.selected>a {
- *   background-color: #C8EF48;
- *   color: #000;
- * }
- * So instead, we have the following two rules.
-*/
-#locationbar ul.menu li a {
-  background-color: #AFDB1F;
-  color: #000;
-}
-#locationbar ul.menu li.selected>a {
-  background-color: #C8EF48;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items on mouse-over.
- * This is the same as how they look when selected, so that
- * they look right during the deliberate delay between being
- * moused-over and actually activated.
- */
-ul#menuroot li a.breadcrumb:hover {
-  background-position: 0px 0px;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items when selected for opening. */
-ul#menuroot li.selected a.breadcrumb {
-  background-position: 0px 0px;
-  color: #000;
-}
-/* Make dyn menu items that are the source of submenus have a right-arrow
- * on the far right, to show they can be opened.
- *
- * Does not include the breadcrumbs.
- */
-#locationbar ul.menu a.container {
-  background-image: url(/@@/arrowRight);
-  background-repeat: no-repeat;
-  background-position: center right;
-}
-/* Allow dyn menus to appear ouside of the locationbar, even though they
- * overflow its bounds.
- */
-#locationbar {overflow: visible;}
-/* Prevent the text in links in menu items from wrapping.
- * Apply appropriate formatting to links in menu items.
- */
-#locationbar li a,
-#locationbar li .unlinked {
-  left: auto;
-  margin: 0px 0px 0px 0px;
-  white-space: pre;
 }
 
 /* === Location bar === */
@@ -699,6 +600,7 @@ hierarchy, and the application tabs. */
   text-align: center;
   color: #333;
   line-height: 1.5em;
+  white-space: nowrap; /* keeps multi-word tab labels on a single line */
 }
 #lp-apps span a, #lp-apps span strong {
   display: block;
@@ -811,7 +713,7 @@ hierarchy, and the application tabs. */
   font-weight: normal;
   color: #a7a7a7;
 }
-.navigation.menu > :first-child {
+#view-navigation-tabs .navigation.menu > :first-child {
   background: url(navigation-nw-w-normal.png) top left no-repeat;
 }
 .navigation.menu > strong:first-child {
@@ -869,7 +771,9 @@ it out of the page flow. */
 span.help {font-weight: normal;}
 
 /* === ID and timestamp === */
-/* The first text in many pages is the object's timestamp and identifier. */
+/* The first text in many pages is the object's timestamp and identifier.
+These may be <div>s or <p>s, but should have the same spacing regardless: */
+.object {margin: 0 0 0.5em; padding: 0;}
 /* The timestamp is the date last modified or (more usually) registered: */
 .object.timestamp {float: right;}
 /* An identifier is a unique label, such as a bug number or branch ID: */
@@ -879,64 +783,125 @@ span.help {font-weight: normal;}
 /* A "navigation menu" categorizes the information about an object. */
 /* For example, a distribution has "Details / Announcements / Mentoring..." */
 /* Navigation menus appear as a segmented pill overlaid on a groove: */
-.navigation.menu {
-  background: url(navigation-menu-groove.png) repeat-x center left;
-  margin: 1em 0 2em;
+/* First row of options */
+#context-navigation-tabs .navigation.menu {
+  margin: 0.5em 0 1em;
   text-align: center;
 }
 /* Segments have slight padding, and are normally light grey: */
-.navigation.menu * {
-  background: #eee url(navigation-n.png) top left repeat-x;
+#context-navigation-tabs .navigation.menu * {
+  background: #808080 url(navigation-n.png) top left repeat-x;
   padding: 0.25em 0;
+  color: #fff;
 }
 /* But the selected element is slightly darker: */
-.navigation.menu strong * {background-color: #ddd;}
+#context-navigation-tabs .navigation.menu strong * {background-color: #353434;}
 /* All segments have a border, and padding around their text: */
-.navigation.menu * * {
+#context-navigation-tabs .navigation.menu * * {
   border-right: 1px solid #ccc;
-  border-bottom: 1px solid #bbb;
+  border-bottom: 1px solid #353434;
   padding: 0.25em 0.5em;
 }
 /* For text browsers, there's a " / " separator, hidden from CSS browsers: */
-.navigation.menu small {display: none;}
+#context-navigation-tabs .navigation.menu small {display: none;}
 /* All text in the navigation menu is near-black, even the links: */
-.navigation.menu, .navigation.menu a {color: #333;}
-.navigation.menu a:hover {text-decoration: none;}
+#context-navigation-tabs .navigation.menu, .navigation.menu a {color: #333;}
+#context-navigation-tabs .navigation.menu a:hover {text-decoration: none;}
 /* The first segment has a rounded cap, matching its color: */
-.navigation.menu > :first-child {
-  background: url(navigation-nw-w-normal.png) top left no-repeat;
+#context-navigation-tabs .navigation.menu > :first-child {
+  background: url(navigation-parent-nw-w-normal.png) top left no-repeat;
 }
-.navigation.menu > strong:first-child {
+#context-navigation-tabs .navigation.menu > strong:first-child {
   background-image: url(navigation-nw-w-selected.png);
 }
 /* The bottom right corner is placed over top of the bottom border: */
-.navigation.menu > :first-child::before {
+#context-navigation-tabs .navigation.menu > :first-child::before {
+  content: '';
+  background: url(navigation-parent-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
+}
+#context-navigation-tabs .navigation.menu > strong:first-child::before {
+  background-image: url(navigation-sw-selected.png);
+}
+/* The last segment has a rounded cap, matching its color: */
+#context-navigation-tabs .navigation.menu > :last-child {
+  background: url(navigation-parent-ne-e-normal.png) top right no-repeat;
+}
+#context-navigation-tabs .navigation.menu > strong:last-child {
+  background-image: url(navigation-ne-e-selected.png);
+}
+#context-navigation-tabs .navigation.menu > :last-child * {border-right: none;}
+/* The bottom right corner is placed over top of the bottom border: */
+#context-navigation-tabs .navigation.menu > :last-child::after {
+  content: '';
+  background: url(navigation-parent-se-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
+}
+#context-navigation-tabs .navigation.menu > strong:last-child::after {
+  background-image: url(navigation-se-selected.png);
+}
+/* Second row of options */
+#view-navigation-tabs .navigation.menu {
+  margin: 0.5em 0 1em;
+  text-align: center;
+}
+/* Segments have slight padding, and are normally light grey: */
+#view-navigation-tabs .navigation.menu * {
+  background: #4c4c4c url(navigation-n.png) top left repeat-x;
+  padding: 0.25em 0;
+  color: #fff;
+}
+/* But the selected element is slightly darker: */
+#view-navigation-tabs .navigation.menu strong * {background-color: #000;}
+/* All segments have a border, and padding around their text: */
+#view-navigation-tabs .navigation.menu * * {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #0d0d0d;
+  padding: 0.25em 0.5em;
+}
+/* For text browsers, there's a " / " separator, hidden from CSS browsers: */
+#view-navigation-tabs .navigation.menu small {display: none;}
+/* All text in the navigation menu is near-black, even the links: */
+#view-navigation-tabs .navigation.menu, .navigation.menu a {color: #333;}
+#view-navigation-tabs .navigation.menu a:hover {text-decoration: none;}
+/* The first segment has a rounded cap, matching its color: */
+#view-navigation-tabs .navigation.menu > :first-child {
+  background: url(navigation-nw-w-normal.png) top left no-repeat;
+}
+#view-navigation-tabs .navigation.menu > strong:first-child {
+  background-image: url(navigation-nw-w-selected.png);
+}
+/* The bottom right corner is placed over top of the bottom border: */
+#view-navigation-tabs .navigation.menu > :first-child::before {
   content: '';
   background: url(navigation-sw-normal.png) no-repeat bottom left;
   padding: 0.25em 2px;
   vertical-align: -1px;
 }
-.navigation.menu > strong:first-child::before {
+#view-navigation-tabs .navigation.menu > strong:first-child::before {
   background-image: url(navigation-sw-selected.png);
 }
 /* The last segment has a rounded cap, matching its color: */
-.navigation.menu > :last-child {
+#view-navigation-tabs .navigation.menu > :last-child {
   background: url(navigation-ne-e-normal.png) top right no-repeat;
 }
-.navigation.menu > strong:last-child {
-  background-image: url(/+icing/navigation-ne-e-selected.png);
+#view-navigation-tabs .navigation.menu > strong:last-child {
+  background-image: url(navigation-ne-e-selected.png);
 }
-.navigation.menu > :last-child * {border-right: none;}
+#view-navigation-tabs .navigation.menu > :last-child * {border-right: none;}
 /* The bottom right corner is placed over top of the bottom border: */
-.navigation.menu > :last-child::after {
+#view-navigation-tabs .navigation.menu > :last-child::after {
   content: '';
-  background: url(/+icing/navigation-se-normal.png) no-repeat bottom left;
+  background: url(navigation-se-normal.png) no-repeat bottom left;
   padding: 0.25em 2px;
   vertical-align: -1px;
 }
-.navigation.menu > strong:last-child::after {
-  background-image: url(/+icing/navigation-se-selected.png);
+#view-navigation-tabs .navigation.menu > strong:last-child::after {
+  background-image: url(navigation-se-selected.png);
 }
+
 
 #globalsearch {
   float: right;
@@ -951,7 +916,7 @@ span.help {font-weight: normal;}
 
 /* The last element on every page is a standard footer. */
 #globalfooter {
-    clear: both; 
+    clear: both;
     border: solid #c1c9d6;
     border-width: 1px 0 0 0;
     margin: 0.5em 0;
@@ -1057,6 +1022,8 @@ portlets. We achieve this using a negative right margin: */
 #portlets {width: 200px; margin: 0;}
 /* Inside, the main column itself keeps 20px clear of the 200px column: */
 #nonportlets {margin-right: 220px;}
+/* Non-portlets can also be constrained to an easily readable width. */
+#nonportlets.readable {max-width: 40em;}
 /* One-column pages can construct portlets using <div class="aside">: */
 div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
@@ -1198,7 +1165,7 @@ ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news {
-  list-style-image: url(/@@/news);
+  list-style-type: none;
   margin-bottom: 1em;
 }
 ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
@@ -1275,6 +1242,100 @@ beside the mugshot. */
 .product.series, .project {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
+/* --- Home --- */
+#home-description {
+  font-size: 1.5em;
+  font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
+  text-align: center;
+  margin: 1em 0 1em 0;
+  padding: 0.2em;
+  background-color: #ededed;
+}
+#home-stats {
+  margin: auto;
+  text-align: center;
+  color: gray;
+  max-width: 40em;
+}
+#home-page h2 {
+  width: 100%;
+  text-align: center;
+  text-decoration: underline;
+}
+#home-page img {
+  vertical-align: middle;
+}
+#featured-projects ul {
+  list-style-type: none;
+  width: 50%;
+  margin: 0;
+  padding: 0 ;
+  float: left;
+}
+#featured-projects li {
+  padding-bottom: 2px;
+}
+.home-banners {
+  background-color: #8890ff;
+  width: 220px;
+  padding: 1em 0 1em 1em;
+  margin-top: 1em;
+  overflow: hidden;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+.home-banners a {
+  font-weight: bold;
+  color: white;
+}
+.home-banner-container {
+  width: 100%;
+  background-color: #ededed;
+  padding: 1em;
+  padding-top: 0;
+}
+
+/* Soyuz-related styles (that don't have a facet, but generally are
+ * under Overview)
+ */
+#sources-list-entries {
+  border: 1px solid gray;
+  padding: 0.3em;
+  float: left; /* So the border doesn't use 100% of the page */
+}
+
+#package_counters {
+    clear: left;
+}
+
+div#build-status-summary {
+    clear:right;
+    float:right;
+}
+
+div#build-status-summary h2 {
+    margin-top:0;
+}
+
+div#build-status-summary th {
+    text-align:left;
+}
+
+div#signing-key {
+    clear: both;
+    float: left;
+}
+
+div#signing-key p {
+    max-width: none;
+    background: url(/@@/info) center left no-repeat;
+    padding-left: 18px;
+}
+
+div#signing-key a {
+    font-weight: bold;
+}
 
 /* --- Code --- */
 
@@ -1317,13 +1378,52 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
 
+.voteAPPROVE       {color: green;}
+.voteNEEDS_FIXING  {color: #930;}
+.voteDISAPPROVE    {color: red;}
+.voteRESUBMIT      {color: red;}
+.voteABSTAIN       {color: grey;}
+.votePENDING       {color: #f60;}
+
+.mergestatusWORK_IN_PROGRESS  {color: black;}
+.mergestatusNEEDS_REVIEW      {color: #f60;}
+.mergestatusCODE_APPROVED     {color: green;}
+.mergestatusREJECTED          {color: red;}
+.mergestatusMERGED            {color: green;}
+.mergestatusMERGE_FAILED      {color: red;}
+.mergestatusQUEUED            {color: black;}
+.mergestatusSUPERSEDED        {color: grey;}
+
+.branch-no-dev-focus {
+  background: #FFF59C;
+  vertical-align: middle;
+  text-align: center;
+  height: 2.5em;
+}
+
 .mergeproposal p {margin: 0.5em 0 }
 
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
 
-/* --- Bugs --- */
+.greylink a:link, .greylink a:visited {
+  color: grey;
+}
 
+.commentSuffix {
+  height: 2.5em;
+}
+.commentVote {
+  float: right;
+}
+.codereviewcomment {font: 120% monospace;}
+.codereviewcomment .attachment {
+  background-color: #f6f6f6;
+}
+.back-link { margin-top: 3em; }
+
+/* === Bugs === */
+/* The Launchpad Bugs application uses a maroon color: */
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
 body.tab-bugs #mainarea #portlets .portlet.active h2 a,
 body.tab-bugs #mainarea div#portlets div.portlet.active a {
@@ -1373,7 +1473,9 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 .importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
 .status :link, .importance :link {text-decoration: none;}
 
-#bug-description {font-family: monospace;}
+/* In a bug report page, the current context is highlighted in yellow: */
+#affected-software tr.highlight {background-color: #ff9;}
+
 
 /* --- Blueprints --- */
 
@@ -1598,24 +1700,26 @@ div.right {clear: right; float: right;}
 div.left div.portlet, div.right div.portlet {
   border: dotted #cbcbcb; /* matches color of mainarea_* images */
   border-width: 1px 0 0 0;
-  margin-top: 1em;
-  padding-top: 1em;
+  margin-top: 0;
+  padding-top: 0.5em;
 }
 div.left div.portlet {
-  border-width: 1px 1px 0 0;
-  padding: 0.75em 0.75em 0.75em 0;
+  border-width: 1px 0 0 0;
+  padding: 0 0.5em 0.5em 0;
 }
 div.right div.portlet { /* is this necessary? */
   border-width: 1px 0 0 1px;
-  padding: 0.75em 0 0.75em 0.75em;
+  padding: 0 0 0.5em 0.5em;
 }
 div.columns div.right div.portlet {border: none; padding: 0;} /* BlueprintsFP */
 
-div.three.column {width: 30%; margin-right: 3%;}
+div.three.column.middle {margin-right: 1%;}
 div.three.column.left, div.three.column.middle, div.three.column.right {
   clear: none;
   float: left;
+  width: 33%;
 }
+div.three.column.left, div.three.column.right { margin: 0;}
 .title {
   font-weight: bold;
 }
@@ -1625,108 +1729,18 @@ ul.buttons li {display: inline; margin: 0 0 0 0;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}
+
+ul.helplinks {float: right; margin: 0.5em;}
+/* We set `display: block` to lose the bullets.  We should use
+ * `list-style-type:none` but this is what our existing code does.
+ */
+ul.helplinks li {display: block; margin: 0 0 0 0;}
+
 /*
 li {
   margin-bottom: 0.75em;
 }
 */
-
-.bug-summary, .summary {
-  font-weight: bold;
-}
-
-fieldset {
-  border: none;
-  margin: 0.5em 0 1em;
-  padding: 0;
-}
-
-/* === Tables === */
-
-table.latest th, table.latest td {padding-bottom: 2em;}
-table.summary {float: right; margin: 0 0 1em 1em;}
-table.listing table.summary {margin-top: 0.5em;}
-table.summary caption {font-style: italic; margin-left: 1em;}
-div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
-table.summary td {padding-left: 0.5em;}
-table.summary ul, table.summary ul li {
-  list-style-position: inside;
-  margin: 0;
-  padding: 0;
-}
-th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
-th.icon.left, td.icon.left {padding-right: 0;}
-th.icon.right, td.icon.right {padding-left: 0;}
-th.nowrap, td.nowrap {white-space: nowrap;}
-tfoot th, table.contributions th {text-align: left;}
-table.contributions, table.contributions th, table.contributions td {
-  border: 1px solid #e6e6e6;}
-table.contributions th {font-weight: normal;}
-table.contributions tr.odd {background-color: #fff; color: inherit;}
-table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
-table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
-table.contributions td {vertical-align: middle; width: 16px;}
-
-/* --- Listing tables --- */
-
-table.listing {margin: 0; width: 100%; font-size: 90%;}
-table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
-table.listing thead, table.listing thead th, table.listing tfoot tr {
-  border: 1px solid #d2d2d2;
-  background-color: #fff;
-}
-table.listing tr.category {border-bottom: 1px solid #d2d2d2;}
-table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
-table.listing tfoot td {border: 1px solid #d2d2d2;}
-table.listing thead td {border: none;}
-tr.highlight {background-color: #ff9;}
-table.listing tr.note {font-size: smaller;}
-.amount {text-align: right;}
-table.listing th, table.listing td {padding: 0.25em;}
-/* We don't want extra padding on nested tables, such as batch navigation. */
-table.listing table th, table.listing table td {padding: 0;}
-table.listing th {font-size: 1.125em; white-space: nowrap;}
-table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
-table.listing tr.note td {border-style: none;}
-table.listing img {vertical-align: middle;}
-table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
-table.listing table tbody, table.listing table thead,
-table.listing table thead th, table.listing tfoot tr,
-table.listing table tfoot td, table.listing table td {
-  border: none;
-}
-table.duplicate.listing * {color: #999;}
-
-table.listing table.simple {margin-left: 2em;}
-table.listing table.simple td {padding: 0.25em;}
-
-table.compressed { width: auto }
-table.compressed td { padding: 0.25em 0.5em }
-
-/* --- Sortable tables --- */
-
-table.sortable a.sortheader {
-  color:#666666;
-  font-weight: bold;
-  text-decoration: none;
-  display: block;
-}
-table.sortable img.sortarrow {
-  padding-left: 2px;
-}
-th.ascending {
-  background-image: url(/@@/arrowDown);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-th.descending {
-  background-image: url(/@@/arrowUp);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-/* Used to indicate a value to be used to sort cells in a row */
-.sortkey, .revsortkey {display: none;}
 
 /* Clouds of links. */
 .cloud-size-small {
@@ -1828,3 +1842,13 @@ pre.wrap {
   white-space: -o-pre-wrap;
   word-wrap: break-word;
 }
+
+/* Don't add styles here.
+A chronologically-ordered style sheet is hard to maintain and debug.
+
+First, see if you can solve your problem by correcting the HTML.
+If not, see if there is an existing class that does what you want.
+As a last resort, if you really do need extra CSS, add it to the appropriate
+section of the style sheet, as shown in the table of contents.
+
+Don't add styles here. Thanks. */

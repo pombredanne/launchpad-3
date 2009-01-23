@@ -19,7 +19,7 @@ launchpad user or team.
 
     >>> browser.getControl(name='field.owner').value = 'cprov'
     >>> browser.getControl(name='existing').value = ['existing']
-    >>> browser.getControl('Change Registrant').click()
+    >>> browser.getControl('Change owner').click()
 
 Now we can see the new owner and also the old owner which has been made an
 administrator of the team.
@@ -61,7 +61,7 @@ But cprov can.
 
     >>> browser.getControl(name='field.owner').value = 'ubuntu-team'
     >>> browser.getControl(name='existing').value = ['existing']
-    >>> browser.getControl('Change Registrant').click()
+    >>> browser.getControl('Change owner').click()
 
     >>> browser.url
     'http://launchpad.dev/~landscape-developers'
@@ -81,4 +81,3 @@ But cprov can.
     Guilherme Salgado ...                      Approved
     Sample Person     ...                      Administrator
     Ubuntu Team       ...                      Administrator
-

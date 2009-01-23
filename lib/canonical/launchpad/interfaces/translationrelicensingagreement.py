@@ -37,8 +37,10 @@ class ITranslationRelicensingAgreement(Interface):
 
 
 class TranslationRelicensingAgreementOptions(EnumeratedType):
-    BSD = Item("""License all my translations under the BSD license""")
-    REMOVE = Item("""Have all my translations removed from Launchpad""")
+    BSD = Item("""I agree to licence all my translations in Launchpad """
+               """using the BSD licence.""")
+    REMOVE = Item("""I do not want to use the BSD licence and understand this """
+                  """means I can't make translations in Launchpad.""")
 
 
 class ITranslationRelicensingAgreementEdit(ITranslationRelicensingAgreement):

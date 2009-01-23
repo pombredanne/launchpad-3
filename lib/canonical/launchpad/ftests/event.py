@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-from zope.app.tests import ztapi
+from zope.app.testing import ztapi
 
 
 class TestEventListener:
@@ -33,11 +33,9 @@ class TestEventListener:
 
     def unregister(self):
         """Stop the event listener from listening to events."""
-        # XXX: There is currently no way of unsubscribing an event
-        #      handler, so we simply set self._active to False in order
-        #      to make the handler return without doing anything.
-        #      This won't be necessary anymore after bug 2338 has been
-        #      fixed, so that it will be possible to tear down the CA.
-        #      -- Bjorn Tillenius, 2006-02-14
+        # XXX: Bjorn Tillenius 2006-02-14 bug=2338: There is currently no way
+        #      of unsubscribing an event handler, so we simply set
+        #      self._active to False in order to make the handler return
+        #      without doing anything.
         self._active = False
 

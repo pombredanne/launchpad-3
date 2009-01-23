@@ -27,7 +27,8 @@ Also, any anonymous POST submission should fail:
   ... """)
   HTTP/1.1 500 Internal Server Error
   ...
-  ...UnexpectedFormData: Anonymous users cannot do POST submissions...
+  ...UnexpectedFormData: Anonymous users or users who are not accepting
+  our licensing terms cannot do POST submissions...
 
 
 Let's log in.
@@ -473,12 +474,10 @@ We replace it with an empty, imported translation:
     >>> import datetime, pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_message = potmsgset.updateTranslation(
-    ...     evolution_pofile, carlos, {0: u''}, False, True,
-    ...     datetime.datetime.now(UTC))
-    >>> translation_message.is_imported
-    True
-    >>> translation_message.translations
-    [None]
+    ...     evolution_pofile, carlos, {0: u''}, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> print translation_message
+    None
 
     >>> logout()
 

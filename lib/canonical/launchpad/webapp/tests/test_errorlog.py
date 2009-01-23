@@ -13,15 +13,22 @@ from textwrap import dedent
 import tempfile
 import traceback
 
+from zope.app.publication.tests.test_zopepublication import (
+    UnauthenticatedPrincipal)
+from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
 from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.lazr.rest.declarations import webservice_error
 
 
 UTC = pytz.timezone('UTC')
@@ -330,7 +337,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[12], '\n')
 
         # traceback
-        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[16], 'ArbitraryException: xyz\n')
@@ -339,20 +346,6 @@ class TestErrorReportingUtility(unittest.TestCase):
         """Test ErrorReportingUtility.raising() with a request"""
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-
-        class TestRequestWithPrincipal(TestRequest):
-            def setInWSGIEnvironment(self, key, value):
-                self._orig_env[key] = value
-
-            class principal:
-                id = 42
-                title = u'title'
-                # non ASCII description
-                description = u'description |\N{BLACK SQUARE}|'
-
-                @staticmethod
-                def getLogin():
-                    return u'Login'
 
         request = TestRequestWithPrincipal(
                 environ={
@@ -412,7 +405,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines.pop(0), '\n')
 
         # traceback
-        self.assertEqual(lines.pop(0), 'Traceback (innermost last):\n')
+        self.assertEqual(lines.pop(0), 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         lines.pop(0)
@@ -422,9 +415,60 @@ class TestErrorReportingUtility(unittest.TestCase):
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
 
+    def test_raising_with_xmlrpc_request(self):
+        # Test ErrorReportingUtility.raising() with an XML-RPC request.
+        request = TestRequest()
+        directlyProvides(request, IXMLRPCRequest)
+        request.getPositionalArguments = lambda : (1,2)
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        try:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+        self.assertEqual(lines[15], 'xmlrpc args=(1, 2)\n')
+
+    def test_raising_with_webservice_request(self):
+        # Test ErrorReportingUtility.raising() with a WebServiceRequest
+        # request. Only some exceptions result in OOPSes.
+        request = TestRequest()
+        directlyProvides(request, WebServiceLayer)
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        # Exceptions that don't use webservice_error result in OOPSes.
+        try:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
+            utility.raising(sys.exc_info(), request, now=now)
+            self.assertNotEqual(request.oopsid, None)
+
+        # Exceptions with a webservice_error in the 500 range result
+        # in OOPSes.
+        class InternalServerError(Exception):
+            webservice_error(500)
+        try:
+            raise InternalServerError("")
+        except InternalServerError:
+            utility.raising(sys.exc_info(), request, now=now)
+            self.assertNotEqual(request.oopsid, None)
+
+        # Exceptions with any other webservice_error do not result
+        # in OOPSes.
+        class BadDataError(Exception):
+            webservice_error(400)
+        try:
+            raise BadDataError("")
+        except BadDataError:
+            utility.raising(sys.exc_info(), request, now=now)
+            self.assertEqual(request.oopsid, None)
+
+
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
-        from canonical.launchpad.webapp.errorlog import ScriptRequest
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
@@ -465,14 +509,13 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[15], '\n')
 
         # traceback
-        self.assertEqual(lines[16], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[16], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[19], 'ArbitraryException: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
-
 
     def test_raising_with_unprintable_exception(self):
         # Test ErrorReportingUtility.raising() with an unprintable exception.
@@ -515,29 +558,62 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[12], '\n')
 
         # traceback
-        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
         self.assertEqual(
             lines[16], 'UnprintableException: <unprintable instance object>\n'
             )
 
-    def test_raising_unauthorized(self):
-        """Test ErrorReportingUtility.raising() with an Unauthorized
-        exception.
-
-        An OOPS is not recorded when a Unauthorized exceptions is raised.
-        """
+    def test_raising_unauthorized_without_request(self):
+        """Unauthorized exceptions are logged when there's no request."""
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-
         try:
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), now=now)
-
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
-        self.assertFalse(os.path.exists(errorfile))
+        self.failUnless(os.path.exists(errorfile))
+
+    def test_raising_unauthorized_without_principal(self):
+        """Unauthorized exceptions are logged when the request has no
+        principal."""
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = ScriptRequest([('name2', 'value2')])
+        try:
+            raise Unauthorized('xyz')
+        except Unauthorized:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.failUnless(os.path.exists(errorfile))
+
+    def test_raising_unauthorized_with_unauthenticated_principal(self):
+        """Unauthorized exceptions are not logged when the request has an
+        unauthenticated principal."""
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequestWithUnauthenticatedPrincipal()
+        try:
+            raise Unauthorized('xyz')
+        except Unauthorized:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.failIf(os.path.exists(errorfile))
+
+    def test_raising_unauthorized_with_authenticated_principal(self):
+        """Unauthorized exceptions are logged when the request has an
+        authenticated principal."""
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequestWithPrincipal()
+        try:
+            raise Unauthorized('xyz')
+        except Unauthorized:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.failUnless(os.path.exists(errorfile))
 
     def test_raising_translation_unavailable(self):
         """Test ErrorReportingUtility.raising() with a TranslationUnavailable
@@ -602,11 +678,48 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(''.join(lines[13:17]), exc_tb)
 
 
+class TestSensitiveRequestVariables(unittest.TestCase):
+    """Test request variables that should not end up in the stored OOPS.
+
+    The _is_sensitive() method will return True for any variable name that
+    should not be included in the OOPS.
+    """
+
+    def test_oauth_signature_is_sensitive(self):
+        """The OAuth signature can be in the body of a POST request, but if
+        that happens we don't want it to be included in the OOPS, so we need
+        to mark it as sensitive.
+        """
+        request = TestRequest(
+            environ={'SERVER_URL': 'http://api.launchpad.dev'},
+            form={'oauth_signature': '&BTXPJ6pQTvh49r9p'})
+        self.failUnless(_is_sensitive(request, 'oauth_signature'))
+
+
+class TestRequestWithUnauthenticatedPrincipal(TestRequest):
+    principal = UnauthenticatedPrincipal(42)
+
+
+class TestRequestWithPrincipal(TestRequest):
+    def setInWSGIEnvironment(self, key, value):
+        self._orig_env[key] = value
+
+    class principal:
+        id = 42
+        title = u'title'
+        # non ASCII description
+        description = u'description |\N{BLACK SQUARE}|'
+
+        @staticmethod
+        def getLogin():
+            return u'Login'
+
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestErrorReport))
     suite.addTest(unittest.makeSuite(TestErrorReportingUtility))
+    suite.addTest(unittest.makeSuite(TestSensitiveRequestVariables))
     return suite
 
 if __name__ == '__main__':

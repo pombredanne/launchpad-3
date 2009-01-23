@@ -11,14 +11,14 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget,
-    GeneralFormView, LaunchpadFormView)
+    action, canonical_url, custom_widget, LaunchpadFormView)
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.launchpad.interfaces.specificationdependency import (
-    ISpecificationDependency)
+    ISpecificationDependency, ISpecificationDependencyRemoval)
 
 from zope.formlib import form
 from zope.schema import Choice
+
 
 class SpecificationDependencyAddView(LaunchpadFormView):
     schema = ISpecificationDependency
@@ -39,8 +39,7 @@ class SpecificationDependencyAddView(LaunchpadFormView):
                     "before this feature can be started, then specify that "
                     "dependency here so Launchpad knows about it and can "
                     "give you an accurate project plan.")),
-            render_context=self.render_context,
-            custom_widget=self.custom_widgets['dependency'])
+            render_context=self.render_context)
 
     def validate(self, data):
         is_valid = True
@@ -65,9 +64,13 @@ class SpecificationDependencyAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class SpecificationDependencyRemoveView(GeneralFormView):
+class SpecificationDependencyRemoveView(LaunchpadFormView):
+    schema = ISpecificationDependencyRemoval
+    label = 'Remove a dependency'
+    field_names = ['dependency']
+    for_input = True
 
-    def process(self, dependency):
-        self._nextURL = canonical_url(self.context)
-        return self.context.removeDependency(dependency)
-
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        self.context.removeDependency(data['dependency'])
+        self.next_url = canonical_url(self.context)

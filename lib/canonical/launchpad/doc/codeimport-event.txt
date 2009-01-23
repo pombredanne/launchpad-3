@@ -337,7 +337,6 @@ ICodeImportEventSet.newOnline method.
 A new online event can optionally take a user and a reason.  This is the
 case when a user updates the state of the machine through the web UI.
 
-    >>> factory = LaunchpadObjectFactory()
     >>> apollo = factory.makeCodeImportMachine(hostname="apollo")
     >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
     >>> online_event = event_set.newOnline(apollo, ddaa, 'Fubar was fixed')

@@ -49,6 +49,7 @@ are adjusted after the request has been served:
     6XXs: 0
     http requests: 0
     requests: 0
+    retries: 0
     soft timeouts: 0
     timeouts: 0
     xml-rpc faults: 0
@@ -66,8 +67,13 @@ are adjusted after the request has been served:
     2XXs: 1
     http requests: 1
     requests: 1
-    
+
 == Number of 404s ==
+
+Note that retries is incremented too. As per the standard Launchpad
+database policy, this request first uses the slave DB. The requested
+information is not found in there, so a retry is attempted against the
+master DB in case the information is missing due to replication lag.
 
     >>> output = http("GET http://launchpad.dev/non-existant HTTP/1.1\n")
     >>> output.getStatus()
@@ -77,6 +83,7 @@ are adjusted after the request has been served:
     4XXs: 1
     http requests: 1
     requests: 1
+    retries: 1
 
 == Number of 500 Internal Server Errors (unhandled exceptions) ==
 
@@ -85,7 +92,7 @@ may also include the odd case where the OOPS system has failed and a
 fallback error page is rendered by Zope3. There doesn't seem to be any
 particular need to differentiate these cases though:
 
-    >>> from zope.app.tests import ztapi
+    >>> from zope.app.testing import ztapi
     >>> class ErrorView(object):
     ...     """A broken view"""
     ...     def __call__(self, *args, **kw):
@@ -192,4 +199,3 @@ Stats can also be retrieved via HTTP in cricket-graph format:
     xmlrpc_faults:0@...
     xmlrpc_requests:0@...
     <BLANKLINE>
-

@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
     'RequestedCDs',
     'ShipItReport',
     'ShipItReportSet',
@@ -60,9 +59,6 @@ from canonical.launchpad.interfaces import (
     ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType,
     ShippingService, SOFT_MAX_SHIPPINGRUN_SIZE)
 from canonical.launchpad.database.country import Country
-
-
-MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ShippingRequest(SQLBase):
@@ -608,36 +604,6 @@ class ShippingRequestSet:
                 # can't export it.
                 continue
             assert not (request.isCancelled() or request.isShipped())
-
-            # Make sure we ship at least one Ubuntu CD for each Edubuntu CD
-            # that we approved in this request.
-            requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
-            requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
-            requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
-            edubuntu_total_approved = 0
-            for arch, requested_cds in requested_edubuntu.items():
-                if requested_cds is None:
-                    continue
-                edubuntu_total_approved += requested_cds.quantityapproved
-            if edubuntu_total_approved > 0:
-                all_requested_arches = set(
-                    requested_ubuntu.keys() + requested_edubuntu.keys())
-                new_ubuntu_quantities = {}
-                for arch in all_requested_arches:
-                    # Need to use getattr() here because
-                    # requested_edubuntu[arch] will be None if the request
-                    # doesn't contain any Edubuntu CDs of that architecture.
-                    edubuntu_qty = getattr(
-                        requested_edubuntu[arch], 'quantityapproved', 0)
-                    if edubuntu_qty == 0:
-                        continue
-                    ubuntu_qty = getattr(
-                        requested_ubuntu[arch], 'quantityapproved', 0)
-                    if edubuntu_qty > ubuntu_qty:
-                        ubuntu_qty = edubuntu_qty
-                    new_ubuntu_quantities[arch] = ubuntu_qty
-                request.setApprovedQuantities(
-                    {ShipItFlavour.UBUNTU: new_ubuntu_quantities})
 
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(

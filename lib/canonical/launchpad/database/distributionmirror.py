@@ -11,7 +11,6 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
 from datetime import datetime, timedelta, MINYEAR
 import pytz
 
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -21,13 +20,21 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 
+from canonical.archivepublisher.diskpool import poolify
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
-from canonical.archivepublisher.diskpool import poolify
-
+from canonical.launchpad.database.country import Country
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
+from canonical.launchpad.database.publishing import (
+    SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.helpers import (
+    get_email_template, get_contact_email_addresses, shortlist)
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, IDistributionMirrorSet, IDistributionMirror,
     IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
@@ -36,17 +43,11 @@ from canonical.launchpad.interfaces import (
     MirrorFreshness, MirrorSpeed, MirrorStatus, PackagePublishingPocket,
     PackagePublishingStatus, pocketsuffix, PROBE_INTERVAL,
     SourcePackageFileType)
-from canonical.launchpad.database.country import Country
-from canonical.launchpad.database.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses, shortlist)
-from canonical.launchpad.webapp import urlappend, canonical_url
 from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp import urlappend, canonical_url
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class DistributionMirror(SQLBase):
@@ -223,12 +224,12 @@ class DistributionMirror(SQLBase):
         message = template % replacements
         subject = "Launchpad: Verification of %s failed" % self.name
 
-        mirror_admin_address = contactEmailAddresses(
+        mirror_admin_address = get_contact_email_addresses(
             self.distribution.mirror_admin)
         simple_sendmail(fromaddress, mirror_admin_address, subject, message)
 
         if notify_owner:
-            owner_address = contactEmailAddresses(self.owner)
+            owner_address = get_contact_email_addresses(self.owner)
             simple_sendmail(fromaddress, owner_address, subject, message)
 
     def newProbeRecord(self, log_file):
@@ -467,7 +468,7 @@ class DistributionMirrorSet:
         if limit is not None:
             query += " LIMIT %d" % limit
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         ids = ", ".join(str(id)
                         for (id, date_created) in store.execute(query))
         query = '1 = 2'

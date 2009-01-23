@@ -7,7 +7,7 @@
 <facet facet="answers">
 
   <!-- Question -->
-  <content class="canonical.launchpad.database.Question">
+  <class class="canonical.launchpad.database.Question">
     <!-- IQuestion -->
     <allow
         attributes="id title description status priority owner assignee
@@ -45,15 +45,15 @@
       permission="launchpad.AnyPerson"
       attributes="linkBug unlinkBug"
       />
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.QuestionBug">
+  <class class="canonical.launchpad.database.QuestionBug">
     <allow interface="canonical.launchpad.interfaces.IQuestionBug"/>
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.QuestionMessage">
+  <class class="canonical.launchpad.database.QuestionMessage">
     <allow interface="canonical.launchpad.interfaces.IQuestionMessage"/>
-  </content>
+  </class>
 
   <adapter
     for="canonical.launchpad.interfaces.IQuestion"
@@ -64,11 +64,6 @@
     for="canonical.launchpad.interfaces.IQuestion"
     provides="canonical.launchpad.interfaces.IFAQTarget"
     factory="canonical.launchpad.components.answertracker.question_to_faqtarget"
-    />
-  <adapter
-    for="canonical.launchpad.interfaces.IQuestion"
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    factory="canonical.launchpad.browser.QuestionSOP"
     />
 
   <browser:menus
@@ -218,9 +213,9 @@
     />
 
   <!-- QuestionSet -->
-  <content class="canonical.launchpad.database.QuestionSet">
+  <class class="canonical.launchpad.database.QuestionSet">
     <allow interface="canonical.launchpad.interfaces.IQuestionSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.QuestionSet"

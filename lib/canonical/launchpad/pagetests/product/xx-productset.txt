@@ -21,14 +21,38 @@ However, the unprivileged user can see "+all" and "+new".
     >>> user_browser.title
     'Register a project in Launchpad'
 
-The Commercial Admins may successfully access the +review-licenses page.
+A member of Launchpad Developers may successfully access the +review-licenses
+page.
 
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> celebs.launchpad_developers.addMember(nopriv, nopriv)
+    >>> logout()
     >>> commercial_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
+    ...     auth='Basic no-priv@canonical.com:test')
     >>> commercial_browser.open(
     ...     'http://launchpad.dev/projects/+review-licenses')
     >>> commercial_browser.title
     'Review licenses of projects'
+
+The search parameters that filter on a boolean value can also
+be left unspecified to get results with either value.
+
+    >>> for name in ('active', 'license_reviewed', 'has_zero_licenses',
+    ...              'license_info_is_empty'):
+    ...     control = commercial_browser.getControl(name='field.%s' % name)
+    ...     for option in control.displayOptions:
+    ...         print option.decode('utf-8').encode('ascii', 'replace'),
+    ...     print
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?Empty ?Not Empty
 
 The default form values will search for active projects that have not
 been reviewed and that have an Other/Open-Source or Other/Proprietary
@@ -116,7 +140,7 @@ First, add a product with a Other/Open Source license.
     >>> user_browser.getControl(name='field.licenses').value = [
     ...     'OTHER_OPEN_SOURCE']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Publish this Project').click()
     >>> print user_browser.url
     http://launchpad.dev/other-open-source
 
@@ -128,13 +152,13 @@ First, add a product with a Other/Open Source license.
     ...     print '     ', pillar.get('title')
     &nbsp;Other-Open-Source Product (Unreviewed)
           This project&rsquo;s license has not been reviewed.
+    &nbsp;Launchpad Translations (Unspecified)
+          This project&rsquo;s license has not been specified.
     &nbsp;Mega Money Maker (Proprietary)
           This project&rsquo;s license is proprietary.
     &nbsp;Derby
           None
     &nbsp;Redfish (Unspecified)
-          This project&rsquo;s license has not been specified.
-    &nbsp;Bazaar (Unspecified)
           This project&rsquo;s license has not been specified.
 
 If an open source project adds a proprietary license then the project
@@ -153,11 +177,17 @@ will be displayed as proprietary.
     ...     print '     ', pillar.get('title')
     &nbsp;Other-Open-Source Product (Proprietary)
           This project&rsquo;s license is proprietary.
+    &nbsp;Launchpad Translations (Unspecified)
+          This project&rsquo;s license has not been specified.
     &nbsp;Mega Money Maker (Proprietary)
           This project&rsquo;s license is proprietary.
     &nbsp;Derby
           None
     &nbsp;Redfish (Unspecified)
           This project&rsquo;s license has not been specified.
-    &nbsp;Bazaar (Unspecified)
-          This project&rsquo;s license has not been specified.
+
+Revert name12's team membership.
+
+    >>> login('foo.bar@canonical.com')
+    >>> nopriv.leave(celebs.launchpad_developers)
+    >>> logout()

@@ -7,11 +7,11 @@
 # Note that http/ftp proxies are needed by the product 
 # release finder
 
-# Only run this script on forster
+# Only run this script on loganberry
 THISHOST=`uname -n`
-if [ "forster" != "$THISHOST" ]
+if [ "loganberry" != "$THISHOST" ]
 then
-        echo "This script must be run on forster."
+        echo "This script must be run on loganberry."
         exit 1
 fi
 
@@ -40,6 +40,9 @@ cd /srv/launchpad.net/production/launchpad/cronscripts
 
 echo == Expiring memberships `date` ==
 python2.4 flag-expired-memberships.py -q
+
+echo == Allocating revision karma `date` ==
+python2.4 allocate-revision-karma.py -q
 
 echo == Recalculating karma `date` ==
 python2.4 foaf-update-karma-cache.py -q

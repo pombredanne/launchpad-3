@@ -13,6 +13,7 @@ __all__ = [
     'BranchCreationForbidden',
     'BranchNameInUse',
     'BranchUniqueNameConflict',
+    'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
@@ -20,6 +21,7 @@ __all__ = [
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
     'NoBranchForSeries',
+    'NoBranchWithID',
     'NoDefaultBranchForPillar',
     'NoSuchBranch',
     'NoSuchBug',
@@ -31,11 +33,25 @@ __all__ = [
     'NoSuchSeries',
     'NoSuchTeamMailingList',
     'NotInTeam',
+    'NoUrlForBranch',
     'RequiredParameterMissing',
     'UnexpectedStatusReport',
     ]
 
+
 import xmlrpclib
+
+
+def check_fault(fault, *fault_classes):
+    """Check if 'fault's faultCode matches any of 'fault_classes'.
+
+    :param fault: An instance of `xmlrpclib.Fault`.
+    :param fault_classes: Any number of `LaunchpadFault` subclasses.
+    """
+    for cls in fault_classes:
+        if fault.faultCode == cls.error_code:
+            return True
+    return False
 
 
 class LaunchpadFault(xmlrpclib.Fault):
@@ -65,6 +81,7 @@ class NoSuchProduct(LaunchpadFault):
 
     def __init__(self, product_name):
         LaunchpadFault.__init__(self, product_name=product_name)
+        self.product_name = product_name
 
 
 class NoSuchPerson(LaunchpadFault):
@@ -343,3 +360,71 @@ class InvalidBranchName(LaunchpadFault):
     def __init__(self, error):
         error_message = error.args[0].encode('utf-8', 'replace')
         LaunchpadFault.__init__(self, error=error_message)
+
+
+class NoBranchWithID(LaunchpadFault):
+    """There's no branch with the given ID."""
+
+    error_code = 270
+    msg_template = 'No branch with ID %(branch_id)s'
+
+    def __init__(self, branch_id):
+        LaunchpadFault.__init__(self, branch_id=branch_id)
+
+
+class NoUrlForBranch(LaunchpadFault):
+    """resolve_lp_path resolved to a remote branch with no URL."""
+
+    error_code = 280
+    msg_template = (
+        'The remote branch at %(unique_name)s has no URL specified.')
+
+    def __init__(self, unique_name):
+        LaunchpadFault.__init__(self, unique_name=unique_name)
+
+
+class PathTranslationError(LaunchpadFault):
+    """Raised when a virtual path cannot be translated to a real one.
+
+    This can be raised when the path is utterly unrecognizable, or when the
+    path looks sensible, but points to a resource we can't find.
+    """
+
+    error_code = 290
+    msg_template = "Could not translate '%(path)s'."
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)
+
+
+class InvalidPath(LaunchpadFault):
+    """Raised when `translatePath` is passed something that's not a path."""
+
+    error_code = 300
+    msg_template = (
+        "Could not translate '%(path)s'. Can only translate absolute paths.")
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)
+
+
+class PermissionDenied(LaunchpadFault):
+    """Raised when a user is denied access to some resource."""
+
+    error_code = 310
+    msg_template = (
+        "%(message)s")
+
+    def __init__(self, message="Permission denied."):
+        LaunchpadFault.__init__(self, message=message)
+
+
+class NotFound(LaunchpadFault):
+    """Raised when a resource is not found."""
+
+    error_code = 320
+    msg_template = (
+        "%(message)s")
+
+    def __init__(self, message="Not found."):
+        LaunchpadFault.__init__(self, message=message)

@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- SourcePackage -->
-  <content class="canonical.launchpad.database.SourcePackage">
+  <class class="canonical.launchpad.database.SourcePackage">
     <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -21,12 +21,21 @@
       attributes="newQuestion createQuestionFromBug addAnswerContact
                   removeAnswerContact"
       />
-  </content>
+  </class>
+
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"
     for="canonical.launchpad.interfaces.ISourcePackage"
     factory="canonical.launchpad.components.answertracker.sourcepackage_to_faqtarget"
     />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    factory="canonical.launchpad.browser.SourcePackageBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     name="+index"
@@ -51,13 +60,6 @@
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="SourcePackageNavigation"
-    />
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ISourcePackage"
-    factory="canonical.launchpad.browser.SourcePackageSOP"
-    permission="zope.Public"
     />
 
   <browser:url

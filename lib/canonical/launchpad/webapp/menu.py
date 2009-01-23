@@ -22,13 +22,13 @@ __all__ = [
 import cgi
 import types
 
-from zope.i18n import translate, Message, MessageID
+from zope.i18n import translate, Message
 from zope.interface import implements
 from zope.component import getMultiAdapter
 from zope.security.proxy import (
     isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
@@ -137,7 +137,7 @@ Link = LinkData
 class MenuLink:
     """Adapter from ILinkData to ILink."""
     implements(ILink)
-    decorates(ILinkData, context='_linkdata')
+    delegates(ILinkData, context='_linkdata')
 
     # These attributes are set by the menus infrastructure.
     name = None
@@ -267,7 +267,7 @@ class MenuBase(UserAttributeCache):
             # self.links.
             raise AssertionError(
                 "Links in 'enable_only' not found in 'links': %s" %
-                (', '.join([name for name in unknown_links])))
+                ', '.join(sorted(unknown_links)))
 
         for idx, linkname in enumerate(self.links):
             link = self._get_link(linkname)
@@ -356,6 +356,7 @@ class NavigationMenu(MenuBase):
     _baseclassname = 'NavigationMenu'
 
     title = None
+    disabled = False
 
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
@@ -450,7 +451,7 @@ class enabled_with_permission:
 ## text.
 ##
 
-# XXX mars 2008-2-12:
+# XXX: mars 2008-02-12:
 # This entire block should be extracted into its own module, along
 # with the structured() class.
 
@@ -484,7 +485,7 @@ def translate_if_i18n(obj_or_msgid):
 
     Returns any other type of object untouched.
     """
-    if isinstance(obj_or_msgid, (Message, MessageID)):
+    if isinstance(obj_or_msgid, Message):
         return translate(
             obj_or_msgid,
             context=get_current_browser_request())

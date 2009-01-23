@@ -18,7 +18,9 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_cve_sequence
 
 from canonical.lazr import DBEnumeratedType, DBItem
-
+from canonical.lazr.rest.declarations import (
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, exported)
 
 class CveStatus(DBEnumeratedType):
     """The Status of this item in the CVE Database.
@@ -57,31 +59,46 @@ class CveStatus(DBEnumeratedType):
 class ICve(Interface):
     """A single CVE database entry."""
 
+    export_as_webservice_entry()
+
     id = Int(title=_('ID'), required=True, readonly=True)
-    sequence = TextLine(
-        title=_('CVE Sequence Number'),
-        description=_('Should take the form XXXX-XXXX, all digits.'),
-        required=True, readonly=False, constraint=valid_cve_sequence)
-    status = Choice(title=_('Current CVE State'),
-        default=CveStatus.CANDIDATE, description=_("Whether or not the "
-        "vulnerability has been reviewed and assigned a full CVE number, "
-        "or is still considered a Candidate, or is deprecated."),
-        required=True, vocabulary='CveStatus')
-    description = TextLine(
-        title=_('Title'),
-        description=_('A description of the CVE issue. This will be '
-            'updated regularly from the CVE database.'),
-        required=True, readonly=False)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    datemodified = Datetime(
-        title=_('Date Modified'), required=True, readonly=False)
+    sequence = exported(
+        TextLine(title=_('CVE Sequence Number'),
+                 description=_('Should take the form XXXX-XXXX, all digits.'),
+                 required=True, readonly=False,
+                 constraint=valid_cve_sequence))
+    status = exported(
+        Choice(title=_('Current CVE State'),
+               default=CveStatus.CANDIDATE,
+               description=_("Whether or not the "
+                             "vulnerability has been reviewed and assigned a "
+                             "full CVE number, or is still considered a "
+                             "Candidate, or is deprecated."),
+               required=True, vocabulary=CveStatus))
+    description = exported(
+        TextLine(title=_('Title'),
+                 description=_('A description of the CVE issue. This will be '
+                               'updated regularly from the CVE database.'),
+                 required=True, readonly=False))
+    datecreated = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
+    datemodified = exported(
+        Datetime(title=_('Date Modified'), required=True, readonly=False),
+        exported_as='date_modified')
 
     # other attributes
-    url = Attribute("Return a URL to the site that has the CVE data for "
-        "this CVE reference.")
-    displayname = Attribute("A very brief name describing the ref and state.")
-    title = Attribute("A title for the CVE")
+    url = exported(
+        TextLine(title=_('URL'),
+                 description=_("Return a URL to the site that has the CVE "
+                               "data for this CVE reference.")))
+    displayname = exported(
+        TextLine(title=_("Display Name"),
+                 description=_("A very brief name describing "
+                               "the ref and state.")),
+        exported_as='display_name')
+    title = exported(TextLine(title=_("Title"),
+                              description=_("A title for the CVE")))
     references = Attribute("The set of CVE References for this CVE.")
 
     def createReference(source, content, url=None):
@@ -94,6 +111,8 @@ class ICve(Interface):
 class ICveSet(Interface):
     """The set of ICve objects."""
 
+    export_as_webservice_collection(ICve)
+
     title = Attribute('Title')
 
     def __getitem__(key):
@@ -105,6 +124,7 @@ class ICveSet(Interface):
     def new(sequence, description, cvestate=CveStatus.CANDIDATE):
         """Create a new ICve."""
 
+    @collection_default_content()
     def getAll():
         """Return all ICVEs"""
 

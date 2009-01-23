@@ -13,98 +13,121 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Edit dependencies for <tal:title replace="context/title" /></h1>
+  <h1>Edit dependencies for the <tal:title replace="context/title" /></h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div class="form" metal:fill-slot="widgets">
 
       <table>
-        <tal:dependencies
-          condition="widget"
-          define="widget nocall:view/widgets/selected_dependencies;
-                  field_name widget/context/__name__;
-                  error python:view.getFieldError(field_name);">
-          <tr>
-            <th>
-              <label tal:attributes="for widget/name"
-                     tal:content="string:${widget/label}:">Label</label>
-            </th>
-            <td class="ppa_dependency_row">
-              <input tal:replace="structure widget" />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <div class="error message" tal:condition="error"
-                   tal:content="structure error">Error message</div>
-            </td>
-            <td>
-              <input
-                tal:condition="view/has_dependencies"
-                tal:replace="structure
-                             view/actions/field.actions.remove/render" />
-              <p id="empty-dependencies"
-                 tal:condition="not: view/has_dependencies"
-                 >No dependencies recorded for this PPA yet.</p>
-            </td>
-          </tr>
-          <tr tal:condition="view/has_dependencies">
-            <td colspan="2">
-              <p class="formHelp" tal:condition="widget/hint"
-                 tal:content="widget/hint">Some Help Text</p>
-            </td>
-          </tr>
-        </tal:dependencies>
+
+        <tal:primary_dependency
+          define="widget nocall:view/widgets/primary_dependencies|nothing"
+          condition="widget">
+          <metal:widget
+            metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:primary_dependency>
+
+        <tal:primary_components
+          define="widget nocall:view/widgets/primary_components|nothing"
+          condition="widget">
+          <metal:widget
+            metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:primary_components>
+
+        <tr style="height: 2em;">
+          <td colspan="2">&nbsp;</td>
+        </tr>
 
         <tal:add_dependency
-          condition="widget"
-          define="widget nocall:view/widgets/dependency_candidate;
-                  field_name widget/context/__name__;
-                  error python:view.getFieldError(field_name);">
-          <tr>
-            <th>
-              <label tal:attributes="for widget/name"
-                     tal:content="string:${widget/label}:">Label</label>
-            </th>
-            <td>
-              <input tal:replace="structure widget" />
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="error message" tal:condition="error"
-                   tal:content="structure error">Error message</div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p class="formHelp" tal:condition="widget/hint"
-                 tal:content="widget/hint">Some Help Text</p>
-            </td>
-            <td>
-              <input tal:replace="structure
-                                  view/actions/field.actions.add/render" />
-            </td>
-          </tr>
+          define="widget nocall:view/widgets/dependency_candidate|nothing"
+          condition="widget">
+          <metal:widget
+            metal:use-macro="context/@@launchpad_form/widget_row" />
         </tal:add_dependency>
 
+        <tr tal:condition="not: view/has_dependencies">
+          <td></td>
+          <td>
+            <p id="empty-dependencies"
+            ><i>No dependencies recorded for this PPA yet.</i></p>
+          </td>
+        </tr>
+
+        <tal:dependencies
+          define="widget nocall:view/widgets/selected_dependencies|nothing"
+          condition="view/has_dependencies">
+          <metal:widget
+            metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:dependencies>
       </table>
 
    </div> <!-- widgets -->
 
-   <div class="actions" metal:fill-slot="buttons">
-   </div> <!-- empty buttons -->
-
-
   </div> <!-- launchpad_form -->
+
+<script type="text/javascript">
+   YUI().use("*", function(Y) {
+
+       // Highlight (setting bold font-weight) the label for the
+       // selected option in a given NodesList. Assumes the input is
+       // contained by the label.
+       function highlight_checked (nodes) {
+           nodes.each(function(input) {
+               var label = Y.get(input.get("parentNode"));
+               if (input.get("checked")) {
+                   label.setStyle("fontWeight", "bold");
+               }
+               else {
+                   label.setStyle("fontWeight", "normal");
+               }
+           });
+       };
+
+       var main_area = Y.get("#mainarea");
+
+       // Highlight the selected radio button input on page load.
+       var inputs = main_area.queryAll("input.highlight-selected");
+       highlight_checked(inputs);
+
+       // Install signal handlers for all radio-button inputs to
+       // recalculate with options should be highlighted when one of
+       // them is clicked.
+       inputs.each(function(input) {
+           input.on("click", function(e) {
+               var main_area = Y.get("#mainarea");
+               var inputs = main_area.queryAll("input.highlight-selected");
+               highlight_checked(inputs);
+           });
+       });
+
+       // Install handlers to decorate selected check-box inputs when
+       // they get clicked. Selected options text (next sibling) will
+       // be decorated with 'line-through' style and rendered in
+       // 'red'. Options not selected (or unselected) text will be
+       // rendered in 'blue' and without any decoration.
+       var inputs = main_area.queryAll("input.line-through-when-checked");
+       if (inputs) {
+           inputs.each(function(input) {
+               input.on("click", function(e) {
+                   var input = e.currentTarget;
+                   var link = input.next();
+                   if (input.get("checked")) {
+                       link.setStyle("color", "red");
+                       link.setStyle("textDecoration", "line-through");
+                   }
+                   else {
+                       link.setStyle("color", "blue");
+                       link.setStyle("textDecoration", "none");
+                   }
+               });
+           });
+       };
+   });
+</script>
 
 
 </div> <!--main -->
-
-<p metal:fill-slot="help">
-
-</p>
 
 </body>
 </html>

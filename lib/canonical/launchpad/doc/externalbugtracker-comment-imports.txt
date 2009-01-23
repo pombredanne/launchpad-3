@@ -52,6 +52,7 @@ ExternalBugTracker class which implements these three methods.
     ...         '1': "Example comment the first",
     ...         '2': "Example comment the second",
     ...         '3': "Example comment the third"}
+    ...     comment_datecreated = None
     ...
     ...     poster_tuple = ("Joe Bloggs", "joe.bloggs@example.com")
     ...
@@ -72,6 +73,7 @@ ExternalBugTracker class which implements these three methods.
     ...         message = getUtility(IMessageSet).fromText(
     ...             "Some subject or other",
     ...             self.comment_dict[comment_id], owner=poster,
+    ...             datecreated=self.comment_datecreated,
     ...             rfc822msgid=comment_id)
     ...         return message
 
@@ -237,9 +239,13 @@ IBugWatch provides an addComment() method by which comments can be
 linked to a bug watch. This method accepts a Launchpad Message object
 representing the comment itself and a comment_id paramter, which can be
 used to pass the ID of the comment on the remote bug tracker from which
-the comment was imported.
+the comment was imported. It returns the created IBugMessage.
 
-    >>> bug_watch.addComment(comment_id, message)
+    >>> bug_messsage = bug_watch.addComment(comment_id, message)
+    >>> bug_messsage.bug == bug_watch.bug
+    True
+    >>> bug_messsage.message == message
+    True
 
 After using addComment() to add a comment, hasComment() will return True
 for that comment.
@@ -256,6 +262,33 @@ message and the bug to which the watch belongs.
 
     >>> bug_message.bugwatch == bug_watch
     True
+
+The list of imported messages can be retrieved using
+getImportedBugMessages(). Messages that are linked to the bug watch but
+don't have a remote_comment_id are comments waiting to be pushed to the
+remote tracker and will not be returned by getImportedBugMessages()
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch2 = factory.makeBugWatch('42')
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Imported comment', bugwatch=bug_watch2,
+    ...     remote_comment_id='test')
+    <Message at ...>
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Native comment')
+    <Message at ...>
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Pushable comment', bugwatch=bug_watch2)
+    <Message at ...>
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> for bug_message in bug_watch2.getImportedBugMessages():
+    ...     print bug_message.message.text_contents
+    Imported comment
 
     >>> commit()
 
@@ -301,6 +334,7 @@ DebBugs database. The message is linked to the bug watch for which it
 was imported.
 
     >>> bug_watch.addComment(message_two.rfc822msgid, message_two)
+    <BugMessage at ...>
     >>> bug_watch.hasComment(message_two.rfc822msgid)
     True
 
@@ -336,12 +370,16 @@ We'll add a listener to check for Karma events.
 Importing a comment with a CVE reference will produce a CVE link in
 Launchpad but will result in no Karma records being created.
 
-    >>> external_bugtracker.remote_comments['5'] = (
-    ...     "A comment containing a CVE entry: CVE-1991-9911.")
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch = factory.makeBugWatch('123456')
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> external_bugtracker.remote_comments = {
+    ...     '5':"A comment containing a CVE entry: CVE-1991-9911."}
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456...
 
-    >>> for cve in bug.cves:
+    >>> for cve in bug_watch.bug.cves:
     ...     print cve.displayname
     CVE-1991-9911
 
@@ -358,13 +396,102 @@ includes a CVE reference appear to come from a valid Launchpad user.
 
 Once again, CVE links are created but no karma is assigned.
 
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
-    INFO:...:Imported 2 comments for remote bug 123456...
+    INFO:...:Imported 1 comments for remote bug 123456...
 
-    >>> for cve in sorted([cve.displayname for cve in bug.cves]):
+    >>> for cve in sorted([cve.displayname for cve in bug_watch.bug.cves]):
     ...     print cve
     CVE-1991-9911
     CVE-1999-0593
 
     >>> karma_helper.unregister_listener()
+
+
+== E-mail notifications ==
+
+When bug comments are imported, notifications are sent to inform the bug
+subscribers about it. The first time we import comments from a bug
+watch, there can be a lot of comments. To avoid causing a lot of e-mail
+notifications to be sent, only one notification is sent for all the
+comments.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> now = datetime(2008, 9, 12, 15, 30, 45, tzinfo=pytz.timezone('UTC'))
+    >>> test_bug = factory.makeBug(date_created=now)
+    >>> bug_watch = factory.makeBugWatch('42', bug=test_bug)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> external_bugtracker.remote_comments = {
+    ...     '1': 'First imported comment (initial import)',
+    ...     '2': 'Second imported comment (initial import)',
+    ...     }
+    >>> external_bugtracker.comment_datecreated = now + timedelta(hours=1)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 2 comments for remote bug 42 ...
+
+    >>> from canonical.launchpad.database.bugnotification import (
+    ...     BugNotification)
+    >>> notifications = list(BugNotification.selectBy(bug=bug_watch.bug))
+    >>> len(notifications)
+    1
+
+The notification is marked as being a comment, and the Bug Watch Updater
+is used as the From address.
+
+    >>> notifications[0].is_comment
+    True
+    >>> notifications[0].message.owner.name
+    u'bug-watch-updater'
+
+    >>> print notifications[0].message.text_contents
+    Launchpad has imported 2 comments from the remote bug at
+    http://.../show_bug.cgi?id=42.
+    <BLANKLINE>
+    If you reply to an imported comment from within Launchpad, your comment
+    will be sent to the remote bug automatically. Read more about
+    Launchpad's inter-bugtracker facilities at
+    https://help.launchpad.net/InterBugTracking.
+    <BLANKLINE>
+    ------------------------------------------------------------------------
+    On 2008-09-12T16:30:45+00:00 Foo Bar wrote:
+    <BLANKLINE>
+    First imported comment (initial import)
+    <BLANKLINE>
+    Reply at: http://.../.../+bug/.../comments/1
+    <BLANKLINE>
+    ------------------------------------------------------------------------
+    On ... Foo Bar wrote:
+    <BLANKLINE>
+    Second imported comment (initial import)
+    <BLANKLINE>
+    Reply at: http://.../.../+bug/.../comments/2
+
+If we already have comments imported for a bug watch, one notification
+will be sent for each subsequent imported comment, even if there is
+more than one.
+
+    >>> external_bugtracker.poster_tuple = (
+    ...     "Joe Bloggs", "joe.bloggs@example.com")
+    >>> external_bugtracker.remote_comments = {
+    ...     '3': 'Third imported comment (initial import)',
+    ...     '4': 'Fourth imported comment (initial import)',
+    ...     }
+    >>> bug_watch.getImportedBugMessages().count() > 0
+    True
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 2 comments for remote bug 42 ...
+
+    >>> notifications = list(BugNotification.selectBy(
+    ...     bug=bug_watch.bug, orderBy='id'))
+    >>> notifications = notifications[1:]
+    >>> len(notifications)
+    2
+    >>> for notification in notifications:
+    ...     print "%s wrote: %s" % (
+    ...         notification.message.owner.name,
+    ...         notification.message.text_contents)
+    joe-bloggs wrote: Third imported comment (initial import)
+    joe-bloggs wrote: Fourth imported comment (initial import)

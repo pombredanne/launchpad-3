@@ -145,16 +145,16 @@ class TestProberProtocolAndFactory(TrialTestCase):
         self.failUnless(getattr(prober, 'timeoutCall', None) is not None)
         return deferred
 
-    def test_redirectawareprober_follows_http_redirect(self):
-        url = 'http://localhost:%s/redirect-to-valid-mirror' % self.port
+    def test_RedirectAwareProber_follows_http_redirect(self):
+        url = 'http://localhost:%s/redirect-to-valid-mirror/file' % self.port
         prober = RedirectAwareProberFactory(url)
         self.failUnless(prober.redirection_count == 0)
         self.failUnless(prober.url == url)
         deferred = prober.probe()
         def got_result(result):
             self.failUnless(prober.redirection_count == 1)
-            self.failUnless(
-                prober.url == 'http://localhost:%s/valid-mirror' % self.port)
+            new_url = 'http://localhost:%s/valid-mirror/file' % self.port
+            self.failUnless(prober.url == new_url)
             self.failUnless(result == str(httplib.OK))
         return deferred.addCallback(got_result)
 
@@ -475,8 +475,10 @@ class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
         prober.redirect('http://bar.foo')
         self.failUnless(prober.timeoutCall.resetCalled)
 
-    def _createFactoryAndStubConnectAndTimeoutCall(self):
-        prober = RedirectAwareProberFactory('http://foo.bar')
+    def _createFactoryAndStubConnectAndTimeoutCall(self, url=None):
+        if url is None:
+            url = 'http://foo.bar'
+        prober = RedirectAwareProberFactory(url)
         prober.timeoutCall = FakeTimeOutCall()
         prober.connectCalled = False
         def connect():
@@ -484,23 +486,42 @@ class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
         prober.connect = connect
         return prober
 
+    def test_raises_error_if_redirected_to_different_file(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall(
+            'http://foo.bar/baz/boo/package.deb')
+        def failed(error):
+            prober.has_failed = True
+        prober.failed = failed
+        prober.redirect('http://foo.bar/baz/boo/notfound?file=package.deb')
+        self.failUnless(prober.has_failed)
+
     def test_connect_depends_on_localhost_only_config(self):
         # If localhost_only is True and the host to which we would connect is
         # not localhost, the connect() method is not called.
-        orig_config = config.distributionmirrorprober.localhost_only
-        config.distributionmirrorprober.localhost_only = True
+        localhost_only_conf = """
+            [distributionmirrorprober]
+            localhost_only: True
+            """
+        config.push('localhost_only_conf', localhost_only_conf)
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         self.failUnless(prober.connect_host != 'localhost')
         prober.probe()
         self.failIf(prober.connectCalled)
+        # Restore the config.
+        config.pop('localhost_only_conf')
 
         # If localhost_only is False, then it doesn't matter the host to which
         # we'll connect to --the connect() method will be called.
-        config.distributionmirrorprober.localhost_only = False
+        remote_conf = """
+            [distributionmirrorprober]
+            localhost_only: False
+            """
+        config.push('remote_conf', remote_conf)
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.probe()
         self.failUnless(prober.connectCalled)
-        config.distributionmirrorprober.localhost_only = orig_config
+        # Restore the config.
+        config.pop('remote_conf')
 
     def test_noconnection_is_made_when_infiniteloop_detected(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()

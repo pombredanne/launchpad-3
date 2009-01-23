@@ -104,10 +104,10 @@ want a link to the spec we're currently looking at.
        [
        "bgcolor"="#ffffff",
        "mode"="hier",
-       "nodesep"="0.25",
+       "nodesep"="0.01",
        "ranksep"="0.25",
-       "ratio"="auto",
-       "size"="5.2,9"
+       "ratio"="compress",
+       "size"="9.2,9"
        ]
    node
        [
@@ -320,7 +320,7 @@ a message explaining that the image was not linked.
     <p class="error message">There was an error linking the dependency tree
     to its specs.</p>
 
-    >>> from zope.app.error.interfaces import IErrorReportingUtility
+    >>> from zope.error.interfaces import IErrorReportingUtility
     >>> globalErrorUtility = getUtility(IErrorReportingUtility)
     >>> oops_report = globalErrorUtility.getLastOopsReport()
     >>> print oops_report.type, oops_report.value

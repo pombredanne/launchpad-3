@@ -21,6 +21,13 @@ that he's interested in that feature.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
 
+If No Privileges has a sudden change of heart, there's a cancel link
+that will return the browser to the bug page.
+
+    >>> cancel_link = user_browser.getLink('Cancel')
+    >>> cancel_link.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
+
 By looking at the 'Subscribers' portlet, he sees that David Allouche is not
 currently subscribed to the bug:
 
@@ -36,6 +43,14 @@ currently subscribed to the bug:
     Foo Bar
     Mark Shuttleworth
     Ubuntu Team
+
+Unlike the main bug page, here the 'Subscribers' portlet does not have
+any 'Subscribe' links.
+
+    >>> user_browser.getLink('Subscribe')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 He subscribes David Allouche to the bug using his Launchpad username.
 

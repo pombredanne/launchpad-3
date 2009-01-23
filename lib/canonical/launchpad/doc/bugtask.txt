@@ -329,7 +329,10 @@ demonstrate.
     >>> print ubuntu.currentseries.name
     hoary
 
+    # Only owners, experts, or admins can create a milestone.
+    >>> login('foo.bar@canonical.com')
     >>> ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
+    >>> login('test@canonical.com')
 
     >>> generic_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
@@ -433,8 +436,12 @@ A distroseries/productseries task that isn't the current development
 focus, doesn't have any conjoined masters or slaves.
 
     >>> from storm.store import Store
+
+    # Only owners, experts, or admins can create a series.
+    >>> login('foo.bar@canonical.com')
     >>> alsa_utils_stable = alsa_utils.newSeries(
     ...     launchbag.user, 'stable', 'The stable series.')
+    >>> login('test@canonical.com')
     >>> Store.of(alsa_utils_stable).flush()
     >>> alsa_utils.development_focus == alsa_utils_stable
     False
@@ -711,8 +718,11 @@ when the bug hasn't actually been filed yet in that context. For cases
 like these, use the NullBugTask object.
 
 
+    >>> from canonical.launchpad.interfaces.bugtask import INullBugTask
     >>> netapplet = productset.get(11)
     >>> null_bugtask = bug_one.getNullBugTask(product=netapplet)
+    >>> verifyObject(INullBugTask, null_bugtask)
+    True
     >>> IUpstreamBugTask.providedBy(null_bugtask)
     True
 
@@ -863,6 +873,44 @@ maintained by Foo Bar.
     ...     foobar, user=mr_no_privs)
     >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [2]
+
+
+== Open bugtask count for a given list of projects ==
+
+IBugTaskSet.getOpenBugTasksPerProduct() will return a dictionary
+of product_id:count entries for bugs in an open status that
+the user given as a parameter is allowed to see. If a product,
+such as id=3 does not have any open bugs, it will not appear
+in the result.
+
+    >>> products = [productset.get(id) for id in (3, 5, 20)]
+    >>> bugtask_counts = bugtaskset.getOpenBugTasksPerProduct(
+    ...     sample_person, products)
+    >>> for product_id, count in sorted(bugtask_counts.items()):
+    ...     print 'product_id=%d count=%d' % (product_id, count)
+    product_id=5 count=1
+    product_id=20 count=2
+
+A Launchpad admin will get a higher count for the product with id=20
+because he can see the private bug.
+
+    >>> bugtask_counts = bugtaskset.getOpenBugTasksPerProduct(
+    ...     foobar, products)
+    >>> for product_id, count in sorted(bugtask_counts.items()):
+    ...     print 'product_id=%d count=%d' % (product_id, count)
+    product_id=5 count=1
+    product_id=20 count=3
+
+Someone subscribed to the private bug on the product with id=20
+will also have it added to the count.
+
+    >>> karl = personset.getByName('karl')
+    >>> bugtask_counts = bugtaskset.getOpenBugTasksPerProduct(
+    ...     karl, products)
+    >>> for product_id, count in sorted(bugtask_counts.items()):
+    ...     print 'product_id=%d count=%d' % (product_id, count)
+    product_id=5 count=1
+    product_id=20 count=3
 
 
 == Privacy and Priviledged Users ==
