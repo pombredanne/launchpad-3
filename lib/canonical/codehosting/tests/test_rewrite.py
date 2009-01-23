@@ -52,16 +52,17 @@ class TestBranchRewriter(TestCase):
 
     def test_translateLine_private(self):
         # All requests for /$branch_name/... for private branches are
-        # rewritten to https, which is then handled directly by codebrowse.
+        # rewritten to codebrowse, which will then redirect them to https and
+        # handle them there.
         rewriter = self.makeRewriter()
         branch = self.factory.makeBranch(private=True)
         output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
         self.assertEqual(
-            'https://bazaar.launchpad.dev/%s/changes' % branch.unique_name,
+            'http://localhost:8080/%s/changes' % branch.unique_name,
             output)
         output = rewriter.rewriteLine("/%s/.bzr" % branch.unique_name)
         self.assertEqual(
-            'https://bazaar.launchpad.dev/%s/.bzr' % branch.unique_name,
+            'http://localhost:8080/%s/.bzr' % branch.unique_name,
             output)
 
     def test_translateLine_static(self):

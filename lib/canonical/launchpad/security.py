@@ -96,7 +96,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, ITranslationImportQueueEntry)
-from canonical.launchpad.interfaces.translator import ITranslator
+from canonical.launchpad.interfaces.translator import (
+    ITranslator, IEditTranslator)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1156,14 +1157,26 @@ class EditPOFileDetails(EditByOwnersOrAdmins):
                 user.inTeam(rosetta_experts))
 
 
-class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
+class AdminTranslator(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
     usedfor = ITranslator
 
     def checkAuthenticated(self, user):
         """Allow the owner of a translation group to edit the translator
         of any language in the group."""
         return (user.inTeam(self.obj.translationgroup.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslator(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IEditTranslator
+
+    def checkAuthenticated(self, user):
+        """Allow the translator and the group owner to edit parts of
+        the translator entry."""
+        return (user.inTeam(self.obj.translator) or
+                user.inTeam(self.obj.translationgroup.owner) or
                 OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
 
 
