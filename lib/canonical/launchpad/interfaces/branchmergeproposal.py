@@ -545,7 +545,7 @@ class IMergeProposalCreatedJob(Interface):
     """Interface for review diffs."""
 
     def run():
-        """Perform the diff specified by this job."""
+        """Perform the diff and email specified by this job."""
 
 
 class IMergeProposalCreatedJobSource(Interface):

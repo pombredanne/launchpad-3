@@ -26,7 +26,7 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
     """Run merge proposal creation jobs."""
 
     def main(self):
-        globalErrorUtility.configure('diff_bmps')
+        globalErrorUtility.configure('mpcreationjobs')
         job_source = getUtility(IMergeProposalCreatedJobSource)
         runner = JobRunner.fromReady(job_source)
         server = get_scanner_server()
@@ -40,5 +40,5 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = RunMergeProposalCreatedJobs(
-        'sendcodemail', config.diff_bmps.dbuser)
+        'sendcodemail', config.mpcreationjobs.dbuser)
     script.lock_and_run()

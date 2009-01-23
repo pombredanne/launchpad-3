@@ -17,8 +17,8 @@ class TestDiffBMPs(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
-    def test_diff_bmps(self):
-        """Ensure diff_bmps runs and generates diffs."""
+    def test_mpcreationjobs(self):
+        """Ensure mpcreationjobs runs and generates diffs."""
         self.useTempBzrHome()
         target, target_tree = self.createMirroredBranchAndTree()
         target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
@@ -35,7 +35,7 @@ class TestDiffBMPs(TestCaseWithFactory):
         self.assertIs(None, bmp.review_diff)
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/diff_bmps.py', [])
+            'cronscripts/mpcreationjobs.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual('Ran 1 MergeProposalCreatedJobs.\n', stdout)
         self.assertEqual('INFO    creating lockfile\n', stderr)

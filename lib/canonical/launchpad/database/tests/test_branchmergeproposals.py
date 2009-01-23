@@ -862,12 +862,14 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_providesInterface(self):
+        """MergeProposalCreatedJob provides the expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = MergeProposalCreatedJob.create(bmp)
         verifyObject(IMergeProposalCreatedJob, job)
         verifyObject(IBranchMergeProposalJob, job)
 
     def test_run_makes_diff(self):
+        """MergeProposalCreationJob.run creates a diff."""
         self.useBzrBranches()
         target, target_tree = self.create_branch_and_tree('target')
         target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
@@ -904,7 +906,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         job.run()
 
     def test_run_sends_email(self):
-        """The review diff is only generated if not already assigned."""
+        """MergeProposalCreationJob.run sends an email."""
         review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
         transaction.commit()
         bmp = self.factory.makeBranchMergeProposal(review_diff=review_diff)

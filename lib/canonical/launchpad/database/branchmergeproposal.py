@@ -1,3 +1,4 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database class for branch merge prosals."""
@@ -51,7 +52,6 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
-from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
@@ -710,7 +710,6 @@ class BranchMergeProposalJob(SQLBase):
     """Base class for jobs related to branch merge proposals."""
 
     implements(IBranchMergeProposalJob)
-    delegates(IJob, context='job')
 
     _table = 'BranchMergeProposalJob'
 
@@ -805,6 +804,7 @@ class BranchMergeProposalQueryBuilder:
 
 class BranchMergeProposalJobDerived(object):
 
+    """Intermediate class for deriving from BranchMergeProposalJob."""
     delegates(IBranchMergeProposalJob)
 
     def __init__(self, job):
@@ -837,11 +837,13 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     @classmethod
     def create(klass, bmp):
+        """See `IMergeProposalCreationJob`."""
         job = BranchMergeProposalJob(
             bmp, klass.class_job_type, {})
         return klass(job)
 
     def run(self):
+        """See `IMergeProposalCreationJob`."""
         if self.branch_merge_proposal.review_diff is None:
             self.branch_merge_proposal.review_diff = self._make_review_diff()
             transaction.commit()
@@ -851,6 +853,7 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         return self.branch_merge_proposal.review_diff
 
     def _make_review_diff(self):
+        """Return a StaticDiff to be used as a review diff."""
         cleanups = []
         def get_branch(branch):
             bzr_branch = branch.getBzrBranch()
@@ -871,6 +874,7 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     @staticmethod
     def _find_revisions(bzr_source, bzr_target):
+        """Return the revisions to use for a review diff."""
         source_revision = bzr_source.last_revision()
         target_revision = bzr_target.last_revision()
         graph = bzr_target.repository.get_graph(bzr_source.repository)
