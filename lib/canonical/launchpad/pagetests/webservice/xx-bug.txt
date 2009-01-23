@@ -422,6 +422,13 @@ target, we reset it in order to avoid data inconsistencies.
   >>> print jokosher_bugtask['milestone_link']
   None
 
+  >>> print webservice.named_post(
+  ...     jokosher_bugtask['self_link'],
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/firefox'))
+  HTTP/1.1 200 Ok
+  ...
+
 
 == Bug subscriptions ==
 
