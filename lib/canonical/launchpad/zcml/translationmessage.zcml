@@ -6,35 +6,28 @@
 
 <facet facet="translations">
 
-    <content class="canonical.launchpad.database.TranslationMessage">
+    <class class="canonical.launchpad.database.TranslationMessage">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationMessage" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.ITranslationMessage" />
-    </content>
+    </class>
 
     <!-- Dummy Translation Message. It's a read only class. -->
-    <content class="canonical.launchpad.database.DummyTranslationMessage">
+    <class class="canonical.launchpad.database.DummyTranslationMessage">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationMessage" />
-    </content>
+    </class>
 
     <!-- XXX CarlosPerelloMarin 2007-11-16 Commented until we start migrating
          view code.
-    <content class="canonical.launchpad.browser.POMsgSetSuggestions">
+    <class class="canonical.launchpad.browser.POMsgSetSuggestions">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
             />
-    </content>
+    </class>
     -->
-
-    <adapter
-      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-      for="canonical.launchpad.interfaces.ITranslationMessage"
-      factory="canonical.launchpad.browser.CurrentTranslationMessageSOP"
-      permission="zope.Public"
-      />
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationMessage"

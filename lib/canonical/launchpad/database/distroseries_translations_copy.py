@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Functions to copy translations from parent to child distroseries."""
 
@@ -41,9 +41,10 @@ def _copy_active_translations_to_new_series(
     process of being poured back into its source table.  In that case the
     sensible thing to do is probably to continue pouring it.
     """
+    parent = child.parent_series
     logger.info(
         "Populating blank distroseries %s with translations from %s." %
-        sqlvalues(child, child.parent))
+        sqlvalues(child, parent))
 
     # Because this function only deals with the case where "child" is a new
     # distroseries without any existing translations attached, it can afford
@@ -78,7 +79,7 @@ def _copy_active_translations_to_new_series(
 
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
-    where = 'distroseries = %s AND iscurrent' % quote(child.parent_series)
+    where = 'distroseries = %s AND iscurrent' % quote(parent)
     copier.extract('POTemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
@@ -432,11 +433,7 @@ def _copy_active_translations_as_update(child, transaction, logger):
     """Update child distroseries with translations from parent."""
     # This function makes extensive use of temporary tables.  Testing with
     # regular persistent tables revealed frequent lockups as the algorithm
-    # waited for autovacuum to go over the holding tables.  Using temporary
-    # tables means that we cannot let our connection be reset at the end of
-    # every transaction.
-    original_reset_setting = transaction.reset_after_transaction
-    transaction.reset_after_transaction = False
+    # waited for autovacuum to go over the holding tables.
     full_name = "%s_%s" % (child.distribution.name, child.name)
     tables = ['POFile', 'TranslationMessage']
     copier = MultiTableCopy(full_name, tables, logger=logger)
@@ -578,7 +575,6 @@ def _copy_active_translations_as_update(child, transaction, logger):
 
     flush_database_updates()
     transaction.commit()
-    transaction.reset_after_transaction = original_reset_setting
 
 
 def copy_active_translations(child_series, transaction, logger):

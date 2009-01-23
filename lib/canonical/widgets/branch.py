@@ -194,8 +194,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
                              type='radio',
                              onClick=other_branch_onclick)
 
-        other_radio_button = self._joinButtonToMessageTemplate % (
-            elem, other_branch_text)
+        other_radio_button = '%s&nbsp;%s' % (elem, other_branch_text)
 
         items.append(other_radio_button)
 

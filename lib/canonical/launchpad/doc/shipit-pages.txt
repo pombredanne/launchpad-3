@@ -1,8 +1,8 @@
 = ShipIt Pages =
 
-    >>> from canonical.launchpad.database import ShippingRequest
-    >>> from canonical.launchpad.layers import (
-    ...     ShipItKUbuntuLayer, ShipItUbuntuLayer)
+    >>> from canonical.launchpad.database import (
+    ...     ShippingRequest, StandardShipItRequestSet)
+    >>> from canonical.launchpad.layers import ShipItUbuntuLayer
     >>> jordis_request = ShippingRequest.get(16)
 
 
@@ -24,20 +24,61 @@ StandardShipItRequests.
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.systemhomes import ShipItApplication
     >>> shipit = ShipItApplication()
-    >>> myrequest_view = create_view(
+    >>> myrequest_view = create_initialized_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
     >>> myrequest_view.is_open = False
     >>> myrequest_view.request.icing_url = '/+icing-ubuntu'
-    >>> html = myrequest_view.renderStandardrequestForm()
+    >>> html = myrequest_view.render()
     >>> from BeautifulSoup import BeautifulSoup
     >>> print BeautifulSoup(html).findAll('h1')[-1].renderContents()
     ShipIt is currently closed
 
     >>> myrequest_view.is_open = True
-    >>> html = myrequest_view.renderStandardrequestForm()
+    >>> html = myrequest_view.render()
     >>> headers = BeautifulSoup(html).findAll('h1')
     >>> 'ShipIt is currently closed' in headers
     False
+
+
+=== Non-existent options ===
+
+Sometimes a user may submit a stale page with an option that doesn't
+exist anymore.  If that's the case, we will present an error message to
+the user but we will not create a new ShippingRequest.
+
+Our logged in user, Sample Person, doesn't have a current shipit order,
+so he'll make one now.
+
+    >>> myrequest_view = create_initialized_view(
+    ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
+    >>> print myrequest_view.current_order
+    None
+
+    # First we need to delete one of the options shown.
+    >>> option_id = myrequest_view.selected_standardrequest
+    >>> StandardShipItRequestSet().get(option_id).destroySelf()
+    >>> print StandardShipItRequestSet().get(option_id)
+    None
+
+And now Sample Person tries to make a new request using the standard
+option we just deleted.
+
+    >>> form = {'field.province': 'SP', 'field.city': 'Sampa',
+    ...         'field.recipientdisplayname': 'Pablo Escobar',
+    ...         'field.addressline1': 'Rua Pablo Escobar, 1',
+    ...         'field.phone': '4325125', 'field.postcode': '12343',
+    ...         'field.country': 31, 'field.actions.continue': 'Submit',
+    ...         'ordertype': option_id}
+    >>> myrequest_view = create_initialized_view(
+    ...     shipit, 'myrequest', form=form, layer=ShipItUbuntuLayer,
+    ...     method='POST')
+
+As expected, he gets an error message and he still has no current order.
+
+    >>> print myrequest_view.form_wide_errors
+    [u'The option you chose was not found...]
+    >>> print myrequest_view.current_order
+    None
 
 
 == /shipit/requests/$request.id ==
@@ -52,7 +93,7 @@ headers, or we'll start shipping wrong CDs to people. This order is specified
 by the ordered_flavours and ordered_architectures attributes of the view
 class.
 
-    >>> review_request_view = create_view(
+    >>> review_request_view = create_initialized_view(
     ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
     ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Ubuntu Server Edition']
@@ -71,8 +112,8 @@ And this is the order we use when generating the widgets matrix.
     ...         else:
     ...             newrow.append(cell.label)
     ...     print newrow
-    ['Ubuntu', u'PC', u'64-bit PC']
-    ['Kubuntu', u'PC', u'64-bit PC']
+    ['Ubuntu', u'PC', None]
+    ['Kubuntu', u'PC', None]
     ['Edubuntu', u'PC', None]
     ['Ubuntu Server Edition', u'PC', u'64-bit PC']
 
@@ -94,11 +135,10 @@ widgets.
 
     >>> review_request_view.context.isApproved()
     True
-    >>> review_request_view.initial_values
-    {'highpriority': True, 'kubuntu_quantityamd64approved': 0,
-     'ubuntu_quantityx86approved': 0, 'kubuntu_quantityx86approved': 5,
-     'edubuntu_quantityx86approved': 5, 'ubuntu_quantityamd64approved': 0,
-     'server_quantityamd64approved': 0, 'server_quantityx86approved': 0}
+    >>> sorted(review_request_view.initial_values.items())
+    [('edubuntu_quantityx86approved', 5), ('highpriority', True),
+     ('kubuntu_quantityx86approved', 5), ('server_quantityamd64approved', 0),
+     ('server_quantityx86approved', 0), ('ubuntu_quantityx86approved', 0)]
 
     >>> pending_approval_request = ShippingRequest.get(12)
     >>> review_request_view = create_view(
@@ -110,40 +150,7 @@ widgets.
     ...     print row
     ['Ubuntu', 10, 0]
 
-    >>> review_request_view.initial_values
-    {'highpriority': False, 'kubuntu_quantityamd64approved': 0,
-     'ubuntu_quantityx86approved': 10, 'kubuntu_quantityx86approved': 0,
-     'edubuntu_quantityx86approved': 0, 'ubuntu_quantityamd64approved': 0,
-     'server_quantityamd64approved': 0, 'server_quantityx86approved': 0}
-
-
-== Hardy-specific changes ==
-
-Although Hardy is an LTS release it has been decided that Kubuntu Hardy
-will not be LTS, so we need a small hack to make sure we don't say
-"8.04 LTS" when talking about Kubuntu in the same way we do when talking
-about Ubuntu/Edubuntu.
-
-The simplest way to do so is by storing a modified HARDY item from
-ShipItDistroSeries in the views that render public pages.
-
-    >>> view = create_view(shipit, '+index', layer=ShipItUbuntuLayer)
-    >>> view.initialize()
-    >>> view.series.title
-    '8.04 LTS (Hardy Heron)'
-    >>> create_view(shipit, 'login', layer=ShipItUbuntuLayer).series.title
-    '8.04 LTS (Hardy Heron)'
-    >>> create_view(
-    ...     shipit, 'myrequest', layer=ShipItUbuntuLayer).series.title
-    '8.04 LTS (Hardy Heron)'
-
-    >>> view = create_view(shipit, '+index', layer=ShipItKUbuntuLayer)
-    >>> view.initialize()
-    >>> view.series.title
-    '8.04 (Hardy Heron)'
-    >>> create_view(shipit, 'login', layer=ShipItKUbuntuLayer).series.title
-    '8.04 (Hardy Heron)'
-    >>> create_view(
-    ...     shipit, 'myrequest', layer=ShipItKUbuntuLayer).series.title
-    '8.04 (Hardy Heron)'
-
+    >>> sorted(review_request_view.initial_values.items())
+    [('edubuntu_quantityx86approved', 0), ('highpriority', False),
+     ('kubuntu_quantityx86approved', 0), ('server_quantityamd64approved', 0),
+     ('server_quantityx86approved', 0), ('ubuntu_quantityx86approved', 10)]

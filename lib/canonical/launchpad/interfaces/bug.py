@@ -30,9 +30,9 @@ from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
+from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -41,9 +41,11 @@ from canonical.launchpad.validators.bugattachment import (
 
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_factory_operation, export_write_operation, exported,
-    operation_parameters, rename_parameters_as, webservice_error)
+    export_factory_operation, export_operation_as, export_write_operation,
+    exported, mutator_for, operation_parameters, rename_parameters_as,
+    webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 
 
 class CreateBugParams:
@@ -137,7 +139,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(IMessageTarget, ICanBeMentored):
+class IBug(ICanBeMentored):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -165,7 +167,7 @@ class IBug(IMessageTarget, ICanBeMentored):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Reference(IPerson, title=_("The owner's IPerson")))
+        Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
     duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')
@@ -173,7 +175,8 @@ class IBug(IMessageTarget, ICanBeMentored):
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "
                            "their subscribers."),
-             default=False))
+             default=False,
+             readonly=True))
     date_made_private = exported(
         Datetime(title=_('Date Made Private'), required=False, readonly=True))
     who_made_private = exported(
@@ -207,8 +210,12 @@ class IBug(IMessageTarget, ICanBeMentored):
             value_type=Object(schema=IBugWatch),
             readonly=True),
         exported_as='bug_watches')
-    cves = Attribute('CVE entries related to this bug.')
-    cve_links = Attribute('LInks between this bug and CVE entries.')
+    cves = exported(
+        CollectionField(
+            title=_('CVE entries related to this bug.'),
+            value_type=Reference(schema=ICve),
+            readonly=True))
+    cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
         CollectionField(
             title=_('Subscriptions.'),
@@ -259,9 +266,36 @@ class IBug(IMessageTarget, ICanBeMentored):
     message_count = Int(
         title=_('The number of comments on this bug'),
         required=True, readonly=True)
+    users_affected_count = exported(
+        Int(title=_('The number of users affected by this bug'),
+            required=True, readonly=True))
+    users_unaffected_count = exported(
+        Int(title=_('The number of users unaffected by this bug'),
+            required=True, readonly=True))
 
-    def followup_subject():
-        """Return a candidate subject for a followup message."""
+    messages = CollectionField(
+            title=_("The messages related to this object, in reverse "
+                    "order of creation (so newest first)."),
+            readonly=True,
+            value_type=Reference(schema=IMessage))
+
+    indexed_messages = exported(
+        CollectionField(
+            title=_("The messages related to this object, in reverse "
+                    "order of creation (so newest first)."),
+            readonly=True,
+            value_type=Reference(schema=IMessage)),
+        exported_as='messages')
+
+    followup_subject = Attribute("The likely subject of the next message.")
+
+    @operation_parameters(
+        subject=copy_field(IMessage['subject']),
+        content=copy_field(IMessage['content']))
+    @call_with(owner=REQUEST_USER)
+    @export_factory_operation(IMessage, [])
+    def newMessage(owner, subject, content):
+        """Create a new message, and link it to this object."""
 
     # subscription-related methods
 
@@ -401,6 +435,20 @@ class IBug(IMessageTarget, ICanBeMentored):
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
+    # XXX intellectronica 2008-11-06 Bug #294858:
+    # We use this method to suppress the return value
+    # from linkCVE, which we don't want to export.
+    # In the future we'll have a decorator which does that for us.
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
+    @export_operation_as('linkCVE')
+    @export_write_operation()
+    def linkCVEAndReturnNothing(cve, user):
+        """Ensure that this CVE is linked to this bug."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
+    @export_write_operation()
     def unlinkCVE(cve, user=None):
         """Ensure that any links between this bug and the given CVE are
         removed.
@@ -525,6 +573,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no bugtask was edited.
         """
 
+    @mutator_for(private)
+    @operation_parameters(private=copy_field(private))
+    @call_with(who=REQUEST_USER)
+    @export_write_operation()
     def setPrivate(private, who):
         """Set bug privacy.
 
@@ -539,6 +591,35 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         Return None if no such bugtask is found.
         """
+
+    def getBugTasksByPackageName(bugtasks):
+        """Return a mapping from `ISourcePackageName` to its bug tasks.
+
+        This mapping is suitable to pass as the bugtasks_by_package
+        cache to getConjoinedMaster().
+
+        The mapping is from a `ISourcePackageName` to all the bug tasks
+        that are targeted to such a package name, no matter which
+        distribution or distro series it is.
+
+        All the tasks that don't have a package will be available under
+        None.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def isUserAffected(user):
+        """Is :user: marked as affected by this bug?"""
+
+    @operation_parameters(
+        affected=Bool(
+            title=_("Does this bug affect you?"),
+            required=False, default=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def markUserAffected(user, affected=True):
+        """Mark :user: as affected by this bug."""
+
 
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug

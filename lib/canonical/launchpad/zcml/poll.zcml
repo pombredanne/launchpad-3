@@ -7,18 +7,12 @@
 <facet facet="overview">
 
     <!-- Poll -->
-    <content class="canonical.launchpad.database.Poll">
+    <class class="canonical.launchpad.database.Poll">
         <allow interface="canonical.launchpad.interfaces.IPoll" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPoll" />
-    </content>
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPoll"
-        provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-        factory="canonical.launchpad.browser.poll_to_structuralheading"
-      />
+    </class>
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -81,42 +75,29 @@
             />
     </browser:pages>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IPoll"
         class="canonical.launchpad.browser.PollEditView"
-        schema="canonical.launchpad.interfaces.IPoll"
-        fields="name title proposition secrecy allowspoilt
-                dateopens datecloses"
-        label="Edit poll details"
         permission="launchpad.Edit"
         template="../templates/poll-edit.pt"
         />
 
-    <browser:addform
+    <browser:page
         name="+newoption"
         for="canonical.launchpad.interfaces.IPoll"
         class="canonical.launchpad.browser.PollOptionAddView"
-        schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name title"
-        label="Create new poll option"
         permission="launchpad.Edit"
         template="../templates/poll-newoption.pt"
-        >
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:addform>
-
+        />
 
     <!-- PollOption -->
-    <content class="canonical.launchpad.database.PollOption">
+    <class class="canonical.launchpad.database.PollOption">
         <allow interface="canonical.launchpad.interfaces.IPollOption" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPollOption" />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPollOption"
@@ -127,45 +108,36 @@
         path_expression="string:+option/${id}"
         attribute_to_parent="poll" />
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IPollOption"
         class="canonical.launchpad.browser.poll.PollOptionEditView"
-        schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name title"
-        label="Edit poll details"
         permission="launchpad.Edit"
         template="../templates/polloption-edit.pt"
-        >
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:editform>
-
+        />
 
     <!-- Vote -->
     <!-- Can't require launchpad.Edit to set_attributes because in most cases
     the vote won't be associated with a person, and thus we can't check it
     against the logged in user. -->
-    <content class="canonical.launchpad.database.Vote">
+    <class class="canonical.launchpad.database.Vote">
         <allow interface="canonical.launchpad.interfaces.IVote" />
         <require
             permission="zope.Public"
             set_attributes="option preference" />
-    </content>
+    </class>
 
 
     <!-- VoteCast -->
-    <content class="canonical.launchpad.database.VoteCast">
+    <class class="canonical.launchpad.database.VoteCast">
         <allow interface="canonical.launchpad.interfaces.IVoteCast" />
-    </content>
+    </class>
 
 
     <!-- PollSet -->
-    <content class="canonical.launchpad.database.PollSet">
+    <class class="canonical.launchpad.database.PollSet">
         <allow interface="canonical.launchpad.interfaces.IPollSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.PollSet"
@@ -183,9 +155,9 @@
 
 
     <!-- PollOptionSet -->
-    <content class="canonical.launchpad.database.PollOptionSet">
+    <class class="canonical.launchpad.database.PollOptionSet">
         <allow interface="canonical.launchpad.interfaces.IPollOptionSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.PollOptionSet"

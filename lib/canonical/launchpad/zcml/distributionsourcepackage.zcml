@@ -5,16 +5,17 @@
   i18n_domain="launchpad">
 
   <!-- DistributionSourcePackage -->
-  <content class="canonical.launchpad.database.DistributionSourcePackage">
+  <class class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease
-                  releases publishing_history binary_package_names
+                  releases publishing_history
                   current_publishing_records bug_reporting_guidelines
                   latest_overall_publication __getitem__ getVersion
-                  bugtasks __eq__ __ne__ searchTasks open_bugtasks
-                  closed_bugtasks critical_bugtasks inprogress_bugtasks
-                  unassigned_bugtasks new_bugtasks all_bugtasks
+                  __eq__ __ne__ bugtasks searchTasks
+                  open_bugtasks closed_bugtasks critical_bugtasks
+                  inprogress_bugtasks unassigned_bugtasks new_bugtasks
+                  all_bugtasks
                   getUsedBugTags getUsedBugTagsWithOpenCounts
                   bugtargetdisplayname bugtargetname getMostCommonBugs
                   getBugCounts bug_subscriptions getSubscriptions
@@ -37,7 +38,11 @@
       attributes="newQuestion createQuestionFromBug addAnswerContact
                   removeAnswerContact"
       />
-  </content>
+    <require
+      permission="launchpad.Edit"
+      set_attributes="bug_reporting_guidelines"
+      />
+  </class>
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
@@ -48,6 +53,12 @@
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
       factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"
       />
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.browser.DistributionSourcePackageBreadcrumbBuilder"
+    permission="zope.Public"
+    />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />
@@ -73,13 +84,6 @@
     classes="DistributionSourcePackageNavigation"
     />
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    factory="canonical.launchpad.browser.DistributionSourcePackageSOP"
-    permission="zope.Public"
-    />
-
   <browser:menus
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
@@ -100,6 +104,15 @@
       template="../templates/distributionsourcepackage-portlet-pub-details.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageEditView"
+    name="+edit"
+    facet="overview"
+    template="../templates/distributionsourcepackage-edit.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

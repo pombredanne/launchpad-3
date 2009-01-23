@@ -1,56 +1,63 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
-"""View classes related to IDistroSeries."""
+"""View classes related to `IDistroSeries`."""
 
 __metaclass__ = type
 
 __all__ = [
     'DistroSeriesAddView',
-    'DistroSeriesDynMenu',
+    'DistroSeriesAdminView',
+    'DistroSeriesBreadcrumbBuilder',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
     'DistroSeriesLanguagePackAdminView',
+    'DistroSeriesPackageSearchView',
     'DistroSeriesNavigation',
-    'DistroSeriesSOP',
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesView',
     ]
 
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad import _
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
-    LaunchpadEditFormView, action)
-from canonical.launchpad.webapp.dynmenu import DynMenu
-
-from canonical.launchpad.interfaces import (
-    IDistroSeriesLanguageSet, IDistroSeries, ICountry, IDistroSeriesSet,
-    ILaunchBag, ILanguageSet, NotFoundError)
-
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.interfaces.country import ICountry
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.distroserieslanguage import (
+    IDistroSeriesLanguageSet)
+from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchBag, ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
+from canonical.launchpad.webapp.menu import (
+    ApplicationMenu, Link, enabled_with_permission)
+from canonical.launchpad.webapp.publisher import (
+    canonical_url, stepthrough, stepto)
+from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistroSeries
-
-    def breadcrumb(self):
-        return self.context.version
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
@@ -77,11 +84,8 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroserieslang = distroserieslangset.getDummy(
                 self.context, lang)
 
-        if (self.context.hide_all_translations and
-            not check_permission('launchpad.Admin', distroserieslang)):
-            raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators '
-                'may view translations for this distribution series.')
+        if not check_permission('launchpad.Admin', distroserieslang):
+            self.context.checkTranslationsViewable()
 
         return distroserieslang
 
@@ -115,27 +119,11 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             return self.context.last_delta_language_pack_exported.file
 
 
-class DistroSeriesSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.fullseriesname
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: list architectures, alphabetically
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        # XXX mpt 2006-10-04: list series, most recent first
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistroSeries`."""
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):
@@ -152,6 +140,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
              'add_port', 'add_milestone', 'admin', 'builds', 'queue',
              'subscribe']
 
+    @enabled_with_permission('launchpad.Admin')
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
@@ -232,7 +221,7 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
+    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -260,11 +249,6 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show the sequence in which specs should be implemented'
-        return Link('+roadmap', text, icon='info')
 
     def new(self):
         text = 'Register a blueprint'
@@ -303,17 +287,17 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
             'Request a full language pack export')
 
 
+class DistroSeriesPackageSearchView(PackageSearchViewBase):
+    """Customised PackageSearchView for DistroSeries"""
+
+    def contextSpecificSearch(self):
+        """See `AbstractPackageSearchView`."""
+        return self.context.searchPackages(self.text)
+
+
 class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def initialize(self):
-        self.text = self.request.form.get('text')
-        self.matches = 0
-        self._results = None
-
-        self.searchrequested = False
-        if self.text:
-            self.searchrequested = True
-
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
@@ -339,15 +323,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
         return unused_language_packs
 
-    def searchresults(self):
-        """Try to find the packages in this distro series that match
-        the given text, then present those as a list.
-        """
-        if self._results is None:
-            self._results = self.context.searchPackages(self.text)
-        self.matches = len(self._results)
-        return self._results
-
     def requestDistroLangs(self):
         """Produce a set of DistroSeriesLanguage and
         DummyDistroSeriesLanguage objects for the languages the user
@@ -366,6 +341,36 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    def checkTranslationsViewable(self):
+        """Check that these translations are visible to the current user.
+
+        Launchpad admins, Translations admins, and users with admin
+        rights on the `DistroSeries` are always allowed.  For others
+        this delegates to `IDistroSeries.checkTranslationsViewable`,
+        which raises `TranslationUnavailable` if the translations are
+        set to be hidden.
+
+        :return: Returns normally if this series' translations are
+            viewable to the current user.
+        :raise TranslationUnavailable: if this series' translations are
+            hidden and the user is not one of the limited caste that is
+            allowed to access them.
+        """
+        if check_permission('launchpad.Admin', self.context):
+            # Anyone with admin rights on this series passes.  This
+            # includes Launchpad admins.
+            return
+
+        user = self.user
+        experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if user is not None and user.inTeam(experts):
+            # Translations admins also pass.
+            return
+
+        # Everyone else passes only if translations are viewable to the
+        # public.
+        self.context.checkTranslationsViewable()
 
     def distroserieslanguages(self):
         """Produces a list containing a DistroSeriesLanguage object for
@@ -408,14 +413,108 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         return self.request.response.redirect(distro_url + "/+filebug")
 
 
-class DistroSeriesEditView(SQLObjectEditView):
+class DistroSeriesEditView(LaunchpadEditFormView):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
+    schema = IDistroSeries
+    field_names = ['displayname', 'title', 'summary', 'description']
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    def initialize(self):
+        """See `LaunchpadEditFormView`.
+
+        Additionally set the 'label' attribute which will be used in the
+        template.
+        """
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Change %s details' % self.context.title
+
+    @action("Change")
+    def change_action(self, action, data):
+        """Update the context and redirects to its overviw page."""
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+        self.next_url = canonical_url(self.context)
+
+
+class DistroSeriesAdminView(LaunchpadEditFormView):
+    """View class for administering a DistroSeries object.
+
+    It redirects to the main distroseries page after a successful edit.
+    """
+    schema = IDistroSeries
+    field_names = ['name', 'version', 'changeslist']
+    custom_widget('status', LaunchpadDropdownWidget)
+
+    def initialize(self):
+        """See `LaunchpadEditFormView`.
+
+        Additionally set the 'label' attribute which will be used in the
+        template.
+        """
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Administer %s' % self.context.title
+
+    def setUpFields(self):
+        """Override `LaunchpadFormView`.
+
+        In addition to setting schema fields, also initialize the
+        'status' field. See `createStatusField` method.
+        """
+        LaunchpadEditFormView.setUpFields(self)
+        self.form_fields = (
+            self.form_fields + self.createStatusField())
+
+    def createStatusField(self):
+        """Create the 'status' field.
+
+        Create the status vocabulary according the current distroseries
+        status:
+         * stable   -> CURRENT, SUPPORTED, OBSOLETE
+         * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
+        """
+        stable_status = (
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED,
+            DistroSeriesStatus.OBSOLETE,
+            )
+
+        if self.context.status not in stable_status:
+            terms = [status for status in DistroSeriesStatus.items
+                     if status not in stable_status]
+            terms.append(DistroSeriesStatus.CURRENT)
+        else:
+            terms = stable_status
+
+        status_vocabulary = SimpleVocabulary(
+            [SimpleTerm(item, item.name, item.title) for item in terms])
+
+        return form.Fields(
+            Choice(__name__='status',
+                   title=_('Status'),
+                   vocabulary=status_vocabulary,
+                   description=_("Select the the distroseries status."),
+                   required=True))
+
+    @action("Change")
+    def change_action(self, action, data):
+        """Update the context and redirects to its overviw page.
+
+        Also, set 'datereleased' when a unstable distroseries is made
+        CURRENT.
+        """
+        status = data.get('status')
+        if (self.context.datereleased is None and
+            status == DistroSeriesStatus.CURRENT):
+            self.context.datereleased = UTC_NOW
+
+        self.updateContextFromData(data)
+
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+        self.next_url = canonical_url(self.context)
 
 
 class DistroSeriesAddView(AddView):
@@ -433,14 +532,13 @@ class DistroSeriesAddView(AddView):
 
         assert owner is not None
 
-        distroseries = getUtility(IDistroSeriesSet).new(
+        distroseries = self.context.newSeries(
             name = data['name'],
             displayname = data['displayname'],
             title = data['title'],
             summary = data['summary'],
             description = data['description'],
             version = data['version'],
-            distribution = self.context,
             parent_series = data['parent_series'],
             owner = owner
             )
@@ -450,14 +548,6 @@ class DistroSeriesAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
-
-
-class DistroSeriesDynMenu(DynMenu):
-
-    def mainMenu(self):
-        for architecture in self.context.architectures:
-            yield self.makeLink(
-                architecture.architecturetag, target=architecture)
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

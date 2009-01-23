@@ -16,10 +16,16 @@ __all__ = [
     'SpecificationNavigation',
     'SpecificationView',
     'SpecificationSimpleView',
+    'SpecificationEditMilestoneView',
+    'SpecificationEditPeopleView',
+    'SpecificationEditPriorityView',
+    'SpecificationEditStatusView',
     'SpecificationEditView',
+    'SpecificationEditWhiteboardView',
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
+    'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -27,7 +33,6 @@ __all__ = [
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput',
     'SpecificationSetView',
-    'SpecificationSHP',
     ]
 
 from operator import attrgetter
@@ -35,7 +40,8 @@ import os
 from subprocess import Popen, PIPE
 
 from zope.component import getUtility
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
@@ -45,36 +51,29 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
-from canonical.launchpad.interfaces import (
-    IDistribution,
-    ILaunchBag,
-    INewSpecification,
-    INewSpecificationSeriesGoal,
-    INewSpecificationSprint,
-    INewSpecificationTarget,
-    INewSpecificationProjectTarget,
-    IPersonSet,
-    IProduct,
-    ISpecification,
-    ISpecificationBranch,
-    ISpecificationSet,
-    NotFoundError,
-    SpecificationDefinitionStatus,
-    )
+from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.specification import (
+    INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
+    INewSpecificationTarget, INewSpecificationProjectTarget, ISpecification,
+    ISpecificationSet, SpecificationDefinitionStatus)
+from canonical.launchpad.interfaces.specificationbranch import (
+    ISpecificationBranch)
+from canonical.launchpad.interfaces.sprintspecification import (
+    ISprintSpecification)
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
+    ContextMenu, LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     safe_action, stepthrough, stepto, custom_widget)
-from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
-from canonical.launchpad.browser.launchpad import (
-    AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -252,21 +251,8 @@ class SpecificationNavigation(Navigation):
 
     @stepto('+branch')
     def traverse_branch(self):
-        person_name = self.request.stepstogo.consume()
-        product_name = self.request.stepstogo.consume()
-        branch_name = self.request.stepstogo.consume()
-        if person_name is None or product_name is None or branch_name is None:
-            raise NotFoundError
-
-        person = getUtility(IPersonSet).getByName(person_name)
-        if person is None:
-            raise NotFoundError
-
-        branch = person.getBranch(product_name, branch_name)
-
-        if not branch:
-            raise NotFoundError
-
+        branch = getUtility(IBranchNamespaceSet).traverse(
+            iter(self.request.stepstogo))
         return self.context.getBranchLink(branch)
 
     def traverse(self, name):
@@ -478,20 +464,69 @@ class SpecificationView(SpecificationSimpleView):
             self.notices.append(msg)
 
 
-class SpecificationEditView(SQLObjectEditView):
+class SpecificationEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        # we need to ensure that resolution is recorded if the spec is now
-        # resolved
-        user = getUtility(ILaunchBag).user
-        newstate = self.context.updateLifecycleStatus(user)
+    schema = ISpecification
+    field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
+    label = 'Edit specification'
+    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('whiteboard', TextAreaWidget, height=10)
+    custom_widget('specurl', TextWidget, width=60)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        # We need to ensure that resolution is recorded if the spec is now
+        # resolved.
+        newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
-        self.request.response.redirect(canonical_url(self.context))
+        self.next_url = canonical_url(self.context)
 
 
-class SpecificationGoalProposeView(GeneralFormView):
+class SpecificationEditWhiteboardView(SpecificationEditView):
+    label = 'Edit specification status whiteboard'
+    field_names = ['whiteboard']
+    custom_widget('whiteboard', TextAreaWidget, height=15)
+
+
+class SpecificationEditPeopleView(SpecificationEditView):
+    label = 'Change the people involved'
+    field_names = ['assignee', 'drafter', 'approver', 'whiteboard']
+
+
+class SpecificationEditPriorityView(SpecificationEditView):
+    label = 'Change priority'
+    field_names = ['priority', 'direction_approved', 'whiteboard']
+
+    @property
+    def extra_info(self):
+        return ('The priority should reflect the views of the coordinating '
+                'team of %s.' % self.context.target.displayname)
+
+
+class SpecificationEditStatusView(SpecificationEditView):
+    label = 'Change status'
+    field_names = ['definition_status', 'implementation_status', 'whiteboard']
+
+
+class SpecificationEditMilestoneView(SpecificationEditView):
+    label = 'Target to a milestone'
+    field_names = ['milestone', 'whiteboard']
+
+    @property
+    def extra_info(self):
+        return ("Select the milestone of %s in which you would like this "
+                "feature to be implemented."
+                % self.context.target.displayname)
+
+
+class SpecificationGoalProposeView(LaunchpadEditFormView):
+    schema = ISpecification
+    label = 'Target to a distribution series'
+    field_names = ['distroseries', 'whiteboard']
+    custom_widget('whiteboard', TextAreaWidget, height=5)
 
     @property
     def initial_values(self):
@@ -501,22 +536,24 @@ class SpecificationGoalProposeView(GeneralFormView):
             'whiteboard': self.context.whiteboard,
             }
 
-    def process(self, productseries=None, distroseries=None,
-        whiteboard=None):
-        # this can accept either distroseries or productseries but the menu
-        # system will only link to the relevant page for that type of spec
-        # target (distro or upstream)
-        if productseries and distroseries:
-            return 'Please choose a product OR distro series, not both.'
-        goal = None
-        if productseries is not None:
-            goal = productseries
-        if distroseries is not None:
-            goal = distroseries
-        self.context.whiteboard = whiteboard
-        propose_goal_with_automatic_approval(self.context, goal, self.user)
-        self._nextURL = canonical_url(self.context)
-        return 'Done.'
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        self.context.whiteboard = data['whiteboard']
+        propose_goal_with_automatic_approval(
+            self.context, data['distroseries'], self.user)
+        self.next_url = canonical_url(self.context)
+
+
+class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
+    label = 'Target to a product series'
+    field_names = ['productseries', 'whiteboard']
+
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        self.context.whiteboard = data['whiteboard']
+        propose_goal_with_automatic_approval(
+            self.context, data['productseries'], self.user)
+        self.next_url = canonical_url(self.context)
 
 
 def propose_goal_with_automatic_approval(specification, series, user):
@@ -648,8 +685,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
                     "that selecting a specification here and pressing "
                     "Continue will change the specification status "
                     "to Superseded.")),
-            render_context=self.render_context,
-            custom_widget=self.custom_widgets['superseded_by'])
+            render_context=self.render_context)
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):
@@ -664,8 +700,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if (self.context.definition_status == 
-                    SpecificationDefinitionStatus.SUPERSEDED):
+            if self.context.definition_status == SUPERSEDED:
                 self.context.definition_status = NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
@@ -817,10 +852,10 @@ class SpecGraph:
             mode='hier',
             # bgcolor='transparent',  # Fails with graphviz-cairo.
             bgcolor='#ffffff',  # Same as Launchpad page background.
-            size='5.2,9',  # Width fits in centre of 3 col layout, 1024x768.
-            ratio='auto',
+            size='9.2,9',  # Width fits of 2 col layout, 1024x768.
+            ratio='compress',
             ranksep=0.25,
-            nodesep=0.25
+            nodesep=0.01 # Separation between nodes
             )
 
         # Global node and edge attributes.
@@ -849,20 +884,19 @@ class SpecGraph:
         return u'\n'.join(L)
 
 
-class SpecificationSprintAddView(SQLObjectAddView):
+class SpecificationSprintAddView(LaunchpadFormView):
 
-    def create(self, sprint):
-        user = getUtility(ILaunchBag).user
-        sprint_link = self.context.linkSprint(sprint, user)
-        return sprint_link
+    schema = ISprintSpecification
+    label = _("Propose specification for meeting agenda")
+    field_names = ["sprint"]
+    # ISprintSpecification.sprint is a read-only field, so we need to set
+    # for_input to True here to ensure it's rendered as an input widget.
+    for_input = True
 
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
-
-    def nextURL(self):
-        return canonical_url(self.context)
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
+        self.context.linkSprint(data["sprint"], self.user)
+        self.next_url = canonical_url(self.context)
 
 
 class SpecGraphNode:
@@ -1144,13 +1178,3 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
-
-
-class SpecificationSHP(StructuralHeaderPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.target.title
-

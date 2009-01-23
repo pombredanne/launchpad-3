@@ -1,17 +1,17 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Support for browser-cookie sessions."""
 
 __metaclass__ = type
 
 from cookielib import domain_match
 from zope.component import getUtility
-from zope.app.session.interfaces import ISession
-from zope.app.session.http import CookieClientIdManager
+from zope.session.http import CookieClientIdManager
 
 from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlparse
+
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
@@ -38,6 +38,7 @@ def get_cookie_domain(request_domain):
             return dotted_domain
     return None
 
+ANNOTATION_KEY = 'canonical.launchpad.webapp.session.sid'
 
 class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
@@ -48,6 +49,23 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # It should be larger than our session expiry time.
         self.cookieLifetime = 1 * YEARS
         self._secret = None
+
+    def getClientId(self, request):
+        sid = self.getRequestId(request)
+        if sid is None:
+            # XXX gary 21-Oct-2008 bug 285803
+            # Our session data container (see pgsession.py in the same
+            # directory) explicitly calls setRequestId the first time a
+            # __setitem__ is called. Therefore, we only generate one here,
+            # and do not set it. This keeps the session id out of anonymous
+            # sessions.  Unfortunately, it is also Rube-Goldbergian: we should
+            # consider switching to our own session/cookie machinery that
+            # suits us better.
+            sid = request.annotations.get(ANNOTATION_KEY)
+            if sid is None:
+                sid = self.generateUniqueId()
+                request.annotations[ANNOTATION_KEY] = sid
+        return sid
 
     def _get_secret(self):
         # Because our CookieClientIdManager is not persistent, we need to
@@ -79,16 +97,6 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
-        if request.getCookies().has_key(self.namespace):
-            # Session has already been set in a previous request
-            new_session = False
-        elif request.response.getCookie(self.namespace, None) is not None:
-            # Session has already been set for the first time in this request
-            new_session = False
-        else:
-            # Session has never been set
-            new_session = True
-
         # XXX: SteveAlexander, 2007-04-01.
         #      This is on the codepath where anon users get a session cookie
         #      set unnecessarily.
@@ -108,15 +116,5 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         if cookie_domain is not None:
             cookie['domain'] = cookie_domain
 
-        if new_session:
-            session = ISession(request)['launchpad.session']
-            referrer = request.get('HTTP_REFERER', None)
-            if referrer is not None:
-                referrer = referrer.decode('US-ASCII', 'replace')
-            session['initial_referrer'] = referrer
-            url = str(request.URL).decode('US-ASCII', 'replace')
-            if request.get('QUERY_STRING', None):
-                url = url + '?' + request['QUERY_STRING']
-            session['initial_url'] = url
 
 idmanager = LaunchpadCookieClientIdManager()

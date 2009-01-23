@@ -1,15 +1,17 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['SourcePackageRelease']
+__all__ = [
+    'SourcePackageRelease',
+    '_filter_ubuntu_translation_file',
+    ]
 
 import datetime
 import operator
 import pytz
 from StringIO import StringIO
 import re
-import tarfile
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -26,13 +28,15 @@ from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus, active_publishing_status)
 from canonical.launchpad.interfaces.sourcepackage import (
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -49,6 +53,28 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
 from canonical.launchpad.webapp.interfaces import NotFoundError
+
+
+def _filter_ubuntu_translation_file(filename):
+    """Filter for translation filenames in tarball.
+
+    Grooms filenames of translation files in tarball, returning None or
+    empty string for files that should be ignored.
+
+    Passed to `ITranslationImportQueue.addOrUpdateEntriesFromTarball`.
+    """
+    source_prefix = 'source/'
+    if not filename.startswith(source_prefix):
+        return None
+
+    filename = filename[len(source_prefix):]
+
+    if filename.startswith('debian/po/'):
+        # Skip filenames in debian/po/*.  They're from debconf
+        # translations, which are treated separately in Ubuntu.
+        return None
+
+    return filename
 
 
 class SourcePackageRelease(SQLBase):
@@ -115,8 +141,8 @@ class SourcePackageRelease(SQLBase):
         return Build.select("""
             sourcepackagerelease = %s AND
             archive.id = build.archive AND
-            archive.purpose != %s
-            """ % sqlvalues(self.id, ArchivePurpose.PPA),
+            archive.purpose IN %s
+            """ % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES),
             orderBy=['-datecreated', 'id'],
             clauseTables=['Archive'])
 
@@ -162,9 +188,9 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage.
-        # XXX 20080616 mpt: cprov says this property "won't be as useful as it
-        # looks once we start supporting derivation ... [It] is dangerous and
-        # should be renamed (or removed)". <http://launchpad.net/bugs/241298>
+        # XXX 2008-06-16 mpt bug=241298: cprov says this property "won't be as
+        # useful as it looks once we start supporting derivation ... [It] is
+        # dangerous and should be renamed (or removed)".
         series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
@@ -199,8 +225,8 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
-            # Only process main archives to skip PPA publishings.
-            if publishing.archive.purpose == ArchivePurpose.PPA:
+            # Only process main archives and skip PPA/copy archives.
+            if publishing.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
                 continue
             sp = SourcePackage(self.sourcepackagename,
                                publishing.distroseries)
@@ -241,10 +267,8 @@ class SourcePackageRelease(SQLBase):
         """See `ISourcePacakgeRelease`."""
         archives = set()
         publishings = self.publishings.prejoin(['archive'])
-        live_states = (PackagePublishingStatus.PENDING,
-                       PackagePublishingStatus.PUBLISHED)
         for pub in publishings:
-            if pub.status in live_states:
+            if pub.status in active_publishing_status:
                 archives.add(pub.archive)
 
         return sorted(archives, key=operator.attrgetter('id'))
@@ -265,10 +289,9 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-
     def _getPackageSize(self):
         """Get the size total (in KB) of files comprising this package.
-        
+
         Please note: empty packages (i.e. ones with no files or with
         files that are all empty) have a size of zero.
         """
@@ -281,7 +304,7 @@ class SourcePackageRelease(SQLBase):
                     SourcePackageReleaseFile.sourcepackagerelease =
                     SourcePackageRelease.id
                 JOIN LibraryFileAlias ON
-                    SourcePackageReleaseFile.libraryfile = 
+                    SourcePackageReleaseFile.libraryfile =
                     LibraryFileAlias.id
                 JOIN LibraryFileContent ON
                     LibraryFileAlias.content = LibraryFileContent.id
@@ -317,7 +340,7 @@ class SourcePackageRelease(SQLBase):
 
         # Always include the primary archive when looking for
         # past build times (just in case that none can be found
-        # in a PPA).
+        # in a PPA or copy archive).
         archives = [archive.id]
         if archive.purpose != ArchivePurpose.PRIMARY:
             archives.append(distroarchseries.main_archive.id)
@@ -427,7 +450,7 @@ class SourcePackageRelease(SQLBase):
         parent_architectures = []
         archtag = distroarchseries.architecturetag
 
-        if archive.purpose != ArchivePurpose.PPA:
+        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             # XXX cprov 20070720: this code belongs to IDistroSeries content
             # class as 'parent_series' property. Other parts of the system
             # can benefit of this, like SP.packagings, for instance.
@@ -458,8 +481,7 @@ class SourcePackageRelease(SQLBase):
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
         # and so on
-        if archive.purpose in (ArchivePurpose.PARTNER,
-                               ArchivePurpose.PRIMARY):
+        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             parent_archives = set()
             archive_set = getUtility(IArchiveSet)
             for series in parent_series:
@@ -549,41 +571,18 @@ class SourcePackageRelease(SQLBase):
         client = getUtility(ILibrarianClient)
 
         tarball_file = client.getFileByAlias(tarball_alias.id)
-        tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
-
-        # Get the list of files to attach.
-        # XXX CarlosPerelloMarin bug=213881: This should use generic
-        # translation file format infrastructure, so we don't need to keep
-        # this list of file extensions up to date here.
-        filenames = [
-            name for name in tarball.getnames()
-            if name.startswith('source/') or name.startswith('./source/')
-            if (name.endswith('.pot') or name.endswith('.po') or
-                name.endswith('.xpi'))]
+        tarball = tarball_file.read()
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        translation_import_queue_set = getUtility(ITranslationImportQueue)
+        queue = getUtility(ITranslationImportQueue)
 
-        # Attach all files
-        for filename in filenames:
-            # Fetch the file
-            content = tarball.extractfile(filename).read()
-            if len(content) == 0:
-                # The file is empty, we ignore it.
-                continue
-            if filename.startswith('source/'):
-                # Remove the special 'source/' prefix for the path.
-                filename = filename[len('source/'):]
-            elif filename.startswith('./source/'):
-                # Remove the special './source/' prefix for the path.
-                filename = filename[len('./source/'):]
-            # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
-                filename, content, is_published, importer,
-                sourcepackagename=self.sourcepackagename,
-                distroseries=self.upload_distroseries)
+        queue.addOrUpdateEntriesFromTarball(
+            tarball, is_published, importer,
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.upload_distroseries,
+            filename_filter=_filter_ubuntu_translation_file)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""

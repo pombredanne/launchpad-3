@@ -23,7 +23,6 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-emails" />
   <div tal:replace="structure context/@@+portlet-latestquestions" />
 </metal:leftportlets>
 
@@ -61,6 +60,8 @@
       </li>
     </tal:not-restricted>
   </ul>
+
+  <div class="section" tal:content="structure context/@@+portlet-map" />
 
   <div class="left">
     <tal:recent-members>
@@ -201,8 +202,7 @@
           </p>
           <ul>
             <li tal:repeat="team context/super_teams">
-              <a tal:attributes="href team/fmt:url"
-                 tal:content="team/browsername">name</a>
+              <tal:block replace="structure team/fmt:link" />
             </li>
           </ul>
         </tal:block>

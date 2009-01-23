@@ -13,6 +13,11 @@
     <div metal:fill-slot="main">
       <h1>Not allowed here</h1>
       <span metal:use-macro="context/@@+forbidden-page-macros/body" />
+      <ul class="menu">
+        <li class="info"
+            tal:condition="view/layer_help"
+            tal:content="structure view/layer_help" />
+      </ul>
     </div>
   </body>
 </html>

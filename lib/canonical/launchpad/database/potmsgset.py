@@ -1,10 +1,11 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['POTMsgSet']
 
 import gettextpo
+import logging
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -12,10 +13,10 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
 from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
+    BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet,
     RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
 from canonical.launchpad.helpers import shortlist
@@ -26,6 +27,24 @@ from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
 from canonical.launchpad.database.translationtemplateitem import (
     TranslationTemplateItem)
+
+
+# Msgids that indicate translation credit messages, and their
+# contexts.
+credit_message_ids = {
+    # Regular gettext credits messages.
+    u'translation-credits': None,
+    u'translator-credits': None,
+    u'translator_credits': None,
+
+    # KDE credits messages.
+    u'Your emails': u'EMAIL OF TRANSLATORS',
+    u'Your names': u'NAME OF TRANSLATORS',
+
+    # Old KDE credits messages.
+    u'_: EMAIL OF TRANSLATORS\nYour emails': None,
+    u'_: NAME OF TRANSLATORS\nYour names': None,
+    }
 
 
 class POTMsgSet(SQLBase):
@@ -46,24 +65,38 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
+    _cached_singular_text = None
+
+    def __storm_invalidated__(self):
+        self._cached_singular_text = None
+
     @property
     def singular_text(self):
         """See `IPOTMsgSet`."""
-        format_importer = getUtility(
-            ITranslationImporter).getTranslationFormatImporter(
-                self.potemplate.source_file_format)
-        if format_importer.uses_source_string_msgids:
-            # This format uses English translations as the way to store the
-            # singular_text.
-            english_language = getUtility(ILanguageSet)['en']
-            translation_message = self.getCurrentTranslationMessage(
-                english_language)
-            if (translation_message is not None and
-                translation_message.msgstr0 is not None):
-                return translation_message.msgstr0.translation
+        if self._cached_singular_text is not None:
+            return self._cached_singular_text
 
-        # By default, singular text is the msgid_singular.
+        if self.potemplate.uses_english_msgids:
+            self._cached_singular_text = self.msgid_singular.msgid
+            return self._cached_singular_text
+
+        # Singular text is stored as an "English translation."
+        translation_message = self.getCurrentTranslationMessage(
+            getUtility(ILaunchpadCelebrities).english)
+        if translation_message is not None:
+            msgstr0 = translation_message.msgstr0
+            if msgstr0 is not None:
+                self._cached_singular_text = msgstr0.translation
+                return self._cached_singular_text
+
+        # There is no "English translation," at least not yet.  Return
+        # symbolic msgid, but do not cache--an English text may still be
+        # imported.
         return self.msgid_singular.msgid
+
+    def clearCachedSingularText(self):
+        """Clear cached result for `singular_text`, if any."""
+        self._cached_singular_text = None
 
     @property
     def plural_text(self):
@@ -141,7 +174,7 @@ class POTMsgSet(SQLBase):
     def _getExternalTranslationMessages(self, language, used):
         """Return external suggestions for this message.
 
-        External suggestions are all non-fuzzy TranslationMessages for the
+        External suggestions are all TranslationMessages for the
         same english string which are used or suggested in other templates.
 
         A message is used if it's either imported or current, and unused
@@ -159,38 +192,56 @@ class POTMsgSet(SQLBase):
             query = [in_use_clause]
         else:
             query = ["(NOT %s)" % in_use_clause]
-        query.append('is_fuzzy IS NOT TRUE')
         query.append('POFile.language = %s' % sqlvalues(language))
         query.append('POFile.id = TranslationMessage.pofile')
 
         query.append('''
-                potmsgset IN (
-                    SELECT POTMsgSet.id FROM POTMsgSet
-                        JOIN POTemplate ON POTMsgSet.potemplate = POTemplate.id
-                        LEFT JOIN ProductSeries ON
-                            POTemplate.productseries = ProductSeries.id
-                        LEFT JOIN Product ON ProductSeries.product = Product.id
-                        LEFT JOIN DistroSeries ON
-                            POTemplate.distroseries = DistroSeries.id
-                        LEFT JOIN Distribution ON
-                            DistroSeries.distribution = Distribution.id
-                      WHERE POTMsgSet.id!=%s AND
-                          msgid_singular=%s AND
-                          POTemplate.iscurrent AND
-                          (Product.official_rosetta OR
-                           Distribution.official_rosetta)
-                          )''' % sqlvalues(self, self.msgid_singular))
+            potmsgset IN (
+                SELECT POTMsgSet.id
+                FROM POTMsgSet
+                JOIN POTemplate ON
+                    POTMsgSet.potemplate = POTemplate.id
+                LEFT JOIN ProductSeries ON
+                    POTemplate.productseries = ProductSeries.id
+                LEFT JOIN Product ON
+                    ProductSeries.product = Product.id
+                LEFT JOIN DistroSeries ON
+                    POTemplate.distroseries = DistroSeries.id
+                LEFT JOIN Distribution ON
+                    DistroSeries.distribution = Distribution.id
+                WHERE
+                    POTMsgSet.id <> %s AND
+                    msgid_singular = %s AND
+                    POTemplate.iscurrent AND
+                    (Product.official_rosetta OR Distribution.official_rosetta)
+            )''' % sqlvalues(self, self.msgid_singular))
 
-        result = TranslationMessage.select(' AND '.join(query),
-                                           clauseTables=['POFile'])
-        # XXX 2007-11-20 Danilo: We do filtering of duplicates in
-        # the browser code, which is how it was before DB refactoring.
-        # We should move this to SQL queries above, and lower the limit
-        # below.
-        # The numbers were gotten from our production data, by finding
-        # the largest number of external "suggestions" we may get, with
-        # the maximum turning out to be 1943.
-        return shortlist(result, longest_expected=1000, hardlimit=2000)
+        # Subquery to find the ids of TranslationMessages that are
+        # matching suggestions.
+        # We're going to get a lot of duplicates, sometimes resulting in
+        # thousands of suggstions.  Weed out most of that duplication by
+        # excluding older messages that are identical to newer ones in
+        # all translated forms.  The Python code can later sort out the
+        # distinct translations per form.
+        msgstrs = ', '.join([
+            'COALESCE(msgstr%d, -1)' % form
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+        ids_query_params = {
+            'msgstrs': msgstrs,
+            'where': ' AND '.join(query)
+        }
+        ids_query = '''
+            SELECT DISTINCT ON (%(msgstrs)s)
+                TranslationMessage.id
+            FROM TranslationMessage
+            JOIN POFile ON POFile.id = TranslationMessage.pofile
+            WHERE %(where)s
+            ORDER BY %(msgstrs)s, date_created DESC
+            ''' % ids_query_params
+
+        result = TranslationMessage.select('id IN (%s)' % ids_query)
+
+        return shortlist(result, longest_expected=100, hardlimit=2000)
 
     def getExternallyUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
@@ -200,6 +251,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return self._getExternalTranslationMessages(language, used=False)
 
+    @property
     def flags(self):
         if self.flagscomment is None:
             return []
@@ -259,7 +311,7 @@ class POTMsgSet(SQLBase):
 
         return sanitized_translations
 
-    def _validate_translations(self, translations, fuzzy, ignore_errors):
+    def _validate_translations(self, translations, ignore_errors):
         """Validate all the `translations` and return a validation_status."""
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
@@ -271,9 +323,9 @@ class POTMsgSet(SQLBase):
         # to know if gettext is unhappy with the input.
         try:
             helpers.validate_translation(
-                original_texts, translations, self.flags())
+                original_texts, translations, self.flags)
         except gettextpo.error:
-            if fuzzy or ignore_errors:
+            if ignore_errors:
                 # The translations are stored anyway, but we set them as
                 # broken.
                 validation_status = TranslationValidationStatus.UNKNOWNERROR
@@ -286,9 +338,9 @@ class POTMsgSet(SQLBase):
                         break
 
                 if has_translations:
-                    # Partial translations cannot be stored unless the fuzzy
-                    # flag is set, the exception is raised again and handled
-                    # outside this method.
+                    # Partial translations cannot be stored, the
+                    # exception is raised again and handled outside
+                    # this method.
                     raise
 
         return validation_status
@@ -325,22 +377,43 @@ class POTMsgSet(SQLBase):
             else:
                 clauses.append('msgstr%s=%s' % (
                     sqlvalues(pluralform, potranslations[pluralform])))
-        return TranslationMessage.selectOne(' AND '.join(clauses))
+
+        remaining_plural_forms = range(
+            pluralforms, TranslationConstants.MAX_PLURAL_FORMS)
+
+        # Normally at most one message should match.  But if there is
+        # more than one, prefer the one that adds the fewest extraneous
+        # plural forms.
+        order = [
+            'msgstr%s NULLS FIRST' % quote(form)
+            for form in remaining_plural_forms
+            ]
+        matches = list(
+            TranslationMessage.select(' AND '.join(clauses), orderBy=order))
+
+        if len(matches) > 0:
+            if len(matches) > 1:
+                logging.warn(
+                    "Translation for POTMsgSet %s into %s "
+                    "matches %s existing translations." % sqlvalues(
+                        self, pofile.language.code, len(matches)))
+            return matches[0]
+        else:
+            return None
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):
-        current_message = self.getCurrentTranslationMessage(
-            pofile.language)
+        """Make the given translation message the current one."""
+        current_message = self.getCurrentTranslationMessage(pofile.language)
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
             # or if the current message came from import
             # or if current message is empty (deactivated translation).
-            # Fuzzy/empty imported translations should not replace
-            # non-fuzzy/non-empty imported translations.
+            # Empty imported translations should not replace
+            # non-empty imported translations.
             if (current_message is None or
                 (current_message.is_imported and
-                 (current_message.is_fuzzy or not new_message.is_fuzzy) and
                  (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty):
                 new_message.is_current = True
@@ -382,14 +455,17 @@ class POTMsgSet(SQLBase):
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
 
+    def _isTranslationMessageASuggestion(self, force_suggestion,
+                                         pofile, submitter,
+                                         force_edition_rights, is_imported,
+                                         lock_timestamp):
+        # Whether a message should be saved as a suggestion and
+        # whether a we should display a warning when an older translation is
+        # submitted.
+        # Returns a pair of (just_a_suggestion, warn_about_lock_timestamp).
 
-    def updateTranslation(self, pofile, submitter, new_translations, is_fuzzy,
-                          is_imported, lock_timestamp, ignore_errors=False,
-                          force_edition_rights=False):
-        """See `IPOTMsgSet`."""
-        assert self.potemplate == pofile.potemplate, (
-            "The template for the translation file and this message doesn't"
-            " match.")
+        if force_suggestion:
+            return True, False
 
         # Is the submitter allowed to edit translations?
         is_editor = (force_edition_rights or
@@ -404,6 +480,44 @@ class POTMsgSet(SQLBase):
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
 
+        # If not an editor, default to submitting a suggestion only.
+        just_a_suggestion = not is_editor
+        warn_about_lock_timestamp = False
+
+        # Our current submission is newer than 'lock_timestamp'
+        # and we try to change it, so just add a suggestion.
+        if (not just_a_suggestion and not is_imported and
+            self.isTranslationNewerThan(pofile, lock_timestamp)):
+            just_a_suggestion = True
+            warn_about_lock_timestamp = True
+
+        return just_a_suggestion, warn_about_lock_timestamp
+
+    def allTranslationsAreEmpty(self, translations):
+        """Return true if all translations are empty strings or None."""
+        has_translations = False
+        for pluralform in translations:
+            translation = translations[pluralform]
+            if (translation is not None and translation != u""):
+                has_translations = True
+                break
+        return not has_translations
+
+    def updateTranslation(self, pofile, submitter, new_translations,
+                          is_imported, lock_timestamp, force_suggestion=False,
+                          ignore_errors=False, force_edition_rights=False):
+        """See `IPOTMsgSet`."""
+        assert self.potemplate == pofile.potemplate, (
+            "The template for the translation file and this message doesn't"
+            " match.")
+
+        just_a_suggestion, warn_about_lock_timestamp = (
+            self._isTranslationMessageASuggestion(force_suggestion,
+                                                  pofile, submitter,
+                                                  force_edition_rights,
+                                                  is_imported,
+                                                  lock_timestamp))
+
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
         if self.is_translation_credit and not is_imported:
@@ -414,18 +528,7 @@ class POTMsgSet(SQLBase):
             new_translations, pofile.plural_forms)
         # Check that the translations are correct.
         validation_status = self._validate_translations(
-            sanitized_translations, is_fuzzy, ignore_errors)
-
-        # If not an editor, default to submitting a suggestion only.
-        just_a_suggestion = not is_editor
-        warn_about_lock_timestamp = False
-
-        # Our current submission is newer than 'lock_timestamp'
-        # and we try to change it, so just add a suggestion.
-        if (not just_a_suggestion and not is_imported and not is_fuzzy and
-            self.isTranslationNewerThan(pofile, lock_timestamp)):
-            just_a_suggestion = True
-            warn_about_lock_timestamp = True
+            sanitized_translations, ignore_errors)
 
         # Find all POTranslation records for strings we need.
         potranslations = self._findPOTranslations(sanitized_translations)
@@ -435,6 +538,10 @@ class POTMsgSet(SQLBase):
         # created.
         matching_message = self._findTranslationMessage(
             pofile, potranslations, pofile.plural_forms)
+
+        if is_imported:
+            imported_message = self.getImportedTranslationMessage(
+                pofile.language, pofile.variant)
 
         if matching_message is None:
             # Creating a new message.
@@ -447,72 +554,68 @@ class POTMsgSet(SQLBase):
             assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
                 "Change this code to support %d plural forms."
                 % TranslationConstants.MAX_PLURAL_FORMS)
-            new_message = TranslationMessage(
-                potmsgset=self,
-                potemplate=pofile.potemplate,
-                pofile=pofile,
-                language=pofile.language,
-                variant=pofile.variant,
-                origin=origin,
-                submitter=submitter,
-                msgstr0=potranslations[0],
-                msgstr1=potranslations[1],
-                msgstr2=potranslations[2],
-                msgstr3=potranslations[3],
-                msgstr4=potranslations[4],
-                msgstr5=potranslations[5],
-                validation_status=validation_status)
 
-            # It's a fuzzy one.
-            new_message.is_fuzzy = is_fuzzy
-
-            if just_a_suggestion:
-                # Adds suggestion karma: editors get their translations
-                # automatically approved, so they get 'reviewer' karma
-                # instead.
-                submitter.assignKarma(
-                    'translationsuggestionadded',
-                    product=self.potemplate.product,
-                    distribution=self.potemplate.distribution,
-                    sourcepackagename=self.potemplate.sourcepackagename)
-                if warn_about_lock_timestamp:
-                    raise TranslationConflict(
-                        'The new translations were saved as suggestions to '
-                        'avoid possible conflicts. Please review them.')
+            if (is_imported and
+                self.allTranslationsAreEmpty(sanitized_translations)):
+                # Don't create empty is_imported translations
+                if imported_message is not None:
+                    imported_message.is_imported = False
+                    if imported_message.is_current:
+                        imported_message.is_current = False
+                return None
             else:
-                # Set the new current message if it validates ok.
-                if (new_message.validation_status ==
-                    TranslationValidationStatus.OK):
-                    # Makes the new_message current if needed and also
-                    # assignes karma for translation approval
-                    self._makeTranslationMessageCurrent(
-                        pofile, new_message, is_imported, submitter)
+                matching_message = TranslationMessage(
+                    potmsgset=self,
+                    potemplate=pofile.potemplate,
+                    pofile=pofile,
+                    language=pofile.language,
+                    variant=pofile.variant,
+                    origin=origin,
+                    submitter=submitter,
+                    msgstr0=potranslations[0],
+                    msgstr1=potranslations[1],
+                    msgstr2=potranslations[2],
+                    msgstr3=potranslations[3],
+                    msgstr4=potranslations[4],
+                    msgstr5=potranslations[5],
+                    validation_status=validation_status)
 
-            matching_message = new_message
+                if just_a_suggestion:
+                    # Adds suggestion karma: editors get their translations
+                    # automatically approved, so they get 'reviewer' karma
+                    # instead.
+                    submitter.assignKarma(
+                        'translationsuggestionadded',
+                        product=self.potemplate.product,
+                        distribution=self.potemplate.distribution,
+                        sourcepackagename=self.potemplate.sourcepackagename)
         else:
             # There is an existing matching message. Update it as needed.
             # Also update validation status if needed
             matching_message.validation_status = validation_status
-            if just_a_suggestion:
-                # An existing message is just a suggestion, warn if needed.
-                if warn_about_lock_timestamp:
-                    raise TranslationConflict(
-                        'The new translations were saved as suggestions to '
-                        'avoid possible conflicts. Please review them.')
 
-            else:
-                # Set the new current message if it validates ok.
-                if (matching_message.validation_status ==
-                    TranslationValidationStatus.OK):
-                    # Makes the new_message current if needed and also
-                    # assignes karma for translation approval
-                    self._makeTranslationMessageCurrent(
-                        pofile, matching_message, is_imported, submitter)
+        if just_a_suggestion:
+            # An existing message is just a suggestion, warn if needed.
+            if warn_about_lock_timestamp:
+                raise TranslationConflict(
+                    'The new translations were saved as suggestions to '
+                    'avoid possible conflicts. Please review them.')
 
-                if not is_fuzzy:
-                    matching_message.is_fuzzy = is_fuzzy
+        else:
+            # Set the new current message if it validates ok.
+            if (matching_message.validation_status ==
+                TranslationValidationStatus.OK):
+                # Makes the new_message current if needed and also
+                # assignes karma for translation approval
+                self._makeTranslationMessageCurrent(
+                    pofile, matching_message, is_imported, submitter)
 
         if is_imported:
+            # If there is no previously existing imported message,
+            # make this one current (revert current to imported).
+            if imported_message is None:
+                matching_message.is_current = True
+
             # Note that the message is imported.
             matching_message.is_imported = is_imported
 
@@ -648,35 +751,18 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
-        return (self.msgid_singular is not None and
-                self.msgid_singular.msgid in [
-            u'translation-credits',
-            u'translator-credits',
-            u'translator_credits',
-            u'_: EMAIL OF TRANSLATORS\nYour emails',
-            u'Your emails',
-            ])
+        return self.is_translation_credit
 
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # is_translation_credit is used
-        if self.msgid_singular is None:
+        if self.msgid_singular.msgid not in credit_message_ids:
             return False
-        regular_credits = self.msgid_singular.msgid in [
-            u'translation-credits',
-            u'translator-credits',
-            u'translator_credits' ]
-        old_kde_credits = self.msgid_singular.msgid in [
-            u'_: EMAIL OF TRANSLATORS\nYour emails',
-            u'_: NAME OF TRANSLATORS\nYour names'
-            ]
-        kde_credits = ((self.msgid_singular.msgid == u'Your emails' and
-                        self.context == u'EMAIL OF TRANSLATORS') or
-                       (self.msgid_singular.msgid == u'Your names' and
-                        self.context == u'NAME OF TRANSLATORS'))
-        return (regular_credits or old_kde_credits or kde_credits)
+
+        expected_context = credit_message_ids[self.msgid_singular.msgid]
+        return expected_context is None or (self.context == expected_context)
 
     def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""

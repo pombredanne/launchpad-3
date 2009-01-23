@@ -130,15 +130,18 @@ Translators'
 
 Check that the branches have been renamed properly.
 
-    >>> sample.getBranch(None, 'peoplemerge') == peoplemerge
+    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    ...     get_branch_namespace)
+    >>> sample_junk = get_branch_namespace(sample)
+    >>> sample_junk.getByName('peoplemerge') == peoplemerge
     True
-    >>> sample.getBranch(None, 'peoplemerge-0') == peoplemerge0
+    >>> sample_junk.getByName('peoplemerge-0') == peoplemerge0
     True
-    >>> sample.getBranch(None, 'peoplemerge-1') == peoplemerge1
+    >>> sample_junk.getByName('peoplemerge-1') == peoplemerge1
     True
-    >>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge2
+    >>> sample_junk.getByName('peoplemerge-2') == peoplemerge2
     True
-    >>> sample.getBranch(None, 'peoplemerge-1-1') == peoplemerge11
+    >>> sample_junk.getByName('peoplemerge-1-1') == peoplemerge11
     True
 
 The Karma that was previously assigned to marilize is now assigned to name12
@@ -315,7 +318,6 @@ the winner, and the to_person will be unaffected.
     loser, winner,
 
 
-
 == Merging teams ==
 
 Merging of teams is also possible and uses the same API used for merging
@@ -365,6 +367,32 @@ merged.
     ...
     AssertionError: Only teams without active members can be merged
 
+A team with a mailing list can only be merged if has no mailing list or if the
+mailing list is in the PURGED state.  This state indicates that there are no
+artifacts of the list on the Mailman side.
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> mailing_list = getUtility(IMailingListSet).new(landscape)
+    >>> print mailing_list.status.name
+    REGISTERED
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> personset.merge(landscape, ubuntu_team)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't merge teams which have mailing lists...
+
+Purging the associated mailing list doesn't delete it, but puts it into a
+state that essentially treats it as nonexistent.  It still can't be merged
+until all the members are deactivated though.
+
+    >>> mailing_list.purge()
+    >>> print mailing_list.status.name
+    PURGED
+    >>> personset.merge(landscape, ubuntu_team)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only teams without active members can be merged
+
 For cases like this we have an API which takes care of deactivating all
 active members of the team so that we can perform the merge.
 
@@ -386,17 +414,3 @@ active members of the team so that we can perform the merge.
     [u'launchpad']
     >>> list(IPollSubset(landscape).getAll())
     []
-
-A team can't be merged into another one if it has an associated mailing
-list.  This is for the sole reason that it's very unlikely to happen and
-we don't really want to write code to support things that will probably
-never be needed.
-
-    >>> from canonical.launchpad.interfaces import IMailingListSet
-    >>> mailing_list = getUtility(IMailingListSet).new(landscape)
-    >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> personset.merge(landscape, ubuntu_team)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Can't merge teams which have mailing lists...
-

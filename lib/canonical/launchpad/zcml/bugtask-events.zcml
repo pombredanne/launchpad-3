@@ -9,12 +9,12 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        zope.lifecycleevent.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.bugtask_created" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        zope.lifecycleevent.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber

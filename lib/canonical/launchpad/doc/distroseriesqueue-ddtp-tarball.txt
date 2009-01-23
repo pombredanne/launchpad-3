@@ -78,17 +78,37 @@ It was not rejected.
 
   >>> success = upload.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Sent a mail:
   ...
+  DEBUG: Sent a mail:
+  DEBUG:     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
+  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>
+  DEBUG:     Body:
+  DEBUG: * Duhh
+  DEBUG:
+  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
+  DEBUG: Origin: Ubuntu/warty
+  DEBUG:
+  DEBUG:
+  DEBUG: ==
+  DEBUG:
+  DEBUG: Announcing to test@example.com
+  DEBUG:
+  DEBUG: Thank you for your contribution to Ubuntu Test.
+  DEBUG:
+  DEBUG: --
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
   DEBUG: signer of the above package.
   DEBUG: Sent a mail:
-  DEBUG:     Subject: Accepted: translations_main_20060728.tar.gz - (raw-ddtp-tarball)
+  DEBUG:     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
   DEBUG:     Recipients: test@example.com
-  ...
-
+  DEBUG:     Body:
+  DEBUG: * Duhh
+  DEBUG:
+  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
+  DEBUG: Origin: Ubuntu/warty
+  DEBUG:
 
 And all things worked.
 

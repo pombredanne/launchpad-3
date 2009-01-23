@@ -7,7 +7,7 @@
 
 <facet facet="translations">
 
-    <content class="canonical.launchpad.database.POTemplate">
+    <class class="canonical.launchpad.database.POTemplate">
       <allow interface="canonical.launchpad.interfaces.IPOTemplate" />
       <require
         permission="launchpad.Edit"
@@ -21,7 +21,7 @@
                         iscurrent from_sourcepackagename date_last_updated
                         source_file source_file_format"
       />
-    </content>
+    </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IPOTemplate"
@@ -33,13 +33,6 @@
         classes="POTemplateNavigation POTemplateSubsetNavigation
                  POTemplateSetNavigation"
         />
-
-    <adapter
-      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-      for="canonical.launchpad.interfaces.IPOTemplate"
-      factory="canonical.launchpad.browser.POTemplateSOP"
-      permission="zope.Public"
-      />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplate"
@@ -88,29 +81,21 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <browser:editform
+    <browser:page
         name="+edit"
-        schema="canonical.launchpad.interfaces.IPOTemplate"
+        for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateEditView"
-        label="Change PO template information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="description priority owner"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <browser:editform
+    <browser:page
         name="+admin"
-        schema="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateEditView"
-        label="Administer PO template"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        class="canonical.launchpad.browser.POTemplateAdminView"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
-        fields="name translation_domain description header iscurrent owner
-                productseries distroseries sourcepackagename
-                from_sourcepackagename sourcepackageversion binarypackagename
-                languagepack path source_file_format priority
-                date_last_updated"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
@@ -135,13 +120,13 @@
         classes="POTemplateFacets POTemplateAppMenus"
         />
 
-    <content class="canonical.launchpad.database.POTemplateSubset">
+    <class class="canonical.launchpad.database.POTemplateSubset">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IPOTemplateSubset"
             set_attributes="sourcepackagename distroseries"
             />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplateSubset"

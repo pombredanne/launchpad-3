@@ -55,7 +55,7 @@
                    build/calculated_buildstart/fmt:displaydate" />
               </tal:soyuz_record>
               <tal:gina_record condition="not: build/buildduration">
-                  <i>not available</i>
+                  <i>at an unknown time</i>
               </tal:gina_record>
               <tal:show_builder_info condition="view/show_builder_info">
                 on
@@ -78,7 +78,7 @@
                   content="build/buildduration/fmt:approximateduration" />
                 <tal:log condition="build/buildlog">
                   &mdash;
-                  <a tal:attributes="href build/buildlog/http_url"
+                  <a tal:attributes="href string: ${build/fmt:url}/+files/${build/buildlog/filename}"
                     >see the log</a>
                 </tal:log>
               </tal:date_built>

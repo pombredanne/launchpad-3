@@ -79,6 +79,8 @@ By this time she probably realises it's easier to answer the survey once
 than to keep skipping it every time she comes back, so she answers it.
 
     >>> browser.getControl(name="field.environment").displayValue = ['Work']
+    >>> browser.getControl(name="field.platform").displayValue = [
+    ...     'Dell servers', 'Intel Servers']
     >>> browser.getControl(name="field.employee_number").displayValue = [
     ...     '2 - 5']
     >>> browser.getControl(name="field.evaluated_uses").displayValue = [

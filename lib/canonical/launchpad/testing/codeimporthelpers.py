@@ -57,7 +57,9 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         machine = factory.makeCodeImportMachine(set_online=True)
     # The code import must be in a reviewed state.
     if code_import.review_status != CodeImportReviewStatus.REVIEWED:
-        code_import.approve({}, code_import.registrant)
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
 
     CodeImportJobWorkflow().startJob(code_import.import_job, machine)
     if logtail:
@@ -95,7 +97,9 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
         status = CodeImportResultStatus.SUCCESS
     # The code import must be in a reviewed state.
     if code_import.review_status != CodeImportReviewStatus.REVIEWED:
-        code_import.approve({}, code_import.registrant)
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
 
     # If the job isn't running, make it run.
     if code_import.import_job.state != CodeImportJobState.RUNNING:

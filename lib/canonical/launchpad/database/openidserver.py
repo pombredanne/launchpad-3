@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdAuthorization',
-    'OpenIdAuthorizationSet',
+    'OpenIDAuthorization',
+    'OpenIDAuthorizationSet',
     'OpenIDRPConfig',
     'OpenIDRPConfigSet',
     'OpenIDRPSummary',
@@ -16,10 +16,14 @@ __all__ = [
 
 from datetime import datetime
 import pytz
+import re
 
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
-from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
+from sqlobject import (
+    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
+from storm.expr import Or
+from zope.component import getUtility
 from zope.interface import implements, classProvides
 
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
@@ -28,17 +32,30 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
-    ILaunchpadOpenIdStoreFactory, IOpenIdAuthorization,
-    IOpenIdAuthorizationSet, IOpenIDRPConfig, IOpenIDRPConfigSet,
-    IOpenIDRPSummary, IOpenIDRPSummarySet)
+    ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
+    IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
+    IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-class OpenIdAuthorization(SQLBase):
-    implements(IOpenIdAuthorization)
-    _table = 'OpenIdAuthorization'
+class OpenIDAuthorization(SQLBase):
+    implements(IOpenIDAuthorization)
+
+    _table = 'OpenIDAuthorization'
+
+    @staticmethod
+    def _get_store():
+        """See `SQLBase`.
+
+        The authorization check should always use the master flavor,
+        principally because +rp-preauthorize will create them on GET requests.
+        """
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     client_id = StringCol()
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -46,12 +63,12 @@ class OpenIdAuthorization(SQLBase):
     trust_root = StringCol(notNull=True)
 
 
-class OpenIdAuthorizationSet:
-    implements(IOpenIdAuthorizationSet)
+class OpenIDAuthorizationSet:
+    implements(IOpenIDAuthorizationSet)
 
     def isAuthorized(self, person, trust_root, client_id):
-        """See IOpenIdAuthorizationSet."""
-        return  OpenIdAuthorization.select("""
+        """See IOpenIDAuthorizationSet."""
+        return  OpenIDAuthorization.select("""
             person = %s
             AND trust_root = %s
             AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
@@ -59,13 +76,13 @@ class OpenIdAuthorizationSet:
             """ % sqlvalues(person.id, trust_root, client_id)).count() > 0
 
     def authorize(self, person, trust_root, expires, client_id=None):
-        """See IOpenIdAuthorizationSet."""
+        """See IOpenIDAuthorizationSet."""
         if expires is None:
             expires = NEVER_EXPIRES
 
         assert not person.isTeam(), 'Attempting to authorize a team.'
 
-        existing = OpenIdAuthorization.selectOneBy(
+        existing = OpenIDAuthorization.selectOneBy(
                 personID=person.id,
                 trust_root=trust_root,
                 client_id=client_id
@@ -74,8 +91,11 @@ class OpenIdAuthorizationSet:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
-            OpenIdAuthorization(
-                    person=person, trust_root=trust_root,
+            # Even though OpenIDAuthorizationSet always uses the master
+            # store, it's likely that the person can come from the slave.
+            # That's why we are using the ID to create the reference.
+            OpenIDAuthorization(
+                    personID=person.id, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
 
@@ -83,7 +103,7 @@ class OpenIdAuthorizationSet:
 class OpenIDRPConfig(SQLBase):
     implements(IOpenIDRPConfig)
 
-    _table = 'OpenIdRPConfig'
+    _table = 'OpenIDRPConfig'
     trust_root = StringCol(dbName='trust_root', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     description = StringCol(dbName='description', notNull=True)
@@ -94,6 +114,8 @@ class OpenIDRPConfig(SQLBase):
         dbName='creation_rationale', notNull=True,
         schema=PersonCreationRationale,
         default=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
+    can_query_any_team = BoolCol(
+        dbName='can_query_any_team', notNull=True, default=False)
 
     def allowed_sreg(self):
         value = self._allowed_sreg
@@ -112,37 +134,57 @@ class OpenIDRPConfig(SQLBase):
 class OpenIDRPConfigSet:
     implements(IOpenIDRPConfigSet)
 
+    url_re = re.compile("^(.+?)\/*$")
+
+    def _normalizeTrustRoot(self, trust_root):
+        """Given a trust root URL ensure it ends with exactly one '/'."""
+        match = self.url_re.match(trust_root)
+        assert match is not None, (
+            "Attempting to normalize trust root %s failed." % trust_root)
+        return "%s/" % match.group(1)
+
     def new(self, trust_root, displayname, description, logo=None,
             allowed_sreg=None,
-            creation_rationale=PersonCreationRationale
-                               .OWNER_CREATED_UNKNOWN_TRUSTROOT):
-        """See `IOpenIdRPConfigSet`"""
+            creation_rationale=
+                PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT,
+            can_query_any_team=False):
+        """See `IOpenIDRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
         else:
             allowed_sreg = None
+        trust_root = self._normalizeTrustRoot(trust_root)
         return OpenIDRPConfig(
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,
-            _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale)
+            _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale,
+            can_query_any_team=can_query_any_team)
 
     def get(self, id):
-        """See `IOpenIdRPConfigSet`"""
+        """See `IOpenIDRPConfigSet`"""
         try:
             return OpenIDRPConfig.get(id)
         except SQLObjectNotFound:
             return None
 
     def getAll(self):
-        """See `IOpenIdRPConfigSet`"""
-        return OpenIDRPConfig.select()
+        """See `IOpenIDRPConfigSet`"""
+        return OpenIDRPConfig.select(orderBy=['displayname', 'trust_root'])
 
     def getByTrustRoot(self, trust_root):
-        """See `IOpenIdRPConfigSet`"""
-        return OpenIDRPConfig.selectOneBy(trust_root=trust_root)
+        """See `IOpenIDRPConfigSet`"""
+        trust_root = self._normalizeTrustRoot(trust_root)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # XXX: BradCrittenden 2008-09-26 bug=274774: Until the database is
+        # updated to normalize existing data the query must look for
+        # trust_roots that end in '/' and those that do not.
+        return store.find(
+            OpenIDRPConfig,
+            Or(OpenIDRPConfig.trust_root==trust_root,
+               OpenIDRPConfig.trust_root==trust_root[:-1])).one()
 
 
-class LaunchpadOpenIdStore(PostgreSQLStore):
+class LaunchpadOpenIDStore(PostgreSQLStore):
     """The standard OpenID Library PostgreSQL store with overrides to
     ensure it plays nicely with Zope3 and Launchpad.
 
@@ -150,7 +192,7 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
     created from browser code without warnings, as getUtility is not
     suitable as this class is not thread safe.
     """
-    classProvides(ILaunchpadOpenIdStoreFactory)
+    classProvides(ILaunchpadOpenIDStoreFactory)
 
     exceptions = psycopg2
     settings_table = None
@@ -210,14 +252,22 @@ class OpenIDRPSummarySet:
     """A set of OpenID RP Summaries."""
     implements(IOpenIDRPSummarySet)
 
-    def getByIdentifier(self, identifier):
-        """See `IOpenIDRPSummarySet`.
-
-        :raise AssertionError: If the identifier is used by more than
-            one account.
-        """
-        return OpenIDRPSummary.selectBy(
-            openid_identifier=identifier, orderBy='id')
+    def getByIdentifier(self, identifier, only_unknown_trust_roots=False):
+        """See `IOpenIDRPSummarySet`."""
+        # XXX: flacoste 2008-11-17 bug=274774: Normalize the trust_root
+        # in OpenIDRPSummary.
+        if only_unknown_trust_roots:
+            result = OpenIDRPSummary.select("""
+            CASE
+                WHEN OpenIDRPSummary.trust_root LIKE '%%/'
+                THEN OpenIDRPSummary.trust_root
+                ELSE OpenIDRPSummary.trust_root || '/'
+            END NOT IN (SELECT trust_root FROM OpenIdRPConfig)
+            AND openid_identifier = %s
+                """ % sqlvalues(identifier))
+        else:
+            result = OpenIDRPSummary.selectBy(openid_identifier=identifier)
+        return result.orderBy('id')
 
     def _assert_identifier_is_not_reused(self, account, identifier):
         """Assert no other account in the summaries has the identifier."""
@@ -246,7 +296,7 @@ class OpenIDRPSummarySet:
         if account.status != AccountStatus.ACTIVE:
             raise AssertionError(
                 'Account %d is not ACTIVE account.' % account.id)
-        identifier = account.openid_identity_url
+        identifier = IOpenIDPersistentIdentity(account).openid_identity_url
         self._assert_identifier_is_not_reused(account, identifier)
         if date_used is None:
             date_used = datetime.now(pytz.UTC)
@@ -263,4 +313,3 @@ class OpenIDRPSummarySet:
                 trust_root=trust_root, date_created=date_used,
                 date_last_used=date_used, total_logins=1)
         return summary
-

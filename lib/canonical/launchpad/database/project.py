@@ -9,10 +9,12 @@ __all__ = [
     'ProjectSet',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
     AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+from storm.expr import In
 
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -26,20 +28,21 @@ from canonical.launchpad.interfaces import (
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -50,11 +53,13 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin, StructuralSubscriptionTargetMixin):
+              MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              StructuralSubscriptionTargetMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
@@ -66,6 +71,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -256,24 +264,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
-    # XXX: Bjorn Tillenius 2006-08-17:
-    #      A Project shouldn't provide IBugTarget, since it's not really
-    #      a bug target, thus bugtargetdisplayname and createBug don't make
-    #      sense here. IBugTarget should be split into two interfaces; one
-    #      that makes sense for Project to implement, and one containing the
-    #      rest of IBugTarget.
-    bugtargetdisplayname = None
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        raise NotImplementedError('Cannot file bugs against a project')
-
-    def searchTasks(self, search_params):
-        """See `IBugTarget`."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this milestone."""
         search_params.setProject(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See `IBugTarget`."""
+        """See `IHasBugs`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
@@ -281,15 +277,15 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See `IBugTarget`."""
+        """See `IHasBugs`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
         return get_bug_tags_open_count(
-            "BugTask.product IN (%s)" % ",".join(product_ids), user)
+            In(BugTask.productID, product_ids), user)
 
     def _getBugTaskContextClause(self):
-        """See `BugTargetBase`."""
+        """See `HasBugsBase`."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
     # IQuestionCollection
@@ -423,7 +419,7 @@ class ProjectSet:
         return iter(Project.selectBy(active=True))
 
     def __getitem__(self, name):
-        project = Project.selectOneBy(name=name, active=True)
+        project = self.getByName(name=name, ignore_inactive=True)
         if project is None:
             raise NotFoundError(name)
         return project
@@ -444,19 +440,19 @@ class ProjectSet:
             raise NotFoundError(projectid)
         return project
 
-    def getByName(self, name, default=None, ignore_inactive=False):
-        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
-        if ignore_inactive:
-            project = Project.selectOneBy(name=name, active=True)
-        else:
-            project = Project.selectOneBy(name=name)
-        if project is None:
-            return default
-        return project
+    def getByName(self, name, ignore_inactive=False):
+        """See `IProjectSet`."""
+        pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
+        if not IProject.providedBy(pillar):
+            return None
+        return pillar
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, mugshot=None, logo=None, icon=None):
+            description, owner, mugshot=None, logo=None, icon=None,
+            registrant=None):
         """See `canonical.launchpad.interfaces.project.IProjectSet`."""
+        if registrant is None:
+            registrant = owner
         return Project(
             name=name,
             displayname=displayname,
@@ -465,6 +461,7 @@ class ProjectSet:
             description=description,
             homepageurl=homepageurl,
             owner=owner,
+            registrant=registrant,
             datecreated=UTC_NOW,
             mugshot=mugshot,
             logo=logo,

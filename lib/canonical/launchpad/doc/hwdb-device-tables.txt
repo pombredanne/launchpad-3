@@ -28,7 +28,86 @@ row with the same name raises an IntegrityError error.
     Traceback (most recent call last):
     ...
     IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname_name_key"
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+The database checks the uniqueness of the lower-case name, hence we
+cannot insert another name like "INTEL" or "intel".
+
+    >>> vendor_name_set.create('INTEL')
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> vendor_name_set.create('intel')
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+The lower-case uniqueness constraint works for latin characters with
+diacritical marks too...
+
+    >>> a_umlaut_upper = u'\N{LATIN CAPITAL LETTER A WITH DIAERESIS}'
+    >>> a_umlaut_lower = u'\N{LATIN SMALL LETTER A WITH DIAERESIS}'
+    >>> a_umlaut_name = vendor_name_set.create(name=a_umlaut_upper)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> print repr(a_umlaut_name.name)
+    u'\xc4'
+
+    >>> vendor_name_set.create(name=a_umlaut_lower)
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+...as well as for Cyrillic characters...
+
+    >>> cyrillic_de_upper = u'\N{CYRILLIC CAPITAL LETTER DE}'
+    >>> cyrillic_de_lower = u'\N{CYRILLIC SMALL LETTER DE}'
+    >>> cyrillic_de_name = vendor_name_set.create(name=cyrillic_de_upper)
+    >>> print repr(cyrillic_de_name.name)
+    u'\u0414'
+
+    >>> vendor_name_set.create(name=cyrillic_de_lower)
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+...and Greek characters.
+
+    >>> alpha_upper = u'\N{GREEK CAPITAL LETTER ALPHA}'
+    >>> alpha_lower = u'\N{GREEK SMALL LETTER ALPHA}'
+    >>> cyrillic_de_name = vendor_name_set.create(name=alpha_upper)
+    >>> print repr(cyrillic_de_name.name)
+    u'\u0391'
+
+    >>> vendor_name_set.create(name=alpha_lower)
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -37,6 +116,26 @@ Existing IHWVendorName records are retrieved by IHWVendorName.getByName().
     >>> intel_name = vendor_name_set.getByName('Intel')
     >>> print intel_name.name
     Intel
+
+The capitalization of the name does not metter.
+
+    >>> intel_name = vendor_name_set.getByName('INTEL')
+    >>> print intel_name.name
+    Intel
+
+    >>> intel_name = vendor_name_set.getByName('intel')
+    >>> print intel_name.name
+    Intel
+
+    >>> umlaut_name = vendor_name_set.getByName(
+    ...     u'\N{LATIN CAPITAL LETTER A WITH DIAERESIS}')
+    >>> print repr(umlaut_name.name)
+    u'\xc4'
+
+    >>> umlaut_name = vendor_name_set.getByName(
+    ...     u'\N{LATIN SMALL LETTER A WITH DIAERESIS}')
+    >>> print repr(umlaut_name.name)
+    u'\xc4'
 
 If no record matching the given name exists, IHWVendorName.getByName()
 returns None.
@@ -348,6 +447,25 @@ HWVendorIDSet.getByBusAndVendorID() must be a valid ID for the given bus.
     ...
     ValueError: '8086' is not a valid vendor ID for PCI
 
+HWVendorIDSet.get() returns the HWVendorID record with the given ID...
+
+    >>> vendor_id = vendor_id_set.get(1)
+    >>> print vendor_id.bus.name, vendor_id.vendor_id_for_bus
+    SYSTEM MSI
+
+...or None, if no such record exists.
+
+    >>> print vendor_id_set.get(1000000)
+    None
+
+HWVendorIDSet.idsForBus() returns all known HWVendorIDs for a given bus.
+
+    >>> for vendor_id in vendor_id_set.idsForBus(HWBus.PCI):
+    ...     print vendor_id.bus.name, vendor_id.vendor_id_for_bus
+    PCI 0x10ae
+    PCI 0x10de
+    PCI 0x8086
+
 
 == HWDevice ==
 
@@ -373,14 +491,23 @@ A new device record is created by IHWDeviceSet.create.
     ...                                    product_name=product_name)
 
 Bus and vendor ID are not directly stored as HWDevice attributes; we can
-access them, as well as the vendor name, via the attribute bus_vendor,
-which references HWVendorID.
+access them, as well as the vendor name, either via the attribute
+bus_vendor, which references HWVendorID...
 
     >>> print usb_controller.bus_vendor.bus.title
     PCI
     >>> print usb_controller.bus_vendor.vendor_id_for_bus
     0x8086
     >>> print usb_controller.bus_vendor.vendor_name.name
+    Intel
+
+...or via the (read-only) HWDevice properties bus, vendor_id, vendor_name.
+
+    >>> print usb_controller.bus.title
+    PCI
+    >>> print usb_controller.vendor_id
+    0x8086
+    >>> print usb_controller.vendor_name
     Intel
 
 Other attributes stored in HWDevice are the product ID, the product name,
@@ -824,6 +951,126 @@ parameters or creates a new one, if no existing record matches.
     >>> print device3.variant
     Some other scanner
 
+    >>> device4 = device_set.getOrCreate(bus=HWBus.USB,
+    ...                                  vendor_id='0x07b3',
+    ...                                  product_id='0x0015',
+    ...                                  product_name='OpticPro U24')
+    >>> print device4.bus_vendor.bus.title
+    USB
+    >>> print device4.bus_vendor.vendor_id_for_bus
+    0x07b3
+    >>> print device4.bus_product_id
+    0x0015
+    >>> print device4.name
+    OpticPro U24
+    >>> print device4.variant
+    None
+
+
+HWDeviceSet.getByID() returns a HWDevice record with the given database ID.
+
+    >>> device = device_set.getByID(1)
+    >>> print device.id
+    1
+    >>> print device.vendor_id
+    MSI
+    >>> print device.bus_product_id
+    MS-7369
+
+HWDeviceSet.getByID() returns None if no record with the passed ID exists.
+
+    >>> device = device_set.getByID(1000000)
+    >>> print device
+    None
+
+HWDeviceSet.search() returns all devices with a given bus and vendor ID.
+
+    >>> devices = device_set.search(bus=HWBus.USB, vendor_id='0x07b3')
+    >>> for device in devices:
+    ...     print device.bus.title, device.vendor_id, device.bus_product_id,
+    ...     print device.variant
+    USB 0x07b3 0x0017 None
+    USB 0x07b3 0x0017 OpticPro UT12
+    USB 0x07b3 0x0017 OpticPro UT16
+    USB 0x07b3 0x0017 Some other scanner
+    USB 0x07b3 0x0015 None
+
+Searching can be limited to a single product ID.
+
+    >>> devices = device_set.search(
+    ...     bus=HWBus.USB, vendor_id='0x07b3', product_id='0x0017')
+    >>> for device in devices:
+    ...     print device.bus.title, device.vendor_id, device.bus_product_id,
+    ...     print device.variant
+    USB 0x07b3 0x0017 None
+    USB 0x07b3 0x0017 OpticPro UT12
+    USB 0x07b3 0x0017 OpticPro UT16
+    USB 0x07b3 0x0017 Some other scanner
+
+HWDevice.getSubmissions() returns submissions which contain this device.
+
+We'll switch the DB user from hwdb-submission-processor to the ordinary
+Launchpad user, because the former has no access to the table
+distribution, which we want to access in this test.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> sata_controller = device_set.getByDeviceID(
+    ...     bus=HWBus.PCI, vendor_id='0x10de', product_id='0x045d')
+    >>> for submission in sata_controller.getSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+We can limit the results to a specific driver. (See below for details about
+HWDriver.)
+
+    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> ahci_driver = getUtility(IHWDriverSet).getByPackageAndName(
+    ...     'linux-image-2.6.24-19-generic', 'ahci')
+    >>> for submission in sata_controller.getSubmissions(
+    ...     driver=ahci_driver):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> usb_storage_driver = getUtility(IHWDriverSet).getByPackageAndName(
+    ...     'linux-image-2.6.24-19-generic', 'usb-storage')
+    >>> print list(sata_controller.getSubmissions(
+    ...     driver=usb_storage_driver))
+    []
+
+We can limit the results to a specific distribution.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> distribution_set = getUtility(IDistributionSet)
+    >>> ubuntu = distribution_set.getByName('ubuntu')
+    >>> for submission in sata_controller.getSubmissions(
+    ...     distribution=ubuntu):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> debian = distribution_set.getByName('debian')
+    >>> sata_controller.getSubmissions(distribution=debian).count()
+    0
+
+We can limit the results to a specific architecture.
+
+    >>> for submission in sata_controller.getSubmissions(
+    ...     architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> sata_controller.getSubmissions(architecture='amd64').count()
+    0
+
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+HWDevice.drivers is the set of drivers that are associated via
+HWDeviceDriverLink (see below) with this device.
+
+    >>> for driver in sata_controller.drivers:
+    ...     print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic ahci
+
 
 == HWDeviceNameVariant ==
 
@@ -897,7 +1144,8 @@ example a Ghostscript driver of a printer or a Sane scanner backend.
     GNU GPL v2
 
 The submitted data does not need to contain package information for all
-drivers, hence the field package_name may be None.
+drivers, hence the field package_name may be None or the empty string
+(see below).
 
     >>> driver2 = driver_set.create(package_name=None,
     ...                             name='whatever',
@@ -912,13 +1160,13 @@ drivers, hence the field package_name may be None.
 Since we also do not always know the license of a driver, the license
 may too be None.
 
-    >>> driver3 = driver_set.create(package_name=None,
+    >>> driver3 = driver_set.create(package_name='',
     ...                             name='something_else',
     ...                             license=None)
     >>> print driver3.name
     something_else
-    >>> print driver3.package_name
-    None
+    >>> print repr(driver3.package_name)
+    u''
     >>> print driver3.license
     None
 
@@ -986,6 +1234,77 @@ the given parameters or creates a new one, if no existing record matches.
     foo
     >>> print driver.package_name
     linux-image-generic
+
+IHWDriverSet.search() returns a sequence of driver records matching the
+given parameters.
+
+    >>> drivers = driver_set.search(package_name='linux-image-generic')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    linux-image-generic usb
+    linux-image-generic foo
+
+    >>> drivers = driver_set.search(name='usb')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic usb
+    linux-image-generic usb
+
+    >>> drivers = driver_set.search(
+    ...     package_name='linux-image-2.6.24-19-generic', name='ahci')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic ahci
+
+If package_name is an empty string, driver records are returned where
+the package name is not recorded (which is denoted by None or the
+empty string. See also bug 306265: Disallow the column value
+HWDriver.package_name=null).
+
+    >>> drivers = driver_set.search(package_name='')
+    >>> for driver in drivers:
+    ...    print repr(driver.package_name), driver.name
+    None whatever
+    u'' something_else
+
+    >>> drivers = driver_set.search(package_name='', name='whatever')
+    >>> for driver in drivers:
+    ...    print driver.package_name, driver.name
+    None whatever
+
+If no parameters are specific, IHWDriverSet.search() returns all driver
+records.
+
+    >>> drivers = driver_set.search()
+    >>> for driver in drivers:
+    ...    print repr(driver.package_name), driver.name
+    u'linux-image-2.6.24-19-generic' ehci_hcd
+    u'linux-image-2.6.24-19-generic' usb
+    u'linux-image-2.6.24-19-generic' usb-storage
+    u'linux-image-2.6.24-19-generic' sd
+    u'linux-image-2.6.24-19-generic' hub
+    u'linux-image-2.6.24-19-generic' ahci
+    u'linux-image-2.6.24-19-generic' sr
+    u'linux-image-generic' usb
+    None whatever
+    u'' something_else
+    u'linux-image-generic' foo
+
+HWDriverSet.getByID() returns a HWDriver record with the given database ID.
+
+    >>> driver = driver_set.getByID(1)
+    >>> print driver.id
+    1
+    >>> print driver.package_name
+    linux-image-2.6.24-19-generic
+    >>> print driver.name
+    ehci_hcd
+
+HWDriverSet.getByID() returns None if no record with the passed ID exists.
+
+    >>> driver = driver_set.getByID(1000000)
+    >>> print driver
+    None
 
 
 == HWDeviceDriverLink ==
@@ -1129,11 +1448,68 @@ the given parameters or creates a new one, if no existing record matches.
     None
 
 
+== HWDeviceClass ==
+
+This table specifies the class or classes of a device. A device class
+describes the capabilities of a device, i.e, if it is a printer,
+input device, sound device etc. HWDeviceClass stores the main class of
+a device, enumerated by HWMainClass, as well as a sub-class, enumerated
+by HWSubClass. The required main class specifies the generic type of
+a device, the optional sub-class a more detailed type.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     HWMainClass, HWSubClass, IHWDeviceClassSet)
+    >>> device_class_set = getUtility(IHWDeviceClassSet)
+    >>> device_class_optic_pro_ut12 = device_class_set.create(
+    ...     device=optic_pro_ut12, main_class=HWMainClass.SCANNER,
+    ...     sub_class=HWSubClass.SCANNER_FLATBED)
+    >>> print device_class_optic_pro_ut12.device.name
+    OpticPro UT12
+    >>> print device_class_optic_pro_ut12.main_class.title
+    Scanner
+    >>> print device_class_optic_pro_ut12.sub_class.title
+    Flatbed Scanner
+
+A device may be associated with more than one HWDeviceClass record.
+This allows, for example, the ability to describe a combined
+printer/scanner device as both a printer and a scanner. We (wrongly)
+assume that the Optic Pro UT12 is an MFP device. Let us also assume
+that we do not know if the printer component of this device uses
+inkjet or laser technology, hence we do not specify a sub-class.
+
+    >>> device_class_printer_ut12 = device_class_set.create(
+    ...     device=optic_pro_ut12, main_class=HWMainClass.PRINTER)
+    >>> print device_class_printer_ut12.device.name
+    OpticPro UT12
+    >>> print device_class_printer_ut12.main_class.title
+    Printer
+    >>> print device_class_printer_ut12.sub_class
+    None
+
+If a sub-class is specified, it must match the main class. The attempt
+to create a HWDeviceClass record with non-matching records results in
+a TypeError. The check for matching main class sub-class values ensures
+that the main class name is a prefix of the sub-class name.
+
+    >>> device_class_set.create(device=optic_pro_ut12,
+    ...     main_class=HWMainClass.NETWORK,
+    ...     sub_class=HWSubClass.STORAGE_HARDDISK)
+    Traceback (most recent call last):
+    ...
+    TypeError: HWDeviceClass() did not get matching argument values for
+    main_class: <DBItem HWMainClass.NETWORK, (10000) Network> and
+    sub_class: <DBItem HWSubClass.STORAGE_HARDDISK, (11001) Hard Disk>.
+
+
 == HWSubmissionDevice ==
 
 This table links devices listed in a submission to the
 HWDeviceDriverLink table. Additionally it links a device of a
-submission to its parent device, as modeled by HAL.
+submission to its parent device, as modeled by HAL. A submission
+may contain two or more identical devices. In order to unambiugously
+relate HWSubmissionDevice records to devices as represented in the
+submitted data, we store the attribute "id" of the HAL device node
+too.
 
 We need a submission to which we can link HWSubmissionDevice entries.
 
@@ -1147,13 +1523,19 @@ A HWSubmissionDevice record for a system does not have any parent...
     >>> submission_device_set = getUtility(IHWSubmissionDeviceSet)
     >>> submitted_tuffbook_2600 = submission_device_set.create(
     ...     device_driver_link=tuffbook_2600_device_driver_link,
-    ...     submission=sample_submission, parent=None)
+    ...     submission=sample_submission, parent=None, hal_device_id=1)
     >>> print submitted_tuffbook_2600.device_driver_link.device.name
     Tuffbook 2600
+    >>> print submitted_tuffbook_2600.device.name
+    Tuffbook 2600
+    >>> print submitted_tuffbook_2600.driver
+    None
     >>> print submitted_tuffbook_2600.submission.submission_key
     test_submission_id_1
     >>> print submitted_tuffbook_2600.parent
     None
+    >>> print submitted_tuffbook_2600.hal_device_id
+    1
 
 ...while ordinary device entries have the attribute parent set. The
 parent/child relationship may extend to several "generations". For
@@ -1163,7 +1545,8 @@ is the system itself.
     >>> submitted_usb_ehci_hcd_controller = submission_device_set.create(
     ...      device_driver_link=usb_controller_ehci_hcd_link,
     ...      submission=sample_submission,
-    ...      parent=submitted_tuffbook_2600)
+    ...      parent=submitted_tuffbook_2600,
+    ...      hal_device_id=2)
 
 For the "output aspect" of the USB controller, we have
 usb_controller_usb_link; its parent is submitted_usb_ehci_hcd_controller
@@ -1172,7 +1555,18 @@ that we just have created.
     >>> submitted_usb_controller = submission_device_set.create(
     ...      device_driver_link=usb_controller_usb_link,
     ...      submission=sample_submission,
-    ...      parent=submitted_usb_ehci_hcd_controller)
+    ...      parent=submitted_usb_ehci_hcd_controller,
+    ...      hal_device_id=3)
+    >>> print submitted_usb_controller.device_driver_link.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print submitted_usb_controller.device_driver_link.driver.name
+    usb
+    >>> print submitted_usb_controller.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print submitted_usb_controller.driver.name
+    usb
+    >>> print submitted_usb_controller.hal_device_id
+    3
 
 The USB controller is connected to an (often internal) USB hub. We don't
 yet have HWDevice and HWDeviceDriverLink records for this hub, so we must
@@ -1187,16 +1581,60 @@ create them first.
     >>> submitted_usb_hub = submission_device_set.create(
     ...     device_driver_link=usb_hub_driver_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_usb_controller)
+    ...     parent=submitted_usb_controller,
+    ...     hal_device_id=4)
 
 Finally, a scanner may be connected to the USB hub.
 
     >>> submitted_scanner_usb = submission_device_set.create(
     ...     device_driver_link=scanner_usb_driver_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_usb_hub)
+    ...     parent=submitted_usb_hub,
+    ...     hal_device_id=5)
 
     >>> submitted_scanner_sane = submission_device_set.create(
     ...     device_driver_link=scanner_sane_plustek_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_scanner_usb)
+    ...     parent=submitted_scanner_usb,
+    ...     hal_device_id=6)
+
+IHWSubmissionDevice records belonging to a submission are retrieved by
+IHWSubmissionDeviceSet.getDevices().
+
+    >>> submitted_devices = submission_device_set.getDevices(
+    ...     submission=sample_submission)
+    >>> def print_device(submission_device, indent=0):
+    ...     if indent > 0:
+    ...         print '-' * indent + '>',
+    ...     device = submission_device.device_driver_link.device
+    ...     driver = submission_device.device_driver_link.driver
+    ...     print device.bus_vendor.vendor_name.name, device.name,
+    ...     if driver is not None:
+    ...         print driver.name
+    ...     else:
+    ...         print '(no driver)'
+    ...     for sub_device in submitted_devices:
+    ...         if sub_device.parent == submission_device:
+    ...             print_device(sub_device, indent+1)
+    >>> devices_without_parent = [
+    ...     device for device in submitted_devices if device.parent is None]
+    >>> root_device, = devices_without_parent
+    >>> print_device(root_device)
+    Tonka Tuffbook 2600 (no driver)
+    -> Intel 82801GBM/GHM (ICH7 Family) USB2 EHCI Controller ehci_hcd
+    --> Intel 82801GBM/GHM (ICH7 Family) USB2 EHCI Controller usb
+    ---> Unknown Intel USB hub usb
+    ----> Plustek OpticPro UT12 usb
+    -----> Plustek OpticPro UT12 plustek
+
+A single IHWSubmissionDevice record is retrieved by
+IHWSubmissionDeviceSet.get().
+
+    >>> submitted_device = submission_device_set.get(1)
+    >>> print_device(submitted_device)
+    MSI MS-7369 (no driver)
+
+This method returns None if a nonexistent ID is passed.
+
+    >>> print submission_device_set.get(1000000)
+    None

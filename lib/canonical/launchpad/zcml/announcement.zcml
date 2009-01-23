@@ -5,14 +5,14 @@
   i18n_domain="launchpad">
 
   <!-- Announcement -->
-  <content class="canonical.launchpad.database.Announcement">
+  <class class="canonical.launchpad.database.Announcement">
     <allow attributes="id date_created registrant target title summary url
                        date_announced date_last_modified date_updated active
                        future published" />
     <require permission="launchpad.Edit"
              attributes="modify retarget retract set_publication_date
                          destroySelf" />
-  </content>
+  </class>
 
   <browser:menus
     module="canonical.launchpad.browser"
@@ -23,13 +23,6 @@
     for="canonical.launchpad.interfaces.IAnnouncement"
     path_expression="string:+announcement/${id}"
     attribute_to_parent="target"
-    />
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-    for="canonical.launchpad.interfaces.IAnnouncement"
-    factory="canonical.launchpad.browser.AnnouncementSHP"
-    permission="zope.Public"
     />
 
   <browser:defaultView

@@ -48,7 +48,7 @@
        </tal:ubuntero>
 
       <tal:not-ubuntero condition="not: context/is_ubuntero">
-        <tal:is_request_person condition="view/viewingOwnPage">
+        <tal:is_request_person condition="view/viewing_own_page">
           <b>Ubuntero:</b> <span id="ubuntero">No</span>
           <a href="/codeofconduct"
             ><img src="/@@/edit" alt="Apply to become an Ubuntero" /></a>
@@ -112,6 +112,14 @@
                >Mailing list archive</a>
           </td>
         </tr>
+        <tal:can_see_subscribers condition="context/required:launchpad.Edit">
+          <tr>
+            <td><a id="mailing-list-subscribers"
+                   tal:attributes="href context/fmt:url/+mailing-list-subscribers"
+                   >Mailing list subscribers</a>
+            </td>
+          </tr>
+        </tal:can_see_subscribers>
       </table>
 
     </tal:is_team>

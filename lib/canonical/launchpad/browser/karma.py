@@ -10,12 +10,16 @@ __all__ = [
 
 from operator import attrgetter
 
+from zope.component import getUtility
+
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    IDistribution, IKarmaActionSet, IProduct, IProject)
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.karma import IKarmaAction, IKarmaActionSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, canonical_url)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadView, Navigation)
 
 
 TOP_CONTRIBUTORS_LIMIT = 20
@@ -29,10 +33,16 @@ class KarmaActionSetNavigation(Navigation):
         return self.context.getByName(name)
 
 
-class KarmaActionEditView(SQLObjectEditView):
+class KarmaActionEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    schema = IKarmaAction
+    label = "Edit karma action"
+    field_names = ["name", "category", "points", "title", "summary"]
+
+    @action(_("Change"), name="change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(getUtility(IKarmaActionSet))
 
 
 class KarmaContextContributor:
@@ -62,7 +72,8 @@ class KarmaContextTopContributorsView(LaunchpadView):
         results = self.context.getTopContributors(limit=limit)
         contributors = [KarmaContextContributor(person, karmavalue)
                         for person, karmavalue in results]
-        return sorted(contributors, key=attrgetter('karmavalue'), reverse=True)
+        return sorted(
+            contributors, key=attrgetter('karmavalue'), reverse=True)
 
     def getTopContributors(self):
         return self._getTopContributorsWithLimit(limit=TOP_CONTRIBUTORS_LIMIT)
@@ -74,7 +85,8 @@ class KarmaContextTopContributorsView(LaunchpadView):
     def top_contributors_by_category(self):
         contributors_by_category = {}
         limit = TOP_CONTRIBUTORS_LIMIT
-        results = self.context.getTopContributorsGroupedByCategory(limit=limit)
+        results = self.context.getTopContributorsGroupedByCategory(
+            limit=limit)
         for category, people_and_karma in results.items():
             contributors = []
             for person, karmavalue in people_and_karma:

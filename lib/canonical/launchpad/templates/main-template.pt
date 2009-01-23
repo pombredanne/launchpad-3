@@ -4,13 +4,12 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.0 (r${revno});
+    version string:Launchpad 2.1.12 (r${revno});
   "
 ><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:lpm="http://ns.launchpad.net/lpm"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -23,6 +22,7 @@
   tal:define="
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
+      icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
@@ -75,28 +75,91 @@
       </style>
     </noscript>
 
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
+    <tal:devmode define="yui string:${icingroot}/yui/3.0.0pr2/build;
+                         lazr_js string:${icingroot}/lazr/build;
+                         lp_js string:${icingroot}/build"
+                    condition="devmode">
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/yui/yui.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/oop/oop.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/event/event.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/dom/dom.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/node/node.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/io/io-base.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/io/io-form.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/json/json.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/attribute/attribute.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/base/base.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/anim/anim.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/plugin/plugin.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget.js"></script>
+
+      <script type="text/javascript"
+              tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/client/client.js"></script>
+    </tal:devmode>
+    <tal:production condition="not:devmode">
+      <script type="text/javascript"
+              tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+    </tal:production>
+
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
       function onLoadFunction() {
-        lpmenu.initialize(['menuroot'], '/', 'menupreload',
-                           [], '1.3em', 16, true);
         sortables_init();
         initInlineHelp();
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
-    <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
+
+    <tal:needs_json tal:condition="request/needs_json">
+      <script type="text/javascript"
+        tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
+      <script type="text/javascript"
+        tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
+    </tal:needs_json>
+    <tal:needs-gmap2 condition="request/needs_gmap2">
+      <tal:devmode condition="devmode">
+        <script type="text/javascript"
+                tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
+                ></script>
+      </tal:devmode>
+      <tal:not-devmode condition="not: devmode">
+        <script type="text/javascript"
+                tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
+                ></script>
+      </tal:not-devmode>
+    </tal:needs-gmap2>
+    <link rel="shortcut icon" href="/@@/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
     id="document"
-    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
+    tal:attributes="class string:tab-${view/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="locationbar">
       <tal:login replace="structure context/@@login_status" />
@@ -117,12 +180,12 @@
 
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
-      tal:define="facetmenu CONTEXTS/menu:facet"
+      tal:define="facetmenu view/menu:facet"
       id="lp-apps"
       class="clearfix"
     >
       <tal:XXX replace="nothing">
-        # XXX mpt 20080702: The HTML comment works around bug 229931.
+        # XXX mpt 2008-07-02 bug=229931: The HTML comment works.
       </tal:XXX>
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
@@ -160,7 +223,7 @@
         <div id="container">
           <!--[if IE 7]>&nbsp;<![endif]-->
           <tal:XXX condition="nothing">
-            # XXX mpt 20080716 bug=249032: This conditional comment should
+            # XXX mpt 2008-07-16 bug=249032: This conditional comment should
             # not be necessary.
           </tal:XXX>
 
@@ -205,7 +268,9 @@
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
-                              <!-- XXX Mark Shuttleworth 2007-04-30: Obsolete -->
+                             <tal:XXX condition="nothing">
+                              # XXX Mark Shuttleworth 2007-04-30: Obsolete
+                             </tal:XXX>
                             </metal:block>
                           </div>
                           <tal:notifications
@@ -223,7 +288,7 @@
                           tal:condition="view/macro:pagehas/portlets"
                         >
                           <tal:menu condition="view/macro:pagehas/actionsmenu"
-                                    replace="structure CONTEXTS/@@+menubox" />
+                                    replace="structure view/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
                           <metal:portlets define-slot="portlets_one" />
@@ -246,10 +311,10 @@
           <a tal:condition="not:request/lp:person" href="/+tour"
           >What is Launchpad?</a>
           <a tal:condition="request/lp:person" href="/feedback"
-          >Help improve Launchpad</a>
+          >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
         <div id="lp-arcana">
-            &copy;&nbsp;2004-2008&nbsp;<a
+            &copy;&nbsp;2004-2009&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           |
           <a href="/legal">Terms of use</a>
@@ -266,7 +331,7 @@
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
-              <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+              <tal:block tal:replace="view/menu:selectedfacetname" />
             </li>
             <li>Page type:
                <tal:pagetype replace="view/macro:pagetype" />
@@ -291,27 +356,19 @@
 
     <div id="help-pane" class="invisible">
       <div id="help-body">
-        <iframe id="help-pane-content" class="invisible"></iframe>
+        <tal:XXX condition="nothing">
+          # XXX mars 2008-11-07 bug=295254:
+          # We use this ugly src="" hack to get rid of an IE6 security
+          # warning.  See bug #295234.
+        </tal:XXX>
+        <iframe
+          id="help-pane-content"
+          class="invisible"
+          src="javascript:void(0);"></iframe>
       </div>
       <div id="help-footer">
         <span id="help-close"></span>
       </div>
-    </div>
-    <div id="menupreload" style="visibility:hidden"
-      xml:lang="en" lang="en" dir="ltr">
-      <ul class="menu" lpm:mid="root">
-        <tal:condition condition="request/lp:person">
-          <li class="item"
-              tal:attributes="lpm:mid string:/~${request/lp:person/name}/+menudata/contributions"><a
-          class="container" href="/projects">Projects</a></li>
-        </tal:condition>
-        <tal:condition condition="not: request/lp:person">
-          <li class="item"><a href="/projects">Projects</a></li>
-        </tal:condition>
-        <li class="item"><a href="/distros">Distributions</a></li>
-        <li class="item"><a href="/people">People</a></li>
-        <li class="item"><a href="/sprints">Meetings</a></li>
-      </ul>
     </div>
     <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
       <script language="Javascript" type="text/javascript">
@@ -359,11 +416,28 @@
           frameborder="0"
           style="visibility:visible; z-index:999; position:absolute;
                  top:-500px; left:-500px;">
-       <LAYER name="gToday:datepicker:agenda.js"
-              src="/+popcalxp/npopeng.htm"
-              background="/+popcalxp/npopeng.htm">     </LAYER>
       </iframe>
     </tal:datepicker>
+
+    <tal:cache condition="view/user|nothing"
+               define="cache request/webservicerequest:cache;
+                       links cache/links;
+                       objects cache/objects;">
+      <script tal:repeat="key links"
+        tal:content="structure string:LP.client.links['${key}'] =
+                        '${links/?key/fmt:api_url}';">
+      </script>
+      <script tal:repeat="key objects"
+        tal:content="structure string:LP.client.cache['${key}'] =
+         ${objects/?key/webservice:json};">
+      </script>
+    </tal:cache>
+
+    <script tal:condition="context/webservice:is_entry"
+     tal:content="structure string:LP.client.cache['context'] =
+       ${context/webservice:json};">
+    </script>
+
   </body>
 </html>
 <tal:requestlog

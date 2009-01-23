@@ -30,7 +30,6 @@ the trust_root given by the relying party.  We will set up an RP
 configuration that uses the UBUNTU_SHOP creation rationale:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     IOpenIDRPConfigSet, IPersonSet, PersonCreationRationale)
 
@@ -123,10 +122,11 @@ directed back to the original site:
 
 The creation rationale has been set correctly:
 
-    >>> login(ANONYMOUS)
+    >>> login('new-user@example.com')
     >>> person = getUtility(IPersonSet).getByEmail('new-user@example.com')
     >>> expected_claimed_id = (
-    ...     'http://openid.launchpad.dev/+id/' + person.openid_identifier)
+    ...     'http://openid.launchpad.dev/+id/' +
+    ...     person.account.openid_identifier)
     >>> print person.creation_rationale.name
     OWNER_CREATED_UBUNTU_SHOP
     >>> logout()

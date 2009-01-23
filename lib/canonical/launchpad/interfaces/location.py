@@ -13,11 +13,12 @@ __all__ = [
     'IHasLocation',
     'ILocationRecord',
     'IObjectWithLocation',
+    'IPersonLocation',
     'ISetLocation',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Float
+from zope.schema import Bool, Choice, Datetime, Float, Object
 
 from canonical.launchpad import _
 from canonical.lazr.interface import copy_field
@@ -41,19 +42,6 @@ class IHasLocation(Interface):
                vocabulary='TimezoneName'))
 
 
-class ISetLocation(Interface):
-    """An interface for setting the location and time zone of an object."""
-
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(
-        latitude=copy_field(IHasLocation['latitude'], required=True),
-        longitude=copy_field(IHasLocation['longitude'], required=True),
-        time_zone=copy_field(IHasLocation['time_zone'], required=True))
-    @export_write_operation()
-    def setLocation(latitude, longitude, time_zone, user):
-        """Specify the location and time zone of a person."""
-
-
 class IObjectWithLocation(Interface):
     """An interface supported by objects with a defined location."""
 
@@ -71,4 +59,26 @@ class ILocationRecord(IHasLocation):
         "The person who last provided this location information.")
     date_last_modified = Datetime(
         title=_("The date this information was last updated."))
+    visible = Bool(
+        title=_("Is this location record visible?"),
+        required=False, readonly=False, default=True)
 
+
+class ISetLocation(Interface):
+    """An interface for setting the location and time zone of an object."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        latitude=copy_field(IHasLocation['latitude'], required=True),
+        longitude=copy_field(IHasLocation['longitude'], required=True),
+        time_zone=copy_field(IHasLocation['time_zone'], required=True))
+    @export_write_operation()
+    def setLocation(latitude, longitude, time_zone, user):
+        """Specify the location and time zone of a person."""
+
+
+class IPersonLocation(ILocationRecord):
+    """A location record for a person."""
+
+    # Can't use IPerson as the schema here because of circular dependencies.
+    person = Object(title=_("Person"), schema=Interface)

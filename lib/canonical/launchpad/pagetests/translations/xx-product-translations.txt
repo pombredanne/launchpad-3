@@ -35,8 +35,12 @@ translation, or link the product to a translatable package.
     >>> registrant.open(
     ...     'http://translations.launchpad.dev/gnomebaker')
     >>> print find_main_content(registrant.contents)
-    <...
-    ...How to start using Launchpad Translations...
+    <...How to start using Launchpad Translations...
+    This project is not configured to use Launchpad for translations...
+    You can change this in the <a ...>project settings</a>.
+    ...
+    To set up gnomebaker for translation in Launchpad, you need to upload a
+    translation template for one of its release series.
     ...
     >>> registrant.getLink(
     ...     url=('/gnomebaker/trunk/'
@@ -46,6 +50,13 @@ translation, or link the product to a translatable package.
     ...     url='/gnomebaker/+packages'
     ...     ) is not None
     True
+
+The instructions for the registrant link to the settings page, where they can
+configure the project to use Launchpad for translations if desired.
+
+    >>> registrant.getLink('project settings').click()
+    >>> print registrant.url
+    http://.../gnomebaker/+edit
 
 (The template upload process is tested in xx-translation-import-queue.txt.)
 
@@ -57,7 +68,9 @@ contact the product's registrant.
     >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(unprivileged.contents))
     Translation setup needed
+    ...
     This project&rsquo;s license has not been specified.
+    This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.
     You might want to talk with Foo Bar, the project registrant, about
     using Launchpad for translations.
@@ -97,7 +110,9 @@ registrant, so the text reflects both possibilities.
     >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Translation setup needed
+    ...
     This project&rsquo;s license has not been specified.
+    This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.
     If you are Foo Bar, log in to begin the setup process.
     Otherwise, you might want to talk with Foo Bar, the project registrant,

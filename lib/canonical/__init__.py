@@ -7,3 +7,9 @@
 #from zope.i18n.messageid import MessageFactory
 #_ = MessageFactory("canonical")
 
+# Filter all deprecation warnings for Zope 3.6, which eminate from
+# the zope package.
+import warnings
+filter_pattern = '.*(Zope 3.6|provide.*global site manager).*'
+warnings.filterwarnings(
+    'ignore', filter_pattern, category=DeprecationWarning)

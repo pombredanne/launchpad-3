@@ -3,9 +3,9 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.TeamMembershipSet">
+    <class class="canonical.launchpad.database.TeamMembershipSet">
         <allow interface="canonical.launchpad.interfaces.ITeamMembershipSet"/>
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.TeamMembershipSet"
@@ -13,15 +13,15 @@
         <allow interface="canonical.launchpad.interfaces.ITeamMembershipSet" />
     </securedutility>
 
-    <!-- XXX: Need to refactor ITeamMembership into specific interfaces for
-    each persmission. Guilherme Salgado, 2008-02-15 -->
-    <content class="canonical.launchpad.database.TeamMembership">
+    <!-- XXX: Guilherme Salgado 2008-02-15: Need to refactor ITeamMembership
+              into specific interfaces for each persmission. -->
+    <class class="canonical.launchpad.database.TeamMembership">
         <require
             permission="zope.Public"
-            attributes="team person status proposed_by acknowledged_by
+            attributes="id team person status proposed_by acknowledged_by
                         reviewed_by last_changed_by date_proposed
                         date_acknowledged date_reviewed datejoined dateexpires
-                        date_created proponent_comment
+                        date_created date_last_changed proponent_comment
                         acknowledger_comment reviewer_comment
                         last_change_comment isExpired
                         sendExpirationWarningEmail canBeRenewedByMember
@@ -33,7 +33,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="reviewed_by reviewer_comment" />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.ITeamMembership"
@@ -44,13 +44,6 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
-
-    <adapter
-      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-      for="canonical.launchpad.interfaces.ITeamMembership"
-      factory="canonical.launchpad.browser.TeamMembershipSHP"
-      permission="zope.Public"
-      />
 
     <browser:page
         name="+index"
@@ -69,17 +62,17 @@
         template="../templates/teammembership-listing-simple.pt"
         />
 
-    <content class="canonical.launchpad.browser.person.TeamInvitationView">
+    <class class="canonical.launchpad.browser.person.TeamInvitationView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
         <allow attributes="__call__" />
-    </content>
+    </class>
 
-    <content
+    <class
         class="canonical.launchpad.browser.person.TeamMembershipSelfRenewalView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
         <allow attributes="__call__" />
-    </content>
+    </class>
 
 </configure>

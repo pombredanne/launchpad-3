@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_allowed_default_stacking_names',
     'Product',
     'ProductSet',
+    'ProductWithLicenses',
     ]
 
 
@@ -15,14 +15,17 @@ import operator
 import datetime
 import calendar
 import pytz
+import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
+from lazr.delegates import delegates
+from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -33,7 +36,7 @@ from canonical.launchpad.database.branchvisibilitypolicy import (
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -45,6 +48,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -65,11 +69,12 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadUsage, NotFoundError)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
+    NotFoundError)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
 from canonical.launchpad.interfaces.questioncollection import (
@@ -83,11 +88,68 @@ from canonical.launchpad.interfaces.specification import (
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 
+def get_license_status(license_approved, license_reviewed, licenses):
+    """Decide the license status for an `IProduct`.
+
+    :return: A LicenseStatus enum value.
+    """
+    # A project can only be marked 'license_approved' if it is
+    # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
+    # OPEN_SOURCE, which means one of our admins has determined it is good
+    # enough for us for the project to freely use Launchpad.
+    if license_approved:
+        return LicenseStatus.OPEN_SOURCE
+    if len(licenses) == 0:
+        # We don't know what the license is.
+        return LicenseStatus.UNSPECIFIED
+    elif License.OTHER_PROPRIETARY in licenses:
+        # Notice the difference between the License and LicenseStatus.
+        return LicenseStatus.PROPRIETARY
+    elif License.OTHER_OPEN_SOURCE in licenses:
+        if license_reviewed:
+            # The OTHER_OPEN_SOURCE license was not manually approved
+            # by setting license_approved to true.
+            return LicenseStatus.PROPRIETARY
+        else:
+            # The OTHER_OPEN_SOURCE is pending review.
+            return LicenseStatus.UNREVIEWED
+    else:
+        # The project has at least one license and does not have
+        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+        return LicenseStatus.OPEN_SOURCE
+
+
+class ProductWithLicenses:
+    """Caches `Product.licenses`."""
+
+    delegates(IProduct, 'product')
+
+    def __init__(self, product, licenses):
+        self.product = product
+        self._licenses = licenses
+
+    @property
+    def licenses(self):
+        """See `IProduct`."""
+        return self._licenses
+
+    @property
+    def license_status(self):
+        """See `IProduct`.
+
+        Normally, the `Product.license_status` property would use
+        `Product.licenses`, which is not cached, instead of
+        `ProductWithLicenses.licenses`, which is cached.
+        """
+        return get_license_status(
+            self.license_approved, self.license_reviewed, self.licenses)
+
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
-              HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
+              HasSpecificationsMixin, HasSprintsMixin,
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              QuestionTargetMixin, HasTranslationImportsMixin,
+              HasAliasMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
@@ -103,6 +165,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         foreignKey="Person",
         storm_validator=validate_public_person, dbName="owner", notNull=True)
+    registrant = ForeignKey(
+        foreignKey="Person",
+        storm_validator=validate_public_person, dbName="registrant",
+        notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
@@ -155,6 +221,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    remote_product = Unicode(
+        name='remote_product', allow_none=True, default=None)
 
     @property
     def official_anything(self):
@@ -179,6 +247,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    _cached_licenses = None
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
@@ -214,16 +283,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        if self.name in get_allowed_default_stacking_names():
-            return self.development_focus.series_branch
-        return None
+        default_branch = self.development_focus.series_branch
+        if default_branch is None:
+            return None
+        elif default_branch.last_mirrored is None:
+            return None
+        else:
+            return default_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
-                                  subscription_months, whiteboard=None):
+                                  subscription_months, whiteboard=None,
+                                  current_datetime=None):
         """See `IProduct`."""
 
         def add_months(start, num_months):
@@ -235,7 +309,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             including leap years, where th 28th-31st maps to the 28th or
             29th.
             """
-            years, new_month = divmod(start.month + num_months, 12)
+            # The months are 1-indexed but the divmod calculation will only
+            # work if it is 0-indexed.  Subtract 1 from the months and then
+            # add it back to the new_month later.
+            years, new_month = divmod(start.month - 1 + num_months, 12)
+            new_month += 1
             new_year = start.year + years
             # If the day is not valid for the new month, make it the last day
             # of that month, e.g. 20080131 + 1 month = 20080229.
@@ -246,9 +324,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      day=new_day)
             return new_date
 
-        now = datetime.datetime.now(pytz.timezone('UTC'))
+        if current_datetime is None:
+            current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
+
         if self.commercial_subscription is None:
-            date_starts = now
+            date_starts = current_datetime
             date_expires = add_months(date_starts, subscription_months)
             subscription = CommercialSubscription(
                 product=self,
@@ -260,15 +340,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 whiteboard=whiteboard)
             self._commercial_subscription_cached = subscription
         else:
-            if (now <= self.commercial_subscription.date_expires):
+            if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.
                 self.commercial_subscription.date_expires = (
                     add_months(self.commercial_subscription.date_expires,
                                subscription_months))
             else:
-                self.commercial_subscription.date_starts = now
+                # Start the new subscription now and extend for the new
+                # period.
+                self.commercial_subscription.date_starts = current_datetime
                 self.commercial_subscription.date_expires = (
-                    add_months(date_starts, subscription_months))
+                    add_months(current_datetime, subscription_months))
             self.commercial_subscription.sales_system_id = voucher
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
@@ -340,46 +422,29 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         :return: A LicenseStatus enum value.
         """
-        # A project can only be marked 'license_approved' if it is
-        # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
-        # OPEN_SOURCE, which means one of our admins has determined it is good
-        # enough for us for the project to freely use Launchpad.
-        if self.license_approved:
-            return LicenseStatus.OPEN_SOURCE
-        # Since accesses to the licenses property performs a query on
-        # the ProductLicense table, store the value to avoid doing the
-        # query 3 times.
-        licenses = self.licenses
-        if len(licenses) == 0:
-            # We don't know what the license is.
-            return LicenseStatus.UNSPECIFIED
-        elif License.OTHER_PROPRIETARY in licenses:
-            # Notice the difference between the License and LicenseStatus.
-            return LicenseStatus.PROPRIETARY
-        elif License.OTHER_OPEN_SOURCE in licenses:
-            if self.license_reviewed:
-                # The OTHER_OPEN_SOURCE license was not manually approved
-                # by setting license_approved to true.
-                return LicenseStatus.PROPRIETARY
-            else:
-                # The OTHER_OPEN_SOURCE is pending review.
-                return LicenseStatus.UNREVIEWED
-        else:
-            # The project has at least one license and does not have
-            # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
-            return LicenseStatus.OPEN_SOURCE
+        return get_license_status(
+            self.license_approved, self.license_reviewed, self.licenses)
 
     def _resetLicenseReview(self):
         """When the license is modified, it must be reviewed again."""
         self.license_reviewed = False
         self.license_approved = False
 
+    def __storm_invalidated__(self):
+        """Clear cached non-storm attributes when the transaction ends."""
+        self._cached_licenses = None
+        if safe_hasattr(self, '_commercial_subscription_cached'):
+            del self._commercial_subscription_cached
+
     def _getLicenses(self):
         """Get the licenses as a tuple."""
-        return tuple(
-            product_license.license
-            for product_license
-                in ProductLicense.selectBy(product=self, orderBy='license'))
+        if self._cached_licenses is None:
+            product_licenses = ProductLicense.selectBy(
+                product=self, orderBy='license')
+            self._cached_licenses = tuple(
+                product_license.license
+                for product_license in product_licenses)
+        return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_license_reviewed=True):
         """Set the licenses from a tuple of license enums.
@@ -413,6 +478,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
+        self._cached_licenses = tuple(sorted(licenses))
 
     licenses = property(_getLicenses, _setLicenses)
 
@@ -431,10 +497,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return None
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this product.."""
         search_params.setProduct(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""
@@ -442,8 +507,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(
-            "BugTask.product = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.product == self, user)
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
@@ -881,10 +945,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
 
-def get_allowed_default_stacking_names():
-    """Return a list of names of `Product`s that allow default stacking."""
-    return config.codehosting.allow_default_stacking.split(',')
-
 
 class ProductSet:
     implements(IProductSet)
@@ -893,14 +953,14 @@ class ProductSet:
         self.title = "Projects in Launchpad"
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        item = Product.selectOneBy(name=name, active=True)
-        if item is None:
+        """See `IProductSet`."""
+        product = self.getByName(name=name, ignore_inactive=True)
+        if product is None:
             raise NotFoundError(name)
-        return item
+        return product
 
     def __iter__(self):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         return iter(self.all_active)
 
     @property
@@ -908,32 +968,32 @@ class ProductSet:
         return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
-        return self.all_active[:quantity]
+        if quantity is None:
+            return self.all_active
+        else:
+            return self.all_active[:quantity]
 
     @property
     def all_active(self):
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it in
+        # The main product listings include owner, so we prejoin it.
         return results.prejoin(["owner"])
 
     def get(self, productid):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         try:
             return Product.get(productid)
         except SQLObjectNotFound:
             raise NotFoundError("Product with ID %s does not exist" %
                                 str(productid))
 
-    def getByName(self, name, default=None, ignore_inactive=False):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        if ignore_inactive:
-            product = Product.selectOneBy(name=name, active=True)
-        else:
-            product = Product.selectOneBy(name=name)
-        if product is None:
-            return default
-        return product
+    def getByName(self, name, ignore_inactive=False):
+        """See `IProductSet`."""
+        pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
+        if not IProduct.providedBy(pillar):
+            return None
+        return pillar
 
     def getProductsWithBranches(self, num_products=None):
         """See `IProductSet`."""
@@ -964,12 +1024,17 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None):
+                      icon=None, licenses=None, license_info=None,
+                      registrant=None):
         """See `IProductSet`."""
+        if registrant is None:
+            registrant = owner
+        if licenses is None:
+            licenses = sets.Set()
         product = Product(
-            owner=owner, name=name, displayname=displayname,
-            title=title, project=project, summary=summary,
-            description=description, homepageurl=homepageurl,
+            owner=owner, registrant=registrant, name=name,
+            displayname=displayname, title=title, project=project,
+            summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,

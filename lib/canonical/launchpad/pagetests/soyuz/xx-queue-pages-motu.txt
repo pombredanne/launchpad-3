@@ -53,7 +53,6 @@ not have permission to accept items in "main":
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    Accepting Results:
     FAILED: alsa-utils (You have no rights to accept component(s) 'main')
 
 The same applies to the binary upload "pmount" because its build
@@ -63,7 +62,6 @@ produced a package in main:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    Accepting Results:
     FAILED: pmount (You have no rights to accept component(s) 'main')
 
 Let's change the components on some uploads so that the user has
@@ -111,7 +109,6 @@ If he tries to override back to main, it will fail:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    Accepting Results:
     FAILED: alsa-utils (No rights to override from universe to main)
 
 The same applies to the binary:
@@ -122,7 +119,6 @@ The same applies to the binary:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    Accepting Results:
     FAILED: pmount (No rights to override from universe to main)
 
 Our user is able to override to multiverse, however.  Let's do that
@@ -134,7 +130,6 @@ with pmount:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    Accepting Results:
     OK: pmount(multiverse/(unchanged)/(unchanged))
 
 Our user is also able to reject, let's reject alsa-utils:
@@ -143,7 +138,6 @@ Our user is also able to reject, let's reject alsa-utils:
     >>> motu_browser.getControl(name="Reject").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    Rejecting Results:
     OK: alsa-utils
 
 In some cases the user might select more than one item at once, but he
@@ -155,10 +149,9 @@ will be left alone.
     >>> motu_browser.getControl(
     ...     name="component_override").displayValue = ["multiverse"]
     >>> motu_browser.getControl(name="Accept").click()
-    >>> for message in get_feedback_messages(motu_browser.contents):
+    >>> for message in sorted(get_feedback_messages(motu_browser.contents)):
     ...     print message
-    Accepting Results:
-    OK: mozilla-firefox(multiverse/(unchanged)/(unchanged)),
     FAILED: netapplet (You have no rights to accept component(s) 'main')
+    OK: mozilla-firefox(multiverse/(unchanged)/(unchanged))
 
 

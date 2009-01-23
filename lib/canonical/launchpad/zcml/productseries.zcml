@@ -6,8 +6,12 @@
     i18n_domain="launchpad">
 
     <!-- This is class ProductSeries -->
-    <content class="canonical.launchpad.database.ProductSeries">
-        <allow interface="canonical.launchpad.interfaces.IProductSeries" />
+    <class class="canonical.launchpad.database.ProductSeries">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesPublic" />
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.IProductSeriesEditRestricted"
+            />
         <allow
             interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
         <allow
@@ -15,17 +19,12 @@
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary user_branch
-                            status releasefileglob"
+                            status releasefileglob import_branch"
             />
         <require
             permission="launchpad.AnyPerson"
             set_attributes="importstatus rcstype cvsroot cvsmodule
                 cvstarfileurl cvsbranch svnrepository"
-            />
-        <require
-            permission="launchpad.Admin"
-            interface="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
-            set_attributes="import_branch"
             />
         <!-- IStructuralSubscriptionTarget -->
         <allow attributes="bug_subscriptions getBugNotificationsRecipients
@@ -35,7 +34,7 @@
             permission="launchpad.AnyPerson"
             attributes="addBugSubscription addSubscription
                         removeBugSubscription" />
-    </content>
+    </class>
 
     <browser:menus
         module="canonical.launchpad.browser.productseries"
@@ -60,21 +59,6 @@
 	  template="../templates/specification-add.pt"
 	/>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSeries"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductSeriesDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
-
-    <adapter
-        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-        for="canonical.launchpad.interfaces.IProductSeries"
-        factory="canonical.launchpad.browser.ProductSeriesSOP"
-        permission="zope.Public"
-        />
-
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -88,6 +72,13 @@
         factory="canonical.launchpad.components.productseries.productseries_to_product"
         permission="zope.Public"
         />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProductSeries"
+      factory="canonical.launchpad.browser.ProductSeriesBreadcrumbBuilder"
+      permission="zope.Public"
+      />
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -261,35 +252,23 @@
         permission="launchpad.Edit"
         />
 
-    <browser:editform
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesReviewView"
         facet="overview"
-        label="Review product series details"
-        fields="product name"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        >
-        <browser:widget
-            field="name"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="20" />
-    </browser:editform>
+        template="../templates/productseries-review.pt"
+        />
 
-    <browser:generalform
+    <browser:page
         name="+addpackage"
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.PackagingAddView"
-        schema="canonical.launchpad.interfaces.IPackaging"
-        label="Add distribution packaging record"
-        fields="distroseries sourcepackagename packaging"
-        keyword_arguments="distroseries sourcepackagename packaging"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt" >
-    </browser:generalform>
+    </browser:page>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -367,9 +346,9 @@
     />
 
   <!-- ProductSeriesSet -->
-  <content class="canonical.launchpad.database.ProductSeriesSet">
+  <class class="canonical.launchpad.database.ProductSeriesSet">
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.ProductSeriesSet"
@@ -381,31 +360,6 @@
     for="canonical.launchpad.interfaces.IProductSeriesSet"
     path_expression="string:series"
     parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
-    />
-
-  <browser:defaultView
-    for="canonical.launchpad.interfaces.IProductSeriesSet"
-    layer="canonical.launchpad.layers.CodeLayer"
-    name="+bazaar-index" />
-
-  <!-- XXX: jamesh 2006-09-27: Need better permissions. -->
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProductSeriesSet"
-    permission="launchpad.AnyPerson"
-    facet="branches"
-    class="canonical.launchpad.browser.ProductSeriesSourceSetView">
-    <browser:page
-      name="+bazaar-index"
-      template="../templates/sources-index.pt"
-      />
-  </browser:pages>
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IProductSeries"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.ProductSeriesShortLink"
-    attribute="__call__"
     />
 
 </configure>

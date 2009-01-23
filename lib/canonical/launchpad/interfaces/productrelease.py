@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Product release interfaces."""
@@ -6,30 +6,36 @@
 __metaclass__ = type
 
 __all__ = [
-    'IProductReleaseSet',
     'IProductRelease',
+    'IProductReleaseEditRestricted',
     'IProductReleaseFile',
     'IProductReleaseFileAddForm',
+    'IProductReleaseFileEditRestricted',
+    'IProductReleaseFilePublic',
+    'IProductReleasePublic',
+    'IProductReleaseSet',
     'UpstreamFileType',
     ]
 
-from zope.schema import Bytes, Choice, Datetime, Int, Object, Text, TextLine
-from zope.interface import Interface, Attribute
+from zope.schema import Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.interface import Interface
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.validators.productrelease import (
     productrelease_file_size_constraint,
     productrelease_signature_size_constraint)
-
 from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_factory_operation, export_operation_as, export_write_operation,
+    exported, operation_parameters)
 
 
 class UpstreamFileType(DBEnumeratedType):
@@ -92,6 +98,15 @@ class ProductReleaseVersionField(ContentNameField):
         return IProductRelease
 
     def _getByName(self, version):
+        """Return the content object for the specified version.
+
+        The version is specified either by the context directly or by the
+        context's referenced productseries.  Overridden from
+        `ContentFieldName`.
+        """
+        # Import locally to avoid circular imports.
+        from canonical.launchpad.interfaces.productseries import (
+            IProductSeries)
         if IProductSeries.providedBy(self.context):
             productseries = self.context
         else:
@@ -100,83 +115,221 @@ class ProductReleaseVersionField(ContentNameField):
         return releaseset.getBySeriesAndVersion(productseries, version)
 
 
-class IProductRelease(Interface):
-    """A specific release (i.e. has a version) of a product. For example,
-    Mozilla 1.7.2 or Apache 2.0.48."""
-    export_as_webservice_entry()
+class IProductReleaseFileEditRestricted(Interface):
+    """`IProductReleaseFile` properties which require `launchpad.Edit`."""
+
+    @export_write_operation()
+    @export_operation_as('delete')
+    def destroySelf():
+        """Delete the product release file."""
+
+
+class IProductReleaseFilePublic(Interface):
+    """Public properties for `IProductReleaseFile`."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    datereleased = Datetime(title=_('Date Released'), required=True,
-        readonly=False, description=_('The date this release was '
-        'published. Before release, this should have an estimated '
-        'release date.'))
+    productrelease = exported(
+        ReferenceChoice(title=_('Project release'),
+                        description=_("The parent product release."),
+                        schema=Interface, # Defined later.
+                        required=True,
+                        vocabulary='ProductRelease'),
+        exported_as='project_release')
+    libraryfile = exported(
+        Bytes(title=_("File"),
+              description=_("The file contents."),
+              readonly=True,
+              required=True),
+        exported_as='file')
+    signature = exported(
+        Bytes(title=_("File signature"),
+              description=_("The file signature."),
+              readonly=True,
+              required=False))
+    filetype = exported(
+        Choice(title=_("Upstream file type"), required=True,
+               vocabulary=UpstreamFileType,
+               default=UpstreamFileType.CODETARBALL),
+        exported_as='file_type')
+    description = exported(
+        Text(title=_("Description"), required=False,
+             description=_('A detailed description of the file contents')))
+    date_uploaded = exported(
+        Datetime(title=_('Upload date'),
+                 description=_('The date this file was uploaded'),
+                 required=True, readonly=True))
+
+
+class IProductReleaseFile(IProductReleaseFileEditRestricted,
+                          IProductReleaseFilePublic):
+    """A file associated with a ProductRelease."""
+    export_as_webservice_entry("project_release_file")
+
+
+class IProductReleaseEditRestricted(Interface):
+    """`IProductRelease` properties which require `launchpad.Edit`."""
+
+    @call_with(uploader=REQUEST_USER)
+    @operation_parameters(
+        filename=TextLine(),
+        signature_filename=TextLine(),
+        content_type=TextLine(),
+        file_content=Bytes(constraint=productrelease_file_size_constraint),
+        signature_content=Bytes(
+            constraint=productrelease_signature_size_constraint),
+        file_type=copy_field(IProductReleaseFile['filetype'], required=False)
+        )
+    @export_factory_operation(
+        IProductReleaseFile, ['description'])
+    @export_operation_as('add_file')
+    def addReleaseFile(filename, file_content, content_type,
+                       uploader, signature_filename=None,
+                       signature_content=None,
+                       file_type=UpstreamFileType.CODETARBALL,
+                       description=None):
+        """Add file to the library and link to this `IProductRelease`.
+
+        The signature file will also be added if available.
+
+        :param filename: Name of the file being uploaded.
+        :param file_content: StringIO or file object.
+        :param content_type: A MIME content type string.
+        :param uploader: The person who uploaded the file.
+        :param signature_filename: Name of the uploaded gpg signature file.
+        :param signature_content: StringIO or file object.
+        :param file_type: An `UpstreamFileType` enum value.
+        :param description: Info about the file.
+        :returns: `IProductReleaseFile` object.
+        """
+
+    @export_write_operation()
+    @export_operation_as('delete')
+    def destroySelf():
+        """Delete this product release.
+
+        This method must not be used if this product release has any
+        release files associated with it.
+        """
+
+
+class IProductReleasePublic(Interface):
+    """Public `IProductRelease` properties."""
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+
+    datereleased = exported(
+        Datetime(
+            title=_('Date Released'), required=True,
+            readonly=False,
+            description=_('The date this release was published. Before '
+                          'release, this should have an estimated '
+                          'release date.')),
+        exported_as="date_released"
+        )
+
     version = exported(
         ProductReleaseVersionField(
             title=_('Version'),
-            description=_(
-                'The specific version number assigned to this release. '
-                'Letters and numbers are acceptable, for releases like '
-                '"1.2rc3".'),
-            readonly=True, constraint=sane_version))
-    owner = Int(title=_('Owner'), required=True)
+            description= u'The specific version number assigned to this '
+            'release. Letters and numbers are acceptable, for releases like '
+            '"1.2rc3".',
+            readonly=True, constraint=sane_version)
+        )
+
+    owner = exported(
+            Reference(title=u"The owner of this release.",
+                      schema=IPerson, required=True)
+            )
+
     productseries = exported(
         Choice(
-            title=_('Release Series'), readonly=True,
+            title=_('Release series'), readonly=True,
             vocabulary='FilteredProductSeries'),
         exported_as='project_series')
-    codename = TextLine(title=_('Code name'), required=False,
-        description=_('The release code-name. Famously, one Gnome release '
-        'was code-named "that, and a pair of testicles", but you don\'t '
-        'have to be as brave with your own release codenames.'))
-    summary = Text(title=_("Summary"), required=False,
-        description=_('A brief summary of the release highlights, to '
-        'be shown at the top of the release page, and in listings.'))
-    description = Text(title=_("Description"), required=False,
-        description=_('A detailed description of the new features '
-        '(though the changelog below might repeat some of this '
-        'information). The description here will be shown on the project '
-        'release home page.'))
-    changelog = Text(title=_('Changelog'), required=False)
-    datecreated = Datetime(title=_('Date Created'),
-        description=_("The date this productrelease was created in "
-        "Launchpad."), required=True, readonly=True)
-    displayname = Attribute('Constructed displayname for a product release.')
-    title = Attribute('Constructed title for a product release.')
-    product = Attribute(_('The upstream project of this release.'))
-    files = Attribute(_('Iterable of product release files.'))
 
-    def addFileAlias(alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
-        """Add a link between this product and a library file alias."""
+    codename = exported(
+        TextLine(title=u'Code name', required=False,
+                 description=u'The release code-name. Famously, one Gnome '
+                 'release was code-named "that, and a pair of testicles", '
+                 "but you don't have to be as brave with your own release "
+                 'codenames.'),
+        exported_as='code_name')
 
-    def deleteFileAlias(alias):
-        """Delete the link between this product and a library file alias."""
+    summary = exported(
+        Text(
+            title=_("Summary"), required=False,
+            description=_('A brief summary of the release highlights, to '
+                          'be shown at the top of the release page, and in '
+                          'listings.'))
+        )
+
+    description = exported(
+        Text(
+            title=_("Description"), required=False,
+            description=_('A detailed description of the new features '
+                          '(though the changelog below might repeat some of '
+                          'this information). The description here will be '
+                          'shown on the project release home page.'))
+        )
+
+    changelog = exported(
+        Text(
+            title=_('Changelog'), required=False)
+        )
+
+    datecreated = exported(
+        Datetime(title=_('Date Created'),
+                 description=_("The date this project release was created in "
+                               "Launchpad."),
+                 required=True, readonly=True),
+        exported_as="date_created")
+
+    displayname = exported(
+        Text(title=u'Constructed display name for a project release.',
+             readonly=True),
+        exported_as="display_name")
+
+    title = exported(
+        Text(title=u'Constructed title for a project release.')
+        )
+
+    product = exported(
+        Reference(title=u'The upstream project of this release.',
+                  schema=Interface, readonly=True),
+         exported_as="project")
+
+    files = exported(
+        CollectionField(
+            title=_('Project release files'),
+            description=_('A list of files for this release.'),
+            readonly=True,
+            value_type=Reference(schema=IProductReleaseFile)))
 
     def getFileAliasByName(name):
-        """Return the LibraryFileAlias by file name or None if not found."""
+        """Return the `LibraryFileAlias` by file name.
+
+        Raises a NotFoundError if no matching ProductReleaseFile exists.
+        """
+
+    def getProductReleaseFileByName(name):
+        """Return the `ProductReleaseFile` by file name.
+
+        Raises a NotFoundError if no matching ProductReleaseFile exists.
+        """
 
 
-class IProductReleaseFile(Interface):
+class IProductRelease(IProductReleaseEditRestricted,
+                      IProductReleasePublic):
+    """A specific release (i.e. version) of a product.
 
-    id = Int(title=_('ID'), required=True, readonly=True)
-    productrelease = Choice(title=_('Project release'), required=True,
-                            vocabulary='ProductRelease')
-    libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
-                         description=_("The attached file."),
-                         required=True)
-    signature = Object(schema=ILibraryFileAlias, title=_("Signature"),
-                       description=_("The signature of the attached file."),
-                       required=False)
-    filetype = Choice(title=_("Upstream file type"), required=True,
-                      vocabulary=UpstreamFileType,
-                      default=UpstreamFileType.CODETARBALL)
-    description = Text(title=_("Description"), required=False,
-        description=_('A detailed description of the file contents'))
-    date_uploaded = Datetime(title=_('Upload date'),
-        description=_('The date this file was uploaded'),
-        required=True, readonly=True)
+    For example: Mozilla 1.7.2 or Apache 2.0.48.
+    """
+
+    export_as_webservice_entry('project_release')
+
+# Set the schema for IProductReleaseFile now that IProductRelease is defined.
+IProductReleaseFile['productrelease'].schema = IProductRelease
+
 
 class IProductReleaseFileAddForm(Interface):
     """Schema for adding ProductReleaseFiles to a project."""
@@ -195,12 +348,9 @@ class IProductReleaseFileAddForm(Interface):
                          vocabulary=UpstreamFileType,
                          default=UpstreamFileType.CODETARBALL)
 
+
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
-
-    def new(version, owner, productseries, codename=None, shortdesc=None,
-            description=None, changelog=None):
-        """Create a new ProductRelease"""
 
     def getBySeriesAndVersion(productseries, version, default=None):
         """Get a release by its version and productseries.

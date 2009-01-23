@@ -14,7 +14,7 @@ The POST data consists of the following fields:
     in the SQL table Distribution, column name.
   * distroseries: The distroseries version. The value should match a value
     in the SQL table distroseries, column version
-  * processorfamily: The name of the processorfamily. The value should 
+  * processorfamily: The name of the processorfamily. The value should
     match a value in the SQL table Processorfamily, column name.
   * system: The system name as returned by HAL (system.vendor, system.product)
   * submission_data: An XML file containing the collected data. This file is
@@ -66,7 +66,7 @@ The submitted data is stored in raw_submission.
     >>> submission.raw_submission.read()
     'some data.'
 
-A reference to distroarchseries is created for the fields distribution, 
+A reference to distroarchseries is created for the fields distribution,
 distroseries, architecture.
 
     >>> submission.distroarchseries.distroseries.distribution.name
@@ -110,7 +110,7 @@ to Launchpad, we refuse the submissions.
     >>> submit_view.initialize()
     >>> print submission_set.getBySubmissionKey(u'unique-id-3')
     None
-    
+
     >>> form['field.submission_key'] = u'unique-id-4'
     >>> invalid_form = form.copy()
     >>> invalid_form['field.architecture'] = 'no architecture'
@@ -189,12 +189,220 @@ All fields are required.
 
 Teams can be owners of submissions.
 
+    >>> import os
+    >>> from canonical.config import config
     >>> team_form = form.copy()
     >>> team_form['field.emailaddress'] = 'support@ubuntu.com'
     >>> team_form['field.submission_key'] = u'unique-id-68'
+    >>> valid_sample_data_path = os.path.join(
+    ...     config.root,
+    ...     'lib/canonical/launchpad/scripts/tests/'
+    ...     'simple_valid_hwdb_submission.xml')
+    >>> valid_sample_data = StringIO(open(valid_sample_data_path).read())
+    >>> valid_sample_data.filename = 'simple_valid_hwdb_submission.xml'
+    >>> team_form['field.submission_data'] = valid_sample_data
     >>> request = LaunchpadTestRequest(method='POST', form=team_form)
     >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> submission = submission_set.getBySubmissionKey(u'unique-id-68')
     >>> submission.owner.displayname
     u'Ubuntu Team'
+
+
+== Submission Processing ==
+
+Submissions are processed by the cronscript process-hwdb-submissions.py.
+This script processes all submissions with the status SUBMITTED, checks
+the validity of each submission, populates the HWDB tables with data
+from a submission and sets the submission state to VALID. If any error
+occurs when a submission is processed, its status is set to INVALID and
+according error is logged. For details, see
+lib/canonical/launchpad/scripts/tests/test_hwdb_submission_processing.py.
+
+We have currently three unprocessed submissions in the database, one
+submission with the status PROCESSED and no submissions with the status
+INVALID.
+
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...     HWSubmissionProcessingStatus)
+    >>> new_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.status.title
+    test_submission_id_1 Submitted
+    unique-id-1 Submitted
+    unique-id-68 Submitted
+    >>> processed_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED)
+    >>> for submission in processed_submissions:
+    ...     print submission.submission_key, submission.status.title
+    sample-submission Processed
+    >>> invalid_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID)
+    >>> print invalid_submissions.count()
+    0
+
+The script process-hwdb-submissions.py takes the optional parameter
+-m or --max-submissions, so let's process just the first of these three
+submissions. This submission is invalid, because it has no Librarian
+file, which leads to an OOPS when it is being processed. The submission
+key is logged.
+
+    # Commit the current transaction so that the script sees the
+    # recently added data.
+    >>> import transaction
+    >>> transaction.commit()
+
+    # Run the script.
+    >>> from canonical.launchpad.ftests.script import run_script
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py', ['-m1'])
+    >>> returnvalue
+    0
+    >>> print err
+    INFO    creating lockfile
+    ERROR   Exception while processing HWDB submission test_submission_id_1
+    (OOPS-...)
+    INFO    Processed 0 valid and 1 invalid HWDB submissions
+    >>> print out
+    <BLANKLINE>
+
+Submission "test_submission_id_1" has now the state INVALID; the other
+submissions are unchanged.
+
+    >>> new_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.status.title
+    unique-id-1 Submitted
+    unique-id-68 Submitted
+    >>> processed_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED)
+    >>> for submission in processed_submissions:
+    ...     print submission.submission_key, submission.status.title
+    sample-submission Processed
+    >>> invalid_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID)
+    >>> for submission in invalid_submissions:
+    ...     print submission.submission_key, submission.status.title
+    test_submission_id_1 Invalid submission
+
+From the remaining two not yet processed submissions, one has invalid
+data, the other submission is valid.
+
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py')
+    >>> returnvalue
+    0
+    >>> print err
+    INFO    creating lockfile
+    ERROR   Parsing submission unique-id-1: syntax error: line 1, column 0
+    INFO    Processed 1 valid and 1 invalid HWDB submissions
+    >>> print out
+    <BLANKLINE>
+
+Now we have one valid, two invalid and no unprocessed submissions.
+
+    >>> # We must start a new transaction in order to see the effects
+    >>> # the script had on the database.
+    >>> transaction.commit()
+    >>> new_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED)
+    >>> print new_submissions.count()
+    0
+    >>> processed_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED)
+    >>> for submission in processed_submissions:
+    ...     print submission.submission_key, submission.status.title
+    sample-submission Processed
+    unique-id-68 Processed
+
+    >>> invalid_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID)
+    >>> for submission in invalid_submissions:
+    ...     print submission.submission_key, submission.status.title
+    test_submission_id_1 Invalid submission
+    unique-id-1 Invalid submission
+
+Larger numbers of submissions can be processed too. Add enough submissions
+that scripts.hwdbsubmissions.ProcessingLoop is called at least twice.
+
+    >>> form['field.submission_data'] = valid_sample_data
+    >>> for serial in range(80):
+    ...     form['field.submission_key'] = u'submission-%i' % serial
+    ...     request = LaunchpadTestRequest(method='POST', form=form)
+    ...     submit_view = getMultiAdapter((app, request), name='+submit')
+    ...     submit_view.initialize()
+
+Now we have 80 new submissions and three submissions that were processed
+in previous tests.
+
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    80
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    2
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count()
+    2
+    >>> transaction.commit()
+
+Let's leave some submissions unprocessed in order to check if the
+processing loop terminates properly, when the parameter "-m" is given.
+
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py', ['-m60'])
+    >>> returnvalue
+    0
+    >>> print err
+    INFO    creating lockfile
+    INFO    Processed 60 valid and 0 invalid HWDB submissions
+    >>> print out
+    <BLANKLINE>
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    20
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    62
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count()
+    2
+
+Let's add more subscription so that we have more than max_chunk_size
+unprocessed submissions and process all of them.
+
+    >>> for serial in range(80, 160):
+    ...     form['field.submission_key'] = u'submission-%i' % serial
+    ...     request = LaunchpadTestRequest(method='POST', form=form)
+    ...     submit_view = getMultiAdapter((app, request), name='+submit')
+    ...     submit_view.initialize()
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    100
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    62
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count()
+    2
+    >>> transaction.commit()
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py')
+    >>> returnvalue
+    0
+    >>> print err
+    INFO    creating lockfile
+    INFO    Processed 100 valid and 0 invalid HWDB submissions
+    >>> print out
+    <BLANKLINE>
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    0
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    162
+    >>> print submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count()
+    2

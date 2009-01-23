@@ -368,12 +368,15 @@ OOPS references can take a number of forms:
 It should work if the configuration value doesn't end with a slash:
 
     >>> from canonical.config import config
-    >>> old_config = config.launchpad.oops_root_url
-    >>> config.launchpad.oops_root_url = 'http://foo/bar'
+    >>> oops_root_url = """
+    ...     [launchpad]
+    ...     oops_root_url: http://foo/bar
+    ...     """
+    >>> config.push('oops_root_url', oops_root_url)
     >>> text = 'OOPS 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="http://foo/bar/38C23">OOPS 38C23</a></p>
-    >>> config.launchpad.oops_root_url = old_config
+    >>> config_data = config.pop('oops_root_url')
 
 Check against false positives:
 

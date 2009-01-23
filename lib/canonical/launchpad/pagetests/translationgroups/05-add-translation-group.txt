@@ -112,7 +112,7 @@ Person.
     'http://translations.launchpad.dev/+groups/monolingua/+reassign'
 
     >>> browser.getControl(name='field.owner').value = 'name12'
-    >>> browser.getControl('Change Registrant').click()
+    >>> browser.getControl('Change owner').click()
     >>> browser.url
     'http://translations.launchpad.dev/+groups/monolingua/'
 
@@ -135,5 +135,3 @@ That means that Sample Person is allowed to administer "his" group.
     ...     'translations/groups/monolingua/')
     >>> browser.getLink('Appoint')
     <...+appoint'>
-
-

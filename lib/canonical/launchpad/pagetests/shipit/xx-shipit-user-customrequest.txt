@@ -13,9 +13,10 @@ fields are filled.
   >>> browser.url
   'http://shipit.ubuntu.dev/specialrequest'
 
-  >>> for message in get_feedback_messages(browser.contents):
-  ...     print message
-  Please fix the problems below and try again...
+  >>> print_errors(browser.contents)
+  You can't make a request with 0 CDs
+  ...
+  Required input is missing...
 
 To make a custom request, the reason field is required.
 
@@ -34,9 +35,9 @@ To make a custom request, the reason field is required.
 
   >>> browser.getControl(name='field.reason').value
   ''
-  >>> for message in get_feedback_messages(browser.contents):
-  ...     print message
-  Please fix the problems below and try again...
+  >>> print_errors(browser.contents)
+  (Required)
+  Required input is missing.
 
 The quantities specified by the user must be positive integers.
 
@@ -44,10 +45,8 @@ The quantities specified by the user must be positive integers.
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '-1'
   >>> browser.getControl('Submit Request').click()
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> tags = BeautifulSoup(browser.contents).findAll(attrs={'class': 'error'})
-  >>> for tag in tags:
-  ...     print extract_text(tag)
+  >>> print_errors(browser.contents)
+  You can't make a request with 0 CDs
   Quantities must be greater than or equal 0.
 
   >>> from canonical.launchpad.interfaces import ShipItConstants
@@ -153,12 +152,12 @@ of this same distroseries.
   >>> logout()
 
 His shipped request contained only Ubuntu and Kubuntu CDs, so a request for
-Edubuntu CDs that is under the $max_size_for_auto_approval CDs limit will
+Server CDs that is under the $max_size_for_auto_approval CDs limit will
 be auto approved.
 
-  >>> browser.open('http://shipit.edubuntu.dev/specialrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/specialrequest-server')
   >>> browser.url
-  'http://shipit.edubuntu.dev/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest-server'
 
   # As name16 already has a request, the address fields will be pre-filled for
   # him.
@@ -172,7 +171,7 @@ be auto approved.
   >>> browser.getControl('Submit Request').click()
 
   >>> browser.url
-  'http://shipit.edubuntu.dev/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest-server'
 
   >>> for message in get_feedback_messages(browser.contents):
   ...     print message
@@ -192,7 +191,6 @@ marked as pending approval.
   'http://shipit.ubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
-  >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '1'
   >>> browser.getControl(name='field.reason').value = 'foo'
   >>> browser.getControl('Request More CDs').click()
 
@@ -213,9 +211,9 @@ because he already has a shipped request containing Ubuntu CDs.
 
 
 The architectures of the CDs we ship depend on the flavour (Ubuntu, Kubuntu
-and Edubuntu).
+and Server).
 
-For Ubuntu, we ship both X86 and AMD64 CDs.
+For Ubuntu, we ship only X86 CDs.
 
   >>> browser.open('http://shipit.ubuntu.dev/specialrequest')
   >>> browser.url
@@ -224,14 +222,16 @@ For Ubuntu, we ship both X86 and AMD64 CDs.
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>
   >>> browser.getControl(name='field.ubuntu_quantityamd64')
-  <Control name='field.ubuntu_quantityamd64' type='text'>
+  Traceback (most recent call last):
+  ...
+  LookupError: name 'field.ubuntu_quantityamd64'
   >>> browser.getControl(name='field.ubuntu_quantityppc')
   Traceback (most recent call last):
   ...
   LookupError: name 'field.ubuntu_quantityppc'
 
 
-For Kubuntu we also ship X86 and AMD64.
+For Kubuntu we also ship only X86.
 
   >>> browser.open('http://shipit.kubuntu.dev/specialrequest')
   >>> browser.url
@@ -240,25 +240,25 @@ For Kubuntu we also ship X86 and AMD64.
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>
   >>> browser.getControl(name='field.ubuntu_quantityamd64')
-  <Control name='field.ubuntu_quantityamd64' type='text'>
+  Traceback (most recent call last):
+  ...
+  LookupError: name 'field.ubuntu_quantityamd64'
   >>> browser.getControl(name='field.ubuntu_quantityppc')
   Traceback (most recent call last):
   ...
   LookupError: name 'field.ubuntu_quantityppc'
 
 
-And for Edubuntu, we ship only X86.
+And for Server, we ship X86 and AMD64.
 
-  >>> browser.open('http://shipit.edubuntu.dev/specialrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/specialrequest-server')
   >>> browser.url
-  'http://shipit.edubuntu.dev/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest-server'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>
   >>> browser.getControl(name='field.ubuntu_quantityamd64')
-  Traceback (most recent call last):
-  ...
-  LookupError: name 'field.ubuntu_quantityamd64'
+  <Control name='field.ubuntu_quantityamd64' type='text'>
   >>> browser.getControl(name='field.ubuntu_quantityppc')
   Traceback (most recent call last):
   ...

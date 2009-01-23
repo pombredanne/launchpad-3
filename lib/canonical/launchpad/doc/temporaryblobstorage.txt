@@ -45,10 +45,14 @@ Size limits can be enforced, although this is turned off by default:
     >>> from canonical.config import config
     >>> config.launchpad.max_blob_size
     0
-    >>> config.launchpad.max_blob_size = 6
+    >>> max_blob_size = """
+    ...     [launchpad]
+    ...     max_blob_size: 6
+    ...     """
+    >>> config.push('max_blob_size', max_blob_size)
     >>> uuid = tsm.new(data)
     Traceback (most recent call last):
     ...
     BlobTooLarge: 7
-    >>> config.launchpad.max_blob_size = 0
-    
+    >>> config_data = config.pop('max_blob_size')
+

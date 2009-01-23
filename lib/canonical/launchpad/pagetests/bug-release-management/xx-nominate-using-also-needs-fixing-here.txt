@@ -10,25 +10,27 @@ by simply changing the bug id).
     ...  'http://launchpad.dev/ubuntu/grumpy/+source/evolution/+bug/10')
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    This bug is not recorded as needing to be fixed in
-    evolution (Ubuntu Grumpy).
+    This bug isn't linked to evolution (Ubuntu Grumpy).  Would you like to
+    report it here as well?
 
-    >>> user_browser.getControl('Also Needs Fixing Here') is not None
+    >>> user_browser.getControl(
+    ...     'Yes, report in evolution (Ubuntu Grumpy)') is not None
     True
 
 If the button is clicked, the bug is nominated for the series.
 
-    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> user_browser.getControl(
+    ...     'Yes, report in evolution (Ubuntu Grumpy)').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/ubuntu/grumpy/+source/evolution/+bug/10'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
     This bug has been nominated to be fixed in Ubuntu Grumpy.
 
-    >>> user_browser.getControl('Also Needs Fixing Here')
+    >>> user_browser.getControl('Yes, report in evolution (Ubuntu Grumpy)')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Also Needs Fixing Here'
+    LookupError: label 'Yes, report in evolution (Ubuntu Grumpy)'
 
 It works the same way for product series contexts.
 
@@ -36,19 +38,21 @@ It works the same way for product series contexts.
     ...  'http://launchpad.dev/firefox/1.0/+bug/10')
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    This bug is not recorded as needing to be fixed in
-    Mozilla Firefox 1.0.
-    >>> user_browser.getControl('Also Needs Fixing Here') is not None
+    This bug isn't linked to Mozilla Firefox 1.0. Would you like to report it
+    here as well?
+    >>> user_browser.getControl(
+    ...     'Yes, report in Mozilla Firefox 1.0') is not None
     True
 
-    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> user_browser.getControl(
+    ...     'Yes, report in Mozilla Firefox 1.0').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/1.0/+bug/10'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
     This bug has been nominated to be fixed in Mozilla Firefox 1.0.
 
-    >>> user_browser.getControl('Also Needs Fixing Here')
+    >>> user_browser.getControl('Yes, report in evolution (Ubuntu Grumpy)')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Also Needs Fixing Here'
+    LookupError: label 'Yes, report in evolution (Ubuntu Grumpy)'

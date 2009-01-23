@@ -103,7 +103,7 @@ harness.
 
     >>> chained = MboxMailer(chained_filename, overwrite=True, mailer=None)
     >>> from zope.component import provideUtility
-    >>> from zope.app.mail.interfaces import IMailer
+    >>> from zope.sendmail.interfaces import IMailer
     >>> provideUtility(chained, IMailer, name='mbox-mailer-test-mailer')
 
     >>> mailer  = MboxMailer(mbox_filename, overwrite=True,

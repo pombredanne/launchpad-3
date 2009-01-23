@@ -278,3 +278,61 @@ The comment will be included in the remote bug's comments.
     time: 1209399273
     type: comment
     user: launchpad
+
+
+== Getting and setting the Launchpad bug ID ==
+
+The Trac XML-RPC API allows us to tell the remote tracker which
+Launchpad bug links to a particular one of its bugs and also allows us
+to retrieve that information from the remote tracker. We'll add a
+Launchpad bug ID to our example Trac transport to demonstrate this.
+
+    >>> trac_transport.launchpad_bugs['1'] = 42
+
+The XML-RPC method `launchpad.get_launchpad_bug()` is used to retrieve
+the Launchpad bug for a given remote bug.
+
+    >>> timestamp, launchpad_bug = trac_transport.get_launchpad_bug('1')
+    >>> print launchpad_bug
+    42
+
+If the remote bug isn't currently linked to by a Launchpad bug,
+`launchpad.get_launchpad_bug()` will return 0 for the bug ID.
+
+    >>> timestamp, launchpad_bug = trac_transport.get_launchpad_bug('2')
+    >>> print launchpad_bug
+    0
+
+Calling `launchpad.get_launchpad_bug()` on a remote bug that doesn't
+exist will result in a Fault being raised.
+
+    >>> trac_transport.get_launchpad_bug('12345')
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 1001: 'Ticket does not exist'>
+
+Setting the Launchpad bug for a remote bug is done by calling
+`launchpad.set_launchpad_bug()`. This takes two parameters: the remote
+bug ID and the ID of the Launchpad bug that links to it.
+
+    >>> timestamp = trac_transport.set_launchpad_bug('2', 1)
+    >>> timestamp, launchpad_bug = trac_transport.get_launchpad_bug('2')
+    >>> print launchpad_bug
+    1
+
+Calling `launchpad.set_launchpad_bug()` will overwrite the existing
+Launchpad bug ID stored for the given remote bug.
+
+    >>> timestamp = trac_transport.set_launchpad_bug('2', 42)
+    >>> timestamp, launchpad_bug = trac_transport.get_launchpad_bug('2')
+    >>> print launchpad_bug
+    42
+
+Trying to call `launchpad.set_launchpad_bug()` on a remote bug that
+doesn't exist will result in a Fault.
+
+    >>> trac_transport.set_launchpad_bug('12345', 1)
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 1001: 'Ticket does not exist'>
+

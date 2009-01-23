@@ -33,8 +33,10 @@
             <li tal:repeat="field fields"
                 tal:content="python:field[1]" />
             <li tal:condition="not:fields">
-              <!-- XXX: jamesh 2007-07-03
-                   This text should be friendlier -->
+              <tal:XXX condition="nothing">
+               # XXX: jamesh 2007-07-03
+               # This text should be friendlier
+              </tal:XXX>
               <em>Only your identity URL</em>
             </li>
           </ul>

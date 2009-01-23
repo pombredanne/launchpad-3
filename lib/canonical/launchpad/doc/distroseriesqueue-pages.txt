@@ -6,7 +6,7 @@ for IDistroSeries context (IDistroSeriesView)
 Let's instantiate the view for +queue for anonymous access:
 
   >>> from zope.component import queryMultiAdapter
-  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> fake_chroot = LibraryFileAlias.get(1)
@@ -16,7 +16,7 @@ Let's instantiate the view for +queue for anonymous access:
   >>> breezy_autotest_i386 = breezy_autotest['i386']
   >>> unused = breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
 
-  >>> request = TestRequest(form={})
+  >>> request = LaunchpadTestRequest()
   >>> queue_view = queryMultiAdapter(
   ...     (breezy_autotest, request), name="+queue")
 
@@ -47,7 +47,7 @@ A list of available actions in this queue:
 Let's instantiate the view for a specific queue:
 
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']
   >>> queue_view = queryMultiAdapter((warty, request), name="+queue")
@@ -61,7 +61,7 @@ Unexpected values for queue_state results in a proper error, anything
 that can't be can't fit as an integer is automatically assume as the
 default value (NEW queue).
 
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': 'foo'})
   >>> warty = ubuntu['warty']
   >>> queue_view = queryMultiAdapter((warty, request), name="+queue")
@@ -73,7 +73,7 @@ default value (NEW queue).
 
 If a invalid integer is posted it raises.
 
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': '10'})
   >>> warty = ubuntu['warty']
   >>> queue_view = queryMultiAdapter((warty, request), name="+queue")
@@ -85,7 +85,7 @@ If a invalid integer is posted it raises.
 Anonymous users also have access to all queues, including UNAPPROVED
 but they are not allowed to perform any action.
 
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.UNAPPROVED.value})
   >>> queue_view = queryMultiAdapter(
   ...     (breezy_autotest, request), name="+queue")
@@ -110,7 +110,7 @@ Now, let's instantiate the view for +queue as a privileged user:
 
 Attempt to view and act on UNAPPROVED queue works for administrators.
 
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.UNAPPROVED.value})
   >>> queue_view = queryMultiAdapter(
   ...     (breezy_autotest, request), name="+queue")
@@ -134,7 +134,7 @@ Accepting an item from NEW queue.
   >>> getUtility(IPackageUploadSet).get(3).status.name
   'NEW'
 
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.NEW.value,
   ...           'Accept': 'Accept',
   ...           'QUEUE_ID': ['1', '3']})
@@ -170,7 +170,6 @@ Privileged user can accept queue items.
   >>> queue_view.setupQueueList()
 
   >>> queue_view.performQueueAction()
-  u'Accepting Results:<br><br>OK: mozilla-firefox, OK: netapplet'
 
   >>> getUtility(IPackageUploadSet).get(1).status.name
   'ACCEPTED'
@@ -183,7 +182,7 @@ Rejection an item from NEW queue:
   >>> target.status.name
   'NEW'
 
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.NEW.value,
   ...           'Reject': 'Reject',
   ...           'QUEUE_ID': '2'})
@@ -211,7 +210,6 @@ Privileged user can reject queue items.
   >>> queue_view.setupQueueList()
 
   >>> queue_view.performQueueAction()
-  u'Rejecting Results:<br><br>OK: pmount'
 
   >>> target.status.name
   'REJECTED'

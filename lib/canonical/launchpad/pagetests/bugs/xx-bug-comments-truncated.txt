@@ -11,8 +11,11 @@ they are too long. In order to show that, let's set the limit to a
 small value.
 
     >>> from canonical.config import config
-    >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
-    >>> config.malone.max_comment_size = 45
+    >>> max_comment_data = """
+    ...     [malone]
+    ...     max_comment_size: 45
+    ...     """
+    >>> config.push('max_comment_data', max_comment_data)
 
 Bug number two starts with a short comment followed by two longer ones,
 the first one will be displayed as it is, and the other two will be
@@ -27,14 +30,14 @@ truncated.
     ...         print div_tag
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
-    <div style="font-family: monospace;"><p>This
+    <div class="bug-comment"><p>This
     would be a real killer feature. If there...</p></div>
     <p>
     <a href="/tomcat/+bug/2/comments/1">Read more...</a>
     </p>
     </div>
     <div class="boardCommentBody">
-    <div style="font-family: monospace;"><p>Oddly
+    <div class="bug-comment"><p>Oddly
     enough the bug system seems only capabl...</p></div>
     <p>
     <a href="/tomcat/+bug/2/comments/2">Read more...</a>
@@ -54,7 +57,7 @@ The whole comment is visible on this page:
 
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
-    <div style="font-family: monospace;"><p>This
+    <div class="bug-comment"><p>This
       would be a real killer feature. If there is already code
       to make it possible, why aren't there tons of press announcements
       about the secuirty possibilities. Imagine - no more embarrassing
@@ -63,7 +66,8 @@ The whole comment is visible on this page:
       about this. It's not a bug, it's a feature!</p></div>
     </div>
 
-    >>> config.malone.max_comment_size = OLD_COMMENT_SIZE
+    >>> config_data  = config.pop('max_comment_data')
+
 
 == Obfuscated email addresses and hidden content ==
 

@@ -46,37 +46,13 @@ class cmd_launchpad_server(Command):
         Option('mirror-directory',
                help='serve branches from this directory. Defaults to '
                     'config.supermirror.branchesdest.'),
-        Option('authserver_url',
+        Option('branchfs-endpoint',
                help='the url of the internal XML-RPC server. Defaults to '
-                    'config.codehosting.authserver.',
+                    'config.codehosting.branchfs_endpoint.',
                type=unicode),
         ]
 
     takes_args = ['user_id']
-
-    def get_lp_server(self, authserver, user_id, hosted_url, mirror_url):
-        """Create a Launchpad smart server.
-
-        :param authserver: An `xmlrpclib.ServerProxy` (or equivalent) for the
-            Launchpad authserver.
-        :param user_id: A unique ID of the user whose branches are being
-            served. This can be a database ID, a nickname or an email address.
-        :param hosted_url: Where the branches are uploaded to.
-        :param mirror_url: Where all Launchpad branches are mirrored.
-        :return: A `LaunchpadTransport`.
-        """
-        # Importing here to avoid circular import when lpserve is loaded as a
-        # bzr plugin.
-        from canonical.codehosting import transport
-        # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
-        hosted_transport = transport.get_chrooted_transport(hosted_url)
-        mirror_transport = transport.get_chrooted_transport(mirror_url)
-        # Translate the given 'id' into an actual database id.
-        user_id = authserver.getUser(user_id)['id']
-        lp_server = transport.LaunchpadServer(
-            transport.BlockingProxy(authserver), user_id, hosted_transport,
-            mirror_transport)
-        return lp_server
 
     def get_smart_server(self, transport, port, inet):
         """Construct a smart server."""
@@ -111,24 +87,21 @@ class cmd_launchpad_server(Command):
             ui.ui_factory = old_factory
 
     def run(self, user_id, port=None, upload_directory=None,
-            mirror_directory=None, authserver_url=None, inet=False):
-        from canonical.codehosting import transport
+            mirror_directory=None, branchfs_endpoint_url=None, inet=False):
         if upload_directory is None:
             upload_directory = config.codehosting.branches_root
         if mirror_directory is None:
             mirror_directory = config.supermirror.branchesdest
-        if authserver_url is None:
-            authserver_url = config.codehosting.authserver
-
-        debug_log = transport.set_up_logging()
-        debug_log.debug('Running smart server for %s', user_id)
+        if branchfs_endpoint_url is None:
+            branchfs_endpoint_url = config.codehosting.branchfs_endpoint
 
         upload_url = urlutils.local_path_to_url(upload_directory)
         mirror_url = urlutils.local_path_to_url(mirror_directory)
-        authserver = xmlrpclib.ServerProxy(authserver_url)
+        branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
 
-        lp_server = self.get_lp_server(
-            authserver, user_id, upload_url, mirror_url)
+        from canonical.codehosting.branchfs import get_lp_server
+        lp_server = get_lp_server(
+            branchfs_client, int(user_id), upload_url, mirror_url)
         lp_server.setUp()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS

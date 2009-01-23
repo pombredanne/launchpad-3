@@ -8,6 +8,7 @@ __all__ = [
     'CodeImportEditView',
     'CodeImportMachineView',
     'CodeImportNewView',
+    'CodeImportSetBreadcrumbBuilder',
     'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportView',
@@ -20,6 +21,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice, TextLine
 
 from canonical.cachedproperty import cachedproperty
@@ -30,12 +32,15 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IBranchSet, ICodeImport,
     ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
+from canonical.launchpad.interfaces.branch import BranchExists, IBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.interface import copy_field, use_template
 from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
@@ -49,8 +54,10 @@ class CodeImportSetNavigation(Navigation):
     def bugs(self):
         return getUtility(ICodeImportMachineSet)
 
-    def breadcrumb(self):
-        return u'Code Import System'
+
+class CodeImportSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ICodeImportSet`."""
+    text = u'Code Import System'
 
 
 class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
@@ -239,10 +246,28 @@ class CodeImportNewView(CodeImportBaseView):
             cvs_module=data['cvs_module'],
             review_status=status)
 
+    def _setBranchExists(self, existing_branch):
+        """Set a field error indicating that the branch already exists."""
+        self.setFieldError(
+           'branch_name',
+            structured("""
+            There is already an existing import for
+            <a href="%(product_url)s">%(product_name)s</a>
+            with the name of
+            <a href="%(branch_url)s">%(branch_name)s</a>.""",
+                       product_url=canonical_url(existing_branch.product),
+                       product_name=existing_branch.product.name,
+                       branch_url=canonical_url(existing_branch),
+                       branch_name=existing_branch.name))
+
     @action(_('Request Import'), name='request_import')
     def request_import_action(self, action, data):
         """Create the code_import, and subscribe the user to the branch."""
-        code_import = self._create_import(data, None)
+        try:
+            code_import = self._create_import(data, None)
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch)
+            return
 
         # Subscribe the user.
         code_import.branch.subscribe(
@@ -265,8 +290,12 @@ class CodeImportNewView(CodeImportBaseView):
             condition=_showApprove)
     def approve_action(self, action, data):
         """Create the code_import, and subscribe the user to the branch."""
-        code_import = self._create_import(
-            data, CodeImportReviewStatus.REVIEWED)
+        try:
+            code_import = self._create_import(
+                data, CodeImportReviewStatus.REVIEWED)
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch)
+            return
 
         # Don't subscribe the requester as they are an import operator.
         self.next_url = canonical_url(code_import.branch)
@@ -289,41 +318,65 @@ class CodeImportNewView(CodeImportBaseView):
         else:
             raise AssertionError('Unknown revision control type.')
 
-        # Check for an existing branch owned by the vcs-imports
-        # for the product and name specified.
-        if data.get('product') and data.get('branch_name'):
-            existing_branch = getUtility(IBranchSet).getBranch(
-                getUtility(ILaunchpadCelebrities).vcs_imports,
-                data['product'],
-                data['branch_name'])
-            if existing_branch is not None:
-                self.setFieldError(
-                    'branch_name',
-                    structured("""
-                    There is already an existing import for
-                    <a href="%(product_url)s">%(product_name)s</a>
-                    with the name of
-                    <a href="%(branch_url)s">%(branch_name)s</a>.""",
-                    product_url=canonical_url(existing_branch.product),
-                    product_name=existing_branch.product.name,
-                    branch_url=canonical_url(existing_branch),
-                    branch_name=existing_branch.name))
+
+class EditCodeImportForm(Interface):
+    """The fields presented on the form for editing a code import."""
+
+    use_template(
+        ICodeImport, ['svn_branch_url', 'cvs_root', 'cvs_module'])
+    whiteboard = copy_field(IBranch['whiteboard'])
+
+
+def _makeEditAction(label, status, text):
+    """Make an Action to call a particular code import method.
+
+    :param label: The label for the action, which will end up as the
+         button title.
+    :param status: If the code import has this as its review_status, don't
+        show the button (always show the button if it is None).
+    :param text: The text to go after 'The code import has been' in a
+        notifcation, if a change was made.
+    """
+    if status is not None:
+        def condition(self, ignored):
+            return self._showButtonForStatus(status)
+    else:
+        condition = None
+    def success(self, action, data):
+        """Make the requested status change."""
+        if status is not None:
+            data['review_status'] = status
+        event = self.code_import.updateFromData(data, self.user)
+        if event is not None:
+            self.request.response.addNotification(
+                'The code import has been ' + text + '.')
+        else:
+            self.request.response.addNotification('No changes made.')
+    name = label.lower().replace(' ', '_')
+    return form.Action(
+        label, name=name, success=success, condition=condition)
 
 
 class CodeImportEditView(CodeImportBaseView):
     """View for editing code imports.
 
-    This view is registered against the branch, but edits the
-    code import for that branch.  If the branch has no associated
-    code import, then the result is a 404.  If the branch does have
-    a code import, then the adapters property allows the form
-    internals to do the associated mappings.
+    This view is registered against the branch, but mostly edits the code
+    import for that branch -- the exception being that it also allows the
+    editing of the branch whiteboard.  If the branch has no associated code
+    import, then the result is a 404.  If the branch does have a code import,
+    then the adapters property allows the form internals to do the associated
+    mappings.
     """
+
+    schema = EditCodeImportForm
 
     # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
     render_context = True
-    field_names = ['svn_branch_url', 'cvs_root', 'cvs_module']
+
+    @property
+    def initial_values(self):
+        return {'whiteboard': self.context.whiteboard}
 
     def initialize(self):
         """Show a 404 if the branch has no code import."""
@@ -337,7 +390,7 @@ class CodeImportEditView(CodeImportBaseView):
     @property
     def adapters(self):
         """See `LaunchpadFormView`."""
-        return {ICodeImport: self.code_import}
+        return {EditCodeImportForm: self.code_import}
 
     def setUpFields(self):
         CodeImportBaseView.setUpFields(self)
@@ -355,54 +408,21 @@ class CodeImportEditView(CodeImportBaseView):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
 
-    def _showApprove(self, ignored):
-        """Show the Approve button if the import is not reviewed."""
-        return self._showButtonForStatus(CodeImportReviewStatus.REVIEWED)
-
-    def _showInvalidate(self, ignored):
-        """Show the Approve button if the import is not invalid."""
-        return self._showButtonForStatus(CodeImportReviewStatus.INVALID)
-
-    def _showSuspend(self, ignored):
-        """Show the Suspend button if the import is not suspended."""
-        return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
-
-    def _showMarkFailing(self, ignored):
-        """Show the Mark Failing button if the import is not failing."""
-        return self._showButtonForStatus(CodeImportReviewStatus.FAILING)
-
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        """Update the details."""
-        self.code_import.updateFromData(data, self.user)
-
-    @action(_('Approve'), name='approve', condition=_showApprove)
-    def approve_action(self, action, data):
-        """Approve the import."""
-        self.code_import.approve(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been approved.')
-
-    @action(_('Mark Invalid'), name='invalidate', condition=_showInvalidate)
-    def invalidate_action(self, action, data):
-        """Invalidate the import."""
-        self.code_import.invalidate(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been set as invalid.')
-
-    @action(_('Suspend'), name='suspend', condition=_showSuspend)
-    def suspend_action(self, action, data):
-        """Suspend the import."""
-        self.code_import.suspend(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been suspended.')
-
-    @action(_('Mark Failing'), name='markFailing', condition=_showMarkFailing)
-    def markFailing_action(self, action, data):
-        """Mark the import as failing."""
-        self.code_import.markFailing(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been marked as failing.')
+    actions = form.Actions(
+        _makeEditAction(_('Update'), None, 'updated'),
+        _makeEditAction(
+            _('Approve'), CodeImportReviewStatus.REVIEWED,
+            'approved'),
+        _makeEditAction(
+            _('Mark Invalid'), CodeImportReviewStatus.INVALID,
+            'set as invalid'),
+        _makeEditAction(
+            _('Suspend'), CodeImportReviewStatus.SUSPENDED,
+            'suspended'),
+        _makeEditAction(
+            _('Mark Failing'), CodeImportReviewStatus.FAILING,
+            'marked as failing'),
+        )
 
     def validate(self, data):
         """See `LaunchpadFormView`."""

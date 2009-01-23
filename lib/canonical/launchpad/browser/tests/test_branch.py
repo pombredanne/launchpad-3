@@ -15,15 +15,19 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
+
 from canonical.launchpad.browser.branch import (
-    BranchAddView, BranchMirrorStatusView, BranchView)
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView, BranchView)
+from canonical.launchpad.browser.person import PersonBranchesView
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import (
+    login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestBranchMirrorHidden(TestCaseWithFactory):
@@ -45,7 +49,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
 
     def testNormalBranch(self):
         # A branch from a normal location is fine.
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             url="http://example.com/good/mirror")
         view = BranchView(branch, LaunchpadTestRequest())
@@ -56,7 +60,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsAnonymous(self):
         # A branch location with a defined private host is hidden from
         # anonymous browsers.
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         view = BranchView(branch, LaunchpadTestRequest())
@@ -69,7 +73,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         # owner.
         owner = self.factory.makePerson(
             email="eric@example.com", password="test")
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
@@ -89,7 +93,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             email="eric@example.com", password="test")
         other = self.factory.makePerson(
             email="other@example.com", password="test")
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
@@ -170,6 +174,90 @@ class TestBranchView(unittest.TestCase):
                 % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
+
+
+class TestBranchReviewerEditView(TestCaseWithFactory):
+    """Test the BranchReviewerEditView view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_initial_reviewer_not_set(self):
+        # If the reviewer is not set, the field is populated with the owner of
+        # the branch.
+        branch = self.factory.makeAnyBranch()
+        self.assertIs(None, branch.reviewer)
+        view = BranchReviewerEditView(branch, LaunchpadTestRequest())
+        self.assertEqual(
+            branch.owner,
+            view.initial_values['reviewer'])
+
+    def test_initial_reviewer_set(self):
+        # If the reviewer has been set, it is shown as the initial value.
+        branch = self.factory.makeAnyBranch()
+        login_person(branch.owner)
+        branch.reviewer = self.factory.makePerson()
+        view = BranchReviewerEditView(branch, LaunchpadTestRequest())
+        self.assertEqual(
+            branch.reviewer,
+            view.initial_values['reviewer'])
+
+    def test_set_reviewer(self):
+        # Test setting the reviewer.
+        branch = self.factory.makeAnyBranch()
+        reviewer = self.factory.makePerson()
+        login_person(branch.owner)
+        view = BranchReviewerEditView(branch, LaunchpadTestRequest())
+        view.save_action.success({'reviewer': reviewer})
+        self.assertEqual(reviewer, branch.reviewer)
+        # Last modified has been updated.
+        self.assertSqlAttributeEqualsDate(
+            branch, 'date_last_modified', UTC_NOW)
+
+    def test_set_reviewer_as_owner_clears_reviewer(self):
+        # If the reviewer is set to be the branch owner, the review field is
+        # cleared in the database.
+        branch = self.factory.makeAnyBranch()
+        login_person(branch.owner)
+        branch.reviewer = self.factory.makePerson()
+        view = BranchReviewerEditView(branch, LaunchpadTestRequest())
+        view.save_action.success({'reviewer': branch.owner})
+        self.assertIs(None, branch.reviewer)
+        # Last modified has been updated.
+        self.assertSqlAttributeEqualsDate(
+            branch, 'date_last_modified', UTC_NOW)
+
+    def test_set_reviewer_to_same_does_not_update_last_modified(self):
+        # If the user has set the reviewer to be same and clicked on save,
+        # then the underlying object hasn't really been changed, so the last
+        # modified is not updated.
+        modified_date = datetime(2007, 1, 1, tzinfo=pytz.UTC)
+        branch = self.factory.makeAnyBranch(date_created=modified_date)
+        view = BranchReviewerEditView(branch, LaunchpadTestRequest())
+        view.save_action.success({'reviewer': branch.owner})
+        self.assertIs(None, branch.reviewer)
+        # Last modified has not been updated.
+        self.assertEqual(modified_date, branch.date_last_modified)
+
+
+class TestBranchBzrIdentity(TestCaseWithFactory):
+    """Test the bzr_identity on the PersonBranchesView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_dev_focus_identity(self):
+        # A branch that is a development focus branch, should show using the
+        # short name on the listing.
+        product = self.factory.makeProduct(name="fooix")
+        branch = self.factory.makeProductBranch(product=product)
+        # To avoid dealing with admins, just log in the product owner to set
+        # the development focus branch.
+        login_person(product.owner)
+        product.development_focus.user_branch = branch
+        view = PersonBranchesView(branch.owner, LaunchpadTestRequest())
+        view.initialize()
+        navigator = view.branches()
+        [decorated_branch] = navigator.branches()
+        self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
 
 
 def test_suite():

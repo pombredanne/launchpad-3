@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import md5
+import re
 import sha
 import socket
 from socket import SOCK_STREAM, AF_INET
@@ -50,7 +51,8 @@ class FileUploadClient:
             self.state.s.connect((self.upload_host, self.upload_port))
             self.state.f = self.state.s.makefile('w+', 0)
         except socket.error, x:
-            raise UploadFailed(str(x))
+            raise UploadFailed(
+                '[%s:%s]: %s' % (self.upload_host, self.upload_port, x))
 
     def _close(self):
         """Close connection"""
@@ -185,8 +187,10 @@ class FileUploadClient:
         self._connect()
         try:
             # Send command
+            database_name = re.search(
+                    r"dbname=(\S*)", config.database.main_master).group(1)
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendHeader('Database-Name', config.database.dbname)
+            self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())

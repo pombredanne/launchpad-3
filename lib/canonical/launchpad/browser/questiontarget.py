@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 """IQuestionTarget browser views."""
 
@@ -37,8 +37,8 @@ from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
 from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQCollection, ILanguageSet, IProject,
-    IQuestionCollection, IQuestionSet, IQuestionTarget,
+    IDistribution, IFAQCollection, ILanguageSet, ILaunchpadCelebrities,
+    IProject, IQuestionCollection, IQuestionSet, IQuestionTarget,
     ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
     QuestionStatus)
 from canonical.launchpad.webapp import (
@@ -91,7 +91,7 @@ class UserSupportLanguagesMixin:
         English is added to the list instead when an English variant is
         returned.
         """
-        english = getUtility(ILanguageSet)['en']
+        english = getUtility(ILaunchpadCelebrities).english
         languages = set()
         for language in preferred_or_request_languages(self.request):
             if is_english_variant(language):
@@ -180,7 +180,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         languages = set(self.user_support_languages)
         languages.intersection_update(self.context_question_languages)
         terms = []
-        for lang in languages:
+        for lang in sorted(languages, key=attrgetter('code')):
             terms.append(SimpleTerm(lang, lang.code, lang.displayname))
         return form.Fields(
             List(__name__='language',
@@ -190,7 +190,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                  default=self.user_support_languages,
                  description=_(
                      'The languages to filter the search results by.')),
-            custom_widget=self.custom_widgets['language'],
             render_context=self.render_context)
 
     def validate(self, data):
@@ -617,8 +616,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                         "$context",
                         mapping=dict(context=self.context.displayname)),
                 value_type=public_person_choice,
-                required=False),
-            custom_widget=self.custom_widgets['answer_contact_teams'])
+                required=False))
 
     @property
     def initial_values(self):
@@ -684,12 +682,13 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         languages, only English is added to the preferred languages. When
         languages are added, a notification is added to the response.
         """
-        if person_or_team.languages.count() > 0:
+        if len(person_or_team.languages) > 0:
             return
 
         response = self.request.response
+        english = getUtility(ILaunchpadCelebrities).english
         if person_or_team.isTeam():
-            person_or_team.addLanguage(getUtility(ILanguageSet)['en'])
+            person_or_team.addLanguage(english)
             team_mapping = {'name' : person_or_team.name,
                             'displayname' : person_or_team.displayname}
             msgid = _("English was added to ${displayname}'s "
@@ -701,7 +700,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             if len(browserLanguages(self.request)) > 0:
                 languages = browserLanguages(self.request)
             else:
-                languages = [getUtility(ILanguageSet)['en']]
+                languages = [english]
             for language in languages:
                 person_or_team.addLanguage(language)
             language_str = ', '.join([lang.displayname for lang in languages])

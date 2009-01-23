@@ -14,14 +14,14 @@ Changing the status:
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> svg_support = firefox.getSpecification('svg-support')
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.definition_status': 'Drafting',
+    ...     'field.actions.change': 'Change',
+    ...     'field.definition_status': 'Drafting',
     ...     'field.implementation_status':
     ...         svg_support.implementation_status.title,
     ...     }
-    >>> request = LaunchpadTestRequest(form=form)
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
-    >>> edit_view.update()
-    u'Updated...'
+    >>> edit_view.initialize()
 
     >>> import transaction
     >>> from canonical.launchpad.mail import stub
@@ -81,15 +81,14 @@ previous people, and to the approver and the added subscriber:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.actions.change': 'Change',
     ...     'field.definition_status': 'Pending Approval',
     ...     'field.implementation_status':
     ...         svg_support.implementation_status.title,
     ...     'field.needs_discussion': '1'}
-    >>> request = LaunchpadTestRequest(form=form)
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
-    >>> edit_view.update()
-    u'Updated...'
+    >>> edit_view.initialize()
     >>> transaction.commit()
 
 The added subscriber will also receive a notification that they
@@ -140,15 +139,14 @@ Whiteboard change:
     ...     "\n"
     ...     "Another paragraph")
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.actions.change': 'Change',
     ...     'field.definition_status': 'Pending Approval',
     ...     'field.implementation_status':
     ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': new_whiteboard}
-    >>> request = LaunchpadTestRequest(form=form)
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
-    >>> edit_view.update()
-    u'Updated...'
+    >>> edit_view.initialize()
     >>> transaction.commit()
 
     >>> notifications = [
@@ -182,15 +180,14 @@ Definition status and whiteboard change:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.actions.change': 'Change',
     ...     'field.definition_status': 'Approved',
     ...     'field.implementation_status':
     ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': 'Excellent work.'}
-    >>> request = LaunchpadTestRequest(form=form)
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
-    >>> edit_view.update()
-    u'Updated...'
+    >>> edit_view.initialize()
     >>> transaction.commit()
 
     >>> notifications = [
@@ -222,13 +219,12 @@ Change priority:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.priority': 'Essential',
+    ...     'field.actions.change': 'Change', 'field.priority': 'Essential',
     ...     'field.direction_approved': 'on',
     ...     'field.whiteboard': svg_support.whiteboard}
-    >>> request = LaunchpadTestRequest(form=form)
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter((svg_support, request), name='+priority')
-    >>> edit_view.update()
-    u'Updated...'
+    >>> edit_view.initialize()
     >>> transaction.commit()
 
     >>> notifications = [
@@ -258,12 +254,11 @@ Change approver, assignee and drafter:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.assignee': 'sabdfl',
+    ...     'field.actions.change': 'Change', 'field.assignee': 'sabdfl',
     ...     'field.approver': '', 'field.drafter': 'foo.bar@canonical.com'}
-    >>> request = LaunchpadTestRequest(form=form)
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter((svg_support, request), name='+people')
-    >>> edit_view.update()
-    u'Updated...'
+    >>> edit_view.initialize()
     >>> transaction.commit()
 
     >>> notifications = [
@@ -296,11 +291,10 @@ about, no notification is sent:
     >>> form = {
     ...     'FORM_SUBMIT': 'Continue', 'field.productseries': '1',
     ...     'field.whiteboard': 'Proposing for milestones...'}
-    >>> request = LaunchpadTestRequest(form=form)
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> edit_view = getMultiAdapter(
     ...     (svg_support, request), name='+setproductseries')
-    >>> edit_view.update()
-    'Done.'
+    >>> edit_view.initialize()
     >>> transaction.commit()
     >>> len(stub.test_emails)
     0

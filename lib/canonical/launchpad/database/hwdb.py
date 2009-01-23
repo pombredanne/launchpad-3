@@ -5,6 +5,8 @@
 
 __all__ = [
     'HWDevice',
+    'HWDeviceClass',
+    'HWDeviceClassSet',
     'HWDeviceSet',
     'HWDeviceDriverLink',
     'HWDeviceDriverLinkSet',
@@ -13,6 +15,8 @@ __all__ = [
     'HWDriver',
     'HWDriverSet',
     'HWSubmission',
+    'HWSubmissionBug',
+    'HWSubmissionBugSet',
     'HWSubmissionSet',
     'HWSubmissionDevice',
     'HWSubmissionDeviceSet',
@@ -30,22 +34,34 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
+from storm.expr import And, Not, Or, Select
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceDriverLink,
+from canonical.launchpad.database.distribution import Distribution
+from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from canonical.launchpad.database.distroseries import DistroSeries
+from canonical.launchpad.database.teammembership import TeamParticipation
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.hwdb import (
+    HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
+    HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
+    IHWDeviceClass, IHWDeviceClassSet, IHWDeviceDriverLink,
     IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
+    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
+    IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
+    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 # The vendor name assigned to new, unknown vendor IDs. See
@@ -78,6 +94,10 @@ class HWSubmission(SQLBase):
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
     raw_emailaddress = StringCol()
+
+    @property
+    def devices(self):
+        return HWSubmissionDeviceSet().getDevices(submission=self)
 
 
 class HWSubmissionSet:
@@ -114,12 +134,11 @@ class HWSubmissionSet:
             name=filename,
             size=filesize,
             file=raw_submission,
-            # XXX: The hwdb client sends us bzipped XML, but arguably
-            # other clients could send us other formats. The right way
-            # to do this is either to enforce the format in the browser
+            # XXX: kiko 2007-09-20: The hwdb client sends us bzipped XML, but
+            # arguably other clients could send us other formats. The right
+            # way to do this is either to enforce the format in the browser
             # code, allow the client to specify the format, or use a
             # magic module to sniff what it is we got.
-            #   -- kiko, 2007-09-20
             contentType='application/x-bzip2',
             expires=None)
 
@@ -156,12 +175,32 @@ class HWSubmissionSet:
         else:
             return ""
 
+    def _userHasAccessStormClause(self, user):
+        """Limit results of HWSubmission queries to rows the user can access.
+        """
+        submission_is_public = Not(HWSubmission.private)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        janitor = getUtility(ILaunchpadCelebrities).janitor
+        if user is None:
+            return submission_is_public
+        elif user.inTeam(admins) or user == janitor:
+            return True
+        else:
+            public = Not(HWSubmission.private)
+            subselect = Select(
+                TeamParticipation.teamID,
+                And(HWSubmission.ownerID == TeamParticipation.teamID,
+                    TeamParticipation.personID == user.id))
+            has_access = HWSubmission.ownerID.is_in(subselect)
+            return Or(public, has_access)
+
     def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
-        query = "submission_key=%s" % sqlvalues(submission_key)
-        query = query + self._userHasAccessClause(user)
-
-        return HWSubmission.selectOne(query)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            HWSubmission,
+            And(HWSubmission.submission_key == submission_key,
+                self._userHasAccessStormClause(user))).one()
 
     def getByFingerprintName(self, name, user=None):
         """See `IHWSubmissionSet`."""
@@ -213,6 +252,58 @@ class HWSubmissionSet:
         for submission in submissions:
             submission.owner = person
 
+    def getByStatus(self, status, user=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(HWSubmission,
+                                HWSubmission.status == status,
+                                self._userHasAccessStormClause(user))
+        # Provide a stable order. Sorting by id, to get the oldest
+        # submissions first. When date_submitted has an index, we could
+        # sort by that first.
+        result_set.order_by(HWSubmission.id)
+        return result_set
+
+    def search(self, user=None, device=None, driver=None, distribution=None,
+               architecture=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if device is not None:
+            args.append(HWDeviceDriverLink.device == HWDevice.id)
+            args.append(HWDevice.id == device.id)
+        if driver is not None:
+            args.append(HWDeviceDriverLink.driver == HWDriver.id)
+            args.append(HWDriver.id == driver.id)
+        # HWDevice and HWDriver are linked to submissions via
+        # HWDeviceDriverLink and HWSubmissionDevice.
+        if args:
+            args.append(HWSubmissionDevice.device_driver_link ==
+                        HWDeviceDriverLink.id)
+            args.append(HWSubmissionDevice.submission == HWSubmission.id)
+
+        if distribution is not None or architecture is not None:
+            args.append(HWSubmission.distroarchseries == DistroArchSeries.id)
+            if architecture is not None:
+                args.append(DistroArchSeries.architecturetag == architecture)
+            if distribution is not None:
+                args.append(DistroArchSeries.distroseries == DistroSeries.id)
+                args.append(DistroSeries.distribution == Distribution.id)
+                args.append(Distribution.id == distribution.id)
+        result_set = store.find(
+            HWSubmission,
+            self._userHasAccessStormClause(user),
+            *args)
+        # Many devices are associated with more than one driver, even
+        # for one submission, hence we may have more than one
+        # HWSubmissionDevice record and more than one HWDeviceDriverLink
+        # for one device and one submission matching the WHERE clause
+        # defined above. This leads to duplicate results without a
+        # DISTINCT clause.
+        result_set.config(distinct=True)
+        result_set.order_by(HWSubmission.id)
+        return result_set
+
 
 class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""
@@ -259,7 +350,8 @@ class HWVendorNameSet:
 
     def getByName(self, name):
         """See `IHWVendorNameSet`."""
-        return HWVendorName.selectOneBy(name=name)
+        return HWVendorName.selectOne(
+            'ulower(name)=ulower(%s)' % sqlvalues(name))
 
 
 four_hex_digits = re.compile('^0x[0-9a-f]{4}$')
@@ -388,6 +480,18 @@ class HWVendorIDSet:
                 repr(vendor_id), bus.title))
         return HWVendorID.selectOneBy(bus=bus, vendor_id_for_bus=vendor_id)
 
+    def get(self, id):
+        """See `IHWVendorIDSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWVendorID, HWVendorID.id == id).one()
+
+    def idsForBus(self, bus):
+        """See `IHWVendorIDSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(HWVendorID, bus=bus)
+        result_set.order_by(HWVendorID.vendor_id_for_bus)
+        return result_set
+
 
 class HWDevice(SQLBase):
     """See `IHWDevice.`"""
@@ -407,6 +511,18 @@ class HWDevice(SQLBase):
     name = StringCol(notNull=True)
     submissions = IntCol(notNull=True)
 
+    @property
+    def bus(self):
+        return self.bus_vendor.bus
+
+    @property
+    def vendor_id(self):
+        return self.bus_vendor.vendor_id_for_bus
+
+    @property
+    def vendor_name(self):
+        return self.bus_vendor.vendor_name.name
+
     def _create(self, id, **kw):
         bus_vendor = kw.get('bus_vendor')
         if bus_vendor is None:
@@ -420,6 +536,23 @@ class HWDevice(SQLBase):
             raise ValueError('%s is not a valid product ID for %s'
                              % (repr(bus_product_id), bus_vendor.bus.title))
         SQLBase._create(self, id, **kw)
+
+    def getSubmissions(self, driver=None, distribution=None,
+                       architecture=None):
+        """See `IHWDevice.`"""
+        return HWSubmissionSet().search(
+            device=self, distribution=distribution, driver=driver,
+            architecture=architecture)
+
+    @property
+    def drivers(self):
+        """See `IHWDevice.`"""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(HWDriver,
+                                HWDeviceDriverLink.driver == HWDriver.id,
+                                HWDeviceDriverLink.device == self)
+        result_set.order_by((HWDriver.package_name, HWDriver.name))
+        return result_set
 
 
 class HWDeviceSet:
@@ -468,6 +601,23 @@ class HWDeviceSet:
                                variant)
         return device
 
+    def getByID(self, id):
+        """See `IHWDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDevice, HWDevice.id == id).one()
+
+    def search(self, bus, vendor_id, product_id=None):
+        """See `IHWDeviceSet`."""
+        bus_vendor = HWVendorIDSet().getByBusAndVendorID(bus, vendor_id)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if product_id is not None:
+            args.append(HWDevice.bus_product_id == product_id)
+        result_set = store.find(
+            HWDevice, HWDevice.bus_vendor == bus_vendor, *args)
+        result_set.order_by(HWDevice.id)
+        return result_set
+
 
 class HWDeviceNameVariant(SQLBase):
     """See `IHWDeviceNameVariant`."""
@@ -504,6 +654,12 @@ class HWDriver(SQLBase):
     implements(IHWDriver)
     _table = 'HWDriver'
 
+    # XXX: Abel Deuring 2008-12-10 bug=306265: package_name should
+    # be declared notNull=True. This fixes the ambiguity that
+    # "package_name is None" as well as "package_name == ''" can
+    # indicate "we don't know to which package this driver belongs",
+    # moreover, it gives a more clear meaning to the parameter value
+    #package_name='' in webservice API calls.
     package_name = StringCol(notNull=False)
     name = StringCol(notNull=True)
     license = EnumCol(enum=License, notNull=False)
@@ -530,6 +686,26 @@ class HWDriverSet:
         if link is None:
             return self.create(package_name, name, license)
         return link
+
+    def search(self, package_name=None, name=None):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        args = []
+        if package_name is not None:
+            if len(package_name) == 0:
+                args.append(Or(HWDriver.package_name == None,
+                               HWDriver.package_name == ''))
+            else:
+                args.append(HWDriver.package_name == package_name)
+        if name != None:
+            args.append(HWDriver.name == name)
+        result_set = store.find(HWDriver, *args)
+        return result_set.order_by(HWDriver.id)
+
+    def getByID(self, id):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDriver, HWDriver.id == id).one()
 
 
 class HWDeviceDriverLink(SQLBase):
@@ -563,6 +739,43 @@ class HWDeviceDriverLinkSet:
         return device_driver_link
 
 
+class HWDeviceClass(SQLBase):
+    """See `IHWDeviceClass`."""
+    implements(IHWDeviceClass)
+
+    device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
+    main_class = EnumCol(enum=HWMainClass, notNull=True)
+    sub_class = EnumCol(enum=HWSubClass)
+
+    def _create(self, id, **kw):
+        """Create a HWDeviceClass record.
+
+        Ensure that main_class and sub_class have consistent values.
+        """
+        main_class = kw.get('main_class')
+        if main_class is None:
+            raise TypeError('HWDeviceClass() did not get expected keyword '
+                            'argument main_class')
+        sub_class = kw.get('sub_class')
+        if sub_class is not None:
+            if not sub_class.name.startswith(main_class.name + '_'):
+                raise TypeError(
+                    'HWDeviceClass() did not get matching argument values '
+                    'for main_class: %r and sub_class: %r.'
+                    % (main_class, sub_class))
+        SQLBase._create(self, id, **kw)
+
+
+class HWDeviceClassSet:
+    """See `IHWDeviceClassSet`."""
+    implements(IHWDeviceClassSet)
+
+    def create(self, device, main_class, sub_class=None):
+        """See `IHWDeviceClassSet`."""
+        return HWDeviceClass(device=device, main_class=main_class,
+                             sub_class=sub_class)
+
+
 class HWSubmissionDevice(SQLBase):
     """See `IHWSubmissionDevice`."""
 
@@ -577,13 +790,58 @@ class HWSubmissionDevice(SQLBase):
     parent = ForeignKey(dbName='parent', foreignKey='HWSubmissionDevice',
                         notNull=False)
 
+    hal_device_id = IntCol(notNull=True)
+
+    @property
+    def device(self):
+        """See `IHWSubmissionDevice`."""
+        return self.device_driver_link.device
+
+    @property
+    def driver(self):
+        """See `IHWSubmissionDevice`."""
+        return self.device_driver_link.driver
+
+
 class HWSubmissionDeviceSet:
     """See `IHWSubmissionDeviceSet`."""
 
     implements(IHWSubmissionDeviceSet)
 
-    def create(self, device_driver_link, submission, parent):
+    def create(self, device_driver_link, submission, parent, hal_device_id):
         """See `IHWSubmissionDeviceSet`."""
         return HWSubmissionDevice(device_driver_link=device_driver_link,
-                                  submission=submission,
-                                  parent=parent)
+                                  submission=submission, parent=parent,
+                                  hal_device_id=hal_device_id)
+
+    def getDevices(self, submission):
+        """See `IHWSubmissionDeviceSet`."""
+        return HWSubmissionDevice.selectBy(
+            submission=submission,
+            orderBy=['parent', 'device_driver_link', 'hal_device_id'])
+
+    def get(self, id):
+        """See `IHWSubmissionDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            HWSubmissionDevice, HWSubmissionDevice.id == id).one()
+
+
+class HWSubmissionBug(SQLBase):
+    """See `IHWSubmissionBug`."""
+
+    implements(IHWSubmissionBug)
+    _table = 'HWSubmissionBug'
+
+    submission = ForeignKey(dbName='submission', foreignKey='HWSubmission',
+                              notNull=True)
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+
+class HWSubmissionBugSet:
+    """See `IHWSubmissionBugSet`."""
+
+    implements(IHWSubmissionBugSet)
+
+    def create(self, submission, bug):
+        """See `IHWSubmissionBugSet`."""
+        return HWSubmissionBug(submission=submission, bug=bug)

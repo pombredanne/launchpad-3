@@ -109,10 +109,6 @@ class IPOFile(IRosettaStats):
             '''),
         vocabulary=TranslationPermission)
 
-    fuzzy_count = Int(
-        title=_('The number of fuzzy messages in this po file.'),
-        required=True, readonly=True)
-
     from_sourcepackagename = Field(
         title=_('The source package this pofile comes from.'),
         description=_('''
@@ -157,50 +153,14 @@ class IPOFile(IRosettaStats):
         Return an iterator over untranslated message sets in this PO file.
         """
 
-    def __iter__():
-        """Return an iterator over Current `IPOMessageSets` in this PO file.
-        """
-
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
-
-    def getCurrentTranslationMessage(msgid_text, context=None,
-                                     ignore_obsolete=False):
-        """Return the `ITranslationMessage` in this `IPOFile` by msgid_text.
-
-        :param msgid_text: is an unicode string.
-        :param context: Disambiguating context for the message set.
-        :param ignore_obsolete: Whether we should ignore obsolete entries.
-        :return: The `ITranslationMessage` for `msgid_text` or None.
-        """
-
-    def getCurrentTranslationMessageFromPOTMsgSet(potmsgset,
-                                                  ignore_obsolete=False):
-        """Return mapping between potmsgset and `ITranslationMessage`.
-
-        :param potmsgset: An `IPOTMsgSet`.
-        :param ignore_obsolete: Whether we should ignore obsolete messages
-            when looking for the current translation message.
-        :return: The translation message for this translation file and the
-            given potmsgset or None.
-        """
-
-    def __getitem__(msgid_text):
-        """Return the current `ITranslationMessage` by msgid_text.
-
-        :param msgid_text: is an unicode string.
-
-        Raise NotFoundError if it does not exist.
-        """
 
     def findPOTMsgSetsContaining(text):
         """Get POTMsgSets where English text or translation contain `text`."""
 
     def getPOTMsgSetTranslated():
         """Get pot messages that are translated for this translation file."""
-
-    def getPOTMsgSetFuzzy():
-        """Get pot message sets with a translation that must be checked."""
 
     def getPOTMsgSetUntranslated():
         """Get pot message sets that are untranslated for this file."""

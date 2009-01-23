@@ -9,6 +9,7 @@ __all__ = [
     'complete_from_browser',
     'make_endpoint',
     'make_identifier_select_endpoint',
+    'print_endpoints',
 ]
 
 from StringIO import StringIO
@@ -16,6 +17,7 @@ import urllib2
 
 from openid import fetchers
 from openid.consumer.discover import (
+    discover, discoverNoYadis,
     OpenIDServiceEndpoint, OPENID_1_0_TYPE, OPENID_1_1_TYPE,
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
@@ -52,6 +54,15 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
         return self.opener.open(request)
 
 
+def get_requested_server_url(url='http://openid.launchpad.dev/'):
+    """Return the OpenID Server URL."""
+    vhost, ignored = url[len('http://'):].split('.', 1)
+    if vhost not in ('id', 'openid'):
+        # The claimed URL is not on Launchpad, fallback to the beta rules.
+        vhost = 'openid'
+    return allvhosts.configs[vhost].rooturl + '+openid'
+
+
 def make_endpoint(protocol_uri, claimed_id, local_id=None):
     """Create an endpoint for use with `Consumer.beginWithoutDiscovery`.
 
@@ -67,7 +78,7 @@ def make_endpoint(protocol_uri, claimed_id, local_id=None):
 
     endpoint = OpenIDServiceEndpoint()
     endpoint.type_uris = [protocol_uri]
-    endpoint.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+    endpoint.server_url = get_requested_server_url(claimed_id)
     endpoint.claimed_id = claimed_id
     endpoint.local_id = local_id or claimed_id
     return endpoint
@@ -88,7 +99,7 @@ def make_identifier_select_endpoint(protocol_uri):
         "Unexpected protocol URI: %s" % protocol_uri)
 
     endpoint = OpenIDServiceEndpoint()
-    endpoint.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+    endpoint.server_url = get_requested_server_url()
     if protocol_uri == OPENID_2_0_TYPE:
         endpoint.type_uris = [OPENID_IDP_2_0_TYPE]
     else:
@@ -156,3 +167,22 @@ def complete_from_browser(consumer, browser, expected_claimed_id=None):
     if expected_claimed_id is not None:
         del consumer.consumer._verifyDiscoveryResultsOpenID1
     return response
+
+def print_endpoints(url, yadis=True):
+    """Print the OpenID services found through YADIS discovery."""
+    if not yadis :
+        claimed_id, services = discoverNoYadis(url)
+    else:
+        claimed_id, services = discover(url)
+    print 'Claimed ID:', claimed_id
+    print '----'
+    if not services:
+        print 'No services discovered'
+    for service in services:
+        print 'Local ID:', service.getLocalID()
+        print 'Server URL:', service.server_url
+        print 'Supports:'
+        for type_uri in service.type_uris:
+            print '  ' + type_uri
+        print '----'
+

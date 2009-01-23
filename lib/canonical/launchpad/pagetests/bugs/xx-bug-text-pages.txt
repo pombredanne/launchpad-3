@@ -31,6 +31,8 @@ Next, we'll cycle through all statuses so the dates are present:
     >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
     >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
     >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.NEW, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
     >>> logout()
     >>> flush_database_updates()
 
@@ -81,6 +83,7 @@ all tasks related to that bug, presented in an easy-to-digest format:
     date-closed: ...
     date-fix-committed: ...
     date-fix-released: ...
+    date-left-closed: ...
     reporter: Sample Person (name12)
     importance: Low
     assignee: M...rk Sh...ttlew...rth (sabdfl)

@@ -8,10 +8,28 @@ contact any external servers.
     >>> from canonical.database.sqlbase import cursor, sqlvalues
     >>> from canonical.database.constants import UTC_NOW
     >>> cur = cursor()
-    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" % 
+    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" %
     ...     sqlvalues(UTC_NOW))
     >>> import transaction
     >>> transaction.commit()
+
+We'll add a bug watch to the Gnu Savannah bug tracker so that
+checkwatches will try to get an ExternalBugTracker with which to update
+the watch.
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> savannah = getUtility(ILaunchpadCelebrities).savannah_tracker
+    >>> bug_watch = factory.makeBugWatch(bugtracker=savannah)
+
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
     >>> import subprocess
     >>> process = subprocess.Popen(
@@ -27,11 +45,11 @@ contact any external servers.
     >>> print err
     INFO    creating lockfile
     DEBUG   No watches to update on http://bugs.debian.org
-    WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
-            known.
+    DEBUG   No watches to update on mailto:bugs@example.com
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
+    DEBUG   No watches to update on http://bugzilla.gnome.org/
     DEBUG   No watches to update on https://bugzilla.mozilla.org/
     DEBUG   Skipping updating Ubuntu Bugzilla watches.
     INFO    Time for this run: ... seconds.
@@ -142,7 +160,7 @@ will also be automatically filled from the baseurl OOPS property.
     error-explanation=Connection timed out ... http://bugs.example.com
     <BLANKLINE>
     <BLANKLINE>
-    Traceback (innermost last):
+    Traceback (most recent call last):
     ...
     timeout: Connection timed out.
 

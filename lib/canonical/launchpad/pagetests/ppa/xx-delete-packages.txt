@@ -14,7 +14,7 @@ console, even if they try the URL directly.
     LinkNotFoundError
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/+delete-packages')
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+delete-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
@@ -26,7 +26,7 @@ console, even if they try the URL directly.
     LinkNotFoundError
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/~cprov/+archive/+delete-packages')
+    ...    'http://launchpad.dev/~cprov/+archive/ppa/+delete-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
@@ -54,10 +54,17 @@ When the 'Delete packages' page is loaded a list of all published
 sources is presented,
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published     Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
-    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
-    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
+    Source            Published   Status     Series          Section  Build
+        Status
+    cdrkit - 1.0      2007-07-09  Published  Breezy-autotest Editors  i386
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty           Editors
+
+An informational message also directs the user to the PPA help page
+via a link:
+
+    >>> admin_browser.getLink('PPA help page').url
+    'https://help.launchpad.net/Packaging/PPA'
 
 The user can update the form to only list published sources with name
 matching the given text.
@@ -72,11 +79,21 @@ matching the given text.
     ...     name='field.name_filter').value = 'pmount'
     >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-Foo Bar can select one or more sources to be deleted and the
-'deletion_comment' field is mandatory.
+The user may delete packages from a PPA without providing a reason
+(deletion comment). Let's try it on sabdfl's archive.
+
+    >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
+    >>> print_ppa_packages(admin_browser.contents)
+    Source            Published   Status     Series          Section  Build
+        Status
+    iceweasel...(...) 2007-07-09  Published  Breezy-autotest Editors
+
+Please note that the 'deletion_comment' field (which is optional) is empty.
 
     >>> admin_browser.getControl('Deletion comment').value
     ''
@@ -84,20 +101,23 @@ Foo Bar can select one or more sources to be deleted and the
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = ''
     >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['27']
+    ...    name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl("Request Deletion").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    Read the page help to understand how removals work.
-    Deletion comment is required.
+    Source and binaries deleted by Foo Bar request:
+    iceweasel 1.0 in breezy-autotest
+    Deletion comment: None
+
+The single package in sabdfl's archive was deleted successfully.
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published     Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
-    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
-    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
+
+Now back to cprov's archive for the remaining tests.
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
 
 Deletion requires, at least, one selected a source, otherwise an error
 is issued.
@@ -109,7 +129,6 @@ is issued.
     ...     print msg
     There is 1 error.
     No sources selected.
-    Read the page help to understand how removals work.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
@@ -133,12 +152,11 @@ entirely readable content.
     Source and binaries deleted by Foo Bar request:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
-    Read the page help to understand how removals work.
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published     Status     Series          Section  Built
-    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
-    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
+    Source             Published   Status     Series   Section  Build Status
+    iceweasel...(...)  2007-07-09  Published  Warty    Editors
+    pmount - 0.1-1     2007-07-09  Published  Warty    Editors
 
 Here we can check for maliciously submitted forms containing
 invalid data.
@@ -172,25 +190,28 @@ will use another browser to inspect the results of our deletions.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+    Source            Published   Status     Series          Section  Build
+        Status
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
     >>> cprov_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
-    >>> cprov_browser.getControl('Search', index=0).click()
+    >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
 
     >>> cprov_browser.getControl(
     ...    name='field.status_filter').value = ['any']
-    >>> cprov_browser.getControl('Search', index=0).click()
+    >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+    Source            Published   Status     Series          Section  Build
+        Status
+    cdrkit - 1.0      2007-07-09  Deleted    Breezy-autotest Editors  i386
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
 Before deleting the remaining sources we will save a in this state for
 the form re-submission tests.
@@ -251,12 +272,13 @@ Any user can see that all packages present in Celso's PPA are deleted.
 
     >>> cprov_browser.getControl(
     ...    name='field.status_filter').value = ['any']
-    >>> cprov_browser.getControl('Search', index=0).click()
+    >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
-    iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
-    pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
+    Source            Published   Status     Series          Section  Build
+        Status
+    cdrkit - 1.0      2007-07-09  Deleted    Breezy-autotest Editors  i386
+    iceweasel...(...) 2007-07-09  Deleted    Warty           Editors
+    pmount - 0.1-1    2007-07-09  Deleted    Warty           Editors
 
 PPAs that don't contain any published source packages, do not present
 the 'Delete packages' link.
@@ -272,7 +294,7 @@ for PPAs that do not contain any published packages, instead a clear
 message is presented.
 
     >>> admin_browser.open(
-    ...    'http://launchpad.dev/~no-priv/+archive/+delete-packages')
+    ...    'http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages')
     >>> admin_browser.title
     'Delete packages from PPA for No Privileges Person'
 
@@ -341,9 +363,10 @@ overview page.
     >>> user_browser.open('http://launchpad.dev/~no-priv/+archive')
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
-    >>> user_browser.getControl('Search', index=0).click()
+    >>> user_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
@@ -361,8 +384,8 @@ section indicates to the user that it is still published.
     Built Packages
       foo-bin Foo app is great
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 Even if the source added is recorded as SUPERSEDED, it is still
 available for deletion because it contains a PUBLISHED binary.
@@ -372,7 +395,8 @@ available for deletion because it contains a PUBLISHED binary.
     'Delete packages from PPA for No Privileges Person'
 
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Superseded Hoary           Base
 
     >>> details_section = find_tag_by_id(
@@ -385,8 +409,8 @@ available for deletion because it contains a PUBLISHED binary.
     Built Packages
       foo-bin Foo app is great
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 The list of 'deletable' sources can be filtered by status. The default
 filter is 'Any Status', but the user can choose another.
@@ -409,17 +433,21 @@ When he selects 'Superseded' the SUPERSEDED source shows up again.
     ...     name='field.status_filter').value = ['superseded']
     >>> user_browser.getControl("Update").click()
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Superseded Hoary           Base
 
 The deletion works exactly as it does for PUBLISHED sources, both,
 source and binaries are marked as DELETED and the corresponding
 'datesuperseded' as set to 'now'.
 
+    >>> deletion_comment = (
+    ...     "Deletion of a number of base pairs that is not evenly "
+    ...     "divisible by three will lead to a frameshift mutation.")
     >>> user_browser.getControl(
     ...    name='field.selected_sources').value = [str(foo_pub_src.id)]
     >>> user_browser.getControl(
-    ...    "Deletion comment").value = "Go foo, go ..."
+    ...    "Deletion comment").value = deletion_comment
     >>> user_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(user_browser.contents)
@@ -427,7 +455,7 @@ source and binaries are marked as DELETED and the corresponding
     ...     print msg
     Source and binaries deleted by No Privileges Person request:
     foo 1.0 in hoary
-    Deletion comment: Go foo, go ...
+    Deletion comment: Deletion of a number of base pairs that is ...
 
 After the deletion, any user accessing No-privileges' PPA page can see
 a row representing 'foo' and it is marked as 'superseded'. In its
@@ -435,25 +463,30 @@ corresponding expandable area, he can see that the 'Built Packages'
 section is omitted, however the source and binary files can be
 downloaded from librarian.
 
+Please note also how the deletion comment is diplayed in its entirety as
+opposed to being truncated after the fisrt 20 characters.
+
     >>> user_browser.open('http://launchpad.dev/~no-priv/+archive')
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
-    >>> user_browser.getControl('Search', index=0).click()
+    >>> user_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Deleted    Hoary           Base
 
     >>> details_section = find_tag_by_id(
     ...     user_browser.contents, details_section_id)
     >>> print extract_text(details_section)
     Publishing details
-    Deleted ... ago by No Privileges Person (Go foo, go ...)
+    Deleted ... ago by No Privileges Person
+    Deletion of a number of base pairs that is not evenly divisible by three will lead to a frameshift mutation.
     Changelog
     Builds
       i386
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 Once a deleted package gets removed from disk we render a message in
 the "Publishing Status" section pointing to the users that even if the
@@ -479,21 +512,22 @@ links at the end of the section.
 
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
-    >>> user_browser.getControl('Search', index=0).click()
+    >>> user_browser.getControl('Filter', index=0).click()
     >>> details_section = find_tag_by_id(
     ...     user_browser.contents, details_section_id)
 
     >>> print extract_text(details_section)
     Publishing details
     Removed from disk ... ago.
-    Deleted ... ago by No Privileges Person (Go foo, go ...)
+    Deleted ... ago by No Privileges Person
+    Deletion of a number of base pairs that is not evenly divisible by ...
     Removed files can still be downloaded from the Librarian; see below.
     Changelog
     Builds
       i386
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 The message for the file links does not appear for non-PPA publishings
 as it would refer to non-existent links.
@@ -505,7 +539,8 @@ as it would refer to non-existent links.
     1.0 DELETED:
     Warty pocket Release in component main and section editors
     Removed from disk on 2006-12-02.
-    Deleted by Celso Providelo (I do not like it.)
+    Deleted by Celso Providelo
+    I do not like it.
     Published on 2006-12-01
     Copied from ubuntu breezy-autotest in Primary Archive for Ubuntu Linux
 

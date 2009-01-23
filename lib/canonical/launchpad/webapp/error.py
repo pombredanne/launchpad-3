@@ -60,7 +60,7 @@ class SystemErrorView:
         # if canonical.launchpad.layers.PageTestLayer.providedBy(
         #     self.request):
         #     self.pagetesting = True
-        # XXX 20080109 mpt: We don't use this any more. See bug 181472.
+        # XXX mpt 20080109 bug=181472: We don't use this any more.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer
@@ -147,6 +147,14 @@ class SystemErrorView:
             return self.plain_oops_template()
         else:
             return self.index()
+
+    @property
+    def layer_help(self):
+        if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
+            return '''<a href="http://help.launchpad.net/Feeds">
+                      Help with Launchpad feeds</a>'''
+        else:
+            return None
 
 
 class ProtocolErrorView(SystemErrorView):

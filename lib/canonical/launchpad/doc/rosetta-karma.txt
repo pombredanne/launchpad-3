@@ -298,7 +298,7 @@ And we can see as he won't get any karma activity from that, otherwise it'd be
 printed after the call to updateTranslationSet().
 
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, fuzzy, published,
+    ...     pofile, no_priv, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
 
@@ -313,7 +313,7 @@ At this moment, karma is assigned and thus is printed here.
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, fuzzy, published,
+    ...     pofile, no_priv, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
@@ -332,7 +332,7 @@ being approved.
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'somethingelse'}
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, fuzzy, published,
+    ...     pofile, kurem, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     Karma added: action=translationreview, product=evolution
@@ -347,7 +347,7 @@ get karma for his autoapproved translation.
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'changed again'}
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, fuzzy, published,
+    ...     pofile, kurem, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     >>> transaction.commit()
@@ -371,7 +371,7 @@ description.
     ...     u'field.owner': u'test@canonical.com',
     ...     u'field.priority': u'0',
     ...     u'field.description': u'This is a new description',
-    ...     u'UPDATE_SUBMIT': u'Change'}
+    ...     u'field.actions.change': u'Change'}
     >>> potemplate_view = create_view(
     ...     potemplate, '+edit', form=form, layer=TranslationsLayer)
     >>> potemplate_view.request.method = 'POST'
@@ -383,11 +383,8 @@ Let's see the description we have atm:
 
 We do the update and see the karma being assigned.
 
-    >>> status = potemplate_view.update()
+    >>> status = potemplate_view.initialize()
     Karma added: action=translationtemplatedescriptionchanged, product=evolution
-
-    >>> status
-    u'Updated on ${date_time}'
 
 And the new one is:
 

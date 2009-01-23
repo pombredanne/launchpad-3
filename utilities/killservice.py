@@ -12,7 +12,7 @@ import os, logging
 from signal import SIGTERM
 from optparse import OptionParser
 from canonical.config import config
-from canonical.pidfile import get_pid, pidfile_path, remove_pidfile
+from canonical.lazr.pidfile import get_pid, pidfile_path, remove_pidfile
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.mailman.runmailman import stop_mailman
 

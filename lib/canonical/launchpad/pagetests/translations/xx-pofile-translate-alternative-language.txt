@@ -142,9 +142,8 @@ The translate page also allows the user to filter the translatable strings to
 show only the strings he is interested in.
 
     >>> browser.getControl(name='show', index=1).displayOptions
-    ['all items', 'untranslated items', 'items that need review',
-     'translated items', 'items with new suggestions',
-     'items changed in Launchpad']
+    ['all items', 'untranslated items', 'translated items',
+     'items with new suggestions', 'items changed in Launchpad']
 
 Carlos sets the filter to display only the untranslated strings.
 
@@ -162,7 +161,7 @@ navigation bar between the translation controls and the messages.
 
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
     >>> print extract_text(navigation).decode('utf-8')
-    1 ... 10  of 13 results ...
+    1 ... 10  of 15 results ...
 
 Carlos uses the 'Save & Continue' button to see the next page of
 messages.
@@ -170,7 +169,7 @@ messages.
     >>> browser.getControl('Save & Continue').click()
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
     >>> print extract_text(navigation)
-    11 ... 13  of 13 results ...
+    11 ... 15  of 15 results ...
 
 
 == Language variants and alternative language ==

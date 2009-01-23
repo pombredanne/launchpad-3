@@ -16,8 +16,8 @@ from urlparse import urlparse, urlunparse
 
 import ZConfig
 
-from canonical.lazr.config import ImplicitTypeSchema
-from canonical.lazr.interfaces.config import ConfigErrors
+from lazr.config import ImplicitTypeSchema
+from lazr.config.interfaces import ConfigErrors
 
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
@@ -100,11 +100,11 @@ class CanonicalConfig:
         if self._config is not None:
             return
 
-        here = os.path.dirname(__file__)
+        here = os.path.abspath(os.path.dirname(__file__))
         schema_file = os.path.join(here, 'schema-lazr.conf')
-        config_dir = os.path.join(
+        config_dir = os.path.abspath(os.path.join(
             here, os.pardir, os.pardir, os.pardir,
-            'configs', self.instance_name)
+            'configs', self.instance_name))
         config_file = os.path.join(
             config_dir, '%s-lazr.conf' % self.process_name)
         if not os.path.isfile(config_file):
@@ -277,13 +277,13 @@ class DatabaseConfig:
     chosen config section over the base section:
 
         >>> from canonical.config import config, dbconfig
-        >>> print config.database.dbhost
-        localhost
+        >>> print config.database.main_master
+        dbname=...
         >>> print config.database.dbuser
         Traceback (most recent call last):
           ...
         AttributeError: ...
-        >>> print config.launchpad.dbhost
+        >>> print config.launchpad.main_master
         Traceback (most recent call last):
           ...
         AttributeError: ...
@@ -293,14 +293,14 @@ class DatabaseConfig:
         librarian
 
         >>> dbconfig.setConfigSection('librarian')
-        >>> print dbconfig.dbhost
-        localhost
+        >>> print dbconfig.main_master
+        dbname=...
         >>> print dbconfig.dbuser
         librarian
 
         >>> dbconfig.setConfigSection('launchpad')
-        >>> print dbconfig.dbhost
-        localhost
+        >>> print dbconfig.main_master
+        dbname=...
         >>> print dbconfig.dbuser
         launchpad
 
@@ -320,10 +320,12 @@ class DatabaseConfig:
     """
     _config_section = None
     _db_config_attrs = frozenset([
-        'dbuser', 'dbhost', 'dbname', 'db_statement_timeout',
-        'db_statement_timeout_precision', 'isolation_level',
-        'randomise_select_results', 'soft_request_timeout'])
-    _db_config_required_attrs = frozenset(['dbuser', 'dbname'])
+        'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave',
+        'db_statement_timeout', 'db_statement_timeout_precision',
+        'isolation_level', 'randomise_select_results',
+        'soft_request_timeout'])
+    _db_config_required_attrs = frozenset([
+        'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave'])
 
     def setConfigSection(self, section_name):
         self._config_section = section_name

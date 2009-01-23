@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Language interfaces."""
@@ -138,6 +138,9 @@ class ILanguageSet(Interface):
         If there is no language with the give code,
         raise NotFoundError exception.
         """
+
+    def get(language_id):
+        """Return the language with the given id."""
 
     def getLanguageByCode(code):
         """Return the language with the given code or None."""

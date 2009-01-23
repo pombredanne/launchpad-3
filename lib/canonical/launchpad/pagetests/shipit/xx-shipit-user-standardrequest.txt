@@ -18,9 +18,9 @@ fields are filled.
   >>> browser.url
   'http://shipit.ubuntu.dev/myrequest'
 
-  >>> for message in get_feedback_messages(browser.contents):
-  ...     print message
-  Please fix the problems below and try again...
+  >>> print_errors(browser.contents)
+  (Required)
+  Required input is missing...
 
 For some countries like the US, our shipping company requires a postcode, so
 we can't accept a request from the US without a postcode.
@@ -39,7 +39,6 @@ we can't accept a request from the US without a postcode.
 
   >>> for message in get_feedback_messages(browser.contents):
   ...     print message
-  Please fix the problems below and try again.
   Shipping to your country requires a postcode, but you didn't provide one...
 
 Now we fill in the last remaining required field and the request is
@@ -66,8 +65,8 @@ only choose the number of CDs from a list of predefined options.
   >>> logout()
 
 
-If now we go to one of shipit.kubuntu or shipit.edubuntu, we'll be able to
-add more CDs to our existing request...
+If now we go to shipit.kubuntu, we'll be able to add more CDs to our
+existing request...
 
   >>> browser.open('http://shipit.kubuntu.dev/myrequest')
   >>> browser.url
@@ -102,16 +101,16 @@ given distroseries.
   >>> logout()
 
 name16's shipped request contained Ubuntu and Kubuntu CDs. This means that if
-he makes another request containing /only/ Edubuntu CDs it'll be auto
+he makes another request containing /only/ Server CDs it'll be auto
 approved, otherwise it'll have to be manually approved.
 
   >>> sorted(flavour.title 
   ...        for flavour in shippingrun.requests[0].getContainedFlavours())
   ['Kubuntu', 'Ubuntu']
 
-  >>> browser.open('http://shipit.edubuntu.dev/myrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/myrequest-server')
   >>> browser.url
-  'http://shipit.edubuntu.dev/myrequest'
+  'http://shipit.ubuntu.dev/myrequest-server'
 
 As name16 already has a request, the address fields will be pre-filled for
 him.
@@ -121,16 +120,16 @@ him.
   >>> browser.getControl(name='field.organization').value
   'Baz'
 
-  >>> browser.getControl(name='ordertype').value = ['14']
+  >>> browser.getControl(name='ordertype').value = ['16']
   >>> browser.getControl('Submit Request').click()
   >>> browser.url
-  'http://shipit.edubuntu.dev/myrequest'
+  'http://shipit.ubuntu.dev/myrequest-server'
 
   >>> login(ANONYMOUS)
   >>> Person.byName('name16').currentShipItRequest().isApproved()
   True
   >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
-  1
+  2
   >>> logout()
 
 If he adds any Ubuntu or Kubuntu CDs to his request, it'll then be marked as
@@ -190,3 +189,43 @@ It's also possible to cancel an existing request.
   >>> Person.byName('name16').currentShipItRequest() is None
   True
   >>> logout()
+
+
+== When users have only one option ==
+
+As of 8.10, we started shipping only 32-bit CDs of Ubuntu/Kubuntu, and most
+users will have only the option of requesting a single CD, whereas others
+(with significant karma or members of the ubuntumembers team) will get a few
+other options.
+
+Since these options are presented as radio buttons, it doesn't make any sense
+to present a single option as a radio button, so if the user has only one
+option we will just state how many CDs he will get and ask him to enter his
+address.
+
+    # First we make sure there's only one standard option for Kubuntu
+    # requests.
+    >>> from canonical.launchpad.interfaces.shipit import ShipItFlavour
+    >>> from canonical.launchpad.database.shipit import StandardShipItRequest
+    >>> for option in StandardShipItRequest.select():
+    ...     option.destroySelf()
+    >>> sole_option = StandardShipItRequest(
+    ...     flavour=ShipItFlavour.KUBUNTU, quantityx86=1, quantityamd64=0,
+    ...     quantityppc=0, user_description="1 Kubuntu CD")
+
+    >>> browser.open('http://shipit.kubuntu.dev/myrequest')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'options'))
+    Just enter your address below and we will send you 1 Kubuntu CD
+    of the...release...
+
+    >>> browser.getControl(name='field.recipientdisplayname').value = 'Foo'
+    >>> browser.getControl(name='field.organization').value = 'Baz'
+    >>> browser.getControl(name='field.addressline1').value = 'Street'
+    >>> browser.getControl(name='field.city').value = 'City'
+    >>> browser.getControl(name='field.province').value = 'Province'
+    >>> browser.getControl(name='field.postcode').value = '123456'
+    >>> browser.getControl(name='field.country').value = ['226']
+    >>> browser.getControl(name='field.phone').value = '43242442'
+    >>> browser.getControl('Submit Request').click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    Request accepted...

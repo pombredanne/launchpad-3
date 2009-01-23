@@ -206,7 +206,7 @@ Next we'll subscribe our user to the first bug we've just registered:
     >>> browser.open(bug_1_url)
     >>> browser.getLink('Subscribe someone else').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Bug...Subscribe someone else to the bug report...
+    Bug...Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
     >>> browser.getControl('Add').click()
@@ -229,7 +229,7 @@ Next we'll subscribe our user to the second bug we've just registered:
     >>> browser.open(bug_2_url)
     >>> browser.getLink('Subscribe someone else').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Bug...Subscribe someone else to the bug report...
+    Bug...Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
     >>> browser.getControl('Add').click()

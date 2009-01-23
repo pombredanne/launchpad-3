@@ -64,9 +64,23 @@ registerLaunchpadFunction(hookUpFilterSubmission);
       </tr>
     </thead>
     <tbody>
+        <tal:allow-setting-dev-focus condition="context/view/show_set_development_focus">
+        <tal:missing-dev-focus define="product context/view/context;
+                                       dev_focus context/view/has_development_focus_branch"
+             condition="not: dev_focus">
+      <tal:ignore condition="nothing">
+        Only show the warning and link if the user can actually set the development focus
+      </tal:ignore>
+      <tr tal:condition="product/required:launchpad.Edit"
+          tal:define="edit_link product/development_focus/fmt:url/+linkbranchtoseries">
+        <td colspan="5" class="branch-no-dev-focus">A development focus branch hasn't 
+            been specified, <a tal:attributes="href edit_link">set it now</a>.</td>
+      </tr>
+      </tal:missing-dev-focus>
+      </tal:allow-setting-dev-focus>
       <tr tal:repeat="branch context/branches">
         <td>
-          <a tal:attributes="href branch/fmt:url;
+          <img src="/@@/branch" /> <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"
              tal:content="branch/bzr_identity">
                Name
@@ -74,7 +88,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
           <tal:associated-series repeat="series branch/associated_product_series"
                                  condition="context/view/show_series_links">
             <tal:first-series condition="repeat/series/start">
-              <br/><strong>Series:</strong>
+            <br/><strong style="margin-left: 2.5em;">Series:</strong>
             </tal:first-series>
             <tal:comment condition="nothing">
               The lack of whitespace in the following tal expression

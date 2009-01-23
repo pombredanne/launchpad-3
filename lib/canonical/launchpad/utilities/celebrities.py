@@ -7,8 +7,8 @@ __all__ = ['LaunchpadCelebrities']
 from zope.interface import implements
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonSet, IDistributionSet, IBugTrackerSet,
-    IProductSet, NotFoundError, IDistributionMirrorSet)
+    ILanguageSet, ILaunchpadCelebrities, IPersonSet, IDistributionSet,
+    IBugTrackerSet, IProductSet, NotFoundError, IDistributionMirrorSet)
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
@@ -55,6 +55,14 @@ class CelebrityDescriptor:
         self.interface = interface
         self.name = name
 
+    def _getCelebrityByName(self, utility):
+        """Find the celebrity by name."""
+        return utility.getByName(self.name)
+
+    def _isRightCelebrity(self, celebrity):
+        """Is this the celebrity we were looking for?"""
+        return celebrity.name == self.name
+
     def __get__(self, instance, cls=None):
         if instance is None:
             return self
@@ -62,7 +70,7 @@ class CelebrityDescriptor:
         utility = getUtility(self.interface)
         if self.id is None:
             try:
-                celebrity = utility.getByName(self.name)
+                celebrity = self._getCelebrityByName(utility)
                 if celebrity is None:
                     raise MissingCelebrityError(self.name)
             except NotFoundError:
@@ -71,11 +79,25 @@ class CelebrityDescriptor:
         else:
             try:
                 celebrity = utility.get(self.id)
-                if celebrity is None or celebrity.name != self.name:
+                if celebrity is None or not self._isRightCelebrity(celebrity):
                     raise MutatedCelebrityError(self.name)
             except NotFoundError:
                 raise MutatedCelebrityError(self.name)
         return celebrity
+
+
+class LanguageCelebrityDescriptor(CelebrityDescriptor):
+    """A `CelebrityDescriptor` for celebrities that are languages.
+
+    Unlike most other celebrities, languages are retrieved by code.
+    """
+    def _getCelebrityByName(self, utility):
+        """See `CelebrityDescriptor`."""
+        return utility.getLanguageByCode(self.name)
+
+    def _isRightCelebrity(self, celebrity):
+        """See `CelebrityDescriptor`."""
+        return celebrity.code == self.name
 
 
 class LaunchpadCelebrities:
@@ -85,10 +107,12 @@ class LaunchpadCelebrities:
     admin = CelebrityDescriptor(IPersonSet, 'admins')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
+    english = LanguageCelebrityDescriptor(ILanguageSet, 'en')
     rosetta_experts = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
     bazaar_experts = CelebrityDescriptor(IPersonSet, 'bazaar-experts')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
+    gnome_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'gnome-bugs')
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
@@ -106,6 +130,8 @@ class LaunchpadCelebrities:
         IPersonSet, 'mailing-list-experts')
     katie = CelebrityDescriptor(IPersonSet, 'katie')
     commercial_admin = CelebrityDescriptor(IPersonSet, 'commercial-admins')
+    lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
+    ppa_key_guard = CelebrityDescriptor(IPersonSet, 'ppa-key-guard')
 
     @property
     def ubuntu_archive_mirror(self):

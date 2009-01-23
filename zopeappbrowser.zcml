@@ -8,7 +8,7 @@
     <!-- <browser:defaultSkin name="zope.app.rotterdam.Rotterdam" /> -->
 
     <!-- <include package="zope.app.exception.browser" /> -->
-    <include package="zope.app.traversing.browser" />
+    <include package="zope.traversing.browser" />
     <!--
     <include package="zope.app.security.browser" />
       -->

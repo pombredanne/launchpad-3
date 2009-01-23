@@ -7,14 +7,15 @@ import grp
 import pwd
 import sys
 import errno
+import socket
 import tempfile
 import subprocess
 
 from canonical.config import config
 from canonical.launchpad.mailman.config import (
-    configure_hostname, configure_prefix, configure_siteowner,
-    configure_usergroup)
+    configure_prefix, configure_siteowner)
 from canonical.launchpad.mailman.monkeypatches import monkey_patch
+from lazr.config import as_username_groupname
 from configs import generate_overrides
 
 basepath = [part for part in sys.path if part]
@@ -42,7 +43,7 @@ def build_mailman():
 
     # Make sure the target directories exist and have the correct
     # permissions, otherwise configure will complain.
-    user, group = configure_usergroup(config.mailman.build_user_group)
+    user, group = as_username_groupname(config.mailman.build_user_group)
     # Now work backwards to get the uid and gid
     try:
         uid = pwd.getpwnam(user).pw_uid
@@ -68,7 +69,10 @@ def build_mailman():
     os.chmod(var_dir, 02775)
 
     mailman_source = os.path.join('sourcecode', 'mailman')
-    build_host_name = configure_hostname(config.mailman.build_host_name)
+    if config.mailman.build_host_name:
+        build_host_name = config.mailman.build_host_name
+    else:
+        build_host_name = socket.getfqdn()
 
     # Build and install the Mailman software.  Note that we don't care about
     # --with-cgi-gid because we're not going to use that Mailman subsystem.
@@ -97,6 +101,7 @@ def build_mailman():
         sys.exit(retcode)
     # Try again to import the package.
     try:
+        # pylint: disable-msg=W0404
         import Mailman
     except ImportError:
         print >> sys.stderr, 'Could not import the Mailman package'

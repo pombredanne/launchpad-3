@@ -144,7 +144,6 @@ When the FAQ is modified, the attributes are automatically updated.
     >>> from zope.interface import providedBy
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> old_faq = Snapshot(firefox_faq, providing=providedBy(firefox_faq))
     >>> firefox_faq.keywords = 'extension'
     >>> notify(SQLObjectModifiedEvent(
@@ -188,6 +187,8 @@ But if we make him an answer contact, he will:
     >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
     >>> firefox.addAnswerContact(no_priv)
     True
+    >>> from canonical.launchpad.webapp.authorization import clear_cache
+    >>> clear_cache()
     >>> check_permission('launchpad.Edit', firefox_faq)
     True
 

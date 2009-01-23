@@ -77,6 +77,25 @@ The RP config contains all the information we'd expect:
     OWNER_CREATED_UNKNOWN_TRUSTROOT
     >>> logout()
 
+The trust_root will have a trailing slash appended even if the user
+does not specify one.
+
+    >>> admin_browser.open('http://openid.launchpad.dev/+rpconfig')
+    >>> admin_browser.getLink('Add an RP config').click()
+    >>> admin_browser.getControl('Trust Root').value = 'http://example-two.com'
+    >>> admin_browser.getControl('Display Name').value = 'Example Two RP'
+    >>> admin_browser.getControl('Description').value = 'example description'
+    >>> admin_browser.getControl('Create').click()
+
+The new RP configuration page is now included in the list, with the
+trailing slash in the trust root:
+
+    >>> print admin_browser.contents
+    <...
+    <td><a href="...">Example Two RP</a></td>
+    <td>http://example-two.com/</td>
+    ...
+
 
 == Editing RP Configurations ==
 

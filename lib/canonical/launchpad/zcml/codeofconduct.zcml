@@ -7,12 +7,12 @@
 <facet facet="overview">
 
     <!-- CodeofConduct -->
-    <content class="canonical.launchpad.database.CodeOfConduct">
+    <class class="canonical.launchpad.database.CodeOfConduct">
         <allow interface="canonical.launchpad.interfaces.ICodeOfConduct" />
         <require
             permission="launchpad.AnyPerson"
             set_schema="canonical.launchpad.interfaces.ICodeOfConduct" />
-    </content>
+    </class>
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -44,17 +44,14 @@
         attribute="__call__"
         />
 
-    <browser:generalform
+    <browser:page
         name="+sign"
         for="canonical.launchpad.interfaces.ICodeOfConduct"
-        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
-        label="Sign a code of conduct"
-        fields="signedcode"
         class="canonical.launchpad.browser.SignedCodeOfConductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/signedcodeofconduct-add.pt"
         >
-    </browser:generalform>
+    </browser:page>
 
     <!-- CodeOfConductConf -->
     <securedutility
@@ -100,12 +97,12 @@
 
 
     <!-- SignedCodeofConduct -->
-    <content class="canonical.launchpad.database.SignedCodeOfConduct">
+    <class class="canonical.launchpad.database.SignedCodeOfConduct">
         <allow interface="canonical.launchpad.interfaces.ISignedCodeOfConduct" />
         <require
             permission="launchpad.AnyPerson"
             set_schema="canonical.launchpad.interfaces.ISignedCodeOfConduct" />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
@@ -146,9 +143,9 @@
     </browser:editform>
 
     <!-- SignedCodeOfConductSet -->
-    <content class="canonical.launchpad.database.SignedCodeOfConductSet">
+    <class class="canonical.launchpad.database.SignedCodeOfConductSet">
         <allow interface="canonical.launchpad.interfaces.ISignedCodeOfConductSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.SignedCodeOfConductSet"

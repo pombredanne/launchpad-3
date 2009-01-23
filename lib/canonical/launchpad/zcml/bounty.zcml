@@ -7,12 +7,12 @@
 <facet facet="bounties">
 
   <!-- Bounty -->
-  <content class="canonical.launchpad.database.Bounty">
+  <class class="canonical.launchpad.database.Bounty">
     <allow interface="canonical.launchpad.interfaces.IBounty" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.IBounty" />
-  </content>
+  </class>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IBounty"
@@ -77,26 +77,19 @@
         template="../templates/bounty-edit.pt"
         />
 
-  <browser:addform
-    name="+addmessage"
-    for="canonical.launchpad.interfaces.IBounty"
-    schema="canonical.launchpad.interfaces.IMessage"
-    class="canonical.launchpad.browser.MessageAddView"
-    label="Add message or comment"
-    fields="subject content owner"
-    keyword_arguments="subject content owner"
-    permission="launchpad.AnyPerson"
-    template="../templates/message-add.pt">
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    <browser:page
+      name="+addmessage"
+      for="canonical.launchpad.interfaces.IBounty"
+      class="canonical.launchpad.browser.MessageAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/message-add.pt"
+      />
 
 
     <!-- BountySet -->
-    <content class="canonical.launchpad.database.BountySet">
+    <class class="canonical.launchpad.database.BountySet">
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BountySet"

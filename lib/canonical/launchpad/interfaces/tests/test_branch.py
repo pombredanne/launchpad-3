@@ -38,6 +38,23 @@ class TestFormatSupport(TestCase):
         self.assertEqual(
             set(), bzrlib_format_strings.difference(launchpad_format_strings))
 
+    def test_repositoryDescriptions(self):
+        self.checkDescriptions(RepositoryFormat)
+
+    def test_branchDescriptions(self):
+        self.checkDescriptions(BranchFormat)
+
+    def test_controlDescriptions(self):
+        self.checkDescriptions(ControlFormat)
+
+    def checkDescriptions(self, format_enums):
+        for item in format_enums.items:
+            description = item.description
+            if description.endswith('\n'):
+                description = description[:-1]
+            self.assertTrue(len(description.split('\n')) == 1,
+                            item.description)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

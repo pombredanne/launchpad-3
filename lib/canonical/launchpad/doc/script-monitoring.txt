@@ -32,15 +32,16 @@ IScriptActivitySet.recordSuccess():
   >>> activity = getUtility(IScriptActivitySet).recordSuccess(
   ...     name='script-name',
   ...     date_started=datetime.datetime(2007,2,1,10,0,tzinfo=UTC),
-  ...     date_completed=datetime.datetime(2007,2,1,10,1,tzinfo=UTC))
+  ...     date_completed=datetime.datetime(2007,2,1,10,1,tzinfo=UTC),
+  ...     hostname='script-host')
 
 The activity object records the script name, the host name it ran on
 and the start and end timestamps:
 
   >>> print activity.name
   script-name
-  >>> activity.hostname == socket.gethostname()
-  True
+  >>> print activity.hostname
+  script-host
   >>> print activity.date_started
   2007-02-01 10:00:00+00:00
   >>> print activity.date_completed
@@ -53,12 +54,21 @@ will match the activity we just created:
   >>> print activity.date_started
   2007-02-01 10:00:00+00:00
 
-
 If no activity has occurred for a script, getLastActivity() returns
 None:
 
   >>> print getUtility(IScriptActivitySet).getLastActivity('no-such-script')
   None
+
+If the hostname parameter is omitted, it defaults to the host the
+script ran on, as determined by 'socket.gethostname()':
+
+  >>> local_activity = getUtility(IScriptActivitySet).recordSuccess(
+  ...     name=factory.getUniqueString(),
+  ...     date_started=datetime.datetime.now(UTC),
+  ...     date_completed=datetime.datetime.now(UTC))
+  >>> local_activity.hostname == socket.gethostname()
+  True
 
 
 == LaunchpadScript Integration ==
@@ -70,13 +80,13 @@ and others where it is useful to monitor the result.
   >>> script_file = tempfile.NamedTemporaryFile()
   >>> script_file.write("""
   ... from canonical.launchpad.scripts.base import LaunchpadCronScript
-  ... 
+  ...
   ... class TestScript(LaunchpadCronScript):
   ...     def main(self):
   ...         # Fail if we are told to do so
   ...         if self.args[0] == 'fail':
   ...             raise RuntimeError('Some failure')
-  ... 
+  ...
   ... if __name__ == '__main__':
   ...     script = TestScript('test-script')
   ...     script.run()

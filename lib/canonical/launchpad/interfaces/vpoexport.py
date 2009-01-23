@@ -34,6 +34,9 @@ class IVPOExportSet(Interface):
 
         The filtering is done based on the 'series', last modified 'date',
         archive 'component' and if it belongs to a 'languagepack'
+
+        Results are grouped by `POTemplate` to allow for caching of
+        information related to the template.
         """
 
     def get_distroseries_pofiles_count(series, date=None, component=None,

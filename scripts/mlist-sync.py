@@ -3,7 +3,7 @@
 
 """Sync Mailman data from one Launchpad to another."""
 
-# XXX BarryWarsaw 12-Feb-2008
+# XXX BarryWarsaw 2008-02-12:
 # Things this script does NOT do correctly.
 #
 # - Fix up the deactivated lists.  This isn't done because that data lives in
@@ -32,6 +32,7 @@ import subprocess
 import _pythonpath
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -170,14 +171,19 @@ class MailingListSyncScript(LaunchpadCronScript):
                 old_address = '%s@%s' % (list_name, self.options.hostname)
                 for email_address in mlist_addresses:
                     if email_address.email == old_address:
-                        email_address.email = lp_mailing_list.address
+                        new_address = lp_mailing_list.address
+                        removeSecurityProxy(email_address).email = new_address
+                        self.logger.info('%s -> %s', old_address, new_address)
                         break
                 else:
                     self.logger.error('No change to LP email address for: %s',
                                       list_name)
             else:
-                email_address = mlist_addresses[0]
+                email_address = removeSecurityProxy(mlist_addresses[0])
+                old_address = email_address.email
                 email_address.email = lp_mailing_list.address
+                self.logger.info('%s -> %s',
+                                 old_address, lp_mailing_list.address)
 
     def deleteMailmanList(self, list_name):
         """Delete all Mailman data structures for `list_name`."""

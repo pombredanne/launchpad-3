@@ -55,9 +55,9 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            # XXX RBC 2007-05-23 bug 31546, 30633: builders that are not 'ok'
-            # are not worth rechecking here for some currently undocumented
-            # reason.
+            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
+            # 'ok' are not worth rechecking here for some currently
+            # undocumented reason. This also relates to bug #30633.
             if builder.builderok:
                 self.updateBuilderStatus(builder, arch)
 
@@ -81,11 +81,14 @@ class BuilderGroup:
         # exceptions raised in the Builder API since we already started the
         # main refactoring of this area.
         except (ValueError, TypeError, xmlrpclib.Fault,
-                socket.error, BuildDaemonError), reason:
+                BuildDaemonError), reason:
             builder.failbuilder(str(reason))
             self.logger.warn(
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
+        except socket.error, reason:
+            error_message = str(reason)
+            builder.handleTimeout(self.logger, error_message)
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information doesn't match with DB.

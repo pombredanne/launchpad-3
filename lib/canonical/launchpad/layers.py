@@ -8,7 +8,8 @@ Also define utilities that manipulate layers.
 __metaclass__ = type
 
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest, IDefaultBrowserLayer)
 
 from canonical.lazr.interfaces.rest import (
     WebServiceLayer as LazrWebServiceLayer)
@@ -22,7 +23,7 @@ def setFirstLayer(request, layer):
     directlyProvides(request, layer, directlyProvidedBy(request))
 
 
-class LaunchpadLayer(IDefaultBrowserLayer):
+class LaunchpadLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
 
@@ -46,9 +47,14 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
+# XXX sinzui 2008-09-04 bug=264783:
+# Remove this layer.
+class OpenIDLayer(LaunchpadLayer):
+    """The `OpenID` layer."""
 
-class OpenIdLayer(LaunchpadLayer):
-    """The `OpenId` layer."""
+
+class IdLayer(LaunchpadLayer):
+    """The new OpenID `Id` layer."""
 
 
 class DebugLayer(Interface):
@@ -87,8 +93,9 @@ class ShipItKUbuntuLayer(ShipItLayer):
     """The `ShipIt` for KUbuntu layer."""
 
 
-class ShipItEdUbuntuLayer(ShipItLayer):
+class ShipItEdUbuntuLayer(IDefaultBrowserLayer):
     """The `ShipIt` for EdUbuntu layer."""
+
 
 class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""

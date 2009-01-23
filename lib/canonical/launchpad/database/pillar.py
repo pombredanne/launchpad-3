@@ -8,25 +8,30 @@ Pillars are currently Product, Project and Distribution.
 
 __metaclass__ = type
 
+import warnings
+
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.zope.interfaces import IZStorm
+from storm.expr import LeftJoin, NamedFunc, Select
+from storm.info import ClassAlias
+from storm.locals import SQL
+from storm.store import Store
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-        NotFoundError, IPillarNameSet, IPillarName,
-        IProduct, IDistribution,
-        IDistributionSet, IProductSet, IProjectSet,
-        )
-
 from canonical.launchpad.database.featuredproject import FeaturedProject
+from canonical.launchpad.database.productlicense import ProductLicense
+from canonical.launchpad.interfaces import (
+    IDistribution, IDistributionSet, IPillarName, IPillarNameSet, IProduct,
+    IProductSet, IProjectSet, License, NotFoundError)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 __all__ = [
     'pillar_sort_key',
+    'HasAliasMixin',
     'PillarNameSet',
     'PillarName',
     ]
@@ -56,20 +61,19 @@ class PillarNameSet:
 
     def __contains__(self, name):
         """See `IPillarNameSet`."""
-        # XXX flacoste 20071009 Workaround bug #90983.
-        name = name.encode('ASCII')
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.execute("""
             SELECT TRUE
             FROM PillarName
-            WHERE name=? AND active IS TRUE
-            """, [name])
+            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+                   OR name=?)
+                AND alias_for IS NULL
+                AND active IS TRUE
+            """, [name, name])
         return result.get_one() is not None
 
     def __getitem__(self, name):
         """See `IPillarNameSet`."""
-        # XXX flacoste 20071009 Workaround bug #90983.
-        name = name.encode('ASCII')
         pillar = self.getByName(name, ignore_inactive=True)
         if pillar is None:
             raise NotFoundError(name)
@@ -87,28 +91,27 @@ class PillarNameSet:
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
 
-        # XXX flacoste 20071009 Workaround bug #90983.
-        name = name.encode('ASCII')
 
         # Retrieve information out of the PillarName table.
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         cur = cursor()
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
-            WHERE name=?
+            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+                   OR name=?)
+                AND alias_for IS NULL
             """
         if ignore_inactive:
             query += " AND active IS TRUE"
-        result = store.execute(query, [name])
+        result = store.execute(query, [name, name])
         row = result.get_one()
         if row is None:
             return None
 
-        assert len([column for column in row[1:] if column is None]) == 2, """
-                One (and only one) of project, project or distribution may
-                be NOT NULL
-                """
+        assert len([column for column in row[1:] if column is None]) == 2, (
+            "One (and only one) of product, project or distribution may be "
+            "NOT NULL: %s" % row[1:])
 
         id, product, project, distribution = row
 
@@ -119,90 +122,112 @@ class PillarNameSet:
         else:
             return getUtility(IDistributionSet).get(distribution)
 
-    def build_search_query(self, text):
-        return """
-            SELECT 'distribution' AS otype, id, name, title, description,
-                   icon,
-                   rank(fti, ftq(%(text)s)) AS rank
-            FROM distribution
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
+    def build_search_query(self, text, extra_columns=()):
+        """Query parameters shared by search() and count_search_matches().
 
-            UNION ALL
+        :returns: Storm ResultSet object
+        """
+        # These classes are imported in this method to prevent an import loop.
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.project import Project
+        from canonical.launchpad.database.distribution import Distribution
+        OtherPillarName = ClassAlias(PillarName)
+        origin = [
+            PillarName,
+            LeftJoin(
+                OtherPillarName, PillarName.alias_for == OtherPillarName.id),
+            LeftJoin(Product, PillarName.product == Product.id),
+            LeftJoin(Project, PillarName.project == Project.id),
+            LeftJoin(
+                Distribution, PillarName.distribution == Distribution.id),
+            ]
+        conditions = SQL('''
+            PillarName.active = TRUE
+            AND (PillarName.name = lower(%(text)s) OR
 
-            SELECT 'project' AS otype, id, name, title, description, icon,
-                rank(fti, ftq(%(text)s)) AS rank
-            FROM product
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
-                AND active IS TRUE
+                 Product.fti @@ ftq(%(text)s) OR
+                 lower(Product.title) = lower(%(text)s) OR
 
-            UNION ALL
+                 Project.fti @@ ftq(%(text)s) OR
+                 lower(Project.title) = lower(%(text)s) OR
 
-            SELECT 'project group' AS otype, id, name, title, description,
-                icon,
-                rank(fti, ftq(%(text)s)) AS rank
-            FROM project
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
-                AND active IS TRUE
-
-            UNION ALL
-
-            SELECT 'distribution' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM distribution
-            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
-
-            UNION ALL
-
-            SELECT 'project group' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM project
-            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
-                AND active IS TRUE
-
-            UNION ALL
-
-            SELECT 'project' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM product
-            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
-                AND active IS TRUE
-
-            """ % sqlvalues(text=text)
+                 Distribution.fti @@ ftq(%(text)s) OR
+                 lower(Distribution.title) = lower(%(text)s)
+                )
+            ''' % sqlvalues(text=text))
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        columns = [
+            PillarName, OtherPillarName, Product, Project, Distribution]
+        for column in extra_columns:
+            columns.append(column)
+        return store.using(*origin).find(tuple(columns), conditions)
 
     def count_search_matches(self, text):
-        base_query = self.build_search_query(text)
-        count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
-        store = getUtility(IZStorm).get('main')
-        return store.execute(count_query).get_one()[0]
+        result = self.build_search_query(text)
+        return result.count()
 
     def search(self, text, limit):
         """See `IPillarSet`."""
+        # These classes are imported in this method to prevent an import loop.
+        from canonical.launchpad.database.product import (
+            Product, ProductWithLicenses)
         if limit is None:
             limit = config.launchpad.default_batch_size
-        query = self.build_search_query(text) + """
-            /* we order by rank AND name to break ties between pillars with
-               the same rank in a consistent fashion, and we add the hard
-               LIMIT */
-            ORDER BY rank DESC, name
-            LIMIT %d
-            """ % limit
-        store = getUtility(IZStorm).get('main')
-        result = store.execute(query)
-        keys = ['type', 'id', 'name', 'title', 'description', 'icon', 'rank']
+
+        class Array(NamedFunc):
+            """Storm representation of the array() PostgreSQL function."""
+            name = 'array'
+
+        # Pull out the licenses as a subselect which is converted
+        # into a PostgreSQL array so that multiple licenses per product
+        # can be retrieved in a single row for each product.
+        extra_column = Array(
+            Select(columns=[ProductLicense.license],
+                   where=(ProductLicense.product == Product.id),
+                   tables=[ProductLicense]))
+        result = self.build_search_query(text, [extra_column])
+
+        # If the search text matches the name or title of the
+        # Product, Project, or Distribution exactly, then this
+        # row should get the highest search rank (9999999).
+        # Each row in the PillarName table will join with only one
+        # of either the Product, Project, or Distribution tables,
+        # so the coalesce() is necessary to find the rank() which
+        # is not null.
+        result.order_by(SQL('''
+            (CASE WHEN PillarName.name = lower(%(text)s)
+                      OR lower(Product.title) = lower(%(text)s)
+                      OR lower(Project.title) = lower(%(text)s)
+                      OR lower(Distribution.title) = lower(%(text)s)
+                THEN 9999999
+                ELSE coalesce(rank(Product.fti, ftq(%(text)s)),
+                              rank(Project.fti, ftq(%(text)s)),
+                              rank(Distribution.fti, ftq(%(text)s)))
+            END) DESC, PillarName.name
+            ''' % sqlvalues(text=text)))
         # People shouldn't be calling this method with too big limits
         longest_expected = 2 * config.launchpad.default_batch_size
-        return shortlist(
-            [dict(zip(keys, values)) for values in result.get_all()],
-            longest_expected=longest_expected)
+        if limit > longest_expected:
+            warnings.warn(
+                "The search limit (%s) was greater "
+                "than the longest expected size (%s)"
+                % (limit, longest_expected),
+                stacklevel=2)
+        pillars = []
+        # Prefill pillar.product.licenses.
+        for pillar_name, other, product, project, distro, license_ids in (
+            result[:limit]):
+            pillar = pillar_name.pillar
+            if IProduct.providedBy(pillar):
+                licenses = [
+                    License.items[license_id]
+                    for license_id in license_ids]
+                product_with_licenses = ProductWithLicenses(
+                    pillar, tuple(sorted(licenses)))
+                pillars.append(product_with_licenses)
+            else:
+                pillars.append(pillar)
+        return pillars
 
     def add_featured_project(self, project):
         """See `IPillarSet`."""
@@ -251,14 +276,47 @@ class PillarName(SQLBase):
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)
+    alias_for = ForeignKey(
+        foreignKey='PillarName', dbName='alias_for', default=None)
 
     @property
     def pillar(self):
-        if self.distribution is not None:
-            return self.distribution
-        elif self.project is not None:
-            return self.project
-        elif self.product is not None:
-            return self.product
+        pillar_name = self
+        if self.alias_for is not None:
+            pillar_name = self.alias_for
+
+        if pillar_name.distribution is not None:
+            return pillar_name.distribution
+        elif pillar_name.project is not None:
+            return pillar_name.project
+        elif pillar_name.product is not None:
+            return pillar_name.product
         else:
-            raise AssertionError("Unknown pillar type: %s" % self.name)
+            raise AssertionError("Unknown pillar type: %s" % pillar_name.name)
+
+
+class HasAliasMixin:
+    """Mixin for classes that implement IHasAlias."""
+
+    @property
+    def aliases(self):
+        """See `IHasAlias`."""
+        aliases = PillarName.selectBy(alias_for=PillarName.byName(self.name))
+        return [alias.name for alias in aliases]
+
+    def setAliases(self, names):
+        """See `IHasAlias`."""
+        store = Store.of(self)
+        existing_aliases = set(self.aliases)
+        self_pillar = store.find(PillarName, name=self.name).one()
+        to_remove = set(existing_aliases).difference(names)
+        to_add = set(names).difference(existing_aliases)
+        for name in to_add:
+            assert store.find(PillarName, name=name).count() == 0, (
+                "This alias is already in use: %s" % name)
+            PillarName(name=name, alias_for=self_pillar)
+        for name in to_remove:
+            pillar_name = store.find(PillarName, name=name).one()
+            assert pillar_name.alias_for == self_pillar, (
+                "Can't remove an alias of another pillar.")
+            store.remove(pillar_name)

@@ -67,9 +67,16 @@ Inspecting the files processed:
   foo_1.0-1_i386.deb
   foo_1.0-1_powerpc.deb
 
-Perform acceptance, creating the respective PackageUpload item and children:
+Perform acceptance, creating the respective PackageUpload item and children.
+Please note how the package name appears only one time in the subject line
+(although the upload has one source and two builds associated with it).
 
+  >>> foo_mixed_upload.logger = mock_logger
   >>> success = foo_mixed_upload.do_accept()
+  DEBUG: ...
+  DEBUG:     Subject: [ubuntu/warty-security] foo 1.0-1 (New)
+  ...
+
   >>> foo_mixed_queue = foo_mixed_upload.queue_root
   >>> foo_mixed_queue.status.name
   'NEW'

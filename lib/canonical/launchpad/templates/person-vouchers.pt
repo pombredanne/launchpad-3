@@ -6,30 +6,17 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Redeem Vouchers for Commercial Subscriptions</h1>
-    </metal:heading>
     <div metal:fill-slot="main"
          tal:define="
-           commercial_projects view/owned_commercial_projects;
+           commercial_projects view/has_commercial_projects;
            config modules/canonical.config/config">
 
-      <tal:deactivate-feature
-        condition="not: config/commercial/is_subscription_feature_active">
-        <tal:comment condition="nothing">
-          XXX BradCrittenden 2008-06-20 bug=234070
-          Remove condition referencing is_subscription_feature_active after
-          this feature has launched.
-        </tal:comment>
-        Voucher redemption is not yet enabled in Launchpad.
-      </tal:deactivate-feature>
+        <h1>Redeem Vouchers for Commercial Subscriptions</h1>
 
-      <tal:activate-feature
-        condition="config/commercial/is_subscription_feature_active">
         <tal:not_commercial condition="not: commercial_projects">
           <tal:name replace="string:${context/displayname} " />
           does not own any commercial projects. Only project owners can redeem
@@ -41,26 +28,10 @@
               <p>
               <tal:name replace="string:${context/displayname} " />
               does not have any unredeemed vouchers available.</p>
-              <p>Here are the steps to obtain a commercial subscription:</p>
-              <ol>
-                <li>Purchase a Launchpad subscription in the
-                  <tal:XXX condition="nothing">
-                    2008074 bac: When the bug in the Canonical shop that does not
-                    redirect back to the original page after login is fixed the target
-                    attribute should be removed so that the link is followed within
-                    the same browser window (bug 248454).
-                  </tal:XXX>
-                  <a tal:define="config modules/canonical.config/config"
-                     tal:attributes="href config/commercial/purchase_subscription_url;
-                                     target string:_blank">
-                  Canonical Shop</a>.
-                </li>
-                <li>You will receive an email that your order has been processed.</li>
-                <li>Then you may apply the purchased subscription to this project
-                    on your <a href="/people/+me/+vouchers">
-                    voucher management page</a>.
-                </li>
-              </ol>
+
+              <tal:voucher-instructions
+                 replace="structure context/@@+voucher-purchase-instructions"
+                 />
 
             </tal:no_vouchers>
             <tal:has_voucher condition="vouchers">
@@ -87,7 +58,6 @@
             </tal:has_voucher>
           </tal:define_vouchers>
         </tal:commercial>
-        </tal:activate-feature>
     </div>
   </body>
 </html>

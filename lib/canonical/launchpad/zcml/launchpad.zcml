@@ -1,3 +1,4 @@
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -286,7 +287,7 @@
 
   <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
   <browser:page
-      for="dict"
+      for="*"
       name="+menubox"
       class="canonical.launchpad.browser.launchpad.MenuBox"
       template="../templates/launchpad-menubox.pt"
@@ -322,29 +323,12 @@
       permission="zope.Public"
       />
 
-  <!-- breadcrumbs -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+breadcrumbs"
-      class="canonical.launchpad.browser.launchpad.Breadcrumbs"
-      attribute="__call__"
-      permission="zope.Public"
-      />
   <!-- hierarchy -->
   <browser:page
       for="zope.interface.Interface"
       name="+hierarchy"
       class="canonical.launchpad.browser.launchpad.Hierarchy"
       attribute="__call__"
-      permission="zope.Public"
-      />
-
-  <!-- one-zero status page -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+1-0-templates"
-      class="canonical.launchpad.browser.OneZeroTemplateStatus"
-      template="../templates/launchpad-onezerostatus.pt"
       permission="zope.Public"
       />
 
@@ -398,6 +382,14 @@
       template="../templates/sources-list.pt"
       permission="zope.Public"
       />
+
+  <browser:page
+      for="zope.interface.Interface"
+      name="+test-webservice-js"
+      template="../templates/test-webservice-js.pt"
+      permission="zope.Public"
+      />
+
 
 </facet>
 
@@ -483,25 +475,9 @@ these URLs in Apache.
 <browser:page
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing-contrib"
-  class="canonical.launchpad.browser.launchpad.ContribIcingFolder"
+  class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
-  />
-
-
-<adapter
-  provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-  for="zope.interface.Interface"
-  factory="canonical.launchpad.browser.launchpad.DefaultStructuralObjectPresentation"
-  permission="zope.Public"
-  />
-
-<browser:page
-  for="zope.interface.Interface"
-  class="canonical.launchpad.browser.StructuralHeaderPresentationView"
-  permission="zope.Public"
-  name="+structural-header"
-  template="../templates/launchpad-structuralheader.pt"
   />
 
 <browser:page
@@ -509,14 +485,6 @@ these URLs in Apache.
   name="+applicationbuttons"
   permission="zope.Public"
   class="canonical.launchpad.browser.ApplicationButtons"
-  attribute="__call__"
-  />
-
-<browser:page
-  for="*"
-  name="+shortlink"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.DefaultShortLink"
   attribute="__call__"
   />
 

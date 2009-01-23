@@ -4,8 +4,8 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
+    'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
-    'ProductSeriesDynMenu',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -15,10 +15,7 @@ __all__ = [
     'ProductSeriesOverviewMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesShortLink',
-    'ProductSeriesSOP',
     'ProductSeriesSourceListView',
-    'ProductSeriesSourceSetView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesTranslationMenu',
     'ProductSeriesTranslationsExportView',
@@ -28,30 +25,27 @@ __all__ = [
 import cgi
 import os.path
 from zope.component import getUtility
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import (
-    DefaultShortLink, StructuralObjectPresentation)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
     IProductSeries, ISourcePackageNameSet, ITranslationImportQueue,
-    ITranslationImporter, ImportStatus, NotFoundError)
+    ITranslationImporter, NotFoundError)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
     Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -63,9 +57,6 @@ def quote(text):
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = IProductSeries
-
-    def breadcrumb(self):
-        return 'Series ' + self.context.name
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -83,26 +74,11 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return self.context.getRelease(name)
 
 
-class ProductSeriesSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.product.displayname + ' series:'
-
-    def getMainHeading(self):
-        return self.context.name
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Releases, most recent first.
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProductSeries`."""
+    @property
+    def text(self):
+        return 'Series ' + self.context.name
 
 
 class ProductSeriesFacets(StandardLaunchpadFacets):
@@ -208,7 +184,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
+    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -236,11 +212,6 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, summary, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show the sequence in which specs should be implemented'
-        return Link('+roadmap', text, summary, icon='info')
 
     def new(self):
         text = 'Register a blueprint'
@@ -411,7 +382,14 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
     def translationsUpload(self):
         """Upload new translatable resources related to this IProductSeries.
-        """
+
+        Uploads may fail if there are already entries with the same path name
+        and uploader (importer) in the queue and the new upload cannot be
+        safely matched to any of them.  The user will be informed about the
+        failure with a warning message."""
+        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # potemplate and pofile and should be unified.
+
         file = self.request.form['file']
         if not isinstance(file, FileUpload):
             if file == '':
@@ -442,41 +420,104 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext in translation_importer.supported_file_extensions):
+        if ext in translation_importer.supported_file_extensions:
             # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
+            entry = translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,
                 productseries=self.context)
-
-            self.request.response.addInfoNotification(
-                structured(
-                'Thank you for your upload. The file content will be'
-                ' reviewed soon by an admin and then imported into Launchpad.'
-                ' You can track its status from the <a href="%s/+imports">'
-                'Translation Import Queue</a>' % canonical_url(self.context)))
+            if entry is None:
+                self.request.response.addWarningNotification(
+                    "Upload failed.  The name of the file you "
+                    "uploaded matched multiple existing "
+                    "uploads, for different templates.  This makes it "
+                    "impossible to determine which template the new "
+                    "upload was for.  Try uploading to a specific "
+                    "template: visit the page for the template that you "
+                    "want to upload to, and select the upload option "
+                    "from there.")
+            else:
+                self.request.response.addInfoNotification(
+                    structured(
+                    'Thank you for your upload.  It will be automatically '
+                    'reviewed in the next few hours.  If that is not '
+                    'enough to determine whether and where your file '
+                    'should be imported, it will be reviewed manually by an '
+                    'administrator in the coming few days.  You can track '
+                    'your upload\'s status in the '
+                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                        canonical_url(self.context))))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
-            num = translation_import_queue_set.addOrUpdateEntriesFromTarball(
-                content, True, self.user,
-                productseries=self.context)
+            (num, conflicts) = (
+                translation_import_queue_set.addOrUpdateEntriesFromTarball(
+                    content, True, self.user,
+                    productseries=self.context))
 
             if num > 0:
+                if num == 1:
+                    plural_s = ''
+                    itthey = 'it'
+                else:
+                    plural_s = 's'
+                    itthey = 'they'
                 self.request.response.addInfoNotification(
                     structured(
-                    'Thank you for your upload. %d files from the tarball'
-                    ' will be reviewed soon by an admin and then imported'
-                    ' into Launchpad. You can track its status from the'
-                    ' <a href="%s/+imports">Translation Import Queue</a>' % (
-                        num,
+                    'Thank you for your upload. %d file%s from the tarball '
+                    'will be automatically '
+                    'reviewed in the next few hours.  If that is not enough '
+                    'to determine whether and where your file%s should '
+                    'be imported, %s will be reviewed manually by an '
+                    'administrator in the coming few days.  You can track '
+                    'your upload\'s status in the '
+                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                        num, plural_s, plural_s, itthey,
                         canonical_url(self.context))))
+                if len(conflicts) > 0:
+                    if len(conflicts) == 1:
+                        warning = (
+                            "A file could not be uploaded because its "
+                            "name matched multiple existing uploads, for "
+                            "different templates." )
+                        ul_conflicts = (
+                            "The conflicting file name was:<br /> "
+                            "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
+                    else:
+                        warning = (
+                            "%d files could not be uploaded because their "
+                            "names matched multiple existing uploads, for "
+                            "different templates." % len(conflicts))
+                        ul_conflicts = (
+                            "The conflicting file names were:<br /> "
+                            "<ul><li>%s</li></ul>" % (
+                            "</li><li>".join(map(cgi.escape, conflicts))))
+                    self.request.response.addWarningNotification(
+                        structured(
+                        warning + "  This makes it "
+                        "impossible to determine which template the new "
+                        "upload was for.  Try uploading to a specific "
+                        "template: visit the page for the template that you "
+                        "want to upload to, and select the upload option "
+                        "from there.<br />"+ ul_conflicts))
             else:
-                self.request.response.addWarningNotification(
-                    "Nothing has happened. The tarball you uploaded does not"
-                    " contain any file that the system can understand.")
+                if len(conflicts) == 0:
+                    self.request.response.addWarningNotification(
+                        "Upload ignored.  The tarball you uploaded did not "
+                        "contain any files that the system recognized as "
+                        "translation files.")
+                else:
+                    self.request.response.addWarningNotification(
+                        "Upload failed.  One or more of the files you "
+                        "uploaded had names that matched multiple existing "
+                        "uploads, for different templates.  This makes it "
+                        "impossible to determine which template the new "
+                        "upload was for.  Try uploading to a specific "
+                        "template: visit the page for the template that you "
+                        "want to upload to, and select the upload option "
+                        "from there.")
         else:
             self.request.response.addWarningNotification(
-                "Ignored your upload because the file you uploaded was not"
+                "Upload failed because the file you uploaded was not"
                 " recognised as a file that can be imported.")
 
     @property
@@ -549,17 +590,19 @@ class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
         return canonical_url(self.context.product, rootsite="code")
 
 
-class ProductSeriesReviewView(SQLObjectEditView):
+class ProductSeriesReviewView(LaunchpadEditFormView):
 
-    def changed(self):
-        """Redirect to the productseries page.
+    schema = IProductSeries
+    field_names = ['product', 'name']
+    label = 'Review product series details'
+    custom_widget('name', TextWidget, width=20)
 
-        We need this because people can now change productseries'
-        product and name, and this will make the canonical_url change too.
-        """
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             _('This Series has been changed'))
-        self.request.response.redirect(canonical_url(self.context))
+        self.next_url = canonical_url(self.context)
 
 
 class ProductSeriesRdfView(object):
@@ -590,44 +633,6 @@ class ProductSeriesRdfView(object):
         return encodeddata
 
 
-class ProductSeriesSourceSetView:
-    """This is a view class that supports a page listing all the
-    productseries upstream code imports. This used to be the SourceSource
-    table but the functionality was largely merged into ProductSeries, hence
-    the need for this View class.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.text = request.form.get('text', None)
-        try:
-            self.importstatus = int(request.form.get('state', None))
-        except (ValueError, TypeError):
-            self.importstatus = None
-        # setup the initial values if there was no form submitted
-        if request.form.get('search', None) is None:
-            self.importstatus = ImportStatus.TESTING.value
-
-        results = self.context.searchImports(
-            text=self.text, importstatus=self.importstatus)
-        self.batchnav = BatchNavigator(results, request)
-
-    def sourcestateselector(self):
-        html = '<select name="state">\n'
-        html += '  <option value="ANY"'
-        if self.importstatus == None:
-            html += ' selected'
-        html += '>Any</option>\n'
-        for enum in ImportStatus.items:
-            html += '<option value="'+str(enum.value)+'"'
-            if self.importstatus == enum.value:
-                html += ' selected'
-            html += '>' + str(enum.title) + '</option>\n'
-        html += '</select>\n'
-        return html
-
-
 class ProductSeriesSourceListView(LaunchpadView):
     """A listing of all the running imports.
 
@@ -639,19 +644,6 @@ class ProductSeriesSourceListView(LaunchpadView):
         results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
 
         self.batchnav = BatchNavigator(results, self.request)
-
-
-class ProductSeriesShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
-
-
-class ProductSeriesDynMenu(DynMenu):
-
-    def mainMenu(self):
-        for release in self.context.releases:
-            yield self.makeLink(release.title, context=release)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

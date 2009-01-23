@@ -8,46 +8,44 @@ __metaclass__ = type
 
 import os
 import shutil
-from shutil import move
 from subprocess import Popen, PIPE
 from unittest import TestLoader
 
 import bzrlib.branch
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import local_path_from_url
 
 import transaction
 from zope.component import getUtility
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
-    BranchTestCase, create_branch_with_one_revision)
-from canonical.codehosting.tests.servers import AuthserverOutOfProcess
+    create_branch_with_one_revision, LoomTestMixin)
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessAppServerLayer
 
 
-class BranchScannerTest(BranchTestCase):
+class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
     """Tests for cronscripts/branch-scanner.py."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessAppServerLayer
+
     # Branch to install branch-scanner test data on.
     branch_id = 7
 
     def setUp(self):
-        BranchTestCase.setUp(self)
-        authserver = AuthserverOutOfProcess()
-        authserver.setUp()
-        self.addCleanup(authserver.tearDown)
+        TestCaseWithTransport.setUp(self)
         self.db_branch = getUtility(IBranchSet)[self.branch_id]
         assert self.db_branch.revision_history.count() == 0
 
     def getWarehouseLocation(self, db_branch):
         """Get the warehouse location for a database branch."""
         destination = os.path.join(
-            local_path_from_url(config.supermirror.warehouse_root_url),
+            local_path_from_url(
+                config.codehosting.internal_branch_by_id_root),
             branch_id_to_path(db_branch.id))
         ensure_base(get_transport(destination))
         self.addCleanup(lambda: shutil.rmtree(destination))
@@ -108,10 +106,12 @@ class BranchScannerTest(BranchTestCase):
     def test_branchScannerLooms(self):
         # The branch scanner can scan loomified branches.
         destination = self.getWarehouseLocation(self.db_branch)
-        # makeLoomBranchAndTree creates the branch in a test-specific sandbox.
-        # We want to put it in the store.
-        loom_tree = self.makeLoomBranchAndTree('loom')
-        move(loom_tree.basedir, destination)
+
+        # Build the loom in the destination directory.
+        self.addCleanup(lambda: os.chdir(os.getcwd()))
+        os.chdir(destination)
+        loom_tree = self.makeLoomBranchAndTree('.')
+
         loom_branch = bzrlib.branch.Branch.open(destination)
         self.installTestBranch(self.db_branch, loom_branch)
 

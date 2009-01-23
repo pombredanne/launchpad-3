@@ -6,22 +6,22 @@
     i18n_domain="launchpad">
 
     <!-- SourcePackageReleaseFile -->
-    <content class="canonical.launchpad.database.SourcePackageReleaseFile">
+    <class class="canonical.launchpad.database.SourcePackageReleaseFile">
         <allow interface="canonical.launchpad.interfaces.ISourcePackageReleaseFile" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.ISourcePackageReleaseFile"
         />
-    </content>
+    </class>
 
     <!-- BinaryPackageFile -->
-    <content class="canonical.launchpad.database.BinaryPackageFile">
+    <class class="canonical.launchpad.database.BinaryPackageFile">
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageFile" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBinaryPackageFile"
         />
-    </content>
+    </class>
 
     <securedutility
       class="canonical.launchpad.database.BinaryPackageFileSet"

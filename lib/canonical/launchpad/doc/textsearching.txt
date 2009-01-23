@@ -323,7 +323,7 @@ Bug #44913 - Unicode characters in the wrong place
 Bug #44913 - Nothing but stopwords in a query needing repair
 
     >>> ftq('a)a')
-    (a)&a <=> None
+    a&a <=> None
 
 
 Stop words (words deemed too common in English to search on) are removed
@@ -396,33 +396,51 @@ or invalid leading operators
     (hi&mom) <=> 'hi' & 'mom'
 
     >>> ftq("(hi mom")
-    (hi&mom) <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("(((hi mom")
-    (((hi&mom))) <=> 'hi' & 'mom'
+    ((hi&mom)) <=> 'hi' & 'mom'
 
     >>> ftq("hi mom)")
-    (hi&mom) <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("hi mom)))")
-    (((hi&mom))) <=> 'hi' & 'mom'
+    ((hi&mom)) <=> 'hi' & 'mom'
 
     >>> ftq("hi (mom")
-    hi&(mom) <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("hi) mom")
-    (hi)&mom <=> 'hi' & 'mom'
+    hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("(foo .") # Bug 43245
-    (foo) <=> 'foo'
+    foo <=> 'foo'
 
     >>> ftq("(foo.")
-    (foo) <=> 'foo'
+    foo <=> 'foo'
 
     Bug #54972
 
     >>> ftq("a[a\n[a")
     ((a&a)|aa)&a <=> 'aa'
+
+    Bug #96698
+
+    >>> ftq("f)(")
+    f <=> 'f'
+
+    Bug #174368
+
+    >>> ftq(")foo(")
+    foo <=> 'foo'
+
+    Bug #160236
+
+    >>> ftq("foo&&bar-baz")
+    foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
+
+    >>> ftq("foo||bar.baz")
+    foo|((bar&baz)|barbaz) <=> 'foo' | ( 'bar' & 'baz' | 'barbaz' )
 
 
 Phrase Searching

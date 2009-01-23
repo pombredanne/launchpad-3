@@ -12,7 +12,6 @@ import unittest
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
     commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
@@ -28,8 +27,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    AppServerLayer, DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    AppServerLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -89,6 +88,13 @@ def uploaderTearDown(test):
     # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
+
+def archivepublisherSetUp(test):
+    """Setup the archive publisher script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
+
+
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
@@ -115,13 +121,6 @@ def peopleKarmaTearDown(test):
     DatabaseLayer.force_dirty_database()
     tearDown(test)
 
-def branchStatusSetUp(test):
-    test._authserver = AuthserverTacTestSetup()
-    test._authserver.setUp()
-
-def branchStatusTearDown(test):
-    test._authserver.tearDown()
-
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
@@ -130,9 +129,16 @@ def bugNotificationSendingSetUp(test):
 def bugNotificationSendingTearDown(test):
     tearDown(test)
 
-def statisticianSetUp(test):
+def cveSetUp(test):
+    lobotomize_stevea()
+    LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
+
+def statisticianSetUp(test):
+    test_dbuser = config.statistician.dbuser
+    test.globs['test_dbuser'] = test_dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
 
 def statisticianTearDown(test):
     tearDown(test)
@@ -251,7 +257,7 @@ def manageChrootSetup(test):
     LaunchpadZopelessLayer.switchDbUser("fiera")
 
 
-# XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
+# XXX BarryWarsaw 2007-08-15 bug=132784: as a placeholder for improving
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
 
@@ -277,6 +283,9 @@ def mailingListXMLRPCInternalSetUp(test):
         def isLaunchpadMember(self, address):
             return super(ImpedenceMatchingView, self).isLaunchpadMember(
                 address)
+        @mailinglists_helper.fault_catcher
+        def isTeamPublic(self, team_name):
+            return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
     # Expose in the doctest's globals, the view as the thing with the
     # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
@@ -353,22 +362,22 @@ special = {
             '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
-    'librarian.txt': LayeredDocFileSuite(
-            '../doc/librarian.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
     'message.txt': LayeredDocFileSuite(
             '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'cve-update.txt': LayeredDocFileSuite(
             '../doc/cve-update.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+            setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
             ),
     'nascentupload.txt': LayeredDocFileSuite(
             '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer,
+            ),
+    'archive-signing.txt': LayeredDocFileSuite(
+            '../doc/archive-signing.txt',
+            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
             ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
@@ -471,6 +480,12 @@ special = {
             '../doc/launchpadformharness.txt',
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer
+            ),
+    'bugzilla-import.txt': LayeredDocFileSuite(
+            '../doc/bugzilla-import.txt',
+            setUp=setUp, tearDown=tearDown,
+            stdout_logging_level=logging.WARNING,
+            layer=LaunchpadZopelessLayer
             ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',
@@ -688,6 +703,14 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-linking-back.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-linking-back.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                stdout_logging_level=logging.ERROR,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-mantis-csv.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-mantis-csv.txt',
@@ -702,9 +725,9 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'externalbugtracker-python.txt':
+    'externalbugtracker-roundup-python-bugs.txt':
             LayeredDocFileSuite(
-                '../doc/externalbugtracker-python.txt',
+                '../doc/externalbugtracker-roundup-python-bugs.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
@@ -773,14 +796,6 @@ special = {
             setUp=zopelessLaunchpadSecuritySetUp,
             tearDown=zopelessLaunchpadSecurityTearDown,
             layer=LaunchpadZopelessLayer,
-            ),
-    # Also run the pillar.txt doctest under the Zopeless layer.
-    # This exposed bug #149632.
-    'pillar.txt-zopeless': LayeredDocFileSuite(
-            '../doc/pillar.txt',
-            setUp=setUp, tearDown=tearDown,
-            #layer=ExperimentalLaunchpadZopelessLayer
-            layer=LaunchpadZopelessLayer
             ),
     'openid-fetcher.txt': LayeredDocFileSuite(
             '../doc/openid-fetcher.txt',
@@ -852,14 +867,18 @@ special = {
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,
         ),
-    'google-service-stub.txt': LayeredDocFileSuite(
-            '../doc/google-service-stub.txt',
-            layer=GoogleServiceLayer,
-            ),
+    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
+    # multiple spurious problems with layer and test.
+    # 'google-service-stub.txt': LayeredDocFileSuite(
+    #         '../doc/google-service-stub.txt',
+    #         layer=GoogleServiceLayer,
+    #         ),
     'karmacache.txt': LayeredDocFileSuite(
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
+    'filebug-data-parser.txt': LayeredDocFileSuite(
+        '../doc/filebug-data-parser.txt')
     }
 
 
@@ -883,7 +902,12 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests_without_logging = [
-        'answer-tracker-emailinterface.txt',
+        # XXX gary 2008-12-06 bug=305856: Spurious test failure discovered on
+        # buildbot, build 40.  Note that, to completely disable the test from
+        # running, the filename has been changed to
+        # answer-tracker-emailinterface.txt.disabled, so when this test is
+        # reinstated it will be need to be changed back.
+        # 'answer-tracker-emailinterface.txt',
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',

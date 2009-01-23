@@ -16,17 +16,15 @@
 
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
-  <tal:branch-summary content="structure context/@@+branch-summary" />
-
   <tal:has-proposals condition="view/proposal_count">
     <div tal:replace="structure view/proposals/@@+listing" />
   </tal:has-proposals>
 
-  <p id="no-proposals"
+  <em id="no-proposals"
      tal:condition="not: view/proposal_count"
      tal:content="view/no_proposal_message">
-    No reviews
-  </p>
+     No reviews
+  </em>
 
 </div>
 

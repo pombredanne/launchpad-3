@@ -15,6 +15,11 @@
         <allow interface="canonical.launchpad.interfaces.IHWDBApplication" />
     </securedutility>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="HWDBApplicationNavigation"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IHWDBApplication"
         path_expression="string:+hwdb"
@@ -34,6 +39,9 @@
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWSubmission"
             attributes="id" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="status" />
     </class>
 
     <browser:url
@@ -85,11 +93,6 @@
         name="+hwdb-submissions"
         />
 
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="HWDBSubmissionSetNavigation"
-        />
-
     <class class="canonical.launchpad.browser.hwdb.HWDBFingerprintSetView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
@@ -109,8 +112,13 @@
 
     <class class="canonical.launchpad.database.HWVendorID">
         <allow interface="canonical.launchpad.interfaces.IHWVendorID" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWVendorID"
+        path_expression="string:+hwvendorid/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWVendorIDSet"
@@ -120,8 +128,13 @@
 
     <class class="canonical.launchpad.database.HWDevice">
         <allow interface="canonical.launchpad.interfaces.IHWDevice" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDevice"
+        path_expression="string:+device/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWDeviceSet"
@@ -144,8 +157,13 @@
     <class class="canonical.launchpad.database.HWDriver">
         <allow
             interface="canonical.launchpad.interfaces.IHWDriver" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDriver"
+        path_expression="string:+driver/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWDriverSet"
@@ -167,11 +185,29 @@
             interface="canonical.launchpad.interfaces.IHWDeviceDriverLinkSet" />
     </securedutility>
 
+    <class class="canonical.launchpad.database.HWDeviceClass">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDeviceClass" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.hwdb.HWDeviceClassSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceClassSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDeviceClassSet" />
+    </securedutility>
+
     <class class="canonical.launchpad.database.HWSubmissionDevice">
         <allow
             interface="canonical.launchpad.interfaces.IHWSubmissionDevice" />
-        <allow attributes="id" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWSubmissionDevice"
+        path_expression="string:+submissiondevice/${id}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWSubmissionDeviceSet"
@@ -180,4 +216,16 @@
             interface="canonical.launchpad.interfaces.IHWSubmissionDeviceSet" />
     </securedutility>
 
+    <class class="canonical.launchpad.database.HWSubmissionBug">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionBug" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWSubmissionBugSet"
+        provides="canonical.launchpad.interfaces.IHWSubmissionBugSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionBugSet" />
+    </securedutility>
 </configure>

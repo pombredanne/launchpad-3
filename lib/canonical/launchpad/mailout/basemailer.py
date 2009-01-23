@@ -12,7 +12,7 @@ __all__ = ['BaseMailer']
 
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import format_address, MailController
 from canonical.launchpad.mailout import text_delta
 from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
@@ -29,7 +29,7 @@ class BaseMailer:
     """
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None):
+                 delta=None, message_id=None):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -39,6 +39,8 @@ class BaseMailer:
         :param from_address: The from_address to use on emails.
         :param delta: A Delta object with members "delta_values", "interface"
             and "new_values", such as BranchMergeProposalDelta.
+        :param message_id: The Message-Id to use for generated emails.  If
+            not supplied, random message-ids will be used.
         """
         self._subject_template = subject
         self._template_name = template_name
@@ -47,15 +49,21 @@ class BaseMailer:
             self._recipients.add(recipient, reason, reason.mail_header)
         self.from_address = from_address
         self.delta = delta
+        self.message_id = message_id
 
-    def generateEmail(self, email):
+    def generateEmail(self, email, recipient):
         """Generate the email for this recipient.
 
         :return: (headers, subject, body) of the email.
         """
+        to_address = format_address(recipient.displayname, email)
         headers = self._getHeaders(email)
         subject = self._getSubject(email)
-        return (headers, subject, self._getBody(email))
+        body = self._getBody(email)
+        ctrl = MailController(
+            self.from_address, to_address, subject, body, headers)
+        self._addAttachments(ctrl)
+        return ctrl
 
     def _getSubject(self, email):
         """The subject template expanded with the template params."""
@@ -72,7 +80,16 @@ class BaseMailer:
         reply_to = self._getReplyToAddress()
         if reply_to is not None:
             headers['Reply-To'] = reply_to
+        if self.message_id is not None:
+            headers['Message-Id'] = self.message_id
         return headers
+
+    def _addAttachments(self, ctrl):
+        """Add any appropriate attachments to a MailController.
+
+        Default implementation does nothing.
+        """
+        pass
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
@@ -95,7 +112,5 @@ class BaseMailer:
     def sendAll(self):
         """Send notifications to all recipients."""
         for email, recipient in self._recipients.getRecipientPersons():
-            to_address = format_address(recipient.displayname, email)
-            headers, subject, body = self.generateEmail(email)
-            simple_sendmail(
-                self.from_address, to_address, subject, body, headers)
+            ctrl = self.generateEmail(email, recipient)
+            ctrl.send()

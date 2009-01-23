@@ -13,12 +13,12 @@ from canonical.launchpad.interfaces import IBranchSet, IProductSet
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies.dbobjects import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class BranchVocabTestCase(TestCase):
     """A base class for the branch vocabulary test cases."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Set up the anonymous security interaction.
@@ -42,21 +42,21 @@ class TestBranchVocabulary(BranchVocabTestCase):
         sprocket = factory.makeProduct(name='sprocket')
         # Scotty's branches.
         scotty = factory.makePerson(name='scotty')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=scotty, product=widget, name='fizzbuzz')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=scotty, product=widget, name='mountain')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=scotty, product=sprocket, name='fizzbuzz')
         # Spotty's branches.
         spotty = factory.makePerson(name='spotty')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=spotty, product=widget, name='hill')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=spotty, product=widget, name='sprocket')
         # Sprocket's branches.
         sprocket_person = factory.makePerson(name='sprocket')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=sprocket_person, product=widget, name='foo')
 
     def test_emptySearch(self):
@@ -109,6 +109,22 @@ class TestBranchVocabulary(BranchVocabTestCase):
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
 
+    def test_singleQueryResult(self):
+        # If there is a single search result that matches, use that
+        # as the result.
+        term = self.vocab.getTermByToken('mountain')
+        self.assertEqual(
+            '~scotty/widget/mountain',
+            term.value.unique_name)
+
+    def test_multipleQueryResult(self):
+        # If there are more than one search result, a LookupError is still
+        # raised.
+        self.assertRaises(
+            LookupError,
+            self.vocab.getTermByToken,
+            'fizzbuzz')
+
 
 class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
     """Test the BranchRestrictedOnProductVocabulary behaves as expected.
@@ -133,14 +149,14 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
         test_product = factory.makeProduct(name='widget')
         other_product = factory.makeProduct(name='sprocket')
         person = factory.makePerson(name='scotty')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=person, product=test_product, name='main')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=person, product=test_product, name='mountain')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=person, product=other_product, name='main')
         person = factory.makePerson(name='spotty')
-        factory.makeBranch(
+        factory.makeProductBranch(
             owner=person, product=test_product, name='hill')
 
     def test_mainBranches(self):
@@ -168,6 +184,22 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
             ]
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
+
+    def test_singleQueryResult(self):
+        # If there is a single search result that matches, use that
+        # as the result.
+        term = self.vocab.getTermByToken('mountain')
+        self.assertEqual(
+            '~scotty/widget/mountain',
+            term.value.unique_name)
+
+    def test_multipleQueryResult(self):
+        # If there are more than one search result, a LookupError is still
+        # raised.
+        self.assertRaises(
+            LookupError,
+            self.vocab.getTermByToken,
+            'scotty')
 
 
 class TestRestrictedBranchVocabularyOnBranch(

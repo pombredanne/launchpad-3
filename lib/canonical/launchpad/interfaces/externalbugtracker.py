@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IExternalBugTracker',
     'IExternalBugTrackerTokenAPI',
+    'ISupportsBackLinking',
     'ISupportsBugImport',
     'ISupportsCommentImport',
     'ISupportsCommentPushing',
@@ -136,4 +137,29 @@ class ISupportsCommentPushing(IExternalBugTracker):
             Launchpad.
         :return: The ID assigned to the comment by the remote bugtracker
             as a string.
+        """
+
+
+class ISupportsBackLinking(IExternalBugTracker):
+
+    def getLaunchpadBugId(remote_bug):
+        """Return a Launchpad bug ID for a given remote bug.
+
+        :param remote_bug: The ID of the bug on the remote tracker from
+            which to get the Launchpad bug ID.
+
+        The bug ID returned is that which the remote tracker has a
+        record of after setLaunchpadBugId() has been called.
+
+        Return None if there is no recorded Launchpad bug ID for
+        `remote_bug`.
+        """
+
+    def setLaunchpadBugId(remote_bug, launchpad_bug_id):
+        """Set the Launchpad bug ID for a bug on the remote bug tracker.
+
+        :param remote_bug: The ID of the bug on the remote tracker on
+            which to set the Launchpad bug ID.
+        :param launchpad_bug_id: The ID of the Launchpad bug that's
+            watching the remote bug.
         """

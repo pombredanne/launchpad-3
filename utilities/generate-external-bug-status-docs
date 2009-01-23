@@ -8,6 +8,13 @@
 # See https://help.launchpad.net/BugStatuses
 #
 
+# XXX: GavinPanella 2008-12-03 bug=235434: This script is a temporary
+# measure before moving the documentation of external bug status
+# mapping tables into Launchpad proper. It is not tested and will
+# remain so because it would be a mostly wasted effort. The impact of
+# this is very low because it is infrequently run, and typically only
+# by me, so I get to pick up the pieces.
+
 import _pythonpath
 
 import codecs
@@ -29,7 +36,7 @@ def generate_blank_lines(num):
 
 def generate_page_header():
     """Generate the header for the page."""
-    yield '[[Anchor(StatusTables)]]'
+    yield '<<Anchor(StatusTables)>>'
     yield '== Status mapping tables =='
     yield ''
     yield 'Last generated: %s.' % (
@@ -41,7 +48,7 @@ def generate_table_header(typ):
 
     :param typ: A member of `BugTrackerType`.
     """
-    yield '[[Anchor(%s)]]' % (typ.name,)
+    yield '<<Anchor(%s)>>' % (typ.name,)
     yield '=== %s ===' % (typ.title,)
 
 

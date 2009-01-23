@@ -54,8 +54,7 @@ status is returned.
 ...         print output
 
 >>> login('test@canonical.com')
->>> from canonical.launchpad.testing import factory
->>> factory.LaunchpadObjectFactory().makeBugAttachment(1)
+>>> factory.makeBugAttachment(1)
 <BugAttachment at ...>
 >>> logout()
 
@@ -104,7 +103,6 @@ status is returned.
 
 >>> check("/codeofconduct")
 >>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+sign", auth=True)
 >>> check("/codeofconduct/1.0/+download")
 
 >>> check("/projectgroups", auth=True)
@@ -156,7 +154,6 @@ status is returned.
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
->>> check("/ubuntu/+roadmap")
 >>> check_redirect("/ubuntu/+translations", status=301)
 >>> check("/ubuntu/+translations", host='translations.launchpad.dev')
 >>> check("/ubuntu/+edit", auth=True)
@@ -393,9 +390,6 @@ Approving/declining a bug nomination.
 Test /people traversals.
 
 >>> check("/people/")
->>> check("/people/+peoplelist")
->>> check("/people/+teamlist")
->>> check("/people/+ubunterolist")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
 >>> check("/people/+portlet-about")
@@ -458,8 +452,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/~sabdfl/+related-software")
 
 >>> check("/+code")
->>> check("/+code/series", auth=True)
->>> check("/+code/series/+bazaar-index", auth=True)
 
 >>> check("/+builds/bob/")
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
@@ -484,6 +476,10 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check_not_found("/sourcepackagenames")
 >>> check_not_found("/binarypackagenames")
 
+The pillar set is published through the web service, but not through
+the website.
+
+>>> check_not_found("/pillars")
 
 Check legacy URL redirects
 
@@ -500,6 +496,7 @@ Check redirects of Unicode URLs works
 Icing resources.
 
 >>> from canonical.launchpad.versioninfo import revno
+>>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
 >>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,

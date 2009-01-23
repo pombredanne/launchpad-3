@@ -1,7 +1,7 @@
 <configure xmlns="http://namespaces.zope.org/zope">
-    <content class="canonical.launchpad.database.BugActivity">
+    <class class="canonical.launchpad.database.BugActivity">
         <allow interface="canonical.launchpad.interfaces.IBugActivity" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BugActivitySet"

@@ -25,6 +25,7 @@ __all__ = [
 import base64
 import urllib2
 import weakref
+import transaction
 
 from zope.testbrowser.browser import Browser as _Browser
 
@@ -76,6 +77,18 @@ class Browser(_Browser):
     def close(self):
         """Yay!  Zope browsers don't have a close() method."""
         self.mech_browser.close()
+
+    def _changed(self):
+        """Ensure the current transaction is committed.
+
+        Because this browser is used in the AppServerLayer where it talks
+        real-HTTP to a child process, we need to ensure that the parent
+        process also gets its current transaction in sync with the child's
+        changes.  The easiest way to do that is to just commit the current
+        transaction.
+        """
+        super(Browser, self)._changed()
+        transaction.commit()
 
 
 def setUp(test):

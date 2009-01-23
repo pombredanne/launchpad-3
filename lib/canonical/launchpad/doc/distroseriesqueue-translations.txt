@@ -30,7 +30,8 @@ uploaded into the system.
   >>> hoary = distro_series_set.queryByName(ubuntu, 'hoary')
 
   # Create the Dapper distro series.
-  >>> dapper = distro_series_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
+  >>> dapper = ubuntu.newSeries(
+  ...     'dapper', 'Dapper', 'Dapper',
   ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
 
   # And an AMD 64 arch series.

@@ -86,8 +86,9 @@ elements.
 Only IField can be exported as entry fields.
 
     >>> from zope.interface import Attribute
-    >>> class NotAField1(Interface):
-    ...     an_attribute = exported(Attribute('A standard attribute'))
+    >>> class Foo(Interface):
+    ...     export_as_webservice_entry()
+    ...     not_a_field = exported(Attribute('A standard attribute'))
     Traceback (most recent call last):
       ...
     TypeError: exported() can only be used on IFields.
@@ -726,6 +727,11 @@ name, and is in the same module
     >>> entry_interface.__name__
     'IBookEntry'
 
+The original interface docstring is copied over to the new interface:
+
+    >>> entry_interface.__doc__
+    'A simple book data model.'
+
 It extends IEntry.
 
     >>> from canonical.lazr.interfaces.rest import IEntry
@@ -786,12 +792,16 @@ The resulting class is named based on the interface:
     >>> entry_adapter_factory.__name__
     'BookEntryAdapter'
 
+Its docstring is also copied over from the original interface:
+
+    >>> entry_adapter_factory.__doc__
+    'A simple book data model.'
+
 The resulting adapter has its schema attribute set to the exported
 interface, and proxies all attributes to the underlying object.
 
-    >>> from zope.interface import implements
     >>> from zope.interface.verify import verifyObject
-
+    >>> from zope.interface import implements
     >>> class Book(object):
     ...     """Simple IBook implementation."""
     ...     implements(IBook)
@@ -867,6 +877,11 @@ with the @collection_default_content decorator.
     >>> collection_adapter.find()
     ['A book', 'Another book']
 
+The adapter's docstring is taken from the original interface.
+
+    >>> collection_adapter.__doc__
+    'Set of all the books in the system.'
+
 If parameters were specified, they'll be passed in to the method by
 find(). The REQUEST_USER marker value will be replaced by the logged in
 user.
@@ -931,6 +946,11 @@ the ResourceOperation base class.
     'GET_IBookSetOnSteroids_searchBooks'
     >>> issubclass(read_method_adapter_factory, ResourceOperation)
     True
+
+The adapter's docstring is taken from the decorated method docstring.
+
+    >>> read_method_adapter_factory.__doc__
+    "Return list of books containing 'text'."
 
 The adapter's params attribute contains the specification of the
 parameters accepted by the operation.
@@ -1089,6 +1109,151 @@ IMethod marked for export:
     Traceback (most recent call last):
       ...
     TypeError: 'getAllBooks' isn't tagged for webservice export.
+
+
+=== Mutators ===
+
+A method can be designated as a mutator for some field. Here, the
+set_text() method is designated as the mutator for the 'text' field.
+
+    >>> from canonical.lazr.rest.declarations import mutator_for
+    >>> class IHasText(Interface):
+    ...     export_as_webservice_entry()
+    ...     text = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(text)
+    ...     @operation_parameters(text=TextLine())
+    ...     @export_write_operation()
+    ...     def set_text(text):
+    ...         pass
+
+The implementation of set_text() applies a standardized transform to the
+incoming text.
+
+    >>> from zope.interface import implements
+    >>> class HasText(object):
+    ...     implements(IHasText);
+    ...
+    ...     def __init__(self):
+    ...         self.text = ''
+    ...
+    ...     def set_text(self, text):
+    ...         self.text = "!" + text + "!"
+
+Generate the entry interface and adapter...
+
+    >>> hastext_entry_interface = generate_entry_interface(IHasText)
+    >>> hastext_entry_adapter_factory = generate_entry_adapter(
+    ...     IHasText, hastext_entry_interface)
+
+    >>> obj = HasText()
+    >>> hastext_entry_adapter = hastext_entry_adapter_factory(obj)
+
+...and you'll have an object that invokes set_text() when you set the
+'text' attribute.
+
+    >>> hastext_entry_adapter.text
+    ''
+    >>> hastext_entry_adapter.text = 'foo'
+    >>> hastext_entry_adapter.text
+    '!foo!'
+
+The original interface defines 'text' as read-only, but the
+generated interface does not.
+
+    >>> hastext_entry_interface.get('text').readonly
+    False
+
+It's not necessary to expose the mutator method as a write operation.
+
+    >>> class IHasText(Interface):
+    ...     export_as_webservice_entry()
+    ...     text = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(text)
+    ...     def set_text(text):
+    ...         pass
+
+
+A mutator method must take only one argument: the new value for the
+field. Taking no arguments is obviously an error.
+
+    >>> class ZeroArgumentMutator(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(value)
+    ...     def set_value():
+    ...         pass
+    Traceback (most recent call last):
+    ...
+    TypeError: A mutator method must take one and only one non-fixed
+    argument. set_value takes 0.
+
+Taking more than one argument is also an error...
+
+    >>> class TwoArgumentMutator(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(value)
+    ...     def set_value(arg1, arg2):
+    ...         pass
+    Traceback (most recent call last):
+    ...
+    TypeError: A mutator method must take one and only one non-fixed
+    argument. set_value takes 2.
+
+...unless all but one of the arguments are spoken for by a call_with()
+annotation. This definition does not result in a TypeError.
+
+    >>> class OneFixedArgumentMutator(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(value)
+    ...     @call_with(arg1=REQUEST_USER, arg3='fixed')
+    ...     @operation_parameters(arg2=TextLine())
+    ...     @export_write_operation()
+    ...     def set_value(arg1, arg2, arg3):
+    ...         pass
+
+A field can only have a mutator if it's read-only (not settable
+directly).
+
+    >>> class WritableMutator(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=False))
+    ...
+    ...     @mutator_for(value)
+    ...     @export_write_operation()
+    ...     def set_value(new_value):
+    ...         pass
+    Traceback (most recent call last):
+    ...
+    TypeError: Only a read-only field can have a mutator method.
+
+A field can only have one mutator.
+
+    >>> class FieldWithTwoMutators(Interface):
+    ...     export_as_webservice_entry()
+    ...     value = exported(TextLine(readonly=True))
+    ...
+    ...     @mutator_for(value)
+    ...     @export_write_operation()
+    ...     @operation_parameters(new_value=TextLine())
+    ...     def set_value(new_value):
+    ...         pass
+    ...
+    ...     @mutator_for(value)
+    ...     @export_write_operation()
+    ...     @operation_parameters(new_value=TextLine())
+    ...     def set_value_2(new_value):
+    ...         pass
+    Traceback (most recent call last):
+    ...
+    TypeError: A field can only have one mutator method; set_value_2
+    makes two.
 
 
 === Security ===

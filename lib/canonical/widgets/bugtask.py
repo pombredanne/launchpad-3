@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import os
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
@@ -26,6 +25,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
@@ -74,7 +74,8 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form_ng.getOne(self.name + ".option") == self.assign_to:
+        option = self.request.form_ng.getOne(self.name + ".option")
+        if option == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
@@ -299,10 +300,7 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def _joinButtonToMessage(self, option_tag, label, input_id):
         """Join the input tag with the label."""
-        here = os.path.dirname(__file__)
-        template_path = os.path.join(
-            here, 'templates', 'bugtask-bugwatch-widget.txt')
-        row_template = open(template_path).read()
+        row_template = get_widget_template('bugtask-bugwatch-widget.txt')
         return row_template % {
             'input_tag': option_tag,
             'input_id': input_id,
@@ -331,8 +329,8 @@ class BugTaskBugWatchWidget(RadioWidget):
             and getattr(self, 'firstItem', False)
             and len(self.vocabulary) > 0
             and self.context.required):
-                # Grab the first item from the iterator:
-                values = [iter(self.vocabulary).next().value]
+            # Grab the first item from the iterator:
+            values = [iter(self.vocabulary).next().value]
         elif value != self.context.missing_value:
             values = [value]
         else:

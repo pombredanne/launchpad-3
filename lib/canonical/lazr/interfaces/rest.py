@@ -15,11 +15,13 @@ __all__ = [
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
+    'IJSONRequestCache',
     'IResourceOperation',
     'IResourceGETOperation',
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
+    'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
@@ -47,6 +49,9 @@ class IHTTPResource(Interface):
 
     def __call__():
         """Publish the object."""
+
+    def getETag(media_type):
+        "An ETag for this resource's current state."
 
 
 class IJSONPublishable(Interface):
@@ -166,8 +171,33 @@ class IScopedCollection(ICollection):
     collection = Attribute("The collection scoped to an entry.")
 
 
+class ITopLevelEntryLink(Interface):
+    """A link to a special entry.
+
+    For instance, an alias for the currently logged-in user.
+
+    The link will be present in the representation of the service root
+    resource.
+    """
+
+    link_name = Attribute("The name of the link to this entry in the "
+                          "representation of the service root resource. "
+                          "'_link' will be automatically appended.")
+
+    entry_type = Attribute("The interface defined by the entry on the "
+                           "other end of the link.")
+
+
 class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
+
+
+class IJSONRequestCache(Interface):
+    """A cache of objects exposed as URLs or JSON representations."""
+
+    links = Attribute("Objects whose links need to be exposed.");
+    objects = Attribute("Objects whose JSON representations need "
+                        "to be exposed.");
 
 
 class IByteStorage(Interface):
@@ -182,8 +212,12 @@ class IByteStorage(Interface):
     is_stored = Attribute("Whether or not there's a previously created "
                           "external byte stream here.")
 
-    def createStored(mediaType, representation):
-        """Create a new stored bytestream."""
+    def createStored(mediaType, representation, filename=None):
+        """Create a new stored bytestream.
+
+        :param filename: The name of the file being stored. If None,
+        the name of the storage field is used instead.
+        """
 
     def deleteStored():
         """Delete an existing stored bytestream."""

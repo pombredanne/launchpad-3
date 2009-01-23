@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """PostgreSQL server side session storage for Zope3."""
 
@@ -10,17 +10,21 @@ from UserDict import DictMixin
 from random import random
 from datetime import datetime, timedelta
 
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.session.interfaces import (
-    ISessionDataContainer, ISessionData, ISessionPkgData)
+from zope.session.interfaces import (
+    ISessionDataContainer, ISessionData, ISessionPkgData, IClientIdManager)
 
 from storm.zope.interfaces import IZStorm
+from canonical.launchpad.webapp.publisher import get_current_browser_request
+
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
 HOURS = 60 * MINUTES
 DAYS = 24 * HOURS
+
 
 class PGSessionBase:
     store_name = 'session'
@@ -61,18 +65,15 @@ class PGSessionDataContainer(PGSessionBase):
     session_pkg_data_table_name = 'SessionPkgData'
 
     def __getitem__(self, client_id):
-        """See zope.app.session.interfaces.ISessionDataContainer"""
+        """See zope.session.interfaces.ISessionDataContainer"""
         self._sweep()
-        # Ensure the row in session_data_table_name exists in the database.
-        # __setitem__ handles this for us.
-        self[client_id] = 'ignored'
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
-        """See zope.app.session.interfaces.ISessionDataContainer"""
-        self.store.execute(
-                "SELECT ensure_session_client_id(?)", (client_id,),
-                noresult=True)
+        """See zope.session.interfaces.ISessionDataContainer"""
+        # The SessionData / SessionPkgData objects know how to store
+        # themselves.
+        pass
 
     _last_sweep = datetime.utcnow()
     fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
@@ -99,6 +100,8 @@ class PGSessionData(PGSessionBase):
 
     lastAccessTime = None
 
+    _have_ensured_client_id = False
+
     def __init__(self, session_data_container, client_id):
         self.session_data_container = session_data_container
         self.client_id = client_id
@@ -113,12 +116,54 @@ class PGSessionData(PGSessionBase):
             """ % (table_name, session_data_container.resolution)
         self.store.execute(query, (client_id,), noresult=True)
 
+    def _ensureClientId(self):
+        if self._have_ensured_client_id:
+            return
+        # We want to make sure the browser cookie and the database both know
+        # about our client id. We're doing it lazily to try and keep anonymous
+        # users from having a session.
+        self.store.execute(
+            "SELECT ensure_session_client_id(?)", (self.client_id,),
+            noresult=True)
+        request = get_current_browser_request()
+        if request is not None:
+            client_id_manager = getUtility(IClientIdManager)
+            if IUnauthenticatedPrincipal.providedBy(request.principal):
+                # it would be nice if this could be a monitored, logged
+                # message instead of an instant-OOPS.
+                assert (client_id_manager.namespace in request.cookies or
+                        request.response.getCookie(
+                            client_id_manager.namespace) is not None), (
+                    'Session data should generally only be stored for '
+                    'authenticated users, and for users who have just logged '
+                    'out.  If an unauthenticated user has just logged out, '
+                    'they should have a session cookie set for ten minutes. '
+                    'This should be plenty of time for passing notifications '
+                    'about successfully logging out.  Because this assertion '
+                    'failed, it means that some code is trying to set '
+                    'session data for an unauthenticated user who has been '
+                    'logged out for more than ten minutes: something that '
+                    'should not happen.  The code setting the session data '
+                    'should be reviewed; and failing that, the cookie '
+                    'timeout after logout (set in '
+                    'canonoical.launchpad.webapp.login) should perhaps be '
+                    'increased a bit, if a ten minute fudge factor is not '
+                    'enough to handle the vast majority of computers with '
+                    'not-very-accurate system clocks.  In an exceptional '
+                    'case, the code may set the necessary cookies itself to '
+                    'assert that yes, it *should* set the session for an '
+                    'unauthenticated user.  See the webapp.login module for '
+                    'an example of this, as well.')
+            else:
+                client_id_manager.setRequestId(request, self.client_id)
+        self._have_ensured_client_id = True
+
     def __getitem__(self, product_id):
         """Return an ISessionPkgData"""
         return PGSessionPkgData(self, product_id)
 
     def __setitem__(self, product_id, session_pkg_data):
-        """See zope.app.session.interfaces.ISessionData
+        """See zope.session.interfaces.ISessionData
 
         This is a noop in the RDBMS implementation.
         """
@@ -135,8 +180,8 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def __init__(self, session_data, product_id):
         self.session_data = session_data
         self.product_id = product_id
-        self.table_name = \
-                session_data.session_data_container.session_pkg_data_table_name
+        self.table_name = (
+            session_data.session_data_container.session_pkg_data_table_name)
         self._populate()
 
     _data_cache = None
@@ -159,6 +204,7 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def __setitem__(self, key, value):
         pickled_value =  pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
 
+        self.session_data._ensureClientId()
         self.store.execute("SELECT set_session_pkg_data(?, ?, ?, ?)",
                            (self.session_data.client_id, self.product_id,
                             key, pickled_value), noresult=True)

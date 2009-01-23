@@ -5,9 +5,9 @@
   i18n_domain="launchpad">
 
   <!-- DistroSeriesPackageCache -->
-  <content class="canonical.launchpad.database.DistroSeriesPackageCache">
+  <class class="canonical.launchpad.database.DistroSeriesPackageCache">
     <allow
       interface="canonical.launchpad.interfaces.IDistroSeriesPackageCache" />
-  </content>
+  </class>
 
 </configure>

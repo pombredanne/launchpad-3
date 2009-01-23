@@ -17,7 +17,7 @@ records to disk, including configuration and indexes.
     >>> print cprov_archive.distribution.name
     ubuntu
     >>> print cprov_archive.name
-    default
+    ppa
     >>> print cprov_archive.purpose.name
     PPA
     >>> cprov_archive.enabled
@@ -51,19 +51,62 @@ The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
 essentially the password to the archive for the builder.
 
+It can only be set by users with launchpad.Admin permission in the
+archive, i.e. a launchpad-administrator.
+
+    >>> cprov_archive.buildd_secret = 'boing'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'buildd_secret', 'launchpad.Admin')
+
+Foo Bar, can set 'buildd_secret'.
+
     >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = "secret"
+    >>> cprov_archive.buildd_secret = 'not so secret'
+
+In a public PPA, 'buildd_secret' still visible to anyone.
+
+    >>> login(ANONYMOUS)
+    >>> print cprov_archive.private
+    False
+
+    >>> print cprov_archive.buildd_secret
+    not so secret
+
+Once made private, 'buildd_secret' content can only be read by users with
+'launchpad.View' in the archive.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = 'really secret'
+    >>> cprov_archive.private = True
+
     >>> login(ANONYMOUS)
     >>> print cprov_archive.buildd_secret
-    secret
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'buildd_secret', 'launchpad.View')
+
+Celso can read 'buildd_secret' contents for his PPA.
+
+    >>> login('celso.providelo@canonical.com')
+    >>> print cprov_archive.buildd_secret
+    really secret
+
+In order to continue the tests of public archive attributes we will
+make Celso's PPA public again.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+    >>> login(ANONYMOUS)
 
 Useful properties:
 
-    >>> cprov_archive.title
-    u'PPA for Celso Providelo'
+    >>> print cprov_archive.title
+    PPA for Celso Providelo
 
-    >>> cprov_archive.archive_url
-    u'http://ppa.launchpad.dev/cprov/ubuntu'
+    >>> print cprov_archive.archive_url
+    http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
 Inquire what Distribution Series this archive has published sources to:
 
@@ -74,7 +117,7 @@ Inquire what Distribution Series this archive has published sources to:
 once a IArchive is created. Changing those values would affect the way
 archives are published on disk.
 
-    >>> cprov_archive.purpose = ArchivePurpose.REBUILD
+    >>> cprov_archive.purpose = ArchivePurpose.COPY
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
@@ -91,21 +134,29 @@ using default names.
     Unauthorized: (..., 'name', 'launchpad.Admin')
 
 When editable, the 'name' field is protected by a constraint that
-asserts the archive is indeed a REBUILD and if the name is valid.
+asserts the archive is indeed a COPY and if the name is valid.
 
     >>> login("foo.bar@canonical.com")
 
     >>> cprov_archive.name = 'there-we-go'
     Traceback (most recent call last):
     ...
-    AssertionError: Only REBUILD archives can be renamed.
+    AssertionError: Only COPY archives can be renamed.
 
-We will create a REBUILD archive and modify its name.
+We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> rebuild_owner = factory.makePerson(
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen')
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=rebuild_owner, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
+
+By default, copy archives are created with their 'publish' flag
+turned off, so that the publisher ignores them.
+
+    >>> rebuild_archive.publish
+    False
 
 Only 'valid' (traversable) names can be set.
 
@@ -121,6 +172,28 @@ Valid names work as expected.
     there-we-go
 
     >>> login(ANONYMOUS)
+
+Please note that copy archive titles include the owner name as well as
+the archive's name.
+
+    >>> rebuild_archive.title
+    u'Copy archive there-we-go for J\xc3\xbcrgen'
+
+The "is_copy" property allows us to ask an archive whether it's a copy
+archive.
+
+    >>> rebuild_archive.is_copy
+    True
+
+    >>> cprov_archive.is_copy
+    False
+
+Uploads to copy archives are not allowed.
+
+    >>> rebuild_archive.canUpload(cprov)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Uploads to copy archives are not allowed.
 
 
 == Published Source and Binary Lookup ==
@@ -484,6 +557,151 @@ and 'exact_match' flag:
     >>> status_lookup.count()
     2
 
+== getBuildCounters ==
+
+IArchive.getBuildCounters() allows callsites to quickly present
+the number of builds in a pre-defined status for a given IArchive.
+
+    >>> def print_build_counters(build_counters):
+    ...     sorted_keys = sorted(build_counters)
+    ...     for key in sorted_keys:
+    ...         print key, build_counters[key]
+
+Build counters for Celso's PPA.
+
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    pending    0
+    succeeded  3
+    superseded 0
+    total      4
+
+Build counters for ubuntu primary archive.
+
+    >>> print_build_counters(ubuntu.main_archive.getBuildCounters())
+    failed     5
+    pending    2
+    succeeded  8
+    superseded 3
+    total      18
+
+An option argument can be used to exclude any builds that have the status
+`NEEDSBUILD`:
+
+    >>> print_build_counters(
+    ...     ubuntu.main_archive.getBuildCounters(include_needsbuild=False))
+    failed 5
+    pending 1
+    succeeded 8
+    superseded 3
+    total 17
+
+
+== getBuildSummariesForSourceIds() ==
+
+IArchive.getBuildSummariesForSourceIds() allows callsites to get an update
+on the build statuses for a set of source publishing record ids. This
+is useful for dynamically updating a page which displays a small batch of
+source packages, such as the PPA/Archive pages.
+
+Create a small function for displaying the results:
+
+    >>> def print_build_summary(summary):
+    ...     print "%s\n%s\nRelevant builds:\n%s" % (
+    ...         summary['status'].title,
+    ...         summary['status'].description,
+    ...         "\n".join(
+    ...             " - %s" % build.title for build in summary['builds'])
+    ...     )
+
+    >>> def print_build_summaries(summaries):
+    ...     for source_id, summary in sorted(summaries.items()):
+    ...         print "Source ID: %s" % source_id
+    ...         print_build_summary(summary)
+
+Now print the build summaries for firefox and foo_bar:
+
+    >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_source_pub = firefox_source.publishing_history[0]
+    >>> foobar = ubuntu.getSourcePackage('foobar')
+    >>> foo_pub = foobar.publishing_history[0]
+
+    >>> build_summaries = \
+    ...     ubuntu.main_archive.getBuildSummariesForSourceIds(
+    ...         [firefox_source_pub.id, foo_pub.id])
+    >>> print_build_summaries(build_summaries)
+    Source ID: 18
+    FULLYBUILT
+    All builds were built successfully.
+    Relevant builds:
+     - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+     - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    Source ID: 22
+    FAILEDTOBUILD
+    There were build failures.
+    Relevant builds:
+     - i386 build of foobar 1.0 in ubuntu warty RELEASE
+
+
+== No public access to IArchiveView methods ==
+
+Both the getBuildCounters() and getBuildSummariesForSourceIds() methods are
+not publically available, but available only to users who have permission to
+view the archive:
+
+First, we turn cprov's archive into a private one:
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = 'really secret'
+    >>> cprov_archive.private = True
+
+And grab some source IDs from the archive:
+
+    >>> sources = cprov_archive.getPublishedSources()
+    >>> source_ids = [sources[0].id, sources[1].id]
+
+Then verify that an admin can see the counters and build summaries:
+
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    ...
+    total      4
+    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    ...     source_ids))
+    Source ID: 27
+    ...
+
+Next veryify that cprov can still access the build counters:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    failed     1
+    ...
+    total      4
+    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    ...     source_ids))
+    Source ID: 27
+    ...
+
+But the public cannot:
+
+    >>> login('no-priv@canonical.com')
+    >>> print_build_counters(cprov_archive.getBuildCounters())
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'getBuildCounters', 'launchpad.View')
+    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    ...     source_ids))
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'getBuildSummariesForSourceIds', 'launchpad.View')
+
+Make the archive public again before continuing:
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+
 
 == Package Counters ==
 
@@ -491,7 +709,7 @@ IArchive provides properties to calculate the number and the size of
 the packages (sources and binaries) currently published in the
 archive. They are based in the publication lookup methods.
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     3
     >>> cprov_archive.number_of_binaries
     3
@@ -508,7 +726,7 @@ in the archive (+1kbytes for each publication)
     ...     cprov_archive.sources_size + cprov_archive.binaries_size)
 
     >>> number_of_publications = (
-    ...     cprov_archive.number_of_sources +
+    ...     cprov_archive.number_of_sources_published +
     ...     cprov_archive.number_of_binaries)
     >>> indexes_size = number_of_publications * 1024
 
@@ -572,14 +790,14 @@ see if the counter decreases.
 Superseding a source package and verifying that the source counter
 decreases.
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     3
     >>> superseded = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(superseded)
 
-    >>> cprov_archive.number_of_sources
+    >>> cprov_archive.number_of_sources_published
     2
 
 Superseding a binary package and verifying that the binary counter
@@ -769,13 +987,13 @@ Then, the archive topology will follow:
 <PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
 
     >>> pubconfig.archiveroot
-    u'/var/tmp/ppa.test/cprov/ubuntutest'
+    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest'
 
     >>> pubconfig.poolroot
-    u'/var/tmp/ppa.test/cprov/ubuntutest/pool'
+    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/pool'
 
     >>> pubconfig.distsroot
-    u'/var/tmp/ppa.test/cprov/ubuntutest/dists'
+    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists'
 
 Path not used in *personal* archives publication workflow are set to
 None, so they won't get created:
@@ -832,11 +1050,18 @@ Celso's PPA has no dependencies stored in the sampledata.
     >>> print_dependencies(cprov.archive)
     No dependencies recorded.
 
-We will make Celso's PPA to depend on Mark's PPA.
+We will make Celso's PPA to depend on Mark's PPA, specifically on its
+RELEASE pocket and 'main' component.
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> main_component = getUtility(IComponentSet)['main']
+
+    >>> release_pocket = PackagePublishingPocket.RELEASE
+
     >>> archive_dependency = cprov.archive.addArchiveDependency(
-    ...     sabdfl.archive)
+    ...     sabdfl.archive, release_pocket, main_component)
 
 The `IArchiveDependency` object simply maps the desired relationship.
 
@@ -846,13 +1071,19 @@ The `IArchiveDependency` object simply maps the desired relationship.
     >>> print archive_dependency.dependency.title
     PPA for Mark Shuttleworth
 
+The `IArchiveDependency` object itself implement a 'title'
+property. For PPA dependencies the title defaults to the PPA title.
+
+    >>> print archive_dependency.title
+    PPA for Mark Shuttleworth
+
 The archive dependency is immediately recorded on Celso's PPA.
 
     >>> print_dependencies(cprov.archive)
     PPA for Mark Shuttleworth
 
 'getArchiveDependency' returns the corresponding `IArchiveDependency`
-for a given 'dependency' if it exists, otherwise it returns None.
+for a given 'dependency', otherwise it returns None.
 
     >>> print cprov.archive.getArchiveDependency(
     ...     sabdfl.archive).dependency.title
@@ -871,7 +1102,7 @@ dependency is published in Mark's PPA.
     No dependencies recorded.
 
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
-    ...     cprov.archive)
+    ...     cprov.archive, release_pocket, main_component)
 
     >>> print_dependencies(no_priv.archive)
     PPA for Celso Providelo
@@ -881,37 +1112,102 @@ dependency is published in Mark's PPA.
 
 'dependency' is already recorded (duplicated).
 
-    >>> no_priv.archive.addArchiveDependency(cprov.archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     cprov.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: This dependency is already recorded.
+    ArchiveDependencyError: Only one dependency record per archive is
+    supported.
 
 'dependency' and target archive are the same.
 
-    >>> no_priv.archive.addArchiveDependency(no_priv.archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     no_priv.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
     ArchiveDependencyError: An archive should not depend on itself.
 
-A 'dependency' can only be a PPA. Other archives (PRIMARY, PARTNER or
-EMBARGOED) are explicitly forbidden until we can analyse the impact of
-allowing them.
+A 'dependency' can be added for any type of archive, PPA, PRIMARY, PARTNER or
+COPY.
 
     >>> ubuntu = no_priv.archive.distribution
-    >>> no_priv.archive.addArchiveDependency(ubuntu.main_archive)
+    >>> primary_dependency = no_priv.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.UPDATES,
+    ...     getUtility(IComponentSet)['universe'])
+
+Other dependencies than PPAs have an extended 'title', which includes
+the target 'pocket' and a human-readable reference to the components
+involved.
+
+    >>> print primary_dependency.title
+    Primary Archive for Ubuntu Linux - UPDATES (main, universe)
+
+See further implications of archive dependencies in
+doc/archive-dependencies.txt.
+
+Only one dependency per archive can be added.
+
+    >>> no_priv.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.RELEASE,
+    ...     getUtility(IComponentSet)['main'])
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Archive dependencies only applies to PPAs.
+    ArchiveDependencyError: Only one dependency record per archive is
+    supported.
 
-'removeArchiveDependency' allow us to purge a recorded 'dependency'.
+Thus archive dependency removal can be performed simply by passing the
+dependency target.
+
+    >>> no_priv.archive.removeArchiveDependency(ubuntu.main_archive)
+
+Non-PPA dependencies can have empty 'component', which has a slightly
+more concise title.
+
+    >>> primary_component_dep = no_priv.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
+
+    >>> print primary_component_dep.title
+    Primary Archive for Ubuntu Linux - SECURITY
+
+However only PRIMARY archive dependencies support pockets other than
+RELEASE or other components than 'main'.
+
+    >>> no_priv.archive.addArchiveDependency(
+    ...     sabdfl.archive, PackagePublishingPocket.UPDATES,
+    ...     main_component)
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: Non-primary archives only support the
+    RELEASE pocket.
+
+    >>> no_priv.archive.addArchiveDependency(
+    ...     sabdfl.archive, release_pocket,
+    ...     getUtility(IComponentSet)['universe'])
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: Non-primary archives only support the
+    'main' component.
+
+'removeArchiveDependency' allow us to purge a recorded
+`ArchiveDependency` corresponding to the given 'dependency', 'pocket'
+and 'component'.
 
     >>> print_dependencies(no_priv.archive)
     PPA for Celso Providelo
+    Primary Archive for Ubuntu Linux
 
     >>> no_priv.archive.removeArchiveDependency(cprov.archive)
+    >>> no_priv.archive.removeArchiveDependency(ubuntu.main_archive)
 
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
+
+Attempts to remove a non-existent dependency results in a AssertionError.
+
+    >>> no_priv.archive.removeArchiveDependency( sabdfl.archive)
+    Traceback (most recent call last):
+    ...
+    AssertionError: This dependency does not exist.
 
 Since the 'dependency' property only returns explicitly recorded
 archive dependencies and we usually need the expanded list when
@@ -988,6 +1284,37 @@ Then a lookup on Celso's PPA will find it.
     True
 
 
+== Creating a package copy request from an IArchive ==
+
+The IArchive interface includes a convenience method for creating a
+package copy request:
+
+    >>> requestor = factory.makePerson(name='me-copy')
+    >>> target = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...     name='my-copy-archive')
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor)
+    >>> print pcr
+    Package copy request
+    source = primary/hoary/-/RELEASE
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
+The requestPackageCopy method can also take an optional suite name:
+
+    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
+    ...     target, requestor, suite="hoary-updates");
+    >>> print package_copy_request
+    Package copy request
+    source = primary/hoary/-/UPDATES
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other
@@ -1007,10 +1334,10 @@ A new Archive can be created by passing a name and an owner
     >>> sandbox_archive.owner == name16
     True
 
-PPAs are created with the name attribute set to 'default'.
+PPAs are created with the name attribute set to 'ppa' by default.
 
     >>> print sandbox_archive.name
-    default
+    ppa
 
 We can take the opportunity to check if the default 'authorized_size'
 corresponds to what we state in our policy, 1024 MiB:
@@ -1050,30 +1377,49 @@ restricted by archive owner.
 As mentioned in the error message, getPPAByDistributionAndOwnerName()
 should be used instead. See below.
 
+Similarly, IArchiveSet.getByDistroAndName() retrieves an IArchive given a
+distribution and the archive name.  Returned archives are always distribution
+archives; that is PPAs are not considered.
+
+XXX Julian 2008-09-24 We need to add a getByOwnerAndName() to fetch PPAs
+at some point, but it's not needed right now.
+
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'partner')
+    >>> print partner_archive.title
+    Partner Archive for Ubuntu Test
+
+Passing an invalid name will cause an empty result set.
+
+    >>> bogus = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'bogus')
+    >>> print bogus
+    None
+
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
-    >>> partner_archive.archive_url
-    u'http://launchpad.dev/ubuntutest-partner'
+    >>> print partner_archive.archive_url
+    http://ftpmaster.internal/ubuntutest-partner
 
-    >>> sandbox_archive.archive_url
-    u'http://ppa.launchpad.dev/name16/ubuntu'
+    >>> print sandbox_archive.archive_url
+    http://ppa.launchpad.dev/name16/ppa/ubuntu
 
-    >>> getUtility(IArchiveSet).getByDistroPurpose(
+    >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
-    u'http://launchpad.dev/ubuntutest'
+    http://ftpmaster.internal/ubuntutest
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
-    >>> naked_cprov_archive.archive_url
-    u'http://ppa.launchpad.dev/cprov/ubuntu'
+    >>> print naked_cprov_archive.archive_url
+    http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
     >>> naked_cprov_archive.private = True
     >>> naked_cprov_archive.syncUpdate()
 
-    >>> naked_cprov_archive.archive_url
-    u'http://private.ppa.launchpad.dev/cprov/ubuntu'
+    >>> print naked_cprov_archive.archive_url
+    http://private-ppa.launchpad.dev/cprov/ppa/ubuntu
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
@@ -1101,36 +1447,36 @@ to publish to the RELEASE pocket no matter what state the distroseries is in.
     False
 
 getPPAByDistributionAndOwnerName method allow PPA lookups based on a
-distribution and a person name. This method is used in
+distribution, person name and the PPA name. This method is used in
 `PackageLocation` to provide a homogeneous way to refer to a Location
 (archive, distribution, distroseries, pocket).
 
     >>> cprov_archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'cprov')
+    ...     ubuntu, 'cprov', 'ppa')
     True
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.archive == archive_set.getPPAByDistributionAndOwnerName(
-    ...     ubuntu, 'sabdfl')
+    ...     ubuntu, 'sabdfl', 'ppa')
     True
 
 Iteration over the own utility is performed against all archives,
-including PPA, PRIMARY, PARTNER and REBUILDS:
+including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    14
+    16
 
     >>> print sorted(set(archive_purposes))
-    ['PARTNER', 'PPA', 'PRIMARY', 'REBUILD']
+    ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
 
-ArchiveSet utility also offers counters for:
+ArchiveSet utility also offers counters in the distribution context for:
 
  * The number of published sources in public PPAs
-   (number_of_ppa_sources);
+   (getNumberOfPPASourcesForDistribution);
 
  * The number of published binaries in public PPAs
-   (number_of_ppa_binaries)
+   (getNumberOfPPABinariesForDistribution);
 
 Those counters are obtained from the cached package counters for each
 PPA, so they will change when the caches get updated.
@@ -1140,9 +1486,9 @@ Those counters explicity exclude packages in private PPAs.
 The current counters says we only have 1 source and 1 binary published
 in public PPAs.
 
-    >>> archive_set.number_of_ppa_sources
+    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
     1
-    >>> archive_set.number_of_ppa_binaries
+    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
     1
 
 As mentioned caches for private PPAs are not considered.
@@ -1159,9 +1505,9 @@ As mentioned caches for private PPAs are not considered.
     >>> naked_cprov_archive.binaries_cached = 2000
     >>> naked_cprov_archive.syncUpdate()
 
-    >>> archive_set.number_of_ppa_sources
+    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
     1
-    >>> archive_set.number_of_ppa_binaries
+    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
     1
 
 On the other hand, changes in the a public PPA are immediately
@@ -1179,10 +1525,21 @@ considered.
     >>> naked_no_priv_archive.binaries_cached = 2
     >>> naked_no_priv_archive.syncUpdate()
 
-    >>> archive_set.number_of_ppa_sources
+    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
     11
-    >>> archive_set.number_of_ppa_binaries
+    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
     3
+
+Since we currently only create archives for ubuntu distribution, the
+counters for other distributions are always 'zero'.
+
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+
+    >>> archive_set.getNumberOfPPASourcesForDistribution(debian)
+    0
+
+    >>> archive_set.getNumberOfPPABinariesForDistribution(debian)
+    0
 
 'getPPAsForUser' returns all the PPAs a given user participates in. It
 uses `TeamParticipation` relationships to calculate all the PPAs the
@@ -1219,7 +1576,7 @@ immediately recognises 'cprov' rights on it.
     PPA for Launchpad Buildd Admins
 
 When there is no active PPA for the team a user participates the
-method returns a empty SelectResults.
+method returns an empty SelectResults.
 
     >>> jblack = getUtility(IPersonSet).getByName('jblack')
 
@@ -1423,6 +1780,75 @@ archive.
     total      1
 
 
+== A general way to get specific archives for a distribution ==
+
+IArchiveSet also includes the helper method `getArchivesForDistribution`
+which can be used to get archives of a specific purpose(s) for a distribution
+(note: the sample data currently contains one copy archive for ubuntu, and
+one has been created above):
+
+First create a function to print the names of a set of archives:
+
+    >>> def print_archive_names(archives):
+    ...     names = [archive.name for archive in archives]
+    ...     names.sort()
+    ...     for name in names:
+    ...         print name
+
+    >>> archive_set = getUtility(IArchiveSet)
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.COPY)
+    >>> print_archive_names(ubuntu_copy_archives)
+    my-copy-archive
+    there-we-go
+
+
+The method `getArchivesForDistribution` can also be used with multiple
+purposes. First we'll check how many partner archives are in the DB:
+
+    >>> partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.PARTNER)
+    >>> print_archive_names(partner_archives)
+    partner
+
+And then use `getArchivesForDistribution` to get all copy and partner
+archives:
+    >>> copy_n_partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
+    >>> print_archive_names(copy_n_partner_archives)
+    my-copy-archive
+    partner
+    there-we-go
+
+After we create three copy archives for ubuntu, the
+`getArchivesForDistribution` finds the relevant COPY archives:
+
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="ultimate-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="fine-copy")
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...                                        name="copy-r-us")
+
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY])
+    >>> print_archive_names(ubuntu_copy_archives)
+    copy-r-us
+    fine-copy
+    my-copy-archive
+    there-we-go
+    ultimate-copy
+
+
+The `getArchivesForDistribution` method can also be used to get an
+archive using an archive name:
+
+    >>> primary_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, name='primary')
+    >>> print_archive_names(primary_archives)
+    primary
+
+
 == Archive Permission Checking ==
 
 IArchive has two public methods, canUpload() and canAdministerQueue()
@@ -1430,8 +1856,6 @@ that check a user's permission to upload and/or administer a
 distroseries upload queue respectively.  See archivepermission.txt
 for more details.
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> main_component = getUtility(IComponentSet)['main']
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
@@ -1467,35 +1891,35 @@ Cprov does not have permission, however.
 
 For further information about how ArchiveRebuild works see
 archive-rebuilds.txt. Here we will just document why the creation and
-lookup of REBUILD archives are a little different than the rest of the
+lookup of COPY archives are a little different than the rest of the
 archives.
 
-When creating archives with REBUILD purpose, the 'name' field is
+When creating archives with COPY purpose, the 'name' field is
 mandatory, since it's user defined. There is no default name for
 them.
 
-Creating new REBUILD archive without passing a name results in an
+Creating new COPY archive without passing a name results in an
 AssertionError.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the 'name', in addition to the owner, purpose and
 distribution, does the trick.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest, name='test-rebuild-one')
 
 As mentioned before, the rebuild archive name should be traversable
 otherwise an error is raised.
 
     >>> getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest, name='Very@Wrong!Name')
     Traceback (most recent call last):
     ...
@@ -1511,23 +1935,221 @@ Another difference is the lookup, we can use getByDistroPurpose(),
 however we have to pass 'name', otherwise a error is raised.
 
     >>> getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD)
+    ...     ubuntutest, ArchivePurpose.COPY)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the name it behaves exactly it does for primary archive
 purposes (PRIMARY and PARTNER). When no matching archive is found,
 None is returned.
 
     >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD, name="does-not-exist")
+    ...     ubuntutest, ArchivePurpose.COPY, name="does-not-exist")
     >>> print candidate
     None
 
 If there is a matching archive it is returned.
 
     >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD, name="test-rebuild-one")
+    ...     ubuntutest, ArchivePurpose.COPY, name="test-rebuild-one")
     >>> print candidate.name
     test-rebuild-one
+
+
+== Synchronising sources from other archives ==
+
+IArchive.syncSources is a convenience wrapper around the copying code
+in canonical.launchpad.scripts.packagecopier.  It allows the caller to
+provide a list of sources that can be copied to the context archive.
+
+First we use the SoyuzTestPublisher to make some test publications in
+hoary:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.0", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.1", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package2", version="1.0", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="pack", version="1.0", archive=cprov.archive)
+
+Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
+can ask syncSources to synchronise these packages into sabdfl's PPA in the
+release pocket, but to do so we must have edit permissions on the archive.
+
+    >>> sources = ["package1", "package2"]
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+Let's log in as sabdfl and it will work:
+
+    >>> login("mark@hbd.com")
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
+    [u'package1', u'package2']
+    >>> [sabdfl_one] = sabdfl.archive.getPublishedSources(name="package1")
+    >>> print sabdfl_one.sourcepackagerelease.version
+    1.1
+    >>> [sabdfl_two] = sabdfl.archive.getPublishedSources(name="package2")
+    >>> print sabdfl_two.sourcepackagerelease.version
+    1.0
+
+Notice that the latest version of package_one was copied, ignoring the
+older one.
+
+Repeating this source copy gives an error:
+
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    CannotCopy:
+        package1 1.1 in hoary (same version already building...
+        package2 1.0 in hoary (same version already building...
+
+Repeating this copy with binaries also gives an error:
+
+    >>> sabdfl.archive.syncSources(
+    ...     sources, cprov.archive, "release", include_binaries=True)
+    Traceback (most recent call last):
+    ...
+    CannotCopy:
+        package1 1.1 in hoary (source has no binaries to be copied)
+        package2 1.0 in hoary (source has no binaries to be copied)
+
+Specifying non-existent source names, pocket names or distroseries names
+all result in a NotFound exception:
+
+    >>> sabdfl.archive.syncSources(["bogus"], cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    SourceNotFound: No such source package: 'bogus'.
+
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "badpocket")
+    Traceback (most recent call last):
+    ...
+    PocketNotFound: 'BADPOCKET'
+
+    >>> sabdfl.archive.syncSources(
+    ...     sources, cprov.archive, "release", to_series="badseries")
+    Traceback (most recent call last):
+    ...
+    DistroSeriesNotFound: badseries
+
+
+We can also specify a single source to be copied with the `syncSource`
+call.  This allows a version to be specified so older versions can be
+pulled.
+
+Set up v1.0 and 1.1 of "package3":
+
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.0", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.1", archive=cprov.archive)
+
+The underlying package discovery has the ability to do substring matches
+on the supplied package names.  However, this feature is not being used
+as it's potentially dangerous, since through the API there is no "are
+you sure!" type transaction.
+
+When copying a single package, if we supply a package name of "pack" it will
+only match one of the test packages we created above rather than all of them.
+
+As with syncSources() you need to have edit permission on the archive.
+
+    >>> login(ANONYMOUS)
+    >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+    
+Login as sabdfl to continue.
+
+    >>> login("mark@hbd.com")
+    >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    >>> [pack] = sabdfl.archive.getPublishedSources(
+    ...     name="pack", exact_match=True)
+    >>> print pack.sourcepackagerelease.version
+    1.0
+
+Copy package3 1.0 explicitly:
+
+    >>> sabdfl.archive.syncSource("package3", "1.0", cprov.archive, "release")
+    >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")
+    >>> print sabdfl_three.sourcepackagerelease.version
+    1.0
+
+
+== Publish flag ==
+
+Every archive has a "publish" flag that governs whether it should be
+published or not. Upon creation that flag is false for copy archives but
+true for all other archive types.
+
+    >>> uber = getUtility(IDistributionSet).new(
+    ... 'uberdistro', 'The uberdistro', 'The mother of all distros',
+    ... 'All you would want from a distro', 'zero', 'uberdistro.org',
+    ... sabdfl, cprov)
+
+The primary archive for the Überdistro was created by the
+IDistributionSet.new() method. Let's check its publish flag.
+
+    >>> uber_primary = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     uber, ArchivePurpose.PRIMARY)
+    >>> uber_primary.publish
+    True
+
+    >>> uber_partner = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PARTNER,
+    ...     distribution=uber, name='uber-partner')
+    >>> uber_partner.publish
+    True
+
+The 'sandbox archive' is a PPA that was newly created above.
+
+    >>> sandbox_archive.is_ppa
+    True
+    >>> sandbox_archive.publish
+    True
+
+    >>> uber_copy = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     distribution=uber, name='uber-copy')
+    >>> uber_copy.publish
+    False
+
+== The name uniqueness constraints for archives ==
+
+The names of PPAs must be unique per owner and distribution.
+
+The names of archives other than PPAs must be unique for a given
+distribution. Trying to create an archive with the same name and
+distribution but with a different owner will fail.
+
+    >>> copycat_archive = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
+    ...     distribution=uber, name='uber-copy')
+    Traceback (most recent call last):
+    ...
+    AssertionError: archive 'uber-copy' exists ... in 'uberdistro'.
+
+The same constraint is enforced for other archive types e.g. for partner
+archives.
+
+    >>> copycat_archive = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PARTNER,
+    ...     distribution=uber, name='uber-partner')
+    Traceback (most recent call last):
+    ...
+    AssertionError: archive 'uber-partner' exists ... in 'uberdistro'.
+

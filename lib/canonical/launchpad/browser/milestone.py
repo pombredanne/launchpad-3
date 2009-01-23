@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'milestone_to_structuralheading',
     'MilestoneSetNavigation',
     'MilestoneNavigation',
     'MilestoneContextMenu',
@@ -19,8 +18,7 @@ from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
-    IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone,
-    IStructuralHeaderPresentation)
+    IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
 
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ContextMenu, Link,
@@ -42,11 +40,6 @@ class MilestoneSetNavigation(GetitemNavigation):
 class MilestoneNavigation(Navigation):
 
     usedfor = IMilestone
-
-
-def milestone_to_structuralheading(milestone):
-    """Adapts an `IMilestone` into an `IStructuralHeaderPresentation`."""
-    return IStructuralHeaderPresentation(milestone.target)
 
 
 class MilestoneContextMenu(ContextMenu):
@@ -92,13 +85,19 @@ class MilestoneView(LaunchpadView):
                     orderby=['-importance', 'datecreated', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
-        # XXX kiko 2007-08-27: Doing this in the callsite is
-        # particularly annoying and causes us to issue one query per
-        # displayed bugtask, which means 600 queries on certain Ubuntu
-        # milestone pages. It's not trivial to do the filtering in
-        # BugTaskSet.search() unfortunately. Can we find a good way of
-        # filtering conjoined in database queries?
-        return [task for task in tasks if task.conjoined_master is None]
+        # We could replace all the code below with a simple
+        # >>> [task for task in tasks if task.conjoined_master is None]
+        # But that'd cause one extra hit to the DB for every bugtask returned
+        # by the search above, so we do a single query to get all of a task's
+        # siblings here and use that to find whether or not a given bugtask
+        # has a conjoined master.
+        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks(
+            [task.bug.id for task in tasks])
+        non_conjoined_slaves = []
+        for task in tasks:
+            if task.getConjoinedMaster(bugs_and_tasks[task.bug]) is None:
+                non_conjoined_slaves.append(task)
+        return non_conjoined_slaves
 
     @property
     def bugtask_count_text(self):

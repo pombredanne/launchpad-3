@@ -11,19 +11,18 @@ __all__ = [
     'BuildRescoringView',
     'BuildUrl',
     'BuildView',
-    'build_to_structuralheading',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
-from canonical.launchpad.interfaces.launchpad import (
-    IStructuralHeaderPresentation, UnexpectedFormData)
+from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
@@ -31,15 +30,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-
-
-def build_to_structuralheading(build):
-    """Adapts an `IBuild` into an `IStructuralHeaderPresentation`."""
-    if build.archive.is_ppa:
-        return IStructuralHeaderPresentation(build.archive)
-    else:
-        return IStructuralHeaderPresentation(
-            build.distributionsourcepackagerelease)
 
 
 class BuildUrl:
@@ -53,6 +43,9 @@ class BuildUrl:
     On the other hand, PPA builds will be presented under the PPA page:
 
        /~cprov/+archive/+build/1235
+
+    Copy archives will be presented under the archives page:
+       /ubuntu/+archive/my-special-archive/+build/1234
     """
     implements(ICanonicalUrlData)
     rootsite = None
@@ -62,7 +55,7 @@ class BuildUrl:
 
     @property
     def inside(self):
-        if self.context.archive.purpose == ArchivePurpose.PPA:
+        if self.context.archive.is_ppa or self.context.archive.is_copy:
             return self.context.archive
         else:
             return self.context.distributionsourcepackagerelease
@@ -72,7 +65,7 @@ class BuildUrl:
         return u"+build/%d" % self.context.id
 
 
-class BuildNavigation(GetitemNavigation):
+class BuildNavigation(GetitemNavigation, FileNavigationMixin):
     usedfor = IBuild
 
 
@@ -92,7 +85,7 @@ class BuildContextMenu(ContextMenu):
     @property
     def is_ppa_build(self):
         """Some links are only displayed on PPA."""
-        return self.context.archive.purpose == ArchivePurpose.PPA
+        return self.context.archive.is_ppa
 
     def ppa(self):
         return Link(
@@ -148,6 +141,18 @@ class BuildView(LaunchpadView):
         return (check_permission('launchpad.Edit', self.context)
             and self.context.can_be_retried)
 
+    @property
+    def has_done_upload(self):
+        """Return True if this build's package upload is done."""
+        package_upload = self.context.package_upload
+
+        if package_upload is None:
+            return False
+
+        if package_upload.status == PackageUploadStatus.DONE:
+            return True
+
+        return False
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""

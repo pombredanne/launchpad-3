@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# Copyright 2005-2008 Canonical Ltd. All rights reserved.
 # pylint: disable-msg=W0702
 
 """Functions for language pack creation script."""
@@ -51,8 +51,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
         yield (sourcepackagename, translationdomain)
 
 
-def export(distroseries, component, update, force_utf8, logger,
-           cache_clear_interval):
+def export(distroseries, component, update, force_utf8, logger):
     """Return a pair containing a filehandle from which the distribution's
     translations tarball can be read and the size of the tarball in bytes.
 
@@ -62,9 +61,6 @@ def export(distroseries, component, update, force_utf8, logger,
     :arg force_utf8: Whether the export should have all files exported as
         UTF-8.
     :arg logger: A logger object.
-    :arg cache_clear_interval: Number indicating how often to clear the
-        ORM cache to avoid dangerous buildup.  The cache is cleared after
-        every cache_clear_interval POFiles.
     """
     # We will need when the export started later to add the timestamp for this
     # export inside the exported tarball.
@@ -92,12 +88,39 @@ def export(distroseries, component, update, force_utf8, logger,
 
     pofiles = export_set.get_distroseries_pofiles(
         distroseries, date, component, languagepack=True)
+
+    # Manual caching.  Fetch POTMsgSets in bulk per template, and cache
+    # them across POFiles if subsequent POFiles belong to the same
+    # template.
+    cached_potemplate = None
+    cached_potmsgsets = []
+
     for index, pofile in enumerate(pofiles):
         number = index + 1
         logger.debug("Exporting PO file %d (%d/%d)" %
             (pofile.id, number, pofile_count))
 
         potemplate = pofile.potemplate
+        if potemplate != cached_potemplate:
+            # Launchpad's StupidCache caches absolutely everything,
+            # which causes us to run out of memory.  We know at this
+            # point that we don't have useful references to potemplate's
+            # messages anymore, so remove them forcibly from the cache.
+            store = Store.of(potemplate)
+            for potmsgset in cached_potmsgsets:
+                store.invalidate(potmsgset.msgid_singular)
+                store.invalidate(potmsgset)
+
+            cached_potemplate = potemplate
+            cached_potmsgsets = [
+                potmsgset for potmsgset in potemplate.getPOTMsgSets()]
+
+            if ((index + 1) % 5) == 0:
+                # Garbage-collect once in 5 templates (but not at the
+                # very beginning).  Bit too expensive to do for each
+                # one.
+                gc.collect()
+
         domain = potemplate.translation_domain.encode('ascii')
         language_code = pofile.language.code.encode('ascii')
 
@@ -126,13 +149,7 @@ def export(distroseries, component, update, force_utf8, logger,
             logger.exception(
                 "Uncaught exception while exporting PO file %d" % pofile.id)
 
-        if number % cache_clear_interval == 0:
-            # XXX JeroenVermeulen 2008-07-28 bug=252545: we go through a
-            # lot of data here, and it accumulates somewhere in the
-            # object cache.  Invalidate the cache from time to time, and
-            # allow the garbage collector to run.
-            Store.of(pofile).invalidate()
-            gc.collect()
+        store.invalidate(pofile)
 
     logger.info("Exporting XPI template files.")
     librarian_client = getUtility(ILibrarianClient)
@@ -172,8 +189,7 @@ def export(distroseries, component, update, force_utf8, logger,
 
 
 def export_language_pack(distribution_name, series_name, logger,
-                         component=None, force_utf8=False, output_file=None,
-                         cache_clear_interval=20):
+                         component=None, force_utf8=False, output_file=None):
     """Export a language pack for the given distribution series.
 
     :param distribution_name: Name of the distribution we want to export the
@@ -187,20 +203,19 @@ def export_language_pack(distribution_name, series_name, logger,
         force to use the UTF-8 encoding.
     :param output_file: File path where this export file should be stored,
         instead of using Librarian. If '-' is given, we use standard output.
-    :arg cache_clear_interval: Number indicating how often to clear the
-        ORM cache to avoid dangerous buildup.  The cache is cleared after
-        every cache_clear_interval POFiles.
     :return: The exported language pack or None.
     """
     distribution = getUtility(IDistributionSet)[distribution_name]
     distroseries = distribution.getSeries(series_name)
 
+    full_export_requested_flag_needs_reset = False
     if distroseries.language_pack_full_export_requested:
         # We were instructed that this export must be a full one.
         update = False
         logger.info('Got a request to do a full language pack export.')
-        # Also, unset that flag so next export will proceed normally.
-        distroseries.language_pack_full_export_requested = False
+        # Also, unset that flag so next export will proceed normally,
+        # but do it afterwards so we don't lock any tables.
+        full_export_requested_flag_needs_reset = True
     elif distroseries.language_pack_base is None:
         # There is no full export language pack being used, we cannot produce
         # an update.
@@ -214,8 +229,7 @@ def export_language_pack(distribution_name, series_name, logger,
     # Export the translations to a tarball.
     try:
         filehandle, size = export(
-            distroseries, component, update, force_utf8, logger,
-            cache_clear_interval=cache_clear_interval)
+            distroseries, component, update, force_utf8, logger)
     except:
         # Bare except statements are used in order to prevent premature
         # termination of the script.
@@ -267,6 +281,9 @@ def export_language_pack(distribution_name, series_name, logger,
             return None
 
         logger.debug('Upload complete, file alias: %d' % file_alias)
+
+        if full_export_requested_flag_needs_reset:
+            distroseries.language_pack_full_export_requested = False
 
         # Let's register this new language pack.
         language_pack_set = getUtility(ILanguagePackSet)

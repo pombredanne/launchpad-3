@@ -9,7 +9,7 @@ __all__ = [
     'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -29,12 +29,34 @@ class IRevision(Interface):
     revision_date = Datetime(
         title=_("The date the revision was committed."),
         required=True, readonly=True)
+    karma_allocated = Bool(
+        title=_("Has karma been allocated for this revision?"),
+        required=True, default=False)
     parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
     properties = Attribute("The `RevisionProperty`s for this revision.")
 
     def getProperties():
         """Return the revision properties as a dict."""
+
+    def allocateKarma(branch):
+        """Allocate karma to the revision_author for this revision."""
+
+    def getBranch(allow_private=False, allow_junk=True):
+        """Return a branch associated with this revision.
+
+        The chances are that there will be many branches with any revision
+        that has landed on the trunk branch.  A branch owned by the revision
+        author is chosen over a branch not owned by the author.  A branch with
+        the revision in the history is chosen over a branch that just has the
+        revision in the ancestry.
+
+        :param allow_private: If True, a public or private branch may be
+            returned.  Otherwise only a public branch may be returned.
+        :param allow_junk: If True junk branches are acceptable, if False,
+            only non-junk branches are returned.
+        :return: A `Branch` or None if an appropriate branch cannot be found.
+        """
 
 
 class IRevisionAuthor(Interface):
@@ -46,6 +68,7 @@ class IRevisionAuthor(Interface):
     email = Attribute("The email address extracted from the author text.")
     person = PublicPersonChoice(title=_('Author'), required=False,
         readonly=False, vocabulary='ValidPersonOrTeam')
+    personID = Attribute("The primary key of the person")
 
     def linkToLaunchpadPerson():
         """Attempt to link the revision author to a Launchpad `Person`.
@@ -83,9 +106,15 @@ class IRevisionSet(Interface):
         None if the revision is not known.
         """
 
+    def onlyPresent(revids):
+        """Return the revision ids from `revids` that are present."""
+
     def new(revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
+
+    def newFromBazaarRevision(bzr_revision):
+        """Create a new Revision from the given Bazaar Revision object."""
 
     def checkNewVerifiedEmail(email):
         """See if this email address has been used to commit revisions.
@@ -110,4 +139,60 @@ class IRevisionSet(Interface):
         In order to get the time the revision was actually created, the time
         extracted from the revision properties is used.  While this may not
         be 100% accurate, it is much more accurate than using date created.
+
+        :return: ResultSet containing tuples of (Revision, RevisionAuthor)
+        """
+
+    def getRevisionsNeedingKarmaAllocated():
+        """Get the revisions needing karma allocated.
+
+        Under normal circumstances karma is allocated for revisions by the
+        branch scanner as it is scanning the revisions.
+
+        There are a number of circumstances where this doesn't happen though:
+          * The revision author is not linked to a Launchpad person
+          * The branch is +junk
+
+        :return: A ResultSet containing revisions where:
+           * karma not allocated
+           * revision author linked to a Launchpad person
+           * revision in a branch associated with a product
+        """
+
+    def getPublicRevisionsForPerson(person, day_limit=30):
+        """Get the public revisions for the person or team specified.
+
+        :param person: A person or team.
+        :param day_limit: Defines a time boundary for the revision_date, where
+            (now - day_limit) < revision_date <= now.
+        :return: ResultSet containing all revisions that are in a public
+            branch somewhere where the person is the revision author, or
+            the revision author is in the team, where the revision_date is
+            within `day_limit` number of days of now.  The results are ordered
+            with the most recent revision_date first.
+        """
+
+    def getPublicRevisionsForProduct(product, day_limit=30):
+        """Get the public revisions for the product specified.
+
+        :param product: A valid `Product`.
+        :param day_limit: Defines a time boundary for the revision_date, where
+            (now - day_limit) < revision_date <= now.
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with the product, where the revision_date is
+            within `day_limit` number of days of now.  The results are ordered
+            with the most recent revision_date first.
+        """
+
+    def getPublicRevisionsForProject(project, day_limit=30):
+        """Get the public revisions for the project specified.
+
+        :param project: A valid `Project`.
+        :param day_limit: Defines a time boundary for the revision_date, where
+            (now - day_limit) < revision_date <= now.
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with a product that is associated with the
+            project, where the revision_date is within `day_limit` number
+            of days of now.  The results are ordered with the most recent
+            revision_date first.
         """

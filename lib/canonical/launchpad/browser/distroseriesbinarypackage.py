@@ -3,21 +3,18 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroSeriesBinaryPackageBreadcrumbBuilder',
     'DistroSeriesBinaryPackageFacets',
     'DistroSeriesBinaryPackageNavigation',
     'DistroSeriesBinaryPackageView',
     ]
 
-from zope.app.form.utility import setUpWidgets, getWidgetsData
-from zope.app.form.interfaces import IInputWidget
-
-from zope.component import getUtility
-
 from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation
+    StandardLaunchpadFacets, ApplicationMenu, Navigation
     )
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 
 class DistroSeriesBinaryPackageFacets(StandardLaunchpadFacets):
@@ -39,8 +36,13 @@ class DistroSeriesBinaryPackageNavigation(Navigation):
 
     usedfor = IDistroSeriesBinaryPackage
 
-    def breadcrumb(self):
+
+class DistroSeriesBinaryPackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistroSeriesBinaryPackage`."""
+    @property
+    def text(self):
         return self.context.binarypackagename.name
+
 
 class DistroSeriesBinaryPackageView:
 

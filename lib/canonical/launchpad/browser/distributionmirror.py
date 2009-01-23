@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
+__all__ = ['DistributionMirrorEditView',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
            'DistributionMirrorView', 'DistributionMirrorReviewView',
            'DistributionMirrorReassignmentView',
@@ -11,7 +11,7 @@ __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
 from datetime import datetime
 import pytz
 
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.event import notify
 from zope.interface import implements
 
@@ -30,13 +30,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
-
-
-class DistributionMirrorFacets(StandardLaunchpadFacets):
-
-    usedfor = IDistributionMirror
-    enable_only = ['overview']
+    LaunchpadEditFormView, LaunchpadFormView, Link)
 
 
 class DistributionMirrorOverviewMenu(ApplicationMenu):

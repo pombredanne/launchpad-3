@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 from zope.interface import implements
-from zope.app.mail.interfaces import IMailer
+from zope.sendmail.interfaces import IMailer
 from zope.app import zapi
 from logging import getLogger
 import email

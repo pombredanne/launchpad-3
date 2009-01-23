@@ -101,7 +101,7 @@ browser:renamed-page is available for this purpose.
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
-    ...   <include file="lib/zope/app/meta.zcml" />
+    ...   <include file="lib/zope/app/zcmlfiles/meta.zcml" />
     ...   <browser:renamed-page
     ...       for="canonical.launchpad.interfaces.IQuestionTarget"
     ...       name="+old_tickets_page"

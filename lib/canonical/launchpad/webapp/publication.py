@@ -1,58 +1,65 @@
 # (c) Canonical Ltd. 2004-2006, all rights reserved.
 
 __metaclass__ = type
+__all__ = [
+    'LoginRoot',
+    'LaunchpadBrowserPublication'
+    ]
+
 
 import gc
 import os
-from datetime import datetime
 import thread
 import threading
-from time import strftime
 import traceback
 import urllib
 
 from cProfile import Profile
+from datetime import datetime
+from time import strftime
 
 import tickcount
+import transaction
 
 from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError, IntegrityError
 from storm.zope.interfaces import IZStorm
-import transaction
+
+import zope.app.publication.browser
 
 from zope.app import zapi  # used to get at the adapters service
-import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, queryView
+from zope.component import getUtility, queryMultiAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
-
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
 from zope.publisher.publish import mapply
-
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
+
+import canonical.launchpad.layers as layers
+import canonical.launchpad.webapp.adapter as da
 
 from canonical.config import config
 from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
-import canonical.launchpad.layers as layers
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-import canonical.launchpad.webapp.adapter as da
+    IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
+    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-__all__ = [
-    'LoginRoot',
-    'LaunchpadBrowserPublication'
-    ]
+METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
 
 class LoginRoot:
@@ -67,7 +74,7 @@ class LoginRoot:
     def publishTraverse(self, request, name):
         if not request.getTraversalStack():
             root_object = getUtility(ILaunchpadRoot)
-            view = queryView(root_object, name, request)
+            view = queryMultiAdapter((root_object, request), name=name)
             return view
         else:
             return self
@@ -89,6 +96,7 @@ class LaunchpadBrowserPublication(
     def __init__(self, db):
         self.db = db
         self.thread_locals = threading.local()
+        self.thread_locals.db_policy = None
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -147,7 +155,11 @@ class LaunchpadBrowserPublication(
         da.set_request_started()
 
         newInteraction(request)
+
         transaction.begin()
+
+        self.thread_locals.db_policy = IDatabasePolicy(request)
+        self.thread_locals.db_policy.beforeTraversal()
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -172,9 +184,6 @@ class LaunchpadBrowserPublication(
         return principal
 
     def maybeRestrictToTeam(self, request):
-
-        from canonical.launchpad.interfaces import (
-            IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
         restrict_to_team = config.launchpad.restrict_to_team
         if not restrict_to_team:
             return
@@ -303,8 +312,7 @@ class LaunchpadBrowserPublication(
         view = removeSecurityProxy(ob)
         # It's possible that the view is a bounded method.
         view = getattr(view, 'im_self', view)
-        context = removeSecurityProxy(
-            getattr(view, 'context', None))
+        context = removeSecurityProxy(getattr(view, 'context', None))
         if context is None:
             pageid = ''
         else:
@@ -322,6 +330,15 @@ class LaunchpadBrowserPublication(
         # problems we encode it into ASCII.
         request.setInWSGIEnvironment(
             'launchpad.pageid', pageid.encode('ASCII'))
+
+        if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
+            # this is a direct call on a C-defined method such as __repr__ or
+            # dict.__setitem__.  Apparently publishing this is possible and
+            # acceptable, at least in the case of
+            # canonical.launchpad.webapp.servers.PrivateXMLRPCPublication.
+            # mapply cannot handle these methods because it cannot introspect
+            # them.  We'll just call them directly.
+            return ob(*request.getPositionalArguments())
 
         return mapply(ob, request.getPositionalArguments(), request)
 
@@ -345,9 +362,17 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
+        if self.thread_locals.db_policy is not None:
+            self.thread_locals.db_policy.afterCall()
+            self.thread_locals.db_policy = None
+
         # Abort the transaction on a read-only request.
+        # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
+        elif txn.isDoomed():
+            txn.abort() # Sends an abort to the database, even though
+            # transaction is still doomed.
         else:
             txn.commit()
 
@@ -379,23 +404,6 @@ class LaunchpadBrowserPublication(
             request._traversalticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
 
-        # Debugging code. Please leave. -- StuartBishop 20050622
-        # Set 'threads 1' in launchpad.conf if you are using this.
-        # from canonical.mem import printCounts, mostRefs, memory
-        # from datetime import datetime
-        # mem = memory()
-        # try:
-        #     delta = mem - self._debug_mem
-        # except AttributeError:
-        #     print '= Startup memory %d bytes' % mem
-        #     delta = 0
-        # self._debug_mem = mem
-        # now = datetime.now().strftime('%H:%M:%S')
-        # print '== %s (%.1f MB/%+d bytes) %s' % (
-        #         now, mem/(1024*1024), delta, str(request.URL))
-        # print str(request.URL)
-        # printCounts(mostRefs(4))
-
     def _maybePlacefullyAuthenticate(self, request, ob):
         """ This should never be called because we've excised it in
         favor of dealing with auth in events; if it is called for any
@@ -424,24 +432,64 @@ class LaunchpadBrowserPublication(
             # The exception wasn't raised in the middle of the traversal nor
             # the publication, so there's nothing we need to do here.
             pass
+    
+        def should_retry(exc_info):
+            if not retry_allowed:
+                return False
 
-        # Reraise Retry exceptions rather than log.
-        # XXX stub 20070317: Remove this when the standard
-        # handleException method we call does this (bug to be fixed upstream)
-        if retry_allowed and isinstance(
-            exc_info[1], (Retry, DisconnectionError, IntegrityError,
-                          TransactionRollbackError)):
+            # If we get a LookupError and the default database being
+            # used is a replica, raise a Retry exception instead of
+            # returning the 404 error page. We do this in case the
+            # LookupError is caused by replication lag. Our database
+            # policy forces the use of the master database for retries.
+            if (isinstance(exc_info[1], LookupError) and isinstance(
+                self.thread_locals.db_policy, LaunchpadDatabasePolicy)):
+                store_selector = getUtility(IStoreSelector)
+                default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
+                master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+                if default_store is master_store:
+                    return False
+                else:
+                    return True
+
+            # Retry exceptions need to be propagated so they are
+            # retried. Retry exceptions occur when an optimistic
+            # transaction failed, such as we detected two transactions
+            # attempting to modify the same resource.
+            # DisconnectionError and TransactionRollbackError indicate
+            # a database transaction failure, and should be retried
+            # The appserver detects the error state, and a new database
+            # connection is opened allowing the appserver to cope with
+            # database or network outages.
+            # An IntegrityError may be caused when we insert a row
+            # into the database that already exists, such as two requests
+            # doing an insert-or-update. It may succeed if we try again.
+            if isinstance(exc_info[1], (Retry, DisconnectionError,
+                IntegrityError, TransactionRollbackError)):
+                return True
+
+            return False
+
+        # Reraise Retry exceptions ourselves rather than invoke
+        # our superclass handleException method, as it will log OOPS
+        # reports etc. This would be incorrect, as transaction retry
+        # is a normal part of operation.
+        if should_retry(exc_info):
             if request.supportsRetry():
                 # Remove variables used for counting ticks as this request is
                 # going to be retried.
                 orig_env.pop('launchpad.traversalticks', None)
                 orig_env.pop('launchpad.publicationticks', None)
+            # Our endRequest needs to know if a retry is pending or not.
+            request._wants_retry = True
             if isinstance(exc_info[1], Retry):
                 raise
             raise Retry(exc_info)
+
         superclass = zope.app.publication.browser.BrowserPublication
-        superclass.handleException(self, object, request, exc_info,
-                                   retry_allowed)
+        superclass.handleException(
+            self, object, request, exc_info, retry_allowed)
+
         # If it's a HEAD request, we don't care about the body, regardless of
         # exception.
         # UPSTREAM: Should this be part of zope,
@@ -449,6 +497,27 @@ class LaunchpadBrowserPublication(
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
             request.response.setResult('')
+
+    def beginErrorHandlingTransaction(self, request, ob, note):
+        """Hook for when a new view is started to handle an exception.
+
+        We need to add an additional behavior to the usual Zope behavior.
+        We must restart the request timer.  Otherwise we can get OOPS errors
+        from our exception views inappropriately.
+        """
+        super(LaunchpadBrowserPublication,
+              self).beginErrorHandlingTransaction(request, ob, note)
+        # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to
+        # only clear the SQL records and timeout when we are preparing for a
+        # view (or a side effect). Otherwise, we don't want to clear the
+        # records because they are what the error reporting utility uses to
+        # create OOPS reports with the SQL commands that led up to the error.
+        # At the moment, we can only distinguish based on the "note" argument:
+        # an undocumented argument of this undocumented method.
+        if note in ('application error-handling',
+                    'application error-handling side-effect'):
+            da.clear_request_started()
+            da.set_request_started()
 
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
@@ -462,31 +531,36 @@ class LaunchpadBrowserPublication(
             self.debugReferencesLeak(request)
 
         # Maintain operational statistics.
-        OpStats.stats['requests'] += 1
+        if getattr(request, '_wants_retry', False):
+            OpStats.stats['retries'] += 1
+        else:
+            OpStats.stats['requests'] += 1
 
-        # Increment counters for HTTP status codes we track individually
-        # NB. We use IBrowserRequest, as other request types such as
-        # IXMLRPCRequest use IHTTPRequest as a superclass.
-        # This should be fine as Launchpad only deals with browser
-        # and XML-RPC requests.
-        if IBrowserRequest.providedBy(request):
-            OpStats.stats['http requests'] += 1
-            status = request.response.getStatus()
-            if status == 404: # Not Found
-                OpStats.stats['404s'] += 1
-            elif status == 500: # Unhandled exceptions
-                OpStats.stats['500s'] += 1
-            elif status == 503: # Timeouts
-                OpStats.stats['503s'] += 1
+            # Increment counters for HTTP status codes we track individually
+            # NB. We use IBrowserRequest, as other request types such as
+            # IXMLRPCRequest use IHTTPRequest as a superclass.
+            # This should be fine as Launchpad only deals with browser
+            # and XML-RPC requests.
+            if IBrowserRequest.providedBy(request):
+                OpStats.stats['http requests'] += 1
+                status = request.response.getStatus()
+                if status == 404: # Not Found
+                    OpStats.stats['404s'] += 1
+                elif status == 500: # Unhandled exceptions
+                    OpStats.stats['500s'] += 1
+                elif status == 503: # Timeouts
+                    OpStats.stats['503s'] += 1
 
-            # Increment counters for status code groups.
-            OpStats.stats[str(status)[0] + 'XXs'] += 1
+                # Increment counters for status code groups.
+                OpStats.stats[str(status)[0] + 'XXs'] += 1
 
         # Reset all Storm stores when not running the test suite. We could
         # reset them when running the test suite but that'd make writing tests
-        # a much more painful task.
-        if threading.currentThread().getName() != 'MainThread':
-            for name, store in getUtility(IZStorm).iterstores():
+        # a much more painful task. We still reset the slave stores though
+        # to minimize stale cache issues.
+        thread_name = threading.currentThread().getName()
+        for name, store in getUtility(IZStorm).iterstores():
+            if thread_name != 'MainThread' or name.endswith('-slave'):
                 store.reset()
 
     def startProfilingHook(self):
@@ -509,7 +583,7 @@ class LaunchpadBrowserPublication(
         timestamp = "%s.%d" % (
             now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
         pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-        oopsid= getattr(request, 'oopsid', None)
+        oopsid = getattr(request, 'oopsid', None)
 
         if config.profiling.profile_requests:
             profiler = self.thread_locals.profiler
@@ -635,3 +709,11 @@ def debug_references_startup_check(event):
     if os.path.exists(config.debug.references_scoreboard_file):
         os.remove(config.debug.references_scoreboard_file)
 
+
+class DefaultPrimaryContext:
+    """The default primary context is the context."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, context):
+        self.context = context

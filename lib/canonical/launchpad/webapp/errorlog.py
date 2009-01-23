@@ -17,12 +17,15 @@ import types
 import urllib
 
 from zope.interface import implements
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
+from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_statements, get_request_duration,
     soft_timeout_expired)
@@ -92,8 +95,8 @@ def _is_sensitive(request, name):
     if ('PASSWORD' in upper_name or 'PASSWD' in upper_name):
         return True
 
-    # Block HTTP_COOKIE
-    if name == 'HTTP_COOKIE':
+    # Block HTTP_COOKIE and oauth_signature.
+    if name in ('HTTP_COOKIE', 'oauth_signature'):
         return True
 
     # Allow remaining UPPERCASE names and remaining form variables.  Note that
@@ -212,7 +215,8 @@ class ErrorReport:
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
+    _ignored_exceptions = set(['TranslationUnavailable'])
+    _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 
     lasterrordir = None
@@ -408,32 +412,38 @@ class ErrorReportingUtility:
             if request:
                 # XXX jamesh 2005-11-22: Temporary fix, which Steve should
                 #      undo. URL is just too HTTPRequest-specific.
-                if hasattr(request, 'URL'):
+                if safe_hasattr(request, 'URL'):
                     url = request.URL
-                try:
-                    # XXX jamesh 2005-11-22: UnauthenticatedPrincipal
-                    # does not have getLogin()
-                    if hasattr(request.principal, 'getLogin'):
-                        login = request.principal.getLogin()
-                    else:
-                        login = 'unauthenticated'
+
+                if WebServiceLayer.providedBy(request):
+                    webservice_error = getattr(
+                        info[0], '__lazr_webservice_error__', 500)
+                    if webservice_error / 100 != 5:
+                        request.oopsid = None
+                        # Return so the OOPS is not generated.
+                        return
+
+                missing = object()
+                principal = getattr(request, 'principal', missing)
+                if safe_hasattr(principal, 'getLogin'):
+                    login = principal.getLogin()
+                elif principal is missing or principal is None:
+                    # Request has no principal.
+                    login = None
+                else:
+                    # Request has an UnauthenticatedPrincipal.
+                    login = 'unauthenticated'
+                    if strtype in (
+                        self._ignored_exceptions_for_unauthenticated_users):
+                        return
+
+                if principal is not None and principal is not missing:
                     username = _safestr(
                         ', '.join([
                                 unicode(login),
                                 unicode(request.principal.id),
                                 unicode(request.principal.title),
                                 unicode(request.principal.description)]))
-                # XXX jamesh 2005-11-22:
-                # When there's an unauthorized access, request.principal is
-                # not set, so we get an AttributeError.
-                # Is this right? Surely request.principal should be set!
-                # Answer: Catching AttributeError is correct for the
-                #         simple reason that UnauthenticatedUser (which
-                #         I always use during coding), has no 'getLogin()'
-                #         method. However, for some reason this except
-                #         does **NOT** catch these errors.
-                except AttributeError:
-                    pass
 
                 if getattr(request, '_orig_env', None):
                     pageid = request._orig_env.get('launchpad.pageid', '')
@@ -444,6 +454,9 @@ class ErrorReportingUtility:
                         req_vars.append((_safestr(key), '<hidden>'))
                     else:
                         req_vars.append((_safestr(key), _safestr(value)))
+                if IXMLRPCRequest.providedBy(request):
+                    args = request.getPositionalArguments()
+                    req_vars.append(('xmlrpc args', _safestr(args)))
                 req_vars.sort()
             strv = _safestr(info[1])
 
@@ -507,13 +520,13 @@ class ScriptRequest(ErrorReportRequest):
     """Fake request that can be passed to ErrorReportingUtility.raising.
 
     It can be used by scripts to enrich error reports with context information
-    and a representation of the resource on which the error occured. It also
+    and a representation of the resource on which the error occurred. It also
     gives access to the generated OOPS id.
 
-    The resource for which the error occured MAY be identified by an URL. This
-    URL should point to a human-readable representation of the model object,
-    such as a page on launchpad.net, even if this URL does not occur as part of
-    the normal operation of the script.
+    The resource for which the error occurred MAY be identified by an URL.
+    This URL should point to a human-readable representation of the model
+    object, such as a page on launchpad.net, even if this URL does not occur
+    as part of the normal operation of the script.
 
     :param data: context information relevant to diagnosing the error. It is
         recorded as request-variables in the OOPS.

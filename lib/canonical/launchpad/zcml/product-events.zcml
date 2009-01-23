@@ -4,7 +4,7 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IProduct
-        zope.app.event.interfaces.IObjectModifiedEvent"
+        zope.lifecycleevent.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.productsubscribers.product_modified" />
 
 </configure>

@@ -9,16 +9,38 @@ __all__ = [
     'IArchiveDependency',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute, Interface
+from zope.schema import Choice, Datetime, Int, Object
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 
 
 class IArchiveDependency(Interface):
     """ArchiveDependency interface."""
 
-    id = Attribute("The archive ID.")
+    id = Int(title=_("The archive ID."), readonly=True)
 
-    date_created = Attribute("Instant when the dependency was created.")
+    date_created = Datetime(
+        title=_("Instant when the dependency was created."),
+        required=False, readonly=True)
 
-    archive = Attribute("Archive affected by this dependency.")
+    archive = Choice(
+        title=_('Target archive'),
+        required=True,
+        vocabulary='PPA',
+        description=_("The PPA affected by this dependecy."))
 
-    dependency = Attribute("Dependency archive.")
+    dependency = Object(
+        schema=IArchive,
+        title=_("The archive set as a dependency."),
+        required=False)
+
+    pocket = Choice(
+        title=_("Pocket"), required=True, vocabulary=PackagePublishingPocket)
+
+    component = Choice(
+        title=_("Component"), required=True, vocabulary='Component')
+
+    title = Attribute("Archive dependency title.")

@@ -8,7 +8,7 @@ __all__ = [
     'fault_catcher',
     'get_alternative_email',
     'mailman',
-    'new_person',
+    'new_list_for_team',
     'new_team',
     'print_actions',
     'print_info',
@@ -26,10 +26,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
-    IMailingListSet, IMessageApprovalSet, IPersonSet,
-    MailingListAutoSubscribePolicy, MailingListStatus,
-    PersonCreationRationale, PostedMessageStatus, TeamSubscriptionPolicy)
+    ILaunchpadCelebrities, IMailingListSet, IMessageApprovalSet, IPersonSet,
+    MailingListStatus, PostedMessageStatus, TeamSubscriptionPolicy)
 
 
 def fault_catcher(func):
@@ -102,10 +100,15 @@ def print_info(info, full=False):
     clearer, we specifically suppress printing of the mail-archive recipient
     when `full` is False (the default).
     """
+    status_mapping = {
+        0: 'RECIPIENT',
+        2: 'X',
+        }
     for team_name in sorted(info):
         print team_name
         subscribees = info[team_name]
-        for address, realname, flags, status in subscribees:
+        for address, realname, flags, status_id in subscribees:
+            status = status_mapping.get(status_id, '??')
             if realname == '':
                 realname = '(n/a)'
             if (not full and
@@ -155,8 +158,8 @@ def new_team(team_name, with_list=False):
     we need to use in the doctest.
     """
     displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
-    # bug 125505.
+    # XXX BarryWarsaw 2007-09-27 bug 125505: Set the team's subscription
+    # policy to OPEN.
     policy = TeamSubscriptionPolicy.OPEN
     personset = getUtility(IPersonSet)
     team_creator = personset.getByName('no-priv')
@@ -186,13 +189,13 @@ def new_list_for_team(team):
     return team_list
 
 
-def apply_for_list(browser, team_name):
+def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/'):
     """Create a team and apply for its mailing list.
 
     This should only be used in page tests.
     """
     displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    browser.open('http://launchpad.dev/people/+newteam')
+    browser.open(rooturl + 'people/+newteam')
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
     # Use an open team for simplicity.
@@ -200,46 +203,9 @@ def apply_for_list(browser, team_name):
         name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
     # Apply for the team's mailing list'
-    browser.open('http://launchpad.dev/~%s' % team_name)
+    browser.open(rooturl + '~%s' % team_name)
     browser.getLink('Configure mailing list').click()
     browser.getControl('Apply for Mailing List').click()
-
-
-def new_person(first_name, set_preferred_email=True,
-               use_default_autosubscribe_policy=False):
-    """Create a new person with the given first name.
-
-    The person will be given two email addresses, with the 'long form'
-    (e.g. anne.person@example.com) as the preferred address.  Return
-    the new person object.
-
-    The person will also have their mailing list auto-subscription
-    policy set to 'NEVER' unless 'use_default_autosubscribe_policy' is
-    set to True. (This requires the Launchpad.Edit permission).  This
-    is useful for testing, where we often want precise control over
-    when a person gets subscribed to a mailing list.
-    """
-    variable_name = first_name.lower()
-    full_name = first_name + ' Person'
-    # E.g. firstname.person@example.com will be an alternative address.
-    preferred_address = variable_name + '.person@example.com'
-    # E.g. aperson@example.org will be the preferred address.
-    alternative_address = variable_name[0] + 'person@example.org'
-    person, email = getUtility(IPersonSet).createPersonAndEmail(
-        preferred_address,
-        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-        name=variable_name, displayname=full_name)
-    if set_preferred_email:
-        person.setPreferredEmail(email)
-
-    if not use_default_autosubscribe_policy:
-        # Shut off list auto-subscription so that we have direct control
-        # over subscriptions in the doctests.
-        person.mailing_list_auto_subscribe_policy = \
-            MailingListAutoSubscribePolicy.NEVER
-    getUtility(IEmailAddressSet).new(alternative_address, person,
-                                     EmailAddressStatus.VALIDATED)
-    return person
 
 
 def get_alternative_email(person):
@@ -273,6 +239,7 @@ def review_list(list_name, status=None):
     list_set = getUtility(IMailingListSet)
     mailing_list = list_set.get(list_name)
     mailing_list.review(lpadmin, status)
+    return mailing_list
 
 
 class MailmanStub:
@@ -289,6 +256,11 @@ class MailmanStub:
         for mailing_list in mailing_list_set.approved_lists:
             mailing_list.startConstructing()
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+        for mailing_list in mailing_list_set.deactivated_lists:
+            mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        for mailing_list in mailing_list_set.modified_lists:
+            mailing_list.startUpdating()
+            mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
         # Simulate acknowledging held messages.
         message_set = getUtility(IMessageApprovalSet)
         message_ids = set()
@@ -300,7 +272,6 @@ class MailmanStub:
         for message_id in message_ids:
             message = message_set.getMessageByMessageID(message_id)
             message.acknowledge()
-        flush_database_updates()
 
 
 mailman = MailmanStub()

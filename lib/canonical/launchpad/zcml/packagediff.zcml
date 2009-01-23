@@ -6,15 +6,19 @@
   i18n_domain="launchpad">
 
   <!-- PackageDiff -->
-  <content class="canonical.launchpad.database.PackageDiff">
+  <class class="canonical.launchpad.database.PackageDiff">
     <allow interface="canonical.launchpad.interfaces.IPackageDiff"/>
-  </content>
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.IPackageDiff"
+          />
+  </class>
 
 
   <!-- PackageDiffSet -->
-  <content class="canonical.launchpad.database.PackageDiffSet">
+  <class class="canonical.launchpad.database.PackageDiffSet">
     <allow interface="canonical.launchpad.interfaces.IPackageDiffSet"/>
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.PackageDiffSet"

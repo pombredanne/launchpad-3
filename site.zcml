@@ -17,7 +17,7 @@
 
     <!-- package-includes/*-configure.zcml contains package configuration
         shared between a normal launchpad instance and the test suite.
-        package-includes/*-configure-normal.zcml and 
+        package-includes/*-configure-normal.zcml and
         package-includes/*-configure-testing.zcml contain configuration
         that needs to be different between normal and test modes.
     -->
@@ -32,4 +32,6 @@
 
     <!-- include request summarizer here so it only affects webapp -->
     <include file="summarizerequests.zcml" />
+
+    <include package="zc.zservertracelog" />
 </configure>

@@ -47,6 +47,7 @@ An empty project group needs to be set up first...
     >>> admin_browser.getControl('Title:').value = 'My Test Group'
     >>> admin_browser.getControl(name='field.summary').value = 'Summary'
     >>> admin_browser.getControl('Description:').value = 'Define me'
+    >>> admin_browser.getControl('Maintainer:').value = 'cprov'
     >>> admin_browser.getControl('Add').click()
     >>> admin_browser.url
     'http://launchpad.dev/a-test-group'
@@ -96,7 +97,7 @@ Also, the bugs, blueprints, translations and answers facets will be disabled:
       ..
     LinkNotFoundError...
 
-A warning message will be displayed at the top of the overview page when the 
+A warning message will be displayed at the top of the overview page when the
 owner of the project group views it:
 
     >>> admin_browser.open('http://launchpad.dev/a-test-group')
@@ -125,8 +126,10 @@ The home page of a project contains a list of all products which are part of tha
 
 Inactive products are not included in that list, though.
 
-    >>> from canonical.launchpad.database import ProductSet
-    >>> firefox = ProductSet().getByName('firefox')
+    # Use the DB classes directly to avoid having to setup a zope interaction
+    # (i.e. login()) and bypass the security proxy.
+    >>> from canonical.launchpad.database import Product
+    >>> firefox = Product.byName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()
 

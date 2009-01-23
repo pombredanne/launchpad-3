@@ -1,13 +1,13 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <content class="canonical.launchpad.database.ScriptActivity">
+  <class class="canonical.launchpad.database.ScriptActivity">
     <allow interface="canonical.launchpad.interfaces.IScriptActivity"/>
-  </content>
+  </class>
 
   <!-- RevisionSet -->
-  <content class="canonical.launchpad.database.ScriptActivitySet">
+  <class class="canonical.launchpad.database.ScriptActivitySet">
     <allow interface="canonical.launchpad.interfaces.IScriptActivitySet" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.ScriptActivitySet"

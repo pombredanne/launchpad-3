@@ -140,7 +140,7 @@ class TestMakeBugBranch(unittest.TestCase):
 
     def setUp(self):
         factory = LaunchpadObjectFactory()
-        self.branch = factory.makeBranch()
+        self.branch = factory.makeAnyBranch()
         self.bug = factory.makeBug()
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
@@ -216,7 +216,7 @@ class TestBugLinking(BzrSyncTestCase):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
         self.bug2 = self.factory.makeBug()
-        self.new_db_branch = self.factory.makeBranch()
+        self.new_db_branch = self.factory.makeAnyBranch()
         self.layer.txn.commit()
 
     def getBugURL(self, bug):
@@ -273,8 +273,9 @@ class TestBugLinking(BzrSyncTestCase):
     def test_nonMainlineRevisionsDontMakeBugBranches(self):
         """Don't add BugBranches based on non-mainline revisions."""
         # Make the base revision.
+        author = self.factory.getUniqueString()
         self.bzr_tree.commit(
-            u'common parent', committer=self.AUTHOR, rev_id='r1',
+            u'common parent', committer=author, rev_id='r1',
             allow_pointless=True)
 
         # Branch from the base revision.
@@ -283,17 +284,17 @@ class TestBugLinking(BzrSyncTestCase):
 
         # Commit to both branches
         self.bzr_tree.commit(
-            u'commit one', committer=self.AUTHOR, rev_id='r2',
+            u'commit one', committer=author, rev_id='r2',
             allow_pointless=True)
         new_tree.commit(
-            u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
+            u'commit two', committer=author, rev_id='r1.1.1',
             allow_pointless=True,
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
 
         # Merge and commit.
         self.bzr_tree.merge_from_branch(new_tree.branch)
         self.bzr_tree.commit(
-            u'merge', committer=self.AUTHOR, rev_id='r3',
+            u'merge', committer=author, rev_id='r3',
             allow_pointless=True)
 
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)

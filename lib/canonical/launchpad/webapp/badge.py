@@ -64,8 +64,6 @@ class Badge:
 STANDARD_BADGES = {
     'bug': Badge('/@@/bug', '/@@/bug-large',
                  'bug', 'Linked to a bug', 'bugbadge'),
-    # XXX: TimPenhey 2007-10-10
-    # No big blueprint exists, see bug 151171
     'blueprint': Badge('/@@/blueprint', None,
                        '(Linked to a blueprint)', 'Linked to a blueprint'),
     'branch': Badge('/@@/branch', '/@@/branch-large',

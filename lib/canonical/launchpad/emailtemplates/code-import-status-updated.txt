@@ -1,6 +1,6 @@
 Hello,
 
-%(status)s
+%(body)s
 
 -- 
 %(branch)s

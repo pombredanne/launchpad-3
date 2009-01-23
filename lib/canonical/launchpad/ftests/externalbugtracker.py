@@ -26,7 +26,7 @@ from canonical.launchpad.components.externalbugtracker import (
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac)
 from canonical.launchpad.components.externalbugtracker.trac import (
-    LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
+    FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
@@ -151,6 +151,14 @@ class TestExternalBugTracker(ExternalBugTracker):
 
     def __init__(self, baseurl='http://example.com/'):
         super(TestExternalBugTracker, self).__init__(baseurl)
+
+    def getRemoteBug(self, remote_bug):
+        """Return the tuple (None, None) as a representation of a remote bug.
+
+        We add this method here to prevent tests which need to call it,
+        but which make no use of the output, from failing.
+        """
+        return None, None
 
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
@@ -366,7 +374,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'is_open': True,
             'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
             'priority': 'P1',
-            'product': 'HeartOfGold',
+            'product': 'Marvin',
             'resolution': 'FIXED',
             'severity': 'normal',
             'status': 'RESOLVED',
@@ -437,6 +445,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'get_bugs',
             'login',
             'time',
+            'set_link',
             ],
         'Test': ['login_required']
         }
@@ -445,6 +454,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     auth_required_methods = [
         'add_comment',
         'login_required',
+        'set_link',
         ]
 
     expired_cookie = None
@@ -551,14 +561,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         random_cookie_1 = str(random.random())
         random_cookie_2 = str(random.random())
 
-        # Reset the headers so that we don't end up with long strings of
-        # repeating cookies.
-        self.last_response_headers = HTTPMessage(StringIO())
-
-        self.last_response_headers.addheader(
-            'set-cookie', 'Bugzilla_login=%s;' % random_cookie_1)
-        self.last_response_headers.addheader(
-            'set-cookie', 'Bugzilla_logincookie=%s;' % random_cookie_2)
+        self.setCookie('Bugzilla_login=%s;' % random_cookie_1)
+        self.setCookie('Bugzilla_logincookie=%s;' % random_cookie_2)
 
         # We always return the same user ID.
         # This has to be listified because xmlrpclib tries to expand
@@ -567,7 +571,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""
-        bug_ids = arguments['ids']
+        bug_ids = arguments.get('ids')
+        products = arguments.get('products')
+
+        assert bug_ids is not None or products is not None, (
+            "One of ('ids', 'products') should be specified")
+
         bugs_to_return = []
         bugs = dict(self.bugs)
 
@@ -575,6 +584,24 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # with permissive=True in the Real World.
         permissive = arguments.get('permissive', False)
         assert permissive, "get_bugs() must be called with permissive=True"
+
+        # If a changed_since argument is specified, marshall it into a
+        # datetime so that we can use it for comparisons.
+        # XXX 2008-08-05 gmb (bug 254999):
+        #     We can remove these lines once we upgrade to python 2.5.
+        changed_since = arguments.get('changed_since')
+        if changed_since is not None:
+            changed_since_timetuple = time.strptime(
+                str(changed_since), '%Y%m%dT%H:%M:%S')
+            changed_since = datetime(*changed_since_timetuple[:6])
+
+        # If we have some products but no bug_ids we just get all the
+        # bug IDs for those products and stuff them in the bug_ids list
+        # for processing below.
+        if bug_ids is None:
+            bug_ids = [
+                bug_id for bug_id, bug in self.bugs.items()
+                    if bug['product'] in products]
 
         for id in bug_ids:
             # If the ID is an int, look up the bug directly. We copy the
@@ -585,6 +612,22 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
                 bug_dict = dict(self.bugs[int(id)])
             except ValueError:
                 bug_dict = dict(self.bugs[self.bug_aliases[id]])
+            except KeyError:
+                # We ignore KeyErrors (since permissive == True, which
+                # means that we ignore invalid bug IDs).
+                continue
+
+            # If changed_since is specified, discard all the bugs whose
+            # last_change_time is < changed_since.
+            if (changed_since is not None and
+                bug_dict['last_change_time'] < changed_since):
+                continue
+
+            # If the bug doesn't belong to one of the products in the
+            # products list, ignore it.
+            if (products is not None and
+                bug_dict['product'] not in products):
+                continue
 
             # Update the DateTime fields of the bug dict so that they
             # look like ones that would be sent over XML-RPC.
@@ -683,6 +726,26 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # expand sequences of length 1. Trying to do that on a dict will
         # cause it to explode.
         return [{'comment_id': comment_id}]
+
+    def set_link(self, arguments):
+        """Set the Launchpad bug ID for a given Bugzilla bug.
+
+        :returns: The current Launchpad bug ID for the Bugzilla bug or
+            0 if one is not set.
+        """
+        bug_id = int(arguments['id'])
+        launchpad_id = arguments['launchpad_id']
+
+        # Extract the current launchpad_id from the bug, then update
+        # that field.
+        bug = self.bugs[bug_id]
+        old_launchpad_id = bug['internals'].get('launchpad_id', 0)
+        bug['internals']['launchpad_id'] = launchpad_id
+
+        # We need to return a list here because xmlrpclib will try to
+        # expand sequences of length 1, which will fail horribly when
+        # the sequence is in fact a dict.
+        return [{'launchpad_id': old_launchpad_id}]
 
 
 class TestMantis(Mantis):
@@ -789,6 +852,9 @@ class TestInternalXMLRPCTransport:
     then switches back to the 'checkwatches' user.
     """
 
+    def __init__(self, quiet=False):
+        self.quiet = quiet
+
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
         method = getattr(self, method_name)
@@ -800,7 +866,10 @@ class TestInternalXMLRPCTransport:
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)
-        print "Using XML-RPC to generate token."
+
+        if not self.quiet:
+            print "Using XML-RPC to generate token."
+
         return token_api.newBugTrackerToken()
 
 
@@ -817,6 +886,7 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
     """An XML-RPC transport to be used when testing Trac."""
 
     remote_bugs = {}
+    launchpad_bugs = {}
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
@@ -1026,6 +1096,42 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
 
         return [self.utc_time, comment_id]
 
+    def get_launchpad_bug(self, bugid):
+        """Get the Launchpad bug ID for a given remote bug.
+
+        The remote bug to Launchpad bug mappings are stored in the
+        launchpad_bugs dict.
+
+        If `bugid` references a remote bug that doesn't exist, raise a
+        Fault.
+
+        If a remote bug doesn't have a Launchpad bug mapped to it,
+        return 0. Otherwise return the mapped Launchpad bug ID.
+        """
+        if bugid not in self.remote_bugs:
+            raise xmlrpclib.Fault(
+                FAULT_TICKET_NOT_FOUND, 'Ticket does not exist')
+
+        return [self.utc_time, self.launchpad_bugs.get(bugid, 0)]
+
+    def set_launchpad_bug(self, bugid, launchpad_bug):
+        """Set the Launchpad bug ID for a remote bug.
+
+        If `bugid` references a remote bug that doesn't exist, raise a
+        Fault.
+
+        Return the current UTC timestamp.
+        """
+        if bugid not in self.remote_bugs:
+            raise xmlrpclib.Fault(
+                FAULT_TICKET_NOT_FOUND, 'Ticket does not exist')
+
+        self.launchpad_bugs[bugid] = launchpad_bug
+
+        # Return a list, since xmlrpclib insists on trying to expand
+        # results.
+        return [self.utc_time]
+
 
 class TestRoundup(Roundup):
     """Roundup ExternalBugTracker for testing purposes.
@@ -1045,7 +1151,7 @@ class TestRoundup(Roundup):
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
-        if self.isPython():
+        if self.host == 'bugs.python.org':
             return open(
                 file_path + '/' + 'python_example_ticket_export.csv', 'r')
         else:

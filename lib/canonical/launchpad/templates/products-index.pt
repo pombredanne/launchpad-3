@@ -46,7 +46,7 @@
         do another search with more relevant search terms.
       </p>
 
-      <p>
+      <p tal:condition="view/searchresults">
         <span tal:replace="view/matches">3</span>
         <span tal:condition="python: view.matches == 1">project found</span>
         <span tal:condition="python: view.matches != 1">projects found</span>
@@ -63,44 +63,38 @@
         id="search-results"
         >
         <tbody>
-          <tr tal:repeat="pillar results" tal:replace="structure pillar/@@+listing-simple">
+          <tr tal:repeat="pillarname results"
+              tal:replace="structure pillarname/@@+listing-simple">
           </tr>
         </tbody>
       </table>
 
-      <p class="error" id="application-summary"
-         tal:condition="not: view/searchresults">
-        No projects matching
-        &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
-        were found.
-      </p>
+      <div id="application-summary">
+        <p class="error" 
+           tal:condition="not: view/searchresults">
+          No projects matching
+          &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
+          were found.
+        </p>
 
-      <h2>Haven&#8217;t found your project?</h2>
+        <h2>Haven&#8217;t found your project?</h2>
 
-      <p id="application-summary">
-        If the project you are looking for isn't here, go ahead and register
-        it yourself!
-      </p>
+        <p>
+          If the project you are looking for isn't here, go ahead and register
+          it yourself!
+        </p>
 
-      <ul class="rollover buttons">
-        <li>
-          <a href="/projects/+new-guided">
-            <img
-              alt="Register a project"
-              src="/+icing/but-lrg-registerproj.gif"
-            />
-          </a>
-        </li>
-      </ul>
-
-      <h2>Why register?</h2>
-
-      <p id="application-summary">
-        Launchpad helps people to work together by making it easy to share
-        code, bug reports, translations, and ideas. To get started, search here
-        for a project you want to know more about.
-      </p>
-
+        <ul class="rollover buttons">
+          <li>
+            <a href="/projects/+new-guided">
+              <img
+                alt="Register a project"
+                src="/+icing/but-lrg-registerproj.gif"
+              />
+            </a>
+          </li>
+        </ul>
+      </div>
     </tal:non-empty-search-string>
 
   </tal:searching>
@@ -110,6 +104,13 @@
       Launchpad helps people to work together by making it easy to share
       code, bug reports, translations, and ideas. To get started, search here
       for a project you want to know more about.
+    </p>
+
+    <p>
+      If you find a project you run, <a href="/launchpad/+addquestion">ask
+      us</a> and we'll hand the project over to you.
+      <br />To set that project up for translation to your language, <a
+      href="/rosetta/+addquestion">ask the Translations staff</a>.
     </p>
 
     <div class="left">
@@ -133,7 +134,6 @@
             </tr>
           </tbody>
         </table>
-        <p><a href="/people/+teamlist">&raquo; Show all teams</a></p>
       </div>
 
     </div>

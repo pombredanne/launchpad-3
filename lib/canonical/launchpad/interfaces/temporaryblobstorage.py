@@ -29,7 +29,7 @@ class ITemporaryBlobStorage(Interface):
     blob = Bytes(title=_('BLOB'), required=True, readonly=True)
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
-    filealias = Attribute("Link to actual storage of blob")
+    file_alias = Attribute("Link to actual storage of blob")
 
 
 class ITemporaryStorageManager(Interface):

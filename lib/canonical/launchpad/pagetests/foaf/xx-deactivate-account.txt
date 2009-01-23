@@ -46,6 +46,10 @@ To deactivate a user's account we require the user to enter his password.
     >>> browser.getControl('Why are you deactivating your account?').value = (
     ...     "I'm going to become a Budhist monk in Tibet")
     >>> browser.getControl('Deactivate My Account').click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    Incorrect password.
 
     >>> browser.getControl('Password').value = 't'
     >>> browser.url

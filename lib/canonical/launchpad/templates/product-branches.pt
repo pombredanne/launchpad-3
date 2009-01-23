@@ -14,14 +14,15 @@
 
 <div metal:fill-slot="main">
 
-  <div style="float:right" id="floating-links">
-    <div tal:define="link context/menu:branches/branch_add"
+  <div style="float:right" id="floating-links"
+       tal:define="menu context/menu:branches">
+    <div tal:define="link menu/branch_add"
          tal:condition="link/enabled"
          tal:content="structure link/render" />
-    <div tal:define="link context/menu:branches/code_import"
+    <div tal:define="link menu/code_import"
          tal:condition="link/enabled"
          tal:content="structure link/render" />
-    <div tal:define="link context/menu:branches/branch_visibility"
+    <div tal:define="link menu/branch_visibility"
          tal:condition="link/enabled"
          tal:content="structure link/render" />
   </div>
@@ -36,14 +37,6 @@
   </tal:has-branches>
 
 </div>
-
-<metal:block fill-slot="help">
-
-  <p>Launchpad is integrated with the <a
-    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
-    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
-
-</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 
 </body>
 </html>

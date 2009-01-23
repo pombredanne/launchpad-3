@@ -13,6 +13,7 @@ import gettextpo
 import os
 import random
 import re
+import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -20,6 +21,7 @@ from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 
 import canonical
 from canonical.launchpad.interfaces import (
@@ -222,19 +224,16 @@ def emailPeople(person):
     return people
 
 
-def contactEmailAddresses(person):
+def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
     In general, it is better to use emailPeople instead.
     """
-    # XXX: Guilherme Salgado 2006-04-20:
-    # This str() call can be removed as soon as Andrew lands his
-    # unicode-simple-sendmail branch, because that will make
-    # simple_sendmail handle unicode email addresses.
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
-    return set(str(removeSecurityProxy(mail_person.preferredemail).email)
+    return set(
+        str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in emailPeople(person))
 
 
@@ -266,15 +265,6 @@ def obfuscateEmail(emailaddr, idx=None):
     if idx is None:
         idx = random.randint(0, len(replacements) - 1)
     return text_replaced(emailaddr, replacements[idx])
-
-
-def convertToHtmlCode(text):
-    """Return the given text converted to HTML codes, like &#103;.
-
-    This is usefull to avoid email harvesting, while keeping the email address
-    in a form that a 'normal' person can read.
-    """
-    return ''.join(["&#%s;" % ord(c) for c in text])
 
 
 def validate_translation(original, translation, flags):
@@ -343,12 +333,12 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
 
 
 def preferred_or_request_languages(request):
-    '''Turn a request into a list of languages to show.
+    """Turn a request into a list of languages to show.
 
     Return Person.languages when the user has preferred languages.
     Otherwise, return the languages from the request either from the
     headers or from the IP address.
-    '''
+    """
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages

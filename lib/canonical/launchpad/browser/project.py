@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -8,30 +8,29 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
+    'ProjectAnswersMenu',
+    'ProjectBountiesMenu',
     'ProjectBranchesView',
     'ProjectBrandingView',
-    'ProjectNavigation',
-    'ProjectDynMenu',
+    'ProjectBreadcrumbBuilder',
     'ProjectEditView',
-    'ProjectReviewView',
-    'ProjectSetNavigation',
-    'ProjectSOP',
     'ProjectFacets',
+    'ProjectMaintainerReassignmentView',
+    'ProjectNavigation',
+    'ProjectRdfView',
+    'ProjectReviewView',
     'ProjectOverviewMenu',
     'ProjectSeriesSpecificationsMenu',
-    'ProjectSpecificationsMenu',
-    'ProjectBountiesMenu',
-    'ProjectAnswersMenu',
-    'ProjectTranslationsMenu',
+    'ProjectSetBreadcrumbBuilder',
     'ProjectSetContextMenu',
-    'ProjectView',
-    'ProjectEditView',
-    'ProjectAddProductView',
+    'ProjectSetNavigation',
     'ProjectSetView',
-    'ProjectRdfView',
+    'ProjectSpecificationsMenu',
+    'ProjectTranslationsMenu',
+    'ProjectView',
     ]
 
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -49,24 +48,23 @@ from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
+from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
-from canonical.launchpad.webapp.dynmenu import DynMenu
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.widgets.popup import SinglePopupWidget
 
 
 class ProjectNavigation(Navigation):
 
     usedfor = IProject
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     def traverse(self, name):
         return self.context.getProduct(name)
@@ -84,67 +82,9 @@ class ProjectNavigation(Navigation):
         return self.context.getSeries(series_name)
 
 
-class ProjectDynMenu(DynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'related': 'relatedMenu',
-        }
-
-    MAX_SUB_PROJECTS = 8
-
-    def relatedMenu(self):
-        """Show items related to this project.
-
-        Show a link to the project, and then
-        the contents of the project menu, excluding the current
-        product from the project's list of products.
-        """
-        yield self.makeLink(self.context.title, target=self.context)
-        for link in self.mainMenu():
-            yield link
-
-    def mainMenu(self, excludeproduct=None):
-        """List products within this project.
-
-        List up to MAX_SUB_PROJECTS products.  If there are more than that
-        number of products, list up to MAX_SUB_PROJECTS products with
-        releases, and give a link to a page showing all products.
-
-        Pass a Product instance in as 'excludeproduct' so that it will be
-        excluded from the menu.
-
-        """
-        products = shortlist(self.context.products, 25)
-        num_products = len(products)
-        if excludeproduct is None:
-            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS
-        else:
-            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS + 1
-        if num_products < MAX_SUB_PROJECTS:
-            for product in products:
-                if product != excludeproduct:
-                    yield self.makeBreadcrumbLink(product)
-        else:
-            # XXX: SteveAlexander 2007-03-27:
-            # Use a database API for products-with-releases that prejoins.
-            count = 0
-            for product in products:
-                if product != excludeproduct and product.releases:
-                    yield self.makeBreadcrumbLink(product)
-                    count += 1
-                    if count >= self.MAX_SUB_PROJECTS:
-                        break
-            yield self.makeLink(
-                'See all %s related projects...' % num_products)
-
-
 class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
-
-    def breadcrumb(self):
-        return 'Project Groups'
 
     def traverse(self, name):
         # Raise a 404 on an invalid project name
@@ -154,20 +94,16 @@ class ProjectSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(project))
 
 
-class ProjectSOP(StructuralObjectPresentation):
+class ProjectBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProject`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
-    def getIntroHeading(self):
-        return None
 
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Products, alphabetically
-        return list(self.context.products[:num])
-
-    def listAltChildren(self, num):
-        return None
+class ProjectSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProjectSet`."""
+    text = 'Project Groups'
 
 
 class ProjectSetContextMenu(ContextMenu):
@@ -243,7 +179,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change owner'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -316,7 +252,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -326,10 +262,6 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         text = 'List documentation'
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
-
-    def roadmap(self):
-        text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
 
     def assignments(self):
         text = 'Assignments'
@@ -359,6 +291,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
     facet = 'translations'
     links = ['changetranslators']
 
+    @enabled_with_permission('launchpad.Edit')
     def changetranslators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
@@ -393,11 +326,54 @@ class ProjectEditView(LaunchpadEditFormView):
             return canonical_url(getUtility(IProjectSet))
 
 
-
 class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
+    custom_widget('registrant', SinglePopupWidget)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema plus adds 'Registrant'.
+
+        The registrant is normally a read-only field and thus does not have a
+        proper widget created by default.  Even though it is read-only, admins
+        need the ability to change it.
+        """
+        super(ProjectReviewView, self).setUpFields()
+        self.form_fields = (self._createAliasesField() + self.form_fields
+                            + self._createRegistrantField())
+
+    def _createAliasesField(self):
+        """Return a PillarAliases field for IProject.aliases."""
+        return form.Fields(
+            PillarAliases(
+                __name__='aliases', title=_('Aliases'),
+                description=_('Other names (separated by space) under which '
+                              'this project group is known.'),
+                required=False, readonly=False),
+            render_context=self.render_context)
+
+    def _createRegistrantField(self):
+        """Return a popup widget person selector for the registrant.
+
+        This custom field is necessary because *normally* the registrant is
+        read-only but we want the admins to have the ability to correct legacy
+        data that was set before the registrant field existed.
+        """
+        return form.Fields(
+            PublicPersonChoice(
+                __name__='registrant',
+                title=_('Project Registrant'),
+                description=_('The person who originally registered the '
+                              'project group.  Distinct from the current '
+                              'owner.  This is historical data and should '
+                              'not be changed without good cause.'),
+                vocabulary='ValidPersonOrTeam',
+                required=True,
+                readonly=False,
+                ),
+            render_context=self.render_context
+            )
 
 
 class ProjectAddProductView(ProductAddViewBase):
@@ -476,8 +452,15 @@ class ProjectSetView(object):
 class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
-    field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl',]
+    field_names = [
+        'name',
+        'displayname',
+        'title',
+        'summary',
+        'description',
+        'owner',
+        'homepageurl',
+        ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
     project = None
@@ -492,7 +475,7 @@ class ProjectAddView(LaunchpadFormView):
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=self.user,
+            owner=data['owner'],
             )
         notify(ObjectCreatedEvent(self.project))
 
@@ -546,12 +529,7 @@ class ProjectAddQuestionView(QuestionAddView):
         self.form_fields = self.createProductField() + self.form_fields
 
     def setUpWidgets(self):
-        # Only setup the widgets that needs validation
-        if not self.add_action.submitted():
-            fields = self.form_fields.select(*self.search_field_names)
-        else:
-            fields = self.form_fields
-
+        fields = self._getFieldsForWidgets()
         # We need to initialize the widget in two phases because
         # the language vocabulary factory will try to access the product
         # widget to find the final context.
@@ -621,7 +599,7 @@ class ProjectSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProjectSeries
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments']
+    links = ['listall', 'doc', 'assignments']
 
     def listall(self):
         text = 'List all blueprints'
@@ -632,10 +610,11 @@ class ProjectSeriesSpecificationsMenu(ApplicationMenu):
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
 
-    def roadmap(self):
-        text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
-
     def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+
+class ProjectMaintainerReassignmentView(ObjectReassignmentView):
+    """View class for changing project maintainer."""
+    ownerOrMaintainerName = 'maintainer'

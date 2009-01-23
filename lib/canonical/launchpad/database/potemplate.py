@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import datetime
+import logging
 import os
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
@@ -40,6 +41,9 @@ from canonical.launchpad.interfaces import (
     RosettaImportStatus, TranslationFileFormat,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat import TranslationMessageData
+
+
+log = logging.getLogger(__name__)
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -112,9 +116,23 @@ class POTemplate(SQLBase, RosettaStats):
     # translating this template to that language (variant).
     _cached_pofiles_by_language = None
 
-    # In-memory cache: code of last-requested language, and its Language.
-    _cached_language_code = None
-    _cached_language = None
+    _uses_english_msgids = None
+
+    def __storm_invalidated__(self):
+        self._cached_pofiles_by_language = None
+        self._uses_english_msgids = None
+
+    @property
+    def uses_english_msgids(self):
+        """See `IPOTemplate`."""
+        if self._uses_english_msgids is not None:
+            return self._uses_english_msgids
+
+        translation_importer = getUtility(ITranslationImporter)
+        format = translation_importer.getTranslationFormatImporter(
+            self.source_file_format)
+        self._uses_english_msgids = not format.uses_source_string_msgids
+        return self._uses_english_msgids
 
     def __iter__(self):
         """See `IPOTemplate`."""
@@ -318,8 +336,8 @@ class POTemplate(SQLBase, RosettaStats):
             # Only count the number of POTMsgSet that are current.
             clauses.append('POTMsgSet.sequence > 0')
 
-        return POTMsgSet.select(" AND ".join(clauses),
-                                orderBy='sequence')
+        query = POTMsgSet.select(" AND ".join(clauses), orderBy='sequence')
+        return query.prejoin(['msgid_singular', 'msgid_plural'])
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
@@ -343,7 +361,7 @@ class POTemplate(SQLBase, RosettaStats):
     def languages(self):
         """See `IPOTemplate`."""
         return Language.select("POFile.language = Language.id AND "
-                               "Language.code != 'en' AND "
+                               "Language.code <> 'en' AND "
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
@@ -492,21 +510,10 @@ class POTemplate(SQLBase, RosettaStats):
 
     def _lookupLanguage(self, language_code):
         """Look up named `Language` object, or raise `LanguageNotFound`."""
-        # Caches last-requested language to deal with repetitive requests.
-        if self._cached_language_code == language_code:
-            assert self._cached_language is not None, (
-                "Cached None as language in POTemplate.")
-            return self._cached_language
-
         try:
-            self._cached_language = Language.byCode(language_code)
+            return Language.byCode(language_code)
         except SQLObjectNotFound:
-            self._cached_language_code = None
-            self._cached_language = None
             raise LanguageNotFound(language_code)
-
-        self._cached_language_code = language_code
-        return self._cached_language
 
     def isPOFilePathAvailable(self, path):
         """Can we assign given path to a new `POFile` without clashes?
@@ -727,16 +734,18 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
-                 distroseries=None, productseries=None):
+                 distroseries=None, productseries=None, iscurrent=None):
         """Create a new `POTemplateSubset` object.
 
         The set of POTemplate depends on the arguments you pass to this
         constructor. The sourcepackagename, from_sourcepackagename,
         distroseries and productseries are just filters for that set.
+        In addition, iscurrent sets the filter for the iscurrent flag.
         """
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
         self.productseries = productseries
+        self.iscurrent = iscurrent
         self.clausetables = []
         self.orderby = ['id']
 
@@ -765,6 +774,11 @@ class POTemplateSubset:
                 ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
             self.orderby.append('DistroSeries.name')
             self.clausetables.append('DistroSeries')
+
+        # Add the filter for the iscurrent flag if requested.
+        if iscurrent is not None:
+            self.query += " AND POTemplate.iscurrent=%s" % (
+                            sqlvalues(iscurrent))
 
         # Finally, we sort the query by its path in all cases.
         self.orderby.append('POTemplate.path')
@@ -837,8 +851,21 @@ class POTemplateSubset:
         queries.append('POTemplate.translation_domain = %s' % sqlvalues(
             translation_domain))
 
-        return POTemplate.selectOne(' AND '.join(queries),
-            clauseTables=clausetables)
+        # Fetch up to 2 templates, to check for duplicates.
+        matches = POTemplate.select(
+            ' AND '.join(queries), clauseTables=clausetables, limit=2)
+
+        result = [match for match in matches]
+        if len(result) == 0:
+            return None
+        elif len(result) == 1:
+            return result[0]
+        else:
+            log.warn(
+                "Found multiple templates with translation domain '%s'.  "
+                "There should be only one."
+                % translation_domain)
+            return None
 
     def getPOTemplateByPath(self, path):
         """See `IPOTemplateSubset`."""
@@ -912,15 +939,16 @@ class POTemplateSet:
         return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distroseries=None, sourcepackagename=None,
-                  productseries=None):
+                  productseries=None, iscurrent=None):
         """See `IPOTemplateSet`."""
         return POTemplateSubset(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
-            productseries=productseries)
+            productseries=productseries,
+            iscurrent=iscurrent)
 
     def getSubsetFromImporterSourcePackageName(self, distroseries,
-        sourcepackagename):
+        sourcepackagename, iscurrent=None):
         """See `IPOTemplateSet`."""
         if distroseries is None or sourcepackagename is None:
             raise AssertionError(
@@ -928,7 +956,8 @@ class POTemplateSet:
 
         return POTemplateSubset(
             distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename,
+            iscurrent=iscurrent)
 
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):

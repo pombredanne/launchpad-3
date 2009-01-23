@@ -6,26 +6,28 @@ to confirm that the environment hasn't been corrupted by tests
 """
 __metaclass__ = type
 
-from cStringIO import StringIO
 import os
 import signal
-from urllib import urlopen
+import smtplib
 import unittest
 
+from cStringIO import StringIO
+from urllib import urlopen
 import psycopg2
 
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
-from canonical.pidfile import pidfile_path
+from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.lazr.pidfile import pidfile_path
 from canonical.testing.layers import (
     AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
     LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
     LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
-    LibrarianLayer, ZopelessLayer)
+    LayerProcessController, LibrarianLayer, ZopelessLayer)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -325,7 +327,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
         self.assertEqual(user, 'librarian')
 
 
-class AppServerTestCase(BaseTestCase):
+class LayerProcessControllerInvariantsTestCase(BaseTestCase):
     layer = AppServerLayer
 
     want_component_architecture = True
@@ -336,51 +338,67 @@ class AppServerTestCase(BaseTestCase):
 
     def testAppServerIsAvailable(self):
         # Test that the app server is up and running.
-        root_url = AppServerLayer.appserver_config.vhost.mainsite.rooturl
-        home_page = urlopen(root_url).read()
+        mainsite = LayerProcessController.appserver_config.vhost.mainsite
+        home_page = urlopen(mainsite.rooturl).read()
         self.failUnless(
             'What is Launchpad?' in home_page,
             "Home page couldn't be retrieved:\n%s" % home_page)
 
-    def testSetUpTwiceRaisesInvariantError(self):
-        # Calling setUp another time should raises an isolation error.
-        self.assertRaises(LayerInvariantError, AppServerLayer.setUp)
+    def testSMTPServerIsAvailable(self):
+        # Test that the SMTP server is up and running.
+        smtpd = smtplib.SMTP()
+        host, port = as_host_port(config.mailman.smtp)
+        code, message = smtpd.connect(host, port)
+        self.assertEqual(code, 220)
+
+    def testStartingAppServerTwiceRaisesInvariantError(self):
+        # Starting the appserver twice should raise an exception.
+        self.assertRaises(LayerInvariantError,
+                          LayerProcessController.startAppServer)
+
+    def testStartingSMTPServerTwiceRaisesInvariantError(self):
+        # Starting the SMTP server twice should raise an exception.
+        self.assertRaises(LayerInvariantError,
+                          LayerProcessController.startSMTPServer)
 
 
-class AppServerSetupTestCase(unittest.TestCase):
-    """Tests for the setUp and tearDown components of AppServerLayer."""
-    # We need the layer below AppServerLayer
-    layer = LaunchpadFunctionalLayer
+class LayerProcessControllerTestCase(unittest.TestCase):
+    """Tests for the `LayerProcessController`."""
+    # We need the database to be set up, no more.
+    layer = DatabaseLayer
 
     def tearDown(self):
-        # If the app server was started, kill it.
-        if AppServerLayer.appserver is not None:
-            AppServerLayer.tearDown()
+        # Stop both servers.  It's okay if they aren't running.
+        LayerProcessController.stopSMTPServer()
+        LayerProcessController.stopAppServer()
 
-    def test_tearDown(self):
-        # Test that tearDown kills the app server and remove the PID file.
-        AppServerLayer.setUp()
-        pid = AppServerLayer.appserver.pid
-        pid_file = pidfile_path('launchpad', AppServerLayer.appserver_config)
-        AppServerLayer.tearDown()
+    def test_stopAppServer(self):
+        # Test that stopping the app server kills the process and remove the
+        # PID file.
+        LayerProcessController.startAppServer()
+        pid = LayerProcessController.appserver.pid
+        pid_file = pidfile_path('launchpad',
+                                LayerProcessController.appserver_config)
+        LayerProcessController.stopAppServer()
         self.assertRaises(OSError, os.kill, pid, 0)
         self.failIf(os.path.exists(pid_file), "PID file wasn't removed")
-        self.failUnless(AppServerLayer.appserver is None,
-            "appserver class attribute wasn't reset")
+        self.failUnless(LayerProcessController.appserver is None,
+                        "appserver class attribute wasn't reset")
 
-    def test_testTearDownRaisesIsolationError(self):
-        # A LayerIsolationError should be raised if the app server dies.
-        AppServerLayer.setUp()
-        AppServerLayer.testSetUp()
-        os.kill(AppServerLayer.appserver.pid, signal.SIGTERM)
-        AppServerLayer.appserver.wait()
-        self.assertRaises(LayerIsolationError, AppServerLayer.testTearDown)
+    def test_postTestInvariants(self):
+        # A LayerIsolationError should be raised if the app server dies in the
+        # middle of a test.
+        LayerProcessController.startAppServer()
+        pid = LayerProcessController.appserver.pid
+        os.kill(pid, signal.SIGTERM)
+        LayerProcessController.appserver.wait()
+        self.assertRaises(LayerIsolationError,
+                          LayerProcessController.postTestInvariants)
 
-    def test_testTearDownResetsDB(self):
-        # The database should be reset after each test since 
-        AppServerLayer.setUp()
-        AppServerLayer.testSetUp()
-        AppServerLayer.testTearDown()
+    def test_postTestInvariants_dbIsReset(self):
+        # The database should be reset by the test invariants.
+        LayerProcessController.startAppServer()
+        LayerProcessController.postTestInvariants()
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 

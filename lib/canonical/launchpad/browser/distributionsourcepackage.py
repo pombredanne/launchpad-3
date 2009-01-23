@@ -3,12 +3,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageSOP',
+    'DistributionSourcePackageBreadcrumbBuilder',
+    'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageView'
+    'DistributionSourcePackageView',
     ]
 
 import itertools
@@ -24,31 +24,25 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistributionSourcePackageRelease,
     IPackageDiffSet, IPackagingUtil, pocketsuffix)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link,
-    StandardLaunchpadFacets, action, canonical_url, redirection)
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, Link, StandardLaunchpadFacets, action, canonical_url,
+    redirection)
+from canonical.launchpad.webapp.menu import enabled_with_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.utils import smartquote
 
 
-class DistributionSourcePackageSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.distribution.title + ' source package:'
-
-    def getMainHeading(self):
-        return self.context.name
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: package releases, most recent first
-        return self.context.releases
-
-    def listAltChildren(self, num):
-        return None
+class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistributionSourcePackage`."""
+    @property
+    def text(self):
+        return smartquote('"%s" package') % (
+            self.context.sourcepackagename.name)
 
 
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
@@ -62,13 +56,20 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['subscribe', 'publishinghistory']
+    links = ['subscribe', 'publishinghistory', 'edit']
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        """Edit the details of this source package."""
+        # This is titled "Edit bug reporting guidelines" because that
+        # is the only editable property of a source package right now.
+        return Link('+edit', 'Edit bug reporting guidelines', icon='edit')
 
 
 class DistributionSourcePackageBugsMenu(
@@ -86,10 +87,6 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     redirection("+editbugcontact", "+subscribe")
 
-    def breadcrumb(self):
-        return smartquote('"%s" package') % (
-            self.context.sourcepackagename.name)
-
 
 class DecoratedDistributionSourcePackageRelease:
     """A decorated DistributionSourcePackageRelease.
@@ -97,7 +94,7 @@ class DecoratedDistributionSourcePackageRelease:
     The publishing history and package diffs for the release are
     pre-cached.
     """
-    decorates(IDistributionSourcePackageRelease, 'context')
+    delegates(IDistributionSourcePackageRelease, 'context')
 
     def __init__(self, distributionsourcepackagerelease,
                  publishing_history, package_diffs):
@@ -266,3 +263,23 @@ class DistributionSourcePackageView(LaunchpadFormView):
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
             for (dspr, spphs) in dspr_pubs]
+
+
+class DistributionSourcePackageEditView(LaunchpadEditFormView):
+    """Edit a distribution source package."""
+
+    schema = IDistributionSourcePackage
+    label = "Change source package details"
+    field_names = [
+        'bug_reporting_guidelines',
+        ]
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url

@@ -3,36 +3,34 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductReleaseContextMenu',
-    'ProductReleaseEditView',
-    'ProductReleaseAddView',
-    'ProductReleaseRdfView',
     'ProductReleaseAddDownloadFileView',
+    'ProductReleaseAddView',
+    'ProductReleaseContextMenu',
+    'ProductReleaseDeleteView',
+    'ProductReleaseEditView',
     'ProductReleaseNavigation',
+    'ProductReleaseRdfView',
     'ProductReleaseView',
     ]
 
 import mimetypes
-from StringIO import StringIO
 
-# zope3
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
-from zope.app.form.browser import TextWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-# launchpad
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILibraryFileAliasSet, IProductRelease,
-    IProductReleaseFileAddForm, IProductReleaseSet)
+    ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
+from canonical.launchpad.interfaces.productseries import IProductSeriesSet
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
-    canonical_url, custom_widget, enabled_with_permission, stepthrough)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, stepthrough)
 
 
 class ProductReleaseNavigation(Navigation):
@@ -41,8 +39,11 @@ class ProductReleaseNavigation(Navigation):
 
     @stepthrough('+download')
     def download(self, name):
-        newlocation = self.context.getFileAliasByName(name)
-        return newlocation
+        return self.context.getFileAliasByName(name)
+
+    @stepthrough('+file')
+    def fileaccess(self, name):
+        return self.context.getProductReleaseFileByName(name)
 
 
 class ProductReleaseContextMenu(ContextMenu):
@@ -80,21 +81,29 @@ class ProductReleaseAddView(AddView):
         return self._nextURL
 
     def createAndAdd(self, data):
-        prset = getUtility(IProductReleaseSet)
         user = getUtility(ILaunchBag).user
-        newrelease = prset.new(
-            data['version'], data['productseries'], user,
-            codename=data['codename'], summary=data['summary'],
-            description=data['description'], changelog=data['changelog'])
+        product_series_set = getUtility(IProductSeriesSet)
+        product_series = product_series_set[data['productseries']]
+        newrelease = product_series.addRelease(
+            data['version'], user, codename=data['codename'],
+            summary=data['summary'], description=data['description'],
+            changelog=data['changelog'])
         self._nextURL = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
 
-class ProductReleaseEditView(SQLObjectEditView):
+class ProductReleaseEditView(LaunchpadEditFormView):
     """Edit view for ProductRelease objects"""
 
-    def changed(self):
-        self.request.response.redirect('.')
+    schema = IProductRelease
+    label = "Edit project release details"
+    field_names = ["summary", "description", "changelog", "codename"]
+    custom_widget('summary', TextAreaWidget, width=62, height=5)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class ProductReleaseRdfView(object):
@@ -132,10 +141,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     custom_widget('description', TextWidget, width=62)
 
-    def normalizeFilename(self, filename):
-        # Replace slashes in the filename with less problematic dashes.
-        return filename.replace('/', '-')
-
     @action('Upload', name='add')
     def add_action(self, action, data):
         form = self.request.form
@@ -144,39 +149,40 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         filetype = data['contenttype']
         # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
         # widget.
-        if file_upload and data['description']:
-            contentType, encoding = mimetypes.guess_type(file_upload.filename)
+        if file_upload is not None and len(data['description']) > 0:
+            # XXX Edwin Grubbs 2008-09-10 bug=268680
+            # Once python-magic is available on the production servers,
+            # the content-type should be verified instead of trusting
+            # the extension that mimetypes.guess_type() examines.
+            content_type, encoding = mimetypes.guess_type(
+                file_upload.filename)
 
-            if contentType is None:
-                contentType = "text/plain"
+            if content_type is None:
+                content_type = "text/plain"
 
-            filename = self.normalizeFilename(file_upload.filename)
-
-            # Create the alias for the file.
-            alias = getUtility(ILibraryFileAliasSet).create(
-                name=filename,
-                size=len(data['filecontent']),
-                file=StringIO(data['filecontent']),
-                contentType=contentType)
-
-            # Create the alias for the signature file, if one was uploaded.
+            # signature_upload is u'' if no file is specified in
+            # the browser.
             if signature_upload:
-                sig_filename = self.normalizeFilename(
-                    signature_upload.filename)
-                sig_alias = getUtility(ILibraryFileAliasSet).create(
-                    name=sig_filename,
-                    size=len(data['signature']),
-                    file=StringIO(data['signature']),
-                    contentType='application/pgp-signature')
+                signature_filename = signature_upload.filename
+                signature_content = data['signature']
             else:
-                sig_alias = None
-            self.context.addFileAlias(alias=alias,
-                                      signature=sig_alias,
-                                      uploader=self.user,
-                                      file_type=filetype,
-                                      description=data['description'])
+                signature_filename = None
+                signature_content = None
+
+            release_file = self.context.addReleaseFile(
+                filename=file_upload.filename,
+                file_content=data['filecontent'],
+                content_type=content_type,
+                uploader=self.user,
+                signature_filename=signature_filename,
+                signature_content=signature_content,
+                file_type=filetype,
+                description=data['description'])
+
             self.request.response.addNotification(
-                "Your file '%s' has been uploaded." % filename)
+                "Your file '%s' has been uploaded."
+                % release_file.libraryfile.filename)
+
         self.next_url = canonical_url(self.context)
 
 
@@ -191,3 +197,24 @@ class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     def getReleases(self):
         """See `ProductDownloadFileMixin`."""
         return set([self.context])
+
+
+class ProductReleaseDeleteView(LaunchpadFormView):
+    """A view for deleting an `IProductRelease`."""
+    label = 'Delete release'
+    schema = IProductRelease
+    field_names = []
+
+    def canBeDeleted(self, action=None):
+        """Can this release be deleted?
+
+        Only releases which have no files associated with it can be deleted.
+        """
+        return self.context.files.count() == 0
+
+    @action('Yes, Delete it', name='delete', condition=canBeDeleted)
+    def add_action(self, action, data):
+        self.request.response.addInfoNotification(
+            "Release %s deleted." % self.context.version)
+        self.next_url = canonical_url(self.context.productseries)
+        self.context.destroySelf()

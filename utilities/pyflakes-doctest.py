@@ -22,6 +22,7 @@ GLOBAL_NAMES = set([
     'canonical_url',
     'commit',
     'create_view',
+    'create_initialized_view',
     'flush_database_updates',
     'getUtility',
     'login',
@@ -46,9 +47,11 @@ GLOBAL_NAMES = set([
     'http',
     'mailinglist_api',
     'parse_relationship_section',
+    'pretty',
     'print_action_links',
     'print_batch_header',
     'print_comments',
+    'print_errors',
     'print_location',
     'print_location_apps',
     'print_navigation_links',
@@ -68,7 +71,12 @@ GLOBAL_NAMES = set([
     # For OpenID per-version tests
     'PROTOCOL_URI',
     # For buildd tests
-    'test_dbuser'
+    'test_dbuser',
+    # For Mailman tests
+    'xmlrpc_watcher',
+    # For archiveuploader tests.
+    'getUploadForSource',
+    'getUploadForBinary',
     ])
 
 
@@ -137,7 +145,11 @@ def suppress_warning(warning):
 def check_doctest(filename):
     """Create a PyFlakes object from a doctest."""
     data = open(filename, 'r').read()
-    script = extract_script(data)
+    try:
+        script = extract_script(data)
+    except ValueError:
+        print >> sys.__stderr__, 'PARSING:', filename
+        raise
 
     try:
         tree = compiler.parse(script)

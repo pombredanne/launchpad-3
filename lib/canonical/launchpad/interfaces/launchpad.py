@@ -20,9 +20,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    IOpenLaunchBag, NotFoundError, UnexpectedFormData,
-    UnsafeFormGetSubmissionError)
+    IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
+    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
 
 
 __all__ = [
@@ -32,10 +31,8 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
-    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -55,7 +52,7 @@ __all__ = [
     'ILaunchpadSearch',
     'ILaunchpadUsage',
     'INotificationRecipientSet',
-    'IOpenIdApplication',
+    'IOpenIDApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -106,8 +103,11 @@ class ILaunchpadCelebrities(Interface):
     bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
+    english = Attribute("The English language.")
+    gnome_bugzilla = Attribute("The Gnome Bugzilla.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
@@ -123,6 +123,9 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
+    lp_translations = Attribute("The Launchpad Translations product.")
+    ppa_key_guard = Attribute("The PPA signing keys owner.")
+
 
 
 class ICrowd(Interface):
@@ -190,7 +193,7 @@ class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
 
 
-class IOpenIdApplication(ILaunchpadApplication):
+class IOpenIDApplication(ILaunchpadApplication):
     """Launchpad Login Service application root."""
 
 
@@ -200,6 +203,10 @@ class IPrivateApplication(ILaunchpadApplication):
     authserver = Attribute("""Old Authserver API end point.""")
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
+
+    branch_puller = Attribute("""Branch puller end point.""")
+
+    branchfilesystem = Attribute("""The branch filesystem end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
@@ -234,10 +241,6 @@ class IAuthApplication(Interface):
 
 class IFeedsApplication(ILaunchpadApplication):
     """Launchpad Feeds application root."""
-
-
-class IHWDBApplication(ILaunchpadApplication):
-    """Hardware database application application root."""
 
 
 class IPasswordResets(IPersistent):

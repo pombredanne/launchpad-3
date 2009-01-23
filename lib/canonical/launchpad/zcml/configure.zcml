@@ -7,17 +7,21 @@
     <!-- Content class configuration -->
     <include file="account.zcml" />
     <include file="announcement.zcml" />
+    <include file="archivearch.zcml" />
+    <include file="archiveauthtoken.zcml" />
+    <include file="archivesubscriber.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
-    <include file="blueprint.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
+    <include file="branchcontainer.zcml" />
     <include file="branchmergeproposal.zcml" />
     <include file="branchmergequeue.zcml" />
+    <include file="branchnamespace.zcml" />
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
     <include file="branchsubscription.zcml" />
@@ -50,13 +54,16 @@
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="codereviewcomment.zcml" />
+    <include file="commercialsubscription.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
     <include file="cve.zcml" />
     <include file="cve-events.zcml" />
     <include file="cvereference.zcml" />
+    <include file="diff.zcml" />
     <include file="datetime.zcml" />
+    <include file="decoratedresultset.zcml" />
     <include file="distribution.zcml" />
     <include file="distributionmirror.zcml" />
     <include file="distributionsourcepackage.zcml" />
@@ -81,6 +88,7 @@
     <include file="hwdb.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
+    <include file="job.zcml" />
     <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="languagepack.zcml" />
@@ -98,6 +106,7 @@
     <include file="openid.zcml" />
     <include file="packagebugsupervisor.zcml" />
     <include file="packagecloner.zcml" />
+    <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
@@ -121,6 +130,7 @@
     <include file="salesforce.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
+    <include file="seriessourcepackagebranch.zcml" />
     <include file="shipit.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
@@ -163,9 +173,10 @@
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
     <include file="archivepermission.zcml" />
+    <include file="archivesigningkey.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
-    <include file="archiverebuild.zcml" />
+    <include file="voucher.zcml" />
 
     <include file="fields.zcml" />
     <include file="widgets.zcml" />

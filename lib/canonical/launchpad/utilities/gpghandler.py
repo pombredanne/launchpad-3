@@ -2,33 +2,49 @@
 
 __metaclass__ = type
 
-__all__ = ['GPGHandler', 'PymeSignature', 'PymeKey', 'PymeUserId']
+__all__ = [
+    'GPGHandler',
+    'PymeKey',
+    'PymeSignature',
+    'PymeUserId',
+    ]
 
-# standard
+import atexit
+import httplib
 import os
-import tempfile
+import re
 import shutil
+import socket
+import subprocess
+import tempfile
 import urllib
 import urllib2
-import re
-import subprocess
-import atexit
 from StringIO import StringIO
+
+import gpgme
+from gpgme import editutil as gpgme_editutil
 
 from zope.interface import implements
 
-import gpgme
-import gpgme.editutil
-
 from canonical.config import config
-
+from canonical.launchpad.interfaces.gpg import GPGKeyAlgorithm
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, GPGUploadFailure, GPGVerificationError,
+    IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
+    MoreThanOneGPGKeyFound, SecretGPGKeyImportDetected)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
-from canonical.launchpad.interfaces import (
-    IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId, GPGVerificationError,
-    MoreThanOneGPGKeyFound, GPGKeyNotFoundError, SecretGPGKeyImportDetected,
-    GPGKeyAlgorithm)
+
+signing_only_param = """
+<GnupgKeyParms format="internal">
+  Key-Type: RSA
+  Key-Usage: sign
+  Key-Length: 1024
+  Name-Real: %(name)s
+  Expire-Date: 0
+</GnupgKeyParms>
+"""
 
 
 class GPGHandler:
@@ -221,6 +237,73 @@ class GPGHandler:
         assert key.exists_in_local_keyring
         return key
 
+    def importSecretKey(self, content):
+        """See `IGPGHandler`."""
+        assert isinstance(content, str)
+
+        # Make sure that gpg-agent doesn't interfere.
+        if 'GPG_AGENT_INFO' in os.environ:
+            del os.environ['GPG_AGENT_INFO']
+
+        context = gpgme.Context()
+        context.armor = True
+        newkey = StringIO(content)
+        import_result = context.import_(newkey)
+
+        secret_imports = [
+            fingerprint
+            for fingerprint, result, status in import_result.imports
+            if status & gpgme.IMPORT_SECRET]
+        if len(secret_imports) != 1:
+            raise MoreThanOneGPGKeyFound(
+                'Found %d secret GPG keys when importing %s'
+                % (len(secret_imports), content))
+
+        fingerprint, result, status = import_result.imports[0]
+        try:
+            key = context.get_key(fingerprint, True)
+        except gpgme.GpgmeError:
+            return None
+
+        key = PymeKey.newFromGpgmeKey(key)
+        assert key.exists_in_local_keyring
+        return key
+
+    def generateKey(self, name):
+        """See `IGPGHandler`."""
+        context = gpgme.Context()
+
+        # Make sure that gpg-agent doesn't interfere.
+        if 'GPG_AGENT_INFO' in os.environ:
+            del os.environ['GPG_AGENT_INFO']
+
+        # Only 'utf-8' encoding is supported by gpgme.
+        # See more information at:
+        # http://pyme.sourceforge.net/doc/gpgme/Generating-Keys.html
+        result = context.genkey(
+            signing_only_param % {'name': name.encode('utf-8')}
+            )
+
+        # Right, it might seem paranoid to have this many assertions,
+        # but we have to take key generation very seriously.
+        assert result.primary, 'Secret key generation failed.'
+        assert not result.sub, (
+            'Only sign-only RSA keys are safe to be generated')
+
+        secret_keys = list(self.localKeys(result.fpr, secret=True))
+
+        assert len(secret_keys) == 1, 'Found %d secret GPG keys for %s' % (
+            len(secret_keys), result.fpr)
+
+        key = secret_keys[0]
+
+        assert key.fingerprint == result.fpr, (
+            'The key in the local keyring does not match the one generated.')
+        assert key.exists_in_local_keyring, (
+            'The key does not seem to exist in the local keyring.')
+
+        return key
+
     def importKeyringFile(self, filepath):
         """See IGPGHandler.importKeyringFile."""
         ctx = gpgme.Context()
@@ -261,12 +344,48 @@ class GPGHandler:
 
         return cipher.getvalue()
 
-    def localKeys(self):
+    def signContent(self, content, key_fingerprint, password='', mode=None):
+        """See IGPGHandler."""
+        if not isinstance(content, str):
+            raise TypeError('Content should be a string.')
+
+        if mode is None:
+            mode = gpgme.SIG_MODE_CLEAR
+
+        # Find the key and make it the only one allowed to sign content
+        # during this session.
+        context = gpgme.Context()
+        context.armor = True
+
+        key = context.get_key(key_fingerprint.encode('ascii'), True)
+        context.signers = [key]
+
+        # Set up containers.
+        plaintext = StringIO(content)
+        signature = StringIO()
+
+        # Make sure that gpg-agent doesn't interfere.
+        if 'GPG_AGENT_INFO' in os.environ:
+            del os.environ['GPG_AGENT_INFO']
+
+        def passphrase_cb(uid_hint, passphrase_info, prev_was_bad, fd):
+            os.write(fd, '%s\n' % password)
+        context.passphrase_cb = passphrase_cb
+
+        # Sign the text.
+        try:
+            result = context.sign(plaintext, signature, mode)
+        except gpgme.GpgmeError:
+            return None
+
+        return signature.getvalue()
+
+    def localKeys(self, filter=None, secret=False):
         """Get an iterator of the keys this gpg handler
         already knows about.
         """
         ctx = gpgme.Context()
-        for key in ctx.keylist():
+        for key in ctx.keylist(filter, secret):
             yield PymeKey.newFromGpgmeKey(key)
 
     def retrieveKey(self, fingerprint):
@@ -282,13 +401,47 @@ class GPGHandler:
             result, pubkey = self._getPubKey(fingerprint)
             if not result:
                 if "Connection refused" in pubkey:
-                    raise AssertionError("The keyserver is not running, help!")
+                    raise AssertionError(
+                        "The keyserver is not running, help!")
                 else:
                     raise GPGKeyNotFoundError(fingerprint, pubkey)
 
             # Import in the local key ring
             key = self.importPublicKey(pubkey)
         return key
+
+    def _submitKey(self, content):
+        """Submit an ASCII-armored public key export to the keyserver.
+
+        It issues a POST at /pks/add on the keyserver specified in the
+        configuration.
+        """
+        keyserver_http_url = '%s:%s' % (
+            config.gpghandler.host, config.gpghandler.port)
+
+        conn = httplib.HTTPConnection(keyserver_http_url)
+        params = urllib.urlencode({'keytext': content})
+        headers = {
+            "Content-type": "application/x-www-form-urlencoded",
+            "Accept": "text/plain",
+            }
+
+        try:
+            conn.request("POST", "/pks/add", params, headers)
+        except socket.error, err:
+            raise GPGUploadFailure(
+                'Could not reach keyserver at http://%s %s' % (
+                    keyserver_http_url, str(err)))
+
+        assert conn.getresponse().status == httplib.OK, (
+            'Keyserver POST failed')
+
+        conn.close()
+
+    def uploadPublicKey(self, fingerprint):
+        """See IGPGHandler"""
+        pub_key = self.retrieveKey(fingerprint)
+        self._submitKey(pub_key.export())
 
     def getURLForKeyInServer(self, fingerprint, action='index', public=False):
         """See IGPGHandler"""
@@ -302,7 +455,6 @@ class GPGHandler:
             host = config.gpghandler.host
         return 'http://%s:%s/pks/lookup?%s' % (host, config.gpghandler.port,
                                                urllib.urlencode(params))
-
 
     def _getKeyIndex(self, fingerprint):
         """See IGPGHandler for further information."""
@@ -416,6 +568,7 @@ class PymeKey:
         self.algorithm = GPGKeyAlgorithm.items[subkey.pubkey_algo].title
         self.keyid = self.fingerprint[-8:]
         self.expired = key.expired
+        self.secret = key.secret
         self.owner_trust = key.owner_trust
         self.can_encrypt = key.can_encrypt
         self.can_sign = key.can_sign
@@ -437,13 +590,30 @@ class PymeKey:
         # edit the owner trust value on the key
         ctx = gpgme.Context()
         key = ctx.get_key(self.fingerprint.encode('ascii'), False)
-        gpgme.editutil.edit_trust(ctx, key, value)
+        gpgme_editutil.edit_trust(ctx, key, value)
         # set the cached copy of owner_trust
         self.owner_trust = value
 
     @property
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm, self.keyid)
+
+    def export(self):
+        """See `PymeKey`."""
+        if self.secret:
+            # XXX cprov 20081014: gpgme_op_export() only supports public keys.
+            # See http://www.fifi.org/cgi-bin/info2www?(gpgme)Exporting+Keys
+            p = subprocess.Popen(
+                ['gpg', '--export-secret-keys', '-a', self.fingerprint],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return p.stdout.read()
+
+        context = gpgme.Context()
+        context.armor = True
+        keydata = StringIO()
+        context.export(self.fingerprint, keydata)
+
+        return keydata.getvalue()
 
 
 class PymeUserId:

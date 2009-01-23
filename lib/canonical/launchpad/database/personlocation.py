@@ -13,21 +13,21 @@ __all__ = [
     'PersonLocation',
     ]
 
-from sqlobject import FloatCol, ForeignKey, StringCol
+from sqlobject import BoolCol, FloatCol, ForeignKey, StringCol
 
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.location import ILocationRecord
+from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.validators.person import validate_public_person
 
 
 class PersonLocation(SQLBase):
     """A person's location."""
 
-    implements(ILocationRecord)
+    implements(IPersonLocation)
  
     _defaultOrder = ['id']
 
@@ -42,5 +42,4 @@ class PersonLocation(SQLBase):
         dbName='last_modified_by', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     date_last_modified = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-
-
+    visible = BoolCol(notNull=True, default=True)

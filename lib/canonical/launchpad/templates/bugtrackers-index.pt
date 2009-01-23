@@ -8,26 +8,22 @@
   dir="ltr"
   metal:use-macro="view/macro:page/onecolumn"
 >
+  <body>
+    <div metal:fill-slot="main">
+      <h1>Bug trackers registered in Launchpad</h1>
+      <p>
+        A bug report in Launchpad can be linked to a bug report in any of
+        these bug trackers.
+        The status of the external bug report is shown in Launchpad, and
+        Launchpad subscribers are notified when the external status changes.
+      </p>
 
-<body>
-
-<div metal:fill-slot="help">
-  <p>
-    Launchpad supports watching bugs in selected remote bug
-    trackers.  Registering a bug tracker allows you to link
-    Launchpad bug reports with bugs in the remote bug tracker; once
-    linked, status will be visible on Launchpad bug pages, and
-    subscribers will be notified when the upstream bug report
-    changes.
-  </p>
-  <p>
-    View <a href="https://help.launchpad.net/RemoteBugCoverage">the
-    grid on our help wiki</a> for details on the extent of
-    Launchpad's support for each remote bug tracker type.
-  </p>
-</div>
-
-<div metal:fill-slot="main">
+      <p
+         tal:define="link context/menu:context/newbugtracker"
+         tal:content="structure link/render"
+         tal:condition="link/enabled">
+        Add a new bug tracker
+      </p>
 
   <table class="sortable listing" id="trackers">
     <thead>

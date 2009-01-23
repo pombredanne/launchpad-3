@@ -7,13 +7,14 @@
   <facet facet="overview">
 
     <!-- BinaryPackagename -->
-    <content class="canonical.launchpad.database.BinaryPackageName">
+    <class class="canonical.launchpad.database.BinaryPackageName">
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
-    </content>
+    </class>
 
-    <vocabulary
+    <utility
       name="BinaryPackageName"
-      factory="canonical.launchpad.database.binarypackagename.BinaryPackageNameVocabulary"
+      component="canonical.launchpad.database.binarypackagename.BinaryPackageNameVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
       />
 
     <!-- BinaryPackageNameSet -->
@@ -23,9 +24,9 @@
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageNameSet" />
     </securedutility>
 
-    <content class="canonical.launchpad.database.BinaryPackageNameSet">
+    <class class="canonical.launchpad.database.BinaryPackageNameSet">
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageNameSet" />
-    </content>
+    </class>
 
   </facet>
 </configure>

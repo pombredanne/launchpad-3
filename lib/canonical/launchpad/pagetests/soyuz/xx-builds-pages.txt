@@ -121,7 +121,7 @@ initialised' one (fix bug #52704).
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started not available on an unknown build machine and finished
+    Build started at an unknown time on an unknown build machine and finished
     on 2007-08-09 taking
     ------------------------------
     Failed to upload
@@ -130,23 +130,23 @@ initialised' one (fix bug #52704).
     taking a minute &mdash; see the log
     ------------------------------
     Failed to build
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    Build started at an unknown time on an unknown build machine
+    ------------------------------
+    Failed to build
     i386 build of foobar 1.0 in ubuntu warty RELEASE
     Build started on 2006-12-01 on Bob The Builder and finished on 2006-12-01
     taking 1 second &mdash; see the log
-    ------------------------------
-    Failed to build
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    Build started not available on an unknown build machine
     ------------------------------
 
     >>> anon_browser.getLink("Next").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Build for superseded Source
-    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
+    i386 build of at 0.00 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
-    i386 build of at 0.00 in ubuntu warty RELEASE
+    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
     i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
@@ -178,7 +178,7 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started not available on an unknown build machine and finished
+    Build started at an unknown time on an unknown build machine and finished
     on 2007-08-09 taking
     ------------------------------
     Successfully built
@@ -215,7 +215,7 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
     Failed to build
     i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    Build started not available on an unknown build machine
+    Build started at an unknown time on an unknown build machine
     ------------------------------
     Failed to build
     i386 build of foobar 1.0 in ubuntu warty RELEASE
@@ -323,13 +323,13 @@ don't have much to say.
     taking 1 second &mdash; see the log
     ------------------------------
     Build for superseded Source
+    i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
+    ------------------------------
+    Build for superseded Source
     i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
     i386 build of at 0.00 in ubuntu warty RELEASE
-    ------------------------------
-    Build for superseded Source
-    i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
     ------------------------------
 
 Finally anonymous user goes to the next batch to see how a build with

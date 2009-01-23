@@ -444,3 +444,120 @@ A librarian file has a default view that should redirect to the download URL.
     >>> url = alias.getURL()
     >>> lfa_url == url
     True
+
+
+== StreamOrRedirectLibraryFileAliasView ==
+
+This special view allows call sites to stream restricted `LibraryFileAlias`
+contents directly from launchpad instances.
+
+    >>> filename = 'public.txt'
+    >>> content = 'PUBLIC'
+    >>> public_file = getUtility(ILibraryFileAliasSet).create(
+    ...     filename, len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
+
+    >>> filename = 'restricted.txt'
+    >>> content = 'RESTRICTED'
+    >>> restricted_file = getUtility(ILibraryFileAliasSet).create(
+    ...     filename, len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=True)
+
+Commit the just-created files.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+
+This view  implements `IBrowserPublisher` which allows us to use it in
+traversals.
+
+    >>> from canonical.launchpad.browser.librarian import (
+    ...     StreamOrRedirectLibraryFileAliasView)
+
+    >>> empty_request = LaunchpadTestRequest()
+    >>> restricted_view = StreamOrRedirectLibraryFileAliasView(
+    ...     restricted_file, empty_request)
+
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> verifyObject(IBrowserPublisher, restricted_view)
+    True
+
+When the context file is a restricted `LibraryFileAlias`, the
+traversal chain is finished with the view object itself.
+
+    >>> view, extra = restricted_view.browserDefault(empty_request)
+    >>> view == restricted_view
+    True
+
+The zope publishing system will then call that view and receive an open
+file containig the content to be streamed, as documented in
+lib/zope/publisher/httpresults.txt. This approach minimises the memory
+usage when streaming huge files.
+
+    >>> result = view()
+    >>> print result
+    <open file '<fdopen>', mode 'w+b' ...>
+
+    >>> result.seek(0)
+    >>> print result.read()
+    RESTRICTED
+
+`StreamOrRedirectLibraryFileAliasView` ignores the system http_proxy
+configuration and is still able to access the restricted file even if
+a invalid proxy address is set.
+
+This approach was adopted because all launchpad machines are
+configured to use the same proxy, originally for external
+access. Openning the restricted librarian for the proxy host would be
+too permissive and that's why we only allow direct access from the
+app-servers.
+
+Let's configure a broken proxy and refresh the default urllib2 opener
+to follow it.
+
+    >>> import os
+    >>> import urllib2
+    >>> os.environ['http_proxy'] = 'http://foo.bar:1234'
+    >>> urllib2.install_opener(urllib2.build_opener())
+
+The file can be reached by `StreamOrRedirectLibraryFileAliasView`.
+
+    >>> result = view()
+    >>> result.seek(0)
+    >>> print result.read()
+    RESTRICTED
+
+But is unreachable in the test scope, due to the broken proxy
+settings.
+
+    >>> print os.environ['http_proxy']
+    http://foo.bar:1234
+
+    >>> print restricted_file.read()
+    Traceback (most recent call last):
+    ...
+    URLError: <urlopen error (-2, 'Name or service not known')>
+
+Let's remove the broken proxy settings to avoid compromising other
+tests.
+
+    >>> del os.environ['http_proxy']
+    >>> urllib2.install_opener(urllib2.build_opener())
+
+When the context given to `StreamOrRedirectLibraryFileAliasView` is a
+public `LibraryFileAlias` the traversal chain is extended with a
+`RedirectionView` pointing to its public librarian url.
+
+    >>> public_view = StreamOrRedirectLibraryFileAliasView(
+    ...     public_file, empty_request)
+
+    >>> verifyObject(IBrowserPublisher, public_view)
+    True
+
+    >>> view, extra = public_view.browserDefault(empty_request)
+
+    >>> print view
+    <...RedirectionView ...>
+
+    >>> view.target == public_file.http_url
+    True
