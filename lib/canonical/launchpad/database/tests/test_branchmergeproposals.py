@@ -7,9 +7,11 @@ __metaclass__ = type
 from datetime import datetime
 from unittest import TestCase, TestLoader
 
+from bzrlib import errors as bzr_errors
 from pytz import UTC
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import (
@@ -19,6 +21,7 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
     BranchMergeProposalJobType, is_valid_transition, MergeProposalCreatedJob,
 )
+from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
@@ -886,6 +889,16 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         self.assertNotIn('+bar', diff.diff.text)
         self.assertIn('+qux', diff.diff.text)
         self.assertEqual(diff, bmp.review_diff)
+
+    def test_run_skips_diff_if_present(self):
+        """The review diff is only generated if not already assigned."""
+        self.useBzrBranches()
+        bmp = self.factory.makeBranchMergeProposal()
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertRaises(bzr_errors.NotBranchError, job.run)
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        removeSecurityProxy(bmp).review_diff = review_diff
+        job.run()
 
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""

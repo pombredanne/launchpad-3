@@ -840,6 +840,11 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         return klass(job)
 
     def run(self):
+        if self.branch_merge_proposal.review_diff is None:
+            self.branch_merge_proposal.review_diff = self._make_review_diff()
+        return self.branch_merge_proposal.review_diff
+
+    def _make_review_diff(self):
         cleanups = []
         def get_branch(branch):
             bzr_branch = branch.getBzrBranch()
@@ -853,7 +858,6 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
                 bzr_source, bzr_target)
             diff = StaticDiff.acquire(
                 lca, source_revision, bzr_source.repository)
-            self.branch_merge_proposal.review_diff = diff
         finally:
             for cleanup in reversed(cleanups):
                 cleanup()
