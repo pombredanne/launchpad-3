@@ -125,6 +125,10 @@ class StepsToGo:
     >>> bool(stepstogo)
     False
 
+    >>> request = FakeRequest([], ['baz', 'bar', 'foo'])
+    >>> list(StepsToGo(request))
+    ['foo', 'bar', 'baz']
+
     """
 
     @property
@@ -151,7 +155,11 @@ class StepsToGo:
         self.request.setTraversalStack(stack)
         return nextstep
 
-    next = consume
+    def next(self):
+        value = self.consume()
+        if value is None:
+            raise StopIteration
+        return value
 
     def startswith(self, *args):
         """Return whether the steps to go start with the names given."""

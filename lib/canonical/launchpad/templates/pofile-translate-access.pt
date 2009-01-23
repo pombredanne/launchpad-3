@@ -12,7 +12,12 @@
           <tal:and condition="repeat/manager/end"> and </tal:and>
         </tal:comma>
         <tal:team condition="manager/team">
-          <a tal:replace="structure manager/team/fmt:link" />,
+          <a tal:replace="structure manager/team/fmt:link" /><!-- (nospace)
+        --><tal:documentation tal:condition="manager/style_guide_url">
+        (<a class="style_guide_url"
+            tal:attributes="href manager/style_guide_url"
+             ><img src="/@@/link" alt=""/> Documentation</a>)<!-- (nospace)
+        --></tal:documentation>,
           assigned by
           <a tal:attributes="href manager/group/fmt:url"
              tal:content="manager/group/name">

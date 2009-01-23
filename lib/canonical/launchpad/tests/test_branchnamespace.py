@@ -609,6 +609,16 @@ class TestNamespaceSet(TestCaseWithFactory):
             InvalidNamespace,
             self.namespace_set.traverse, iter([person.name]))
 
+    def test_last_segment_none(self):
+        # If the last name passed to traverse is None, raise an error (rather
+        # than returning None).
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            AssertionError,
+            self.namespace_set.traverse,
+            iter([person.name, product.name, None]))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

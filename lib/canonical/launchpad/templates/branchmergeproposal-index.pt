@@ -25,7 +25,7 @@
     <a tal:define="link context_menu/delete"
        tal:condition="link/enabled"
        tal:attributes="href link/url"
-       ><img src="/@@/remove" tal:attributes="title link/text; alt link/text" />
+       ><img src="/@@/trash-icon" tal:attributes="title link/text; alt link/text" />
     </a>
 </h1>
 
@@ -120,7 +120,7 @@
 
   <div id="review-diff" tal:condition="context/review_diff">
   <h2>Review Diff</h2>
-  <pre tal:content="context/review_diff/diff/text" />
+  <pre tal:content="view/review_diff" />
   </div>
   <div class="back-link">
     &laquo; Back to <tal:link replace="structure context/source_branch/fmt:bzr-link"/>
