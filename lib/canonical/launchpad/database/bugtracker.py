@@ -40,8 +40,8 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.bugtracker import (
-    BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES, IBugTracker,
-    IBugTrackerAlias, IBugTrackerAliasSet, IBugTrackerSet)
+    BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
+    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email

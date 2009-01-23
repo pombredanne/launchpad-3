@@ -479,7 +479,6 @@ class IProductPublic(
     remote_product = exported(
         TextLine(
             title=_('Remote product'),
-            readonly=True,
             description=_(
                 "The ID of this project on its remote bug tracker.")))
 
