@@ -7,7 +7,6 @@ __all__ = ['GettextCheckMessages']
 from datetime import timedelta, datetime
 
 import gettextpo
-import logging
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

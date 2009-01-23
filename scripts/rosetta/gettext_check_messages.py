@@ -1,4 +1,5 @@
 #! /usr/bin/python2.4
+# pylint: disable-msg=W0403
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
 """Run gettext consistency checks on messages in the database.
