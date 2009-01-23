@@ -62,7 +62,7 @@
       <div id="home-description">Launchpad is a unique collaboration and
       <a href="http://bazaar-vcs.org/">Bazaar</a>
       code hosting platform for software projects.</div>
-      <div id="home-page" style="width:90%; margin:auto;">
+      <div id="home-page" style="width:90%; max-width:80em; margin:auto;">
         <div class="three column left" id="featured-projects">
           <h2>Featured projects</h2>
           <div style="margin:auto;">
@@ -122,7 +122,6 @@
         <div class="three column right">
           <div style="margin:auto; width:230px;">
             <h2>Get started</h2>
-             <div class="home-banners home-banner-container">
               <div class="home-banners">
                 <a href="/projects/+new-guided"><img src="/@@/add"
                 /> Create a new project</a><br/>
@@ -138,10 +137,9 @@
               <div class="home-banners">
                 <a href="/+tour"><img src="/@@/maybe" alt=""
                 /> Take the tour</a><br>
-                <a href="/+tour"><img src="/@@/maybe" alt=""
+                <a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
                 /> Read the guide</a>
               </div>
-            </div>
           </div>
         </div>
       </div><!-- 3 cols -->
