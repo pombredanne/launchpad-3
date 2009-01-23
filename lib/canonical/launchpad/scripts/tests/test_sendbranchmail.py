@@ -21,11 +21,16 @@ class TestSendbranchmail(TestCaseWithFactory):
 
     def test_sendbranchmail(self):
         """Ensure sendbranchmail runs and sends email."""
-        branch = self.factory.makeBranch()
+        self.useTempBzrHome()
+        branch, tree = self.createMirroredBranchAndTree()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
             CodeReviewNotificationLevel.FULL)
+        transport = tree.bzrdir.root_transport
+        transport.put_bytes('foo', 'bar')
+        tree.add('foo')
+        tree.commit('Added foo.')
         job_1 = RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', True, 'foo')
         transaction.commit()
