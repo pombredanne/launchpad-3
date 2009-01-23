@@ -240,7 +240,10 @@ The --dry-run option makes the script abort all its database changes.
 == Commit points ==
 
 To avoid long-running transactions and potential locks, the script
-commits regularly.
+commits regularly.  Normally this happens every few seconds.  For the
+purpose of this test we count messages checked.  If we set the commit
+interval to 1, we get a commit after every message plus one at the end
+to close things off neatly.
 
     >>> run_checker(["-w potmsgset=%s" % quote(potmsgset)], commit_interval=1)
     DEBUG Checking messages matching:  potmsgset=...
@@ -260,5 +263,3 @@ commits regularly.
     INFO Messages disabled: 0
     INFO Messages unmasked: 0
     INFO Commit points: 3
-
-
