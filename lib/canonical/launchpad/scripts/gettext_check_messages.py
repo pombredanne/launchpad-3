@@ -17,6 +17,22 @@ from canonical.launchpad.scripts.base import LaunchpadScript
 
 
 class GettextCheckMessages(LaunchpadScript):
+    """Run a set of `TranslationMessage`s through gettext checks.
+
+    Every translation message that goes into Launchpad is checked, but
+    since part of the information about the message is in the template
+    and part is in the translation, there are some scenarios where we
+    can end up having a message in the database that neither Launchpad
+    nor gettext would otherwise accept.  For instance, the template may
+    add a c-format flag after the translation is already accepted, or a
+    newer gettext version may check for conditions that older versions
+    let slide.
+
+    This script takes a given set of messages (specified as an SQL
+    "WHERE" clause) and checks each of them.  Messages that are found
+    faulty are deactivated, and where appropriate, imported messages
+    they were overriding are activated instead.
+    """
 
     _check_count = 0
     _error_count = 0
