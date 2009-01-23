@@ -81,11 +81,30 @@ No Privileges Person *is* allowed to translate into Welsh.
 We can use TranslationGroupSet to check what translation groups a person
 is a part of:
 
-    >>> [group.name for group in translation_group_set.getByPerson(carlos)]
-    [u'testing-translation-team']
+    >>> for group in translation_group_set.getByPerson(carlos):
+    ...     print group.name
+    testing-translation-team
 
-    >>> [group.name for group in translation_group_set.getByPerson(no_priv)]
-    [u'foo-translators']
+    >>> for group in translation_group_set.getByPerson(no_priv):
+    ...     print group.name
+    foo-translators
+
+    >>> translators = getUtility(ITranslatorSet)
+    >>> for trans in translators.getByTranslator(carlos):
+    ...     print trans.language.code
+    ...     print trans.translationgroup.name
+    ...     print trans.style_guide_url
+    es
+    testing-translation-team
+    None
+
+    >>> for trans in translators.getByTranslator(no_priv):
+    ...     print trans.language.code
+    ...     print trans.translationgroup.name
+    ...     print trans.style_guide_url
+    cy
+    foo-translators
+    None
 
 "Do you want us to shut everything down?"
 

@@ -121,6 +121,7 @@ from canonical.launchpad.interfaces.teammembership import (
     TeamMembershipStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
+from canonical.launchpad.interfaces.translator import ITranslatorSet
 from canonical.launchpad.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
@@ -2133,6 +2134,11 @@ class Person(
     def translation_groups(self):
         """See `IPerson`."""
         return getUtility(ITranslationGroupSet).getByPerson(self)
+
+    @property
+    def translators(self):
+        """See `IPerson`."""
+        return getUtility(ITranslatorSet).getByTranslator(self)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
