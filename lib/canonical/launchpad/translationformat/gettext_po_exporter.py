@@ -235,9 +235,8 @@ def wrap_text(text, prefix, wrap_width):
     There are a couple of other characters that will be escaped in the
     output, too.
 
-    >>> translation_message.msgid_singular = (
-    ...     ur'"'+u"\t\r")
-    >>> print export_translation_message(translation_message, wrap_width=10)
+    >>> translation_message.msgid_singular = (ur'"' + u"\t\r")
+    >>> export_translation_message(translation_message, wrap_width=10)
     msgid ""
     "\"\t\r"
     msgstr ""
