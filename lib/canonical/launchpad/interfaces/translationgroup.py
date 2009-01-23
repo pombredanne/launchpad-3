@@ -17,7 +17,8 @@ from zope.schema import Choice, Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary, Title
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -142,6 +143,17 @@ class ITranslationGroup(IHasOwner):
         'appointed as a translator. There may be other projects that are '
         'part of project groups for which the group also translates.')
     distributions = Attribute('The distros for which this group translates.')
+
+    translation_guide_url = URIField(
+        title=_('Translation instructions'), required=False,
+        allowed_schemes=['http', 'https', 'ftp'],
+        allow_userinfo=False,
+        description=_("The URL of the generic translation instructions "
+                      "followed by this particular translation group. "
+                      "This should include team policies and "
+                      "recommendations, specific instructions for "
+                      "any non-standard behaviour and other documentation."
+                      "Can be any of http://, https://, or ftp://."))
 
     # accessing the translator list
     def query_translator(language):

@@ -700,6 +700,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     translation_groups = Attribute(
         "The set of TranslationGroup objects this person is a member of.")
 
+    translators = Attribute(
+        "The set of Translator objects this person is a member of.")
+
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 

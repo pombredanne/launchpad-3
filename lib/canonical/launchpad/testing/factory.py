@@ -345,7 +345,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             poll_type=PollAlgorithm.SIMPLE)
 
     def makeTranslationGroup(
-        self, owner, name=None, title=None, summary=None):
+        self, owner, name=None, title=None, summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
         if name is None:
             name = self.getUniqueString("translationgroup")
@@ -354,7 +354,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if summary is None:
             summary = self.getUniqueString("summary")
         return getUtility(ITranslationGroupSet).new(
-            name, title, summary, owner)
+            name, title, summary, url, owner)
 
     def makeMilestone(self, product=None, distribution=None, name=None):
         if product is None and distribution is None:
