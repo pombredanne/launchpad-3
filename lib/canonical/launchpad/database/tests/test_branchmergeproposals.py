@@ -10,7 +10,6 @@ from unittest import TestCase, TestLoader
 from pytz import UTC
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import (
@@ -20,7 +19,6 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
     BranchMergeProposalJobType, is_valid_transition, MergeProposalCreatedJob,
 )
-from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,

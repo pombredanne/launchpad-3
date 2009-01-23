@@ -5,15 +5,10 @@
 
 import unittest
 import transaction
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import ZopelessAppServerLayer
-from canonical.codehosting.branchfs import get_scanner_server
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    CodeReviewNotificationLevel,)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal, MergeProposalCreatedJob)
 
@@ -26,7 +21,6 @@ class TestDiffBMPs(TestCaseWithFactory):
         """Ensure diff_bmps runs and generates diffs."""
         self.useTempBzrHome()
         target, target_tree = self.createMirroredBranchAndTree()
-        target = removeSecurityProxy(target)
         target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
         target_tree.add('foo')
         target_tree.commit('added foo')

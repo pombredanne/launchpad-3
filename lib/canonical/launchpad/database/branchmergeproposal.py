@@ -805,6 +805,15 @@ class BranchMergeProposalJobDerived(object):
 
     delegates(IBranchMergeProposalJob)
 
+    def __init__(self, job):
+        self.context = job
+
+    def __eq__(self, job):
+        return (self.__class__ is job.__class__ and self.job == job.job)
+
+    def __ne__(self, job):
+        return not (self == job)
+
     @classmethod
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
@@ -824,15 +833,6 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
-    def __init__(self, job):
-        self.context = job
-
-    def __eq__(self, job):
-        return (self.__class__ is job.__class__ and self.job == job.job)
-
-    def __ne__(self, job):
-        return not (self == job)
-
     @classmethod
     def create(klass, bmp):
         job = BranchMergeProposalJob(
@@ -849,7 +849,8 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         try:
             bzr_source = get_branch(self.branch_merge_proposal.source_branch)
             bzr_target = get_branch(self.branch_merge_proposal.target_branch)
-            lca, source_revision = self._find_revisions(bzr_source, bzr_target)
+            lca, source_revision = self._find_revisions(
+                bzr_source, bzr_target)
             diff = StaticDiff.acquire(
                 lca, source_revision, bzr_source.repository)
             self.branch_merge_proposal.review_diff = diff
