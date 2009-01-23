@@ -1391,10 +1391,13 @@ class ArchiveSet:
                 # Append the extra expression to capture either public
                 # archives, or archives owned by the user, or archives
                 # owned by a team of which the user is a member:
+                # Note: 'Archive.ownerID == user.id' 
+                # is unnecessary below because there is a TeamParticipation
+                # entry showing that each person is a member of the "team"
+                # that consists of themselves.
                 extra_exprs.append(
                     Or(
                         Archive.private == False,
-                        Archive.ownerID == user.id,
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
