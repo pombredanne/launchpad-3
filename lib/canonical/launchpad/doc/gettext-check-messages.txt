@@ -44,12 +44,14 @@ points that would otherwise be in the output.
     ...     def _get_time(self):
     ...         return self._check_count
 
-    >>> def run_checker(options):
+    >>> def run_checker(options, commit_interval=None):
     ...     """Create and run an instrumented `GettextCheckMessages`."""
     ...     checker = InstrumentedGettextCheckMessages(
     ...         'gettext-check-messages-test', test_args=options)
     ...     checker.logger = FakeLogger()
     ...     checker.txn = MockTransactionManager()
+    ...     if commit_interval is not None:
+    ...         checker._commit_interval = commit_interval
     ...     checker.main()
 
     >>> logout()
@@ -98,7 +100,7 @@ and re-does the gettext check.  Which messages it checks is specified as
 a plain SQL WHERE clause.
 
     >>> run_checker(['-vv', "-w id=%s" % quote(current_message.id)])
-    DEBUG Checking messages matching: id=...
+    DEBUG Checking messages matching:  id=...
     DEBUG Checking message ....
     DEBUG Commit point.
     Committing.
@@ -121,7 +123,7 @@ detects the problem when it checks that message.
     >>> current_message.translations = [u'%s c']
 
     >>> run_checker(["-w id=%s" % quote(current_message.id)])
-    DEBUG Checking messages matching: id=...
+    DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
     INFO ... (current): format specifications ... are not the same
     INFO ...: unmasked ...
@@ -154,7 +156,7 @@ message is not activated.
     >>> imported_message.translations = [u'%s %s i']
 
     >>> run_checker(["-w id=%s" % quote(current_message.id)])
-    DEBUG Checking messages matching: id=...
+    DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
     INFO ... (current): format specifications ... are not the same
     DEBUG Commit point.
@@ -183,7 +185,7 @@ In this example we'd like to see a nicely predictable ordering, so we
 add a sort order using the -o option.
 
     >>> run_checker(['-w', 'potmsgset=%s' % quote(potmsgset), '-o',  'id'])
-    DEBUG Checking messages matching: potmsgset=...
+    DEBUG Checking messages matching:  potmsgset=...
     DEBUG Checking message ...
     INFO ... (unused): format specifications ... are not the same
     DEBUG Commit point.
@@ -220,7 +222,7 @@ The --dry-run option makes the script abort all its database changes.
 
     >>> run_checker(["-w id=%s" % quote(current_message.id), '--dry-run'])
     INFO Dry run.  Not making any changes.
-    DEBUG Checking messages matching: id=...
+    DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
     INFO ... (current): format specifications ... are not the same
     DEBUG Commit point.
@@ -233,5 +235,30 @@ The --dry-run option makes the script abort all its database changes.
     INFO Messages disabled: 1
     INFO Messages unmasked: 0
     INFO Commit points: 2
+
+
+== Commit points ==
+
+To avoid long-running transactions and potential locks, the script
+commits regularly.
+
+    >>> run_checker(["-w potmsgset=%s" % quote(potmsgset)], commit_interval=1)
+    DEBUG Checking messages matching:  potmsgset=...
+    DEBUG Checking message ...
+    INFO ... (...): number of format specifications ...
+    DEBUG Commit point.
+    Committing.
+    DEBUG Checking message ...
+    INFO ... (...): format specifications ... are not the same
+    DEBUG Commit point.
+    Committing.
+    DEBUG Commit point.
+    Committing.
+    INFO Done.
+    INFO Messages checked: 2
+    INFO Validation errors: 3
+    INFO Messages disabled: 0
+    INFO Messages unmasked: 0
+    INFO Commit points: 3
 
 
