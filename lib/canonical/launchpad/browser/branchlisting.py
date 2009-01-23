@@ -58,8 +58,8 @@ class BranchListingItem(BranchBadges):
     delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
-                 show_blueprint_badge, show_mp_badge, is_dev_focus,
-                 associated_product_series):
+                 show_blueprint_badge, is_dev_focus,
+                 associated_product_series, show_mp_badge):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
@@ -137,7 +137,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return list(self.currentBatch())
 
     @cachedproperty
-    def has_bug_branch_links(self):
+    def branch_ids_with_bug_links(self):
         """Return a set of branch ids that should show bug badges."""
         bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
             self._branches_for_current_batch, self.view.user)
@@ -147,7 +147,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return result
 
     @cachedproperty
-    def has_branch_spec_links(self):
+    def branch_ids_with_spec_links(self):
         """Return a set of branch ids that should show blueprint badges."""
         spec_branches = getUtility(
             ISpecificationBranchSet).getSpecificationBranchesForBranches(
@@ -158,7 +158,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return result
 
     @cachedproperty
-    def has_merge_proposals(self):
+    def branch_ids_with_merge_proposals(self):
         """Return a set of branches that should show merge proposal badges.
 
         Branches have merge proposals badges if they've been proposed for
@@ -225,15 +225,15 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
-        show_bug_badge = branch.id in self.has_bug_branch_links
-        show_blueprint_badge = branch.id in self.has_branch_spec_links
-        show_mp_badge = branch.id in self.has_merge_proposals
+        show_bug_badge = branch.id in self.branch_ids_with_bug_links
+        show_blueprint_badge = branch.id in self.branch_ids_with_spec_links
+        show_mp_badge = branch.id in self.branch_ids_with_merge_proposals
         associated_product_series = self.getProductSeries(branch)
         is_dev_focus = (self.getDevFocusBranch(branch) == branch)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, show_mp_badge,
-            is_dev_focus, associated_product_series)
+            show_blueprint_badge, is_dev_focus,
+            associated_product_series, show_mp_badge)
 
     def branches(self):
         """Return a list of BranchListingItems."""
