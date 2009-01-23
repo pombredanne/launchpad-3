@@ -21,11 +21,12 @@ class TestBugTracker(TestCaseWithFactory):
         login(ANONYMOUS)
 
     def test_multi_product_constraints_observed(self):
-        # BugTrackers of type for which multi_product=True
-        # should return None when no remote product is passed to
-        # getBugFilingURL(). BugTracker for which
-        # require_remote_product=False should still return a URL even
-        # when getBugFilingURL() is passed no remote product.
+        """BugTrackers for which multi_product=True should return None
+        when no remote product is passed to getBugFilingURL().
+
+        BugTrackers for which multi_product=False should still return a
+        URL even when getBugFilingURL() is passed no remote product.
+        """
         for type in BugTrackerType.items:
             bugtracker = self.factory.makeBugTracker(bugtrackertype=type)
 

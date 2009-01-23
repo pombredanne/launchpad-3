@@ -189,7 +189,7 @@ class BugTracker(SQLBase):
 
     @property
     def multi_product(self):
-        """Return True if getBugFilingLink() requires a remote product."""
+        """Return True if this BugTracker tracks multiple projects."""
         if self.bugtrackertype not in SINGLE_PRODUCT_BUGTRACKERTYPES:
             return True
         else:
@@ -201,7 +201,8 @@ class BugTracker(SQLBase):
             # Don't try to return anything if remote_product is required
             # for this BugTrackerType and one hasn't been passed.
             return None
-        elif remote_product is None:
+
+        if remote_product is None:
             # Turn the remote product into an empty string so that
             # quote() doesn't blow up later on.
             remote_product = ''
