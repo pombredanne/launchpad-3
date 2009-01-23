@@ -16,6 +16,7 @@ import transaction
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionSpec
+from bzrlib import urlutils
 import pytz
 import simplejson
 
@@ -49,14 +50,15 @@ from canonical.launchpad.interfaces import (
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
-    BranchMergeProposalStatus, BranchPersonSearchRestriction,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
-    CodeReviewNotificationLevel, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
-    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
+    BranchMergeProposalExists, BranchMergeProposalStatus,
+    BranchPersonSearchRestriction, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
+    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
+    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchPersonSearchContext, IBranchSet, ILaunchpadCelebrities,
+    InvalidBranchMergeProposal, IPerson, IProduct, IProductSet, IProject,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError,
+    RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchDiffJob, IBranchDiffJobSource,
     IBranchJob, IBranchNavigationMenu, IRevisionMailJob,
@@ -258,7 +260,7 @@ class Branch(SQLBase):
             """ % sqlvalues(self, target_branch,
                             BRANCH_MERGE_PROPOSAL_FINAL_STATES))
         if target.count() > 0:
-            raise InvalidBranchMergeProposal(
+            raise BranchMergeProposalExists(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.'
                 % (self.unique_name, target_branch.unique_name))
@@ -330,8 +332,15 @@ class Branch(SQLBase):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return ((self.revision_count > 0  or self.last_mirrored != None)
-            and not self.private)
+        return (self.revision_count > 0  or self.last_mirrored != None)
+
+    def codebrowse_url(self, *extras):
+        """See `IBranch`."""
+        if self.private:
+            root = config.codehosting.secure_codebrowse_root
+        else:
+            root = config.codehosting.codebrowse_root
+        return urlutils.join(root, self.unique_name, *extras)
 
     @property
     def bzr_identity(self):

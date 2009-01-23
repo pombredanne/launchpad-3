@@ -1939,7 +1939,7 @@ def send_direct_contact_email(
     for recipient_email, recipient in recipients_set.getRecipientPersons():
         recipient_name = str(encode(recipient.displayname))
         reason, rational_header = recipients_set.getReason(recipient_email)
-        reason = str(encode(reason))
+        reason = str(encode(reason)).replace('\n ', '\n')
         formatted_body = mailwrapper.format(body, force_wrap=True)
         formatted_body += additions % reason
         formatted_body = formatted_body.encode(charset)
