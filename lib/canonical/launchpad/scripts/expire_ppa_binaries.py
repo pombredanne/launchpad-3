@@ -3,10 +3,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
-# This script expires PPA binaries that are superseded or deleted, and
-# are older than 30 days.  It's done with pure SQL rather than Python
-# for speed reasons.
-
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.archive import ArchivePurpose
@@ -19,9 +15,8 @@ class PPABinaryExpirer(LaunchpadCronScript):
     """Helper class for expiring old PPA binaries.
     
     Any PPA binary older than 30 days that is superseded or deleted
-    will be marked for immediate expiry.  The associated publishing
-    record is also marked as OBSOLETE so that it is prevented from
-    being copied in the future.
+    will be marked for immediate expiry.  It's done with pure SQL rather
+    than Python for speed reasons.
     """
 
     def main(self):
@@ -32,32 +27,32 @@ class PPABinaryExpirer(LaunchpadCronScript):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         store.execute("""
-        UPDATE libraryfilealias
-        SET expires=now()
-        FROM
-            libraryfilealias lfa,
-            binarypackagefile bpf,
-            binarypackagerelease bpr,
-            binarypackagepublishinghistory bpph,
-            archive
-        WHERE
-            lfa.id = bpf.libraryfile AND
-            bpr.id = bpf.binarypackagerelease AND
-            bpph.binarypackagerelease = bpr.id AND
-            bpph.dateremoved < (now() - interval '%s') AND
-            archive.id = bpph.archive AND
-            archive.purpose = %s AND
-            NOT EXISTS (
-                SELECT TRUE FROM binarypackagepublishinghistory as bpph2,
-                                 binarypackagerelease as bpr2
-                WHERE
-                    bpph2.binarypackagerelease = bpph.binarypackagerelease
-                    AND
-                    (now() - bpph2.dateremoved < interval '%s'
-                     OR
-                     dateremoved IS NULL
-                    )
-            );
+            UPDATE libraryfilealias
+            SET expires=now()
+            FROM
+                libraryfilealias lfa,
+                binarypackagefile bpf,
+                binarypackagerelease bpr,
+                binarypackagepublishinghistory bpph,
+                archive
+            WHERE
+                lfa.id = bpf.libraryfile AND
+                bpr.id = bpf.binarypackagerelease AND
+                bpph.binarypackagerelease = bpr.id AND
+                bpph.dateremoved < (now() - interval '%s') AND
+                archive.id = bpph.archive AND
+                archive.purpose = %s AND
+                NOT EXISTS (
+                    SELECT TRUE FROM binarypackagepublishinghistory as bpph2,
+                                     binarypackagerelease as bpr2
+                    WHERE
+                        bpph2.binarypackagerelease = bpph.binarypackagerelease
+                        AND
+                        (now() - bpph2.dateremoved < interval '%s'
+                         OR
+                         dateremoved IS NULL
+                        )
+                );
         """ % (stay_of_execution, ArchivePurpose.PPA.value,
                stay_of_execution))
 

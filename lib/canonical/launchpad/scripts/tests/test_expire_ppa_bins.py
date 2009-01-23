@@ -64,23 +64,17 @@ class TestPPABinaryExpiry(unittest.TestCase):
         script = self.getScript()
         script.main()
 
-    def doExpiryTest(self, publication, must_be_expired):
-        """Assert that the binary file in binary publication is/not expired.
+    def assertExpired(self, publication):
+        self.assertNotEqual(
+            publication.binarypackagerelease.files[0].libraryfile.expires,
+            None,
+            "lfa.expires should be set, but it's not.")
 
-        :param publication: The binary publication
-        :param must_be_expired: true or false depending on what you expect
-            it to be.
-        """
-        if must_be_expired:
-            self.assertNotEqual(
-                publication.binarypackagerelease.files[0].libraryfile.expires,
-                None,
-                "lfa.expires should be set, but it's not.")
-        else:
-            self.assertEqual(
-                publication.binarypackagerelease.files[0].libraryfile.expires,
-                None,
-                "lfa.expires should be None, but it's not.")
+    def assertNotExpired(self, publication):
+        self.assertEqual(
+            publication.binarypackagerelease.files[0].libraryfile.expires,
+            None,
+            "lfa.expires should be None, but it's not.")
 
     def testNoExpirationWithNoDateremoved(self):
         """Test that no expiring happens if no dateremoved set."""
@@ -90,7 +84,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             pub_source=pkg1, dateremoved=None, archive=self.ppa)
 
         self.runScript()
-        self.doExpiryTest(pub, False)
+        self.assertNotExpired(pub)
 
     def testNoExpirationWithDateUnderThreshold(self):
         """Test no expiring if dateremoved too recent."""
@@ -101,7 +95,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=self.ppa)
 
         self.runScript()
-        self.doExpiryTest(pub, False)
+        self.assertNotExpired(pub)
 
     def testExpirationWithDateOverThreshold(self):
         """Test expiring works if dateremoved old enough."""
@@ -112,7 +106,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=self.ppa)
 
         self.runScript()
-        self.doExpiryTest(pub, True)
+        self.assertExpired(pub)
 
     def testNoExpirationWithDateOverThresholdAndOtherValidPublication(self):
         """Test no expiry if dateremoved old enough but other publication."""
@@ -126,7 +120,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
         other_binary.secure_record.dateremoved = None
 
         self.runScript()
-        self.doExpiryTest(pub, False)
+        self.assertNotExpired(pub)
 
     def testNoExpirationWithDateOverThresholdAndOtherPubUnderThreshold(self):
         """Test no expiring.
@@ -144,7 +138,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
         other_binary.secure_record.dateremoved = self.under_threshold_date
 
         self.runScript()
-        self.doExpiryTest(pub, False)
+        self.assertNotExpired(pub)
 
     def testNoExpirationWithDateOverThresholdAndOtherPubOverThreshold(self):
         """Test expiring works.
@@ -162,7 +156,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
         other_binary.secure_record.dateremoved = self.over_threshold_date
 
         self.runScript()
-        self.doExpiryTest(pub, True)
+        self.assertExpired(pub)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
