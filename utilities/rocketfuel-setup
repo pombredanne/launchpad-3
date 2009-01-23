@@ -263,21 +263,23 @@ if [ $? -ne 0 ]; then
 fi
 
 # Get the key used to sign the launchpad-developer-dependencies in the PPA.
-LP_PPA_KEY="0A5174AF"
-sudo apt-key list | grep -q $LP_PPA_KEY
-if [ $? -ne 0 ]; then
-  echo "Retrieving LP PPA signing key."
-  gpg --recv-keys $LP_PPA_KEY
-  if [ $? -ne 0 ]; then
-    echo "Could not retrieve signing key for launchpad-developer-dependencies."
-    exit 1
-  fi
-  gpg --export -a $LP_PPA_KEY | sudo apt-key add -
-  if [ $? -ne 0 ]; then
-    echo "Could not install signing key for launchpad-developer-dependencies."
-    exit 1
-  fi
-fi
+REQUIRED_PPA_KEYS="0A5174AF 2B97B7B8"
+for key in $REQUIRED_PPA_KEYS; do
+   sudo apt-key list | grep -q $key
+   if [ $? -ne 0 ]; then
+     echo "Retrieving key $key."
+     gpg --keyserver keyserver.ubuntu.com --recv-keys $key
+     if [ $? -ne 0 ]; then
+       echo "Could not retrieve key $key."
+       exit 1
+     fi
+     gpg --export -a $key | sudo apt-key add -
+     if [ $? -ne 0 ]; then
+       echo "Could not install key $key."
+       exit 1
+     fi
+   fi
+done
 
 sudo aptitude update
 dpkg -s launchpad-developer-dependencies | grep -q "^Status:.*installed"
@@ -291,7 +293,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create the document root to avoid Apache warnings
-mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors
+mkdir -p /var/tmp/bazaar.launchpad.dev/static
 
 # Create an empty rewritemap file so that Apache will start.
 mkdir -p /var/tmp/bazaar.launchpad.dev/config
@@ -324,6 +326,12 @@ fi
 sudo a2enmod deflate > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable deflate module in Apache2"
+  exit 1
+fi
+
+sudo a2enmod headers > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable headers module in Apache2"
   exit 1
 fi
 
