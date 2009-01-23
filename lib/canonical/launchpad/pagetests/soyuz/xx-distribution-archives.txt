@@ -95,8 +95,8 @@ is disabled.
     Copy archive disabled-security-rebuild for Marty Jupiter
 
     >>> tag = find_tag_by_id(anon_browser.contents, 'archive-heading')
-    >>> print tag
-    <h1 ... class="disabled">...
+    >>> print tag['class']
+    disabled
 
     >>> tag = first_tag_by_class(anon_browser.contents, 'warning message')
     >>> print extract_text(tag)
