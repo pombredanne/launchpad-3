@@ -1036,7 +1036,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
-        return ''
+            # RFC 2616 says the body of a 301 response, if present,
+            # SHOULD be a note linking to the new object.
+            return ''
+
+        # If the object didn't move, serve up its representation.
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
 
 class CollectionResource(ReadOnlyResource, BatchingResourceMixin,

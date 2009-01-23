@@ -150,13 +150,15 @@ entry's state, in which case the client should use PUT.
   ...                       headers)
 
 Here we use the web service to change the user 'salgado' so that their
-display name is in uppercase.
+display name is in uppercase. The data returned is the new JSON
+representation of the object.
 
   >>> print modify_person('salgado', {'display_name' : 'GUILHERME SALGADO'},
   ...                     'PATCH')
   HTTP/1.1 200 Ok
-  Content-Length: 0
   ...
+  <BLANKLINE>
+  {...}
 
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
@@ -214,7 +216,9 @@ at hand, you can use the PUT method.
 
 We happen to have a full document from when we sent a GET request to
 the 'salgado' Person. Modifying that document and PUTting it back is
-less work than constructing a new document and sending it with PATCH.
+less work than constructing a new document and sending it with
+PATCH. As with PATCH, a successful PUT serve the new representation of
+the object that was modified.
 
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
@@ -224,6 +228,8 @@ less work than constructing a new document and sending it with PATCH.
   >>> print modify_person('salgado', salgado, 'PUT')
   HTTP/1.1 200 Ok
   ...
+  <BLANKLINE>
+  {...}
 
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
