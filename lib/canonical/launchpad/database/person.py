@@ -2947,14 +2947,6 @@ class PersonSet:
             % vars())
         skip.append(('gpgkey','owner'))
 
-        # Update OpenID. Just trash the authorizations for from_id - don't
-        # risk opening up auth wider than the user actually wants.
-        cur.execute("""
-                DELETE FROM OpenIDAuthorization WHERE person=%(from_id)d
-                """ % vars()
-                )
-        skip.append(('openidauthorization', 'person'))
-
         # Update shipit shipments.
         cur.execute('''
             UPDATE ShippingRequest SET recipient=%(to_id)s
