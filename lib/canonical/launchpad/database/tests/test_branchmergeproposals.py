@@ -36,7 +36,9 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
+    capture_events, LaunchpadObjectFactory, login_person, TestCaseWithFactory,
+    time_counter)
+from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
 
 
@@ -897,12 +899,24 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         job = MergeProposalCreatedJob.create(bmp)
         self.assertRaises(bzr_errors.NotBranchError, job.run)
         review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        transaction.commit()
         removeSecurityProxy(bmp).review_diff = review_diff
         job.run()
 
+    def test_run_sends_email(self):
+        """The review diff is only generated if not already assigned."""
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        transaction.commit()
+        bmp = self.factory.makeBranchMergeProposal(review_diff=review_diff)
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([], pop_notifications())
+        job.run()
+        self.assertEqual(2, len(pop_notifications()))
+
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""
-        bmp = self.factory.makeBranchMergeProposal()
+        # Avoid creating a MergeProposalCreatedJob early
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         job = MergeProposalCreatedJob.create(bmp)
         job.job.sync()
         job.context.sync()
@@ -910,7 +924,8 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_iterReady_excludes_unready_jobs(self):
         """Unready jobs should not be listed."""
-        bmp = self.factory.makeBranchMergeProposal()
+        # Avoid creating a MergeProposalCreatedJob early
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         job = MergeProposalCreatedJob.create(bmp)
         job.job.start()
         job.job.complete()

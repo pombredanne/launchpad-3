@@ -551,5 +551,8 @@ class IMergeProposalCreatedJob(Interface):
 class IMergeProposalCreatedJobSource(Interface):
     """Interface for acquiring MergeProposalCreatedJobs."""
 
+    def create(bmp):
+        """Create a MergeProposalCreatedJob for the specified Job."""
+
     def iterReady():
         """Iterate through all ready MergeProposalCreatedJobs."""

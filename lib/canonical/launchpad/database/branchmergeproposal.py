@@ -17,6 +17,7 @@ from lazr.delegates import delegates
 import simplejson
 from storm.expr import And
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -55,6 +56,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.mailout.branch import RecipientReason
+from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
@@ -842,6 +844,10 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     def run(self):
         if self.branch_merge_proposal.review_diff is None:
             self.branch_merge_proposal.review_diff = self._make_review_diff()
+            transaction.commit()
+        mailer = BMPMailer.forCreation(
+            self.branch_merge_proposal, self.branch_merge_proposal.registrant)
+        mailer.sendAll()
         return self.branch_merge_proposal.review_diff
 
     def _make_review_diff(self):
