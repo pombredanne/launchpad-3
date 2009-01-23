@@ -1352,6 +1352,10 @@ table#package-requests {
 table#package-requests td{
     padding: 0.5em;
 }
+h1.disabled {
+    color: grey;
+}
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
