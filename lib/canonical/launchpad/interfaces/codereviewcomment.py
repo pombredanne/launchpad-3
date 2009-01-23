@@ -85,6 +85,12 @@ class ICodeReviewComment(Interface):
 
     title = TextLine()
 
+    def getMessage():
+        """Get the message content from the message attribute.
+
+        :return: a bytestring, the message itself.
+        """
+
     def getAttachments():
         """Get the attachments from the original message.
 
