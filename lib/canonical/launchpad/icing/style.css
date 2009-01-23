@@ -1337,6 +1337,10 @@ div#signing-key a {
     font-weight: bold;
 }
 
+h1.disabled {
+    color: grey;
+}
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}

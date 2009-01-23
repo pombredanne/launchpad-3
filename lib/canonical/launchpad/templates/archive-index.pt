@@ -32,7 +32,14 @@
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
-      <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
+      <h1 tal:content="CONTEXTS/fmt:pagetitle"
+        tal:condition="context/enabled">
+        PPA for user
+      </h1>
+      <h1 tal:content="CONTEXTS/fmt:pagetitle"
+        tal:condition="not: context/enabled" class="disabled">
+        PPA for user
+      </h1>
 
       <div class="actions" style="float:right;">
         <tal:administer
@@ -58,6 +65,10 @@
            condition="not: archive_active"
            content="context/archive_url">url</tal:no-link>
       </h2>
+
+      <p tal:condition="not: context/enabled" class="warning message">
+        This archive has been disabled.
+      </p>
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
