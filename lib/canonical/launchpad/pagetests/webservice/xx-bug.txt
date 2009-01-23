@@ -218,6 +218,7 @@ data in a bug task is derived from the bug.
   date_triaged: None
   importance: u'Low'
   is_complete: False
+  milestone_link: None
   owner_link: u'http://.../~name12'
   related_tasks_collection_link:
    u'http://api.../debian/+source/mozilla-firefox/+bug/1/related_tasks'
@@ -391,6 +392,35 @@ But we can't make it into a distro task.
   IllegalTarget: Upstream bug tasks may only be re-targeted to
   another project.
   <BLANKLINE>
+
+If the milestone of a task is on a target other than the new
+target, we reset it in order to avoid data inconsistencies.
+
+  >>> firefox_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
+  >>> patch = {u'milestone_link':
+  ...     webservice.getAbsoluteUrl('/firefox/+milestone/1.0')}
+  >>> print webservice.patch(
+  ...     firefox_bugtask['self_link'], 'application/json', dumps(patch))
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  >>> firefox_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
+  >>> print firefox_bugtask['milestone_link']
+  http://api.../firefox/+milestone/1.0
+  >>> print webservice.named_post(
+  ...     firefox_bugtask['self_link'],
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/jokosher'))
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  >>> jokosher_bugtask = webservice.get(
+  ...     firefox_bugtask['self_link'].replace(
+  ...         'firefox', 'jokosher')).jsonBody()
+  >>> print jokosher_bugtask['milestone_link']
+  None
 
 
 == Bug subscriptions ==
