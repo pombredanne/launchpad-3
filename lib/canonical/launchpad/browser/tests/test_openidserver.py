@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Test harness for Login Service related unit tests."""
 
@@ -121,7 +121,7 @@ class PreAuthorizeRPViewTestCase(unittest.TestCase):
         # We do not use the isAuthorized API because we don't know the client
         # id used by browser, since no cookie were used.
         self.failUnless(OpenIDAuthorization.selectOneBy(
-            person=no_priv, trust_root='http://launchpad.dev/'),
+            accountID=no_priv.accountID, trust_root='http://launchpad.dev/'),
             "Pre-authorization record wasn't created.")
 
 

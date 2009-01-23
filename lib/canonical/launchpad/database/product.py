@@ -19,6 +19,7 @@ import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -220,6 +221,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    remote_product = Unicode(
+        name='remote_product', allow_none=True, default=None)
 
     @property
     def official_anything(self):

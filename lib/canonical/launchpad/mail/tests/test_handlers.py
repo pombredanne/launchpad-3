@@ -209,7 +209,8 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processVoteColon(self):
         """Process respects the vote: command."""
-        mail = self.factory.makeSignedMessage(body=' vote: Abstain EBAILIWICK')
+        mail = self.factory.makeSignedMessage(
+            body=' vote: Abstain EBAILIWICK')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
@@ -301,13 +302,13 @@ class TestCodeHandler(TestCaseWithFactory):
         source_branch_url=None, target_branch_url=None):
         if source_branch_url is None:
             if source_branch is None:
-                source_branch = self.factory.makeBranch()
+                source_branch = self.factory.makeAnyBranch()
             source_branch_url = (
                 config.codehosting.supermirror_root +
                 source_branch.unique_name)
         if target_branch_url is None:
             if target_branch is None:
-                target_branch = self.factory.makeBranch()
+                target_branch = self.factory.makeAnyBranch()
             target_branch_url = (
                 config.codehosting.supermirror_root +
                 target_branch.unique_name)
@@ -318,8 +319,8 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_acquireBranchesForProposal(self):
         """Ensure CodeHandler._acquireBranchesForProposal works."""
-        target_branch = self.factory.makeBranch()
-        source_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeAnyBranch()
+        source_branch = self.factory.makeAnyBranch()
         md = self.makeMergeDirective(source_branch, target_branch)
         submitter = self.factory.makePerson()
         self.switchDbUser(config.processmail.dbuser)
@@ -331,7 +332,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_acquireBranchesForProposalRemoteTarget(self):
         """CodeHandler._acquireBranchesForProposal fails on remote targets."""
-        source_branch = self.factory.makeBranch()
+        source_branch = self.factory.makeAnyBranch()
         md = self.makeMergeDirective(
             source_branch, target_branch_url='http://example.com')
         submitter = self.factory.makePerson()
@@ -347,7 +348,7 @@ class TestCodeHandler(TestCaseWithFactory):
         If there's no existing remote branch, it creates one, using
         the suffix of the url as a branch name seed.
         """
-        target_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeProductBranch()
         source_branch_url = 'http://example.com/suffix'
         md = self.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
@@ -372,13 +373,13 @@ class TestCodeHandler(TestCaseWithFactory):
         name seed.  If there is already a branch with that name, it appends
         a numeric suffix.
         """
-        target_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeProductBranch()
         source_branch_url = 'http://example.com/suffix'
         md = self.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
         branches = getUtility(IBranchSet)
         submitter = self.factory.makePerson()
-        duplicate_branch = self.factory.makeBranch(
+        duplicate_branch = self.factory.makeProductBranch(
             product=target_branch.product, name='suffix', owner=submitter)
         self.switchDbUser(config.processmail.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
@@ -433,8 +434,9 @@ class TestCodeHandler(TestCaseWithFactory):
         :param body: The message body to use for the email.
         :return: message, source_branch, target_branch
         """
-        target_branch = self.factory.makeBranch()
-        source_branch = self.factory.makeBranch(product=target_branch.product)
+        target_branch = self.factory.makeProductBranch()
+        source_branch = self.factory.makeProductBranch(
+            product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.factory.makeSignedMessage(body=body,
             subject='My subject', attachment_contents=''.join(md.to_lines()))
@@ -479,6 +481,27 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler.process(message, 'merge@code.launchpad.net', None)
         self.assertEqual(target, source.landing_targets[0].target_branch)
         transaction.commit()
+
+    def test_processMergeProposalExists(self):
+        """processMergeProposal raises BranchMergeProposalExists
+
+        If there is already a merge proposal with the same target and source
+        branches of the merge directive, an email is sent to the user.
+        """
+        message, source_branch, target_branch = self.makeMergeDirectiveEmail()
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        bmp, comment = code_handler.processMergeProposal(message)
+        _unused = pop_notifications()
+        transaction.commit()
+        _unused = code_handler.processMergeProposal(message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(),
+            'The branch %s is already propos=\ned for merging into %s.\n\n' % (
+                source_branch.bzr_identity, target_branch.bzr_identity))
 
 
 class TestVoteEmailCommand(TestCase):
@@ -544,6 +567,13 @@ class TestVoteEmailCommand(TestCase):
         """Test the disapprove alias of -1."""
         command = VoteEmailCommand('vote', ['-1'])
         self.assertVoteAndTag(CodeReviewVote.DISAPPROVE, None, command)
+
+    def test_getVoteNeedsFixingAlias(self):
+        """Test the needs_fixing aliases of needsfixing and needs-fixing."""
+        command = VoteEmailCommand('vote', ['needsfixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
+        command = VoteEmailCommand('vote', ['needs-fixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
 
 
 class TestUpdateStatusEmailCommand(TestCaseWithFactory):

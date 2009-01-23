@@ -113,6 +113,20 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     @property
+    def initial_values(self):
+        """The initial values are used to populate the form fields.
+
+        In this case, the default value of the the comment should be the
+        quoted comment being replied to.
+        """
+        if self.reply_to:
+            comment = '"%s"' % self.reply_to.getMessage()
+        else:
+            comment = ''
+        return {'comment': comment}
+
+
+    @property
     def is_reply(self):
         """True if this comment is a reply to another comment, else False."""
         return ICodeReviewComment.providedBy(self.context)

@@ -4,7 +4,7 @@ IBuild instance implements the 'notify' method which sends a status
 report about the current record to the
 ISourcePackageRelease.creator.preferred email.
 
-We rely on contactEmailAddresses() to DTRT, either use the
+We rely on get_contact_email_addresses() to DTRT, either use the
 Team.contactaddress of the Launchpad Buildd Celebrity or the
 preferredemail of its members.
 
@@ -100,7 +100,7 @@ Let's check the notification content.  It should contain:
 
 This same basic content applies to all types of notification.
 
-  >>> notification_body = build_notification.get_payload()
+  >>> notification_body = build_notification.get_payload(decode=True)
   >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
    * Source Package: pmount
@@ -110,7 +110,7 @@ This same basic content applies to all types of notification.
    * Component: main
    * State: Failed to build
    * Duration: three minutes
-   * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
+   * Build Log: http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9/+files/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/+builds/bob
    * Source: http://launchpad.dev/ubuntu/+source/pmount/0.1-1
   <BLANKLINE>
@@ -432,7 +432,7 @@ archive will get notified.
 Checking the message contents:
 
   >>> build_notification = notifications.pop(0)
-  >>> notification_body = build_notification.get_payload()
+  >>> notification_body = build_notification.get_payload(decode=True)
   >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
    * Source Package: cdrkit
@@ -442,7 +442,7 @@ Checking the message contents:
    * Component: main
    * State: Failed to build
    * Duration: a minute
-   * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
+   * Build Log: http://launchpad.dev/~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/+builds/bob
    * Source: not available
   ...

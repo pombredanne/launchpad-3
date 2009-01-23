@@ -9,6 +9,7 @@
     <include file="announcement.zcml" />
     <include file="archivearch.zcml" />
     <include file="archiveauthtoken.zcml" />
+    <include file="archivesubscriber.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
@@ -52,6 +53,7 @@
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="codereviewcomment.zcml" />
+    <include file="commercialsubscription.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
@@ -85,6 +87,7 @@
     <include file="hwdb.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
+    <include file="job.zcml" />
     <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="languagepack.zcml" />

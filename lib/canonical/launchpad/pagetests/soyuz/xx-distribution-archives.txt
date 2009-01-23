@@ -14,9 +14,20 @@ First create a copy archive for us to see:
     >>> copy_archive.owner.displayname = "Joe Bloggs"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
+
+And add some published packages so that this archive is considered
+an active one:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> stp = SoyuzTestPublisher()
+    >>> hoary = ubuntu['hoary']
+    >>> unused = stp.setUpDefaultDistroSeries(distroseries=hoary)
+    >>> stp.addFakeChroots(distroseries=hoary)
+    >>> pub_src = stp.getPubSource(archive=copy_archive, architecturehintlist='any')
+    >>> pub_bins = stp.getPubBinaries(pub_source=pub_src)
+
     >>> logout()
-    >>> import transaction
-    >>> transaction.commit()
 
 Currently (until we get some UI input) there is no link to the archives
 page, but it exists at:
@@ -50,3 +61,56 @@ details:
     >>> link.click()
     >>> print anon_browser.title
     Copy archive intrepid-security-rebuild for Joe Bloggs
+
+Copy archives only have minor differences from PPAs in their presentation.
+In particular, the source.list entries are not displayed for a copy
+archive:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    None
+
+Whereas, for a PPA which uses the same template, the sources list is
+present:
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    <pre id="sources-list-entries">
+    ...
+    deb-src ...</pre>
+
+The list of copy archives for a distribution may also include private
+copy archives. These should not be displayed unless the user has
+permission to view them.
+
+First, create a private copy archive:
+
+    >>> login('foo.bar@canonical.com')
+    >>> copy_location = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu,
+    ...     name="intrepid-private-security-rebuild")
+    >>> copy_archive = copy_location.archive
+    >>> copy_archive.buildd_secret = 'really secret'
+    >>> copy_archive.private = True
+    >>> copy_archive.owner.displayname = "Harry Potter"
+    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
+    ...     copy_location, copy_archive.owner)
+    >>> pub_src = stp.getPubSource(archive=copy_archive, architecturehintlist='any')
+    >>> pub_bins = stp.getPubBinaries(pub_source=pub_src)
+    >>> logout()
+
+Now viewing the index page anonymously should not display the private
+archive:
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> 'intrepid-private-security-rebuild' in extract_text(main_content)
+    False
+
+But when logged in as the owner or admin, the private archive does display
+For example:
+
+    >>> admin_browser.open("http://launchpad.dev/ubuntu/+archives")
+    >>> main_content = find_main_content(admin_browser.contents)
+    >>> 'intrepid-private-security-rebuild' in extract_text(main_content)
+    True
+
