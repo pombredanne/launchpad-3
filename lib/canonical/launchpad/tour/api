@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-    <meta content="Your Personal Package Archive (PPA) simplifies publishing your software. There&rsquo;s no longer any need to ask testers on Ubuntu to compile your code from source. Just upload a source package and Launchpad will build and publish an installable binary in your own APT repository. Then publish the URL of the repository; users can install the latest version of your package with a single command, and automatically receive updates whenever you push a new version to the archive." name="description"/>
+    <meta content="The Launchpad API and Python library (launchpadlib) give you direct access to your data in Launchpad." name="description"/>
     <meta content="canonical, launchpad, tour" name="keywords"/>
     <meta content="en-US" name="language"/>
     <title>Launchpad tour</title>
@@ -96,7 +96,7 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                                 <br />
                         </p>
 
-                        <p>You can be up and running in minutes, without having to make a single API call directly. <a href="https://help.launchpad.net/API/launchpadlib">Read more about launchpadlib &gt;</a>.
+                        <p>You can be up and running in minutes, without having to make any API calls directly. <a href="https://help.launchpad.net/API/launchpadlib">Read more about launchpadlib &gt;</a>.
                         </p>  
                     </div>
                     <div class="clear"></div>
