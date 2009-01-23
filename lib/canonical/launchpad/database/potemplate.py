@@ -17,7 +17,7 @@ import os
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
@@ -469,7 +469,8 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        template_file = ITranslationFileData(self)
+        template_file = getAdapter(
+            self, ITranslationFileData, 'all_messages')
         exported_file = translation_format_exporter.exportTranslationFiles(
             [template_file])
 
@@ -488,10 +489,10 @@ class POTemplate(SQLBase, RosettaStats):
         building them all beforehand and keeping them in memory at the same
         time.
         """
-        for translation_file in self.pofiles:
-            yield ITranslationFileData(translation_file)
+        for pofile in self.pofiles:
+            yield getAdapter(pofile, ITranslationFileData, 'all_messages')
 
-        yield ITranslationFileData(self)
+        yield getAdapter(self, ITranslationFileData, 'all_messages')
 
     def exportWithTranslations(self):
         """See `IPOTemplate`."""

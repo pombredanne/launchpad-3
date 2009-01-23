@@ -148,7 +148,7 @@ from canonical.launchpad.interfaces import (
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.branchnamespace import (
-    IBranchNamespaceSet)
+    IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
@@ -292,7 +292,7 @@ class BranchTraversalMixin:
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))
-        except NotFoundError:
+        except (NotFoundError, InvalidNamespace):
             return super(BranchTraversalMixin, self).traverse(pillar_name)
 
         # Normally, populating the launch bag is done by the traversal
