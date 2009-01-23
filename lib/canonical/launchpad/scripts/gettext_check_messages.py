@@ -69,23 +69,22 @@ class GettextCheckMessages(LaunchpadScript):
         self.logger.info("%d (%s): %s" % (bad_message.id, currency, error))
         if unmasked_message is not None:
             self.logger.info(
-                "%s: unmasked %s" % (bad_message.id, unmasked_message.id))
+                "%s: unmasked %s." % (bad_message.id, unmasked_message.id))
 
     def _check_message_for_error(self, translationmessage):
         """Return error message for `translationmessage`, if any.
 
         :return: Error message string if there is an error, or None otherwise.
         """
-        self._check_count += 1
         potmsgset = translationmessage.potmsgset
-        msgids = removeSecurityProxy(potmsgset)._list_of_msgids()
+        msgids = potmsgset._list_of_msgids()
         msgstrs = translationmessage.translations
 
         try:
             validate_translation(msgids, msgstrs, potmsgset.flags)
         except gettextpo.error, error:
             self._error_count += 1
-            return str(error)
+            return unicode(error)
 
         return None
 
@@ -111,16 +110,17 @@ class GettextCheckMessages(LaunchpadScript):
             # was previously masking.  If that one passes checks, we can
             # activate it instead.  Disabling the current message
             # "unmasks" the imported one.
-            error = self._check_message_for_error(imported)
-            if error is not None:
+            imported_error = self._check_message_for_error(imported)
+            if imported_error is not None:
                 imported = None
 
         self._log_bad_message(translationmessage, imported, error)
-        translationmessage.is_current = False
-        self._disable_count += 1
-        if imported is not None:
-            imported.is_current = True
-            self._unmask_count += 1
+        if translationmessage.is_current:
+            translationmessage.is_current = False
+            self._disable_count += 1
+            if imported is not None:
+                imported.is_current = True
+                self._unmask_count += 1
 
     def _do_commit(self):
         """Commit ongoing transaction, start a new one."""
@@ -153,8 +153,9 @@ class GettextCheckMessages(LaunchpadScript):
         """Go over `messages`; check and fix them, committing regularly,"""
         next_commit = None
         for message in messages:
-            self.logger.debug("Checking message %s" % message.id)
-            self._check_and_fix(message)
+            self._check_count += 1
+            self.logger.debug("Checking message %s." % message.id)
+            self._check_and_fix(removeSecurityProxy(message))
             next_commit = self._check_transaction_timer(next_commit)
 
         self._do_commit()
