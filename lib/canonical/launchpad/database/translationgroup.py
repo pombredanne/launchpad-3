@@ -57,6 +57,7 @@ class TranslationGroup(SQLBase):
         intermediateTable='Translator', otherColumn='language')
     translators = SQLMultipleJoin('Translator',
                                   joinColumn='translationgroup')
+    translation_guide_url = StringCol(notNull=False, default=None)
 
     # used to note additions
     def add(self, content):
@@ -112,12 +113,13 @@ class TranslationGroupSet:
         except SQLObjectNotFound:
             raise NotFoundError, name
 
-    def new(self, name, title, summary, owner):
+    def new(self, name, title, summary, translation_guide_url, owner):
         """See ITranslationGroupSet."""
         return TranslationGroup(
             name=name,
             title=title,
             summary=summary,
+            translation_guide_url=translation_guide_url,
             owner=owner)
 
     def getByPerson(self, person):
