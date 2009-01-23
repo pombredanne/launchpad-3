@@ -1345,6 +1345,13 @@ div.archive #description fieldset {
     padding: 0 1em;
     margin:0 1em 1em 0;
 }
+table#package-requests {
+    width: 60em;
+    margin: 1em 0;
+}
+table#package-requests td{
+    padding: 0.5em;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
