@@ -43,7 +43,7 @@
         style="text-align: center"
       >
         <img src="/@@/launchpad-logo-and-name.png" 
-             alt="Launchpad Logo"
+             alt=""
              style="margin: 0 9em 1em 0"/>
         <br />
 
@@ -60,7 +60,7 @@
         and&nbsp;counting...
       </div>
       <div id="home-description">Launchpad is a unique collaboration and
-      <a href="http://bazaar-vcs.org/">bazaar</a>
+      <a href="http://bazaar-vcs.org/">Bazaar</a>
       code hosting platform for software projects.</div>
       <div id="home-page" style="width:90%; margin:auto;">
         <div class="three column left" id="featured-projects">
@@ -125,19 +125,21 @@
              <div class="home-banners home-banner-container">
               <div class="home-banners">
                 <a href="/projects/+new-guided"><img src="/@@/add"
-                /> Create a new Project</a><br/>
+                /> Create a new project</a><br/>
                 <a href="/people/+newteam"><img src="/@@/add"
-                /> Create a new Team</a>
+                /> Create a new team</a>
               </div>
               <div class="home-banners">
-                <a href="/projects"><img src="/@@/project" alt="project icon"
-                /> Browse Projects</a><br/>
-                <a href="/people"><img src="/@@/crowd" alt="people icon"
-                /> Browse People &amp; Teams</a>
+                <a href="/projects"><img src="/@@/project" alt=""
+                /> Browse projects</a><br/>
+                <a href="/people"><img src="/@@/crowd" alt=""
+                /> Browse people &amp; Teams</a>
               </div>
               <div class="home-banners">
-                <a href="/+tour"><img src="/@@/maybe" alt="launchpad tour"
-                /> Take the tour</a>
+                <a href="/+tour"><img src="/@@/maybe" alt=""
+                /> Take the tour</a><br>
+                <a href="/+tour"><img src="/@@/maybe" alt=""
+                /> Read the guide</a>
               </div>
             </div>
           </div>
