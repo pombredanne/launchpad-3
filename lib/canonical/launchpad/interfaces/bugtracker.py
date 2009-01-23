@@ -153,7 +153,6 @@ PRODUCT_FREE_BUGTRACKERTYPES = [
     BugTrackerType.PHPPROJECT,
     BugTrackerType.ROUNDUP,
     BugTrackerType.TRAC,
-    BugTrackerType.BUGZILLA,
     ]
 
 
