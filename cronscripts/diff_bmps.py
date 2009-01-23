@@ -2,9 +2,10 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0403
 
-"""Send branch mail.
+"""Handle new BranchMergeProposals.
 
-This script sends out all the mail jobs that are pending.
+This script generates a diff for the merge proposal if needed, then notifies
+all interested parties about the merge proposal.
 """
 
 __metaclass__ = type
@@ -16,26 +17,28 @@ from canonical.config import config
 from canonical.codehosting.branchfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces.branchmergeproposal import (
-    IReviewDiffJobSource,)
+    IMergeProposalCreatedJobSource,)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
-class RunReviewDiffJobs(LaunchpadCronScript):
-    """Run pending branch mail jobs."""
+class RunMergeProposalCreatedJobs(LaunchpadCronScript):
+    """Run merge proposal creation jobs."""
 
     def main(self):
         globalErrorUtility.configure('diff_bmps')
-        runner = JobRunner.fromReady(getUtility(IReviewDiffJobSource))
+        job_source = getUtility(IMergeProposalCreatedJobSource)
+        runner = JobRunner.fromReady(job_source)
         server = get_scanner_server()
         server.setUp()
         try:
             runner.runAll()
         finally:
             server.tearDown()
-        print 'Ran %d ReviewDiffJobs.' % len(runner.completed_jobs)
+        print 'Ran %d MergeProposalCreatedJobs.' % len(runner.completed_jobs)
 
 
 if __name__ == '__main__':
-    script = RunReviewDiffJobs('sendcodemail', config.diff_bmps.dbuser)
+    script = RunMergeProposalCreatedJobs(
+        'sendcodemail', config.diff_bmps.dbuser)
     script.lock_and_run()

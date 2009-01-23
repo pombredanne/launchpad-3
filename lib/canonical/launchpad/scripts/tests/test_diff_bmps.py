@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     CodeReviewNotificationLevel,)
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal, ReviewDiffJob)
+    BranchMergeProposal, MergeProposalCreatedJob)
 
 
 class TestDiffBMPs(TestCaseWithFactory):
@@ -37,13 +37,13 @@ class TestDiffBMPs(TestCaseWithFactory):
         bmp = BranchMergeProposal(
             source_branch=source, target_branch=target,
             registrant=source.owner)
-        job = ReviewDiffJob.create(bmp)
+        job = MergeProposalCreatedJob.create(bmp)
         self.assertIs(None, bmp.review_diff)
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/diff_bmps.py', [])
         self.assertEqual(0, retcode)
-        self.assertEqual('Ran 1 ReviewDiffJobs.\n', stdout)
+        self.assertEqual('Ran 1 MergeProposalCreatedJobs.\n', stdout)
         self.assertEqual('INFO    creating lockfile\n', stderr)
         self.assertIsNot(None, bmp.review_diff)
 

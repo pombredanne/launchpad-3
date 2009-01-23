@@ -8,7 +8,7 @@ __all__ = [
     'BranchMergeProposalGetter',
     'BranchMergeProposalJob',
     'is_valid_transition',
-    'ReviewDiffJob',
+    'MergeProposalCreatedJob',
     ]
 
 from email.Utils import make_msgid
@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
-    IReviewDiffJob, UserNotBranchReviewer, WrongBranchMergeProposal)
+    IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -696,10 +696,11 @@ class BranchMergeProposalGetter:
 class BranchMergeProposalJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
 
-    REVIEW_DIFF = DBItem(0, """
-        Review Diff
+    MERGE_PROPOSAL_CREATED = DBItem(0, """
+        Merge proposal created
 
-        This job generates the review diff for a BranchMergeProposal.
+        This job generates the review diff for a BranchMergeProposal if
+        needed, then sends mail to all interested parties.
         """)
 
 
@@ -806,7 +807,7 @@ class BranchMergeProposalJobDerived(object):
 
     @classmethod
     def iterReady(klass):
-        """Iterate through all ready ReviewDiffJobs."""
+        """Iterate through all ready BranchMergeProposalJobs."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             (BranchMergeProposalJob),
@@ -816,12 +817,12 @@ class BranchMergeProposalJobDerived(object):
         return (klass(job) for job in jobs)
 
 
-class ReviewDiffJob(BranchMergeProposalJobDerived):
-    """See `IReviewDiffJob`."""
+class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
+    """See `IMergeProposalCreatedJob`."""
 
-    implements(IReviewDiffJob)
+    implements(IMergeProposalCreatedJob)
 
-    class_job_type = BranchMergeProposalJobType.REVIEW_DIFF
+    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
     def __init__(self, job):
         self.context = job

@@ -15,7 +15,8 @@ __all__ = [
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
     'IBranchMergeProposalListingBatchNavigator',
-    'IReviewDiffJob',
+    'IMergeProposalCreatedJob',
+    'IMergeProposalCreatedJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -540,15 +541,15 @@ for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
 
-class IReviewDiffJob(Interface):
+class IMergeProposalCreatedJob(Interface):
     """Interface for review diffs."""
 
     def run():
         """Perform the diff specified by this job."""
 
 
-class IReviewDiffJobSource(Interface):
-    """Interface for acquiring ReviewDiffJobs."""
+class IMergeProposalCreatedJobSource(Interface):
+    """Interface for acquiring MergeProposalCreatedJobs."""
 
     def iterReady():
-        """Iterate through all ready ReviewDiffJobs."""
+        """Iterate through all ready MergeProposalCreatedJobs."""

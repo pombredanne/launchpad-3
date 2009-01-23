@@ -18,7 +18,8 @@ from canonical.testing import (
 
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
-    BranchMergeProposalJobType, is_valid_transition, ReviewDiffJob,)
+    BranchMergeProposalJobType, is_valid_transition, MergeProposalCreatedJob,
+)
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event.branchmergeproposal import (
@@ -28,7 +29,8 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    IBranchMergeProposalGetter, IBranchMergeProposalJob, IReviewDiffJob)
+    IBranchMergeProposalGetter, IBranchMergeProposalJob,
+    IMergeProposalCreatedJob)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
@@ -847,19 +849,19 @@ class TestBranchMergeProposalJob(TestCaseWithFactory):
         """BranchMergeProposalJob implements expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = BranchMergeProposalJob(
-            bmp, BranchMergeProposalJobType.REVIEW_DIFF, {})
+            bmp, BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED, {})
         job.sync()
         verifyObject(IBranchMergeProposalJob, job)
 
 
-class TestReviewDiffJob(TestCaseWithFactory):
+class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def test_providesInterface(self):
         bmp = self.factory.makeBranchMergeProposal()
-        job = ReviewDiffJob.create(bmp)
-        verifyObject(IReviewDiffJob, job)
+        job = MergeProposalCreatedJob.create(bmp)
+        verifyObject(IMergeProposalCreatedJob, job)
         verifyObject(IBranchMergeProposalJob, job)
 
     def test_run_makes_diff(self):
@@ -879,7 +881,7 @@ class TestReviewDiffJob(TestCaseWithFactory):
         bmp = BranchMergeProposal(
             source_branch=source, target_branch=target,
             registrant=source.owner)
-        job = ReviewDiffJob.create(bmp)
+        job = MergeProposalCreatedJob.create(bmp)
         diff = job.run()
         self.assertIsNot(None, diff)
         transaction.commit()
@@ -890,18 +892,18 @@ class TestReviewDiffJob(TestCaseWithFactory):
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""
         bmp = self.factory.makeBranchMergeProposal()
-        job = ReviewDiffJob.create(bmp)
+        job = MergeProposalCreatedJob.create(bmp)
         job.job.sync()
         job.context.sync()
-        self.assertEqual([job], list(ReviewDiffJob.iterReady()))
+        self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
 
     def test_iterReady_excludes_unready_jobs(self):
         """Unready jobs should not be listed."""
         bmp = self.factory.makeBranchMergeProposal()
-        job = ReviewDiffJob.create(bmp)
+        job = MergeProposalCreatedJob.create(bmp)
         job.job.start()
         job.job.complete()
-        self.assertEqual([], list(ReviewDiffJob.iterReady()))
+        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
 
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
