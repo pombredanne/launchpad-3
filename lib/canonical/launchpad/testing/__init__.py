@@ -355,6 +355,8 @@ class TestCaseWithFactory(TestCase):
         from bzrlib.transport import get_transport
         db_branch = self.factory.makeAnyBranch()
         transport = get_transport(self.getMirroredPath(db_branch))
+        # Ensure the parent directories exist so that we can stick a branch
+        # in them.
         transport.clone('../../..').ensure_base()
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
