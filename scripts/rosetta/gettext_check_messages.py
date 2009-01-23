@@ -18,7 +18,8 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts import GettextCheckMessages
+from canonical.launchpad.scripts.gettext_check_messages import (
+    GettextCheckMessages)
 
 
 if __name__ == '__main__':
