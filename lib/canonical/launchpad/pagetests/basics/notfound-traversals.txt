@@ -288,18 +288,29 @@ Viewing a bug comment.
 >>> check("/firefox/+bug/1/comments/1", auth=True)
 >>> check_not_found("/firefox/+bug/1/comments/42")
 
-Bug attachments in the context of a bug task are all redirected to be
-in bug context.
+Bug attachments in the context of a bugtask are all redirected to be
+at +attachment/<id>. The old attachments/<id> form is deprecated.
 
 >>> check_not_found("/firefox/+bug/1/attachments")
+>>> check_not_found("/firefox/+bug/1/+attachment")
 >>> check_redirect("/firefox/+bug/1/attachments/1", status=301)
->>> check_not_found("/firefox/+bug/2/attachments/1")
+>>> check("/firefox/+bug/1/+attachment/1")
 
-Bug attachments in the context of a bug.
+Bug attachments in the context of a bug are all redirected to be at
++attachment/<id>. The old attachments/<id> form is deprecated.
 
+>>> check_not_found("/bugs/2/attachments")
+>>> check_not_found("/bugs/2/+attachment")
 >>> check_redirect("/bugs/1/attachments/1", status=301)
->>> check_not_found("/bugs/2/attachments/1")
 >>> check("/bugs/1/+attachment/1", auth=True)
+
+If a requested bug attachment is not associated with the bug already
+traversed we will get a 404. For paths using the old attachments/<id>
+form, a 404 will be issued immediately; no redirect will be sent.
+
+>>> check_not_found("/firefox/+bug/2/attachments/1")
+>>> check_not_found("/firefox/+bug/2/+attachment/1")
+>>> check_not_found("/bugs/2/attachments/1")
 >>> check_not_found("/bugs/2/+attachment/1")
 
 Viewing a bug in the context of an upstream where the bug has not yet
