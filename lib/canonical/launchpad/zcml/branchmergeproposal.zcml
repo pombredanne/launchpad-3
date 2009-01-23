@@ -81,17 +81,12 @@
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       name="+index" />
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IBranchMergeProposal"
-    facet="branches"
-    permission="launchpad.View">
-    <browser:page
-        name="+heading"
-        template="../templates/branchmergeproposal-heading.pt" />
-    <browser:page
-        name="+heading-links"
-        template="../templates/branchmergeproposal-heading-links.pt" />
-  </browser:pages>
+  <browser:page
+      name="+heading"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branchmergeproposal-heading.pt" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
