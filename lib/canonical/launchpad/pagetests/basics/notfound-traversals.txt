@@ -294,7 +294,7 @@ at +attachment/<id>. The old attachments/<id> form is deprecated.
 >>> check_not_found("/firefox/+bug/1/attachments")
 >>> check_not_found("/firefox/+bug/1/+attachment")
 >>> check_redirect("/firefox/+bug/1/attachments/1", status=301)
->>> check("/firefox/+bug/1/+attachment/1")
+>>> check("/firefox/+bug/1/+attachment/1", auth=True)
 
 Bug attachments in the context of a bug are all redirected to be at
 +attachment/<id>. The old attachments/<id> form is deprecated.
