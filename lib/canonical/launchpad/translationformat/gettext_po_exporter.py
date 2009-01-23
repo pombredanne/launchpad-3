@@ -236,7 +236,7 @@ def wrap_text(text, prefix, wrap_width):
     output, too.
 
     >>> translation_message.msgid_singular = (ur'"' + u"\t\r")
-    >>> export_translation_message(translation_message, wrap_width=10)
+    >>> print export_translation_message(translation_message, wrap_width=10)
     msgid ""
     "\"\t\r"
     msgstr ""
