@@ -115,7 +115,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
         self.doExpiryTest(pub, True)
 
     def testNoExpirationWithDateOverThresholdAndOtherValidPublication(self):
-        """Test no expiring if dateremoved old enough but other publication."""
+        """Test no expiry if dateremoved old enough but other publication."""
         pkg4 = self.stp.getPubSource(
             sourcename="pkg4", architecturehintlist="i386", archive=self.ppa)
         [pub] = self.stp.getPubBinaries(
@@ -123,7 +123,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=self.ppa)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
-        other_binary.secure_record.dateremoved=None
+        other_binary.secure_record.dateremoved = None
 
         self.runScript()
         self.doExpiryTest(pub, False)
@@ -141,7 +141,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=self.ppa)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
-        other_binary.secure_record.dateremoved=self.under_threshold_date
+        other_binary.secure_record.dateremoved = self.under_threshold_date
 
         self.runScript()
         self.doExpiryTest(pub, False)
@@ -159,7 +159,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=self.ppa)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
-        other_binary.secure_record.dateremoved=self.over_threshold_date
+        other_binary.secure_record.dateremoved = self.over_threshold_date
 
         self.runScript()
         self.doExpiryTest(pub, True)

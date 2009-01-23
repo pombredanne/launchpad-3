@@ -58,7 +58,8 @@ class PPABinaryExpirer(LaunchpadCronScript):
                      dateremoved IS NULL
                     )
             );
-        """ % (stay_of_execution, ArchivePurpose.PPA.value, stay_of_execution))
+        """ % (stay_of_execution, ArchivePurpose.PPA.value,
+               stay_of_execution))
 
         self.txn.commit()
         self.logger.info('Finished PPA binary expiration')
