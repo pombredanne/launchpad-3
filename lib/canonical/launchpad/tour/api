@@ -91,7 +91,7 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                                 people = launchpad.people<br />
                                 salgado = people['salgado']<br />
                                 print salgado.display_name<br />
-                                $ Guilherme Salgado<br />
+                                # Guilherme Salgado<br />
                                 </code>
                                 <br />
                         </p>
