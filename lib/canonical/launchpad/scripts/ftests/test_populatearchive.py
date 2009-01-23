@@ -661,6 +661,26 @@ class TestPopulateArchiveScript(TestCase):
         ppa.private = False
         ppa.buildd_secret = None
 
+    def testDisabledDestinationArchive(self):
+        """Try copying to a disabled archive.
+
+        This test should provoke a `SoyuzScriptError` exception because
+        the destination archive is disabled.
+        """
+        # Create a copy archive, disable it and then attempt to copy to it.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        distro = getUtility(IDistributionSet).getByName('ubuntu')
+        disabled_archive = getUtility(IArchiveSet).new(
+            ArchivePurpose.COPY, cprov, 'disabled-copy-archive',
+            distro, 'disabled-copy-archive test')
+        disabled_archive.enabled = False
+
+        extra_args = ['--from-user', 'cprov', '--merge-copy']
+        copy_archive = self.runScript(
+            copy_archive_name=disabled_archive.name, reason='',
+            extra_args=extra_args, exception_type=SoyuzScriptError,
+            exception_text='error: cannot copy to disabled archive')
+
     def _verifyClonedSourcePackages(
         self, copy_archive, series, obsolete=None, new=None):
         """Verify that the expected source packages have been cloned.

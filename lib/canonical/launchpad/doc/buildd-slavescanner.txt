@@ -812,6 +812,23 @@ The 'candidate' is constant until we dispatch it.
     >>> new_candidate.id == old_candidate.id
     True
 
+Now let's disable the archive of the associated build record and see
+whether the candidate will still be found.
+
+    >>> old_candidate.build.archive.enabled = False
+    >>> new_candidate = a_builder.findBuildCandidate()
+    >>> new_candidate is None
+    True
+
+The build candidate was not found because builds associated with disabled
+archives are ignored. Now let's re-enable that archive and the build
+candidate will be found again.
+
+    >>> old_candidate.build.archive.enabled = True
+    >>> new_candidate = a_builder.findBuildCandidate()
+    >>> new_candidate.id == old_candidate.id
+    True
+
 In order to make the current candidate be considered 'superseded' we
 need to tweak the status of the current publication directly, as a
 permissive database user.
