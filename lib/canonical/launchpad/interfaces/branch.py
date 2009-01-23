@@ -875,6 +875,13 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    def codebrowse_url(*extras):
+        """Construct a URL for this branch in codebrowse.
+
+        :param extras: Zero or more path segments that will be joined onto the
+            end of the URL (with `bzrlib.urlutils.join`).
+        """
+
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
@@ -1510,6 +1517,9 @@ class IRevisionMailJobSource(Interface):
 
     def create(db_branch, revno, email_from, message, perform_diff, subject):
         """Create and return a new object that implements IRevisionMailJob."""
+
+    def iterReady():
+        """Iterate through ready IRevisionMailJobs."""
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):

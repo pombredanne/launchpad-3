@@ -238,14 +238,14 @@ For branches, fmt:link links to the branch page.
 The bzr-link formatter uses the bzr identity.
 
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href="http://code.launchpad.dev/~eric/fooix/bar/"
+    <a href="http://code.launchpad.dev/~eric/fooix/bar"
     title="The branch title"><img src="/@@/branch"
     alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.user_branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href=".../~eric/fooix/bar/"
+    <a href=".../~eric/fooix/bar"
        title="The branch title"><img src="/@@/branch"
        alt=""/>&nbsp;lp://dev/fooix</a>
 

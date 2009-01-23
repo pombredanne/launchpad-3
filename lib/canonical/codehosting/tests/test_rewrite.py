@@ -36,7 +36,7 @@ class TestBranchRewriter(TestCase):
         branch = self.factory.makeAnyBranch()
         line = rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
         self.assertEqual(
-            'http://bazaar-internal.launchpad.dev/%s/.bzr/README'
+            'file:///var/tmp/bzrsync/%s/.bzr/README'
             % branch_id_to_path(branch.id),
             line)
 
@@ -52,16 +52,17 @@ class TestBranchRewriter(TestCase):
 
     def test_translateLine_private(self):
         # All requests for /$branch_name/... for private branches are
-        # rewritten to https, which is then handled directly by codebrowse.
+        # rewritten to codebrowse, which will then redirect them to https and
+        # handle them there.
         rewriter = self.makeRewriter()
         branch = self.factory.makeBranch(private=True)
         output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
         self.assertEqual(
-            'https://bazaar.launchpad.dev/%s/changes' % branch.unique_name,
+            'http://localhost:8080/%s/changes' % branch.unique_name,
             output)
         output = rewriter.rewriteLine("/%s/.bzr" % branch.unique_name)
         self.assertEqual(
-            'https://bazaar.launchpad.dev/%s/.bzr' % branch.unique_name,
+            'http://localhost:8080/%s/.bzr' % branch.unique_name,
             output)
 
     def test_translateLine_static(self):
@@ -89,7 +90,7 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         input = "/%s/.bzr/README\n" % branch.unique_name
         expected = (
-            "http://bazaar-internal.launchpad.dev/%s/.bzr/README\n"
+            "file:///var/tmp/bzrsync/%s/.bzr/README\n"
             % branch_id_to_path(branch.id))
         self.layer.txn.commit()
         script_file = os.path.join(
@@ -102,9 +103,8 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
         self.assertEqual(expected, output)
-        # XXX MichaelHudson, bug=309240: The script currently logs to stderr,
-        # which it shouldn't do.
-        #self.assertEqual('', err)
+        # The script produces logging output, but not to stderr.
+        self.assertEqual('', err)
 
 
 def test_suite():

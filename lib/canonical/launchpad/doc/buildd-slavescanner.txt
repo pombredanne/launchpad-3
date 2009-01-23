@@ -481,8 +481,7 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://localhost:58000/.../buildlog_ubuntu-hoary-i386.mozilla-=
-    firefox_0.9_BUILDING.txt.gz
+    * Build Log: http://launchpad.dev/.../buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
     ...
     Upload log:
     INFO    creating lockfile

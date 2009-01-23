@@ -20,10 +20,11 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.archivearch import IArchiveArchSet
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet, PackageCopyStatus)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
-from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.scripts import BufferLogger
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
@@ -135,7 +136,7 @@ class TestPopulateArchiveScript(TestCase):
         self, archive_name=None, suite='hoary', user='salgado',
         exists_before=None, exists_after=None, exception_type=None,
         exception_text=None, extra_args=None, copy_archive_name=None,
-        reason=None):
+        reason=None, output_substr=None):
         """Run the script to test.
 
         :type archive_name: `str`
@@ -162,6 +163,9 @@ class TestPopulateArchiveScript(TestCase):
         :type copy_archive_name: `IArchive`
         :param copy_archive_name: optional copy archive instance, used for
             merge copy testing.
+        :param reason: if empty do not provide '--reason' cmd line arg to
+            the script
+        :param output_substr: this must be part of the script's output
         """
         class FakeZopeTransactionManager:
             def commit(self):
@@ -200,7 +204,7 @@ class TestPopulateArchiveScript(TestCase):
 
         # Empty reason string indicates that the '--reason' command line
         # argument should be ommitted.
-        if reason is not None and reason.strip() != '':
+        if reason is not None and not reason.isspace():
             script_args.extend(['--reason', reason])
         elif reason is None:
             reason = "copy archive, %s" % datetime.ctime(datetime.utcnow())
@@ -213,7 +217,7 @@ class TestPopulateArchiveScript(TestCase):
             'populate-archive', dbuser=config.uploader.dbuser,
             test_args=script_args)
 
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         script.txn = FakeZopeTransactionManager()
 
         if exception_type is not None:
@@ -221,6 +225,11 @@ class TestPopulateArchiveScript(TestCase):
                 exception_type, exception_text, script.mainTask)
         else:
             script.mainTask()
+
+        # Does the script's output contain the specified sub-string?
+        if output_substr is not None and not output_substr.isspace():
+            output = script.logger.buffer.getvalue()
+            self.assertTrue(output_substr in output)
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, archive_name)
@@ -357,6 +366,36 @@ class TestPopulateArchiveScript(TestCase):
         copies = self._getPendingPackageNames(copy_archive, warty)
         self.assertEqual(packages, copies)
 
+    def testPackagesetDelta(self):
+        """Try to calculate the delta between two source package sets."""
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+        # Verify that we have the right source packages in the sample data.
+        self._verifyPackagesInSampleData(hoary)
+
+        # Take a snapshot of ubuntu/hoary first.
+        extra_args = ['-a', 'hppa']
+        first_stage = self.runScript(
+            extra_args=extra_args, exists_after=True,
+            copy_archive_name='first-stage')
+        self._verifyClonedSourcePackages(first_stage, hoary)
+
+        # Now add a new package to ubuntu/hoary and update one.
+        self._prepareMergeCopy()
+
+        # Check which source packages are fresher or new in the second stage
+        # archive.
+        expected_output = (
+            "INFO: Fresher packages: 1\n"
+            "INFO: * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
+            "INFO: New packages: 1\n"
+            "INFO: * new-in-second-round (1.0)\n")
+
+        extra_args = ['--package-set-delta']
+        copy_archive = self.runScript(
+            extra_args=extra_args, reason='', output_substr=expected_output,
+            copy_archive_name=first_stage.name)
+
     def testMergeCopy(self):
         """Try repeated copy archive population (merge copy).
 
@@ -378,7 +417,7 @@ class TestPopulateArchiveScript(TestCase):
         # Now add a new package to ubuntu/hoary and update one.
         self._prepareMergeCopy()
 
-        # Take another snapshot of ubuntu/hoary.
+        # Take a snapshot of the modified ubuntu/hoary primary archive.
         second_stage = self.runScript(
             extra_args=extra_args, exists_after=True,
             copy_archive_name='second-stage')
@@ -402,7 +441,7 @@ class TestPopulateArchiveScript(TestCase):
         # Then populate the same copy archive from the 2nd snapshot.
         # This results in the copying of the fresher and of the new package.
         extra_args = [
-            '--merge-copy', '-a', 'hppa', '--from-archive', second_stage.name]
+            '--merge-copy', '--from-archive', second_stage.name]
 
         # An empty 'reason' string is passed to runScript() i.e. the latter
         # will not pass a '--reason' command line argument to the script which
@@ -411,20 +450,6 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = self.runScript(
             extra_args=extra_args, copy_archive_name=copy_archive.name,
             reason='')
-        self._verifyClonedSourcePackages(
-            copy_archive, hoary,
-            # The set of packages that were superseded in the target archive.
-            obsolete=set(['alsa-utils 1.0.9a-4ubuntu1 in hoary']),
-            # The set of packages that are new/fresher in the source archive.
-            new=set(['alsa-utils 2.0 in hoary',
-                     'new-in-second-round 1.0 in hoary'])
-            )
-
-        # Finally populate the same copy archive from ubuntu/hoary directly.
-        # No new packages will be copied.
-        extra_args = ['--merge-copy', '-a', 'hppa']
-        copy_archive = self.runScript(
-            extra_args=extra_args, copy_archive_name=copy_archive.name)
         self._verifyClonedSourcePackages(
             copy_archive, hoary,
             # The set of packages that were superseded in the target archive.
@@ -478,6 +503,28 @@ class TestPopulateArchiveScript(TestCase):
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Invalid processor family: 'wintel'")
+
+    def testFamiliesForExistingArchives(self):
+        """Try specifying processor family names for existing archive.
+
+        The user is not supposed to specify processor families on the command
+        line for existing copy archives. The processor families will be read
+        from the database instead. Please see also the end of the
+        testMultipleArchTags test.
+
+        This test should provoke a `SoyuzScriptError` exception.
+        """
+        extra_args = ['-a', 'x86', '-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, exists_before=False)
+
+        extra_args = ['--merge-copy', '-a', 'x86', '-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, copy_archive_name=copy_archive.name,
+            exception_type=SoyuzScriptError,
+            exception_text=(
+                'error: cannot specify processor families for *existing* '
+                'archive.'))
 
     def testMissingCreationReason(self):
         """Try copy archive population without a copy archive creation reason.
@@ -590,6 +637,29 @@ class TestPopulateArchiveScript(TestCase):
         # archive at hand were stored in the database.
         rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
         self.assertEqual(get_family_names(rset), [u'hppa', u'x86'])
+
+    def testPrivateOriginArchive(self):
+        """Try copying from a private archive.
+
+        This test should provoke a `SoyuzScriptError` exception because
+        presently copy archives can only be created as public archives.
+        The copying of packages from private archives to public ones
+        thus constitutes a security breach.
+        """
+        # We will make cprov's PPA private and then attempt to copy from it.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        ppa = cprov.archive
+        ppa.buildd_secret = 'super-secret-123'
+        ppa.private = True
+
+        extra_args = ['--from-user', 'cprov', '-a', 'hppa']
+        copy_archive = self.runScript(
+            extra_args=extra_args, exception_type=SoyuzScriptError,
+            exception_text=(
+                "Cannot copy from private archive ('cprov/ppa')"))
+
+        ppa.private = False
+        ppa.buildd_secret = None
 
     def _verifyClonedSourcePackages(
         self, copy_archive, series, obsolete=None, new=None):
