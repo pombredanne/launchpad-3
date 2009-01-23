@@ -28,7 +28,8 @@
 
     <div metal:fill-slot="main"
          tal:define="archive_active view/is_active;
-                     archive_label view/archive_label">
+                     archive_label view/archive_label"
+         tal:attributes="class string:archive">
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
@@ -92,14 +93,18 @@
       </div>
 
       <div id="description">
-         <tal:archive-description condition="context/description"
-            replace="structure context/description/fmt:text-to-html" />
-
-        <tal:package-copy-request-list tal:condition="context/is_copy">
-          <metal:package-copy-request-list
-              use-macro="context/@@+macros/package-copy-request-list" />
-        </tal:package-copy-request-list>
+        <fieldset>
+          <legend>Description</legend>
+          <tal:archive-description condition="context/description"
+             replace="structure context/description/fmt:text-to-html" />
+        </fieldset>
       </div>
+
+      <tal:package-copy-request-list tal:condition="context/is_copy">
+        <metal:package-copy-request-list
+            use-macro="context/@@+macros/package-copy-request-list" />
+      </tal:package-copy-request-list>
+
 
       <tal:non_copy_only condition="not: context/is_copy">
         <div tal:condition="archive_active" >
