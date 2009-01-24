@@ -35,7 +35,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.pofile"
-        classes="POFileFacets POFileAppMenus POFileNavigationMenu"
+        classes="POFileFacets POFileNavigationMenu"
         />
 
     <browser:defaultView
