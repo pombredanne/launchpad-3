@@ -189,7 +189,7 @@
       </tal:XXX>
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
-          tal:condition="link/selected"
+          tal:condition="python: link.enabled and link.selected"
           tal:attributes="title link/summary; class string:${link/name} active"
           ><strong
             tal:condition="not:link/linked"
@@ -199,7 +199,7 @@
             tal:attributes="href link/url"
             tal:content="structure link/escapedtext"
         /></span><span
-          tal:condition="python:link.selected is False and link.enabled is True"
+          tal:condition="python: link.enabled and not link.selected"
           tal:attributes="title link/summary; class link/name"
           ><a
             tal:condition="link/enabled"

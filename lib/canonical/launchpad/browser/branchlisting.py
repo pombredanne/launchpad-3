@@ -108,10 +108,8 @@ class BranchListingItem(BranchBadges):
 
     @property
     def revision_codebrowse_link(self):
-        return "%(codebrowse_root)s%(branch)s/revision/%(rev_no)s" % {
-            'codebrowse_root': config.codehosting.codebrowse_root,
-            'branch': self.context.unique_name,
-            'rev_no': self.context.revision_count}
+        return self.context.codebrowse_url(
+            'revision', str(self.context.revision_count))
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):

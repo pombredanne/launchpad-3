@@ -1653,11 +1653,6 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     def initialize(self):
         self.product = self.context
 
-    @property
-    def codebrowse_root(self):
-        """Return the link to codebrowse for this branch."""
-        return config.codehosting.codebrowse_root
-
 
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""

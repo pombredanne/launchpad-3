@@ -91,12 +91,28 @@
     <span tal:replace="context/browsername">Mark Shuttleworth</span> is
     a member of the following translation groups:
 
-    <ul>
-      <li tal:repeat="translation_group view/translation_groups">
-        <a tal:attributes="href translation_group/fmt:url"
-           tal:content="translation_group/title"></a>
-      </li>
-    </ul>
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Translation Group</th>
+            <th>Language</th>
+            <th>Documentation URL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="translator view/translators">
+            <td><a tal:attributes="href translator/translationgroup/fmt:url"
+           tal:content="translator/translationgroup/title"></a></td>
+           <td tal:content="translator/language/englishname">Esperanto</td>
+           <td><a tal:condition="translator/style_guide_url"
+                  tal:content="translator/style_guide_url"
+                  tal:attributes="href translator/style_guide_url"
+                >Documentation URL</a>
+           <a tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
+           ><img src="/@@/edit" /></a></td>
+      </tr>
+      </tbody>
+    </table>
 
   </tal:block>
 

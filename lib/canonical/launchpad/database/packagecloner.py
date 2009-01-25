@@ -115,13 +115,12 @@ class PackageCloner:
 
     def mergeCopy(self, origin, destination):
         """Please see `IPackageCloner`."""
-        # Find packages that are obsolete or missing in the target archive.
-        self._init_packageset_delta(destination)
-        self._compute_packageset_delta(origin)
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # Calculate the package set delta in order to find packages that are
+        # obsolete or missing in the target archive.
+        self.packageSetDiff(origin, destination)
 
         # Now copy the fresher or new packages.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.execute("""
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
@@ -153,28 +152,6 @@ class PackageCloner:
                 secsrc.id = mcd.t_sspph AND mcd.obsoleted = True
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
-
-    def _print_diagnostics(self, store):
-        """Prints diagnostic output, used for debugging."""
-        rset = store.execute("""
-            SELECT sourcepackagename, s_version, t_version
-            FROM tmp_merge_copy_data
-            WHERE obsoleted = True;
-        """)
-        print('\nfresher packages: %s' % '\n'.join(str(r) for r in rset))
-        rset = store.execute("""
-            SELECT sourcepackagename, s_version, t_version
-            FROM tmp_merge_copy_data
-            WHERE missing = True;
-        """)
-        print('new packages: %s' % '\n'.join(str(r) for r in rset))
-        rset = store.execute("""
-            SELECT
-                sourcepackagename, s_version, t_version, obsoleted,
-                missing
-            FROM tmp_merge_copy_data
-        """)
-        print('all packages:\n%s' % '\n'.join(str(r) for r in rset))
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.
@@ -347,6 +324,54 @@ class PackageCloner:
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
 
-    def packageSetDiff(self, origin, destination):
+    def packageSetDiff(self, origin, destination, logger=None):
         """Please see `IPackageCloner`."""
-        raise NotImplementedError("Package set diffs are not available yet.")
+        # Find packages that are obsolete or missing in the target archive.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        self._init_packageset_delta(destination)
+        self._compute_packageset_delta(origin)
+
+        # Get the list of SecureSourcePackagePublishingHistory keys for
+        # source packages that are fresher in the origin archive.
+        fresher_packages = store.execute("""
+            SELECT s_sspph FROM tmp_merge_copy_data WHERE obsoleted = True;
+        """)
+
+        # Get the list of SecureSourcePackagePublishingHistory keys for
+        # source packages that are new in the origin archive.
+        new_packages = store.execute("""
+            SELECT s_sspph FROM tmp_merge_copy_data WHERE missing = True;
+        """)
+
+        if logger is not None:
+            self._print_diagnostics(logger, store)
+
+        return (
+            [package for [package] in fresher_packages],
+            [package for [package] in new_packages],
+            )
+
+    def _print_diagnostics(self, logger, store):
+        """Print details of source packages that are fresher or new.
+
+        Details of packages that are fresher or new in the origin archive
+        are logged using the supplied 'logger' instance. This data is only
+        available after a package set delta has been computed (see
+        packageSetDiff()).
+        """
+        fresher_info = sorted(store.execute("""
+            SELECT sourcepackagename, s_version, t_version
+            FROM tmp_merge_copy_data WHERE obsoleted = True;
+        """))
+        logger.info('Fresher packages: %d' % len(fresher_info))
+        for info in fresher_info:
+            logger.info('* %s (%s > %s)' % info)
+        new_info = sorted(store.execute("""
+            SELECT sourcepackagename, s_version
+            FROM tmp_merge_copy_data WHERE missing = True;
+        """))
+        logger.info('New packages: %d' % len(new_info))
+        for info in new_info:
+            logger.info('* %s (%s)' % info)
+ 
+
