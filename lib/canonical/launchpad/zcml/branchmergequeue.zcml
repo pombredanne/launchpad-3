@@ -5,16 +5,16 @@
     i18n_domain="launchpad">
 
   <!-- Branch Merge Queue -->
-  <content class="canonical.launchpad.database.branchmergequeue.SingleBranchMergeQueue">
+  <class class="canonical.launchpad.database.branchmergequeue.SingleBranchMergeQueue">
     <allow interface="canonical.launchpad.interfaces.branchmergequeue.IBranchMergeQueue" />
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.branchmergequeue.MultiBranchMergeQueue">
+  <class class="canonical.launchpad.database.branchmergequeue.MultiBranchMergeQueue">
     <allow interface="canonical.launchpad.interfaces.branchmergequeue.IMultiBranchMergeQueue" />
     <require
         permission="launchpad.Edit"
         set_schema="canonical.launchpad.interfaces.branchmergequeue.IMultiBranchMergeQueue" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.branchmergequeue.BranchMergeQueueSet"
