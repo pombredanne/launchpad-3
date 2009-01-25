@@ -62,7 +62,7 @@ from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
-    BranchMergeControlStatus, BranchMergeProposalExists,
+    BranchMergeControlStatus,
     BranchPersonSearchRestriction,
     BranchType, BranchTypeError,
     CannotDeleteBranch,
@@ -76,16 +76,16 @@ from canonical.launchpad.interfaces.branch import (
     IRevisionMailJobSource, NoSuchBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
-from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.branchmergeproposal import (
-     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+     BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import validate_public_person
