@@ -2,3 +2,6 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+ * Make it possible to get the search URL for a BugTracker.
+ * Display the search and bug filing URLs in the templates.
