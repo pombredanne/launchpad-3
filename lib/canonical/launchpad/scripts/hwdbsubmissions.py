@@ -1307,6 +1307,15 @@ class HALDevice:
             Since these components are not the most important ones
             for the HWDB, we'll ignore them for now. Bug 237038.
 
+          - info.bus == 'drm' is used by the HAL for the direct
+            rendering interface of a graphics card.
+
+          - info.bus == 'dvb' is used by HAL for the "input aspect"
+            of DVB receivers
+
+          - info.bus == 'memstick_host' is used by HAL for the "output aspect"
+            of memory sticks.
+
           - info.bus == 'net' is used by the HAL version in
             Intrepid for the "output aspects" of network devices.
 
@@ -1328,12 +1337,21 @@ class HALDevice:
             Ethernet and WLAN devices, but like 'usb', they do not
             represent separate devices.
 
+            info.bus == 'tty' is used for the "output aspect"
+            of serial output devices (RS232, modems etc). It appears
+            for USB and PCI devices as well as for legacy devices
+            like the 8250/16450/16550 controllers.
+
             info.bus == 'usb' is used for end points of USB devices;
             the root node of a USB device has info.bus == 'usb_device'.
+
+            info.bus == 'viedo4linux' is used for the "input aspect"
+            of video devices.
         """
         bus = self.raw_bus
-        if bus in (None, 'net', 'scsi_generic', 'scsi_host',
-                   'sound', 'ssb', 'usb'):
+        if bus in (None, 'drm', 'dvb', 'memstick_host', 'net',
+                   'scsi_generic', 'scsi_host', 'sound', 'ssb', 'tty',
+                   'usb', 'video4linux', ):
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
@@ -1408,6 +1426,9 @@ class HALDevice:
         Intrepid for the LC display. Useful vendor and product names
         are not available.
 
+        info.bus == 'bluetooth': HAL does not provide any vendor/product
+        ID data, so we can't store these devices in HWDevice.
+
         info.bus == 'input' is used by the HAL version in
         Intrepid for quite different devices like keyboards, mice,
         special laptop switches and buttons, sometimes with odd
@@ -1464,8 +1485,9 @@ class HALDevice:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
-        if bus in ('backlight', 'ieee1394', 'input', 'misc', 'mmc',
-                   'mmc_host', 'pcmcia', 'platform', 'pnp', 'power_supply'):
+        if bus in ('backlight', 'bluetooth', 'ieee1394', 'input', 'misc',
+                   'mmc', 'mmc_host', 'pcmcia', 'platform', 'pnp',
+                   'power_supply'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;
