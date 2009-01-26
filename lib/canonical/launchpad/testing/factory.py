@@ -1157,7 +1157,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, reviewer=None,
-                               translations=None):
+                               translations=None, lock_timestamp=None):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -1170,7 +1170,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return potmsgset.updateTranslation(pofile, translator, translations,
                                            is_imported=False,
-                                           lock_timestamp=None)
+                                           lock_timestamp=lock_timestamp)
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,
