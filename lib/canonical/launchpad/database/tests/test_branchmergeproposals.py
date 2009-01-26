@@ -9,6 +9,7 @@ from unittest import TestCase, TestLoader
 
 from bzrlib import errors as bzr_errors
 from pytz import UTC
+from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -842,6 +843,23 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             [],
             self._get_merge_proposals(
                 november, visible_by_user=self.factory.makePerson()))
+
+
+class TestBranchMergeProposalDeletion(TestCaseWithFactory):
+    """Deleting a branch merge proposal deletes relevant objects."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_deleteProposal_deletes_job(self):
+        """Deleting a branch merge proposal deletes all related jobs."""
+        proposal = self.factory.makeBranchMergeProposal()
+        job = MergeProposalCreatedJob.create(proposal)
+        job.context.sync()
+        job_id = job.context.id
+        login_person(proposal.registrant)
+        proposal.deleteProposal()
+        self.assertRaises(
+            SQLObjectNotFound, BranchMergeProposalJob.get, job_id)
 
 
 class TestBranchMergeProposalJob(TestCaseWithFactory):

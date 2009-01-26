@@ -467,6 +467,9 @@ class BranchMergeProposal(SQLBase):
         # Delete the related CodeReviewComments.
         for comment in self.all_comments:
             comment.destroySelf()
+        for job in BranchMergeProposalJob.selectBy(
+            branch_merge_proposal=self.id):
+            job.destroySelf()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
