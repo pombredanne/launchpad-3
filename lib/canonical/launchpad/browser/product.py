@@ -563,12 +563,12 @@ class ProductTranslationsMenu(NavigationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = [
+    links = (
         'overview',
         'translators',
         'translationdownload',
         'imports',
-        ]
+        )
 
     def imports(self):
         text = 'Import queue'
