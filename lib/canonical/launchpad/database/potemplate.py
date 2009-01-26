@@ -14,6 +14,7 @@ __all__ = [
 import datetime
 import logging
 import os
+from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
@@ -730,10 +731,18 @@ class POTemplate(SQLBase, RosettaStats):
                 txn.begin()
 
             for pofile in self.pofiles:
-                pofile.updateStatistics()
-                if txn is not None:
-                    txn.commit()
-                    txn.begin()
+                try:
+                    pofile.updateStatistics()
+                    if txn is not None:
+                        txn.commit()
+                        txn.begin()
+                except TransactionRollbackError, error:
+                    if txn is not None:
+                        txn.abort()
+                        txn.begin()
+                    if logger:
+                        logger.warn(
+                            "Statistics update failed: %s" % unicode(error))
 
         template = helpers.get_email_template(template_mail)
         message = template % replacements
