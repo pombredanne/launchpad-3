@@ -369,7 +369,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     AND Product.active
                 GROUP BY Milestone.name
                 %s
-                ORDER BY min(Milestone.dateexpected), Milestone.name
+                ORDER BY min(Milestone.dateexpected) DESC, Milestone.name DESC
             """ % (self.id, having_clause)
         cur = cursor()
         cur.execute(query)

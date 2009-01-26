@@ -124,14 +124,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def all_milestones(self):
         """See IProductSeries."""
         return Milestone.selectBy(
-            productseries=self, orderBy=['-dateexpected', 'name'])
+            productseries=self, orderBy=['-dateexpected', '-name'])
 
     @property
     def milestones(self):
         """See IProductSeries."""
         return Milestone.selectBy(
             productseries=self, visible=True,
-            orderBy=['-dateexpected', 'name'])
+            orderBy=['-dateexpected', '-name'])
 
     @property
     def parent(self):
