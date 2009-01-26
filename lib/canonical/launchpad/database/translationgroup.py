@@ -2,7 +2,10 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['TranslationGroup', 'TranslationGroupSet']
+__all__ = [
+    'TranslationGroup',
+    'TranslationGroupSet'
+    ]
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -11,17 +14,23 @@ from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import (
-    ILanguageSet, ITranslationGroup, ITranslationGroupSet, NotFoundError)
+from storm.expr import Join
+from storm.store import Store
+
+from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.project import Project
+from canonical.launchpad.database.teammembership import TeamParticipation
+from canonical.launchpad.database.translator import Translator
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.database.translator import Translator
 
 
 class TranslationGroup(SQLBase):
@@ -48,6 +57,7 @@ class TranslationGroup(SQLBase):
         intermediateTable='Translator', otherColumn='language')
     translators = SQLMultipleJoin('Translator',
                                   joinColumn='translationgroup')
+    translation_guide_url = StringCol(notNull=False, default=None)
 
     # used to note additions
     def add(self, content):
@@ -103,35 +113,30 @@ class TranslationGroupSet:
         except SQLObjectNotFound:
             raise NotFoundError, name
 
-    def new(self, name, title, summary, owner):
+    def new(self, name, title, summary, translation_guide_url, owner):
         """See ITranslationGroupSet."""
         return TranslationGroup(
             name=name,
             title=title,
             summary=summary,
+            translation_guide_url=translation_guide_url,
             owner=owner)
 
     def getByPerson(self, person):
         """See ITranslationGroupSet."""
-        # XXX CarlosPerelloMarin 2007-04-02 bug=30789:
-        # Direct members query is required until teams are members
-        # of themselves.
-        direct = TranslationGroup.select("""
-            Translator.translationgroup = TranslationGroup.id AND
-            Translator.translator = %s
-            """ % sqlvalues(person),
-            clauseTables=["Translator"],
-            orderBy="TranslationGroup.title")
 
-        indirect = TranslationGroup.select("""
-            Translator.translationgroup = TranslationGroup.id AND
-            Translator.translator = TeamParticipation.team AND
-            TeamParticipation.person = %s
-            """ % sqlvalues(person),
-            clauseTables=["TeamParticipation", "Translator"],
-            orderBy="TranslationGroup.title")
+        store = Store.of(person)
+        origin = [
+            TranslationGroup,
+            Join(Translator,
+                Translator.translationgroupID == TranslationGroup.id),
+            Join(TeamParticipation,
+                TeamParticipation.teamID == Translator.translatorID)
+            ]
+        result = store.using(*origin).find(
+            TranslationGroup, TeamParticipation.person == person)
 
-        return direct.union(indirect)
+        return result.order_by(TranslationGroup.title)
 
     def getGroupsCount(self):
         """See ITranslationGroupSet."""

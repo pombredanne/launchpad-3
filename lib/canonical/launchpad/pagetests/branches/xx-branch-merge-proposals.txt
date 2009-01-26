@@ -683,7 +683,8 @@ Create merge proposal with a review diff, and go to its index page.
     >>> import transaction
     >>> from canonical.launchpad.database.diff import StaticDiff
     >>> login('admin@canonical.com')
-    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff')
+    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
+    ...     u'\u1010'.encode('utf-8'))
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
     >>> url = canonical_url(bmp)
@@ -693,9 +694,8 @@ Create merge proposal with a review diff, and go to its index page.
     ...    return find_tag_by_id(nopriv_browser.contents, 'review-diff')
 
 The text of the review diff is in the page.
-    >>> print extract_text(get_review_diff())
-    Review Diff
-    Fake Diff
+    >>> print repr(extract_text(get_review_diff()))
+    u'Review Diff\nFake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')
