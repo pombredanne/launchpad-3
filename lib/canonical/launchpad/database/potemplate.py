@@ -543,9 +543,11 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             path_variant = '@%s' % variant
 
-        potemplate_dir = os.path.dirname(self.path)
-        path = '%s/%s-%s%s.po' % (potemplate_dir,
+        path = '%s-%s%s.po' % (
             self.translation_domain, language_code, path_variant)
+        potemplate_dir = os.path.dirname(self.path)
+        if potemplate_dir not in ('', '/'):
+            path = potemplate_dir+'/'+path
         return path
 
 
