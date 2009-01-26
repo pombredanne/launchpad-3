@@ -90,6 +90,7 @@ time goes on.
     control_format: None
     date_created: ...
     date_last_modified: ...
+    dependent_branches_collection_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk/dependent_branches'
     display_name: u'The Fooix Trunk'
     landing_candidates_collection_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk/landing_targets'

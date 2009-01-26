@@ -830,10 +830,12 @@ class IBranch(IHasOwner):
                     'proposed for merging in this branch.'),
             readonly=True,
             value_type=Reference(Interface)))
-    dependent_branches = Attribute(
-        "The BranchMergeProposals where this branch is the dependent branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
+    dependent_branches = exported(
+        CollectionField(
+            title=_('A collection of the Bazaar branches that are dependent '
+                    'on this branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
 
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
@@ -1058,6 +1060,7 @@ class IBranch(IHasOwner):
 
 IBranch['landing_targets'].schema = IBranch
 IBranch['landing_candidates'].schema = IBranch
+IBranch['dependent_branches'].schema = IBranch
 
 
 class IBranchSet(Interface):
