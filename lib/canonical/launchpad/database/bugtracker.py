@@ -173,7 +173,7 @@ class BugTracker(SQLBase):
             ),
         BugTrackerType.MANTIS: (
             "%(base_url)s/bug_report_advanced_page.php",
-            None,
+            "%(base_url)s/view_all_bug_page.php",
             ),
         BugTrackerType.PHPPROJECT: (
             "%(base_url)s/report.php",
@@ -185,7 +185,8 @@ class BugTracker(SQLBase):
             ),
         BugTrackerType.RT: (
             "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s",
-            "%(base_url)s/Ticket/Search/Simple.html",
+            "%(base_url)s/Search/Build.html?Query=Queue = "
+                "'%(remote_product)s'",
             ),
         BugTrackerType.SAVANE: (
             "%(base_url)s/bugs/?func=additem&group=%(remote_product)s",
@@ -253,18 +254,24 @@ class BugTracker(SQLBase):
             else:
                 tracker = 'tracker'
 
-            bugtracker_urls['bug_filing_url'] = bug_filing_pattern % ({
+            url_components = {
                 'base_url': base_url,
                 'tracker': quote(tracker),
                 'group_id': quote(group_id),
                 'at_id': quote(at_id),
-                })
+                }
 
         else:
-            bugtracker_urls['bug_filing_url'] = bug_filing_pattern % ({
+            url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
-                })
+                }
+
+
+        bugtracker_urls = {
+            'bug_filing_url': bug_filing_pattern % url_components,
+            'search_url': search_pattern % url_components,
+            }
 
         return bugtracker_urls
 
