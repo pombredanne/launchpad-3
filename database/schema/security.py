@@ -159,32 +159,39 @@ def main(options):
     for section_name in config.sections():
         if section_name.lower() == 'public':
             continue
+
         type_ = config.get(section_name, 'type')
-        if type_ == 'group':
-            if section_name in schema.principals:
-                for user in schema.users:
-                    cur.execute("ALTER GROUP %s DROP USER %s" % (
-                        quote_identifier(section_name), quote_identifier(user)
-                        ))
-            else:
-                cur.execute("CREATE GROUP %s" %
-                            quote_identifier(section_name))
-                schema.groups.append(section_name)
-                schema.principals.append(section_name)
-        elif type_ == 'user':
-            if section_name in schema.principals:
-                # Note - we don't drop the user because it might own
-                # objects in other databases. We need to ensure they are
-                # not superusers though!
-                cur.execute("ALTER USER %s WITH NOCREATEDB NOCREATEUSER" % (
-                    quote_identifier(section_name),
-                    ))
-            else:
-                cur.execute("CREATE USER %s" % quote_identifier(section_name))
-                schema.users.append(section_name)
-                schema.principals.append(section_name)
+        assert type_ in ['user', 'group'], 'Unknown type %s' % type_
+
+        role_options = [
+            'NOCREATEDB', 'NOCREATEROLE', 'NOCREATEUSER', 'INHERIT']
+        if type == 'user':
+            role_options.append('LOGIN')
         else:
-            assert 0, "Unknown type %r for %r" % (type_, section_name)
+            role_options.append('NOLOGIN')
+
+        for username in [section_name, '%s_ro' % section_name]:
+            if username in schema.principals:
+                if type_ == 'group':
+                    for member in schema.users:
+                        cur.execute(
+                            "REVOKE %s FROM %s" % (
+                                quote_identifier(username),
+                                quote_identifier(member)))
+                else:
+                    # Note - we don't drop the user because it might own
+                    # objects in other databases. We need to ensure they are
+                    # not superusers though!
+                    cur.execute(
+                        "ALTER ROLE %s WITH %s" % (
+                            quote_identifier(username),
+                            ' '.join(role_options)))
+            else:
+                cur.execute(
+                    "CREATE ROLE %s WITH %s"
+                    % (quote_identifier(username), ' '.join(role_options)))
+                schema.groups.append(username)
+                schema.principals.append(username)
 
     # Add users to groups
     for user in config.sections():
@@ -194,6 +201,9 @@ def main(options):
             g.strip() for g in config.get(user, 'groups', '').split(',')
             if g.strip()
             ]
+        # Read-Only users get added to Read-Only groups.
+        if user.endswith('_ro'):
+            groups = ['%s_ro' % group for group in groups]
         for group in groups:
             cur.execute(r"""ALTER GROUP %s ADD USER %s""" % (
                 quote_identifier(group), quote_identifier(user)
@@ -216,16 +226,11 @@ def main(options):
             else:
                 t = 'TABLE'
 
-            if section_name in schema.groups:
-                g = 'GROUP '
-            else:
-                g = ''
-
             cur.execute('REVOKE ALL ON %s %s FROM %s%s' % (
                 t, obj.fullname, g, quote_identifier(section_name)
                 ))
             if schema.has_key(obj.seqname):
-                cur.execute('REVOKE ALL ON %s FROM %s%s' % (
+                cur.execute('REVOKE ALL ON SEQUENCE %s FROM %s%s' % (
                     obj.seqname, g, quote_identifier(section_name),
                     ))
 
@@ -251,45 +256,55 @@ def main(options):
                 # No perm means no rights. We can't grant no rights, so skip.
                 continue
 
-            if username in schema.groups:
-                who = 'GROUP %s' % quote_identifier(username)
+            who = quote_identifier(username)
+            if username == 'public':
+                who_ro = who
             else:
-                who = quote_identifier(username)
+                who_ro = quote_identifier('%s_ro' % username)
 
             if obj.type == 'function':
-                cur.execute('GRANT %s ON FUNCTION %s TO %s' % (
-                    perm, obj.fullname, who,
-                    ))
-                cur.execute('GRANT EXECUTE ON FUNCTION %s TO GROUP read' % (
-                    obj.fullname,
-                    ))
-                cur.execute('GRANT ALL ON FUNCTION %s TO GROUP admin' % (
-                    obj.fullname,
-                    ))
+                cur.execute(
+                    'GRANT %s ON FUNCTION %s TO %s'
+                    % (perm, obj.fullname, who))
+                cur.execute(
+                    'GRANT EXECUTE ON FUNCTION %s TO GROUP read'
+                    % obj.fullname)
+                cur.execute(
+                    'GRANT ALL ON FUNCTION %s TO GROUP admin'
+                    % obj.fullname)
+                cur.execute(
+                    'GRANT EXECUTE ON FUNCTION %s TO GROUP %s'
+                    % (obj.fullname, who_ro))
             else:
-                cur.execute('GRANT %s ON TABLE %s TO %s' % (
-                    perm, obj.fullname, who,
-                    ))
-                cur.execute('GRANT SELECT ON TABLE %s TO GROUP read' % (
-                    obj.fullname,
-                    ))
-                cur.execute('GRANT ALL ON TABLE %s TO GROUP admin' % (
-                    obj.fullname,
-                    ))
+                cur.execute(
+                    'GRANT %s ON TABLE %s TO %s'
+                    % (perm, obj.fullname, who))
+                cur.execute(
+                    'GRANT SELECT ON TABLE %s TO GROUP read'
+                    % obj.fullname)
+                cur.execute(
+                    'GRANT ALL ON TABLE %s TO GROUP admin'
+                    % obj.fullname)
+                cur.execute(
+                    'GRANT SELECT ON TABLE %s TO %s'
+                    % (obj.fullname, who_ro))
                 if schema.has_key(obj.seqname):
                     if 'INSERT' in perm or 'UPDATE' in perm:
                         seqperm = 'SELECT, INSERT, UPDATE'
                     else:
                         seqperm = perm
-                    cur.execute('GRANT %s ON %s TO %s' % (
-                        seqperm, obj.seqname, who,
-                        ))
-                    cur.execute('GRANT SELECT ON %s TO GROUP read' % (
-                        obj.seqname,
-                        ))
-                    cur.execute('GRANT ALL ON %s TO GROUP admin' % (
-                        obj.seqname,
-                        ))
+                    cur.execute(
+                        'GRANT %s ON %s TO %s'
+                        % (seqperm, obj.seqname, who))
+                    cur.execute(
+                        'GRANT SELECT ON %s TO GROUP read'
+                        % obj.seqname)
+                    cur.execute(
+                        'GRANT ALL ON %s TO GROUP admin'
+                        % obj.seqname)
+                    cur.execute(
+                        'GRANT SELECT ON %s TO %s'
+                        % (obj.seqname, who_ro))
 
     # Set permissions on public schemas
     public_schemas = [
