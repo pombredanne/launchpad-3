@@ -77,6 +77,8 @@ time goes on.
     >>> branch = factory.makeProductBranch(
     ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
     ...     name='trunk', title='The Fooix Trunk')
+    >>> merge_proposal = factory.makeBranchMergeProposal(
+    ...     target_branch=branch, registrant=eric)
     >>> branch_url = '/' + branch.unique_name
     >>> logout()
 
@@ -122,3 +124,4 @@ The branches of a project are also available.
     >>> for branch in branches['entries']:
     ...     print branch['unique_name']
     ~eric/fooix/trunk
+    ~person-name23/fooix/branch25
