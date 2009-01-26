@@ -70,7 +70,6 @@ An email notification is emitted when the merge proposal is created.
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> from canonical.launchpad.database.branchmergeproposal import (
     ...     MergeProposalCreatedJob,)
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> login('admin@canonical.com')
     >>> from canonical.launchpad.database.diff import StaticDiff
     >>> review_diff = StaticDiff.acquireFromText('x', 'y', 'z')
