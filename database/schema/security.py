@@ -18,8 +18,7 @@ from canonical.launchpad.scripts import logger_options, logger, db_options
 
 class DbObject(object):
     def __init__(
-            self, schema, name, type_, owner, arguments=None, language=None
-            ):
+            self, schema, name, type_, owner, arguments=None, language=None):
         self.schema = schema
         self.name = name
         self.type = type_
@@ -30,6 +29,7 @@ class DbObject(object):
     def __eq__(self, other):
         return self.schema == other.schema and self.name == other.name
 
+    @property
     def fullname(self):
         fn = "%s.%s" % (
                 quote_identifier(self.schema), quote_identifier(self.name)
@@ -37,13 +37,12 @@ class DbObject(object):
         if self.type == 'function':
             fn = "%s(%s)" % (fn, self.arguments)
         return fn
-    fullname = property(fullname)
 
+    @property
     def seqname(self):
         if self.type != 'table':
             return ''
         return "%s.%s" % (self.schema, self.name + '_id_seq')
-    seqname = property(seqname)
 
 
 class DbSchema(dict):
