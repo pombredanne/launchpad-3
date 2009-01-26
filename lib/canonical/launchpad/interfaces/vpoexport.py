@@ -27,6 +27,11 @@ class IVPOExportSet(Interface):
     def get_pofile_rows(pofile):
         """Return exportable rows belonging to the given PO file."""
 
+    def get_pofile_changed_rows(pofile):
+        """Return exportable rows belonging to the given PO file that
+        were changed compared to the imported/packaged rows.
+        """
+
     def get_distroseries_pofiles(series, date=None, component=None,
         languagepack=None):
         """Get a list of PO files which would be contained in an export of a

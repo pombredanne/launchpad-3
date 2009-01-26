@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import unittest
 from textwrap import dedent
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
@@ -95,8 +95,10 @@ class XPIPOExporterTestCase(unittest.TestCase):
         # Prepare the import queue to handle a new .xpi import.
         self.setUpTranslationImportQueueForTemplate()
 
+        translation_file_data = getAdapter(
+            self.firefox_template, ITranslationFileData, 'all_messages')
         exported_template = self.translation_exporter.exportTranslationFiles(
-            [ITranslationFileData(self.firefox_template)])
+            [translation_file_data])
 
         expected_template = dedent(ur'''
             #, fuzzy

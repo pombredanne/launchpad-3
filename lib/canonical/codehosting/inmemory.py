@@ -14,15 +14,15 @@ from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
-from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
-    datetime_from_tuple, LAUNCHPAD_SERVICES, iter_split)
+    datetime_from_tuple, iter_split)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -96,6 +96,21 @@ class ObjectSet:
 
     def getByName(self, name):
         return self._find(name=name)
+
+
+class FakeSourcePackage:
+    """Fake ISourcePackage."""
+
+    def __init__(self, sourcepackagename, distroseries):
+        self.sourcepackagename = sourcepackagename
+        self.distroseries = distroseries
+
+    @property
+    def distribution(self):
+        if self.distroseries is not None:
+            return self.distroseries.distribution
+        else:
+            return None
 
 
 class FakeBranch(FakeDatabaseObject):
@@ -247,8 +262,7 @@ class FakeObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
-                   registrant=None, distroseries=None,
-                   sourcepackagename=None):
+                   registrant=None, sourcepackage=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -261,6 +275,12 @@ class FakeObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if registrant is None:
             registrant = self.makePerson()
+        if sourcepackage is None:
+            sourcepackagename = None
+            distroseries = None
+        else:
+            sourcepackagename = sourcepackage.sourcepackagename
+            distroseries = sourcepackage.distroseries
         IBranch['name'].validate(unicode(name))
         branch = FakeBranch(
             branch_type, name=name, owner=owner, url=url,
@@ -269,6 +289,20 @@ class FakeObjectFactory(ObjectFactory):
             sourcepackagename=sourcepackagename)
         self._branch_set._add(branch)
         return branch
+
+    def makeAnyBranch(self, **kwargs):
+        return self.makeProductBranch(**kwargs)
+
+    def makePersonalBranch(self, owner=None, **kwargs):
+        if owner is None:
+            owner = self.makePerson()
+        return self.makeBranch(
+            owner=owner, product=None, sourcepackage=None, **kwargs)
+
+    def makeProductBranch(self, product=None, **kwargs):
+        if product is None:
+            product = self.makeProduct()
+        return self.makeBranch(product=product, sourcepackage=None, **kwargs)
 
     def makeDistribution(self):
         distro = FakeDistribution(self.getUniqueString())
@@ -286,6 +320,13 @@ class FakeObjectFactory(ObjectFactory):
         sourcepackagename = FakeSourcePackageName(self.getUniqueString())
         self._sourcepackagename_set._add(sourcepackagename)
         return sourcepackagename
+
+    def makeSourcePackage(self, distroseries=None, sourcepackagename=None):
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        return FakeSourcePackage(sourcepackagename, distroseries)
 
     def makeTeam(self, owner):
         team = FakeTeam(name=self.getUniqueString(), members=[owner])
@@ -433,7 +474,7 @@ class FakeBranchFilesystem:
             return faults.PermissionDenied(
                 ('%s cannot create branches owned by %s'
                  % (registrant.displayname, owner.displayname)))
-        product = distroseries = sourcepackagename = None
+        product = sourcepackage = None
         if data['product'] == '+junk':
             if owner.isTeam():
                 return faults.PermissionDenied(
@@ -461,15 +502,15 @@ class FakeBranchFilesystem:
                 return faults.NotFound(
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
+            sourcepackage = FakeSourcePackage(sourcepackagename, distroseries)
         else:
             return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         try:
             return self._factory.makeBranch(
                 owner=owner, name=branch_name, product=product,
-                distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                registrant=registrant, branch_type=BranchType.HOSTED).id
+                sourcepackage=sourcepackage, registrant=registrant,
+                branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
             return faults.PermissionDenied(str(e))
 
@@ -484,7 +525,7 @@ class FakeBranchFilesystem:
         # behaviour should generate explicit errors.)
         if person_id == LAUNCHPAD_SERVICES:
             return True
-        if person_id == ANONYMOUS:
+        if person_id == LAUNCHPAD_ANONYMOUS:
             return not branch.private
         if not branch.private:
             return True
@@ -493,42 +534,12 @@ class FakeBranchFilesystem:
 
     def _canWrite(self, person_id, branch):
         """Can the person 'person_id' write to 'branch'?"""
-        if person_id in [ANONYMOUS, LAUNCHPAD_SERVICES]:
+        if person_id in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             return False
         if branch.branch_type != BranchType.HOSTED:
             return False
         person = self._person_set.get(person_id)
         return person.inTeam(branch.owner)
-
-    def getBranchInformation(self, requester_id, user_name, product_name,
-                             branch_name):
-        unique_name = '~%s/%s/%s' % (user_name, product_name, branch_name)
-        branch = self._branch_set._find(unique_name=unique_name)
-        if branch is None:
-            return '', ''
-        if not self._canRead(requester_id, branch):
-            return '', ''
-        if branch.branch_type == BranchType.REMOTE:
-            return '', ''
-        if self._canWrite(requester_id, branch):
-            permission = 'w'
-        else:
-            permission = 'r'
-        return branch.id, permission
-
-    def getDefaultStackedOnBranch(self, requester_id, product_name):
-        if product_name == '+junk':
-            return ''
-        product = self._product_set.getByName(product_name)
-        if product is None:
-            return faults.NotFound(
-                'Project %r does not exist.' % (product_name,))
-        branch = product.development_focus.user_branch
-        if branch is None:
-            return ''
-        if not self._canRead(requester_id, branch):
-            return ''
-        return '/' + product.development_focus.user_branch.unique_name
 
     def _serializeControlDirectory(self, requester, product_path,
                                    trailing_path):

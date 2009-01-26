@@ -387,6 +387,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
@@ -699,6 +700,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     translation_groups = Attribute(
         "The set of TranslationGroup objects this person is a member of.")
 
+    translators = Attribute(
+        "The set of Translator objects this person is a member of.")
+
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -833,15 +837,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         This method must be used only for people, not teams.
         """
-
-    def getBranch(product_name, branch_name):
-        """The branch associated to this person and product with this name.
-
-        The product_name may be None.
-        """
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
-        # longer appropriate, given source package branches. It's used in
-        # browser/person.py, browser/specification.py.
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.

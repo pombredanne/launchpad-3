@@ -7,18 +7,12 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
-from bzrlib.bzrdir import BzrDir
-from bzrlib.transport import get_transport
 from canonical.testing import LaunchpadZopelessLayer, DatabaseFunctionalLayer
-from sqlobject import SQLObjectNotFound
 import transaction
 
-from canonical.codehosting.scanner.tests.test_bzrsync import (
-    FakeTransportServer)
 from canonical.launchpad.database.diff import Diff, StaticDiff
 from canonical.launchpad.interfaces.diff import (
-    IDiff, IStaticDiff, IStaticDiffSource,
-)
+    IDiff, IStaticDiff, IStaticDiffSource)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -31,30 +25,7 @@ class TestDiff(TestCaseWithFactory):
         verifyObject(IDiff, Diff())
 
 
-class BzrTestCase(TestCaseWithFactory):
-    """Test case providing access to a fake branch location."""
-
-    def create_branch_and_tree(self, tree_location='.'):
-        """Create a database branch, bzr branch and bzr checkout."
-
-        :return: a `Branch` and a workingtree.
-        """
-        db_branch = self.factory.makeBranch()
-        transport = get_transport(db_branch.warehouse_url)
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
-        return db_branch, bzr_branch.create_checkout(tree_location)
-
-    def useBzrBranches(self):
-        """Prepare for using bzr branches."""
-        self.useTempDir()
-        server = FakeTransportServer(get_transport('.'))
-        server.setUp()
-        self.addCleanup(server.tearDown)
-
-
-class TestStaticDiff(BzrTestCase):
+class TestStaticDiff(TestCaseWithFactory):
     """Test that StaticDiff objects work."""
 
     layer = LaunchpadZopelessLayer

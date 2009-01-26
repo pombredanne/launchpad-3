@@ -27,7 +27,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 
-from storm.expr import Desc, In
+from storm.expr import Desc, In, LeftJoin
 from storm.store import Store
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
@@ -1104,15 +1104,20 @@ class PublishingSet:
         """See `PublishingSet`."""
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        origin = (
+            SourcePackagePublishingHistory,
+            PackageDiff,
+            LeftJoin(LibraryFileAlias,
+                     LibraryFileAlias.id == PackageDiff.diff_contentID),
+            LeftJoin(LibraryFileContent,
+                     LibraryFileContent.id == LibraryFileAlias.contentID),
+            )
+        result_set = store.using(*origin).find(
             (SourcePackagePublishingHistory, PackageDiff,
              LibraryFileAlias, LibraryFileContent),
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 PackageDiff.to_sourceID,
-            PackageDiff.diff_contentID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id,
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
         result_set.order_by(

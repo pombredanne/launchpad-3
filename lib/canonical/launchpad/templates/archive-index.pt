@@ -10,8 +10,8 @@
   i18n:domain="launchpad"
   >
 <body>
-    <tal:devmode condition="devmode">
-      <metal:block fill-slot="head_epilogue">
+    <metal:block fill-slot="head_epilogue">
+      <tal:devmode condition="devmode">
         <tal:archive_js define="lp_js string:${icingroot}/build">
           <script type="text/javascript"
                   tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js">
@@ -20,16 +20,32 @@
                   tal:attributes="src string:${lp_js}/soyuz/update_archive_build_statuses.js">
           </script>
         </tal:archive_js>
-      </metal:block>
-    </tal:devmode>
+      </tal:devmode>
+      <script type="text/javascript">
+          YUI().use('node', 'soyuz.update_archive_build_statuses');
+      </script>
+    </metal:block>
 
     <div metal:fill-slot="main"
          tal:define="archive_active view/is_active;
-                     archive_label view/archive_label">
+                     archive_label view/archive_label"
+         tal:attributes="class string:archive">
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
-      <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
+      <h1 id="archive-heading" tal:content="CONTEXTS/fmt:pagetitle"
+        tal:condition="context/enabled">
+        PPA for user
+      </h1>
+      <h1 id="archive-heading" tal:content="CONTEXTS/fmt:pagetitle"
+        tal:condition="not: context/enabled" class="disabled">
+        PPA for user
+      </h1>
+
+      <p tal:condition="not: context/enabled"
+         style="clear: right;" class="warning message">
+        This archive has been disabled.
+      </p>
 
       <div class="actions" style="float:right;">
         <tal:administer
@@ -77,21 +93,27 @@
       </div>
 
       <div id="description">
-         <tal:archive-description condition="context/description"
-            replace="structure context/description/fmt:text-to-html" />
-
-        <tal:package-copy-request-list tal:condition="context/is_copy">
-          <metal:package-copy-request-list
-              use-macro="context/@@+macros/package-copy-request-list" />
-        </tal:package-copy-request-list>
+        <fieldset>
+          <legend>Description</legend>
+          <tal:archive-description condition="context/description"
+             replace="structure context/description/fmt:text-to-html" />
+        </fieldset>
       </div>
 
-      <div tal:condition="archive_active">
+      <tal:package-copy-request-list tal:condition="context/is_copy">
+        <metal:package-copy-request-list
+            use-macro="context/@@+macros/package-copy-request-list" />
+      </tal:package-copy-request-list>
 
-        <h2>apt sources.list entries</h2>
-        <tal:entries replace="structure view/sources_list_entries" />
 
-      </div>
+      <tal:non_copy_only condition="not: context/is_copy">
+        <div tal:condition="archive_active" >
+
+          <h2>apt sources.list entries</h2>
+          <tal:entries replace="structure view/sources_list_entries" />
+
+        </div>
+      </tal:non_copy_only>
 
       <div id="signing-key"
            tal:define="signing_key context/signing_key"

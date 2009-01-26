@@ -27,9 +27,9 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     name='fooix', displayname="Fooix", project=fubar)
     >>> fooey = factory.makeProduct(
     ...     name='fooey', displayname="Fooey", project=fubar)
-    >>> fooix_branch = factory.makeBranch(
+    >>> fooix_branch = factory.makeProductBranch(
     ...     name='feature-x', product=fooix, owner=mike)
-    >>> fooey_branch = factory.makeBranch(
+    >>> fooey_branch = factory.makeProductBranch(
     ...     name='feature-x', product=fooey, owner=mike)
 
     >>> def makeRevision(author, rev_id, log_body):

@@ -508,11 +508,18 @@ class IHWVendorNameSet(Interface):
 class IHWVendorID(Interface):
     """A list of vendor IDs for different busses associated with vendor names.
     """
-    bus = Choice(
-        title=u'The bus that connects a device to a computer',
-        required=True, vocabulary=HWBus)
+    export_as_webservice_entry()
+    id = exported(
+        Int(title=u'The Database ID', required=True, readonly=True))
 
-    vendor_id_for_bus = TextLine(title=u'Vendor ID', required=True)
+    bus = exported(
+        Choice(
+            title=u'The bus that connects a device to a computer',
+            required=True, vocabulary=HWBus))
+
+    vendor_id_for_bus = exported(
+        TextLine(title=u'Vendor ID', required=True),
+        exported_as='vendor_id')
 
     vendor_name = Attribute('Vendor Name')
 
@@ -537,6 +544,20 @@ class IHWVendorIDSet(Interface):
             must be represented as a hexadecimal string, prepended by '0x'.
         :return: The found IHWVendorID instance or None, if no instance
             for the given bus and vendor ID exists.
+        """
+
+    def get(id):
+        """Return an IHWVendorID record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWVendorID instance.
+        """
+
+    def idsForBus(bus):
+        """Return all known IHWVendorID records with the given bus.
+
+        :param bus: A HWBus instance.
+        :return: A sequence of IHWVendorID instances.
         """
 
 
@@ -641,6 +662,11 @@ class IHWDevice(Interface):
 
         Only submissions matching all given criteria are returned.
         """
+
+    drivers = exported(
+        CollectionField(
+            title=_(u"The IHWDriver records related to this device."),
+            value_type=Reference(schema=IHWDriver)))
 
 
 class IHWDeviceSet(Interface):
@@ -926,4 +952,14 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     def drivers(package_name=None, name=None):
         """Return the set of drivers."""
 
+    @operation_parameters(
+        bus=Choice(
+            title=u'A Device Bus.', vocabulary=HWBus, required=True))
+    @operation_returns_collection_of(IHWVendorID)
+    @export_read_operation()
+    def vendorIDs(bus):
+        """Return the known vendor IDs for the given bus.
 
+        :param bus: A `HWBus` value.
+        :return: A list of strings with vendor IDs fr this bus,
+        """

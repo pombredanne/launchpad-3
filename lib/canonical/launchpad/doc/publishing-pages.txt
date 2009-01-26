@@ -173,7 +173,7 @@ Create a small function for displaying the results:
     ...     )
 
     >>> print_build_summary(src_pub_record_view.build_status_summary)
-    Successfully built
+    FULLYBUILT
     All builds were built successfully.
     Relevant builds:
      - i386 build of iceweasel 1.0 in ubuntu warty RELEASE

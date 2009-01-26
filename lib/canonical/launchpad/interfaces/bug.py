@@ -167,7 +167,7 @@ class IBug(ICanBeMentored):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Reference(IPerson, title=_("The owner's IPerson")))
+        Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
     duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')
@@ -200,6 +200,9 @@ class IBug(ICanBeMentored):
             value_type=Reference(schema=IBugTask),
             readonly=True),
         exported_as='bug_tasks')
+    default_bugtask = Reference(
+        title=_("The first bug task to have been filed."),
+        schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')

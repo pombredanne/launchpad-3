@@ -13,6 +13,7 @@ import gettextpo
 import os
 import random
 import re
+import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -20,6 +21,7 @@ from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 
 import canonical
 from canonical.launchpad.interfaces import (
@@ -222,19 +224,16 @@ def emailPeople(person):
     return people
 
 
-def contactEmailAddresses(person):
+def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
     In general, it is better to use emailPeople instead.
     """
-    # XXX: Guilherme Salgado 2006-04-20:
-    # This str() call can be removed as soon as Andrew lands his
-    # unicode-simple-sendmail branch, because that will make
-    # simple_sendmail handle unicode email addresses.
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
-    return set(str(removeSecurityProxy(mail_person.preferredemail).email)
+    return set(
+        str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in emailPeople(person))
 
 
@@ -279,8 +278,8 @@ def validate_translation(original, translation, flags):
     if len(original) > 1:
         # It has plural forms.
         msg.set_msgid_plural(original[1])
-        for i in range(len(translation)):
-            msg.set_msgstr_plural(i, translation[i])
+        for form in range(len(translation)):
+            msg.set_msgstr_plural(form, translation[form])
     elif len(translation):
         msg.set_msgstr(translation[0])
 

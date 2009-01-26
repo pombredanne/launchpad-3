@@ -15,7 +15,7 @@ menu.
    Profile
    Related Software: ...
    Karma: ...
-   Personal Package Archive: http://launchpad.dev/~cprov/+archive
+   Personal Package Archive: http://launchpad.dev/~cprov/+archive/ppa
 
 Since cprov's Personal Package Archive is already activated in
 sampledata, the 'Personal Package Archive' menu item takes you to his
@@ -28,7 +28,7 @@ archive.
     >>> cprov_browser.title
     'PPA for Celso Providelo'
     >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+archive'
+    'http://launchpad.dev/~cprov/+archive/ppa'
 
 If, by any chance, the user tries to access the Personal Package
 Archive activation page for already activated PPA (hand-made or save
@@ -36,7 +36,7 @@ URLs) it will get redirected to the PPA page automatically:
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+activate-ppa")
     >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+archive'
+    'http://launchpad.dev/~cprov/+archive/ppa'
 
 Checking if the Person action-menu is sane, by not presenting links to
 a Personal Package Archive that doesn't exist yet, let's use the
@@ -48,7 +48,7 @@ a Personal Package Archive that doesn't exist yet, let's use the
 Accessing a nonexistent Personal Package Archive page with a hand-made
 URL results in NotFound error:
 
-    >>> sample_browser.open("http://launchpad.dev/~name12/+archive")
+    >>> sample_browser.open("http://launchpad.dev/~name12/+archive/ppa")
     Traceback (most recent call last):
     ...
     NotFound: Object: <Person at ...>, name: u'+archive'
@@ -104,12 +104,13 @@ checkbox must be checked:
 A successful activation redirects to the Personal Package Archive page:
 
     >>> sample_browser.url
-    'http://launchpad.dev/~name12/+archive'
+    'http://launchpad.dev/~name12/+archive/ppa'
 
 Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Hoohay for PPA.
 
 ... and an empty 'whiteboard' section that when filled, includes
@@ -133,10 +134,11 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
     >>> sample_browser.getControl("Save").click()
 
     >>> sample_browser.url
-    'http://launchpad.dev/~name12/+archive'
+    'http://launchpad.dev/~name12/+archive/ppa'
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Howdy, cowboys !
 
     >>> print extract_text(
@@ -177,10 +179,11 @@ Let's proceed with the required permissions:
     >>> sample_browser.getControl("Activate").click()
 
     >>> sample_browser.url
-    'http://launchpad.dev/~landscape-developers/+archive'
+    'http://launchpad.dev/~landscape-developers/+archive/ppa'
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Hoohay for Team PPA.
 
 Any team administrator can 'edit' description & whiteboard contents,
@@ -199,6 +202,7 @@ exactly the same as for a user-PPA, see above:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Yay, I can change it.
 
 Cancelling the 'Edit' form will redirect the user to the PPA overview
@@ -214,6 +218,7 @@ page and discard the changes.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Yay, I can change it.
 
 
@@ -235,10 +240,11 @@ name of other users or teams:
     >>> admin_browser.getControl("Activate").click()
 
     >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+archive'
+    'http://launchpad.dev/~carlos/+archive/ppa'
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'description'))
+    Description
     Go for it, you lazy !
 
     >>> find_tag_by_id(admin_browser.contents, 'whiteboard') is None
@@ -260,11 +266,12 @@ Package Archives.
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+archive/+admin'
+    'http://launchpad.dev/~carlos/+archive/ppa/+admin'
 
 Trying to shortcut the URL as a non-privileged user does not work:
 
-    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> sample_browser.open(
+    ...     "http://launchpad.dev/~carlos/+archive/ppa/+admin")
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -303,14 +310,14 @@ build on a virtualized builder.
     >>> admin_browser.getControl("Save").click()
 
     >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+archive'
+    'http://launchpad.dev/~carlos/+archive/ppa'
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
     PPA whiteboard:
     Here lives a lazy community.
 
-    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.enabled").value
     False
     >>> admin_browser.getControl(name="field.private").value
@@ -348,7 +355,7 @@ MiB. Submitting the form with an authorized_size that is too large
 will result in an error:
 
     >>> limit = 20 * 1024
-    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/ppa/+admin")
     >>> admin_browser.getControl(
     ...     name="field.authorized_size").value = str(limit + 1)
     >>> admin_browser.getControl("Save").click()
@@ -361,7 +368,7 @@ will result in an error:
 The whiteboard section can be viewed by the PPA owner:
 
     >>> carlos_browser = setupBrowser(auth="Basic carlos@canonical.com:test")
-    >>> carlos_browser.open("http://launchpad.dev/~carlos/+archive")
+    >>> carlos_browser.open("http://launchpad.dev/~carlos/+archive/ppa")
     >>> print extract_text(
     ...     find_tag_by_id(carlos_browser.contents, 'whiteboard'))
     PPA whiteboard:
@@ -416,12 +423,13 @@ Activate the first browser:
 A successful activation redirects to the Personal Package Archive page:
 
     >>> browser1.url
-    'http://launchpad.dev/~name16/+archive'
+    'http://launchpad.dev/~name16/+archive/ppa'
 
 Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
+    Description
     PPA rocks!
 
 Activate the second browser:
@@ -431,10 +439,11 @@ Activate the second browser:
 It will be directed to the Personal Package Archive page:
 
     >>> browser2.url
-    'http://launchpad.dev/~name16/+archive'
+    'http://launchpad.dev/~name16/+archive/ppa'
 
 And the description matches the first submission's:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
+    Description
     PPA rocks!
