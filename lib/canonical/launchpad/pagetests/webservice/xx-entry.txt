@@ -244,6 +244,66 @@ with a PATCH request.
   ...
 
 
+=== Server-side modification ===
+
+Sometimes the server will transparently mofdify a value sent by the
+client to clean it up or put it into a canonical form. For this
+purpose, the response to a PUT or PATCH request includes a brand new
+JSON representation of the object, so that the client can know whether
+and which changes were made.
+
+Here's an example. Fields that contain URIs have a URI canonicalizer
+associated with them.
+
+    >>> def set_project_wiki_url(project_url, value):
+    ...     project = webservice.get(project_url).jsonBody()
+    ...     repr = simplejson.dumps({'wiki_url': value})
+    ...     headers = {'Content-type': 'application/json'}
+    ...     return webservice(project_url, "PATCH", repr, headers)
+
+    >>> firefox = webservice.get('/firefox').jsonBody()
+    >>> print firefox['wiki_url']
+    None
+
+Send in a URI with no trailing slash and it'll be transparently
+changed to have a trailing slash. Whitespace will also be trimmed. The
+document returned from the POST request will be the new
+representation, modified by both client and server.
+
+    >>> firefox = set_project_wiki_url(
+    ...     "/firefox", "   http://www.notrailingslash.com ").jsonBody()
+    >>> print firefox['wiki_url']
+    http://www.notrailingslash.com/
+
+Send in a URI with a trailing slash, and the data will not be modified.
+
+    >>> firefox = set_project_wiki_url(
+    ...     "/firefox", "http://www.trailingslash.com/").jsonBody()
+    >>> print firefox['wiki_url']
+    http://www.trailingslash.com/
+
+Send in None, and the value will be erased.
+
+    >>> firefox = set_project_wiki_url("/firefox", None).jsonBody()
+    >>> print firefox['wiki_url']
+    None
+
+The canonicalization works for PUT requests as well.
+
+    >>> firefox['wiki_url'] = "http://www.stillnotrailingslash.com"
+    >>> firefox = webservice("/firefox", "PUT", simplejson.dumps(firefox),
+    ...                      {'Content-type': 'application/json'}).jsonBody()
+    >>> print firefox['wiki_url']
+    http://www.stillnotrailingslash.com/
+
+Bad data is not canonicalized.
+
+    >>> print set_project_wiki_url("/firefox", "not-a-url")
+    HTTP/1.1 400 Bad Request
+    ...
+    wiki_url: "not-a-url" is not a valid URI
+
+
 === Conditional PUT and PATCH ===
 
 When you GET an entry you're given an ETag; an opaque string that

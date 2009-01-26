@@ -69,6 +69,7 @@ import re
 from StringIO import StringIO
 from textwrap import dedent
 
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
@@ -82,6 +83,7 @@ from zope.security.interfaces import ForbiddenAttribute
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 
@@ -590,11 +592,42 @@ class URIField(TextLine):
         self.allow_fragment = allow_fragment
         self.trailing_slash = trailing_slash
 
+    def set(self, object, value):
+        """Canonicalize a URL and set it as a field value.
+
+        The URIField has the following special behavior:
+         * whitespace is stripped from the input value
+         * if the field requires (or forbids) a trailing slash on the URI,
+           then the widget ensures that the widget ends in a slash (or
+           doesn't end in a slash).
+         * the URI is canonicalised.
+        """
+        if value is not None:
+            value = value.strip()
+            self._validate(value)
+            uri = URI(value)
+            # If there is a policy for whether trailing slashes are
+            # allowed at the end of the path segment, ensure that the
+            # URI conforms.
+            if self.trailing_slash is not None:
+                if self.trailing_slash:
+                    uri = uri.ensureSlash()
+                else:
+                    uri = uri.ensureNoSlash()
+            value = str(uri)
+        super(URIField, self).set(object, value)
+
     def _validate(self, value):
+        """Ensure the value is a valid URI."""
         super(URIField, self)._validate(value)
 
-        # Local import to avoid circular imports:
-        from canonical.launchpad.webapp.uri import URI, InvalidURIError
+        if value is None:
+            return
+
+        if isinstance(value, list):
+            raise LaunchpadValidationError('Only a single value is expected')
+
+        value = value.strip()
         try:
             uri = URI(value)
         except InvalidURIError, e:

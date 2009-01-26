@@ -998,7 +998,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                             error = "Validation error"
                         errors.append("%s: %s" % (repr_name, error))
                         continue
-                validated_changeset[name] = value
+                validated_changeset[field] = (name, value)
         # If there are any fields left in the changeset, they're
         # fields that don't correspond to some field in the
         # schema. They're all errors.
@@ -1019,8 +1019,13 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self.context, self.request)
         # Make the changes.
-        for name, value in validated_changeset.items():
-            setattr(self.entry, name, value)
+        for field, (name, value) in validated_changeset.items():
+            field.set(self.entry, value)
+            # Clear any marshalled value for this field from the
+            # cache, so that the upcoming representation generation doesn't
+            # use the cached value.
+            if name in self._unmarshalled_field_cache:
+                del(self._unmarshalled_field_cache[name])
 
         # Send a notification event.
         event = SQLObjectModifiedEvent(
