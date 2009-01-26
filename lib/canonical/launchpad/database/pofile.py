@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -757,7 +757,7 @@ class POFile(SQLBase, POFileMixIn):
         if path != self.path and self.potemplate.isPOFilePathAvailable(path):
             self.path = path
 
-    def importFromQueue(self, entry_to_import, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None, txn=None):
         """See `IPOFile`."""
         assert entry_to_import is not None, "Attempt to import None entry."
         assert entry_to_import.import_into.id == self.id, (
