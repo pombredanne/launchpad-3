@@ -893,12 +893,12 @@ class IBranch(IHasOwner):
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
-    bzr_identity = Attribute(
-        "The shortest lp spec URL for this branch. "
-        "If the branch is associated with a product as the primary "
-        "development focus, then the result should be lp:product.  If "
-        "the branch is related to a series, then lp:product/series. "
-        "Otherwise the result is lp:~user/product/branch-name.")
+    bzr_identity = exported(
+        Text(
+            title=_('Bazaar Identity'),
+            readonly=True,
+            description=_('The bzr branch path as accessed by Launchpad.')),
+            exported_as='bzr_identity')
 
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.

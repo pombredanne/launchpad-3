@@ -87,6 +87,7 @@ time goes on.
     >>> pprint_entry(details)
     branch_format: None
     branch_type: u'Hosted'
+    bzr_identity: u'lp://dev/~eric/fooix/trunk'
     control_format: None
     date_created: ...
     date_last_modified: ...
