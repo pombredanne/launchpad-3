@@ -19,7 +19,7 @@ notification they would like to receive.
     >>> import transaction
     >>> login('test@canonical.com')
     >>> diff = getUtility(IStaticDiffSource).acquireFromText('a', 'b', 'c')
-    >>> # Make Librarian happy
+    >>> # Make Librarian happy.
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal()
     >>> source_subscriber = factory.makePerson(
@@ -96,7 +96,7 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> notifications = pop_notifications()
     >>> registrant = factory.makePerson(
     ...     displayname="Eric", email="eric@example.com")
-    >>> # To avoid trying to access branches, pre-populate review_diff
+    >>> # To avoid trying to access branches, pre-populate review_diff.
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch, review_diff=diff)
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())

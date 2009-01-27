@@ -76,7 +76,7 @@ An email notification is emitted when the merge proposal is created.
     >>> transaction.commit()
     >>> def do_notifications():
     ...     for job in ready_jobs():
-    ...         # Avoid accessing lp-mirrored: URL
+    ...         # Avoid accessing "lp-mirrored:" URL.
     ...         if job.branch_merge_proposal.review_diff is None:
     ...             job.branch_merge_proposal.review_diff = review_diff
     ...         job.context.job.start()

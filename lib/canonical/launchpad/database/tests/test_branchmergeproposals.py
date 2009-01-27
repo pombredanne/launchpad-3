@@ -914,6 +914,9 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_run_skips_diff_if_present(self):
         """The review diff is only generated if not already assigned."""
+        # We want to make sure that we don't try to do anything with the
+        # bzr branch if there's already a diff.  So here, we create a
+        # database branch that has no bzr branch.
         self.useBzrBranches()
         bmp = self.factory.makeBranchMergeProposal()
         job = MergeProposalCreatedJob.create(bmp)
@@ -921,6 +924,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
         transaction.commit()
         removeSecurityProxy(bmp).review_diff = review_diff
+        # If job.run were trying to use the bzr branch, it would error.
         job.run()
 
     def test_run_sends_email(self):
@@ -935,7 +939,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""
-        # Avoid creating a MergeProposalCreatedJob early
+        # Avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         job = MergeProposalCreatedJob.create(bmp)
         job.job.sync()
@@ -944,7 +948,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_iterReady_excludes_unready_jobs(self):
         """Unready jobs should not be listed."""
-        # Avoid creating a MergeProposalCreatedJob early
+        # Avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         job = MergeProposalCreatedJob.create(bmp)
         job.job.start()

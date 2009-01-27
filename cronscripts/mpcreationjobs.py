@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0403
 
 """Handle new BranchMergeProposals.

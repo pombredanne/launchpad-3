@@ -467,6 +467,8 @@ class BranchMergeProposal(SQLBase):
         # Delete the related CodeReviewComments.
         for comment in self.all_comments:
             comment.destroySelf()
+        # Delete all jobs referring to the BranchMergeProposal, whether
+        # or not they have completed.
         for job in BranchMergeProposalJob.selectBy(
             branch_merge_proposal=self.id):
             job.destroySelf()
@@ -848,14 +850,14 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     def run(self):
         """See `IMergeProposalCreationJob`."""
         if self.branch_merge_proposal.review_diff is None:
-            self.branch_merge_proposal.review_diff = self._make_review_diff()
+            self.branch_merge_proposal.review_diff = self._makeReviewDiff()
             transaction.commit()
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
         return self.branch_merge_proposal.review_diff
 
-    def _make_review_diff(self):
+    def _makeReviewDiff(self):
         """Return a StaticDiff to be used as a review diff."""
         cleanups = []
         def get_branch(branch):
@@ -866,7 +868,7 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         try:
             bzr_source = get_branch(self.branch_merge_proposal.source_branch)
             bzr_target = get_branch(self.branch_merge_proposal.target_branch)
-            lca, source_revision = self._find_revisions(
+            lca, source_revision = self._findRevisions(
                 bzr_source, bzr_target)
             diff = StaticDiff.acquire(
                 lca, source_revision, bzr_source.repository)
@@ -876,7 +878,7 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         return diff
 
     @staticmethod
-    def _find_revisions(bzr_source, bzr_target):
+    def _findRevisions(bzr_source, bzr_target):
         """Return the revisions to use for a review diff."""
         source_revision = bzr_source.last_revision()
         target_revision = bzr_target.last_revision()
