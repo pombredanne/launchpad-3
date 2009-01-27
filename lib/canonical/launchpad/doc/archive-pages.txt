@@ -96,7 +96,7 @@ appropriate:
     ...     cprov.archive,
     ...     name="+index",
     ...     method='GET',
-    ...     form={'field.series_filter': 'warty'})
+    ...     query_string='field.series_filter=warty')
     >>> for publishing in filtered_view.sources:
     ...     print publishing.source_package_name
     iceweasel
@@ -184,9 +184,7 @@ filtered results.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+delete-packages",
-    ...     form={
-    ...         'field.name_filter': 'pmount',
-    ...         })
+    ...     query_string="field.name_filter=pmount")
 
     >>> for pub in view.sources:
     ...     print pub.displayname
@@ -618,9 +616,7 @@ All sources in Celso's PPA were just-deleted, so we have to tweak the
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
-    ...     form={
-    ...         'field.status_filter': 'any',
-    ...         })
+    ...     query_string="field.status_filter=any")
 
     >>> [pub.status.name for pub in view.sources]
     ['DELETED', 'DELETED', 'DELETED']

@@ -795,11 +795,6 @@ class IPPAActivateForm(Interface):
 class IArchiveSourceSelectionForm(Interface):
     """Schema used to select sources within an archive."""
 
-    name_filter = TextLine(
-        title=_("Package name"), required=False, default=None,
-        description=_("Display packages only with name matching the given "
-                      "filter."))
-
 
 class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
     """Schema used to delete packages within an archive."""
