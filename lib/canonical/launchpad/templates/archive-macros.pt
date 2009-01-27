@@ -227,7 +227,7 @@
     Present the filtering form used on a few archive pages.
   </tal:comment>
 
-  <form name="package_search" action="" method="GET" style="clear:both">
+  <form class="package-search-filter" action="" method="GET">
     <label for="name">Package name contains:</label>
     <input id="field.name_filter" title="Package Name" size="20"
             type="text" name="field.name_filter"
