@@ -429,3 +429,38 @@ to ensure that the returned URL is valid.
 
     >>> print mozilla_bugzilla.getBugFilingLink('@testproduct&')
     https://bugzilla.mozilla.org/enter_bug.cgi?product=%40testproduct%26
+
+
+== BugTracker.multi_product ==
+
+As described above, some bug trackers don't need to have a remote
+product passed to `getBugFilingLink()` in order to be able to return a
+bug filing URL because they use static URLs for bug filing or only track
+one product.
+
+`IBugTracker` defines an attribute, `multi_product` which can be used to
+check whether a given bug tracker can return a bug filing URL without
+being passed a remote product.
+
+Our example Trac bug tracker's `multi_product` property will
+be False, since it only tracks one product at a time.
+
+    >>> print example_trac.multi_product
+    False
+
+However, Bugzilla instances require remote products in order to be able
+to return a bug filing URL.
+
+    >>> print mozilla_bugzilla.multi_product
+    True
+
+There is a test in database/tests/test_bugtracker.py that checks that
+the constraints of multi_product=True are not violated by any
+BugTracker.
+
+If you try passing remote_product=None to a multi product bugtracker's
+getBugFilingLink() method you'll get None back, since it requires a
+remote product in order to generate a URL.
+
+    >>> print mozilla_bugzilla.getBugFilingLink(None)
+    None

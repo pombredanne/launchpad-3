@@ -242,8 +242,6 @@ class TestWebServiceRequestTraversal(unittest.TestCase):
         """Requests that have /api at the root of their path should trim
         the 'api' name from the traversal stack.
         """
-        from zope.publisher.base import DefaultPublication
-
         # First, we need to forge a request to the API.
         data = ''
         api_url = '/' + WEBSERVICE_PATH_OVERRIDE + '/' + 'beta' + '/' + 'foo'

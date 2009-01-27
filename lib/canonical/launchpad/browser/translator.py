@@ -4,22 +4,38 @@ __metaclass__ = type
 
 import cgi
 
-from canonical.launchpad.interfaces import ITranslator
+from canonical.launchpad.interfaces.translator import (
+    ITranslator, IEditTranslator)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 
 __all__ = [
+    'TranslatorAdminView',
     'TranslatorEditView',
     'TranslatorRemoveView',
     ]
 
-
 class TranslatorEditView(LaunchpadEditFormView):
-    """View class to edit ITranslationGroup objects"""
+    """View class to edit ITranslator objects"""
+
+    schema = IEditTranslator
+
+    @action("Change")
+    def change_action(self, action, data):
+        """Edit the translator that does translations for a given language."""
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.translator)
+
+
+class TranslatorAdminView(LaunchpadEditFormView):
+    """View class to administer ITranslator objects"""
 
     schema = ITranslator
-    field_names = ['language', 'translator']
+    field_names = ['language', 'translator', 'style_guide_url']
 
     @action("Change")
     def change_action(self, action, data):

@@ -64,6 +64,20 @@ class TestMailController(TestCase):
         ctrl.addAttachment(
             'content2', 'text/plain', inline=True, filename='name1')
 
+    def test_MakeMessageSpecialChars(self):
+        """A message should have its to and from addrs converted to ascii."""
+        to_addr = u'\u1100to@example.com'
+        from_addr = u'\u1100from@example.com'
+        ctrl = MailController(from_addr, to_addr, 'subject', 'body')
+        message = ctrl.makeMessage()
+        self.assertEqual('=?utf-8?b?4YSAZnJvbUBleGFtcGxlLmNvbQ==?=',
+            message['From'])
+        self.assertEqual('=?utf-8?b?4YSAdG9AZXhhbXBsZS5jb20=?=',
+            message['To'])
+        self.assertEqual('subject', message['Subject'])
+        self.assertEqual('body', message.get_payload(decode=True))
+
+
     def test_MakeMessage_no_attachment(self):
         """A message without an attachment should have a single body."""
         ctrl = MailController(
