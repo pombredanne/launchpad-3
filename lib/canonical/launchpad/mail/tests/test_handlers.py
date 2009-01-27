@@ -502,6 +502,8 @@ class TestCodeHandler(TestCaseWithFactory):
             notification.get_payload(),
             'The branch %s is already propos=\ned for merging into %s.\n\n' % (
                 source_branch.bzr_identity, target_branch.bzr_identity))
+        self.assertEqual(notification['to'],
+            message['from'])
 
 
 class TestVoteEmailCommand(TestCase):
