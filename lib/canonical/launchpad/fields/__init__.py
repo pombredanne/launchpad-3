@@ -614,7 +614,7 @@ class URIField(TextLine):
             try:
                 uri = URI(input)
             except InvalidURIError, exc:
-                raise ConversionError(str(exc))
+                raise LaunchpadValidationError(str(exc))
             # If there is a policy for whether trailing slashes are
             # allowed at the end of the path segment, ensure that the
             # URI conforms.
@@ -629,9 +629,6 @@ class URIField(TextLine):
 
     def _validate(self, value):
         """Ensure the value is a valid URI."""
-
-        if isinstance(value, list):
-            raise LaunchpadValidationError('Only a single value is expected')
 
         value = value.strip()
         try:
