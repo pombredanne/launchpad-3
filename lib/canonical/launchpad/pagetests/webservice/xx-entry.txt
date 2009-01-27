@@ -265,6 +265,7 @@ associated with them.
     >>> firefox = webservice.get('/firefox').jsonBody()
     >>> print firefox['wiki_url']
     None
+    >>> first_etag = firefox['http_etag']
 
 Send in a URI with no trailing slash and it'll be transparently
 changed to have a trailing slash. Whitespace will also be trimmed. The
@@ -275,6 +276,8 @@ representation, modified by both client and server.
     ...     "/firefox", "   http://www.notrailingslash.com ").jsonBody()
     >>> print firefox['wiki_url']
     http://www.notrailingslash.com/
+    >>> firefox['http_etag'] == first_etag
+    False
 
 Send in a URI with a trailing slash, and the data will not be modified.
 

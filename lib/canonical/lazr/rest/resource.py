@@ -1026,6 +1026,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # use the cached value.
             if name in self._unmarshalled_field_cache:
                 del(self._unmarshalled_field_cache[name])
+        # The representation has changed, and etags will need to be
+        # recalculated.
+        self.etags_by_media_type = {}
 
         # Send a notification event.
         event = SQLObjectModifiedEvent(
