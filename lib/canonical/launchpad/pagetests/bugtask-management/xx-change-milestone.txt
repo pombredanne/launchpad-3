@@ -23,27 +23,22 @@ use, but the bug is not yet targeted to that milestone.
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
-    ['(no value)',
-     'Mozilla Firefox: 0.9',
-     'Mozilla Firefox: 0.9.1',
-     'Mozilla Firefox: 0.9.2',
-     'Mozilla Firefox: 1.0',
-     'Mozilla Firefox: 1.0.0']
+    ['(no value)', 'Mozilla Firefox: 1.0']
 
 Sample Person targets the bug to 1.0 for Firefox. This shows up in the
 Affects table, and in the selected value of the Milestone menu.
 
-    >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0.0']
+    >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0']
     >>> owner_browser.getControl('Save Changes', index=0).click()
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
-    >>> for tr in table.findAll('tr')[:2]:
-    ...     print ' '.join(text.strip() for text in tr.findAll(text=True))
-    Affects  Status  Importance  Assigned to  Milestone
-    Mozilla Firefox     New     Low          Mark Shuttleworth       1.0.0
+    >>> print extract_text(table)
+    Affects          Status  Importance  Assigned to        Milestone
+    Mozilla Firefox  New     Low         Mark Shuttleworth  1.0
+    ...
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox.milestone', index=0)
     >>> milestone_control.displayValue
-    ['Mozilla Firefox: 1.0.0']
+    ['Mozilla Firefox: 1.0']
 
 Sample Person defines milestone 1.0.0 for firefox series 1.0...
 
@@ -66,18 +61,13 @@ are listed too.
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
-    ['(no value)',
-     'Mozilla Firefox: 0.9',
-     'Mozilla Firefox: 0.9.1',
-     'Mozilla Firefox: 0.9.2',
-     'Mozilla Firefox: 1.0',
-     'Mozilla Firefox: 1.0.0']
-    >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0.0']
+    ['(no value)', 'Mozilla Firefox: 1.0']
+    >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0']
     >>> owner_browser.getControl('Save Changes', index=1).click()
     >>> milestone_control = owner_browser.getControl(
     ...     name='1.0_firefox.milestone')
     >>> milestone_control.displayValue
-    ['Mozilla Firefox: 1.0.0']
+    ['Mozilla Firefox: 1.0']
 
 Foo Bar is a member of the Ubuntu team that owns the Ubuntu
 distribution. He decides to assign some bug to some milestones.
@@ -92,15 +82,11 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+bug/1')
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
-    >>> for tr in ([table.thead.tr]
-    ...            + table.tbody.findAll('tr', recursive=False)):
-    ...     if tr.get('style') is None:
-    ...         print ' '.join(text.strip() for text in tr.findAll(text=True))
-    Affects  Status  Importance  Assigned to  Milestone
-    Mozilla Firefox     New     Low          Mark Shuttleworth       1.0.0
-    1.0     New     Undecided              1.0.0
+    >>> print extract_text(table)
+    Affects                   Status  Importance  Assigned to        Milestone
+    Mozilla Firefox           New     Low         Mark Shuttleworth  1.0
     ...
-    mozilla-firefox (Ubuntu)     New     Medium
+    mozilla-firefox (Ubuntu)  New     Medium
     ...
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')
@@ -111,15 +97,11 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> milestone_control.displayValue = ['Ubuntu: 5.04.rc1']
     >>> admin_browser.getControl('Save Changes', index=3).click()
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
-    >>> for tr in ([table.thead.tr]
-    ...            + table.tbody.findAll('tr', recursive=False)):
-    ...     if tr.get('style') is None:
-    ...         print ' '.join(text.strip() for text in tr.findAll(text=True))
-    Affects  Status  Importance  Assigned to  Milestone
-    Mozilla Firefox     New     Low          Mark Shuttleworth       1.0.0
-    1.0     New     Undecided              1.0.0
+    >>> print extract_text(table)
+    Affects                   Status  Importance  Assigned to        Milestone
+    Mozilla Firefox           New     Low         Mark Shuttleworth  1.0
     ...
-    mozilla-firefox (Ubuntu)     New     Medium              5.04.rc1
+    mozilla-firefox (Ubuntu)  New     Medium                         5.04.rc1
     ...
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')

@@ -257,8 +257,8 @@ class IProductReleasePublic(Interface):
                           'be shown at the top of the release page, and in '
                           'listings.'))
 
-    description = Text(
-            title=_("Description"), required=False, readonly=True,
+    release_notes = Text(
+            title=_("Release notes"), required=False, readonly=True,
             description=_('A detailed description of the new features '
                           '(though the changelog below might repeat some of '
                           'this information). The description here will be '

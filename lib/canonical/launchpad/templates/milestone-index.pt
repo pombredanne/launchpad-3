@@ -30,8 +30,8 @@
   </p>
 
   <div class="description"
-       tal:condition="context/description"
-       tal:content="structure context/description/fmt:text-to-html">
+       tal:condition="context/summary"
+       tal:content="structure context/summary/fmt:text-to-html">
     Description of milestone goes here.
   </div>
 

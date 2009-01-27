@@ -395,7 +395,7 @@ ProductSeries of a product.
 
     >>> from datetime import datetime
     >>> [milestone.name for milestone in firefox.milestones]
-    [u'0.9', u'0.9.1', u'0.9.2', u'1.0.0', u'1.0']
+    [u'1.0']
 
 Milestones for products can only be created by product/project owners,
 registry experts, or admins.
@@ -416,10 +416,6 @@ They're ordered by dateexpected.
 
     >>> for milestone in firefox.milestones:
     ...     print '%-7s %s' % (milestone.name, milestone.dateexpected)
-    0.9     None
-    0.9.1   None
-    0.9.2   None
-    1.0.0   None
     1.0     2056-10-16 18:31:44.293448
     1.0-rc1 2018-10-01
 
@@ -428,12 +424,12 @@ property.
 
     >>> firefox_milestone.visible = False
     >>> [milestone.name for milestone in firefox.milestones]
-    [u'0.9', u'0.9.1', u'0.9.2', u'1.0.0', u'1.0']
+    [u'1.0']
 
 To get all milestones of a given product we have the .all_milestones property.
 
     >>> [milestone.name for milestone in firefox.all_milestones]
-    [u'0.9', u'0.9.1', u'0.9.2', u'1.0.0', u'1.0', u'1.0-rc1']
+    [u'1.0.0', u'0.9.2', u'0.9.1', u'0.9', u'1.0', u'1.0-rc1']
 
 == Products With Branches ==
 

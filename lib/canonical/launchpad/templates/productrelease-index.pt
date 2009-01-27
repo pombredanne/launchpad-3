@@ -29,15 +29,13 @@
         this release highlights.
     </p>
 
-    <div tal:content="structure context/description/fmt:text-to-html">
-        $ProductRelease.description goes here. This is longer, like the
-        project release notes.
+    <div tal:content="structure context/release_notes/fmt:text-to-html">
+        $ProductRelease.release_notes go here.
     </div>
 
-    <p tal:condition="not: context/description">
-      <i>This release does not have a description. You may want to edit it
-      and give it a description, including new features and other
-      highlights.</i>
+    <p tal:condition="not: context/release_notes">
+      <i>This release does not have release notes. You may want to edit it
+      and add release notes, including new features and other highlights.</i>
     </p>
 
     <form method="POST"

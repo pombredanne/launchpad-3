@@ -39,7 +39,7 @@
              tal:attributes="href milestone/series_target/fmt:url"
              tal:replace="milestone/series_target/displayname">Feisty</a>
         </td>
-        <td tal:content="structure milestone/description/fmt:shorten/40"
+        <td tal:content="structure milestone/summary/fmt:shorten/40"
             />
       </tr>
     </table>

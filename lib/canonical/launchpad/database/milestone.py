@@ -45,7 +45,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     name = StringCol(notNull=True)
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
-    description = StringCol(notNull=False, default=None)
+    summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
     # joins
@@ -166,7 +166,7 @@ class ProjectMilestone(HasBugsBase):
         self.visible = visible
         self.target = target
         self.series_target = None
-        self.description = None
+        self.summary = None
 
     @property
     def specifications(self):

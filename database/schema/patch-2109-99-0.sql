@@ -13,7 +13,23 @@ SET client_min_messages=ERROR;
 *productseries | integer                     | not null
  datecreated   | timestamp without time zone | not null default timezone('UTC'
  milestone     | integer                     |
+
+
+SUMMARY OF CHANGES:
+    RENAME
+        Milestone.description TO summary
+        ProductRelease.description TO release_notes
+    DELETE
+        ProductRelease.summary (append to Milestone.summary)
+        ProductRelease.version (same as Milestone.name)
+        ProductRelease.codename (move to Milestone)
+        ProductRelease.productseries
+    ADD
+        Milestone.codename
+        NOTNULL constraint on ProductRelease.milestone
 */
+
+
 BEGIN;
 
 -- ProductReleases are only unique on the version and productseries,
@@ -22,6 +38,12 @@ BEGIN;
 ALTER TABLE Milestone
 ADD COLUMN codename TEXT;
 
+ALTER TABLE Milestone
+RENAME COLUMN description TO summary;
+
+ALTER TABLE ProductRelease
+RENAME COLUMN description TO release_notes;
+
 -- Link milestones and releases with matching names and productseries.
 UPDATE ProductRelease
 SET milestone = Milestone.id
@@ -29,12 +51,11 @@ FROM Milestone
 WHERE Milestone.name = lower(ProductRelease.version)
     AND Milestone.productseries = ProductRelease.productseries;
 
--- Append ProductRelease.description to Milestone.description.
+-- Append ProductRelease.summary to Milestone.summary.
 UPDATE Milestone
 SET codename = ProductRelease.codename,
-    description = coalesce(Milestone.description, '')
+    summary = coalesce(Milestone.summary, '')
                   || E'\n' || coalesce(ProductRelease.summary, '')
-                  || E'\n' || coalesce(ProductRelease.description, '')
 FROM ProductRelease
 WHERE ProductRelease.milestone = Milestone.id;
 
@@ -43,15 +64,16 @@ INSERT INTO Milestone (
     product,
     productseries,
     name,
-    description,
-    codename)
+    summary,
+    codename,
+    visible)
 SELECT
     series.product,
     release.productseries,
     lower(release.version),
-    coalesce(release.summary, '')
-        || E'\n' || coalesce(release.description, ''),
-    codename
+    coalesce(release.summary, ''),
+    codename,
+    FALSE
 FROM ProductRelease release
     JOIN ProductSeries series ON series.id = release.productseries
 WHERE milestone IS NULL;
@@ -62,11 +84,9 @@ SET milestone = Milestone.id
 FROM Milestone
 WHERE Milestone.name = lower(ProductRelease.version)
     AND Milestone.productseries = ProductRelease.productseries
-    AND (Milestone.description =
-            coalesce(ProductRelease.summary, '')
-                || E'\n' || coalesce(ProductRelease.description, '')
-         OR (Milestone.description IS NULL
-             AND ProductRelease.description IS NULL));
+    AND (Milestone.summary = coalesce(ProductRelease.summary, '')
+         OR (Milestone.summary IS NULL
+             AND ProductRelease.summary IS NULL));
 
 -- Add NOT NULL constraint.
 ALTER TABLE ProductRelease
@@ -85,9 +105,6 @@ DROP COLUMN codename;
 
 ALTER TABLE ProductRelease
 DROP COLUMN summary;
-
-ALTER TABLE ProductRelease
-DROP COLUMN description;
 
 ALTER TABLE ProductRelease
 DROP COLUMN productseries;

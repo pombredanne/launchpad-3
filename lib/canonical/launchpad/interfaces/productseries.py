@@ -195,8 +195,8 @@ class IProductSeriesEditRestricted(Interface):
 
     @rename_parameters_as(dateexpected='date_targeted')
     @export_factory_operation(IMilestone,
-                              ['name', 'dateexpected', 'description'])
-    def newMilestone(name, dateexpected=None, description=None):
+                              ['name', 'dateexpected', 'summary'])
+    def newMilestone(name, dateexpected=None, summary=None):
         """Create a new milestone for this ProjectSeries."""
 
 

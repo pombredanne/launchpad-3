@@ -153,7 +153,7 @@ class MilestoneAddView(LaunchpadFormView):
     """A view for creating a new Milestone."""
 
     schema = IMilestone
-    field_names = ['name', 'dateexpected', 'description']
+    field_names = ['name', 'dateexpected', 'summary']
     label = "Register a new milestone"
 
     custom_widget('dateexpected', DateWidget)
@@ -164,7 +164,7 @@ class MilestoneAddView(LaunchpadFormView):
         milestone = self.context.newMilestone(
             name=data.get('name'),
             dateexpected=data.get('dateexpected'),
-            description=data.get('description'))
+            summary=data.get('summary'))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -181,7 +181,7 @@ class MilestoneEditView(LaunchpadEditFormView):
     """
 
     schema = IMilestone
-    field_names = ['name', 'visible', 'dateexpected', 'description']
+    field_names = ['name', 'visible', 'dateexpected', 'summary']
     label = "Modify milestone details"
 
     custom_widget('dateexpected', DateWidget)

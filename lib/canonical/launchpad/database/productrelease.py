@@ -37,6 +37,7 @@ class ProductRelease(SQLBase):
     _defaultOrder = ['-datereleased']
 
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    release_notes = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
@@ -59,12 +60,7 @@ class ProductRelease(SQLBase):
 
     @property
     def summary(self):
-        # XXX remove this
-        return self.description
-
-    @property
-    def description(self):
-        return self.milestone.description
+        return self.milestone.summary
 
     @property
     def productseries(self):

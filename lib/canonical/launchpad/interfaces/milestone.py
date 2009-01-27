@@ -99,13 +99,12 @@ class IMilestone(IHasBugs):
             description=_("Whether or not this milestone should be shown "
                           "in web forms for bug targeting.")),
         exported_as='is_visible')
-    description = exported(
+    summary = exported(
         Description(
-            title=_("Description"),
+            title=_("Summary"),
             required=False,
             description=_(
-                "A detailed description of the features and status of this "
-                "milestone.")))
+                "A summary of the features and status of this milestone.")))
     target = exported(
         Reference(
             schema=Interface, # IHasMilestones

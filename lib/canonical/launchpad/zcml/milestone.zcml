@@ -7,7 +7,7 @@
     <!-- Milestone -->
     <class class="canonical.launchpad.database.Milestone">
         <allow attributes="id name product distribution productseries
-                           distroseries dateexpected visible description
+                           distroseries dateexpected visible summary
                            target series_target displayname title
                            specifications product_release" />
         <require
@@ -17,7 +17,7 @@
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name dateexpected description visible
+            set_attributes="name dateexpected summary visible
                             product_release" />
         <require
             permission="launchpad.Admin"
