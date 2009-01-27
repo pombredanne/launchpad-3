@@ -28,18 +28,10 @@
         <p>This PPA does not contain any source packages published.</p>
       </tal:inactive_ppa_header>
 
-      <form name="package_search" action="" method="GET"
-            tal:condition="view/has_sources">
-        <label for="name">Package name contains:</label>
-        <input id="field.name_filter" title="Package Name" size="20"
-                type="text" name="field.name_filter"
-                tal:attributes="value request/field.name_filter|nothing"/>
-        <tal:status_filter
-            replace="structure view/plain_status_filter_widget" /> in
-        <tal:series_filter
-            replace="structure view/plain_series_filter_widget" />
-        <input type="submit" value="Filter" />
-      </form>
+      <tal:package_filter_form condition="view/has_sources">
+        <metal:package_filter_form
+          use-macro="context/@@+macros/package-filter-form" />
+      </tal:package_filter_form>
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
