@@ -53,6 +53,36 @@
       No matching package for '<tal:name_filter replace="name_filter" />'.
     </div>
 
+<script type="text/javascript">
+YUI().use('node', function(Y) {
+    function toggleExpandableRow(expander) {
+       var row_id = expander.get('id').split('-')[0];
+       row = Y.get('#' + row_id);
+       icon = expander.query('img');
+
+       row_display = row.getStyle('display');
+       if (row_display == 'none') {
+           row.setStyle('display', 'table-row');
+           icon.set('src', '/@@/treeExpanded')
+       }
+       else {
+           row.setStyle('display', 'none');
+           icon.set('src', '/@@/treeCollapsed')
+       }
+    }
+
+    var main_area = Y.get('#mainarea');
+    var expanders = main_area.queryAll('a.expander');
+    expanders.each(function(expander) {
+        expander.on("click", function(e) {
+            e.preventDefault();
+            var expander = e.currentTarget;
+            toggleExpandableRow(expander);
+        });
+    });
+});
+</script>
+
   </div>
 
 </metal:source_package_list>

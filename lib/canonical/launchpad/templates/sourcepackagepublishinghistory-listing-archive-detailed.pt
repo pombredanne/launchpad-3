@@ -9,9 +9,8 @@
            tal:condition="view/allow_selection"
            tal:attributes="value context/id;
                            id string:field.selected_sources.${context/id}"
-           name="field.selected_sources" /><a href="#"
-           tal:attributes="onclick
-           string:return toggleExpandableTableRow('pub${context/id}');"
+           name="field.selected_sources" /><a class="expander" href="#"
+           tal:attributes="id string:pub${context/id}-expander'"
            ><img src="/@@/treeCollapsed" alt="Show files" title="Show files"
                  tal:attributes="id string:pub${context/id}-arrow" /></a>
          <tal:source_name content="context/sourcepackagerelease/title"
