@@ -1046,6 +1046,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return ''
 
         # If the object didn't move, serve up its representation.
+        self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
 
