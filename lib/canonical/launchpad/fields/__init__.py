@@ -630,9 +630,6 @@ class URIField(TextLine):
     def _validate(self, value):
         """Ensure the value is a valid URI."""
 
-        if value is None:
-            return
-
         if isinstance(value, list):
             raise LaunchpadValidationError('Only a single value is expected')
 
