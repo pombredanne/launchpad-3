@@ -40,7 +40,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.potemplate.path = "/messages.pot"
         self.failUnlessEqual(
             self.potemplate._composePOFilePath('eo'),
-            "testdomain-eo.po",
+            "/testdomain-eo.po",
             "_composePOFilePath does not create a correct file name with "
             "leading slash and language code."
             )
