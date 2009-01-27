@@ -543,15 +543,11 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             path_variant = '@%s' % variant
 
+        potemplate_dir = os.path.dirname(self.path)
         path = '%s-%s%s.po' % (
             self.translation_domain, language_code, path_variant)
-        potemplate_dir = os.path.dirname(self.path)
-        # dirname returns '/' for the root directory, otherwise it
-        # omits the trailing '/' of the directory.
-        if potemplate_dir in ('', '/'):
-            return potemplate_dir+path
-        else:
-            return potemplate_dir+'/'+path
+
+        return os.path.join(potemplate_dir, path)
 
     def newPOFile(self, language_code, variant=None, requester=None):
         """See `IPOTemplate`."""
