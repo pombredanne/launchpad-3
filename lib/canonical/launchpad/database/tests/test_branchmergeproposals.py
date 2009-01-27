@@ -4,16 +4,21 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 from datetime import datetime
 from unittest import TestCase, TestLoader
 
 from pytz import UTC
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter, is_valid_transition)
-from canonical.launchpad.interfaces import WrongBranchMergeProposal
+    BranchMergeProposalGetter, is_valid_transition, MessageJob,
+    MessageJobAction)
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.interfaces import (
+    IMessageJob, WrongBranchMergeProposal,)
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -25,10 +30,13 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
+from canonical.launchpad.webapp.testing import verifyObject
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer,)
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -989,6 +997,31 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
                          vote_reference.registrant)
         self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
+
+
+class TestMessageJob(TestCaseWithFactory):
+    """Tests for MessageJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeMessageJob(self):
+        lfa = getUtility(ILibraryFileAliasSet).create(
+            'static.diff', len('foo'), StringIO('foo'), 'text/x-diff')
+        return MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
+
+    def test_providesInterface(self):
+        """Ensure that BranchJob implements IBranchJob."""
+        # Ensure database constraints are satisfied.
+        job = self.makeMessageJob()
+        job.sync()
+        verifyObject(IMessageJob, job)
+
+    def test_destroySelf_destroys_job(self):
+        """Ensure that MessageJob.destroySelf destroys the Job as well."""
+        message_job = self.makeMessageJob()
+        job_id = message_job.job.id
+        message_job.destroySelf()
+        self.assertRaises(SQLObjectNotFound, Job.get, job_id)
 
 
 def test_suite():
