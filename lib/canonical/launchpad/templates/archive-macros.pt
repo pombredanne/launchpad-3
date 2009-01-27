@@ -55,31 +55,33 @@
 
 <script type="text/javascript">
 YUI().use('node', function(Y) {
-    function toggleExpandableRow(expander) {
-       var row_id = expander.get('id').split('-')[0];
-       row = Y.get('#' + row_id);
-       icon = expander.query('img');
 
-       row_display = row.getStyle('display');
-       if (row_display == 'none') {
-           row.setStyle('display', 'table-row');
-           icon.set('src', '/@@/treeExpanded')
-       }
-       else {
-           row.setStyle('display', 'none');
-           icon.set('src', '/@@/treeCollapsed')
-       }
-    }
+function toggleExpandableRow(expander) {
+   var row_id = expander.get('id').split('-')[0];
+   row = Y.get('#' + row_id);
+   icon = expander.query('img');
 
-    var main_area = Y.get('#mainarea');
-    var expanders = main_area.queryAll('a.expander');
-    expanders.each(function(expander) {
-        expander.on("click", function(e) {
-            e.preventDefault();
-            var expander = e.currentTarget;
-            toggleExpandableRow(expander);
-        });
+   row_display = row.getStyle('display');
+   if (row_display == 'none') {
+       row.setStyle('display', 'table-row');
+       icon.set('src', '/@@/treeExpanded')
+   }
+   else {
+       row.setStyle('display', 'none');
+       icon.set('src', '/@@/treeCollapsed')
+   }
+}
+
+var packages_list = Y.get('#packages_list');
+var expanders = packages_list.queryAll('a.expander');
+expanders.each(function(expander) {
+    expander.on("click", function(e) {
+        e.preventDefault();
+        var expander = e.currentTarget;
+        toggleExpandableRow(expander);
     });
+});
+
 });
 </script>
 
