@@ -148,7 +148,7 @@ from canonical.launchpad.interfaces import (
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.branchnamespace import (
-    IBranchNamespaceSet)
+    IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
@@ -292,7 +292,7 @@ class BranchTraversalMixin:
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))
-        except NotFoundError:
+        except (NotFoundError, InvalidNamespace):
             return super(BranchTraversalMixin, self).traverse(pillar_name)
 
         # Normally, populating the launch bag is done by the traversal
@@ -3192,6 +3192,11 @@ class PersonTranslationView(LaunchpadView):
         return list(self.context.translation_groups)
 
     @cachedproperty
+    def translators(self):
+        """Return translators a person is a member of."""
+        return list(self.context.translators)
+
+    @cachedproperty
     def person_filter_querystring(self):
         """Return person's name appropriate for including in links."""
         return urllib.urlencode({'person': self.context.name})
@@ -5229,8 +5234,9 @@ class ContactViaWebNotificationRecipientSet:
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
-                'the "Contact this team" link on the ' '%s team page '
-                'to each\nmember directly' % person_or_team.displayname)
+                'the "Contact this team" link on the %s\n'
+                'team page to each member directly' %
+                person_or_team.displayname)
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         return (reason, header)
 

@@ -44,7 +44,8 @@ class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
     def getWarehouseLocation(self, db_branch):
         """Get the warehouse location for a database branch."""
         destination = os.path.join(
-            local_path_from_url(config.supermirror.warehouse_root_url),
+            local_path_from_url(
+                config.codehosting.internal_branch_by_id_root),
             branch_id_to_path(db_branch.id))
         ensure_base(get_transport(destination))
         self.addCleanup(lambda: shutil.rmtree(destination))

@@ -277,7 +277,12 @@ class GPGHandler:
         if 'GPG_AGENT_INFO' in os.environ:
             del os.environ['GPG_AGENT_INFO']
 
-        result = context.genkey(signing_only_param % {'name': name})
+        # Only 'utf-8' encoding is supported by gpgme.
+        # See more information at:
+        # http://pyme.sourceforge.net/doc/gpgme/Generating-Keys.html
+        result = context.genkey(
+            signing_only_param % {'name': name.encode('utf-8')}
+            )
 
         # Right, it might seem paranoid to have this many assertions,
         # but we have to take key generation very seriously.

@@ -163,6 +163,8 @@ class IBugTarget(IHasBugs):
 # We assign the schema for an `IBugTask` attribute here
 # in order to avoid circular dependencies.
 IBugTask['target'].schema = IBugTarget
+IBugTask['transitionToTarget'].getTaggedValue(
+    'lazr.webservice.exported')['params']['target'].schema = IBugTarget
 
 
 class BugDistroSeriesTargetDetails:

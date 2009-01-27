@@ -235,8 +235,7 @@ class UnmergedRevisionsMixin:
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return (config.codehosting.codebrowse_root +
-                self.context.source_branch.unique_name)
+        return self.context.source_branch.codebrowse_url()
 
 
 class BranchMergeProposalRevisionIdMixin:
@@ -336,6 +335,15 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    @property
+    def review_diff(self):
+        """Return a (hopefully) intelligently encoded review diff."""
+        try:
+            diff = self.context.review_diff.diff.text.decode('utf-8')
+        except UnicodeDecodeError:
+            diff = self.context.review_diff.diff.text.decode('windows-1252')
+        return diff
 
     @property
     def has_bug_or_spec(self):

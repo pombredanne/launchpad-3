@@ -29,6 +29,7 @@ A device entry provides the attributes bus_product_id, name and variant.
     ...     pprint_entry(entry)
     bus: u'System'
     bus_product_id: u'MS-7369'
+    drivers_collection_link: u'.../+hwdb/+device/1/drivers'
     id: 1
     name: u'MS-7369'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device'
@@ -69,6 +70,7 @@ devices matching the given value are returned.
     ...     pprint_entry(entry)
     bus: u'System'
     bus_product_id: u'MS-7369'
+    drivers_collection_link: u'.../+hwdb/+device/1/drivers'
     id: 1
     name: u'MS-7369'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device'
@@ -88,6 +90,7 @@ Single device records can be accessed too.
     >>> pprint_entry(device)
     bus: u'PCI'
     bus_product_id: u'0x0455'
+    drivers_collection_link: u'.../+hwdb/+device/2/drivers'
     id: 2
     name: u'MCP65 USB Controller'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device'
@@ -111,6 +114,31 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     ...
     NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
+
+HWDevice.drivers returns the list of drivers associtaed with this device.
+
+    >>> drivers = webservice.get('/+hwdb/+device/2/drivers').jsonBody()
+    >>> for driver in drivers['entries']:
+    ...     pprint_entry(driver)
+    id: 1
+    license: None
+    name: u'ehci_hcd'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
+    id: 5
+    license: None
+    name: u'hub'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/5'
+    id: 2
+    license: None
+    name: u'usb'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
+
 
 === Drivers and Driver Queries ===
 

@@ -29,6 +29,7 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
 from zope.formlib import form
@@ -240,9 +241,7 @@ class BranchNavigationMenu(NavigationMenu):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Source Code'
         enabled = self.branch.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.branch.unique_name
-               + '/files')
+        url = self.branch.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
 
 
@@ -251,8 +250,7 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
-             'browse_revisions',
+    links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates', 'merge_queue',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
@@ -277,22 +275,11 @@ class BranchContextMenu(ContextMenu):
         text = 'Delete branch'
         return Link('+delete', text)
 
-    def browse_code(self):
-        """Return a link to the branch's file listing on codebrowse."""
-        text = 'Browse code'
-        enabled = self.context.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.context.unique_name
-               + '/files')
-        return Link(url, text, icon='info', enabled=enabled)
-
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'All revisions'
         enabled = self.context.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.context.unique_name
-               + '/changes')
+        url = self.context.codebrowse_url('changes')
         return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -398,7 +385,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return config.codehosting.codebrowse_root + self.context.unique_name
+        return self.context.codebrowse_url()
 
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
@@ -956,7 +943,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 registrant=self.user,
                 owner=data['owner'],
-                author=None, # Until BranchSet.new modified to remove it.
                 product=data['product'],
                 url=data.get('url'),
                 title=data['title'],
@@ -1163,6 +1149,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
+    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     @property
     def initial_values(self):

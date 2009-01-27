@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
     IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask,
+    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
 from canonical.launchpad.interfaces.distribution import (
@@ -862,6 +862,37 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_assigned = now
 
         self.assignee = assignee
+
+    def transitionToTarget(self, target):
+        """See `IBugTask`.
+
+        This method allows changing the target of some bug
+        tasks. The rules it follows are similar to the ones
+        enforced implicitly by the code in
+        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
+        """
+        if (self.milestone is not None and
+            self.milestone.target != target):
+            # If the milestone for this bugtask is set, we
+            # have to make sure that it's a milestone of the
+            # current target, or reset it to None
+            self.milestone = None
+
+        if IUpstreamBugTask.providedBy(self):
+            if IProduct.providedBy(target):
+                self.product = target
+            else:
+                raise IllegalTarget(
+                    "Upstream bug tasks may only be re-targeted "
+                    "to another project.")
+        else:
+            if (IDistributionSourcePackage.providedBy(target) and
+                target.distribution == self.target.distribution):
+                self.sourcepackagename = target.sourcepackagename
+            else:
+                raise IllegalTarget(
+                    "Distribution bug tasks may only be re-targeted "
+                    "to a package in the same distribution.")
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
