@@ -135,6 +135,13 @@ class URIWidget(TextWidget):
     displayWidth = 44
     cssClass = 'urlTextType'
 
+    def __init__(self, field, request):
+        super(URIWidget, self).__init__(field, request)
+        self.field = field
+
+    def _toFieldValue(self, input):
+        return TextWidget._toFieldValue(self, self.field._toFieldValue(input))
+
 
 class DelimitedListWidget(TextAreaWidget):
     """A widget that represents a list as whitespace-delimited text.

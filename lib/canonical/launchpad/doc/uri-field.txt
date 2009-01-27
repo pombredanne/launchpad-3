@@ -206,7 +206,7 @@ Multiple values will cause an UnexpectedFormData exception:
   ...                       'http://ubuntu.com'])
   Traceback (most recent call last):
     ...
-  UnexpectedFormData: Only a single value is expected
+  LaunchpadValidationError: Only a single value is expected
 
 Trailing slashes are added or removed if that policy is set for the field:
   >>> field.trailing_slash = True

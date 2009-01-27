@@ -157,6 +157,7 @@ representation of the object.
   ...                     'PATCH')
   HTTP/1.1 200 Ok
   ...
+  Content-Type: application/json
   <BLANKLINE>
   {...}
 
@@ -281,12 +282,6 @@ Send in a URI with a trailing slash, and the data will not be modified.
     ...     "/firefox", "http://www.trailingslash.com/").jsonBody()
     >>> print firefox['wiki_url']
     http://www.trailingslash.com/
-
-Send in None, and the value will be erased.
-
-    >>> firefox = set_project_wiki_url("/firefox", None).jsonBody()
-    >>> print firefox['wiki_url']
-    None
 
 The canonicalization works for PUT requests as well.
 

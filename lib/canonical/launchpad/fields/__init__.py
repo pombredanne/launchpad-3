@@ -594,18 +594,27 @@ class URIField(TextLine):
 
     def set(self, object, value):
         """Canonicalize a URL and set it as a field value.
+        """
+        value = self._toFieldValue(value)
+        super(URIField, self).set(object, value)
 
+    def _toFieldValue(self, input):
+        """
         The URIField has the following special behavior:
          * whitespace is stripped from the input value
          * if the field requires (or forbids) a trailing slash on the URI,
-           then the widget ensures that the widget ends in a slash (or
+           then the  ensures that the widget ends in a slash (or
            doesn't end in a slash).
-         * the URI is canonicalised.
+         * the URI is canonicalized.
         """
-        if value is not None:
-            value = value.strip()
-            self._validate(value)
-            uri = URI(value)
+        if isinstance(input, list):
+            raise LaunchpadValidationError('Only a single value is expected')
+        input = input.strip()
+        if input:
+            try:
+                uri = URI(input)
+            except InvalidURIError, exc:
+                raise ConversionError(str(exc))
             # If there is a policy for whether trailing slashes are
             # allowed at the end of the path segment, ensure that the
             # URI conforms.
@@ -614,12 +623,12 @@ class URIField(TextLine):
                     uri = uri.ensureSlash()
                 else:
                     uri = uri.ensureNoSlash()
-            value = str(uri)
-        super(URIField, self).set(object, value)
+            input = str(uri)
+        return input
+
 
     def _validate(self, value):
         """Ensure the value is a valid URI."""
-        super(URIField, self)._validate(value)
 
         if value is None:
             return
@@ -667,6 +676,7 @@ class URIField(TextLine):
                 if uri.path != '/' and has_slash:
                     raise LaunchpadValidationError(
                         'The URI must not end with a slash.')
+        super(URIField, self)._validate(value)
 
 
 class FieldNotBoundError(Exception):
