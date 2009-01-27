@@ -29,7 +29,7 @@
         replace="structure view/plain_status_filter_widget" /> in
     <tal:series_filter
         replace="structure view/plain_series_filter_widget" />
-    <input type="submit" value="Update" />
+    <input type="submit" value="Filter" />
   </form>
 
   <div metal:use-macro="context/@@launchpad_form/form">
