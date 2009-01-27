@@ -232,11 +232,22 @@ def wrap_text(text, prefix, wrap_width):
     "\\\\\\"
     "\\\\"
     msgstr ""
+
+    There are a couple of other characters that will be escaped in the
+    output, too.
+
+    >>> translation_message.msgid_singular = (ur'"' + u"\t\r")
+    >>> print export_translation_message(translation_message, wrap_width=10)
+    msgid ""
+    "\"\t\r"
+    msgstr ""
+
     '''
     def local_escape(text):
         ret = text.replace(u'\\', u'\\\\')
         ret = ret.replace(ur'"', ur'\"')
         ret = ret.replace(u'\t', u'\\t')
+        ret = ret.replace(u'\r', u'\\r')
         return ret.replace(u'\n', u'\\n')
 
     # Quickly get escaped character byte widths using
@@ -245,7 +256,9 @@ def wrap_text(text, prefix, wrap_width):
         '\\': 2,
         '\"': 2,
         '\t': 2,
-        '\n': 2}
+        '\r': 2,
+        '\n': 2,
+        }
 
     # Wrap at these characters.
     wrap_at = [' ', '\t', '\n', '-', '\\']
