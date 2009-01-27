@@ -1349,6 +1349,9 @@ class HALDevice:
             of video devices.
         """
         bus = self.raw_bus
+        # This set of buses is only used once; it's easier to have it
+        # here than to put it elsewhere and have to document its
+        # location and purpose.
         if bus in (None, 'drm', 'dvb', 'memstick_host', 'net',
                    'scsi_generic', 'scsi_host', 'sound', 'ssb', 'tty',
                    'usb', 'video4linux', ):
