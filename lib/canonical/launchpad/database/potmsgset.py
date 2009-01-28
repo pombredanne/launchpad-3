@@ -180,6 +180,9 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
+        # For testing (details in bug #322308), return no external suggestions.
+        return []
+
         # Return empty list (no suggestions) for translation credit strings
         # because they are automatically translated.
         if self.is_translation_credit:
