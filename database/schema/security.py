@@ -193,6 +193,14 @@ def main(options):
                 schema.groups.append(username)
                 schema.principals.append(username)
 
+        # Set default read-only mode for our roles.
+        cur.execute(
+            'ALTER ROLE %s SET default_transaction_read_only TO FALSE'
+            % quote_identifier(section_name))
+        cur.execute(
+            'ALTER ROLE %s SET default_transaction_read_only TO TRUE'
+            % quote_identifier('%s_ro' % section_name))
+
     # Add users to groups
     for user in config.sections():
         if config.get(user, 'type') != 'user':
