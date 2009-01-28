@@ -602,6 +602,23 @@ class TestNamespaceSet(TestCaseWithFactory):
         self.assertEqual(branch, found_branch)
         self.assertEqual(trailing_segments, list(segments))
 
+    def test_too_few_segments(self):
+        # If there aren't enough segments, raise InvalidNamespace.
+        person = self.factory.makePerson()
+        self.assertRaises(
+            InvalidNamespace,
+            self.namespace_set.traverse, iter([person.name]))
+
+    def test_last_segment_none(self):
+        # If the last name passed to traverse is None, raise an error (rather
+        # than returning None).
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            AssertionError,
+            self.namespace_set.traverse,
+            iter([person.name, product.name, None]))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -112,19 +112,18 @@ def build_package_location(distribution_name, suite=None, purpose=None,
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution, purpose)
         if archive is None:
-            raise PackageLocationError(
+            raise PackdaageLocationError(
                 "Could not find %s archive for %s" % (
                 purpose.title, distribution_name))
     elif purpose == ArchivePurpose.COPY:
         assert archive_name is not None, (
             "archive_name should be passed for COPY archives")
-        archives = getUtility(IArchiveSet).getArchivesForDistribution(
-            distribution, name=archive_name, purposes=purpose)
-        if archives.count() == 0:
+        archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution, purpose, name=archive_name)
+        if archive is None:
             raise PackageLocationError(
                 "Could not find %s archive with the name '%s' for %s" % (
                     purpose.title, archive_name, distribution.name))
-        archive = archives[0]
     else:
         assert person_name is None and archive_name is None, (
             "person_name and archive_name shoudn't be passed when purpose "

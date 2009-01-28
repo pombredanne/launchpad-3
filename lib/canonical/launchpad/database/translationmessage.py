@@ -330,3 +330,7 @@ class TranslationMessageSet:
             return TranslationMessage.get(ID)
         except SQLObjectNotFound:
             return None
+
+    def selectDirect(self, where=None, order_by=None):
+        """See `ILanguageSet`."""
+        return TranslationMessage.select(where, orderBy=order_by)

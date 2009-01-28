@@ -18,9 +18,16 @@
     </class>
 
     <adapter
+        name="all_messages"
         for="canonical.launchpad.interfaces.IPOFile"
         provides="canonical.launchpad.interfaces.ITranslationFileData"
         factory="canonical.launchpad.database.POFileToTranslationFileDataAdapter" />
+
+    <adapter
+        name="changed_messages"
+        for="canonical.launchpad.interfaces.IPOFile"
+        provides="canonical.launchpad.interfaces.ITranslationFileData"
+        factory="canonical.launchpad.database.POFileToChangedFromPackagedAdapter" />
 
     <browser:navigation
         module="canonical.launchpad.browser"

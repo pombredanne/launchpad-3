@@ -501,6 +501,7 @@ link to a repository that doesn't exist yet.
     This archive is public
     PPA for No Privileges Person
     URL: http://ppa.launchpad.dev/no-priv/ppa/ubuntu
+    Description
     I am not allowed to say, I have no privs.
     This PPA does not contain any packages yet.
     ...

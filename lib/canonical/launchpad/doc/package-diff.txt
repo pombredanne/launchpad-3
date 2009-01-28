@@ -623,6 +623,54 @@ the diff was properly generated.
     +I am evil.
     <BLANKLINE>
 
+The 'debdiff' application may fail to process the given pair of
+sources, usually due to hardlink within the source package or other
+very rare (thus unknown yet) conditions.
+
+Anyway, the package-diff request infrastructure copes fine with
+'debdiff' failures. When it happens the request is simply marked as
+FAILED, this way it will not block the pending-diff processor neither
+be processed again, unless it gets reset.
+
+In order to cause a 'debdiff' failure we will taint the DSC file of an
+uploaded source.
+
+    >>> packager = FakePackager(
+    ...     'broken-source', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+
+    >>> packager.buildUpstream(suite='breezy-autotest')
+    >>> packager.buildSource()
+    >>> ignore = packager.uploadSourceVersion('1.0-1', policy='sync')
+
+    >>> packager.buildVersion('1.0-2', changelog_text="I am broken.")
+    >>> packager.buildSource()
+    >>> pub = packager.uploadSourceVersion(
+    ...     '1.0-2', archive=foobar.archive)
+    >>> transaction.commit()
+
+    >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+    >>> [orig, upload_diff, dsc] = pub.sourcepackagerelease.files
+    >>> fillLibrarianFile(dsc.libraryfile.id)
+
+    >>> [broken_diff] = pub.sourcepackagerelease.package_diffs
+    >>> print broken_diff.title
+    1.0-1 (in Ubuntu) to 1.0-2
+
+With a tainted DSC 'debdiff' cannot do much and fails, resulting in a
+FAILED request (empty 'diff_content' and 'date_fullfilled').
+
+    >>> broken_diff.performDiff()
+    >>> transaction.commit()
+
+    >>> print broken_diff.status.name
+    FAILED
+
+    >>> broken_diff.date_fulfilled is None
+    True
+
+    >>> print broken_diff.diff_content
+    None
+
 
 == PackageDiff privacy ==
 

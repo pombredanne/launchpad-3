@@ -280,6 +280,7 @@ class Build(SQLBase):
                 Build.buildstate = 0 AND
                 Build.processor = %s AND
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 ((BuildQueue.lastscore > %s) OR
                  ((BuildQueue.lastscore = %s) AND
                   (Build.id < %s)))
@@ -343,6 +344,7 @@ class Build(SQLBase):
                     Builder.id = BuildQueue.builder
             WHERE
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 Build.buildstate = %s AND
                 Builder.processor = %s
             ORDER BY
@@ -619,7 +621,8 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.http_url
+            buildlog_url = (
+                canonical_url(self) + "/+files/" + self.buildlog.filename)
             builder_url = canonical_url(self.builder)
 
         if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
