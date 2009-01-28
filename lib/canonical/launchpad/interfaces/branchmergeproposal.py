@@ -464,8 +464,11 @@ class IBranchMergeProposal(Interface):
         """Delete the proposal to merge."""
 
 
+IBranch['landing_targets'].value_type = Reference(IBranchMergeProposal)
 IBranch['landing_targets'].schema = IBranchMergeProposal
+IBranch['landing_candidates'].value_type = Reference(IBranchMergeProposal)
 IBranch['landing_candidates'].schema = IBranchMergeProposal
+IBranch['dependent_branches'].value_type = Reference(IBranchMergeProposal)
 IBranch['dependent_branches'].schema = IBranchMergeProposal
 
 

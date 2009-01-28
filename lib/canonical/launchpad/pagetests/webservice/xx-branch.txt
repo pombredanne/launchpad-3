@@ -117,11 +117,11 @@ time goes on.
 There is a branch merge proposal with Fooix trunk as the target branch, so it
 should have a branch at the endpoint of landing_candidates.
 
-    >>> print details['landing_candidates_collection_link']
     >>> landing_candidates = webservice.get(
     ...     details['landing_candidates_collection_link']).jsonBody()
     >>> for candidate in landing_candidates['entries']:
-    ...     print branch['unique_name']
+    ...     print candidate['source_branch_link']
+    http://api.launchpad.dev/beta/~person-name23/fooix/branch25
 
 
 == Project branches ==
