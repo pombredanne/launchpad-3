@@ -124,6 +124,23 @@ should have a branch at the endpoint of landing_candidates.
     http://api.launchpad.dev/beta/~person-name23/fooix/branch25
 
 
+The source_branch of the landing candidate should have this same merge proposal
+in its landing_targets.
+
+    >>> feature_branch_link = \
+    ...     'http://api.launchpad.dev/beta/~person-name23/fooix/branch25'\
+    >>> feature_branch = webservice.get(feature_branch_link).jsonBody()
+    >>> print feature_branch['unique_name']
+    ~person-name23/fooix/branch25
+
+    >>> landing_targets = webservice.get(
+    ...     feature_branch['landing_targets_collection_link']).jsonBody()
+    >>> for target in landing_targets['entries']:
+    ...     print target['target_branch_link']
+    http://api.launchpad.dev/beta/~eric/fooix/trunk
+
+
+
 == Project branches ==
 
 The branches of a project are also available.
