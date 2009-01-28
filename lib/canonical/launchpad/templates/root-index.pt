@@ -61,7 +61,9 @@
       </div>
       <div id="home-description">Launchpad is a unique collaboration and
       <a href="http://bazaar-vcs.org/">Bazaar</a>
-      code hosting platform for software projects.</div>
+      code hosting platform for software projects. <a
+      href="/+tour"
+      >Read more...</a></div>
       <div id="home-page" style="width:90%; max-width:80em; margin:auto;">
         <div class="three column left" id="featured-projects">
           <h2>Featured projects</h2>
@@ -124,21 +126,21 @@
             <h2>Get started</h2>
               <div class="home-banners">
                 <a href="/projects/+new-guided"><img src="/@@/add"
-                /> Create a new project</a><br/>
+                /></a> <a href="/projects/+new-guided">Create a new project</a><br/>
                 <a href="/people/+newteam"><img src="/@@/add"
-                /> Create a new team</a>
+                /></a> <a href="/people/+newteam">Create a new team</a>
               </div>
               <div class="home-banners">
                 <a href="/projects"><img src="/@@/project" alt=""
-                /> Browse projects</a><br/>
+                /></a> <a href="/projects">Browse projects</a><br/>
                 <a href="/people"><img src="/@@/crowd" alt=""
-                /> Browse people &amp; Teams</a>
+                /></a> <a href="/people">Browse people &amp; teams</a>
               </div>
               <div class="home-banners">
-                <a href="/+tour"><img src="/@@/maybe" alt=""
-                /> Take the tour</a><br>
+                <a href="/+tour"><img src="/@@/mentoring" alt=""
+                /></a> <a href="/+tour">Take the tour</a><br>
                 <a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
-                /> Read the guide</a>
+                /></a> <a href="https://help.launchpad.net/">Read the guide</a>
               </div>
           </div>
         </div>
