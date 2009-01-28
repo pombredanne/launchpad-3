@@ -1058,10 +1058,6 @@ class IBranch(IHasOwner):
         """
 
 
-IBranch['landing_targets'].schema = IBranch
-IBranch['landing_candidates'].schema = IBranch
-IBranch['dependent_branches'].schema = IBranch
-
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""

@@ -464,6 +464,11 @@ class IBranchMergeProposal(Interface):
         """Delete the proposal to merge."""
 
 
+IBranch['landing_targets'].schema = IBranchMergeProposal
+IBranch['landing_candidates'].schema = IBranchMergeProposal
+IBranch['dependent_branches'].schema = IBranchMergeProposal
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
