@@ -165,7 +165,7 @@ def main(options):
 
         role_options = [
             'NOCREATEDB', 'NOCREATEROLE', 'NOCREATEUSER', 'INHERIT']
-        if type == 'user':
+        if type_ == 'user':
             role_options.append('LOGIN')
         else:
             role_options.append('NOLOGIN')
