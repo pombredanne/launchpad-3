@@ -48,5 +48,3 @@ store's replication set.
     u'BenD'
     >>> transaction.abort()
 
-Other tables outside that replication set can be traversed to, but they are
-read only.
