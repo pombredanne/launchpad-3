@@ -1,0 +1,34 @@
+Our database adapters need to trap writes to tables in slave replication
+sets. These tables may be reached directly using a SLAVE_FLAVOR store, or
+traversed to from a MASTER_FLAVOR store.
+
+Because our development environment is not replicated, we use database
+permissions to ensure that tables we should not be writing too cannot
+be written to. The same permissions structure is also used on production,
+so the Slony-I triggers blocking writes to slaved tables will never
+actually be invoked.
+
+    >>> from canonical.launchpad.database.person import Person
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, AUTH_STORE, MAIN_STORE,
+    ...     MASTER_FLAVOR, SLAVE_FLAVOR)
+    >>> import transaction
+    >>> from zope.component import getUtility
+
+If a SLAVE_FLAVOR store is requested, it should trap all writes.
+
+    >>> t = transaction.begin()
+    >>> main_slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+    >>> janitor = main_slave.find(Person, name='janitor').one()
+    >>> janitor.displayname = 'Ben Dover'
+    >>> transaction.commit()
+    Traceback (most recent call last):
+    ...
+    InternalError: transaction is read-only
+
+
+If a MASTER_FLAVOR is requested, it should allow writes to table in that
+store's replication set.
+
+Other tables outside that replication set can be traversed to, but they are
+read only.
