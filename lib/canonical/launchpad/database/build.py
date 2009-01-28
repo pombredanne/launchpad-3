@@ -752,7 +752,7 @@ class BuildSet:
                 SourcePackageRelease.sourcepackagename = SourcePackageName.id
                 AND SourcepackageName.name LIKE '%%' || %s || '%%'
             ''' % quote_like(name))
-            tables.append(['SourcePackageRelease', 'SourcePackageName'])
+            tables.extend(['SourcePackageRelease', 'SourcePackageName'])
 
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
@@ -836,9 +836,12 @@ class BuildSet:
 
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
-        condition_clauses.append(
-            "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
-            % sqlvalues(BuildStatus.FULLYBUILT))
+        if status == BuildStatus.FULLYBUILT:
+            condition_clauses.append("Build.datebuilt IS NOT NULL")
+        else:
+            condition_clauses.append(
+                "(Build.buildstate <> %s OR Build.datebuilt IS NOT NULL)"
+                % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
         # * NEEDSBUILD & BUILDING by -lastscore
@@ -861,15 +864,8 @@ class BuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.extend(["DistroArchSeries",
-                             "Archive",
-                             "DistroSeries",
-                             "Distribution"])
+        clauseTables.append("Archive")
         condition_clauses.append("""
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.id = Archive.distribution AND
             Archive.purpose IN (%s) AND
             Archive.id = Build.archive
             """ % ','.join(
