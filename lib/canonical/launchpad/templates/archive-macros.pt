@@ -10,18 +10,9 @@
   </tal:comment>
 
   <div style="padding-top: 1em;" tal:define="batch view/search_results">
-    <form name="package_search" action="" method="GET" style="clear:both">
-      <label for="name">Package name contains:</label>
-      <input id="field.name_filter" title="Package Name" size="20"
-              type="text" name="field.name_filter"
-              tal:attributes="value request/field.name_filter|nothing"/>
-      <tal:status_filter
-          replace="structure view/plain_status_filter_widget" /> in
-      <tal:series_filter
-          replace="structure view/plain_series_filter_widget" />
-      <input type="submit" value="Filter" />
-    </form>
 
+    <metal:package_filter_form
+            use-macro="context/@@+macros/package-filter-form" />
     <tal:navigation_top
         replace="structure view/batchnav/@@+navigation-links-upper" />
 
@@ -113,17 +104,6 @@
     Presents a table with selectable sources for an
     IArchiveSelectableSourceView.
   </tal:comment>
-
-  <tal:search define="name_widget nocall:view/widgets/name_filter;
-                      status_widget nocall:view/widgets/status_filter">
-     <label tal:attributes="for name_widget/name">
-       Show only sources with name matching:
-     </label>
-     <input tal:replace="structure name_widget" />
-     <input tal:replace="structure status_widget" />
-     <input
-       tal:replace="structure view/actions/field.actions.update/render" />
-  </tal:search>
 
   <tal:no_sources tal:condition="not:view/available_sources_size">
     <div id="empty-result" style="border: 1px solid;">
@@ -241,5 +221,24 @@
     </tbody>
   </table>
 </metal:build_status_summary>
+
+<metal:package_filter_form define-macro="package-filter-form">
+  <tal:comment replace="nothing">
+    Present the filtering form used on a few archive pages.
+  </tal:comment>
+
+  <form class="package-search-filter" action="" method="GET">
+    <label for="name">Package name contains:</label>
+    <input id="field.name_filter" title="Package Name" size="20"
+            type="text" name="field.name_filter"
+            tal:attributes="value request/field.name_filter|nothing"/>
+    <tal:status_filter
+        replace="structure view/plain_status_filter_widget" /> in
+    <tal:series_filter
+        replace="structure view/plain_series_filter_widget" />
+    <input type="submit" value="Filter" />
+  </form>
+
+</metal:package_filter_form>
 
 </tal:root>

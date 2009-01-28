@@ -19,6 +19,11 @@
       <p>This PPA does not contain any source packages published.</p>
     </tal:inactive_ppa_header>
 
+    <tal:package_filter_form condition="view/has_sources">
+      <metal:package_filter_form
+        use-macro="context/@@+macros/package-filter-form" />
+    </tal:package_filter_form>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div class="form" metal:fill-slot="widgets"

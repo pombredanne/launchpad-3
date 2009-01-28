@@ -71,13 +71,13 @@ matching the given text.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'nonexistentpackage'
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
     >>> print_ppa_packages(admin_browser.contents)
     No matching source packages for 'nonexistentpackage'.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
@@ -139,7 +139,7 @@ deletion comment, simulating a XSS attack. The current code will
 automaticaly quote the text entered by the user resulting in an
 entirely readable content.
 
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl(
@@ -223,7 +223,7 @@ the form re-submission tests.
 
 Multiple packages can be deleted in one single batch.
 
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
 
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['28', '29']
@@ -423,7 +423,7 @@ records are presented.
 
     >>> user_browser.getControl(
     ...     name='field.status_filter').value = ['published']
-    >>> user_browser.getControl("Update").click()
+    >>> user_browser.getControl("Filter").click()
     >>> print_ppa_packages(user_browser.contents)
     No matching source packages for ''.
 
@@ -431,7 +431,7 @@ When he selects 'Superseded' the SUPERSEDED source shows up again.
 
     >>> user_browser.getControl(
     ...     name='field.status_filter').value = ['superseded']
-    >>> user_browser.getControl("Update").click()
+    >>> user_browser.getControl("Filter").click()
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
