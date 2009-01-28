@@ -155,7 +155,7 @@ representation of the object.
 
   >>> print modify_person('salgado', {'display_name' : 'GUILHERME SALGADO'},
   ...                     'PATCH')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
   Content-Type: application/json
   <BLANKLINE>
@@ -198,7 +198,7 @@ value of Content-Type.
   ...     {'X-HTTP-Method-Override' : 'PATCH',
   ...      'Content-Type': 'not-a-valid-content/type',
   ...      'X-Content-Type-Override': 'application/json'})
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 If you try to use X-HTTP-Method-Override when the underlying HTTP
@@ -227,7 +227,7 @@ the object that was modified.
 
   >>> salgado['display_name'] = 'Guilherme Salgado'
   >>> print modify_person('salgado', salgado, 'PUT')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
   <BLANKLINE>
   {...}
@@ -241,7 +241,7 @@ JSON hash), any document that works with a PUT request will also work
 with a PATCH request.
 
   >>> print modify_person('salgado', salgado, 'PATCH')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 
@@ -341,7 +341,7 @@ your request goes through.
 
   >>> print modify_person('salgado', salgado, 'PATCH',
   ...                     {'If-Match' : etag})
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 If the ETags don't match, it's because somebody modified the entry
@@ -358,7 +358,7 @@ will go through.
 
   >>> print modify_person('salgado', salgado, 'PATCH',
   ...                     {'If-Match' : '"an-old-etag", %s' % etag})
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 Both PUT and PATCH requests work this way.
@@ -407,7 +407,7 @@ attribute, but it has to be the same as the current value.
 
   >>> print modify_person(
   ...     'salgado', {'date_created' : salgado['date_created']}, 'PATCH')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 You can't change the link to an entry's associated collection.
@@ -426,7 +426,7 @@ collection link; you just can't _change_ the value.
   >>> print modify_person('salgado',
   ...                     {'memberships_details_collection_link' : link },
   ...                      'PATCH')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 You can't directly change an entry's URL address.
@@ -495,7 +495,7 @@ relationships to other objects. Here we change the owner of the
   u'http://.../~sabdfl'
   >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('/~salgado')
   >>> print modify_person('admins', admins, 'PUT')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 Identification of the owner is done by specifying a URL; a random
@@ -604,28 +604,28 @@ Or it might be a date that's not in UTC.
 There are five ways to specify UTC:
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025Z')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025+00:00')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025+0000')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025-00:00')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025-0000')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 A value with a missing timezone is treated as UTC.
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 

@@ -38,6 +38,7 @@ from zope.component import (
     getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
+from zope.publisher.http import status_reasons
 from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
@@ -73,6 +74,12 @@ from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
                                 'wadl20061109.xsd')
 
+# XXX leonardr 2009-01-29
+# bug=https://bugs.edge.launchpad.net/zope3/+bug/322486:
+# Add nonstandard status methods to Zope's status_reasons dictionary.
+for (code, reason) in [(209, 'Content Returned')]:
+    if not code in status_reasons:
+        status_reasons[code] = reason
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
     "A page template class for generating web service-related documents."
@@ -1049,6 +1056,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return ''
 
         # If the object didn't move, serve up its representation.
+        self.request.response.setStatus(209)
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(self, cls=ResourceJSONEncoder)
 

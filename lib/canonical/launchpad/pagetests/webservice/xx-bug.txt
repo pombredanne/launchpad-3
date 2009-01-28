@@ -125,13 +125,13 @@ To mark a bug as private, we patch the `private` attribute of the bug.
   False
   >>> print webservice.patch(
   ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=True)))
-  HTTP/1.1 200 Ok...
+  HTTP/1.1 209 Content Returned...
   >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
   >>> bug_twelve['private']
   True
   >>> print webservice.patch(
   ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=False)))
-  HTTP/1.1 200 Ok...
+  HTTP/1.1 209 Content Returned...
 
 
 == Bugs as message targets ==
@@ -261,7 +261,7 @@ The task's importance can be modified directly...
 
   >>> patch = {u'importance': u'High'}
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
-  HTTP/1.1 200 Ok...
+  HTTP/1.1 209 Content Returned...
 
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
@@ -299,7 +299,7 @@ either directly or through a named operation.
 
   >>> patch = {u'status': u'Fix Committed'}
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
-  HTTP/1.1 200 Ok...
+  HTTP/1.1 209 Content Returned...
 
   >>> print webservice.get(bugtask_path).jsonBody()['status']
   Fix Committed
@@ -402,7 +402,7 @@ target, we reset it in order to avoid data inconsistencies.
   ...     webservice.getAbsoluteUrl('/firefox/+milestone/1.0')}
   >>> print webservice.patch(
   ...     firefox_bugtask['self_link'], 'application/json', dumps(patch))
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
   <BLANKLINE>
   >>> firefox_bugtask = webservice.get(
