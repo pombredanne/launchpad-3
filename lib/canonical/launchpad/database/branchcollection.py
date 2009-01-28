@@ -4,9 +4,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'GenericBranchSubset',
-    'PersonBranchSubset',
-    'ProductBranchSubset',
+    'GenericBranchCollection',
+    'PersonBranchCollection',
+    'ProductBranchCollection',
     ]
 
 from datetime import datetime, timedelta
@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.interfaces.branchcollection import IBranchSubset
+from canonical.launchpad.interfaces.branchcollection import IBranchCollection
 
 
 
@@ -32,7 +32,7 @@ def revision_time_limit(day_limit):
         Revision.revision_date > earliest)
 
 
-class GenericBranchSubset:
+class GenericBranchCollection:
 
     def __init__(self, store, branch_filter_expr=None, name=None,
                  displayname=None):
@@ -53,14 +53,14 @@ class GenericBranchSubset:
         return self.getBranches().count()
 
 
-class ProductBranchSubset(GenericBranchSubset):
+class ProductBranchCollection(GenericBranchCollection):
 
-    implements(IBranchSubset)
+    implements(IBranchCollection)
 
     def __init__(self, product):
         store = Store.of(product)
         expression = (Branch.product == product)
-        super(ProductBranchSubset, self).__init__(
+        super(ProductBranchCollection, self).__init__(
             store, expression, product.name, product.displayname)
 
     def getRevisions(self, days=30):
@@ -80,9 +80,9 @@ class ProductBranchSubset(GenericBranchSubset):
         return result_set.order_by(Desc(Revision.revision_date))
 
 
-class PersonBranchSubset:
+class PersonBranchCollection:
 
-    implements(IBranchSubset)
+    implements(IBranchCollection)
 
     def __init__(self, person):
         self._store = Store.of(person)

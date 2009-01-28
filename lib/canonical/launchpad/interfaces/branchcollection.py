@@ -1,16 +1,16 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Branch subset."""
+"""A collection of branches."""
 
 __metaclass__ = type
 __all__ = [
-    'IBranchSubset',
+    'IBranchCollection',
     ]
 
 from zope.interface import Interface
 
 
-class IBranchSubset(Interface):
+class IBranchCollection(Interface):
     # XXX: Write tests to guarantee that adapted objects are being secured via
     # this interface.
     pass

@@ -6,14 +6,14 @@
 
   <adapter
       for="canonical.launchpad.interfaces.IProduct"
-      provides="canonical.launchpad.interfaces.branchcollection.IBranchSubset"
-      factory="canonical.launchpad.database.branchcollection.ProductBranchSubset"
+      provides="canonical.launchpad.interfaces.branchcollection.IBranchCollection"
+      factory="canonical.launchpad.database.branchcollection.ProductBranchCollection"
       />
 
   <adapter
       for="canonical.launchpad.interfaces.IPerson"
-      provides="canonical.launchpad.interfaces.branchcollection.IBranchSubset"
-      factory="canonical.launchpad.database.branchcollection.PersonBranchSubset"
+      provides="canonical.launchpad.interfaces.branchcollection.IBranchCollection"
+      factory="canonical.launchpad.database.branchcollection.PersonBranchCollection"
       />
 
 </configure>
