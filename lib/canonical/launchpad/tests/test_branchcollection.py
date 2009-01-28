@@ -12,9 +12,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.branchsubset import (
+from canonical.launchpad.database.branchcollection import (
     GenericBranchSubset, PersonBranchSubset, ProductBranchSubset)
-from canonical.launchpad.interfaces.branchsubset import IBranchSubset
+from canonical.launchpad.interfaces.branchcollection import IBranchSubset
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

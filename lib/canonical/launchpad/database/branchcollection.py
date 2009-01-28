@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.interfaces.branchsubset import IBranchSubset
+from canonical.launchpad.interfaces.branchcollection import IBranchSubset
 
 
 
@@ -53,23 +53,15 @@ class GenericBranchSubset:
         return self.getBranches().count()
 
 
-class ProductBranchSubset:
+class ProductBranchSubset(GenericBranchSubset):
 
     implements(IBranchSubset)
 
     def __init__(self, product):
-        self._store = Store.of(product)
-        self._product = product
-        self.name = product.name
-        self.displayname = product.displayname
-
-    @property
-    def count(self):
-        # XXX: Is 'count' the best name for this? - jml
-        return self.getBranches().count()
-
-    def getBranches(self):
-        return self._store.find(Branch, Branch.product == self._product)
+        store = Store.of(product)
+        expression = (Branch.product == product)
+        super(ProductBranchSubset, self).__init__(
+            store, expression, product.name, product.displayname)
 
     def getRevisions(self, days=30):
         # XXX: The '30' bit is untested.
@@ -82,7 +74,7 @@ class ProductBranchSubset:
             revision_time_limit(days),
             BranchRevision.revision == Revision.id,
             BranchRevision.branch == Branch.id,
-            Branch.product == self._product,
+            self._branch_filter_expr,
             Branch.private == False)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
