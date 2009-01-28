@@ -21,7 +21,7 @@ If a SLAVE_FLAVOR store is requested, it should trap all writes.
     >>> main_slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
     >>> janitor = main_slave.find(Person, name='janitor').one()
     >>> janitor.displayname = 'Ben Dover'
-    >>> transaction.commit()
+    >>> t.commit()
     Traceback (most recent call last):
     ...
     InternalError: transaction is read-only
@@ -38,6 +38,15 @@ Test this once more to ensure the settings stick across transactions.
 
 If a MASTER_FLAVOR is requested, it should allow writes to table in that
 store's replication set.
+
+    >>> t = transaction.begin()
+    >>> main_master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> main_master.find(Person, name='janitor').one().displayname = 'BenD'
+    >>> transaction.commit()
+    >>> t = transaction.begin()
+    >>> main_master.find(Person, name='janitor').one().displayname
+    u'BenD'
+    >>> transaction.abort()
 
 Other tables outside that replication set can be traversed to, but they are
 read only.
