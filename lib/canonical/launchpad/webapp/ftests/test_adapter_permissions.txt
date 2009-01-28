@@ -26,6 +26,15 @@ If a SLAVE_FLAVOR store is requested, it should trap all writes.
     ...
     InternalError: transaction is read-only
 
+Test this once more to ensure the settings stick across transactions.
+
+    >>> t = transaction.begin()
+    >>> main_slave.find(Person, name='janitor').one().displayname = 'BenD'
+    >>> transaction.commit()
+    Traceback (most recent call last):
+    ...
+    InternalError: transaction is read-only
+
 
 If a MASTER_FLAVOR is requested, it should allow writes to table in that
 store's replication set.
