@@ -387,6 +387,6 @@ class CodeHandler:
                 source_branch=source.bzr_identity,
                 target_branch=target.bzr_identity)
             simple_sendmail('merge@code.launchpad.net',
-                str([message.get('from')]),
+                [message.get('from')],
                 'Error Creating Merge Proposal', body)
 
