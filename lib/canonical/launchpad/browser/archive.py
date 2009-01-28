@@ -20,8 +20,7 @@ __all__ = [
     'traverse_named_ppa',
     ]
 
-
-import urllib
+from cgi import parse_qsl
 
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import IInputWidget
@@ -78,58 +77,6 @@ from canonical.widgets import (
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
-
-
-def construct_redirect_params(data):
-    '''Get part of the URL needed for package copy/delete page redirection.
-
-    After an archive package copy/delete request concludes we need to
-    redirect to the same page while preserving any context that the
-    user may have established.
-
-    The context that needs to be preserved is comprised of the name and the
-    publishing status filter variables (which are part of the original POST
-    request data).
-
-    :param data: POST request data passed to the original package
-        copy/delete request, contains the name and the publishing status
-        filter values.
-
-    :return: a part of the URL needed to redirect to the same page (the
-        encoded HTTP GET parameters)
-    '''
-    url_params_string = ''
-    url_params = dict()
-
-    # Handle the name filter if set.
-    name_filter = data.get('name_filter')
-    if name_filter is not None:
-        url_params['field.name_filter'] = name_filter
-
-    # Handle the publishing status filter which must be one of: any,
-    # published or superseded.
-    status_filter = data.get('status_filter')
-    if status_filter is not None:
-        # Please note: the default value is 'any'.
-        status_filter_value = 'any'
-
-        # Was the status filter perhaps set to published or superseded?
-        if status_filter.collection is not None:
-            # The collection property is of type archive.StatusCollection,
-            # we just want to figure out whether it contains either a
-            # published or superseded status however.
-            status_filter_string = str(status_filter.collection)
-            terms_sought = ('Published', 'Superseded')
-            for term in terms_sought:
-                if term in status_filter_string:
-                    status_filter_value = term.lower()
-                    break
-        url_params['field.status_filter'] = status_filter_value
-
-    if url_params:
-        url_params_string = '?%s' % urllib.urlencode(url_params)
-
-    return url_params_string
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -338,32 +285,23 @@ class ArchiveContextMenu(ContextMenu):
         return Link('+edit-dependencies', text, icon='edit')
 
 
-class ArchiveViewBase:
-    """Common features for Archive view classes."""
+class ArchiveSourcePackageListView(LaunchpadView):
+    """Common features for archive views with lists of packages."""
 
-    @cachedproperty
-    def is_active(self):
-        """Whether or not this PPA already have publications in it."""
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.getPublishedSources().count() > 0
+    def initialize(self):
+        """Setup package filtering fields.
 
-    @property
-    def source_count_text(self):
-        """Return the correct form of the source counter notice."""
-        num_sources_published = self.context.number_of_sources_published
-        if num_sources_published == 1:
-            return '%s source package' % num_sources_published
-        else:
-            return '%s source packages' % num_sources_published
+        Setup status filter widget and the series filter widget.
+        """
+        # Because BrowserRequest.processInputs ignores GET vars when the
+        # method=POST, store them here (as the filtering always uses GET
+        # even when other forms are posted).
+        self.get_params = dict(
+            parse_qsl(self.request.get('QUERY_STRING') or '',True))
 
-    @property
-    def binary_count_text(self):
-        """Return the correct form of the binary counter notice."""
-        if self.context.number_of_binaries == 1:
-            return '%s binary package' % self.context.number_of_binaries
-        else:
-            return '%s binary packages' % self.context.number_of_binaries
+        self.setupNameFilterWidget()
+        self.setupStatusFilterWidget()
+        self.setupSeriesFilterWidget()
 
     @cachedproperty
     def simplified_status_vocabulary(self):
@@ -406,6 +344,109 @@ class ArchiveViewBase:
                            title=distroseries.displayname))
         return SimpleVocabulary(series_terms)
 
+    def setupNameFilterWidget(self):
+        """Set the specified name filter property."""
+        self.specified_name_filter = self.get_params.get('field.name_filter')
+
+    def setupStatusFilterWidget(self):
+        """Build a customized publishing status select widget.
+
+        See `status_vocabulary`.
+        """
+        requested_status_filter = self.get_params.get('field.status_filter')
+
+        # If the request included a status filter, try to use it:
+        self.selected_status_filter = None
+        if requested_status_filter is not None:
+            self.selected_status_filter = (
+                self.simplified_status_vocabulary.getTermByToken(
+                    requested_status_filter))
+
+        # If the request didn't include a status, or it was invalid, use
+        # the default:
+        if self.selected_status_filter is None:
+            self.selected_status_filter = self.default_status_filter
+
+        field = Choice(
+            __name__='status_filter', title=_("Status Filter"),
+            vocabulary=self.simplified_status_vocabulary, required=True)
+        setUpWidget(self, 'status_filter', field, IInputWidget)
+
+    @property
+    def plain_status_filter_widget(self):
+        """Render a <select> control with no <div>s around it."""
+        return self.status_filter_widget.renderValue(
+            self.selected_status_filter.value)
+
+    def setupSeriesFilterWidget(self):
+        """Build a customized archive series select widget.
+
+        Allows users to select between a valid distribution series for the
+        archive distribution, or 'Any Series'.
+        """
+        series_filter = self.get_params.get('field.series_filter', 'any')
+        self.selected_series_filter = (
+            self.series_vocabulary.getTermByToken(series_filter))
+
+        field = Choice(
+            __name__='series_filter', title=_("Series Filter"),
+            vocabulary=self.series_vocabulary, required=True)
+        setUpWidget(self, 'series_filter', field, IInputWidget)
+
+    @property
+    def plain_series_filter_widget(self):
+        """Render a <select> control with no <div>s around it."""
+        return self.series_filter_widget.renderValue(
+            self.selected_series_filter.value)
+
+    @cachedproperty
+    def sources(self):
+        """Return the source results for display on the current page.
+
+        It expects 'self.selected_status_filter' and 
+        'self.selected_series_filter' to be set.
+        """
+        return self.context.getPublishedSources(
+            name=self.specified_name_filter,
+            status=self.selected_status_filter.value.collection,
+            distroseries=self.selected_series_filter.value)
+
+    @property
+    def default_status_filter(self):
+        """Return the default status_filter value.
+
+        Subclasses of ArchiveViewBase can override this when required.
+        """
+        return self.simplified_status_vocabulary.getTermByToken('published')
+
+
+class ArchiveViewBase:
+    """Common features for Archive view classes."""
+
+    @cachedproperty
+    def is_active(self):
+        """Whether or not this PPA already have publications in it."""
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.getPublishedSources().count() > 0
+
+    @property
+    def source_count_text(self):
+        """Return the correct form of the source counter notice."""
+        num_sources_published = self.context.number_of_sources_published
+        if num_sources_published == 1:
+            return '%s source package' % num_sources_published
+        else:
+            return '%s source packages' % num_sources_published
+
+    @property
+    def binary_count_text(self):
+        """Return the correct form of the binary counter notice."""
+        if self.context.number_of_binaries == 1:
+            return '%s binary package' % self.context.number_of_binaries
+        else:
+            return '%s binary packages' % self.context.number_of_binaries
+
     @property
     def archive_url(self):
         """Return an archive_url where available, or None."""
@@ -433,7 +474,7 @@ class ArchiveViewBase:
         return self.context.getBuildCounters()
 
 
-class ArchiveView(ArchiveViewBase, LaunchpadView):
+class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListView):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
@@ -444,54 +485,11 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
     def initialize(self):
         """Setup infrastructure for the PPA index page.
 
-        Setup sources list entries widget, package filter widget and the
-        search result list.
+        Setup sources list entries widget and the search result list.
         """
+        super(ArchiveView, self).initialize()
         self.setupSourcesListEntries()
-        self.setupStatusFilterWidget()
-        self.setupSeriesFilterWidget()
         self.setupPackageBatchResult()
-
-    def setupStatusFilterWidget(self):
-        """Build a customized publishing status select widget.
-
-        See `status_vocabulary`.
-        """
-        status_filter = self.request.get('field.status_filter', 'published')
-        self.selected_status_filter = (
-            self.simplified_status_vocabulary.getTermByToken(status_filter))
-
-        field = Choice(
-            __name__='status_filter', title=_("Status Filter"),
-            vocabulary=self.simplified_status_vocabulary, required=True)
-        setUpWidget(self, 'status_filter',  field, IInputWidget)
-
-    @property
-    def plain_status_filter_widget(self):
-        """Render a <select> control with no <div>s around it."""
-        return self.status_filter_widget.renderValue(
-            self.selected_status_filter.value)
-
-    def setupSeriesFilterWidget(self):
-        """Build a customized archive series select widget.
-
-        Allows users to select between a valid distribution series for the
-        archive distribution, or 'Any Series'.
-        """
-        series_filter = self.request.get('field.series_filter', 'any')
-        self.selected_series_filter = (
-            self.series_vocabulary.getTermByToken(series_filter))
-
-        field = Choice(
-            __name__='series_filter', title=_("Series Filter"),
-            vocabulary=self.series_vocabulary, required=True)
-        setUpWidget(self, 'series_filter', field, IInputWidget)
-
-    @property
-    def plain_series_filter_widget(self):
-        """Render a <select> control with no <div>s around it."""
-        return self.series_filter_widget.renderValue(
-            self.selected_series_filter.value)
 
     def setupSourcesListEntries(self):
         """Setup of the sources list entries widget."""
@@ -501,26 +499,10 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
 
-    @property
-    def search_requested(self):
-        """Whether or not the search form was used."""
-        return self.request.get('field.name_filter') is not None
-
-    def getPublishingRecords(self):
-        """Return the publishing records results.
-
-        It requests 'self.selected_status_filter' to be set.
-        """
-        name_filter = self.request.get('field.name_filter')
-        return self.context.getPublishedSources(
-            name=name_filter,
-            status=self.selected_status_filter.value.collection,
-            distroseries=self.selected_series_filter.value)
-
     def setupPackageBatchResult(self):
         """Setup of the package search results."""
         self.batchnav = BatchNavigator(
-            self.getPublishingRecords(), self.request)
+            self.sources, self.request)
         results = list(self.batchnav.currentBatch())
         self.search_results = ArchiveSourcePublications(results)
 
@@ -530,7 +512,9 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         return(getUtility(
                 IPackageCopyRequestSet).getByTargetArchive(self.context))
 
-class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
+
+class ArchiveSourceSelectionFormView(LaunchpadFormView,
+                                     ArchiveSourcePackageListView):
     """Base class to implement a source selection widget for PPAs."""
 
     schema = IArchiveSourceSelectionForm
@@ -539,57 +523,40 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     max_sources_presented = 50
 
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
-    custom_widget('status_filter', LaunchpadDropdownWidget)
+
+    def initialize(self):
+        """Ensure both parent classes initialize methods are called."""
+        ArchiveSourcePackageListView.initialize(self)
+        LaunchpadFormView.initialize(self)
+
+    def setNextURL(self):
+        """Set self.next_url based on current context.
+
+        This should be called during actions of subclasses.
+        """
+        query_string = self.request.get('QUERY_STRING', '')
+        if query_string:
+            self.next_url = "%s?%s" % (self.request.URL, query_string)
+        else:
+            self.next_url = self.request.URL
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
         In addition to setting schema fields, also initialize the
-        'name_filter' and 'status_filter' widgets required to setup
         'selected_sources' field.
 
-        See `createSimplifiedStatusFilterField` and
-        `createSelectedSourcesField` methods.
+        See `createSelectedSourcesField` method.
         """
         LaunchpadFormView.setUpFields(self)
 
-        # Build and store 'status_filter' field.
-        status_field = self.createSimplifiedStatusFilterField()
-
-        # Setup widgets for 'name_filter' and 'status_filter' fields
-        # because they are required to build 'selected_sources' field.
-        initial_fields = status_field + self.form_fields.select('name_filter')
-        # XXX 2008-09-29 gary
-        # The setUpWidgets method should not be called here. The re-ordering
-        # of the widgets, if needed should be done in setUpWidgets.
-        self.widgets = form.setUpWidgets(
-            initial_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False)
 
         # Build and store 'selected_sources' field.
         selected_sources_field = self.createSelectedSourcesField()
 
         # Append the just created fields to the global form fields, so
         # `setupWidgets` will do its job.
-        self.form_fields += status_field + selected_sources_field
-
-    def setUpWidgets(self):
-        """Override `LaunchpadFormView`.
-
-        Omitting the fields already processed in setUpFields ('name_filter'
-        and 'status_filter').
-        """
-        # See above XXX for the source of this ugliness. This basically
-        # redoes, what the base implementation would do. It should be removed
-        # once the setUpFields is fixed.
-        for field in self.form_fields:
-            if (field.custom_widget is None and
-                field.__name__ in self.custom_widgets):
-                field.custom_widget = self.custom_widgets[field.__name__]
-        self.widgets += form.setUpWidgets(
-            self.form_fields.omit('name_filter').omit('status_filter'),
-            self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False)
+        self.form_fields += selected_sources_field
 
     def focusedElementScript(self):
         """Override `LaunchpadFormView`.
@@ -599,17 +566,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         if not self.has_sources:
             return ''
         return LaunchpadFormView.focusedElementScript(self)
-
-    def createSimplifiedStatusFilterField(self):
-        """Return a simplified publishing status filter field.
-
-        See `status_vocabulary` and `default_status_filter`.
-        """
-        return form.Fields(
-            Choice(__name__='status_filter', title=_("Status Filter"),
-                   vocabulary=self.simplified_status_vocabulary,
-                   required=True, default=self.default_status_filter.value),
-            custom_widget=self.custom_widgets['status_filter'])
 
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
@@ -632,34 +588,14 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
                  description=_('Select one or more sources to be submitted '
                                'to an action.')))
 
-    @property
-    def sources(self):
-        """Query undeleted source publishing records.
-
-        Consider the 'name_filter' form value.
-        """
-        if self.widgets['name_filter'].hasInput():
-            name_filter = self.widgets['name_filter'].getInputValue()
-        else:
-            name_filter = None
-
-        if self.widgets['status_filter'].hasInput():
-            status_filter = self.widgets['status_filter'].getInputValue()
-        else:
-            status_filter = self.widgets['status_filter'].context.default
-
-        return self.getSources(
-            name=name_filter, status=status_filter.collection)
-
     @cachedproperty
     def has_sources(self):
         """Whether or not the PPA has published source packages."""
-        available_sources = self.getSources()
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
-        return available_sources.count() > 0
+        return self.available_sources_size > 0
 
-    @property
+    @cachedproperty
     def available_sources_size(self):
         """Number of available sources."""
         return self.sources.count()
@@ -670,17 +606,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         return self.available_sources_size > self.max_sources_presented
 
     @property
-    def default_status_filter(self):
-        """Return the default status_filter value."""
-        raise NotImplementedError(
-            'Default status_filter should be defined by callsites.')
-
-    def getSources(self, name=None, status=None):
-        """Source lookup method, should be implemented by callsites."""
-        raise NotImplementedError(
-            'Source lookup should be implemented by callsites.')
-
-
+    def action_url(self):
+        """The forms should post to themselves, including GET params."""
+        return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
 
 class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """Archive package deletion view class.
@@ -701,20 +629,29 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         """Present records in any status by default."""
         return self.simplified_status_vocabulary.getTermByToken('any')
 
-    def getSources(self, name=None, status=None):
-        """Return all undeleted sources in the context PPA.
+    @cachedproperty
+    def sources(self):
+        """Return the deletion publishing records results.
 
-        Filters the results using the given 'name'.
-        See `IArchive.getSourcesForDeletion`.
+        This overrides ArchiveViewBase.sources to use a
+        different method on the context specific to deletion records.
+
+        It expects 'self.selected_status_filter' and 
+        'self.selected_series_filter' to be set.
         """
-        return self.context.getSourcesForDeletion(name=name, status=status)
+        return self.context.getSourcesForDeletion(
+            name=self.specified_name_filter,
+            status=self.selected_status_filter.value.collection,
+            distroseries=self.selected_series_filter.value)
 
-    @action(_("Update"), name="update")
-    def action_update(self, action, data):
-        """Simply re-issue the form with the new values."""
-        # The 'selected_sources' widget will always be updated
-        # considering 'name_filter' input value when the page is loaded.
-        pass
+    @cachedproperty
+    def has_sources(self):
+        """Return whether the context has sources to delete.
+
+        Overrides ArchiveViewBase so that it returns true only if this
+        archive has published sources that have not yet been deleted.
+        """
+        return self.context.getSourcesForDeletion().count() > 0
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
@@ -760,9 +697,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         self.request.response.addNotification(
             structured(notification, comment=comment))
 
-        url_params_string = construct_redirect_params(data)
-        self.next_url = '%s%s' % (self.request.URL, url_params_string)
-
+        self.setNextURL()
 
 class DestinationArchiveDropdownWidget(LaunchpadDropdownWidget):
     """Redefining default display value as 'This PPA'."""
@@ -795,14 +730,6 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     def default_status_filter(self):
         """Present published records by default."""
         return self.simplified_status_vocabulary.getTermByToken('published')
-
-    def getSources(self, name=None, status=None):
-        """Return all sources ever published in the context PPA.
-
-        Filters the results using the given 'name'.
-        See `IArchive.getPublishedSources`.
-        """
-        return self.context.getPublishedSources(name=name, status=status)
 
     def setUpFields(self):
         """Override `ArchiveSourceSelectionFormView`.
@@ -993,9 +920,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
 
-        url_params_string = construct_redirect_params(data)
-        self.next_url = '%s%s' % (self.request.URL, url_params_string)
-
+        self.setNextURL()
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     """Archive dependencies view class."""
@@ -1384,7 +1309,7 @@ class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
         return BuildStatus.NEEDSBUILD
 
 
-class BaseArchiveEditView(ArchiveViewBase, LaunchpadEditFormView):
+class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
     schema = IArchive
     field_names = []

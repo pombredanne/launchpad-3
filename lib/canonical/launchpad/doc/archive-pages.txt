@@ -80,54 +80,27 @@ vocabulary for selecting a series filter:
     Breezy Badger Autotest
     Warty
 
-An ArchiveView provides a getPublishingRecords() method that can be used
+An ArchiveView provides a sources property that can be used
 to get all the publishing records for an archive:
 
-    >>> for publishing in ppa_archive_view.getPublishingRecords():
+    >>> for publishing in ppa_archive_view.sources:
     ...     print publishing.source_package_name
     cdrkit
     iceweasel
     pmount
 
-The getPublishingRecords() method can also filter by distroseries when
+The sources property can also filter by distroseries when
 appropriate:
 
     >>> filtered_view = create_initialized_view(
     ...     cprov.archive,
     ...     name="+index",
     ...     method='GET',
-    ...     form={'field.series_filter': 'warty'})
-    >>> for publishing in filtered_view.getPublishingRecords():
+    ...     query_string='field.series_filter=warty')
+    >>> for publishing in filtered_view.sources:
     ...     print publishing.source_package_name
     iceweasel
     pmount
-
-
-== ArchiveSourceSelectionFormView ==
-
-The ArchiveSourceSelectionFormView defines two members that subclasses
-must define to use.
-
-    >>> from canonical.launchpad.browser.archive import (
-    ...      ArchiveSourceSelectionFormView)
-
-    >>> class BadView(ArchiveSourceSelectionFormView):
-    ...     pass
-
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> empty_request = LaunchpadTestRequest(form={})
-    >>> bad_view = BadView(None, empty_request)
-
-    >>> bad_view.default_status_filter
-    Traceback (most recent call last):
-    ...
-    NotImplementedError: Default status_filter should be defined by
-    callsites.
-
-    >>> bad_view.getSources()
-    Traceback (most recent call last):
-    ...
-    NotImplementedError: Source lookup should be implemented by callsites.
 
 
 == ArchivePackageDeletionView ==
@@ -211,9 +184,7 @@ filtered results.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+delete-packages",
-    ...     form={
-    ...         'field.name_filter': 'pmount',
-    ...         })
+    ...     query_string="field.name_filter=pmount")
 
     >>> for pub in view.sources:
     ...     print pub.displayname
@@ -645,9 +616,7 @@ All sources in Celso's PPA were just-deleted, so we have to tweak the
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
-    ...     form={
-    ...         'field.status_filter': 'any',
-    ...         })
+    ...     query_string="field.status_filter=any")
 
     >>> [pub.status.name for pub in view.sources]
     ['DELETED', 'DELETED', 'DELETED']
