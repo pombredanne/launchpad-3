@@ -5,12 +5,52 @@
 
 <metal:expandable_table_js define-macro="expandable-table-js">
   <tal:comment replace="nothing">
+    Javascript needed for expanding/collapsing archive package list
+    row containing extra publication information via XHR.
   </tal:comment>
 
 <script type="text/javascript">
 YUI().use('node', 'io-base', 'lazr.anim', function(Y) {
 
 
+/*
+ * Communicate the update has failed and allow the user to retry
+ * the operation.
+ */
+function informFailure(transaction_id, response, args) {
+    var text = Y.Node.create('<span>');
+    text.set('innerHTML', 'Failed to fetch information.');
+
+    var retry_link = Y.Node.create('<a>')
+    retry_link.set('id', 'retry-repository-size-update');
+    retry_link.set('href', '');
+    retry_link.set('innerHTML', 'Retry');
+    retry_link.on(
+        'click',
+        function (e) {
+            e.preventDefault();
+            startUpdate(row);
+            }
+    );
+
+    var failure_message = Y.Node.create('<p>');
+    failure_message.set('id', 'failure-message');
+    failure_message.appendChild(text);
+    failure_message.appendChild(retry_link);
+
+    container = args.destination.query('td');
+    container.set('innerHTML', '');
+    container.appendChild(failure_message);
+
+    var anim = Y.lazr.anim.red_flash({
+        node: args.destination
+        });
+    anim.run();
+}
+
+/*
+ * Update the row with the XHR response.
+ */
 function doUpdate(transaction_id, response, args) {
     container = args.destination.query('td');
     container.set('innerHTML', response.responseText);
@@ -21,10 +61,25 @@ function doUpdate(transaction_id, response, args) {
 }
 
 
-function populateRow(row) {
+/*
+ * Dispatch a XHR for updating the given row.
+ */
+function startUpdate(row) {
+    var text = Y.Node.create('<span>');
+    text.set('innerHTML', 'Updating publishing information ...');
+
+    var in_progress_message = Y.Node.create('<p>');
+    in_progress_message.set('id', 'in-progress-message');
+    in_progress_message.appendChild(text);
+
+    container = row.query('td')
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message);
+
     var config = {
         on: {
             'success': doUpdate,
+            'failure': informFailure
         },
         arguments: {
             'destination': row,
@@ -36,8 +91,12 @@ function populateRow(row) {
 }
 
 
+/*
+ * Toggle the visibility of the expander targeted and the visual of
+ * the expander itself.
+ */
 function toggleExpandableRow(expander) {
-    var row_id = expander.get('id').split('-')[0];
+    var row_id = expander.get('id').replace('-expander', '');
     row = Y.get('#' + row_id);
     icon = expander.query('img');
 
@@ -45,27 +104,43 @@ function toggleExpandableRow(expander) {
     if (row_display == 'none') {
         row.setStyle('display', 'table-row');
         icon.set('src', '/@@/treeExpanded')
-        populateRow(row);
+        startUpdate(row);
     }
     else {
         row.setStyle('display', 'none');
         icon.set('src', '/@@/treeCollapsed')
+        row.query('td').set('innerHTML', '');
     }
 }
 
-
-var packages_list = Y.get('#packages_list');
-var expanders = packages_list.queryAll('a.expander');
-expanders.each(function(expander) {
-    expander.on("click", function(e) {
-        e.preventDefault();
-        var expander = e.currentTarget;
-        toggleExpandableRow(expander);
+function setupPackageListExpanders() {
+    var packages_list = Y.get('#packages_list');
+    var expanders = packages_list.queryAll('a.expander');
+    expanders.each(function(expander) {
+        expander.on("click", function(e) {
+            e.preventDefault();
+            var expander = e.currentTarget;
+            toggleExpandableRow(expander);
+        });
     });
-});
+}
 
+Y.on("domready", setupPackageListExpanders);
 });
 </script>
+
+<style type="text/css" media="screen, print">
+td p#failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
+
+td p#in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+</style>
+
 
 </metal:expandable_table_js>
 

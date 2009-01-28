@@ -10,7 +10,7 @@
            tal:attributes="value context/id;
                            id string:field.selected_sources.${context/id}"
            name="field.selected_sources" /><a class="expander"
-           tal:attributes="id string:pub${context/id}-expander';
+           tal:attributes="id string:pub${context/id}-expander;
                            href string:+sourcepub/${context/id}/+listing-archive-extra"
            ><img src="/@@/treeCollapsed" alt="Show files" title="Show files"
                  tal:attributes="id string:pub${context/id}-arrow" /></a>
