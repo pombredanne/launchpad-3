@@ -22,35 +22,39 @@ class TestPOTemplate(TestCaseWithFactory):
 
     def test_composePOFilePath(self):
         self.potemplate.path = "testdir/messages.pot"
-        self.failUnlessEqual(
-            self.potemplate._composePOFilePath('eo'),
-            "testdir/testdomain-eo.po",
+        expected = "testdir/testdomain-eo.po"
+        result = self.potemplate._composePOFilePath('eo')
+        self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
-            "directory and language code."
+            "directory and language code. "#
+            "(Expected: '%s' Got: '%s')" % (expected, result)
             )
 
         self.potemplate.path = "testdir/messages.pot"
-        self.failUnlessEqual(
-            self.potemplate._composePOFilePath('eo', 'VARIANT'),
-            "testdir/testdomain-eo@VARIANT.po",
+        expected = "testdir/testdomain-eo@VARIANT.po"
+        result = self.potemplate._composePOFilePath('eo', 'VARIANT')
+        self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
-            "directory, language code and variant."
+            "directory, language code and variant. "
+            "(Expected: '%s' Got: '%s')" % (expected, result)
             )
 
         self.potemplate.path = "/messages.pot"
-        self.failUnlessEqual(
-            self.potemplate._composePOFilePath('eo'),
-            "/testdomain-eo.po",
+        expected = "/testdomain-eo.po"
+        result = self.potemplate._composePOFilePath('eo')
+        self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
-            "leading slash and language code."
+            "leading slash and language code. "
+            "(Expected: '%s' Got: '%s')" % (expected, result)
             )
 
         self.potemplate.path = "messages.pot"
-        self.failUnlessEqual(
-            self.potemplate._composePOFilePath('eo'),
-            "testdomain-eo.po",
+        expected = "testdomain-eo.po"
+        result = self.potemplate._composePOFilePath('eo')
+        self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
-            "missing directory and language code."
+            "missing directory and language code. "
+            "(Expected: '%s' Got: '%s')" % (expected, result)
             )
 
 
