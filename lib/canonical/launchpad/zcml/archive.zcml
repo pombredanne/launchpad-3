@@ -91,6 +91,11 @@
       facet="overview"
       name="+index"
       />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.View">
     <browser:page
       template="../templates/archive-ppa-row.pt"
       facet="overview"
