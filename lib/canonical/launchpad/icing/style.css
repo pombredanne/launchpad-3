@@ -1337,6 +1337,25 @@ div#signing-key a {
     font-weight: bold;
 }
 
+div.archive #description {
+    width: 50em;
+}
+div.archive #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
+table#package-requests {
+    width: 60em;
+    margin: 1em 0;
+}
+table#package-requests td{
+    padding: 0.5em;
+}
+h1.disabled {
+    color: grey;
+}
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}

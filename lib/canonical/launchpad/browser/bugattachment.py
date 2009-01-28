@@ -5,16 +5,19 @@ __metaclass__ = type
 __all__ = [
     'BugAttachmentSetNavigation',
     'BugAttachmentEditView',
+    'BugAttachmentURL',
     ]
 
 from cStringIO import StringIO
 
+from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.interfaces import (
     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     IBugAttachmentEditForm, ILaunchBag)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -23,6 +26,30 @@ from canonical.launchpad.webapp.menu import structured
 class BugAttachmentSetNavigation(GetitemNavigation):
 
     usedfor = IBugAttachmentSet
+
+
+class BugAttachmentURL:
+    """Bug URL creation rules."""
+    implements(ICanonicalUrlData)
+
+    rootsite = 'bugs'
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        """Always relative to a traversed bugtask."""
+        bugtask = getUtility(ILaunchBag).bugtask
+        if bugtask is None:
+            return self.context.bug
+        else:
+            return bugtask
+
+    @property
+    def path(self):
+        """Return the path component of the URL."""
+        return u"+attachment/%d" % self.context.id
 
 
 class BugAttachmentEditView(LaunchpadFormView):
@@ -34,7 +61,8 @@ class BugAttachmentEditView(LaunchpadFormView):
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
-        self.current_bugtask = getUtility(ILaunchBag).bugtask
+        self.next_url = self.cancel_url = (
+            canonical_url(ICanonicalUrlData(context).inside))
 
     @property
     def initial_values(self):
@@ -63,8 +91,6 @@ class BugAttachmentEditView(LaunchpadFormView):
         if self.context.libraryfile.mimetype != data['contenttype']:
             self.updateContentType(data['contenttype'])
 
-        self.next_url = canonical_url(self.current_bugtask)
-
     @action('Delete Attachment', name='delete')
     def delete_action(self, action, data):
         self.request.response.addInfoNotification(structured(
@@ -73,7 +99,6 @@ class BugAttachmentEditView(LaunchpadFormView):
             ' automatically removed from the server.',
             url=self.context.libraryfile.http_url, name=self.context.title))
         self.context.removeFromBug()
-        self.next_url = canonical_url(self.current_bugtask)
 
     def updateContentType(self, new_content_type):
         """Update the attachment content type."""

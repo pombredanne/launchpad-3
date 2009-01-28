@@ -1,17 +1,11 @@
-
-Translation Groups
-------------------
-
-    >>> from canonical.launchpad.ftests.harness import \
-    ...     LaunchpadFunctionalTestSetup
-    >>> LaunchpadFunctionalTestSetup().setUp()
+= Translation Groups =
 
     >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login
     >>> login('daf@canonical.com')
 
-Heres various sets of things that we'll need.
+Here are various sets of things that we'll need.
 
     >>> from canonical.launchpad.interfaces import ITranslationGroupSet
     >>> translation_group_set = getUtility(ITranslationGroupSet)
@@ -43,7 +37,17 @@ Here's our translation group.
     ...     name='foo-translators',
     ...     title='Foo Translators',
     ...     summary='Foo Translators',
+    ...     translation_guide_url='https://help.launchpad.net/',
     ...     owner=carlos)
+
+We can access all details of the new TranslationGroup.
+
+    >>> group.title
+    u'Foo Translators'
+    >>> group.translation_guide_url
+    u'https://help.launchpad.net/'
+    >>> group.owner.name
+    u'carlos'
 
 Let's make it the translation group for Evolution.
 
@@ -81,13 +85,27 @@ No Privileges Person *is* allowed to translate into Welsh.
 We can use TranslationGroupSet to check what translation groups a person
 is a part of:
 
-    >>> [group.name for group in translation_group_set.getByPerson(carlos)]
-    [u'testing-translation-team']
+    >>> for group in translation_group_set.getByPerson(carlos):
+    ...     print group.name
+    testing-translation-team
 
-    >>> [group.name for group in translation_group_set.getByPerson(no_priv)]
-    [u'foo-translators']
+    >>> for group in translation_group_set.getByPerson(no_priv):
+    ...     print group.name
+    foo-translators
 
-"Do you want us to shut everything down?"
+    >>> translators = getUtility(ITranslatorSet)
+    >>> for trans in translators.getByTranslator(carlos):
+    ...     print trans.language.code
+    ...     print trans.translationgroup.name
+    ...     print trans.style_guide_url
+    es
+    testing-translation-team
+    None
 
-    >>> LaunchpadFunctionalTestSetup().tearDown()
-
+    >>> for trans in translators.getByTranslator(no_priv):
+    ...     print trans.language.code
+    ...     print trans.translationgroup.name
+    ...     print trans.style_guide_url
+    cy
+    foo-translators
+    None

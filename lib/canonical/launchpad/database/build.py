@@ -280,6 +280,7 @@ class Build(SQLBase):
                 Build.buildstate = 0 AND
                 Build.processor = %s AND
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 ((BuildQueue.lastscore > %s) OR
                  ((BuildQueue.lastscore = %s) AND
                   (Build.id < %s)))
@@ -343,6 +344,7 @@ class Build(SQLBase):
                     Builder.id = BuildQueue.builder
             WHERE
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 Build.buildstate = %s AND
                 Builder.processor = %s
             ORDER BY

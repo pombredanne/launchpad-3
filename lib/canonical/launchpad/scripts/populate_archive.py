@@ -220,6 +220,10 @@ class ArchivePopulator(SoyuzScript):
                 raise SoyuzScriptError(
                     "error: cannot specify processor families for *existing* "
                     "archive.")
+            # Refuse to copy to a disabled copy archive.
+            if not copy_archive.enabled:
+                raise SoyuzScriptError(
+                    "error: cannot copy to disabled archive")
 
             # The copy archive exists already, get the associated processor
             # families.
