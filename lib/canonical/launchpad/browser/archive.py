@@ -20,8 +20,6 @@ __all__ = [
     'traverse_named_ppa',
     ]
 
-
-import urllib
 from cgi import parse_qsl
 
 from zope.app.form.browser import TextAreaWidget
@@ -287,11 +285,11 @@ class ArchiveContextMenu(ContextMenu):
         return Link('+edit-dependencies', text, icon='edit')
 
 
-class ArchiveViewBase(LaunchpadView):
-    """Common features for Archive view classes."""
+class ArchiveSourcePackageListView(LaunchpadView):
+    """Common features for archive views with lists of packages."""
 
     def initialize(self):
-        """Setup shared infrastructure for the PPA pages.
+        """Setup package filtering fields.
 
         Setup status filter widget and the series filter widget.
         """
@@ -304,30 +302,6 @@ class ArchiveViewBase(LaunchpadView):
         self.setupNameFilterWidget()
         self.setupStatusFilterWidget()
         self.setupSeriesFilterWidget()
-
-    @cachedproperty
-    def is_active(self):
-        """Whether or not this PPA already have publications in it."""
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.context.getPublishedSources().count() > 0
-
-    @property
-    def source_count_text(self):
-        """Return the correct form of the source counter notice."""
-        num_sources_published = self.context.number_of_sources_published
-        if num_sources_published == 1:
-            return '%s source package' % num_sources_published
-        else:
-            return '%s source packages' % num_sources_published
-
-    @property
-    def binary_count_text(self):
-        """Return the correct form of the binary counter notice."""
-        if self.context.number_of_binaries == 1:
-            return '%s binary package' % self.context.number_of_binaries
-        else:
-            return '%s binary packages' % self.context.number_of_binaries
 
     @cachedproperty
     def simplified_status_vocabulary(self):
@@ -369,32 +343,6 @@ class ArchiveViewBase(LaunchpadView):
                 SimpleTerm(distroseries, token=distroseries.name,
                            title=distroseries.displayname))
         return SimpleVocabulary(series_terms)
-
-    @property
-    def archive_url(self):
-        """Return an archive_url where available, or None."""
-        if self.is_active and not self.context.is_copy:
-            return self.context.archive_url
-        else:
-            return None
-
-    @property
-    def archive_label(self):
-        """Return either 'PPA' or 'Archive' as the label for archives.
-
-        It is desired to use the name 'PPA' for branding reasons where
-        appropriate, even though the template logic is the same (and hence
-        not worth splitting off into a separate template or macro)
-        """
-        if self.context.is_ppa:
-            return 'PPA'
-        else:
-            return 'Archive'
-
-    @cachedproperty
-    def build_counters(self):
-        """Return a dict representation of the build counters."""
-        return self.context.getBuildCounters()
 
     def setupNameFilterWidget(self):
         """Set the specified name filter property."""
@@ -472,7 +420,61 @@ class ArchiveViewBase(LaunchpadView):
         return self.simplified_status_vocabulary.getTermByToken('published')
 
 
-class ArchiveView(ArchiveViewBase):
+class ArchiveViewBase:
+    """Common features for Archive view classes."""
+
+    @cachedproperty
+    def is_active(self):
+        """Whether or not this PPA already have publications in it."""
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.getPublishedSources().count() > 0
+
+    @property
+    def source_count_text(self):
+        """Return the correct form of the source counter notice."""
+        num_sources_published = self.context.number_of_sources_published
+        if num_sources_published == 1:
+            return '%s source package' % num_sources_published
+        else:
+            return '%s source packages' % num_sources_published
+
+    @property
+    def binary_count_text(self):
+        """Return the correct form of the binary counter notice."""
+        if self.context.number_of_binaries == 1:
+            return '%s binary package' % self.context.number_of_binaries
+        else:
+            return '%s binary packages' % self.context.number_of_binaries
+
+    @property
+    def archive_url(self):
+        """Return an archive_url where available, or None."""
+        if self.is_active and not self.context.is_copy:
+            return self.context.archive_url
+        else:
+            return None
+
+    @property
+    def archive_label(self):
+        """Return either 'PPA' or 'Archive' as the label for archives.
+
+        It is desired to use the name 'PPA' for branding reasons where
+        appropriate, even though the template logic is the same (and hence
+        not worth splitting off into a separate template or macro)
+        """
+        if self.context.is_ppa:
+            return 'PPA'
+        else:
+            return 'Archive'
+
+    @cachedproperty
+    def build_counters(self):
+        """Return a dict representation of the build counters."""
+        return self.context.getBuildCounters()
+
+
+class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListView):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
@@ -511,7 +513,8 @@ class ArchiveView(ArchiveViewBase):
                 IPackageCopyRequestSet).getByTargetArchive(self.context))
 
 
-class ArchiveSourceSelectionFormView(LaunchpadFormView, ArchiveViewBase):
+class ArchiveSourceSelectionFormView(LaunchpadFormView,
+                                     ArchiveSourcePackageListView):
     """Base class to implement a source selection widget for PPAs."""
 
     schema = IArchiveSourceSelectionForm
@@ -523,7 +526,7 @@ class ArchiveSourceSelectionFormView(LaunchpadFormView, ArchiveViewBase):
 
     def initialize(self):
         """Ensure both parent classes initialize methods are called."""
-        ArchiveViewBase.initialize(self)
+        ArchiveSourcePackageListView.initialize(self)
         LaunchpadFormView.initialize(self)
 
     def setNextURL(self):
