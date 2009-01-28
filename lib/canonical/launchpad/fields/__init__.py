@@ -565,18 +565,17 @@ class ProductBugTracker(Choice):
         if ob.official_malone:
             return self.malone_marker
         else:
-            return ob.bugtracker
+            return getattr(ob, self.__name__)
 
     def set(self, ob, value):
         if self.readonly:
             raise TypeError("Can't set values on read-only fields.")
         if value is self.malone_marker:
             ob.official_malone = True
-            ob.bugtracker = None
+            setattr(ob, self.__name__, None)
         else:
             ob.official_malone = False
-            ob.bugtracker = value
-
+            setattr(ob, self.__name__, value)
 
 class URIField(TextLine):
     implements(IURIField)
