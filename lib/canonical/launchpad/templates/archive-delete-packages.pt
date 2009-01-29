@@ -41,7 +41,7 @@
              tal:content="structure error">Error message</div>
       </tal:selectable_sources_end>
 
-      <tal:actions condition="view/available_sources_size"
+      <tal:actions condition="view/has_sources"
                    define="widget nocall:view/widgets/deletion_comment;
                            field_name widget/context/__name__;
                            error python:view.getFieldError(field_name);">

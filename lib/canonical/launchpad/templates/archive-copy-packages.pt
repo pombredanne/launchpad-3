@@ -52,7 +52,7 @@
         </tal:selectable_sources_end>
 
         <table style="margin-top: 1em;"
-          tal:condition="view/available_sources_size">
+          tal:condition="view/has_sources">
 
           <tal:archive
             define="widget nocall:view/widgets/destination_archive|nothing"

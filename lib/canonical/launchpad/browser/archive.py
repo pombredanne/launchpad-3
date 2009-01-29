@@ -284,8 +284,61 @@ class ArchiveContextMenu(ContextMenu):
         text = 'Edit dependencies'
         return Link('+edit-dependencies', text, icon='edit')
 
+class ArchiveViewBase(LaunchpadView):
+    """Common features for Archive view classes."""
 
-class ArchiveSourcePackageListViewBase(LaunchpadView):
+    @cachedproperty
+    def is_active(self):
+        """Whether or not this PPA already have publications in it."""
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.getPublishedSources().count() > 0
+
+    @property
+    def source_count_text(self):
+        """Return the correct form of the source counter notice."""
+        num_sources_published = self.context.number_of_sources_published
+        if num_sources_published == 1:
+            return '%s source package' % num_sources_published
+        else:
+            return '%s source packages' % num_sources_published
+
+    @property
+    def binary_count_text(self):
+        """Return the correct form of the binary counter notice."""
+        if self.context.number_of_binaries == 1:
+            return '%s binary package' % self.context.number_of_binaries
+        else:
+            return '%s binary packages' % self.context.number_of_binaries
+
+    @property
+    def archive_url(self):
+        """Return an archive_url where available, or None."""
+        if self.is_active and not self.context.is_copy:
+            return self.context.archive_url
+        else:
+            return None
+
+    @property
+    def archive_label(self):
+        """Return either 'PPA' or 'Archive' as the label for archives.
+
+        It is desired to use the name 'PPA' for branding reasons where
+        appropriate, even though the template logic is the same (and hence
+        not worth splitting off into a separate template or macro)
+        """
+        if self.context.is_ppa:
+            return 'PPA'
+        else:
+            return 'Archive'
+
+    @cachedproperty
+    def build_counters(self):
+        """Return a dict representation of the build counters."""
+        return self.context.getBuildCounters()
+
+
+class ArchiveSourcePackageListViewBase(ArchiveViewBase):
     """Common features for archive views with lists of packages."""
 
     def initialize(self):
@@ -296,9 +349,6 @@ class ArchiveSourcePackageListViewBase(LaunchpadView):
         # Because BrowserRequest.processInputs ignores GET vars when the
         # method=POST, store them here (as the filtering always uses GET
         # even when other forms are posted).
-        #TODO: do this conditionally only when request is a post, that
-        # way wont need to include the change that updates the testing
-        # infrustructure
         self.get_params = dict(
             parse_qsl(self.request.get('QUERY_STRING') or '',True))
 
@@ -309,9 +359,6 @@ class ArchiveSourcePackageListViewBase(LaunchpadView):
 
         # By default, this view will not present selectable sources
         self.selectable_sources = False
-
-# TODO: replace all 'has_sources' with batch in templates
-
 
         super(ArchiveSourcePackageListViewBase, self).initialize()
 
@@ -438,62 +485,15 @@ class ArchiveSourcePackageListViewBase(LaunchpadView):
         results = list(self.batchnav.currentBatch())
         self.search_results = ArchiveSourcePublications(results)
 
-
-class ArchiveViewBase:
-    """Common features for Archive view classes."""
-
     @cachedproperty
-    def is_active(self):
-        """Whether or not this PPA already have publications in it."""
+    def has_sources(self):
+        """Whether or not the PPA has published source packages."""
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
-        return self.context.getPublishedSources().count() > 0
-
-    @property
-    def source_count_text(self):
-        """Return the correct form of the source counter notice."""
-        num_sources_published = self.context.number_of_sources_published
-        if num_sources_published == 1:
-            return '%s source package' % num_sources_published
-        else:
-            return '%s source packages' % num_sources_published
-
-    @property
-    def binary_count_text(self):
-        """Return the correct form of the binary counter notice."""
-        if self.context.number_of_binaries == 1:
-            return '%s binary package' % self.context.number_of_binaries
-        else:
-            return '%s binary packages' % self.context.number_of_binaries
-
-    @property
-    def archive_url(self):
-        """Return an archive_url where available, or None."""
-        if self.is_active and not self.context.is_copy:
-            return self.context.archive_url
-        else:
-            return None
-
-    @property
-    def archive_label(self):
-        """Return either 'PPA' or 'Archive' as the label for archives.
-
-        It is desired to use the name 'PPA' for branding reasons where
-        appropriate, even though the template logic is the same (and hence
-        not worth splitting off into a separate template or macro)
-        """
-        if self.context.is_ppa:
-            return 'PPA'
-        else:
-            return 'Archive'
-
-    @cachedproperty
-    def build_counters(self):
-        """Return a dict representation of the build counters."""
-        return self.context.getBuildCounters()
+        return self.search_results.has_sources
 
 
-class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListViewBase):
+class ArchiveView(ArchiveSourcePackageListViewBase):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
@@ -530,9 +530,6 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
 
     schema = IArchiveSourceSelectionForm
 
-    # Maximum number of 'sources' presented.
-    max_sources_presented = 50
-
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
@@ -541,7 +538,6 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         super() ensures this happens in left-to-right order.
         """
         super(ArchiveSourceSelectionFormView, self).initialize()
-
         self.selectable_sources = True
 
     def setNextURL(self):
@@ -591,7 +587,6 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         """
         terms = []
 
-        results = list(self.sources[:self.max_sources_presented])
         for pub in self.search_results:
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
@@ -603,27 +598,11 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
                  description=_('Select one or more sources to be submitted '
                                'to an action.')))
 
-    @cachedproperty
-    def has_sources(self):
-        """Whether or not the PPA has published source packages."""
-        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.available_sources_size > 0
-
-    @cachedproperty
-    def available_sources_size(self):
-        """Number of available sources."""
-        return self.sources.count()
-
-    @property
-    def has_undisplayed_sources(self):
-        """Whether or not some sources are not displayed in the widget."""
-        return self.available_sources_size > self.max_sources_presented
-
     @property
     def action_url(self):
         """The forms should post to themselves, including GET params."""
         return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
+
 
 class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """Archive package deletion view class.
@@ -633,9 +612,6 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """
 
     schema = IArchivePackageDeletionForm
-
-    # Maximum number of 'sources' presented.
-    max_sources_presented = 20
 
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
 
@@ -658,15 +634,6 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             name=self.specified_name_filter,
             status=self.selected_status_filter.value.collection,
             distroseries=self.selected_series_filter.value)
-
-    @cachedproperty
-    def has_sources(self):
-        """Return whether the context has sources to delete.
-
-        Overrides ArchiveViewBase so that it returns true only if this
-        archive has published sources that have not yet been deleted.
-        """
-        return self.context.getSourcesForDeletion().count() > 0
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
@@ -735,9 +702,6 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     custom_widget('destination_archive', DestinationArchiveDropdownWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
     custom_widget('include_binaries', LaunchpadRadioWidget)
-
-    # Maximum number of 'sources' presented.
-    max_sources_presented = 20
 
     default_pocket = PackagePublishingPocket.RELEASE
 
