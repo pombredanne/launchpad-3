@@ -745,11 +745,13 @@ class BranchMergeProposalJob(Storm):
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
+        Storm.__init__(self)
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.branch_merge_proposal = branch_merge_proposal
         self.job_type = job_type
-        # XXX This should be a bytestring, but the DB representation isn't.
+        # XXX AaronBentley 2009-01-29 bug=322819: This should be a bytestring,
+        # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
     def sync(self):
