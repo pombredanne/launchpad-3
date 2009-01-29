@@ -131,6 +131,7 @@ class HTTPResource:
     # Some interesting media types.
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
+    XHTML_TYPE = 'application/xhtml+xml'
 
     # The representation value used when the client doesn't have
     # authorization to see the real value.
@@ -183,10 +184,7 @@ class HTTPResource:
         """
         incoming_etags = self._parseETags('If-None-Match')
 
-        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
-            media_type = self.WADL_TYPE
-        else:
-            media_type = self.JSON_TYPE
+        media_type = self.getPreferredSupportedContentType()
         existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
@@ -311,25 +309,35 @@ class HTTPResource:
         namespace['context'] = self
         return template.pt_render(namespace)
 
+    def toXHTML(self, template_name="html-resource.pt"):
+        """Represent this resource as an XHTML document."""
+        template = LazrPageTemplateFile('../templates/' + template_name)
+        namespace = template.pt_getContext()
+        namespace['context'] = self
+        return template.pt_render(namespace)
+
     def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
 
-        The web service supports WADL and JSON representations. The
-        default is JSON. This method determines whether the client
-        would rather have WADL or JSON.
+        The web service supports WADL, XHTML, and JSON
+        representations. If no supported media type is requested, JSON
+        is the default. This method whether the client would rather
+        have WADL, XHTML, or JSON.
         """
         content_types = self.getPreferredContentTypes()
-        try:
-            wadl_pos = content_types.index(self.WADL_TYPE)
-        except ValueError:
-            wadl_pos = float("infinity")
-        try:
-            json_pos = content_types.index(self.JSON_TYPE)
-        except ValueError:
-            json_pos = float("infinity")
-        if wadl_pos < json_pos:
-            return self.WADL_TYPE
-        return self.JSON_TYPE
+        preferences = []
+        winner = None
+        for media_type in [self.WADL_TYPE, self.XHTML_TYPE, self.JSON_TYPE]:
+            try:
+                pos = content_types.index(media_type)
+                if winner is None or pos < winner[1]:
+                    winner = (media_type, pos)
+            except ValueError:
+                pass
+        if winner is None:
+            return self.JSON_TYPE
+        else:
+            return winner[0]
 
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
@@ -637,8 +645,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.etags_by_media_type[media_type] = etag
             return etag
 
-        # Calculate the ETag for a JSON representation only.
-        if media_type != self.JSON_TYPE:
+        # Calculate the ETag for a JSON or XHTML representation only.
+        if media_type not in (self.JSON_TYPE, self.XHTML_TYPE):
             return None
 
         hash_object = sha.new()
@@ -731,6 +739,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 result = self.toWADL().encode("utf-8")
             elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
+            elif media_type == self.XHTML_TYPE:
+                result = self.toHTML().encode("utf-8")
 
         self.request.response.setHeader('Content-Type', media_type)
         return result
