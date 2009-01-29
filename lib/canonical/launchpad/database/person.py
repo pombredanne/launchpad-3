@@ -123,7 +123,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.interfaces.translator import ITranslatorSet
 from canonical.launchpad.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -242,8 +243,12 @@ class Person(
         We can't do this in a DB trigger as soon the Account table will
         in a seperate database to the Person table.
         """
-        if self.account is not None and self.account.displayname != value:
-            self.account.displayname = value
+        if self.accountID is not None:
+            auth_store = getUtility(IStoreSelector).get(
+                AUTH_STORE, MASTER_FLAVOR)
+            account = auth_store.find(Account, id=self.accountID).one()
+            if account.displayname != value:
+                account.displayname = value
         return value
 
     displayname = StringCol(dbName='displayname', notNull=True,

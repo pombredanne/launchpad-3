@@ -247,14 +247,29 @@ class LaunchpadDatabase(Postgres):
             _main_thread_id == thread.get_ident()):
             raise StormAccessFromMainThread()
 
+        try:
+            realm, flavor = self._uri.database.split('-')
+        except ValueError:
+            assert False, (
+                'DB connection uri %s does not match realm-flavor format'
+                % repr(self._uri.database))
+
+        assert realm in ('main', 'auth'), 'Unknown realm %s' % realm
+        assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
+
         # We set self._dsn here rather than in __init__ so when the Store
         # is reconnected it pays attention to any config changes.
-        config_entry = self._uri.database.replace('-', '_')
+        config_entry = '%s_%s' % (realm, flavor)
         connection_string = getattr(dbconfig, config_entry)
         assert 'user=' not in connection_string, (
                 "Database username should not be specified in "
                 "connection string (%s)." % connection_string)
-        self._dsn = "%s user=%s" % (connection_string, dbconfig.dbuser)
+
+        # Try to lookup dbuser using the $realm_dbuser key. If this fails,
+        # fallback to the dbuser key.
+        dbuser = getattr(dbconfig, '%s_dbuser' % realm, dbconfig.dbuser)
+
+        self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
@@ -419,4 +434,6 @@ class StoreSelector:
             if flavor == DEFAULT_FLAVOR:
                 # None set, use MASTER by default.
                 flavor = MASTER_FLAVOR
-        return getUtility(IZStorm).get('%s-%s' % (name, flavor))
+        return getUtility(IZStorm).get(
+            '%s-%s' % (name, flavor),
+            'launchpad:%s-%s' % (name, flavor))
