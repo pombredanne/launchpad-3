@@ -908,11 +908,11 @@ class IBranch(IHasOwner):
             description=_(
                 'The bzr branch path as accessed by Launchpad. If the '
                 'branch is associated with a product as the primary '
-                'development focus, then the result should be lp:product.  If '
-                'the branch is related to a series, then lp:product/series. '
-                'Otherwise the result is lp:~user/product/branch-name.'
-                )),
-            exported_as='bzr_identity')
+                'development focus, then the result should be lp:product.  '
+                'If the branch is related to a series, then '
+                'lp:product/series.  Otherwise the result is '
+                'lp:~user/product/branch-name.'
+                )))
 
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
@@ -1070,7 +1070,6 @@ class IBranch(IHasOwner):
         :param reason: An error message that will be displayed on the branch
             detail page.
         """
-
 
 
 class IBranchSet(Interface):
