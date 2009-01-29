@@ -30,6 +30,7 @@ back to the tour start.
     http://launchpad.dev/+tour/community
     http://launchpad.dev/+tour/ppa
     http://launchpad.dev/+tour/community-support
+    http://launchpad.dev/+tour/api
     http://launchpad.dev/+tour/feature-tracking
     http://launchpad.dev/+tour/release-management
     http://launchpad.dev/+tour/index
