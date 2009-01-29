@@ -69,9 +69,7 @@ This is mostly as a convenience to API users.
     >>> from canonical.launchpad.interfaces import (
     ...     IArchiveSafePublisher,
     ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackageFilePublishing,
-    ...     ISecureSourcePackagePublishingHistory,
-    ...     ISecureBinaryPackagePublishingHistory)
+    ...     ISourcePackageFilePublishing)
 
 Retrieve any SourcePackagePublishingHistory entry.
 
@@ -214,7 +212,7 @@ architecture-specific binaries in ubuntu/breezy-autotest.
     foo-bin 666 in breezy-autotest i386
     foo-bin 666 in breezy-autotest hppa
 
-Using the source publication, ISecureSourcePackagePublishingHistory, we
+Using the source publication, ISourcePackagePublishingHistory, we
 can obtain the published binaries.
 
     >>> created_ids = [bin.id for bin in binaries]
@@ -376,10 +374,9 @@ the copied location to PUBLISHED, so they can be visible again for
 getPublishedBinaries().
 
     >>> for pub in copied_source.getBuiltBinaries():
-    ...     secure_record = pub.secure_record
-    ...     secure_record.status = PackagePublishingStatus.PUBLISHED
-    ...     secure_record.scheduleddeletiondate = None
-    ...     syncUpdate(secure_record)
+    ...     pub.status = PackagePublishingStatus.PUBLISHED
+    ...     pub.scheduleddeletiondate = None
+    ...     syncUpdate(pub)
 
 Now we override the first binary publication, the hppa one, to
 component 'universe'.
@@ -672,25 +669,10 @@ implement the 'age' property which return a timedelta representing
     datetime.timedelta(...)
 
 
-== Secure Source Publishing ==
-
-'secure_record' returns a ISecureSourcePackagePublishing instance
-corresponding to this publication. This instance also implements
-IArchiveSafePublisher.
-
-    >>> sspph = spph.secure_record
-    >>> ISecureSourcePackagePublishingHistory.providedBy(sspph)
-    True
-    >>> verifyObject(IArchiveSafePublisher, sspph)
-    True
-    >>> sspph.embargo
-    False
-
-
 == Binary and Binary File Publishing ===
 
 Symmetric behaviour is offered for BinaryPackagePublishing,
-BinaryPackageFile and ISecureBinaryPackagePublishingHistory
+BinaryPackageFile and IBinaryPackagePublishingHistory
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBinaryPackageFilePublishing)
@@ -726,14 +708,6 @@ Generating respective "Packages" stanzas:
     MD5sum: 01234567890123456789012345678926
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
-
-    >>> sbpph = bpph.secure_record
-    >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)
-    True
-    >>> verifyObject(IArchiveSafePublisher, sbpph)
-    True
-    >>> sbpph.embargo
-    False
 
     >>> any_file = bpph.files[-1]
     >>> IBinaryPackageFilePublishing.providedBy(any_file)

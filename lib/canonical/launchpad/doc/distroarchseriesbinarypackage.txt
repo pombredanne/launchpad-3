@@ -21,7 +21,7 @@ mozilla-firefox that coincides with pmount's. We're hitch-hiking on two
 existing builds that are in sampledata!
 
   >>> from canonical.launchpad.database.publishing import (
-  ...     SecureBinaryPackagePublishingHistory)
+  ...     BinaryPackagePublishingHistory)
   >>> from canonical.launchpad.database.build import Build
   >>> from canonical.launchpad.database.component import Component
   >>> from canonical.launchpad.database.section import Section
@@ -61,7 +61,7 @@ needs to be removed.
   ...   installedsize=0,
   ...   architecturespecific=False)
 
-  >>> pe = SecureBinaryPackagePublishingHistory(
+  >>> pe = BinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
   ...   component=main_component.id,
   ...   section=misc_section.id,
@@ -102,7 +102,7 @@ needs to be removed.
   ...   installedsize=0,
   ...   architecturespecific=False)
 
-  >>> pe = SecureBinaryPackagePublishingHistory(
+  >>> pe = BinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
   ...   component=main_component.id,
   ...   section=misc_section.id,
@@ -152,11 +152,7 @@ distro_source_package attribute should return None.
   None
 
 Check the publishing record of packages returned by 'currentrelease' and
-'__getitem__', which are different and in 'Published' state. We compare
-the IDs below because pe is a SecureBinaryPackagePublishingHistory,
-whereas the publishing record is a BinaryPackagePublishingHistory -- an
-artifact of how these objects are fetched are done. The ID column on the
-latter view comes from SBPPH, though.
+'__getitem__', which are different and in 'Published' state.
 
   >>> pe.id == current_release.current_publishing_record.id
   True

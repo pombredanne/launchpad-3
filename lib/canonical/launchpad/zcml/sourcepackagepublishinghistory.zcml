@@ -65,15 +65,6 @@
     <!-- XXX cprov 2006-06-14: Missing security adapter. -->
   </class>
 
-  <!-- SecureSourcePackagePublishingHistory -->
-  <class class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">
-    <allow interface="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory"/>
-    <allow interface="canonical.launchpad.interfaces.IArchiveSafePublisher" />
-    <require
-      permission="launchpad.Admin"
-      set_schema="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory" />
-  </class>
-
   <!-- PublishingSet -->
   <class class="canonical.launchpad.database.publishing.PublishingSet">
     <allow interface="canonical.launchpad.interfaces.publishing.IPublishingSet"/>

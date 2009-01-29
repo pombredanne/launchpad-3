@@ -781,8 +781,8 @@ Publishing the record will exclude Celso's PPA from
 pending-publication state:
 
       >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-      >>> src_pub.secure_record.status = PackagePublishingStatus.PUBLISHED
-      >>> syncUpdate(src_pub.secure_record)
+      >>> src_pub.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(src_pub)
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
@@ -827,7 +827,7 @@ Publishing the binaries will exclude Celso's PPA from
 pending-publication results:
 
       >>> for pub in pending_binaries:
-      ...     pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+      ...     pub.status = PackagePublishingStatus.PUBLISHED
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0

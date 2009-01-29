@@ -40,15 +40,5 @@
     <!-- XXX cprov 2006-06-14: missing security adapter -->
   </class>
 
-  <!-- SecureBinaryPackagePublishingHistory -->
-  <class class="canonical.launchpad.database.SecureBinaryPackagePublishingHistory">
-    <allow interface="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory" />
-    <allow interface="canonical.launchpad.interfaces.IArchiveSafePublisher" />
-    <require
-      permission="launchpad.Admin"
-      set_schema="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory" />
-  </class>
-
-
 </facet>
 </configure>

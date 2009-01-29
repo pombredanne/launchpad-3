@@ -400,11 +400,11 @@ states.
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(name='iceweasel')[0]
-    >>> iceweasel_pub.secure_record.status = PackagePublishingStatus.SUPERSEDED
+    >>> iceweasel_pub.status = PackagePublishingStatus.SUPERSEDED
     >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
-    >>> pmount_pub.secure_record.status = PackagePublishingStatus.DELETED
-    >>> pmount_pub.secure_record.removed_by = cprov
-    >>> pmount_pub.secure_record.removal_comment = 'nhack !'
+    >>> pmount_pub.status = PackagePublishingStatus.DELETED
+    >>> pmount_pub.removed_by = cprov
+    >>> pmount_pub.removal_comment = 'nhack !'
     >>> logout()
     >>> transaction.commit()
     >>> flush_database_updates()

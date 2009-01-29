@@ -35,8 +35,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -1236,7 +1235,7 @@ class PackageUploadBuild(SQLBase):
                 else:
                     component = binary.component
 
-                sbpph = SecureBinaryPackagePublishingHistory(
+                bpph = BinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
                     component=component,
@@ -1245,10 +1244,8 @@ class PackageUploadBuild(SQLBase):
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
                     pocket=self.packageupload.pocket,
-                    embargo=False,
                     archive=self.packageupload.archive
                     )
-                bpph = BinaryPackagePublishingHistory.get(sbpph.id)
                 published_binaries.append(bpph)
         return published_binaries
 
@@ -1411,7 +1408,7 @@ class PackageUploadSource(SQLBase):
         else:
             component = self.sourcepackagerelease.component
 
-        sspph = SecureSourcePackagePublishingHistory(
+        return SourcePackagePublishingHistory(
             distroseries=self.packageupload.distroseries,
             sourcepackagerelease=self.sourcepackagerelease,
             component=component,
@@ -1419,9 +1416,7 @@ class PackageUploadSource(SQLBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.packageupload.pocket,
-            embargo=False,
             archive=self.packageupload.archive)
-        return SourcePackagePublishingHistory.get(sspph.id)
 
 
 class PackageUploadCustom(SQLBase):

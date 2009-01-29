@@ -9,8 +9,7 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.database.publishing import (
-    SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory)
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -82,7 +81,7 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
         # and he doesn't have a signing key in the database
         sourcepackagerelease.dscsigningkey = person.gpgkeys[0]
     main_component = getUtility(IComponentSet)['main']
-    SecureSourcePackagePublishingHistory(
+    SourcePackagePublishingHistory(
         distroseries=distroseries,
         sourcepackagerelease=sourcepackagerelease,
         component=main_component,
@@ -90,7 +89,6 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
         status=publishing_status,
         datecreated=UTC_NOW,
         pocket=PackagePublishingPocket.RELEASE,
-        embargo=False,
         archive=archive)
 
     # Only publish binaries if the callsite specified a version.
@@ -101,7 +99,7 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
             binarypackagenameID=binarypackagename.id,
             version=binarypackage_version)
         distroarchseries = distroseries[arch]
-        SecureBinaryPackagePublishingHistory(
+        BinaryPackagePublishingHistory(
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
             component=main_component,
@@ -110,5 +108,4 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
             status=publishing_status,
             datecreated=UTC_NOW,
             pocket=PackagePublishingPocket.RELEASE,
-            embargo=False,
             archive=archive)

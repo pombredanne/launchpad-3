@@ -17,8 +17,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     BinaryPackageFormat, BuildStatus, IBinaryPackageNameSet, IComponentSet,
@@ -172,7 +171,7 @@ class SoyuzTestPublisher:
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
 
-        sspph = SecureSourcePackagePublishingHistory(
+        return SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -182,12 +181,7 @@ class SoyuzTestPublisher:
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            embargo=False,
             archive=archive)
-
-        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
-        # of SSPPH and other useful attributes.
-        return SourcePackagePublishingHistory.get(sspph.id)
 
     def getPubBinaries(self, binaryname='foo-bin', summary='Foo app is great',
                        description='Well ...\nit does nothing, though',
@@ -299,9 +293,9 @@ class SoyuzTestPublisher:
         else:
             archs = distroarchseries.distroseries.architectures
 
-        secure_pub_binaries = []
+        pub_binaries = []
         for arch in archs:
-            pub = SecureBinaryPackagePublishingHistory(
+            pub = BinaryPackagePublishingHistory(
                 distroarchseries=arch,
                 binarypackagerelease=binarypackagerelease,
                 component=binarypackagerelease.component,
@@ -314,10 +308,9 @@ class SoyuzTestPublisher:
                 pocket=pocket,
                 embargo=False,
                 archive=archive)
-            secure_pub_binaries.append(pub)
+            pub_binaries.append(pub)
 
-        return [BinaryPackagePublishingHistory.get(pub.id)
-                for pub in secure_pub_binaries]
+        return pub_binaries
 
 
 class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
@@ -408,14 +401,6 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         """
         self.checkSourcePublication(source, status)
         self.checkBinaryPublications(binaries, status)
-
-    def getSecureSource(self, source):
-        """Return the corresponding SecureSourcePackagePublishingHistory."""
-        return SecureSourcePackagePublishingHistory.get(source.id)
-
-    def getSecureBinary(self, binary):
-        """Return the corresponding SecureBinaryPackagePublishingHistory."""
-        return SecureBinaryPackagePublishingHistory.get(binary.id)
 
     def checkPastDate(self, date, lag=None):
         """Assert given date is older than 'now'.

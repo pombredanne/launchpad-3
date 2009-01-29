@@ -532,7 +532,7 @@ Now we process the accepted queue items, one more time.
 These packages must now be in the publishing history. Let's check it.
 
   >>> from canonical.launchpad.database import (
-  ...    SecureSourcePackagePublishingHistory as SSPPH)
+  ...    SourcePackagePublishingHistory as SSPPH)
   >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> package_names.sort()
   >>> for name in package_names:

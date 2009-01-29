@@ -9,8 +9,8 @@ Get the current counts of stuff in the database:
 
     >>> from canonical.launchpad.database import (
     ...     SourcePackageRelease,
-    ...     SecureSourcePackagePublishingHistory,
-    ...     SecureBinaryPackagePublishingHistory,
+    ...     SourcePackagePublishingHistory,
+    ...     BinaryPackagePublishingHistory,
     ...     Person,
     ...     TeamParticipation,
     ...     WikiName,
@@ -19,8 +19,8 @@ Get the current counts of stuff in the database:
     ...     Build)
     >>> from canonical.launchpad.interfaces import (
     ...     PackagePublishingPocket)
-    >>> SSPPH = SecureSourcePackagePublishingHistory
-    >>> SBPPH = SecureBinaryPackagePublishingHistory
+    >>> SSPPH = SourcePackagePublishingHistory
+    >>> SBPPH = BinaryPackagePublishingHistory
 
     >>> orig_spr_count = SourcePackageRelease.select().count()
     >>> orig_sspph_count = SSPPH.select().count()
@@ -421,7 +421,7 @@ We check that the binary package publishing override facility works:
     >>> n = BinaryPackageName.selectOneBy(name="libdb1-compat")
     >>> db1 = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
     ...         version="2.1.3-7")
-    >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
+    >>> for pub in BinaryPackagePublishingHistory.selectBy(
     ...     binarypackagereleaseID=db1.id, orderBy='distroarchseries'):
     ...     print "%s %s %s" % (
     ...         pub.distroarchseries.distroseries.name, pub.priority,

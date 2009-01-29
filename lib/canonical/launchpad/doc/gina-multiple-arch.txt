@@ -5,16 +5,16 @@ Get the current counts of stuff in the database:
 
     >>> from canonical.launchpad.database import (
     ...     SourcePackageRelease,
-    ...     SecureSourcePackagePublishingHistory,
-    ...     SecureBinaryPackagePublishingHistory,
+    ...     SourcePackagePublishingHistory,
+    ...     BinaryPackagePublishingHistory,
     ...     Person,
     ...     TeamParticipation,
     ...     WikiName,
     ...     EmailAddress,
     ...     BinaryPackageRelease,
     ...     Build)
-    >>> SSPPH = SecureSourcePackagePublishingHistory
-    >>> SBPPH = SecureBinaryPackagePublishingHistory
+    >>> SSPPH = SourcePackagePublishingHistory
+    >>> SBPPH = BinaryPackagePublishingHistory
 
     >>> orig_spr_count = SourcePackageRelease.select().count()
     >>> orig_sspph_count = SSPPH.select().count()

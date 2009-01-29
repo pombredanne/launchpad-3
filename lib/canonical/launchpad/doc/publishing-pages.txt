@@ -39,7 +39,7 @@ comment requires going through the secure record and flushing before
 it will be reflected in the normal record)
 
     >>> login('foo.bar@canonical.com')
-    >>> foo_pub.secure_record.removal_comment = None
+    >>> foo_pub.removal_comment = None
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 

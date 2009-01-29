@@ -107,8 +107,8 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     print "-----------+---------------"
     ...     for component in ubuntu_components:
     ...         component = getUtility(IComponentSet)[component]
-    ...         ogre_pub.secure_record.component = component
-    ...         syncUpdate(ogre_pub.secure_record)
+    ...         ogre_pub.component = component
+    ...         syncUpdate(ogre_pub)
     ...         flush_database_caches()
     ...         components_term = " ".join(
     ...             get_components_for_building(ogre_build))

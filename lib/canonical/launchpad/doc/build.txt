@@ -912,7 +912,7 @@ list.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
-    >>> pmount_pub.secure_record.component = main_component
+    >>> pmount_pub.component = main_component
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
@@ -936,7 +936,7 @@ depend on all components of its distribution PRIMARY archive.
 
     >>> login('foo.bar@canonical.com')
     >>> universe_component = getUtility(IComponentSet)['universe']
-    >>> pmount_pub.secure_record.component = universe_component
+    >>> pmount_pub.component = universe_component
     >>> removeSecurityProxy(depwait_build).archive = cprov.archive
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
@@ -954,7 +954,7 @@ depend on all components of its distribution PRIMARY archive.
 Restore depwait_build previous state.
 
     >>> login('foo.bar@canonical.com')
-    >>> pmount_pub.secure_record.component = main_component
+    >>> pmount_pub.component = main_component
     >>> removeSecurityProxy(depwait_build).archive = hoary.main_archive
     >>> flush_database_caches()
     >>> login(ANONYMOUS)

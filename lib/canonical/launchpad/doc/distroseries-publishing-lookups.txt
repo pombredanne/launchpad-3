@@ -25,9 +25,9 @@ as possible.
     >>> sample_spr = cnews_hoary.currentrelease.sourcepackagerelease
 
     >>> from canonical.launchpad.database.publishing import (
-    ...    SecureSourcePackagePublishingHistory)
+    ...    SourcePackagePublishingHistory)
 
-    >>> SecureSourcePackagePublishingHistory.selectBy(
+    >>> SourcePackagePublishingHistory.selectBy(
     ...     distroseries=breezy_autotest,
     ...     sourcepackagerelease=sample_spr).count()
     0

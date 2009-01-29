@@ -39,9 +39,9 @@ from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
 from canonical.launchpad.database import (Distribution, DistroSeries,
     DistroArchSeries,Processor, SourcePackageName, SourcePackageRelease,
     Build, BinaryPackageRelease, BinaryPackageName,
-    SecureBinaryPackagePublishingHistory,
-    Component, Section, SourcePackageReleaseFile,
-    SecureSourcePackagePublishingHistory, BinaryPackageFile)
+    BinaryPackagePublishingHistory, Component, Section,
+    SourcePackageReleaseFile, SourcePackagePublishingHistory,
+    BinaryPackageFile)
 
 from canonical.launchpad.interfaces import (
     BuildStatus, IPersonSet, IBinaryPackageNameSet, PersonCreationRationale,
@@ -639,7 +639,7 @@ class SourcePackagePublisher:
 
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
-        entry = SecureSourcePackagePublishingHistory(
+        entry = SourcePackagePublishingHistory(
             distroseries=self.distroseries.id,
             sourcepackagerelease=sourcepackagerelease.id,
             status=PackagePublishingStatus.PENDING,
@@ -656,7 +656,7 @@ class SourcePackagePublisher:
 
     def _checkPublishing(self, sourcepackagerelease):
         """Query for the publishing entry"""
-        ret = SecureSourcePackagePublishingHistory.select(
+        ret = SourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distroseries = %s
                    AND archive = %s
@@ -880,7 +880,7 @@ class BinaryPackagePublisher:
 
 
         # Create the Publishing entry with status PENDING.
-        SecureBinaryPackagePublishingHistory(
+        BinaryPackagePublishingHistory(
             binarypackagerelease = binarypackage.id,
             component = component.id,
             section = section.id,
@@ -903,7 +903,7 @@ class BinaryPackagePublisher:
 
     def _checkPublishing(self, binarypackage):
         """Query for the publishing entry"""
-        ret = SecureBinaryPackagePublishingHistory.select(
+        ret = BinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchseries = %s
                    AND archive = %s

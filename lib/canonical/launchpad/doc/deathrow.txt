@@ -7,12 +7,12 @@
   >>> from canonical.archivepublisher.deathrow import DeathRow
   >>> from canonical.archivepublisher.diskpool import DiskPool
   >>> from canonical.launchpad.database import Distribution
-  >>> from canonical.launchpad.database import \
-  ...   SecureBinaryPackagePublishingHistory as SBPPH
-  >>> from canonical.launchpad.database import \
-  ...   SecureSourcePackagePublishingHistory as SSPPH
-  >>> from canonical.launchpad.database import \
-  ...   SourcePackageReleaseFile as SPRF
+  >>> from canonical.launchpad.database import (
+  ...   BinaryPackagePublishingHistory as SBPPH)
+  >>> from canonical.launchpad.database import (
+  ...   SourcePackagePublishingHistory as SSPPH)
+  >>> from canonical.launchpad.database import (
+  ...   SourcePackageReleaseFile as SPRF)
   >>> class MockLogger:
   ...     def debug(self, s):
   ...         print "DEBUG:", s

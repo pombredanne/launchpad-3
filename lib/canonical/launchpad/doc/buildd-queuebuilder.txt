@@ -22,7 +22,7 @@ Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
     ...      Build, BuildQueue, DistroArchSeries, DistroSeries,
-    ...      PocketChroot, SecureSourcePackagePublishingHistory)
+    ...      PocketChroot, SourcePackagePublishingHistory)
 
     >>> from canonical.launchpad.interfaces import (
     ...      PackagePublishingPocket, PackagePublishingStatus)
@@ -366,7 +366,7 @@ To check binary PAS listings we'll use a source publication for
 iceweasel which produces mozilla-firefox binaries in warty and already
 has its data set up.
 
-    >>> firefox_pub = SecureSourcePackagePublishingHistory.get(28)
+    >>> firefox_pub = SourcePackagePublishingHistory.get(28)
     >>> print firefox_pub.sourcepackagerelease.title
     iceweasel - 1.0
     >>> print firefox_pub.sourcepackagerelease.architecturehintlist

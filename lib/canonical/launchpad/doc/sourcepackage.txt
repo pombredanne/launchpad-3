@@ -76,13 +76,10 @@ upload, even though it gets changed in the publishing record.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.database import Component
     >>> from canonical.launchpad.database import (
-    ...     SecureSourcePackagePublishingHistory)
+    ...     SourcePackagePublishingHistory)
     >>> from canonical.launchpad.ftests import syncUpdate
 
-    # SourcePackagePublishingHistory is just a view on
-    # SecureSourcePackagePublishingHistory with some rows removed, so need
-    # to update the SecureSourcePackagePublishingHistory table.
-    >>> latest_publishing = SecureSourcePackagePublishingHistory.get(
+    >>> latest_publishing = SourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
     >>> latest_publishing.component = universe
@@ -127,19 +124,19 @@ SourcePackage context will be reachable.
 
 'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
 
-    >>> secure_pub =  SecureSourcePackagePublishingHistory.get(
+    >>> pub = SourcePackagePublishingHistory.get(
     ...     pmount_hoary['0.1-1'].publishing_history[0].id)
-    >>> secure_pub.datesuperseded is not None
+    >>> pub.datesuperseded is not None
     True
-    >>> secure_pub.dateremoved is None
+    >>> pub.dateremoved is None
     True
 
 We will emulate disk-removal to ensure it will continue to be
 reachable. See bug #179028 for further information.
 
     >>> from datetime import timedelta
-    >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
-    >>> syncUpdate(secure_pub)
+    >>> pub.dateremoved = pub.datesuperseded + timedelta(days=1)
+    >>> syncUpdate(pub)
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name

@@ -838,11 +838,11 @@ permissive database user.
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = old_candidate.build.sourcepackagerelease
-    >>> secure_pub = removeSecurityProxy(
-    ...     old_candidate).build.getCurrentPublication().secure_record
+    >>> pub = removeSecurityProxy(
+    ...     old_candidate).build.getCurrentPublication()
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+    >>> pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
@@ -864,8 +864,8 @@ published.  We need to tweak the status of the publishing record again
 to demonstrate this, and also make the archive private:
 
     >>> source = new_candidate.build.sourcepackagerelease
-    >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.getCurrentPublication().secure_record
+    >>> pub = removeSecurityProxy(
+    ...     new_candidate).build.getCurrentPublication()
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.PENDING
@@ -903,12 +903,12 @@ we can supersede one and delete the other. This will have the effect of
 making the build be superseded and no candidate is returned.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.getCurrentPublication().secure_record
-    >>> secure_pub.status = PackagePublishingStatus.DELETED
-    >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.getCurrentPublication().secure_record
-    >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+    >>> pub = removeSecurityProxy(
+    ...     new_candidate).build.getCurrentPublication()
+    >>> pub.status = PackagePublishingStatus.DELETED
+    >>> pub = removeSecurityProxy(
+    ...     new_candidate).build.getCurrentPublication()
+    >>> pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 

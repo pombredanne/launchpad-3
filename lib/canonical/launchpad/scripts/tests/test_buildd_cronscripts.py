@@ -14,7 +14,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory)
+    SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
@@ -136,9 +136,8 @@ class TestRetryDepwait(unittest.TestCase):
         # Moving the target source to universe, so it can reach the only
         # published binary we have in sampledata.
         source_release = depwait_build.distributionsourcepackagerelease
-        pub_id = source_release.publishing_history[0].id
-        secure_pub = SecureSourcePackagePublishingHistory.get(pub_id)
-        secure_pub.component = getUtility(IComponentSet)['universe']
+        pub = source_release.publishing_history[0]
+        pub.component = getUtility(IComponentSet)['universe']
 
         # Make it dependend on the only binary that can be satisfied in
         # the sampledata.

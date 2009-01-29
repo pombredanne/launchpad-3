@@ -43,6 +43,6 @@ class IPackageCloner(Interface):
             details of the source packages that are fresher or new in the
             origin archive will be logged.
         :return: a 2-tuple (fresher, new) where each element is a sequence
-            of `SecureSourcePackagePublishingHistory` keys of packages
+            of `SourcePackagePublishingHistory` keys of packages
             that are fresher and new in the origin archive respectively.
         """

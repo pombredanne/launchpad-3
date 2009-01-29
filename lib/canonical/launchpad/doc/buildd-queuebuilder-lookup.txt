@@ -18,7 +18,7 @@ publications for a given distroseries:
 
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.database.publishing import (
-    ...     SecureSourcePackagePublishingHistory)
+    ...     SourcePackagePublishingHistory)
     >>> from canonical.launchpad.interfaces import (
     ...     ArchivePurpose, IArchiveSet, IPersonSet, IDistributionSet,
     ...     PackagePublishingPocket, PackagePublishingStatus)
@@ -37,7 +37,7 @@ Creating a single source publishing record:
 
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> def create_publication(distroseries, pocket, archive, status):
-    ...     pub = SecureSourcePackagePublishingHistory(
+    ...     pub = SourcePackagePublishingHistory(
     ...         sourcepackagerelease=the_spr, component=the_spr.component,
     ...         section=the_spr.section, datecreated=UTC_NOW, embargo=False,
     ...         distroseries=distroseries, status=status,

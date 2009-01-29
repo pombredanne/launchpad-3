@@ -5,7 +5,7 @@ uploaded into the system.
 
   >>> from canonical.launchpad.database import (
   ...     ProcessorFamily, Component, GPGKey, Section,
-  ...     SecureSourcePackagePublishingHistory)
+  ...     SourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
   ...     IComponentSet, IDistributionSet, IDistroSeriesSet,
   ...     ISourcePackageNameSet, PackagePublishingPocket,
@@ -50,7 +50,7 @@ queue:
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
   ...     '', '', '', '', dapper.main_archive, 'copyright ?!', '', '')
 
-  >>> publishing_history = SecureSourcePackagePublishingHistory(
+  >>> publishing_history = SourcePackagePublishingHistory(
   ...     distroseries=dapper.id,
   ...     sourcepackagerelease=source_package_release.id,
   ...     component=source_package_release.component.id,
@@ -58,7 +58,6 @@ queue:
   ...     status=PackagePublishingStatus.PUBLISHED,
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
-  ...     embargo=False,
   ...     archive=dapper.main_archive)
 
   # Do the upload into the system.

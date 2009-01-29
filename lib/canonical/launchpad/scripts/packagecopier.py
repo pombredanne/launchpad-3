@@ -722,4 +722,4 @@ class UnembargoSecurityPackage(PackageCopier):
 
             # We don't want to use changeOverride here because it
             # creates a new publishing record.
-            pub_record.secure_record.component = component
+            pub_record.component = component

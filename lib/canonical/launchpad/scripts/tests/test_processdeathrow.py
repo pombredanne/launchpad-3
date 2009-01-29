@@ -22,7 +22,7 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
-from canonical.launchpad.database import SecureSourcePackagePublishingHistory
+from canonical.launchpad.database import SourcePackagePublishingHistory
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.testing import LaunchpadZopelessLayer
@@ -132,38 +132,37 @@ class TestProcessDeathRow(TestCase):
         """Mark the given publishing record for removal."""
         pubrec_ids = []
         for pubrec in pubrecs:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec.id)
-            sspph.status = PackagePublishingStatus.SUPERSEDED
-            sspph.dateremoved = None
-            sspph.scheduleddeletiondate = datetime.datetime(
-                1999, 1, 1, tzinfo=pytz.timezone('UTC'))
+            pubrec.status = PackagePublishingStatus.SUPERSEDED
+            pubrec.dateremoved = None
+            pubrec.scheduleddeletiondate = datetime.datetime(
+                1999, 1, 1, tzinfo=pytz.UTC)
             pubrec_ids.append(pubrec.id)
         return pubrec_ids
 
     def probePublishingStatus(self, pubrec_ids, status):
         """Check if all source publishing records match the given status."""
         for pubrec_id in pubrec_ids:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            spph = SourcePackagePublishingHistory.get(pubrec_id)
             self.assertEqual(
-                sspph.status, status, "ID %s -> %s (expected %s)" % (
-                sspph.id, sspph.status.title, status.title))
+                spph.status, status, "ID %s -> %s (expected %s)" % (
+                spph.id, spph.status.title, status.title))
 
     def probeRemoved(self, pubrec_ids):
         """Check if all source publishing records were removed."""
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pubrec_id in pubrec_ids:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            spph = SourcePackagePublishingHistory.get(pubrec_id)
             self.assertTrue(
-                sspph.dateremoved < right_now,
-                "ID %s -> not removed" % (sspph.id))
+                spph.dateremoved < right_now,
+                "ID %s -> not removed" % (spph.id))
 
     def probeNotRemoved(self, pubrec_ids):
         """Check if all source publishing records were not removed."""
         for pubrec_id in pubrec_ids:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            spph = SourcePackagePublishingHistory.get(pubrec_id)
             self.assertTrue(
-                sspph.dateremoved is None,
-                "ID %s -> removed" % (sspph.id))
+                spph.dateremoved is None,
+                "ID %s -> removed" % (spph.id))
 
     def testDryRun(self):
         """Test we don't delete the file or change the db in dry run mode."""

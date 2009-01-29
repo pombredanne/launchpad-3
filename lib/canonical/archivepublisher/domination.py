@@ -64,8 +64,7 @@ from canonical.database.sqlbase import (
 # Importing from canonical.launchpad.database will cause a circular import
 # because we import from this file into database/distributionmirror.py
 from canonical.launchpad.database.publishing import (
-     BinaryPackagePublishingHistory, SecureSourcePackagePublishingHistory,
-     SecureBinaryPackagePublishingHistory)
+     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import PackagePublishingStatus
 
 
@@ -171,19 +170,19 @@ class Dominator:
         available_architectures = [
             das.id for das in dominated_series.architectures]
         query = """
-            SecureBinaryPackagePublishingHistory.status IN %s AND
-            SecureBinaryPackagePublishingHistory.distroarchseries IN %s AND
-            SecureBinaryPackagePublishingHistory.binarypackagerelease = %s AND
-            SecureBinaryPackagePublishingHistory.pocket = %s AND
-            SecureBinaryPackagePublishingHistory.archive = %s AND
-            SecureBinaryPackagePublishingHistory.component = %s AND
-            SecureBinaryPackagePublishingHistory.section = %s AND
-            SecureBinaryPackagePublishingHistory.priority = %s
+            BinaryPackagePublishingHistory.status IN %s AND
+            BinaryPackagePublishingHistory.distroarchseries IN %s AND
+            BinaryPackagePublishingHistory.binarypackagerelease = %s AND
+            BinaryPackagePublishingHistory.pocket = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.component = %s AND
+            BinaryPackagePublishingHistory.section = %s AND
+            BinaryPackagePublishingHistory.priority = %s
         """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
                         dominated.binarypackagerelease, dominated.pocket,
                         dominated.archive, dominated.component,
                         dominated.section, dominated.priority)
-        return SecureBinaryPackagePublishingHistory.select(query)
+        return BinaryPackagePublishingHistory.select(query)
 
     def _dominateBinary(self, dominated, dominant):
         """Dominate the given binarypackagerelease publication."""
@@ -373,7 +372,7 @@ class Dominator:
                 # However we can still remove *this* record if there's
                 # at least one other PUBLISHED for the spr. This happens
                 # when a package is moved between components.
-                published = SecureSourcePackagePublishingHistory.selectBy(
+                published = SourcePackagePublishingHistory.selectBy(
                     distroseries=pub_record.distroseries,
                     pocket=pub_record.pocket,
                     status=PackagePublishingStatus.PUBLISHED,
@@ -414,7 +413,7 @@ class Dominator:
             cur = cursor()
             cur.execute("""SELECT bpn.id AS name, count(bpn.id) AS count INTO
                 temporary table PubDomHelper FROM BinaryPackageRelease bpr,
-                BinaryPackageName bpn, SecureBinaryPackagePublishingHistory
+                BinaryPackageName bpn, BinaryPackagePublishingHistory
                 sbpph WHERE bpr.binarypackagename = bpn.id AND
                 sbpph.binarypackagerelease = bpr.id AND
                 sbpph.distroarchseries = %s AND sbpph.archive = %s AND
@@ -423,13 +422,13 @@ class Dominator:
                 distroarchseries, self.archive,
                 PackagePublishingStatus.PUBLISHED, pocket))
 
-            binaries = SecureBinaryPackagePublishingHistory.select(
+            binaries = BinaryPackagePublishingHistory.select(
                 """
-                securebinarypackagepublishinghistory.distroarchseries = %s
-                AND securebinarypackagepublishinghistory.archive = %s
-                AND securebinarypackagepublishinghistory.pocket = %s
-                AND securebinarypackagepublishinghistory.status = %s AND
-                securebinarypackagepublishinghistory.binarypackagerelease =
+                binarypackagepublishinghistory.distroarchseries = %s
+                AND binarypackagepublishinghistory.archive = %s
+                AND binarypackagepublishinghistory.pocket = %s
+                AND binarypackagepublishinghistory.status = %s AND
+                binarypackagepublishinghistory.binarypackagerelease =
                     binarypackagerelease.id
                 AND binarypackagerelease.binarypackagename IN (
                     SELECT name FROM PubDomHelper WHERE count > 1)"""
@@ -451,32 +450,29 @@ class Dominator:
 
         self.debug("Performing domination across %s/%s (Source)" %
                    (dr.name, pocket.title))
-        # We can use SecureSourcePackagePublishingHistory here because
-        # the standard .selectBy automatically says that embargo
-        # should be false.
-        sources = SecureSourcePackagePublishingHistory.selectBy(
+        sources = SourcePackagePublishingHistory.selectBy(
             distroseries=dr, archive=self.archive, pocket=pocket,
             status=PackagePublishingStatus.PUBLISHED)
         self._dominateSource(self._sortPackages(sources))
         flush_database_updates()
 
-        sources = SecureSourcePackagePublishingHistory.select("""
-            securesourcepackagepublishinghistory.distroseries = %s AND
-            securesourcepackagepublishinghistory.archive = %s AND
-            securesourcepackagepublishinghistory.pocket = %s AND
-            securesourcepackagepublishinghistory.status IN %s AND
-            securesourcepackagepublishinghistory.scheduleddeletiondate is NULL
+        sources = SourcePackagePublishingHistory.select("""
+            sourcepackagepublishinghistory.distroseries = %s AND
+            sourcepackagepublishinghistory.archive = %s AND
+            sourcepackagepublishinghistory.pocket = %s AND
+            sourcepackagepublishinghistory.status IN %s AND
+            sourcepackagepublishinghistory.scheduleddeletiondate is NULL
             """ % sqlvalues(dr, self.archive, pocket,
                             ELIGIBLE_DOMINATION_STATES))
 
-        binaries = SecureBinaryPackagePublishingHistory.select("""
-            securebinarypackagepublishinghistory.distroarchseries =
+        binaries = BinaryPackagePublishingHistory.select("""
+            binarypackagepublishinghistory.distroarchseries =
                 distroarchseries.id AND
             distroarchseries.distroseries = %s AND
-            securebinarypackagepublishinghistory.archive = %s AND
-            securebinarypackagepublishinghistory.pocket = %s AND
-            securebinarypackagepublishinghistory.status IN %s AND
-            securebinarypackagepublishinghistory.scheduleddeletiondate is NULL
+            binarypackagepublishinghistory.archive = %s AND
+            binarypackagepublishinghistory.pocket = %s AND
+            binarypackagepublishinghistory.status IN %s AND
+            binarypackagepublishinghistory.scheduleddeletiondate is NULL
             """ % sqlvalues(dr, self.archive, pocket,
                             ELIGIBLE_DOMINATION_STATES),
             clauseTables=['DistroArchSeries'])
