@@ -871,6 +871,13 @@ class BugTask(SQLBase, BugTaskMixin):
         enforced implicitly by the code in
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
+        if (self.milestone is not None and
+            self.milestone.target != target):
+            # If the milestone for this bugtask is set, we
+            # have to make sure that it's a milestone of the
+            # current target, or reset it to None
+            self.milestone = None
+
         if IUpstreamBugTask.providedBy(self):
             if IProduct.providedBy(target):
                 self.product = target

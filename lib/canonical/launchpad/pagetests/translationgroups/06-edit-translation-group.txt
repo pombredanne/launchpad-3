@@ -40,7 +40,7 @@ didn't move away from this form.
     There is 1 error.
     There is already a translation group with this name
 
-Chossing another name should work though.
+Choosing another name should work though.
 
     >>> admin_browser.getControl('Name').value = u'renamed-group'
     >>> admin_browser.getControl('Change').click()
@@ -50,4 +50,9 @@ Chossing another name should work though.
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
 
+You can also edit the generic translation instructions for the team
 
+    >>> admin_browser.getLink('Edit translation group details').click()
+    >>> admin_browser.getControl('Translation instructions').value = (
+    ...     u'https://help.launchpad.net/Translations/RenamedGroup')
+    >>> admin_browser.getControl('Change').click()

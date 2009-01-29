@@ -128,6 +128,11 @@ class TestBranchTraversal(TestCaseWithFactory):
         segments = [branch.product.name, branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
+    def test_product_only(self):
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            NotFound, self.traverse, [product.name])
+
     def test_product_branch_no_such_product(self):
         product_name = self.factory.getUniqueString()
         branch_name = self.factory.getUniqueString()

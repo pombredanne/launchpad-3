@@ -8,6 +8,7 @@ __all__ = [
     'POFile',
     'DummyPOFile',
     'POFileSet',
+    'POFileToChangedFromPackagedAdapter',
     'POFileToTranslationFileDataAdapter',
     'POFileTranslator',
     ]
@@ -18,7 +19,7 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin
     )
 from zope.interface import implements
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
@@ -30,18 +31,30 @@ from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationmessage import (
-    DummyTranslationMessage, make_plurals_sql_fragment, TranslationMessage)
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet, IPOFileTranslator,
-    ITranslationExporter, ITranslationFileData, ITranslationImporter,
-    IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
-    OutdatedTranslationError, RosettaImportStatus, TooManyPluralFormsError,
-    TranslationConstants, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError, TranslationPermission,
+from canonical.launchpad.database.translationmessage import TranslationMessage
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.pofile import (
+    IPOFile, IPOFileSet, IPOFileTranslator)
+from canonical.launchpad.interfaces.translationcommonformat import (
+    ITranslationFileData)
+from canonical.launchpad.interfaces.translationexporter import (
+    ITranslationExporter)
+from canonical.launchpad.interfaces.translationgroup import (
+    TranslationPermission)
+from canonical.launchpad.interfaces.translationimporter import (
+    ITranslationImporter, NotExportedFromLaunchpad, OutdatedTranslationError,
+    TooManyPluralFormsError, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError)
+from canonical.launchpad.interfaces.translationimportqueue import (
+    RosettaImportStatus)
+from canonical.launchpad.interfaces.translationmessage import (
     TranslationValidationStatus)
-from canonical.launchpad.translationformat import TranslationMessageData
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.interfaces.translations import TranslationConstants
+from canonical.launchpad.interfaces.vpoexport import IVPOExportSet
+from canonical.launchpad.translationformat.translation_common_format import (
+    TranslationMessageData)
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -580,14 +593,6 @@ class POFile(SQLBase, POFileMixIn):
         # (iow, it's different from a published translation: this only
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
-        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (that is, we no longer create empty
-        # TranslationMessage objects for empty strings in imported files), all
-        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
-        # they will not be needed anymore.
-        not_nulls = make_plurals_sql_fragment(
-            "imported.msgstr%(form)d IS NOT NULL", "OR")
-
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -602,9 +607,8 @@ class POFile(SQLBase, POFileMixIn):
                 current.is_current IS TRUE
             WHERE
                 POTMsgSet.sequence > 0 AND
-                POTMsgSet.potemplate = %s AND
-                (%s))
-            ''' % (quote(self), quote(self.potemplate), not_nulls),
+                POTMsgSet.potemplate = %s)
+            ''' % (quote(self), quote(self.potemplate)),
             orderBy='POTmsgSet.sequence')
 
         return results
@@ -702,21 +706,13 @@ class POFile(SQLBase, POFileMixIn):
         # msgid, that's anything with a singular translation; for ones with a
         # plural form, it's the number of plural forms the language supports.
         self._appendCompletePluralFormsConditions(query)
-        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (that is, we no longer create empty
-        # TranslationMessage objects for empty strings in imported files), all
-        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
-        # they will not be needed anymore.
-        not_nulls = make_plurals_sql_fragment(
-            "imported.msgstr%(form)d IS NOT NULL", "OR")
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
             WHERE
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
-                imported.is_imported IS TRUE AND
-                (%s))''' % not_nulls)
+                imported.is_imported IS TRUE)''')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -921,8 +917,10 @@ class POFile(SQLBase, POFileMixIn):
                 self.potemplate.source_file_format))
 
         # Get the export file.
+        translation_file_data = getAdapter(
+            self, ITranslationFileData, 'all_messages')
         exported_file = translation_format_exporter.exportTranslationFiles(
-            [ITranslationFileData(self)], ignore_obsolete, force_utf8)
+            [translation_file_data], ignore_obsolete, force_utf8)
 
         try:
             file_content = exported_file.read()
@@ -1293,14 +1291,17 @@ class POFileToTranslationFileDataAdapter:
 
         return translation_header
 
-    def _getMessages(self):
+    def _getMessages(self, changed_rows_only=False):
         """Return a list of `ITranslationMessageData` for the `IPOFile`
         adapted."""
         pofile = self._pofile
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
         # information.
-        rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
+        if changed_rows_only:
+            rows = getUtility(IVPOExportSet).get_pofile_changed_rows(pofile)
+        else:
+            rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
 
         messages = []
 
@@ -1340,3 +1341,11 @@ class POFileToTranslationFileDataAdapter:
             messages.append(msgset)
 
         return messages
+
+
+class POFileToChangedFromPackagedAdapter(POFileToTranslationFileDataAdapter):
+    """Adapter from `IPOFile` to `ITranslationFileData`."""
+
+    def __init__(self, pofile):
+        self._pofile = pofile
+        self.messages = self._getMessages(True)
