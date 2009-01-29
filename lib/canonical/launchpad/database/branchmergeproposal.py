@@ -18,6 +18,7 @@ from lazr.delegates import delegates
 import simplejson
 from storm.expr import And
 from storm.store import Store
+from storm.base import Storm
 import transaction
 from zope.component import getUtility
 from zope.event import notify
@@ -26,8 +27,9 @@ from zope.interface import implements
 from canonical.lazr import DBEnumeratedType, DBItem
 from storm.expr import Desc, Join, LeftJoin
 from storm.references import Reference
-from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
-
+from storm.properties import Int, Unicode
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -59,7 +61,7 @@ from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 VALID_TRANSITION_GRAPH = {
@@ -711,21 +713,25 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         """)
 
 
-class BranchMergeProposalJob(SQLBase):
+class BranchMergeProposalJob(Storm):
     """Base class for jobs related to branch merge proposals."""
 
     implements(IBranchMergeProposalJob)
 
-    _table = 'BranchMergeProposalJob'
+    __storm_table__ = 'BranchMergeProposalJob'
 
-    job = ForeignKey(foreignKey='Job', notNull=True)
+    id = Int(primary=True)
 
-    branch_merge_proposal = ForeignKey(
-        foreignKey='BranchMergeProposal', notNull=True)
+    jobID = Int('job')
+    job = Reference(jobID, Job.id)
+
+    branch_merge_proposalID = Int('branch_merge_proposal', allow_none=False)
+    branch_merge_proposal = Reference(
+        branch_merge_proposalID, BranchMergeProposal.id)
 
     job_type = EnumCol(enum=BranchMergeProposalJobType, notNull=True)
 
-    _json_data = StringCol(dbName='json_data')
+    _json_data = Unicode('json_data')
 
     @property
     def metadata(self):
@@ -740,9 +746,44 @@ class BranchMergeProposalJob(SQLBase):
             dict.
         """
         json_data = simplejson.dumps(metadata)
-        SQLBase.__init__(
-            self, job=Job(), branch_merge_proposal=branch_merge_proposal,
-            job_type=job_type, _json_data=json_data)
+        self.job = Job()
+        self.branch_merge_proposal = branch_merge_proposal
+        self.job_type = job_type
+        # XXX This should be a bytestring, but the DB representation isn't.
+        self._json_data = json_data.decode('utf-8')
+
+    def sync(self):
+        store = Store.of(self)
+        store.flush()
+        store.autoreload(self)
+
+    def destroySelf(self):
+        Store.of(self).remove(self)
+
+    @classmethod
+    def selectBy(klass, **kwargs):
+        """Return selected instances of this class.
+
+        At least one pair of keyword arguments must be supplied.
+        foo=bar is interpreted as "select all instances of
+        BranchMergeProposalJob whose property "foo" is equal to "bar".
+        """
+        assert len(kwargs) > 0
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(klass, **kwargs)
+
+    @classmethod
+    def get(klass, key):
+        """Return the instance of this class whose key is supplied.
+
+        :raises: SQLObjectNotFound
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        instance = store.get(klass, key)
+        if instance is None:
+            raise SQLObjectNotFound(
+                'No occurance of %s has key %s' % (klass.__name__, key))
+        return instance
 
 
 class BranchMergeProposalQueryBuilder:
