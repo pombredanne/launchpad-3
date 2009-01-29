@@ -128,7 +128,7 @@ The source_branch of the landing candidate should have this same merge proposal
 in its landing_targets.
 
     >>> feature_branch_link = \
-    ...     'http://api.launchpad.dev/beta/~person-name23/fooix/branch25'\
+    ...     'http://api.launchpad.dev/beta/~person-name23/fooix/branch25'
     >>> feature_branch = webservice.get(feature_branch_link).jsonBody()
     >>> print feature_branch['unique_name']
     ~person-name23/fooix/branch25
