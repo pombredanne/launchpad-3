@@ -285,7 +285,7 @@ class ArchiveContextMenu(ContextMenu):
         return Link('+edit-dependencies', text, icon='edit')
 
 
-class ArchiveSourcePackageListView(LaunchpadView):
+class ArchiveSourcePackageListViewBase(LaunchpadView):
     """Common features for archive views with lists of packages."""
 
     def initialize(self):
@@ -302,6 +302,8 @@ class ArchiveSourcePackageListView(LaunchpadView):
         self.setupNameFilterWidget()
         self.setupStatusFilterWidget()
         self.setupSeriesFilterWidget()
+
+        super(ArchiveSourcePackageListViewBase, self).initialize()
 
     @cachedproperty
     def simplified_status_vocabulary(self):
@@ -474,7 +476,7 @@ class ArchiveViewBase:
         return self.context.getBuildCounters()
 
 
-class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListView):
+class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListViewBase):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
@@ -513,8 +515,8 @@ class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListView):
                 IPackageCopyRequestSet).getByTargetArchive(self.context))
 
 
-class ArchiveSourceSelectionFormView(LaunchpadFormView,
-                                     ArchiveSourcePackageListView):
+class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
+                                     LaunchpadFormView):
     """Base class to implement a source selection widget for PPAs."""
 
     schema = IArchiveSourceSelectionForm
@@ -525,9 +527,11 @@ class ArchiveSourceSelectionFormView(LaunchpadFormView,
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
-        """Ensure both parent classes initialize methods are called."""
-        ArchiveSourcePackageListView.initialize(self)
-        LaunchpadFormView.initialize(self)
+        """Ensure both parent classes initialize methods are called.
+
+        super() ensures this happens in left-to-right order.
+        """
+        super(ArchiveSourceSelectionFormView, self).initialize()
 
     def setNextURL(self):
         """Set self.next_url based on current context.
