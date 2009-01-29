@@ -30,7 +30,16 @@
          tal:condition="view/has_sources">
 
       <metal:selectable-sources
-        use-macro="context/@@+macros/selectable-sources" />
+        use-macro="context/@@+macros/source-package-list" />
+      <tal:selectable_sources_end
+             define="widget nocall:view/widgets/selected_sources;
+                     field_name widget/context/__name__;
+                     error python:view.getFieldError(field_name);">
+        <input tal:attributes="name string:${widget/name}-empty-marker"
+               type="hidden" value="1" />
+        <div class="error message" tal:condition="error"
+             tal:content="structure error">Error message</div>
+      </tal:selectable_sources_end>
 
       <tal:actions condition="view/available_sources_size"
                    define="widget nocall:view/widgets/deletion_comment;

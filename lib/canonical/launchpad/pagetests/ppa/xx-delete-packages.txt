@@ -73,7 +73,7 @@ matching the given text.
     ...     name='field.name_filter').value = 'nonexistentpackage'
     >>> admin_browser.getControl("Filter").click()
     >>> print_ppa_packages(admin_browser.contents)
-    No matching source packages for 'nonexistentpackage'.
+    No matching package for 'nonexistentpackage'.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
@@ -425,7 +425,7 @@ records are presented.
     ...     name='field.status_filter').value = ['published']
     >>> user_browser.getControl("Filter").click()
     >>> print_ppa_packages(user_browser.contents)
-    No matching source packages for ''.
+    No matching package for ''.
 
 When he selects 'Superseded' the SUPERSEDED source shows up again.
 
