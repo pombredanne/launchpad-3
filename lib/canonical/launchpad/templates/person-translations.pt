@@ -94,9 +94,9 @@
       <table class="listing">
         <thead>
           <tr>
-            <th>Translation Group</th>
+            <th>Translation group</th>
             <th>Language</th>
-            <th>Translation Guidelines</th>
+            <th>Translation guidelines</th>
           </tr>
         </thead>
         <tbody>
