@@ -296,12 +296,22 @@ class ArchiveSourcePackageListViewBase(LaunchpadView):
         # Because BrowserRequest.processInputs ignores GET vars when the
         # method=POST, store them here (as the filtering always uses GET
         # even when other forms are posted).
+        #TODO: do this conditionally only when request is a post, that
+        # way wont need to include the change that updates the testing
+        # infrustructure
         self.get_params = dict(
             parse_qsl(self.request.get('QUERY_STRING') or '',True))
 
         self.setupNameFilterWidget()
         self.setupStatusFilterWidget()
         self.setupSeriesFilterWidget()
+        self.setupPackageBatchResult()
+
+        # By default, this view will not present selectable sources
+        self.selectable_sources = False
+
+# TODO: replace all 'has_sources' with batch in templates
+
 
         super(ArchiveSourcePackageListViewBase, self).initialize()
 
@@ -421,6 +431,13 @@ class ArchiveSourcePackageListViewBase(LaunchpadView):
         """
         return self.simplified_status_vocabulary.getTermByToken('published')
 
+    def setupPackageBatchResult(self):
+        """Setup of the package search results."""
+        self.batchnav = BatchNavigator(
+            self.sources, self.request)
+        results = list(self.batchnav.currentBatch())
+        self.search_results = ArchiveSourcePublications(results)
+
 
 class ArchiveViewBase:
     """Common features for Archive view classes."""
@@ -491,7 +508,6 @@ class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListViewBase):
         """
         super(ArchiveView, self).initialize()
         self.setupSourcesListEntries()
-        self.setupPackageBatchResult()
 
     def setupSourcesListEntries(self):
         """Setup of the sources list entries widget."""
@@ -500,13 +516,6 @@ class ArchiveView(ArchiveViewBase, ArchiveSourcePackageListViewBase):
             self.context.series_with_sources)
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
-
-    def setupPackageBatchResult(self):
-        """Setup of the package search results."""
-        self.batchnav = BatchNavigator(
-            self.sources, self.request)
-        results = list(self.batchnav.currentBatch())
-        self.search_results = ArchiveSourcePublications(results)
 
     @property
     def package_copy_requests(self):
@@ -532,6 +541,8 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         super() ensures this happens in left-to-right order.
         """
         super(ArchiveSourceSelectionFormView, self).initialize()
+
+        self.selectable_sources = True
 
     def setNextURL(self):
         """Set self.next_url based on current context.
@@ -581,7 +592,7 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         terms = []
 
         results = list(self.sources[:self.max_sources_presented])
-        for pub in ArchiveSourcePublications(results):
+        for pub in self.search_results:
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',

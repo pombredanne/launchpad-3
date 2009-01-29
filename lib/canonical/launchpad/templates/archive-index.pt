@@ -175,6 +175,9 @@
           replace="structure link/render" />
       </div>
 
+      <metal:package_filter_form
+              use-macro="context/@@+macros/package-filter-form" />
+
       <metal:package-list
           use-macro="context/@@+macros/source-package-list" />
 

@@ -11,8 +11,6 @@
 
   <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
-    <metal:package_filter_form
-            use-macro="context/@@+macros/package-filter-form" />
     <tal:navigation_top
         replace="structure view/batchnav/@@+navigation-links-upper" />
 
