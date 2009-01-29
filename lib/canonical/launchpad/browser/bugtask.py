@@ -2020,7 +2020,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
 
-        return helpers.shortlist(widget_values, longest_expected=15)
+        return helpers.shortlist(widget_values, longest_expected=10)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""

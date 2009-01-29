@@ -20,6 +20,8 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib.form import FormFields
+from zope.schema import Bool
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
@@ -48,7 +50,7 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download', 'viewMilestone']
+    links = ['edit', 'add_file', 'administer', 'download', 'view_milestone']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -69,17 +71,23 @@ class ProductReleaseContextMenu(ContextMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
-    def viewMilestone(self):
+    def view_milestone(self):
         text = 'View milestone'
         url = canonical_url(self.context.milestone)
         return Link(url, text)
 
 
 class ProductReleaseAddView(LaunchpadFormView):
+    """Create a product release.
+
+    Also, deactivate the milestone it is attached to.
+    """
 
     schema = IProductRelease
     label = "Register a release"
     field_names = [
+        'datereleased',
+        'release_notes',
         'changelog',
         ]
 
@@ -88,17 +96,47 @@ class ProductReleaseAddView(LaunchpadFormView):
     def initialize(self):
         if self.context.product_release is not None:
             self.request.response.addErrorNotification(
-                _("A product release already exists for this milestone"))
+                _("A product release already exists for this milestone."))
             self.request.response.redirect(
                 canonical_url(self.context.product_release) + '/+edit')
         else:
             super(ProductReleaseAddView, self).initialize()
 
+    def setUpFields(self):
+        super(ProductReleaseAddView, self).setUpFields()
+        if self.context.visible is True:
+            self.form_fields += FormFields(
+                Bool(
+                    __name__='dont_deactivate_milestone',
+                    title=_("Don't deactivate milestone."),
+                    description=_(
+                        "Only select this if bugs or bluepints still need to "
+                        "be targeted to this product release&rsquo;s "
+                        "milestone.")),
+                render_context=self.render_context)
+
     @action(_('Publish release'))
-    def createAndAdd(self, action, data):
-        user = getUtility(ILaunchBag).user
+    def publishRelease(self, action, data):
+        """Publish product release for this milestone."""
         newrelease = self.context.createProductRelease(
-            user, changelog=data['changelog'])
+            self.user, changelog=data['changelog'],
+            release_notes=data['release_notes'],
+            datereleased=data['datereleased'])
+        # Set Milestone.visible to false, since bugs & blueprints
+        # should not be targeted to a milestone in the past.
+        if data['dont_deactivate_milestone'] is True:
+            pass
+        elif data['dont_deactivate_milestone'] is False:
+            self.context.visible = False
+            self.request.response.addWarningNotification(
+                _("The milestone for this product release was deactivated "
+                  "so that bugs & blueprints cannot be targeted "
+                  "to a milestone in the past."))
+        else:
+            raise AssertionError(
+                "dont_deactivate_milestone must be True or False: %r"
+                % data['dont_deactivate_milestone'])
+
         self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
@@ -108,7 +146,11 @@ class ProductReleaseEditView(LaunchpadEditFormView):
 
     schema = IProductRelease
     label = "Edit project release details"
-    field_names = ["changelog"]
+    field_names = [
+        "datereleased",
+        "release_notes",
+        "changelog",
+        ]
 
     @action('Change', name='change')
     def change_action(self, action, data):

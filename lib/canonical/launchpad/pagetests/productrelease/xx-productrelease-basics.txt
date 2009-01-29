@@ -28,11 +28,36 @@ release in the series.
     >>> browser.title
     'Register a new Milestone 1.0 for Mozilla Firefox release in Launchpad'
 
+    >>> browser.getControl('Release notes').value = 'Released 1.0'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
     >>> browser.getControl('Publish release').click()
 
     >>> browser.url
     'http://launchpad.dev/firefox/trunk/1.0'
+
+After creating a product release on an active milestone, the user
+will be warned that the milestone has been deactivated.
+
+    >>> print get_feedback_messages(browser.contents)
+    [u'The milestone for this product release was deactivated so that bugs
+    &amp; blueprints cannot be targeted to a milestone in the past.']
+    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
+    >>> print get_feedback_messages(browser.contents)
+    [u'A product release already exists for this milestone']
+
+    # The "Don't deactivate milestone" checkbox will eliminate
+    # the error message.
+    >>> browser.open('http://launchpad.dev/firefox/trunk/+addmilestone')
+    >>> browser.getControl('Name').value = 'bar'
+    >>> browser.getControl('Register milestone').click()
+    >>> browser.open('http://launchpad.dev/firefox/+milestone/bar/+addrelease')
+    >>> browser.getControl("Don't deactivate milestone.").selected = True
+    >>> browser.getControl('Publish release').click()
+    >>> print get_feedback_messages(browser.contents)
+    []
+    >>> browser.open('http://launchpad.dev/firefox/trunk/bar')
+    >>> print get_feedback_messages(browser.contents)
+    []
 
 
 == Checking releases with the same version ==

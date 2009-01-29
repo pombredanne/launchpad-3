@@ -82,6 +82,16 @@
              value="Delete Files" />
     </form>
 
+    <h2>Changelog:</h2>
+    <div tal:content="structure context/changelog/fmt:text-to-html">
+        $ProductRelease.release_notes go here.
+    </div>
+
+    <p tal:condition="not: context/changelog">
+      <i>This release does not have a changelog. You may want to edit the
+      release to add a changelog.</i>
+    </p>
+
 </div>
 
 <div metal:fill-slot="help">

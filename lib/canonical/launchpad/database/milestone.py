@@ -96,13 +96,17 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
 
-    def createProductRelease(self, owner, changelog=None):
+    def createProductRelease(self, owner, changelog=None, release_notes=None,
+                             datereleased=None):
         """See `IMilestone`."""
-        # XXX
-        assert self.product_release is None
+        if self.product_release is not None:
+            raise AssertionError(
+                'A milestone can only have one Productrelease.')
         return ProductRelease(
             owner=owner,
             changelog=changelog,
+            release_notes=release_notes,
+            datereleased=datereleased,
             milestone=self)
 
 

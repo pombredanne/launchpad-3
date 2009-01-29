@@ -46,7 +46,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin', 'subscribe', 'publishRelease', 'viewRelease']
+    links = ['edit', 'admin', 'subscribe', 'publish_release', 'view_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -70,7 +70,7 @@ class MilestoneContextMenu(ContextMenu):
                     icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
-    def publishRelease(self):
+    def publish_release(self):
         text = 'Publish release'
         # Releases only exist for products.
         # A milestone can only have a single product release.
@@ -78,7 +78,7 @@ class MilestoneContextMenu(ContextMenu):
                    and self.context.product_release is None)
         return Link('+addrelease', text, icon='add', enabled=enabled)
 
-    def viewRelease(self):
+    def view_release(self):
         text = 'View release'
         # Releases only exist for products.
         if (not IProjectMilestone.providedBy(self.context)

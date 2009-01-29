@@ -36,7 +36,7 @@ class ProductRelease(SQLBase):
     _table = 'ProductRelease'
     _defaultOrder = ['-datereleased']
 
-    datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    datereleased = UtcDateTimeCol(notNull=True)
     release_notes = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
@@ -52,22 +52,37 @@ class ProductRelease(SQLBase):
     # properties
     @property
     def codename(self):
+        """Backwards compatibile codename attribute.
+
+        This attribute was moved to the Milestone."""
         return self.milestone.code_name
 
     @property
     def version(self):
+        """Backwards compatibile version attribute.
+
+        This attribute was replaced by the Milestone.name."""
         return self.milestone.name
 
     @property
     def summary(self):
+        """Backwards compatibile summary attribute.
+
+        This attribute was replaced by the Milestone.summary."""
         return self.milestone.summary
 
     @property
     def productseries(self):
+        """Backwards compatibile summary attribute.
+
+        This attribute was replaced by the Milestone.productseries."""
         return self.milestone.productseries
 
     @property
     def product(self):
+        """Backwards compatibile summary attribute.
+
+        This attribute was replaced by the Milestone.productseries.product."""
         return self.productseries.product
 
     @property
