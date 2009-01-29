@@ -185,7 +185,7 @@ URIWidget provides some additional features over the base TextWidget:
 
 Whitespace is stripped from the value:
 
-  >>> from zope.app.form.interfaces import ConversionError
+  >>> from canonical.launchpad.validators import LaunchpadValidationError
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.widgets.textwidgets import URIWidget
   >>> field = URIField(__name__='foo', title=u'Foo')
@@ -194,11 +194,11 @@ Whitespace is stripped from the value:
   >>> widget._toFieldValue('  http://www.ubuntu.com/   ')
   u'http://www.ubuntu.com/'
 
-Invalid URIs cause a ConversionError:
+Invalid URIs cause a LaunchpadValidationError:
   >>> widget._toFieldValue('not-a-uri')
   Traceback (most recent call last):
     ...
-  ConversionError: ('"not-a-uri" is not a valid URI', None)
+  LaunchpadValidationError: ('"not-a-uri" is not a valid URI', None)
 
 Multiple values will cause an UnexpectedFormData exception:
 
