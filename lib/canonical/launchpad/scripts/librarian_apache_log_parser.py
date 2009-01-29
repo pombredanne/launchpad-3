@@ -9,6 +9,7 @@ parser = apachelog.parser(apachelog.formats['extended'])
 
 def get_date_status_and_request(line):
     """Extract the date, status and request from the given line of log."""
+    # The keys in the 'data' dictionary below are the Apache log format codes.
     data = parser.parse(line)
     return data['%t'], data['%>s'], data['%r']
 

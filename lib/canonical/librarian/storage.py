@@ -186,11 +186,11 @@ def _sameFile(path1, path2):
     return True
 
 
-def _relFileLocation(fileid):
-    """Return the relative location for the given fileid.
+def _relFileLocation(file_id):
+    """Return the relative location for the given file_id.
 
-    The relative location is obtained by converting fileid into a 8-digit hex
+    The relative location is obtained by converting file_id into a 8-digit hex
     and then splitting it across four path segments.
     """
-    h = "%08x" % int(fileid)
+    h = "%08x" % int(file_id)
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
