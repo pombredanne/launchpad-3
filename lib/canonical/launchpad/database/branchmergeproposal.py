@@ -784,7 +784,7 @@ class BranchMergeProposalJob(Storm):
         instance = store.get(klass, key)
         if instance is None:
             raise SQLObjectNotFound(
-                'No occurance of %s has key %s' % (klass.__name__, key))
+                'No occurrence of %s has key %s' % (klass.__name__, key))
         return instance
 
 
