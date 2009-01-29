@@ -10,6 +10,35 @@
 >
 
   <body>
+    <metal:block fill-slot="head_epilogue">
+    <style>
+    .disabled {
+        color: lightgray;
+    }
+    </style>
+    <script type="text/javascript">
+    YUI().use('node', function(Y){
+        Y.on('event:ready', function(){
+            var formatlist = Y.get('#div_format select');
+            var checkbox = Y.get('#div_pochanged input');
+            var changedtext = Y.get('#div_pochanged span');
+            var changedlink = Y.get('#div_pochanged a');
+            formatlist.on('change', function(e){
+                if( formatlist.get('value') == 'MO' ) {
+                    changedtext.addClass('disabled');
+                    changedlink.addClass('disabled');
+                    checkbox.set('disabled', true);
+                }
+                else {
+                    changedtext.removeClass('disabled');
+                    changedlink.removeClass('disabled');
+                    checkbox.set('disabled', false);
+                }
+            });
+        });
+    });
+    </script>
+    </metal:block>
     <div metal:fill-slot="main">
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
@@ -25,21 +54,29 @@
         translation
       </h1>
       <form action="" method="post">
-        <div class="field" tal:repeat="format view/formats">
+        <div id="div_format" class="field" style="clear: left">
+            <label>
+            Format:
+                <select name="format">
+                    <option
+                        tal:repeat="format view/formats"
+                        tal:content="format/title"
+                        tal:attributes="
+                            value format/value;
+                            selected format/is_default"
+                        >PO format</option>
+                </select>
+            </label>
+        </div>
+        <div id="div_pochanged" class="field" style="margin-top: 10px">
           <label>
-            <input type="radio" name="format"
-                   tal:attributes="
-                     value format/value;
-                     checked format/is_default" />
-            <span tal:content="format/title">translation format</span>
+            <input type="checkbox" name="pochanged"
+                   value="POCHANGED" disabled="disabled"/>
+            <span>Only strings that differ from packaged versions
+            (<a href="https://help.launchpad.net/Translations/PartialPOExport"
+                target="_blank">What's this?</a>).</span>
           </label>
         </div>
-        <p>
-          Please see the
-          <a href="https://help.launchpad.net/Translations/PartialPOExport"
-             target="_blank">Help Page</a>
-          for information on the use of the partial PO format.
-        </p>
         <p>
           Once the file is ready for download, Launchpad will e-mail
           <code tal:content="view/user/preferredemail/email">user@domain</code>
