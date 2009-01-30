@@ -54,6 +54,7 @@ from datetime import timedelta
 import re
 
 # ensure correct plugins are loaded
+import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
     BzrBranchFormat6, BzrBranchFormat7)
