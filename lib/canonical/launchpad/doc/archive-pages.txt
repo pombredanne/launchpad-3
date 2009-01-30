@@ -80,6 +80,15 @@ vocabulary for selecting a series filter:
     Breezy Badger Autotest
     Warty
 
+An ArchiveView provides helpers to display the counts of source and
+binary packages within the archive:
+
+    >>> print ppa_archive_view.source_count_text
+    3 source packages
+
+    >>> print ppa_archive_view.binary_count_text
+    3 binary packages
+
 An ArchiveView provides a batched_sources property that can be used
 to get the current batch of publishing records for an archive:
 
@@ -592,8 +601,16 @@ different 'source' provider, which may include deleted sources, and a
 different default status filter (only published sources are presented
 by default).
 
-    >>> [pub.status.name for pub in view.batched_sources]
-    []
+    >>> view.has_sources_for_display
+    False
+
+In this case, the template can use the has_sources_before_filtering
+property to identify that, even though there aren't any sources to
+display, it's not because the archive isn't active, but rather just
+that the user has filtered the sources:
+
+    >>> view.has_sources_before_filtering
+    True
 
 All sources in Celso's PPA were just-deleted, so we have to tweak the
 'status_filter' to see them.
