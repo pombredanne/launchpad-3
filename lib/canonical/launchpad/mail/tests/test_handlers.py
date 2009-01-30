@@ -513,7 +513,7 @@ class TestCodeHandler(TestCaseWithFactory):
             subject='A subject', attachment_contents='')
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
-        bmp, comment = code_handler.processMergeProposal(message)
+        code_handler.processMergeProposal(message)
         transaction.commit()
         [notification] = pop_notifications()
 
@@ -522,7 +522,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification.get_payload(),
             'Your email did not contain a merge directive. Please resend '
-            'your email with the merge directive attached.'
+            'your email with\nthe merge directive attached.\n'
             )
         self.assertEqual(notification['to'],
             message['from'])
