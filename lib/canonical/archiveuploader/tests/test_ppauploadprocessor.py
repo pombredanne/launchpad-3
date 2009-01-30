@@ -1191,15 +1191,11 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # default quota limit, 1024 MiB.
         self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
 
-        # XXX cprov 20071204: see uploadpolicy.py line 255.
-        # When we change the code to actually reject the upload this
-        # test should also be modified to cope with the rejection
-        # notification.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)",
-            "Upload Warnings:",
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Rejected:",
             "PPA exceeded its size limit (1024.00 of 1024.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
