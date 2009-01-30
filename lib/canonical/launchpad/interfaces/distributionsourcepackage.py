@@ -53,7 +53,8 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
             required=False,
             readonly=True,
             # This is really an IProduct but we get a circular import
-            # problem if we do that here. See EOF for the fix.
+            # problem if we do that here. This is patched in
+            # interfaces/product.py.
             schema=Interface))
 
     currentrelease = Attribute(
