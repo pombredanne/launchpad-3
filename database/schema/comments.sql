@@ -1478,7 +1478,7 @@ COMMENT ON COLUMN SourcePackageReleaseFile.libraryfile IS 'The libraryfilealias 
 COMMENT ON COLUMN SourcePackageReleaseFile.filetype IS 'The type of the file. E.g. TAR, DIFF, DSC';
 COMMENT ON COLUMN SourcePackageReleaseFile.sourcepackagerelease IS 'The sourcepackagerelease that this file belongs to';
 
-COMMENT ON TABLE LoginToken IS 'LoginToken stores one time tokens used for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
+COMMENT ON TABLE LoginToken IS 'LoginToken stores one time tokens used by Launchpad for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
 COMMENT ON COLUMN LoginToken.requester IS 'The Person that made this request. This will be null for password recovery requests.';
 COMMENT ON COLUMN LoginToken.requesteremail IS 'The email address that was used to login when making this request. This provides an audit trail to help the end user confirm that this is a valid request. It is not a link to the EmailAddress table as this may be changed after the request is made. This field will be null for password recovery requests.';
 COMMENT ON COLUMN LoginToken.email IS 'The email address that this request was sent to.';
@@ -1487,6 +1487,17 @@ COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
 COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
 COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It''s NULL if it hasn''t been consumed yet.';
+
+
+COMMENT ON TABLE AuthToken IS 'AuthToken stores one time tokens used by the authentication service for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
+COMMENT ON COLUMN AuthToken.requester IS 'The Account that made this request. This will be null for password recovery requests.';
+COMMENT ON COLUMN AuthToken.requester_email IS 'The email address that was used to login when making this request. This provides an audit trail to help the end user confirm that this is a valid request. It is not a link to the EmailAddress table as this may be changed after the request is made. This field will be null for password recovery requests.';
+COMMENT ON COLUMN AuthToken.email IS 'The email address that this request was sent to.';
+COMMENT ON COLUMN AuthToken.date_created IS 'The timestamp that this request was made.';
+COMMENT ON COLUMN AuthToken.token_type IS 'The type of request, as per dbschema.TokenType.';
+COMMENT ON COLUMN AuthToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
+COMMENT ON COLUMN AuthToken.date_consumed IS 'The date and time when this token was consumed. It''s NULL if it hasn''t been consumed yet.';
+
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';

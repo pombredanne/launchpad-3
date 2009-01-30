@@ -256,6 +256,8 @@ class BranchNamespaceSet:
                 result = segments.next()
             except StopIteration:
                 raise InvalidNamespace('/'.join(traversed_segments))
+            if result is None:
+                raise AssertionError("None segment passed to traverse()")
             traversed_segments.append(result)
             return result
         person_name = get_next_segment()
