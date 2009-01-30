@@ -143,7 +143,7 @@ This view also provides package filtering by source package name, so
 the user can refine the available options presented. By default all
 available sources are presented with empty filter.
 
-    >>> for pub in view.sources:
+    >>> for pub in view.search_results:
     ...     print pub.displayname
     cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
@@ -156,7 +156,7 @@ filtered results.
     ...     cprov.archive, name="+delete-packages",
     ...     query_string="field.name_filter=pmount")
 
-    >>> for pub in view.sources:
+    >>> for pub in view.search_results:
     ...     print pub.displayname
     pmount 0.1-1 in warty
 
@@ -166,7 +166,7 @@ Similarly, the sources can be filtered by series:
     ...     cprov.archive, name="+delete-packages",
     ...     query_string="field.series_filter=warty")
 
-    >>> for pub in view.sources:
+    >>> for pub in view.search_results:
     ...     print pub.displayname
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
