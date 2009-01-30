@@ -88,7 +88,8 @@ class BatchNavigator:
         # compatibility (as in the past a work-around has been to include
         # the url batch params in hidden fields within posted forms), if
         # there is no 'start' param in the query string, default to the old
-        # behaviour of using the request.form dict:
+        # behaviour of using the request (which implicitely gets them
+        # from the request.form dict):
         get_params = dict(
             cgi.parse_qsl(request.get('QUERY_STRING') or '',
                       keep_blank_values=True))
@@ -96,7 +97,7 @@ class BatchNavigator:
         if get_params.has_key(self.start_variable_name):
             batch_params_source = get_params
         else:
-            batch_params_source = request.form
+            batch_params_source = request
 
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We
