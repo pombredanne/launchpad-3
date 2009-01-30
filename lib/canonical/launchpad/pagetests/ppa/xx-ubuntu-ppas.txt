@@ -850,3 +850,17 @@ will redirect to the correct URL with the default PPA name, "ppa".
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> admin_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa'
+
+If the user in question doesn't have a PPA, any attempt to access it,
+either via the new-style URL or the compatibility redirection, will
+result in a NotFound error.
+
+    >>> admin_browser.open("http://launchpad.dev/~name16/+archive/ppa")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Person at ... name16 (Foo Bar)>, name: u'+archive'
+
+    >>> admin_browser.open("http://launchpad.dev/~name16/+archive")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Person at ... name16 (Foo Bar)>, name: u'+archive'
