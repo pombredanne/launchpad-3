@@ -464,8 +464,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
             self.selected_series_filter.value)
 
     @cachedproperty
-    def sources(self):
-        """Return the source results for display on the current page.
+    def filtered_sources(self):
+        """Return the source results for display after filtering.
 
         It expects 'self.selected_status_filter' and 
         'self.selected_series_filter' to be set.
@@ -486,11 +486,11 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
     def setupPackageBatchResult(self):
         """Setup of the package search results."""
         self.batchnav = BatchNavigator(
-            self.sources, self.request)
+            self.filtered_sources, self.request)
         results = list(self.batchnav.currentBatch())
-        self.search_results = ArchiveSourcePublications(results)
+        self.batched_sources = ArchiveSourcePublications(results)
 
-    @property
+    @cachedproperty
     def has_sources_for_display(self):
         """Whether or not the PPA has any source packages for display.
 
@@ -498,12 +498,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         """
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
-        return self.available_sources_size > 0
-
-    @cachedproperty
-    def available_sources_size(self):
-        """Number of available sources."""
-        return self.sources.count()
+        return self.filtered_sources.count() > 0
 
 
 class ArchiveView(ArchiveSourcePackageListViewBase):
@@ -600,7 +595,7 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
         """
         terms = []
 
-        for pub in self.search_results:
+        for pub in self.batched_sources:
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',
@@ -634,10 +629,10 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         return self.simplified_status_vocabulary.getTermByToken('any')
 
     @cachedproperty
-    def sources(self):
-        """Return the deletion publishing records results.
+    def filtered_sources(self):
+        """Return the filtered results of publishing records for deletion.
 
-        This overrides ArchiveViewBase.sources to use a
+        This overrides ArchiveViewBase.filtered_sources to use a
         different method on the context specific to deletion records.
 
         It expects 'self.selected_status_filter' and 

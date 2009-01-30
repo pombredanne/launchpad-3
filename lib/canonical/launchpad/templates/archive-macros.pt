@@ -9,7 +9,7 @@
     archive.
   </tal:comment>
 
-  <div style="padding-top: 1em;" tal:define="batch view/search_results">
+  <div style="padding-top: 1em;" tal:define="batch view/batched_sources">
 
     <tal:navigation_top
         replace="structure view/batchnav/@@+navigation-links-upper" />

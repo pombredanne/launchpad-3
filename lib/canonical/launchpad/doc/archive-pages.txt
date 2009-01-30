@@ -80,16 +80,16 @@ vocabulary for selecting a series filter:
     Breezy Badger Autotest
     Warty
 
-An ArchiveView provides a sources property that can be used
-to get all the publishing records for an archive:
+An ArchiveView provides a batched_sources property that can be used
+to get the current batch of publishing records for an archive:
 
-    >>> for publishing in ppa_archive_view.sources:
+    >>> for publishing in ppa_archive_view.batched_sources:
     ...     print publishing.source_package_name
     cdrkit
     iceweasel
     pmount
 
-The sources property can also filter by distroseries when
+The batched_sources property will also be filtered by distroseries when
 appropriate:
 
     >>> filtered_view = create_initialized_view(
@@ -97,7 +97,7 @@ appropriate:
     ...     name="+index",
     ...     method='GET',
     ...     query_string='field.series_filter=warty')
-    >>> for publishing in filtered_view.sources:
+    >>> for publishing in filtered_view.batched_sources:
     ...     print publishing.source_package_name
     iceweasel
     pmount
@@ -127,14 +127,11 @@ build the page.
 We query the available PUBLISHED sources and use them to build the
 'selected_sources' widget.
 
-    >>> [pub.id for pub in view.sources]
+    >>> [pub.id for pub in view.batched_sources]
     [27, 28, 29]
 
     >>> view.has_sources_for_display
     True
-
-    >>> view.available_sources_size
-    3
 
     >>> len(view.widgets.get('selected_sources').vocabulary)
     3
@@ -143,7 +140,7 @@ This view also provides package filtering by source package name, so
 the user can refine the available options presented. By default all
 available sources are presented with empty filter.
 
-    >>> for pub in view.search_results:
+    >>> for pub in view.batched_sources:
     ...     print pub.displayname
     cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
@@ -156,7 +153,7 @@ filtered results.
     ...     cprov.archive, name="+delete-packages",
     ...     query_string="field.name_filter=pmount")
 
-    >>> for pub in view.search_results:
+    >>> for pub in view.batched_sources:
     ...     print pub.displayname
     pmount 0.1-1 in warty
 
@@ -166,7 +163,7 @@ Similarly, the sources can be filtered by series:
     ...     cprov.archive, name="+delete-packages",
     ...     query_string="field.series_filter=warty")
 
-    >>> for pub in view.search_results:
+    >>> for pub in view.batched_sources:
     ...     print pub.displayname
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
@@ -178,7 +175,7 @@ The page also uses all the built in batching features:
     ...     query_string="field.series_filter=warty",
     ...     form={'batch': '1', 'start': '1'})
 
-    >>> for pub in view.search_results:
+    >>> for pub in view.batched_sources:
     ...     print pub.displayname
     pmount 0.1-1 in warty
 
@@ -196,8 +193,6 @@ which the available options already exclude the deleted items.
     ...         'field.selected_sources-empty-marker': 1,
     ...         })
 
-    >>> view.available_sources_size
-    0
     >>> view.has_sources_for_display
     False
 
@@ -209,9 +204,6 @@ re-POSTed to the page, the code is able to identify such invalid
 situation and ignore it. See bug #185922 for reference.
 
     >>> view.initialize()
-
-    >>> view.available_sources_size
-    0
 
     >>> view.has_sources_for_display
     False
@@ -600,7 +592,7 @@ different 'source' provider, which may include deleted sources, and a
 different default status filter (only published sources are presented
 by default).
 
-    >>> [pub.status.name for pub in view.sources]
+    >>> [pub.status.name for pub in view.batched_sources]
     []
 
 All sources in Celso's PPA were just-deleted, so we have to tweak the
@@ -610,7 +602,7 @@ All sources in Celso's PPA were just-deleted, so we have to tweak the
     ...     cprov.archive, name="+copy-packages",
     ...     query_string="field.status_filter=any")
 
-    >>> [pub.status.name for pub in view.sources]
+    >>> [pub.status.name for pub in view.batched_sources]
     ['DELETED', 'DELETED', 'DELETED']
 
 This view contains three properties. The first is a list of the PPAs
