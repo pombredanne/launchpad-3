@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 from datetime import datetime
+from textwrap import dedent
+import transaction
 from unittest import TestCase, TestLoader
 
 from pytz import UTC
@@ -28,7 +30,8 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -989,6 +992,39 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
                          vote_reference.registrant)
         self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
+
+
+class TestUpdateMergeDiff(TestCaseWithFactory):
+    """Test the updateMergeDiff method of BranchMergeProposal."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_new_diff(self):
+        """Test that both the PreviewDiff and the Diff get created."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        diff_text = dedent("""\
+            === modified file 'sample.py'
+            --- sample     2009-01-15 23:44:22 +0000
+            +++ sample     2009-01-29 04:10:57 +0000
+            @@ -19,7 +19,7 @@
+             from zope.interface import implements
+
+             from storm.expr import Desc, Join, LeftJoin
+            -from storm.references import Reference
+            +from storm.locals import Int, Reference
+             from sqlobject import ForeignKey, IntCol
+
+             from canonical.config import config
+            """)
+        diff_stat = u"M sample.py"
+        login_person(merge_proposal.registrant)
+        merge_proposal.updateMergeDiff(
+            diff_text, diff_stat, u"source_id", u"target_id")
+        # Have to commit the transaction to make the Librarian file
+        # available.
+        transaction.commit()
+        self.assertEqual(diff_text, merge_proposal.merge_diff.diff.text)
+        self.assertEqual(diff_stat, merge_proposal.merge_diff.diff.diffstat)
 
 
 def test_suite():
