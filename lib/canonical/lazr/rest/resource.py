@@ -140,6 +140,10 @@ class HTTPResource:
     HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
                                   "with a POST request.")
 
+    # All resources serve WADL and JSON representations. Only entry
+    # resources serve XHTML representations.
+    SUPPORTED_CONTENT_TYPES = [WADL_TYPE, JSON_TYPE]
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -307,7 +311,6 @@ class HTTPResource:
         template = LazrPageTemplateFile('../templates/' + template_name)
         namespace = template.pt_getContext()
         namespace['context'] = self
-        namespace['entry'] = self.entry.schema
         return template.pt_render(namespace)
 
     def getPreferredSupportedContentType(self):
@@ -321,7 +324,7 @@ class HTTPResource:
         content_types = self.getPreferredContentTypes()
         preferences = []
         winner = None
-        for media_type in [self.WADL_TYPE, self.XHTML_TYPE, self.JSON_TYPE]:
+        for media_type in self.SUPPORTED_CONTENT_TYPES:
             try:
                 pos = content_types.index(media_type)
                 if winner is None or pos < winner[1]:
@@ -611,6 +614,10 @@ class ReadWriteResource(HTTPResource):
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
+
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.WADL_TYPE,
+                               HTTPResource.XHTML_TYPE,
+                               HTTPResource.JSON_TYPE]
 
     missing = object()
 
