@@ -216,9 +216,10 @@ class IURIField(ITextLine):
         title=_('Whether a trailing slash is required for this field'),
         required=False,
         description=_('If set to True, then the path component of the URI '
-                      'must end in a slash.  If set to False, then the path '
-                      'component must not end in a slash.  If set to None, '
-                      'then no check is performed.'))
+                      'will be automatically normalized to end in a slash. '
+                      'If set to False, any trailing slash will be '
+                      'automatically removed. If set to None, URIs will '
+                      'not be normalized.'))
 
 
 class IBaseImageUpload(IBytes):
@@ -606,8 +607,6 @@ class URIField(TextLine):
            doesn't end in a slash).
          * the URI is canonicalized.
         """
-        if isinstance(input, list):
-            raise LaunchpadValidationError('Only a single value is expected')
         input = input.strip()
         if input:
             try:
@@ -622,18 +621,14 @@ class URIField(TextLine):
                     uri = uri.ensureSlash()
                 else:
                     uri = uri.ensureNoSlash()
-            input = str(uri)
+            input = unicode(uri)
         return input
 
 
     def _validate(self, value):
         """Ensure the value is a valid URI."""
 
-        value = value.strip()
-        try:
-            uri = URI(value)
-        except InvalidURIError, e:
-            raise LaunchpadValidationError(e)
+        uri = URI(self._toFieldValue(value))
 
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(
@@ -657,18 +652,6 @@ class URIField(TextLine):
             raise LaunchpadValidationError(
                 'URIs with fragment identifiers are not allowed.')
 
-        if self.trailing_slash is not None:
-            has_slash = uri.path.endswith('/')
-            if self.trailing_slash:
-                if not has_slash:
-                    raise LaunchpadValidationError(
-                        'The URI must end with a slash.')
-            else:
-                # Empty paths are normalised to a single slash, so
-                # allow that.
-                if uri.path != '/' and has_slash:
-                    raise LaunchpadValidationError(
-                        'The URI must not end with a slash.')
         super(URIField, self)._validate(value)
 
 

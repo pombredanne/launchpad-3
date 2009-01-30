@@ -140,6 +140,8 @@ class URIWidget(TextWidget):
         self.field = field
 
     def _toFieldValue(self, input):
+        if isinstance(input, list):
+            raise UnexpectedFormData('Only a single value is expected')
         return TextWidget._toFieldValue(self, self.field._toFieldValue(input))
 
 
