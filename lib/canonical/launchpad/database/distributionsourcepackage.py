@@ -218,6 +218,16 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return self._getPublishingHistoryQuery()
 
+    @property
+    def upstream_product(self):
+        for distroseries in self.distribution.serieses:
+            source_package = distroseries.getSourcePackage(
+                self.sourcepackagename)
+            if source_package.direct_packaging is not None:
+                return source_package.direct_packaging.productseries.product
+        else:
+            return None
+
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def current_publishing_records(self):
