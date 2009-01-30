@@ -805,7 +805,7 @@ class NoSuchProduct(NameLookupFailed):
     _message_prefix = "No such product"
 
 
-# Fix a circular imports.
+# Fix a circular import.
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct

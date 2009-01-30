@@ -225,8 +225,6 @@ class DistributionSourcePackage(BugTargetBase,
                 self.sourcepackagename)
             if source_package.direct_packaging is not None:
                 return source_package.direct_packaging.productseries.product
-        else:
-            return None
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
