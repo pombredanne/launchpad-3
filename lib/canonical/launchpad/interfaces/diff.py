@@ -15,6 +15,10 @@ __all__ = [
 from zope.schema import Object, Int, Text, TextLine
 from zope.interface import Interface
 
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
@@ -22,32 +26,41 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
-    text = Text(title=_('Textual contents of a diff.'))
+    export_as_webservice_entry()
+
+    text = exported(
+        Text(title=_('Textual contents of a diff.')), readonly=True)
 
     diff_text = Object(
         title=_('Content of this diff'), required=True,
         schema=ILibraryFileAlias)
 
-    diff_lines_count = Int(
-        title=_('The number of lines in this diff.'))
+    diff_lines_count = exported(
+        Int(title=_('The number of lines in this diff.'), readonly=True))
 
-    diffstat = Text(title=_('Statistics about this diff'))
+    diffstat = exported(
+        Text(title=_('Statistics about this diff'), readonly=True))
 
-    added_lines_count = Int(
-        title=_('The number of lines added in this diff.'))
+    added_lines_count = exported(
+        Int(title=_('The number of lines added in this diff.'),
+            readonly=True))
 
-    removed_lines_count = Int(
-        title=_('The number of lines removed in this diff.'))
+    removed_lines_count = exported(
+        Int(title=_('The number of lines removed in this diff.'),
+            readonly=True))
 
 
 class IStaticDiff(Interface):
     """A diff with a fixed value, i.e. between two revisions."""
 
-    from_revision_id = TextLine()
+    export_as_webservice_entry()
 
-    to_revision_id = TextLine()
+    from_revision_id = exported(TextLine(readonly=True))
 
-    diff = Object(title=_('The Diff object.'), schema=IDiff)
+    to_revision_id = exported(TextLine(readonly=True))
+
+    diff = exported(
+        Reference(IDiff, title=_('The Diff object.'), readonly=True))
 
     def destroySelf():
         """Destroy this object."""
@@ -73,13 +86,15 @@ class IPreviewDiff(Interface):
     trying to determine the effective changes of landing the source branch on
     the target branch.
     """
+    export_as_webservice_entry()
 
-    source_revision_id = TextLine()
+    source_revision_id = exported(TextLine(readonly=True))
 
-    target_revision_id = TextLine()
+    target_revision_id = exported(TextLine(readonly=True))
 
-    dependent_revision_id = TextLine()
+    dependent_revision_id = exported(TextLine(readonly=True))
 
-    diff = Object(title=_('The Diff object.'), schema=IDiff)
+    diff = exported(
+        Reference(IDiff, title=_('The Diff object.'), readonly=True))
 
-    conflicts = Text()
+    conflicts = exported(Text(readonly=True))
