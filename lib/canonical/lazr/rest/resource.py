@@ -307,13 +307,7 @@ class HTTPResource:
         template = LazrPageTemplateFile('../templates/' + template_name)
         namespace = template.pt_getContext()
         namespace['context'] = self
-        return template.pt_render(namespace)
-
-    def toXHTML(self, template_name="html-resource.pt"):
-        """Represent this resource as an XHTML document."""
-        template = LazrPageTemplateFile('../templates/' + template_name)
-        namespace = template.pt_getContext()
-        namespace['context'] = self
+        namespace['entry'] = self.entry.schema
         return template.pt_render(namespace)
 
     def getPreferredSupportedContentType(self):
@@ -689,6 +683,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data['http_etag'] = etag
         return data
 
+    def toXHTML(self, template_name="html-resource.pt"):
+        """Represent this resource as an XHTML document."""
+        template = LazrPageTemplateFile('../templates/' + template_name)
+        namespace = template.pt_getContext()
+        data = sorted([{'name' : name, 'value': value}
+                       for name, value in self.toDataForJSON().items()])
+        namespace['context'] = data
+        return template.pt_render(namespace)
+
     def processAsJSONHash(self, media_type, representation):
         """Process an incoming representation as a JSON hash.
 
@@ -740,7 +743,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
             elif media_type == self.XHTML_TYPE:
-                result = self.toHTML().encode("utf-8")
+                result = self.toXHTML().encode("utf-8")
 
         self.request.response.setHeader('Content-Type', media_type)
         return result
