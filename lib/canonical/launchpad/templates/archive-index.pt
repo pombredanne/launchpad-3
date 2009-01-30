@@ -92,7 +92,7 @@
             use-macro="archive/@@+macros/build-status-summary" />
       </div>
 
-      <div id="description">
+      <div id="description" tal:condition="context/description">
         <fieldset>
           <legend>Description</legend>
           <tal:archive-description condition="context/description"
