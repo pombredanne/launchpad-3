@@ -130,7 +130,7 @@ We query the available PUBLISHED sources and use them to build the
     >>> [pub.id for pub in view.sources]
     [27, 28, 29]
 
-    >>> view.has_sources
+    >>> view.has_sources_for_display
     True
 
     >>> view.available_sources_size
@@ -138,36 +138,6 @@ We query the available PUBLISHED sources and use them to build the
 
     >>> len(view.widgets.get('selected_sources').vocabulary)
     3
-
-The 'selected_sources' widget has a limit controlled via a hard-coded
-view attribute. We only present up to 'max_sources_presented' options
-and if the available number options exceed this number, we present a
-warning message to the user. The local limit is 20.
-
-    >>> view.max_sources_presented
-    20
-
-    >>> view.has_undisplayed_sources
-    False
-
-Using a lower limit we can see the described mechanism working.
-
-    >>> view.max_sources_presented = 2
-    >>> view.initialize()
-
-    >>> view.available_sources_size
-    3
-
-    >>> view.has_undisplayed_sources
-    True
-
-    >>> len(view.widgets.get('selected_sources').vocabulary)
-    2
-
-Restoring the default widget limit.
-
-    >>> view.max_sources_presented = 50
-    >>> view.initialize()
 
 This view also provides package filtering by source package name, so
 the user can refine the available options presented. By default all
@@ -206,7 +176,7 @@ which the available options already exclude the deleted items.
 
     >>> view.available_sources_size
     0
-    >>> view.has_sources
+    >>> view.has_sources_for_display
     False
 
     >>> import transaction
@@ -221,7 +191,7 @@ situation and ignore it. See bug #185922 for reference.
     >>> view.available_sources_size
     0
 
-    >>> view.has_sources
+    >>> view.has_sources_for_display
     False
 
     >>> len(view.errors)

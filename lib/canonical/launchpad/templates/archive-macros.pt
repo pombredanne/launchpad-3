@@ -46,7 +46,7 @@
         replace="structure view/batchnav/@@+navigation-links-lower" />
 
     <div id="empty-result"
-            tal:define="name_filter request/field.name_filter|nothing"
+            tal:define="name_filter view/specified_name_filter|nothing"
             tal:condition="not: batch">
       No matching package for '<tal:name_filter replace="name_filter" />'.
     </div>

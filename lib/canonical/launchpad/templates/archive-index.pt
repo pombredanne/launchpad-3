@@ -27,7 +27,7 @@
     </metal:block>
 
     <div metal:fill-slot="main"
-         tal:define="archive_active view/is_active;
+         tal:define="archive_active view/has_sources_before_filtering;
                      archive_label view/archive_label"
          tal:attributes="class string:archive">
 

@@ -24,11 +24,11 @@
 
     <tal:can_copy condition="view/can_copy">
 
-      <tal:inactive_ppa_header condition="not: view/has_sources">
+      <tal:inactive_ppa_header condition="not: view/has_sources_before_filtering">
         <p>This PPA does not contain any source packages published.</p>
       </tal:inactive_ppa_header>
 
-      <tal:package_filter_form condition="view/has_sources">
+      <tal:package_filter_form condition="view/has_sources_before_filtering">
         <metal:package_filter_form
           use-macro="context/@@+macros/package-filter-form" />
       </tal:package_filter_form>
@@ -36,7 +36,7 @@
       <div metal:use-macro="context/@@launchpad_form/form">
 
       <div class="form" metal:fill-slot="widgets"
-           tal:condition="view/has_sources">
+           tal:condition="view/has_sources_before_filtering">
 
         <metal:selectable-sources
           use-macro="context/@@+macros/source-package-list" />
@@ -52,7 +52,7 @@
         </tal:selectable_sources_end>
 
         <table style="margin-top: 1em;"
-          tal:condition="view/has_sources">
+          tal:condition="view/has_sources_for_display">
 
           <tal:archive
             define="widget nocall:view/widgets/destination_archive|nothing"

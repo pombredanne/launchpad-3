@@ -288,8 +288,13 @@ class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
 
     @cachedproperty
-    def is_active(self):
-        """Whether or not this PPA already have publications in it."""
+    def has_sources_before_filtering(self):
+        """Whether or not this PPA has any sources before filtering.
+
+        This can be overridden by subclasses as necessary. It allows
+        the view to determine whether to display "This PPA does not yet
+        have any published sources" or "No sources matching 'blah'."
+        """
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
         return self.context.getPublishedSources().count() > 0
@@ -314,7 +319,7 @@ class ArchiveViewBase(LaunchpadView):
     @property
     def archive_url(self):
         """Return an archive_url where available, or None."""
-        if self.is_active and not self.context.is_copy:
+        if self.has_sources_before_filtering and not self.context.is_copy:
             return self.context.archive_url
         else:
             return None
@@ -485,12 +490,20 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         results = list(self.batchnav.currentBatch())
         self.search_results = ArchiveSourcePublications(results)
 
-    @cachedproperty
-    def has_sources(self):
-        """Whether or not the PPA has published source packages."""
+    @property
+    def has_sources_for_display(self):
+        """Whether or not the PPA has any source packages for display.
+
+        This is after any filtering or overriding of the sources() method.
+        """
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
-        return self.search_results.has_sources
+        return self.available_sources_size > 0
+
+    @cachedproperty
+    def available_sources_size(self):
+        """Number of available sources."""
+        return self.sources.count()
 
 
 class ArchiveView(ArchiveSourcePackageListViewBase):
@@ -574,7 +587,7 @@ class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase,
 
         Ensure focus is only set if there are sources actually presented.
         """
-        if not self.has_sources:
+        if not self.has_sources_for_display:
             return ''
         return LaunchpadFormView.focusedElementScript(self)
 
@@ -634,6 +647,18 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             name=self.specified_name_filter,
             status=self.selected_status_filter.value.collection,
             distroseries=self.selected_series_filter.value)
+
+    @cachedproperty
+    def has_sources_before_filtering(self):
+        """Whether or not this PPA has any sources before filtering.
+
+        Overrides the ArchiveViewBase.has_sources_before_filtering
+        to ensure that it only returns true if there are sources
+        that can be deleted in this archive."
+        """
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.getSourcesForDeletion().count() > 0
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
