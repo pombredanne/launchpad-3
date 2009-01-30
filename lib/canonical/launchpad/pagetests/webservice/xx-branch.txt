@@ -93,20 +93,20 @@ time goes on.
     control_format: None
     date_created: ...
     date_last_modified: ...
-    dependent_branches_collection_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk/dependent_branches'
+    dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
     display_name: u'The Fooix Trunk'
-    landing_candidates_collection_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk/landing_candidates'
-    landing_targets_collection_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk/landing_targets'
+    landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
+    landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     lifecycle_status: u'New'
     mirror_status_message: None
     name: u'trunk'
-    owner_link: u'http://api.launchpad.dev/beta/~eric'
-    project_link: u'http://api.launchpad.dev/beta/fooix'
-    registrant_link: u'http://api.launchpad.dev/beta/~eric'
+    owner_link: u'.../~eric'
+    project_link: u'.../fooix'
+    registrant_link: u'.../~eric'
     repository_format: None
-    resource_type_link: u'http://api.launchpad.dev/beta/#branch'
+    resource_type_link: u'.../#branch'
     reviewer_link: None
-    self_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk'
+    self_link: u'.../~eric/fooix/trunk'
     summary: None
     title: u'The Fooix Trunk'
     unique_name: u'~eric/fooix/trunk'
@@ -121,14 +121,14 @@ should have a branch at the endpoint of landing_candidates.
     ...     details['landing_candidates_collection_link']).jsonBody()
     >>> for candidate in landing_candidates['entries']:
     ...     print candidate['source_branch_link']
-    http://api.launchpad.dev/beta/~person-name23/fooix/branch25
+    http://.../~person-name23/fooix/branch25
 
 
 The source_branch of the landing candidate should have this same merge proposal
 in its landing_targets.
 
     >>> feature_branch_link = \
-    ...     'http://api.launchpad.dev/beta/~person-name23/fooix/branch25'
+    ...     '/~person-name23/fooix/branch25'
     >>> feature_branch = webservice.get(feature_branch_link).jsonBody()
     >>> print feature_branch['unique_name']
     ~person-name23/fooix/branch25
@@ -137,7 +137,7 @@ in its landing_targets.
     ...     feature_branch['landing_targets_collection_link']).jsonBody()
     >>> for target in landing_targets['entries']:
     ...     print target['target_branch_link']
-    http://api.launchpad.dev/beta/~eric/fooix/trunk
+    http://.../~eric/fooix/trunk
 
 
 
