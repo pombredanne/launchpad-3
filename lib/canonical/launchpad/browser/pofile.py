@@ -591,6 +591,12 @@ class POFileTranslateView(BaseTranslationView):
 
 class POExportView(BaseExportView):
 
+    def modifyFormat(self, format):
+        pochanged = self.request.form.get("pochanged")
+        if format == 'PO' and pochanged == 'POCHANGED':
+            return 'POCHANGED'
+        return format
+
     def processForm(self):
         return (None, [self.context])
 
