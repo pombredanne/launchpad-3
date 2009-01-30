@@ -508,7 +508,6 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_processMissingMergeDirective(self):
         """process sends an email if the original email lacks an attachment.
         """
-        _unused, source, target = self.makeMergeDirectiveEmail()
         message = self.factory.makeSignedMessage(body='A body',
             subject='A subject', attachment_contents='')
         self.switchDbUser(config.processmail.dbuser)
