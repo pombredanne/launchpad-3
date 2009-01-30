@@ -1192,7 +1192,13 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        upload_results = self.processUpload(self.uploadprocessor, upload_dir)
+
+        # Upload got rejected.
+        self.assertEqual(upload_results, ['rejected'])
+
+        # An email communicating the rejection and the reason why it was
+        # rejected is sent to the uploaders.
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Rejected:",
@@ -1221,6 +1227,12 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)
+
+        # User was warned about quota limits but the source was accepted
+        # as informed in the upload notification.
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
     def testPPADoNotCheckSizeQuotaForBinary(self):
         """Verify the size quota check for internal binary PPA uploads.
