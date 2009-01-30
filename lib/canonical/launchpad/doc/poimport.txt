@@ -99,7 +99,7 @@ This is the file that'll get imported.
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
 We sometimes saw deadlocks as POFile statistics were updated after
-importing a template.  The operation read all translation messages
+importing a template.  The operation would read all translation messages
 for the entire template in the same transaction that did the import.
 To prevent this, the importer now does intermediate commits while
 recomputing statistics.
