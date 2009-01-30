@@ -593,14 +593,12 @@ class URIField(TextLine):
         self.trailing_slash = trailing_slash
 
     def set(self, object, value):
-        """Canonicalize a URL and set it as a field value.
-        """
+        """Canonicalize a URL and set it as a field value."""
         value = self._toFieldValue(value)
         super(URIField, self).set(object, value)
 
     def _toFieldValue(self, input):
-        """
-        The URIField has the following special behavior:
+        """The URIField has the following special behavior:
          * whitespace is stripped from the input value
          * if the field requires (or forbids) a trailing slash on the URI,
            then the  ensures that the widget ends in a slash (or
@@ -623,7 +621,6 @@ class URIField(TextLine):
                     uri = uri.ensureNoSlash()
             input = unicode(uri)
         return input
-
 
     def _validate(self, value):
         """Ensure the value is a valid URI."""

@@ -77,7 +77,7 @@ WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
 # XXX leonardr 2009-01-29
 # bug=https://bugs.edge.launchpad.net/zope3/+bug/322486:
 # Add nonstandard status methods to Zope's status_reasons dictionary.
-for (code, reason) in [(209, 'Content Returned')]:
+for code, reason in [(209, 'Content Returned')]:
     if not code in status_reasons:
         status_reasons[code] = reason
 
