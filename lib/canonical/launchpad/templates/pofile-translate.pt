@@ -39,6 +39,30 @@
         </h1>
       </tal:form-writeable>
 
+        <!-- Documentation links -->
+        <tal:documentation condition="view/translation_group">
+          <div class="important-notice-container">
+            <div class="important-notice-balloon">
+              <img src="/@@/info" alt="Information" />
+              <span class="important-notice">
+                Before translating, make sure to go through
+                <a tal:content="string:${view/translation_group/title}
+                                 instructions"
+                   tal:attributes="href view/translation_group/translation_guide_url">translation instructions</a> and
+                <a tal:attributes="href view/translation_team/style_guide_url"
+                   tal:content="string:${context/language/englishname}
+                                guidelines">Serbian guidelines</a>.
+              </span>
+              <span class="important-notice-buttons">
+                <img class="important-notice-cancel-button" src="/@@/no"
+                     alt="Don't show this message anymore"
+                     title="Don't show this notice anymore"
+                     onclick="getElementsByTagAndClassName('div', 'important-notice-container')[0].style['display']='none';"/>
+              </span>
+            </div>
+          </div>
+        </tal:documentation>
+
       <tal:havepluralforms condition="view/has_plural_form_information">
 
         <!-- Search box -->

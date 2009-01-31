@@ -403,6 +403,22 @@ class POFileTranslateView(BaseTranslationView):
     # BaseTranslationView API
     #
 
+    @property
+    def translation_group(self):
+        """Is there a translation group for this translation?"""
+        translation_groups = self.context.potemplate.translationgroups
+        if translation_groups is not None and len(translation_groups) > 0:
+            group = translation_groups[0]
+        else:
+            group = None
+        return group
+
+    @property
+    def translation_team(self):
+        group = self.translation_group
+        team = group.query_translator(self.context.language)
+        return team
+
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
         return BatchNavigator(self._getSelectedPOTMsgSets(),
