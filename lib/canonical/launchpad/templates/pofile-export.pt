@@ -23,6 +23,8 @@
             var formatlist = Y.get('#div_format select');
             var checkbox = Y.get('#div_pochanged input');
             var changedtext = Y.get('#div_pochanged span');
+            // Remove Warning which is only there for graceful degradation.
+            changedtext.removeChild(Y.get('#div_pochanged span em'));
             function toggle_pochanged() {
                 if (formatlist.get('value') == 'PO') {
                     changedtext.removeClass('disabled');
@@ -72,8 +74,9 @@
         <div id="div_pochanged" class="field" style="margin-top: 10px">
           <label>
             <input type="checkbox" name="pochanged"
-                   value="POCHANGED" disabled="disabled"/>
-            <span>Only strings that differ from packaged versions
+                   value="POCHANGED" />
+            <span><em>PO format only:</em>
+            Only strings that differ from packaged versions
             (<a href="https://help.launchpad.net/Translations/PartialPOExport"
                 target="_blank">What's this?</a>).</span>
           </label>
