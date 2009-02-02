@@ -89,4 +89,4 @@ class IPreviewDiff(Interface):
     diff = Object(title=_('The Diff object.'), schema=IDiff)
 
     conflicts = Text(
-        title=_('The conflicts text describing any path or text conflicts.'))
+        title=_('The text describing any path or text conflicts.'))
