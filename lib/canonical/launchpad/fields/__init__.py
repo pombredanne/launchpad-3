@@ -599,10 +599,10 @@ class URIField(TextLine):
 
     def _toFieldValue(self, input):
         """The URIField has the following special behavior:
+
          * whitespace is stripped from the input value
          * if the field requires (or forbids) a trailing slash on the URI,
-           then the  ensures that the widget ends in a slash (or
-           doesn't end in a slash).
+           ensures that the widget ends in a slash (or doesn't end in a slash).
          * the URI is canonicalized.
         """
         input = input.strip()
