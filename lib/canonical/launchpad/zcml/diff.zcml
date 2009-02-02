@@ -9,6 +9,9 @@
   <class class="canonical.launchpad.database.diff.StaticDiff">
     <allow interface="canonical.launchpad.interfaces.diff.IStaticDiff" />
   </class>
+  <class class="canonical.launchpad.database.diff.PreviewDiff">
+    <allow interface="canonical.launchpad.interfaces.diff.IPreviewDiff" />
+  </class>
   <securedutility
       component="canonical.launchpad.database.diff.StaticDiff"
       provides="canonical.launchpad.interfaces.diff.IStaticDiffSource" >

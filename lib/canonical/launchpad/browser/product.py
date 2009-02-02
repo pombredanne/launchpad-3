@@ -674,11 +674,12 @@ class SortSeriesMixin:
         for series in self.product.serieses:
             if filter is None or filter(series):
                 series_list.append(series)
-        # It should never be possible to mark the product's development focus
-        # series as obsolete.
-        assert self.product.development_focus in series_list, (
-            'Development focus series should not have been made obsolete')
-        series_list.remove(self.product.development_focus)
+        # In production data, there exist development focus series that are
+        # obsolete.  This may be caused by bad data, or it may be intended
+        # functionality.  In either case, ensure that the development focus
+        # branch is first in the list.
+        if self.product.development_focus in series_list:
+            series_list.remove(self.product.development_focus)
         # Now sort the list by name with newer versions before older.
         series_list = sorted_version_numbers(series_list,
                                              key=attrgetter('name'))

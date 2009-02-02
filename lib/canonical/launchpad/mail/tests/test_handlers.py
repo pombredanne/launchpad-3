@@ -209,7 +209,8 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processVoteColon(self):
         """Process respects the vote: command."""
-        mail = self.factory.makeSignedMessage(body=' vote: Abstain EBAILIWICK')
+        mail = self.factory.makeSignedMessage(
+            body=' vote: Abstain EBAILIWICK')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
@@ -481,6 +482,51 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(target, source.landing_targets[0].target_branch)
         transaction.commit()
 
+    def test_processMergeProposalExists(self):
+        """processMergeProposal raises BranchMergeProposalExists
+
+        If there is already a merge proposal with the same target and source
+        branches of the merge directive, an email is sent to the user.
+        """
+        message, source_branch, target_branch = self.makeMergeDirectiveEmail()
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        bmp, comment = code_handler.processMergeProposal(message)
+        _unused = pop_notifications()
+        transaction.commit()
+        _unused = code_handler.processMergeProposal(message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(),
+            'The branch %s is already propos=\ned for merging into %s.\n\n' % (
+                source_branch.bzr_identity, target_branch.bzr_identity))
+        self.assertEqual(notification['to'],
+            message['from'])
+
+    def test_processMissingMergeDirective(self):
+        """process sends an email if the original email lacks an attachment.
+        """
+        message = self.factory.makeSignedMessage(body='A body',
+            subject='A subject', attachment_contents='')
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        code_handler.processMergeProposal(message)
+        transaction.commit()
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(),
+            'Your email did not contain a merge directive. Please resend '
+            'your email with\nthe merge directive attached.\n'
+            )
+        self.assertEqual(notification['to'],
+            message['from'])
+
+
 
 class TestVoteEmailCommand(TestCase):
     """Test the vote and tag processing of the VoteEmailCommand."""
@@ -545,6 +591,13 @@ class TestVoteEmailCommand(TestCase):
         """Test the disapprove alias of -1."""
         command = VoteEmailCommand('vote', ['-1'])
         self.assertVoteAndTag(CodeReviewVote.DISAPPROVE, None, command)
+
+    def test_getVoteNeedsFixingAlias(self):
+        """Test the needs_fixing aliases of needsfixing and needs-fixing."""
+        command = VoteEmailCommand('vote', ['needsfixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
+        command = VoteEmailCommand('vote', ['needs-fixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
 
 
 class TestUpdateStatusEmailCommand(TestCaseWithFactory):

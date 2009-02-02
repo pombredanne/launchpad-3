@@ -227,6 +227,7 @@ plural messages:
 
 Let's define a helper function for the exports.
 
+    >>> from zope.component import getAdapter
     >>> def export_with_format(translation_file, format):
     ...     from canonical.launchpad.interfaces import (
     ...         ITranslationExporter, ITranslationFileData)
@@ -235,7 +236,8 @@ Let's define a helper function for the exports.
     ...     translation_format_exporter = (
     ...         translation_exporter.getExporterProducingTargetFileFormat(
     ...             format))
-    ...     requested_file = ITranslationFileData(translation_file)
+    ...     requested_file = getAdapter(
+    ...         translation_file, ITranslationFileData, 'all_messages')
     ...     exported_file = translation_format_exporter.exportTranslationFiles(
     ...         [requested_file])
     ...     return exported_file.read()
