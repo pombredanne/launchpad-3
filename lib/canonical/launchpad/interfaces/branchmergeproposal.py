@@ -473,7 +473,7 @@ class IBranchMergeProposal(Interface):
                         dependent_revision_id=None, conflicts=None):
         """Update the preview diff for this proposal.
 
-        If there is not an existing merge diff, one will be created.
+        If there is not an existing preview diff, one will be created.
 
         :param diff_content: The raw bytes of the diff content to be put in
             the librarian.

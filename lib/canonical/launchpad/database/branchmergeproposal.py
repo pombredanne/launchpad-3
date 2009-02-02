@@ -585,7 +585,6 @@ class BranchMergeProposal(SQLBase):
              # Create the PreviewDiff.
              preview = PreviewDiff()
              preview.diff = Diff()
-             # Store.of(self).add(preview)
              self.preview_diff = preview
 
         self.preview_diff.update(
