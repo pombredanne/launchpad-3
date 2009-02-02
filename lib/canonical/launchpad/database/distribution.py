@@ -1215,6 +1215,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 'ubuntu-meta',
                 'update-manager',
                 'usplash',
+                'nvidia-graphics-drivers-177',
+                'usb-creator',
+                'flashplugin-nonfree',
+                'update-notifier',
+                'sun-java6',
                 ]
         else:
             excluded_packages = []
