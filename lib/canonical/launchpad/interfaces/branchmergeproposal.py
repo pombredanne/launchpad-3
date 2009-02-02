@@ -24,7 +24,7 @@ from zope.schema import Choice, Datetime, Int, List, Object, Text
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import IBranch
-from canonical.launchpad.interfaces.diff import IStaticDiff
+from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
@@ -196,6 +196,11 @@ class IBranchMergeProposal(Interface):
 
     review_diff = Object(
         title=_('The diff to be used for reviews.'), schema=IStaticDiff)
+
+    preview_diff = Object(
+        title=_('The current diff of the source branch against the '
+                'target branch.'),
+        schema=IPreviewDiff, readonly=True)
 
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
@@ -462,6 +467,26 @@ class IBranchMergeProposal(Interface):
 
     def deleteProposal():
         """Delete the proposal to merge."""
+
+    def updatePreviewDiff(diff_content, diff_stat,
+                        source_revision_id, target_revision_id,
+                        dependent_revision_id=None, conflicts=None):
+        """Update the preview diff for this proposal.
+
+        If there is not an existing preview diff, one will be created.
+
+        :param diff_content: The raw bytes of the diff content to be put in
+            the librarian.
+        :param diff_stat: Text describing the files added, remove or modified.
+        :param source_revision_id: The revision id that was used from the
+            source branch.
+        :param target_revision_id: The revision id that was used from the
+            target branch.
+        :param dependent_revision_id: The revision id that was used from the
+            dependent branch.
+        :param conflicts: Text describing the conflicts if any.
+        """
+
 
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
