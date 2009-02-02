@@ -3,19 +3,20 @@
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'StaticDiff',]
+__all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 
 from cStringIO import StringIO
 
 from bzrlib.diff import show_diff_trees
 from sqlobject import ForeignKey, IntCol, StringCol
+from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces.diff import (
-    IDiff, IStaticDiff, IStaticDiffSource)
+    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
@@ -73,6 +74,14 @@ class Diff(SQLBase):
                 'static.diff', size, diff_content, 'text/x-diff')
         return klass(diff_text=diff_text)
 
+    def _update(self, diff_content, diffstat, filename):
+        """Update the diff content and diffstat."""
+        alias = getUtility(ILibraryFileAliasSet).create(
+            filename, len(diff_content), StringIO(diff_content),
+            'text/x-diff')
+        self.diff_text = alias
+        self.diffstat = diffstat
+
 
 class StaticDiff(SQLBase):
     """A diff from one revision to another."""
@@ -117,3 +126,37 @@ class StaticDiff(SQLBase):
         diff = self.diff
         SQLBase.destroySelf(self)
         diff.destroySelf()
+
+
+class PreviewDiff(Storm):
+    """See `IPreviewDiff`."""
+    implements(IPreviewDiff)
+    __storm_table__ = 'PreviewDiff'
+
+    id = Int(primary=True)
+
+    diff_id = Int(name='diff')
+    diff = Reference(diff_id, 'Diff.id')
+
+    source_revision_id = Unicode(allow_none=False)
+
+    target_revision_id = Unicode(allow_none=False)
+
+    dependent_revision_id = Unicode()
+
+    conflicts = Unicode()
+
+    def update(self, diff_content, diffstat,
+               source_revision_id, target_revision_id,
+               dependent_revision_id, conflicts):
+        self.source_revision_id = source_revision_id
+        self.target_revision_id = target_revision_id
+        if dependent_revision_id is None:
+            # XXX: TimPenhey 2009-02-02, bug 324128
+            # The db patch to allow nulls here should land for 2.2.2
+            self.dependent_revision_id = u'OOPS'
+        else:
+            self.dependent_revision_id = dependent_revision_id
+        self.conflicts = conflicts
+
+        self.diff._update(diff_content, diffstat, 'merge.diff')

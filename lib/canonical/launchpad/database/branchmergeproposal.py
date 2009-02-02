@@ -19,7 +19,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from storm.expr import Desc, Join, LeftJoin
-from storm.references import Reference
+from storm.locals import Int, Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
 from canonical.config import config
@@ -32,6 +32,7 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.codereviewvote import (
     CodeReviewVoteReference)
+from canonical.launchpad.database.diff import Diff, PreviewDiff
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.event.branchmergeproposal import (
@@ -138,6 +139,9 @@ class BranchMergeProposal(SQLBase):
 
     review_diff = ForeignKey(
         foreignKey='StaticDiff', notNull=False, default=None)
+
+    preview_diff_id = Int(name='merge_diff')
+    preview_diff = Reference(preview_diff_id, 'PreviewDiff.id')
 
     reviewed_revision_id = StringCol(default=None)
 
@@ -572,6 +576,20 @@ class BranchMergeProposal(SQLBase):
             notify(NewCodeReviewCommentEvent(
                     code_review_message, original_email))
         return code_review_message
+
+    def updatePreviewDiff(self, diff_content, diff_stat,
+                          source_revision_id, target_revision_id,
+                          dependent_revision_id=None, conflicts=None):
+        """See `IBranchMergeProposal`."""
+        if self.preview_diff is None:
+             # Create the PreviewDiff.
+             preview = PreviewDiff()
+             preview.diff = Diff()
+             self.preview_diff = preview
+
+        self.preview_diff.update(
+            diff_content, diff_stat, source_revision_id, target_revision_id,
+            dependent_revision_id, conflicts)
 
 
 class BranchMergeProposalGetter:
