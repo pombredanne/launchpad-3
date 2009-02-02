@@ -1260,7 +1260,7 @@ beside the mugshot. */
 #home-page h2 {
   width: 100%;
   text-align: center;
-  text-decoration: underline;
+  margin-left: -0.8em;
 }
 #home-page img {
   vertical-align: middle;
@@ -1306,7 +1306,8 @@ beside the mugshot. */
 }
 
 #package_counters {
-    clear: left;
+    clear: both;
+    float: left;
 }
 
 div#build-status-summary {
