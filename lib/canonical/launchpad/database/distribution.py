@@ -1206,7 +1206,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if self == ubuntu:
             #XXX gmb 2009-02-02: bug 324298
             #    This needs to be managed in a nicer, non-hardcoded
-            #    fasion.
+            #    fashion.
             excluded_packages = [
                 'apport',
                 'casper',
