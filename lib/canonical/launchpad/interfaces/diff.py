@@ -74,12 +74,19 @@ class IPreviewDiff(Interface):
     the target branch.
     """
 
-    source_revision_id = TextLine()
+    source_revision_id = TextLine(
+        title=_('The tip revision id of the source branch used to generate '
+                'the diff.'))
 
-    target_revision_id = TextLine()
+    target_revision_id = TextLine(
+        title=_('The tip revision id of the target branch used to generate '
+                'the diff.'))
 
-    dependent_revision_id = TextLine()
+    dependent_revision_id = TextLine(
+        title=_('The tip revision id of the dependent branch used to '
+                'generate the diff.'))
 
     diff = Object(title=_('The Diff object.'), schema=IDiff)
 
-    conflicts = Text()
+    conflicts = Text(
+        title=_('The conflicts text describing any path or text conflicts.'))
