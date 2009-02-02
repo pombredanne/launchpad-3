@@ -646,6 +646,7 @@ javascript.
 
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
     >>> print extract_text(results)
+    Repository disk usage
     Package counters and estimated archive size temporarily unavailable.
 
     >>> anon_browser.open(
