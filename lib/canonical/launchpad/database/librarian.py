@@ -10,9 +10,12 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.locals import Date, Int, Reference, Storm, Unicode
+
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent,
+    ILibraryFileDownloadCount, IParsedLibrarianApacheLog)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
 from canonical.database.sqlbase import SQLBase
@@ -183,3 +186,27 @@ class LibraryFileAliasSet(object):
             AND LibraryFileContent.sha1 = '%s'
             """ % sha1, clauseTables=['LibraryFileContent'])
 
+
+class LibraryFileDownloadCount(Storm):
+    """See `ILibraryFileDownloadCount`"""
+
+    implements(ILibraryFileDownloadCount)
+    __storm_table__ = 'LibraryFileDownloadCount'
+
+    id = Int(primary=True)
+    libraryfilealias_id = Int(name='libraryfilealias', allow_none=False)
+    libraryfilealias = Reference(libraryfilealias_id, 'LibraryFileAlias.id')
+    day = Date(allow_none=False, tzinfo=pytz.UTC)
+    count = Int(allow_none=False)
+
+
+class ParsedLibrarianApacheLog(Storm):
+    """See `IParsedLibrarianApacheLog`"""
+
+    implements(IParsedLibrarianApacheLog)
+    __storm_table__ = 'LibraryFileDownloadCount'
+
+    id = Int(primary=True)
+    file_name = Unicode(allow_none=False)
+    first_line = Unicode(allow_none=False)
+    bytes_read = Int(allow_none=False)

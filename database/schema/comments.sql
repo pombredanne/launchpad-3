@@ -1479,7 +1479,7 @@ COMMENT ON COLUMN LibraryFileDownloadCount.count IS 'The number of downloads.';
 
 COMMENT ON TABLE ParsedLibrarianApacheLog IS 'A parsed apache log file for librarian.';
 COMMENT ON COLUMN ParsedLibrarianApacheLog.file_name IS 'The name of the parsed log file.';
-COMMENT ON COLUMN ParsedLibrarianApacheLog.first_line_timestamp IS 'The timestamp on the first line of this log file.';
+COMMENT ON COLUMN ParsedLibrarianApacheLog.first_line IS 'The first line of this log file.';
 COMMENT ON COLUMN ParsedLibrarianApacheLog.bytes_read IS 'The number of bytes from this log file that have been parsed.';
 
 -- SourcePackageReleaseFile
