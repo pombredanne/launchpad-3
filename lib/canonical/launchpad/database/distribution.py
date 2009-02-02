@@ -1204,6 +1204,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # of excluded packages. Otherwise return an empty list.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if self == ubuntu:
+            #XXX gmb 2009-02-02: bug 324298
+            #    This needs to be managed in a nicer, non-hardcoded
+            #    fasion.
             excluded_packages = [
                 'apport',
                 'casper',
