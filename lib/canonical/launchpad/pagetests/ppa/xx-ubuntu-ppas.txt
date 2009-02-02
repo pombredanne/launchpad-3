@@ -271,16 +271,6 @@ and the select control that lets you update them:
         </select>
     ...
 
-The page also shows some stats about Celso's PPA (number of sources. binaries
-and estimated size).
-
-XXX cprov 20081126: The 'package counters' page section is disabled
-due to bad performance on large PPAs.
-
-    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> print extract_text(results)
-    Package counters and estimated archive size temporarily unavailable.
-
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
 
@@ -364,12 +354,24 @@ an anonymous user, the link will be gone.
     ...
     LinkNotFoundError
 
+While we are there, we can also see that Mark's PPA 'repository-size'
+pagelet isn't publicly available once the PPA was marked private.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~sabdfl/+archive/ppa/+repository-size")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'launchpad.View')
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+
 Set sabdfl's archive back to public before continuing.
 
     >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
+
 
 == Searching an archive ==
 
@@ -460,7 +462,7 @@ any package ever published in the context PPA.
     pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
 
 The default series filter is 'any' which means that by default the
-results will include packages from any distro series. A user can 
+results will include packages from any distro series. A user can
 explicitly set the 'Any Series' filter and get the same result:
 
     >>> anon_browser.getControl(name='field.series_filter').value = (
@@ -624,13 +626,6 @@ properly.
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
-XXX cprov 20081126: The 'package counters' page section is disabled
-due to bad performance on large PPAs.
-
-    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> print extract_text(results)
-    Package counters and estimated archive size temporarily unavailable.
-
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
 
@@ -644,6 +639,21 @@ And the sources.list entries point to the right distribution release:
     >>> print text
     deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
     deb-src http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
+
+The repository size information is available in a separate page,
+'+repository-size', which is going be to added to the index page using
+javascript.
+
+    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
+
+    >>> anon_browser.open(
+    ...    "http://launchpad.dev/~sabdfl/+archive/ppa/+repository-size")
+    >>> print extract_text(anon_browser.contents)
+    1 source package (9.5 MiB)
+    1 binary package (0 bytes)
+    Estimated archive size: 9.5 MiB
 
 
 == Other Distribution PPAs ==
