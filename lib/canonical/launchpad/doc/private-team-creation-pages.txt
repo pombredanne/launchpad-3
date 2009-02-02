@@ -1,0 +1,95 @@
+= Private Team Creation =
+
+Private teams may only be created by commercial admins
+(launchpad.Commercial permission).
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> nopriv = personset.getByEmail('no-priv@canonical.com')
+    >>> login('no-priv@canonical.com')
+
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form={}, principal=nopriv)
+    >>> 'visibility' in [field.__name__ for field in view.form_fields]
+    False
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form={}, principal=foo_bar)
+    >>> 'visibility' in [field.__name__ for field in view.form_fields]
+    True
+
+When creating a private membership team, the team subscription policy
+must be 'Restricted.'
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> form = {
+    ...     'field.name': 'super-secret',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=foo_bar)
+
+    >>> for error in view.errors:
+    ...     print error
+    Private teams must have a Restricted subscription policy.
+
+= Private Team Editing =
+
+Like creation, only commercial admins are given the option of changing
+a team's visibility.
+
+    >>> launchpad = personset.getByName('launchpad')
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(
+    ...     launchpad, '+edit',
+    ...     form={}, principal=nopriv)
+    >>> 'visibility' in [field.__name__ for field in view.form_fields]
+    False
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> view = create_initialized_view(
+    ...     launchpad, '+edit',
+    ...     form={}, principal=foo_bar)
+    >>> 'visibility' in [field.__name__ for field in view.form_fields]
+    True
+
+And a non-public team must have restricted membership.
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> # Create the team using the factory to ensure it is properly
+    >>> # configured.
+    >>> super_secret = factory.makeTeam(owner=foo_bar, name='super-secret')
+
+    >>> form = {
+    ...     'field.name': 'super-secret',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     super_secret, '+edit',
+    ...     form=form, principal=foo_bar)
+
+    >>> for error in view.errors:
+    ...     print error
+    Private teams must have a Restricted subscription policy.

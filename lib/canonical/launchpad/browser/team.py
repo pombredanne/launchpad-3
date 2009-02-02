@@ -107,26 +107,27 @@ class HasRenewalPolicyMixin:
             field_name)
 
 
-class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
+class TeamFormMixin:
+    """Form to be used on forms which conditionally display team visiblity.
 
-    schema = ITeam
+    The visibility field should only be shown to users with
+    launchpad.Commercial permission on the team.
+    """
     field_names = [
-        'teamowner', 'name', 'displayname', 'teamdescription',
-        'subscriptionpolicy', 'defaultmembershipperiod',
-        'renewal_policy', 'defaultrenewalperiod', 'visibility']
-    custom_widget('teamowner', SinglePopupWidget, visible=False)
-    custom_widget(
-        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        "name", "visibility", "displayname", "contactemail",
+        "teamdescription", "subscriptionpolicy",
+        "defaultmembershipperiod", "renewal_policy",
+        "defaultrenewalperiod",  "teamowner",
+        ]
 
-    @action('Save', name='save')
-    def action_save(self, action, data):
-        try:
-            self.updateContextFromData(data)
-        except ImmutableVisibilityError, error:
-            self.request.response.addErrorNotification(str(error))
-        self.next_url = canonical_url(self.context)
+    @property
+    def _validate_visibility_consistency(self):
+        """Perform a consistency check regarding visibility.
+
+        This property must be overridden if the current context is not an
+        IPerson.
+        """
+        return self.context.visibility_consistency_warning
 
     def validate(self, data):
         if 'visibility' in data:
@@ -135,24 +136,52 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
             visibility = self.context.visibility
         if visibility != PersonVisibility.PUBLIC:
             if 'visibility' in data:
-                warning = self.context.visibility_consistency_warning
+                warning = self._validate_visibility_consistency
                 if warning is not None:
                     self.setFieldError('visibility', warning)
             if (data['subscriptionpolicy']
                 != TeamSubscriptionPolicy.RESTRICTED):
                 self.setFieldError(
                     'subscriptionpolicy',
-                    'Private teams must have a Restricted subscription'
-                    ' policy.')
+                    'Private teams must have a Restricted subscription '
+                    'policy.')
+
+    def conditionallyOmitVisibility(self):
+        """Remove the visibility field if not authorized."""
+        if not check_permission('launchpad.Commercial', self.context):
+            self.form_fields = self.form_fields.omit('visibility')
+
+
+class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadEditFormView):
+
+    schema = ITeam
+
+    custom_widget('teamowner', HiddenUserWidget)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
         """See `LaunchpadViewForm`.
 
-        Only Launchpad Admins get to see the visibility field.
+        When editing a team the contactemail field is not displayed.
         """
+        # Make an instance copy of field_names so as to not modify the single
+        # class list.
+        self.field_names = list(self.field_names)
+        self.field_names.remove('contactemail')
         super(TeamEditView, self).setUpFields()
-        if not check_permission('launchpad.Admin', self.context):
-            self.form_fields = self.form_fields.omit('visibility')
+        self.conditionallyOmitVisibility()
+
+    @action('Save', name='save')
+    def action_save(self, action, data):
+        try:
+            self.updateContextFromData(data)
+        except ImmutableVisibilityError, error:
+            self.request.response.addErrorNotification(str(error))
+        self.next_url = canonical_url(self.context)
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
@@ -706,19 +735,25 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
 
-class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
+class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
 
     schema = ITeamCreation
     label = ''
-    field_names = ["name", "displayname", "contactemail", "teamdescription",
-                   "subscriptionpolicy", "defaultmembershipperiod",
-                   "renewal_policy", "defaultrenewalperiod", "teamowner"]
+
     custom_widget('teamowner', HiddenUserWidget)
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
         'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        Only Launchpad Admins get to see the visibility field.
+        """
+        super(TeamAddView, self).setUpFields()
+        self.conditionallyOmitVisibility()
 
     @action('Create', name='create')
     def create_action(self, action, data):
@@ -745,6 +780,11 @@ class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
                 "message for up to an hour or two.)" % email)
 
         self.next_url = canonical_url(team)
+
+    @property
+    def _validate_visibility_consistency(self):
+        """See `TeamFormView`."""
+        return None
 
 
 class ProposedTeamMembersEditView(LaunchpadFormView):
