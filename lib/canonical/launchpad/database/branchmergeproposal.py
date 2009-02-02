@@ -140,8 +140,8 @@ class BranchMergeProposal(SQLBase):
     review_diff = ForeignKey(
         foreignKey='StaticDiff', notNull=False, default=None)
 
-    merge_diff_id = Int(name='merge_diff')
-    merge_diff = Reference(merge_diff_id, 'PreviewDiff.id')
+    preview_diff_id = Int(name='merge_diff')
+    preview_diff = Reference(preview_diff_id, 'PreviewDiff.id')
 
     reviewed_revision_id = StringCol(default=None)
 
@@ -577,18 +577,17 @@ class BranchMergeProposal(SQLBase):
                     code_review_message, original_email))
         return code_review_message
 
-    def updateMergeDiff(self, diff_content, diff_stat,
-                        source_revision_id, target_revision_id,
-                        dependent_revision_id=None, conflicts=None):
+    def updatePreviewDiff(self, diff_content, diff_stat,
+                          source_revision_id, target_revision_id,
+                          dependent_revision_id=None, conflicts=None):
         """See `IBranchMergeProposal`."""
-        if self.merge_diff is None:
+        if self.preview_diff is None:
              # Create the PreviewDiff.
              preview = PreviewDiff()
              preview.diff = Diff()
-             Store.of(self).add(preview)
-             self.merge_diff = preview
+             self.preview_diff = preview
 
-        self.merge_diff.update(
+        self.preview_diff.update(
             diff_content, diff_stat, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
 

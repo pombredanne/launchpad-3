@@ -86,13 +86,28 @@ class IPreviewDiff(IDiff):
     """
     export_as_webservice_entry()
 
-    source_revision_id = exported(TextLine(readonly=True))
+    source_revision_id = exported(
+        TextLine(
+            title=_('The tip revision id of the source branch used to '
+                    'generate the diff.'),
+            readonly=True))
 
-    target_revision_id = exported(TextLine(readonly=True))
+    target_revision_id = exported(
+        TextLine(
+            title=_('The tip revision id of the target branch used to '
+                    'generate the diff.'),
+            readonly=True))
 
-    dependent_revision_id = exported(TextLine(readonly=True))
+    dependent_revision_id = exported(
+        TextLine(
+            title=_('The tip revision id of the dependent branch used to '
+                    'generate the diff.'),
+            readonly=True))
 
     diff = exported(
         Reference(IDiff, title=_('The Diff object.'), readonly=True))
 
-    conflicts = exported(Text(readonly=True))
+    conflicts = exported(
+        Text(title=_(
+                'The conflicts text describing any path or text conflicts.'),
+             readonly=True))

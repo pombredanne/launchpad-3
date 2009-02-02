@@ -14,7 +14,7 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by title
                        date_created date_review_requested date_reviewed
-                       review_diff merge_diff votes root_comment all_comments
+                       review_diff preview_diff votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
                        getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions root_message_id
@@ -27,7 +27,7 @@
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
                     enqueue dequeue moveToFrontOfQueue nominateReviewer
-                    updateMergeDiff
+                    updatePreviewDiff
                     " />
     <require
         permission="launchpad.AnyPerson"

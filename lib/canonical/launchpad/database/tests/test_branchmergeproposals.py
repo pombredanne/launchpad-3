@@ -995,14 +995,13 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote_reference.comment)
 
 
-class TestUpdateMergeDiff(TestCaseWithFactory):
+class TestUpdatePreviewDiff(TestCaseWithFactory):
     """Test the updateMergeDiff method of BranchMergeProposal."""
 
     layer = LaunchpadFunctionalLayer
 
-    def test_new_diff(self):
-        """Test that both the PreviewDiff and the Diff get created."""
-        merge_proposal = self.factory.makeBranchMergeProposal()
+    def _updatePreviewDiff(self, merge_proposal):
+        # Update the preview diff for the merge proposal.
         diff_text = dedent("""\
             === modified file 'sample.py'
             --- sample     2009-01-15 23:44:22 +0000
@@ -1019,56 +1018,41 @@ class TestUpdateMergeDiff(TestCaseWithFactory):
             """)
         diff_stat = u"M sample.py"
         login_person(merge_proposal.registrant)
-        merge_proposal.updateMergeDiff(
+        merge_proposal.updatePreviewDiff(
             diff_text, diff_stat, u"source_id", u"target_id")
         # Have to commit the transaction to make the Librarian file
         # available.
         transaction.commit()
-        self.assertEqual(diff_text, merge_proposal.merge_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.merge_diff.diff.diffstat)
+        return diff_text, diff_stat
+
+    def test_new_diff(self):
+        # Test that both the PreviewDiff and the Diff get created.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
 
     def test_update_diff(self):
-        """Test that both the PreviewDiff and the Diff get created."""
+        # Test that both the PreviewDiff and the Diff get updated.
         merge_proposal = self.factory.makeBranchMergeProposal()
         login_person(merge_proposal.registrant)
-        merge_proposal.updateMergeDiff("random text", u"junk", u"a", u"b")
+        merge_proposal.updatePreviewDiff("random text", u"junk", u"a", u"b")
         transaction.commit()
         # Extract the primary key ids for the preview diff and the diff to
         # show that we are reusing the objects.
         preview_diff_id = removeSecurityProxy(
-            merge_proposal.merge_diff).id
+            merge_proposal.preview_diff).id
         diff_id = removeSecurityProxy(
-            merge_proposal.merge_diff.diff).id
-        # Now save the new diff.
-        diff_text = dedent("""\
-            === modified file 'sample.py'
-            --- sample     2009-01-15 23:44:22 +0000
-            +++ sample     2009-01-29 04:10:57 +0000
-            @@ -19,7 +19,7 @@
-             from zope.interface import implements
-
-             from storm.expr import Desc, Join, LeftJoin
-            -from storm.references import Reference
-            +from storm.locals import Int, Reference
-             from sqlobject import ForeignKey, IntCol
-
-             from canonical.config import config
-            """)
-        diff_stat = u"M sample.py"
-        login_person(merge_proposal.registrant)
-        merge_proposal.updateMergeDiff(
-            diff_text, diff_stat, u"source_id", u"target_id")
-        # Have to commit the transaction to make the Librarian file
-        # available.
-        transaction.commit()
-        self.assertEqual(diff_text, merge_proposal.merge_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.merge_diff.diff.diffstat)
+            merge_proposal.preview_diff.diff).id
+        diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
         self.assertEqual(
             preview_diff_id,
-            removeSecurityProxy(merge_proposal.merge_diff).id)
+            removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertEqual(
             diff_id,
-            removeSecurityProxy(merge_proposal.merge_diff.diff).id)
+            removeSecurityProxy(merge_proposal.preview_diff.diff).id)
 
 
 def test_suite():

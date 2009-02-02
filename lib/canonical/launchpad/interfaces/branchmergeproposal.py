@@ -19,7 +19,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, List, Object, Text
+from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -198,7 +198,7 @@ class IBranchMergeProposal(Interface):
         IStaticDiff, title=_('The diff to be used for reviews.'),
         readonly=True)
 
-    merge_diff = exported(
+    preview_diff = exported(
         Reference(
             IPreviewDiff,
             title=_('The current diff of the source branch against the '
@@ -470,14 +470,15 @@ class IBranchMergeProposal(Interface):
     def deleteProposal():
         """Delete the proposal to merge."""
 
-    def updateMergeDiff(diff_content, diff_stat,
+    def updatePreviewDiff(diff_content, diff_stat,
                         source_revision_id, target_revision_id,
                         dependent_revision_id=None, conflicts=None):
-        """Update the merge diff for this proposal.
+        """Update the preview diff for this proposal.
 
-        If there is not an existing merge diff, one will be created.
-        :param diff_content: The binary diff content to be put in the
-            librarian.
+        If there is not an existing preview diff, one will be created.
+
+        :param diff_content: The raw bytes of the diff content to be put in
+            the librarian.
         :param diff_stat: Text describing the files added, remove or modified.
         :param source_revision_id: The revision id that was used from the
             source branch.

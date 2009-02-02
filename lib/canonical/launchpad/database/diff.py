@@ -75,7 +75,7 @@ class Diff(SQLBase):
                 'static.diff', size, diff_content, 'text/x-diff')
         return klass(diff_text=diff_text)
 
-    def update(self, diff_content, diffstat, filename):
+    def _update(self, diff_content, diffstat, filename):
         """Update the diff content and diffstat."""
         alias = getUtility(ILibraryFileAliasSet).create(
             filename, len(diff_content), StringIO(diff_content),
@@ -159,9 +159,11 @@ class PreviewDiff(Storm):
         self.source_revision_id = source_revision_id
         self.target_revision_id = target_revision_id
         if dependent_revision_id is None:
+            # XXX: TimPenhey 2009-02-02, bug 324128
+            # The db patch to allow nulls here should land for 2.2.2
             self.dependent_revision_id = u'OOPS'
         else:
             self.dependent_revision_id = dependent_revision_id
         self.conflicts = conflicts
 
-        self.diff.update(diff_content, diffstat, 'merge.diff')
+        self.diff._update(diff_content, diffstat, 'merge.diff')
