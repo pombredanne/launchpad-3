@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
@@ -441,12 +441,15 @@ class IPOTemplate(IRosettaStats):
         Returns the newly created message set.
         """
 
-    def importFromQueue(entry_to_import, logger=None):
+    def importFromQueue(entry_to_import, logger=None, txn=None):
         """Import given queue entry.
 
         :param entry_to_import: `TranslationImportQueueEntry` specifying an
             approved import for this `POTemplate`
         :param logger: optional logger to report problems to.
+        :param txn: optional transaction manager for intermediate
+            commits.  Used to prevent long-running transactions that can
+            lead to deadlocks.
 
         :return: a tuple of the subject line and body for a notification email
             to be sent to the uploader.

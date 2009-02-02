@@ -505,6 +505,28 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(notification['to'],
             message['from'])
 
+    def test_processMissingMergeDirective(self):
+        """process sends an email if the original email lacks an attachment.
+        """
+        message = self.factory.makeSignedMessage(body='A body',
+            subject='A subject', attachment_contents='')
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        code_handler.processMergeProposal(message)
+        transaction.commit()
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(),
+            'Your email did not contain a merge directive. Please resend '
+            'your email with\nthe merge directive attached.\n'
+            )
+        self.assertEqual(notification['to'],
+            message['from'])
+
+
 
 class TestVoteEmailCommand(TestCase):
     """Test the vote and tag processing of the VoteEmailCommand."""
