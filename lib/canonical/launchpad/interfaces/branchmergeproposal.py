@@ -29,7 +29,8 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -470,6 +471,11 @@ class IBranchMergeProposal(Interface):
     def deleteProposal():
         """Delete the proposal to merge."""
 
+    @operation_parameters(
+        diff_content=Bytes(), diff_stat=Text(),
+        source_revision_id=TextLine(), target_revision_id=TextLine(),
+        dependent_revision_id=TextLine(), conflicts=Text())
+    @export_write_operation()
     def updatePreviewDiff(diff_content, diff_stat,
                         source_revision_id, target_revision_id,
                         dependent_revision_id=None, conflicts=None):
