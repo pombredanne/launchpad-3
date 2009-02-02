@@ -51,8 +51,6 @@ class IDiff(Interface):
 class IStaticDiff(Interface):
     """A diff with a fixed value, i.e. between two revisions."""
 
-    export_as_webservice_entry()
-
     from_revision_id = exported(TextLine(readonly=True))
 
     to_revision_id = exported(TextLine(readonly=True))

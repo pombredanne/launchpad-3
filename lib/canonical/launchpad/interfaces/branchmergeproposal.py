@@ -19,7 +19,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, List, Text
+from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
