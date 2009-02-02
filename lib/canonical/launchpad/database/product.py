@@ -19,6 +19,7 @@ import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -220,6 +221,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    remote_product = Unicode(
+        name='remote_product', allow_none=True, default=None)
+
+    @property
+    def upstream_bug_filing_url(self):
+        """Return the URL of the upstream bug filing form for this project.
+
+        Return None if self.bugtracker is None or self.remote_product is
+        None and self.bugtracker is a multi-product bugtracker.
+        """
+        if not self.bugtracker:
+            return None
+        else:
+            return self.bugtracker.getBugFilingLink(self.remote_product)
 
     @property
     def official_anything(self):

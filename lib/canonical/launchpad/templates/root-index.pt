@@ -43,7 +43,7 @@
         style="text-align: center"
       >
         <img src="/@@/launchpad-logo-and-name.png" 
-             alt="Launchpad Logo"
+             alt=""
              style="margin: 0 9em 1em 0"/>
         <br />
 
@@ -60,9 +60,11 @@
         and&nbsp;counting...
       </div>
       <div id="home-description">Launchpad is a unique collaboration and
-      <a href="http://bazaar-vcs.org/">bazaar</a>
-      code hosting platform for software projects.</div>
-      <div id="home-page" style="width:90%; margin:auto;">
+      <a href="http://bazaar-vcs.org/">Bazaar</a>
+      code hosting platform for software projects. <a
+      href="/+tour"
+      >Read more...</a></div>
+      <div id="home-page" style="width:90%; max-width:80em; margin:auto;">
         <div class="three column left" id="featured-projects">
           <h2>Featured projects</h2>
           <div style="margin:auto;">
@@ -87,6 +89,20 @@
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
             <li class="news">
+              <a href="http://news.launchpad.net/?p=448">
+                <strong>Upstreams: Ubuntu translations come full circle</strong><br />
+                Easily integrate the work done by distribution translators back into
+                your own translation effort.
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=450">
+                <strong>Translations style guides</strong><br />
+                Share your translation team's policies, best practices and guidelines
+                directly from translation pages.
+              </a>
+           </li>
+            <li class="news">
               <a href="http://news.launchpad.net/cool-new-stuff/announcing-the-launchpad-plugin-api-spec">
                 <strong>New bug plugin API</strong><br />
                 Create your own plugin for direct communication between Launchpad
@@ -94,52 +110,39 @@
               </a>
            </li>
            <li class="news">
-              <a href="http://news.launchpad.net/cool-new-stuff/new-launchpad-plugins-for-drupal">
-                <strong>Drupal integration</strong><br />
-                Authenticate visitors to your Drupal site using Launchpad
-                and assign roles based on their team memberships.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/general/launchpad-now-on-twitter-and-identica">
-                <strong>We're on Twitter and identi.ca</strong><br />
-                Follow Launchpad news and bug reports. Also, microblog your project using Launchpad feeds!
-              </a>
-           </li>
-           <li class="news">
               <a href="http://news.launchpad.net/?p=106">
-                <strong>Help test Launchpad's new API!</strong><br />
+                <strong>Help test Launchpad's API!</strong><br />
                 Join the beta of our web services API and Python library.
               </a>
            </li>
 
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2008-12-17.
-            <a href="http://news.launchpad.net">More...</a>
+            Updated 2009-01-28.
+            <a href="http://news.launchpad.net">Read our blog!</a>
           </div>
         </div>
         <div class="three column right">
           <div style="margin:auto; width:230px;">
             <h2>Get started</h2>
-             <div class="home-banners home-banner-container">
               <div class="home-banners">
                 <a href="/projects/+new-guided"><img src="/@@/add"
-                /> Create a new Project</a><br/>
+                /></a> <a href="/projects/+new-guided">Create a new project</a><br/>
                 <a href="/people/+newteam"><img src="/@@/add"
-                /> Create a new Team</a>
+                /></a> <a href="/people/+newteam">Create a new team</a>
               </div>
               <div class="home-banners">
-                <a href="/projects"><img src="/@@/project" alt="project icon"
-                /> Browse Projects</a><br/>
-                <a href="/people"><img src="/@@/crowd" alt="people icon"
-                /> Browse People &amp; Teams</a>
+                <a href="/projects"><img src="/@@/project" alt=""
+                /></a> <a href="/projects">Browse projects</a><br/>
+                <a href="/people"><img src="/@@/crowd" alt=""
+                /></a> <a href="/people">Browse people &amp; teams</a>
               </div>
               <div class="home-banners">
-                <a href="/+tour"><img src="/@@/maybe" alt="launchpad tour"
-                /> Take the tour</a>
+                <a href="/+tour"><img src="/@@/mentoring" alt=""
+                /></a> <a href="/+tour">Take the tour</a><br>
+                <a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
+                /></a> <a href="https://help.launchpad.net/">Read the guide</a>
               </div>
-            </div>
           </div>
         </div>
       </div><!-- 3 cols -->

@@ -59,7 +59,7 @@
 
 <metal:package_copy_request_list define-macro="package-copy-request-list">
   <tal:comment replace="nothing">
-    Presents a table listing all the published source packages for an
+    Presents a table listing all the package copy requests for a copy
     archive.
   </tal:comment>
   <tal:block define="requests view/package_copy_requests">
@@ -67,22 +67,42 @@
       There are currently no requests to copy packages into this archive.
     </p>
     <tal:request_list tal:condition="requests">
-      <p>
-        The following requests have been made to copy packages
-        into this archive:
-      </p>
-      <ul>
-        <li tal:repeat="request requests">
-          <tal:src_archive replace="request/source_archive/name" />
-          <tal:src_distroseries replace="request/source_distroseries/name" />-<tal:src_pocket replace="request/source_pocket/name/fmt:lower" />
-          <tal:src_component condition="request/source_component">
-            (<tal:src_component_name replace="request/source_component/name" />)
-          </tal:src_component>
-          requested by <tal:requestor replace="request/requester/name" />
-          at <tal:requested_date replace="request/date_created/fmt:approximatedate" />
-          (status: <tal:status replace="request/status/name" />)
-        </li>
-      </ul>
+      <table id="package-requests"
+        tal:attributes="summary string:Package copy requests for ${context/name}">
+        <thead>
+          <tr>
+            <th>Copied from</th>
+            <th>Series</th>
+            <th>Requested by</th>
+            <th>When Requested</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="request requests">
+            <td tal:define="archive request/source_archive">
+              <a tal:attributes="href archive/fmt:url"
+                 tal:content="archive/title" 
+                 tal:condition="archive/is_ppa" />
+              <tal:archive_title replace="archive/title" 
+                                 condition="not: archive/is_ppa" />
+            </td>
+            <td>
+              <tal:distroseries 
+                  replace="request/source_distroseries/displayname" />-<tal:src_pocket
+                  replace="request/source_pocket/name/fmt:lower" />
+              <tal:component condition="request/source_component">
+               (<tal:src_component_name
+                  replace="request/source_component/name" />)
+              </tal:component>
+            </td>
+            <td><a tal:attributes="href request/requester/fmt:url"
+                   tal:content="request/requester/displayname" /></td>
+            <td tal:content="request/date_created/fmt:approximatedate" />
+            <td tal:content="request/status/name/capitalize" />
+          </tr>
+        </tbody>
+      </table>
     </tal:request_list>
   </tal:block>
 </metal:package_copy_request_list>

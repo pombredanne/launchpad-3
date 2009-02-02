@@ -61,6 +61,7 @@ class BMPMailer(BranchMailer):
         self.requested_reviews = requested_reviews
         self.comment = comment
         self.review_diff = review_diff
+        self.template_params = self._generateTemplateParams()
 
     def sendAll(self):
         BranchMailer.sendAll(self)
@@ -139,11 +140,9 @@ class BMPMailer(BranchMailer):
                 self.review_diff.diff.text, content_type='text/x-diff',
                 inline=True, filename='review.diff')
 
-    def _getTemplateParams(self, email):
-        """Return a dict of values to use in the body and subject."""
-        # Expand the requested reviews.
-        params = BranchMailer._getTemplateParams(self, email)
-        params.update({
+    def _generateTemplateParams(self):
+        """For template params that don't change, calcualte just once."""
+        params = {
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.bzr_identity,
             'target_branch': self.merge_proposal.target_branch.bzr_identity,
@@ -154,7 +153,7 @@ class BMPMailer(BranchMailer):
             'gap': '',
             'reviews': '',
             'whiteboard': '', # No more whiteboard.
-            })
+            }
 
         requested_reviews = []
         for review in self.requested_reviews:
@@ -173,5 +172,11 @@ class BMPMailer(BranchMailer):
             params['comment'] = (self.comment.message.text_contents)
             if len(requested_reviews) > 0:
                 params['gap'] = '\n\n'
+        return params
 
+    def _getTemplateParams(self, email):
+        """Return a dict of values to use in the body and subject."""
+        # Expand the requested reviews.
+        params = BranchMailer._getTemplateParams(self, email)
+        params.update(self.template_params)
         return params

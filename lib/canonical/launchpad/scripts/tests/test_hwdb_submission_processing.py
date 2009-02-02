@@ -913,8 +913,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         """Test of HALDevice.is_real_device: ignored values of info.bus.
 
         A HAL device is considered to not be a real device, if its
-        info.bus proerty is 'net', 'scsi_generic', 'scsi_host', 'sound',
-        'ssb', or 'usb'.
+        info.bus proerty is 'drm', 'dvb', 'memstick_host', 'net',
+        'scsi_generic', 'scsi_host', 'sound', 'ssb', 'tty', 'usb'
+        or 'video4linux'.
         """
         UDI_SSB = '/org/freedesktop/Hal/devices/ssb__null__0'
         devices = [
@@ -938,7 +939,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
 
         ignored_buses = (
-            'net', 'scsi_generic', 'scsi_host', 'sound',  'ssb', 'usb',)
+            'drm', 'dvb', 'memstick_host', 'net', 'scsi_generic', 'scsi_host',
+            'sound', 'ssb', 'tty', 'usb', 'video4linux', )
         for tested_bus in ignored_buses:
             properties['info.bus'] = (tested_bus, 'str')
             parser.buildDeviceList(parsed_data)
@@ -1269,9 +1271,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('backlight', 'ieee1394', 'input', 'misc', 'mmc',
-                    'mmc_host', 'pcmcia', 'platform', 'pnp', 'power_supply',
-                    'unknown'):
+        for bus in ('backlight', 'bluetooth', 'ieee1394', 'input', 'misc',
+                    'mmc', 'mmc_host', 'pcmcia', 'platform', 'pnp',
+                    'power_supply', 'unknown'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)
             device = parser.hal_devices[self.UDI_SATA_CONTROLLER]

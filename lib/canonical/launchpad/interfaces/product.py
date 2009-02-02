@@ -476,6 +476,15 @@ class IProductPublic(
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
+    remote_product = exported(
+        TextLine(
+            title=_('Remote product'),
+            description=_(
+                "The ID of this project on its remote bug tracker.")))
+
+    upstream_bug_filing_url = Attribute(
+        "The URL of bug filing form on this project's upstream bug tracker")
+
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
                                   current_datetime=None):
@@ -794,3 +803,9 @@ class NoSuchProduct(NameLookupFailed):
     """Raised when we try to find a product that doesn't exist."""
 
     _message_prefix = "No such product"
+
+
+# Fix a circular import.
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+IDistributionSourcePackage['upstream_product'].schema = IProduct

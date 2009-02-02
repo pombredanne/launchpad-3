@@ -218,6 +218,7 @@ data in a bug task is derived from the bug.
   date_triaged: None
   importance: u'Low'
   is_complete: False
+  milestone_link: None
   owner_link: u'http://.../~name12'
   related_tasks_collection_link:
    u'http://api.../debian/+source/mozilla-firefox/+bug/1/related_tasks'
@@ -391,6 +392,42 @@ But we can't make it into a distro task.
   IllegalTarget: Upstream bug tasks may only be re-targeted to
   another project.
   <BLANKLINE>
+
+If the milestone of a task is on a target other than the new
+target, we reset it in order to avoid data inconsistencies.
+
+  >>> firefox_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
+  >>> patch = {u'milestone_link':
+  ...     webservice.getAbsoluteUrl('/firefox/+milestone/1.0')}
+  >>> print webservice.patch(
+  ...     firefox_bugtask['self_link'], 'application/json', dumps(patch))
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  >>> firefox_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
+  >>> print firefox_bugtask['milestone_link']
+  http://api.../firefox/+milestone/1.0
+  >>> print webservice.named_post(
+  ...     firefox_bugtask['self_link'],
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/jokosher'))
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  >>> jokosher_bugtask = webservice.get(
+  ...     firefox_bugtask['self_link'].replace(
+  ...         'firefox', 'jokosher')).jsonBody()
+  >>> print jokosher_bugtask['milestone_link']
+  None
+
+  >>> print webservice.named_post(
+  ...     jokosher_bugtask['self_link'],
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/firefox'))
+  HTTP/1.1 200 Ok
+  ...
 
 
 == Bug subscriptions ==
@@ -643,7 +680,7 @@ An attachment can be added to the bug:
   HTTP/1.1 201 Created
   Content-Length: 0
   Content-Type: text/plain
-  Location: http://.../bugs/1/attachments/1
+  Location: http://.../bugs/1/+attachment/1
 
 Now, bug 1 has one attachment:
 
@@ -655,10 +692,10 @@ Now, bug 1 has one attachment:
   total_size: 1
   ---
   bug_link: u'http://.../bugs/1'
-  data_link: u'http://.../bugs/1/attachments/1/data'
+  data_link: u'http://.../bugs/1/+attachment/1/data'
   message_link: u'http://.../firefox/+bug/1/comments/2'
   resource_type_link: u'http://.../#bug_attachment'
-  self_link: u'http://.../bugs/1/attachments/1'
+  self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
   ---
@@ -668,10 +705,10 @@ The attachment can be fetched directly:
   >>> [attachment] = attachments['entries']
   >>> pprint_entry(webservice.get(attachment['self_link']).jsonBody())
   bug_link: u'http://.../bugs/1'
-  data_link: u'http://.../bugs/1/attachments/1/data'
+  data_link: u'http://.../bugs/1/+attachment/1/data'
   message_link: u'http://.../firefox/+bug/1/comments/2'
   resource_type_link: u'http://.../#bug_attachment'
-  self_link: u'http://.../bugs/1/attachments/1'
+  self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
 
@@ -746,6 +783,23 @@ Once an attachment is uploaded, it is not possible to change it.
   ...     conn.close()
   >>> data
   '12345'
+
+But we can remove the attachment altogether.
+
+  >>> response = webservice.named_post(
+  ...     attachment['self_link'], 'removeFromBug')
+  >>> print response.getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> pprint_collection(attachments)
+  resource_type_link: u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'
+  start: None
+  total_size: 0
+  ---
+
 
 == Searching for bugs ==
 
@@ -833,12 +887,36 @@ setting the tags_combinator parameter to 'All'.
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> product_set = getUtility(IProductSet)
+    >>> milestone_set = getUtility(IMilestoneSet)
+    >>> firefox = product_set.getByName('firefox')
+    >>> firefox_1_0 = milestone_set.getByNameAndProduct(
+    ...     product=firefox, name='1.0')
+    >>> bug = factory.makeBug(product=firefox)
+    >>> bug.bugtasks[0].milestone = firefox_1_0
+    >>> logout()
+
     >>> pprint_collection(webservice.named_get(
     ...     '/mozilla', 'searchTasks',
     ...     milestone=webservice.getAbsoluteUrl(
     ...         '/mozilla/+milestone/1.0')).jsonBody())
-    start: None
-    total_size: 0
+    start: 0
+    total_size: 1
+    ...
+    ---
+
+The same search can be performed directly on the milestone too.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     webservice.getAbsoluteUrl('/mozilla/+milestone/1.0'),
+    ...     'searchTasks').jsonBody())
+    start: 0
+    total_size: 1
+    ...
     ---
 
 Search results can be ordered using the same string values used by
