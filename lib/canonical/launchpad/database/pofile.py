@@ -868,6 +868,9 @@ class POFile(SQLBase, POFileMixIn):
             import_rejected = True
             entry_to_import.error_output = "Too many plural forms."
         else:
+            # The import succeeded.  There may still be non-fatal errors
+            # or warnings for individual messages (kept as a list in
+            # "errors"), but we compose the text for that later.
             entry_to_import.error_output = None
 
         # Prepare the mail notification.
