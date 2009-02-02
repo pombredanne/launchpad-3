@@ -101,7 +101,7 @@ class TestPreviewDiff(TestCaseWithFactory):
         # Create and return a preview diff.
         mp = self.factory.makeBranchMergeProposal()
         login_person(mp.registrant)
-        mp.updateMergeDiff('content', u'stat', u'rev-a', u'rev-b')
+        mp.updatePreviewDiff('content', u'stat', u'rev-a', u'rev-b')
         # Make sure the librarian file is written.
         transaction.commit()
         return mp
@@ -110,15 +110,15 @@ class TestPreviewDiff(TestCaseWithFactory):
         # In order to test the interface provision, we need to make sure that
         # the associated diff object that is delegated to is also created.
         mp = self._createProposalWithPreviewDiff()
-        verifyObject(IPreviewDiff, mp.merge_diff)
+        verifyObject(IPreviewDiff, mp.preview_diff)
 
     def test_canonicalUrl(self):
         # The canonical_url of the merge diff is '+preview' after the
         # canonical_url of the merge proposal itself.
         mp = self._createProposalWithPreviewDiff()
         self.assertEqual(
-            canonical_url(mp) + '/+preview',
-            canonical_url(mp.merge_diff))
+            canonical_url(mp) + '/+preview-diff',
+            canonical_url(mp.preview_diff))
 
 
 def test_suite():

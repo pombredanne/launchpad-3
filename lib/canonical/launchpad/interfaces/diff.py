@@ -111,3 +111,8 @@ class IPreviewDiff(IDiff):
         Text(title=_(
                 'The conflicts text describing any path or text conflicts.'),
              readonly=True))
+
+    branch_merge_proposal = exported(
+        Reference(
+            Interface, readonly=True,
+            title=_('The branch merge proposal that diff relates to.')))

@@ -12,6 +12,11 @@
   <class class="canonical.launchpad.database.diff.PreviewDiff">
     <allow interface="canonical.launchpad.interfaces.diff.IPreviewDiff" />
   </class>
+  <browser:url
+      for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+      path_expression="string:+preview-diff"
+      attribute_to_parent="branch_merge_proposal"
+      rootsite="code" />
   <securedutility
       component="canonical.launchpad.database.diff.StaticDiff"
       provides="canonical.launchpad.interfaces.diff.IStaticDiffSource" >

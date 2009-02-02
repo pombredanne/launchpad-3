@@ -150,7 +150,7 @@ class PreviewDiff(Storm):
     conflicts = Unicode()
 
     branch_merge_proposal = Reference(
-        "<primary key>", "BranchMergeProposal.preview_diff_id",
+        "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
         on_remote=True)
 
     def update(self, diff_content, diffstat,
