@@ -204,7 +204,7 @@ class ParsedLibrarianApacheLog(Storm):
     """See `IParsedLibrarianApacheLog`"""
 
     implements(IParsedLibrarianApacheLog)
-    __storm_table__ = 'LibraryFileDownloadCount'
+    __storm_table__ = 'ParsedLibrarianApacheLog'
 
     id = Int(primary=True)
     file_name = Unicode(allow_none=False)
