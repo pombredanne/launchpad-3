@@ -142,7 +142,7 @@ class URIWidget(TextWidget):
     def _toFieldValue(self, input):
         if isinstance(input, list):
             raise UnexpectedFormData('Only a single value is expected')
-        return TextWidget._toFieldValue(self, self.field._toFieldValue(input))
+        return TextWidget._toFieldValue(self, input)
 
 
 class DelimitedListWidget(TextAreaWidget):
