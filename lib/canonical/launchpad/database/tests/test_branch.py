@@ -53,6 +53,7 @@ from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.xmlrpc.faults import (
@@ -1615,14 +1616,14 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_providesInterface(self):
         """Ensure that BranchDiffJob implements IBranchDiffJob."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', False, 'subject')
         verifyObject(IRevisionMailJob, job)
 
     def test_run_sends_mail(self):
         """Ensure RevisionMailJob.run sends mail with correct values."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
@@ -1637,24 +1638,25 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual(
             'hello\n'
             '\n--\n\n'
-            'http://code.launchpad.dev/~person-name2/product-name8/branch4\n'
-            '\nYou are subscribed to branch '
-            'lp://dev/~person-name2/product-name8/branch4.\n'
+            '%(url)s\n'
+            '\nYou are subscribed to branch %(identity)s.\n'
             'To unsubscribe from this branch go to'
-            ' http://code.launchpad.dev/~person-name2/product-name8/branch4/'
-            '+edit-subscription.\n',
+            ' %(url)s/+edit-subscription.\n' % {
+                'url': canonical_url(branch),
+                'identity': branch.bzr_identity
+                },
             mail.get_payload(decode=True))
 
     def test_revno_string(self):
         """Ensure that revnos can be strings."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 'removed', 'from@example.com', 'hello', False, 'subject')
         self.assertEqual('removed', job.revno)
 
     def test_revno_long(self):
         "Ensure that the revno is a long, not an int."
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 1, 'from@example.com', 'hello', False, 'subject')
         self.assertIsInstance(job.revno, long)
@@ -1684,13 +1686,13 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_iterReady_ignores_BranchDiffJobs(self):
         """Only BranchDiffJobs should not be listed."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         BranchDiffJob.create(branch, 0, 1)
         self.assertEqual([], list(RevisionMailJob.iterReady()))
 
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.org', 'body', False, 'subject')
         job.job.sync()
@@ -1699,7 +1701,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_iterReady_excludes_unready_jobs(self):
         """Unready jobs should not be listed."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.org', 'body', False, 'subject')
         job.job.start()
