@@ -194,13 +194,15 @@ class IBranchMergeProposal(Interface):
             description=_("The person that accepted (or rejected) the code "
                           "for merging.")))
 
-    review_diff = Object(
-        title=_('The diff to be used for reviews.'), schema=IStaticDiff)
+    review_diff = Reference(
+        IStaticDiff, title=_('The diff to be used for reviews.'),
+        readonly=True)
 
-    merge_diff = Object(
-        title=_('The current diff of the source branch against the '
-                'target branch.'),
-        schema=IPreviewDiff, readonly=True)
+    merge_diff = exported(
+        Reference(
+            IPreviewDiff,
+            title=_('The current diff of the source branch against the '
+                    'target branch.'), readonly=True))
 
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))

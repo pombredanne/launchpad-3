@@ -26,10 +26,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
-    export_as_webservice_entry()
-
     text = exported(
-        Text(title=_('Textual contents of a diff.')), readonly=True)
+        Text(title=_('Textual contents of a diff.'), readonly=True))
 
     diff_text = Object(
         title=_('Content of this diff'), required=True,
@@ -79,7 +77,7 @@ class IStaticDiffSource(Interface):
         """
 
 
-class IPreviewDiff(Interface):
+class IPreviewDiff(IDiff):
     """A diff generated to show actual diff between two branches.
 
     This diff will be used primarily for branch merge proposals where we are

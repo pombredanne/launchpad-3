@@ -7,13 +7,15 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
-from canonical.testing import LaunchpadZopelessLayer, DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 import transaction
 
 from canonical.launchpad.database.diff import Diff, StaticDiff
 from canonical.launchpad.interfaces.diff import (
-    IDiff, IStaticDiff, IStaticDiffSource)
-from canonical.launchpad.testing import TestCaseWithFactory
+    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
+from canonical.launchpad.testing import login_person, TestCaseWithFactory
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 
 
@@ -88,6 +90,35 @@ class TestStaticDiff(TestCaseWithFactory):
         static_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'abc')
         transaction.commit()
         self.assertEqual('abc', static_diff.diff.text)
+
+
+class TestPreviewDiff(TestCaseWithFactory):
+    """Test that StaticDiff objects work."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _createProposalWithPreviewDiff(self):
+        # Create and return a preview diff.
+        mp = self.factory.makeBranchMergeProposal()
+        login_person(mp.registrant)
+        mp.updateMergeDiff('content', u'stat', u'rev-a', u'rev-b')
+        # Make sure the librarian file is written.
+        transaction.commit()
+        return mp
+
+    def test_providesInterface(self):
+        # In order to test the interface provision, we need to make sure that
+        # the associated diff object that is delegated to is also created.
+        mp = self._createProposalWithPreviewDiff()
+        verifyObject(IPreviewDiff, mp.merge_diff)
+
+    def test_canonicalUrl(self):
+        # The canonical_url of the merge diff is '+preview' after the
+        # canonical_url of the merge proposal itself.
+        mp = self._createProposalWithPreviewDiff()
+        self.assertEqual(
+            canonical_url(mp) + '/+preview',
+            canonical_url(mp.merge_diff))
 
 
 def test_suite():
