@@ -32,6 +32,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, stepthrough)
+from canonical.widgets import DateTimeWidget
 
 
 class ProductReleaseNavigation(Navigation):
@@ -91,6 +92,8 @@ class ProductReleaseAddView(LaunchpadFormView):
         'changelog',
         ]
 
+    custom_widget('datereleased', DateTimeWidget)
+    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
     custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
     def initialize(self):
@@ -151,6 +154,10 @@ class ProductReleaseEditView(LaunchpadEditFormView):
         "release_notes",
         "changelog",
         ]
+
+    custom_widget('datereleased', DateTimeWidget)
+    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
+    custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
     @action('Change', name='change')
     def change_action(self, action, data):

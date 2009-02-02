@@ -219,7 +219,7 @@ class IProductReleasePublic(Interface):
 
     datereleased = exported(
         Datetime(
-            title=_('Date Released'), required=True,
+            title=_('Date released'), required=True,
             readonly=False,
             description=_('The date this release was published. Before '
                           'release, this should have an estimated '
@@ -257,16 +257,18 @@ class IProductReleasePublic(Interface):
                           'be shown at the top of the release page, and in '
                           'listings.'))
 
-    release_notes = Text(
-            title=_("Release notes"), required=False, readonly=True,
-            description=_('A detailed description of the new features '
+    release_notes = exported(
+        Text(
+            title=_("Release notes"), required=False,
+            description=_('A description of important new features '
                           '(though the changelog below might repeat some of '
-                          'this information). The description here will be '
-                          'shown on the project release home page.'))
+                          'this information).'))
+        )
 
     changelog = exported(
         Text(
-            title=_('Changelog'), required=False)
+            title=_('Changelog'), required=False,
+            description=_('A description of every change in the release.'))
         )
 
     datecreated = exported(

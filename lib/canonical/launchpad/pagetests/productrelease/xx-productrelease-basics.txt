@@ -28,12 +28,16 @@ release in the series.
     >>> browser.title
     'Register a new Milestone 1.0 for Mozilla Firefox release in Launchpad'
 
+    >>> browser.getControl('Date released').value = '2008-01-01'
     >>> browser.getControl('Release notes').value = 'Released 1.0'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
     >>> browser.getControl('Publish release').click()
-
     >>> browser.url
     'http://launchpad.dev/firefox/trunk/1.0'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
+    Released 1.0
+    >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))
+    Fix Foo
 
 After creating a product release on an active milestone, the user
 will be warned that the milestone has been deactivated.
@@ -43,7 +47,7 @@ will be warned that the milestone has been deactivated.
     &amp; blueprints cannot be targeted to a milestone in the past.']
     >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
     >>> print get_feedback_messages(browser.contents)
-    [u'A product release already exists for this milestone']
+    [u'A product release already exists for this milestone.']
 
     # The "Don't deactivate milestone" checkbox will eliminate
     # the error message.
@@ -51,6 +55,7 @@ will be warned that the milestone has been deactivated.
     >>> browser.getControl('Name').value = 'bar'
     >>> browser.getControl('Register milestone').click()
     >>> browser.open('http://launchpad.dev/firefox/+milestone/bar/+addrelease')
+    >>> browser.getControl("Date released").value = '2009-01-01'
     >>> browser.getControl("Don't deactivate milestone.").selected = True
     >>> browser.getControl('Publish release').click()
     >>> print get_feedback_messages(browser.contents)
@@ -76,7 +81,7 @@ has a productrelease.
     'http://launchpad.dev/firefox/trunk/1.0/+edit'
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     tag.renderContents()
-    'A product release already exists for this milestone'
+    'A product release already exists for this milestone.'
 
 
 == Editing a product release ==
@@ -107,8 +112,11 @@ Let's add a release as Jeff:
     >>> browser.getControl('Register milestone').click()
     >>> browser.getLink(url='+milestone/0.6.6.6').click()
     >>> browser.getLink('Publish release').click()
+    >>> browser.getControl('Date released').value = '2008-12-01'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
     >>> browser.getControl('Publish release').click()
+    >>> print browser.url
+    http://launchpad.dev/tomcat/trunk/0.6.6.6
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 

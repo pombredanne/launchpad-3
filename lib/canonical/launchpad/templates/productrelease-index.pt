@@ -29,7 +29,8 @@
         this release highlights.
     </p>
 
-    <div tal:content="structure context/release_notes/fmt:text-to-html">
+    <div id="release_notes"
+         tal:content="structure context/release_notes/fmt:text-to-html">
         $ProductRelease.release_notes go here.
     </div>
 
@@ -83,8 +84,9 @@
     </form>
 
     <h2>Changelog:</h2>
-    <div tal:content="structure context/changelog/fmt:text-to-html">
-        $ProductRelease.release_notes go here.
+    <div id="changelog"
+         tal:content="structure context/changelog/fmt:text-to-html">
+        $ProductRelease.changelog go here.
     </div>
 
     <p tal:condition="not: context/changelog">

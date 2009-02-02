@@ -700,6 +700,7 @@ Project releases are available at their canonical URL on the API virtual host.
     milestone_link: u'http://.../firefox/+milestone/1.0.0'
     owner_link: u'http://.../~name12'
     project_link: u'http://.../firefox'
+    release_notes: u'...'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/1.0/1.0.0'
     title: u'Mozilla Firefox 1.0.0 "First Stable Release"'
@@ -712,7 +713,8 @@ simplifies this for us.
 
     >>> response = webservice.named_post(
     ...     milestone['self_link'], 'createProductRelease', {},
-    ...     changelog='Added 5,000 features.')
+    ...     date_released='2000-01-01T01:01:01+00:00Z',
+    ...     release_notes='New stuff', changelog='Added 5,000 features.')
     >>> print response
     HTTP/1.1 201 Created
     ...
@@ -720,6 +722,8 @@ simplifies this for us.
     >>> release = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print release['version']
     alpha1
+    >>> print release['release_notes']
+    New stuff
     >>> print release['changelog']
     Added 5,000 features.
 
@@ -727,12 +731,12 @@ Only one product release can be created per milestone.
 
     >>> response = webservice.named_post(
     ...     milestone['self_link'], 'createProductRelease', {},
+    ...     date_released='2000-01-01T01:01:01+00:00Z',
     ...     changelog='Added 5,000 features.')
     >>> print response
     HTTP/1.1 500 Internal Server Error
     ...
-        assert self.product_release is None
-    AssertionError
+    AssertionError: A milestone can only have one Productrelease.
 
 
 == Project release entries ==

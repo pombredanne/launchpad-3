@@ -113,7 +113,9 @@ These are created with the addRelease() method of IProductSeries.
 
     >>> login_person(firefox_1_0.owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.9')
-    >>> firefox_109 = milestone.createProductRelease(owner)
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+    >>> firefox_109 = milestone.createProductRelease(owner, datetime.now(UTC))
     >>> from canonical.launchpad.interfaces.productrelease import (
     ...     IProductRelease)
     >>> verifyObject(IProductRelease, firefox_109)
@@ -132,7 +134,8 @@ If a product release has files associated with it, though, it can't be
 deleted.
 
     >>> milestone = firefox_1_0.newMilestone('1.0.10')
-    >>> firefox_1010 = milestone.createProductRelease(owner)
+    >>> firefox_1010 = milestone.createProductRelease(owner,
+    ...                                               datetime.now(UTC))
     >>> firefox_1010.addReleaseFile('test', 'test', 'text/plain', owner)
     <ProductReleaseFile...
     >>> firefox_1010.destroySelf()

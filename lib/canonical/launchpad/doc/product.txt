@@ -393,7 +393,7 @@ We can filter for specifications that contain specific text:
 We can use IProduct.milestones to get all milestones associated with any
 ProductSeries of a product.
 
-    >>> from datetime import datetime
+    >>> from datetime import date
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
@@ -404,13 +404,13 @@ registry experts, or admins.
     >>> product_owner_email = firefox.owner.preferredemail.email
     >>> login("no-priv@canonical.com")
     >>> firefox_one_zero.newMilestone(
-    ...     name='impossible', dateexpected=datetime(2018, 10, 1))
+    ...     name='impossible', dateexpected=date(2018, 10, 1))
     Traceback (most recent call last):
     ...
     Unauthorized: (<ProductSeries at ...>, 'newMilestone', 'launchpad.Edit')
     >>> login(product_owner_email)
     >>> firefox_milestone = firefox_one_zero.newMilestone(
-    ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
+    ...     name='1.0-rc1', dateexpected=date(2018, 10, 1))
 
 They're ordered by dateexpected.
 

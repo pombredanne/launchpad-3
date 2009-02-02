@@ -27,7 +27,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
-    REQUEST_USER)
+    rename_parameters_as, REQUEST_USER)
 
 class MilestoneNameField(ContentNameField):
 
@@ -132,14 +132,18 @@ class IMilestone(IHasBugs):
         readonly=True)
 
     @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(datereleased='date_released')
     @export_factory_operation(
         IProductRelease,
-        ['changelog'])
-    def createProductRelease(owner, changelog=None):
+        ['datereleased', 'changelog', 'release_notes'])
+    def createProductRelease(owner, datereleased,
+                             changelog=None, release_notes=None):
         """Create a new ProductRelease.
 
         :param owner: `IPerson` object who manages the release.
-        :param changelog: Highlighted changes in each version.
+        :param datereleased: Date of the product release.
+        :param changelog: Detailed changes in each version.
+        :param release_notes: Overview of changes in each version.
         :returns: `IProductRelease` object.
         """
 

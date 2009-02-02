@@ -49,7 +49,6 @@ Add a file alias to the productrelease.
     >>> from canonical.launchpad.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")
-    >>> from datetime import datetime
     >>> from pytz import UTC
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO
@@ -191,13 +190,14 @@ Only the product owner can create a new release.
 
     >>> owner_email = firefox.owner.preferredemail.email
     >>> login(ANONYMOUS)
-    >>> trunk.milestones[0].createProductRelease(firefox.owner)
+    >>> trunk.milestones[0].createProductRelease(firefox.owner, now)
     Traceback (most recent call last):
     ...
     Unauthorized: (<Milestone ...>, 'createProductRelease', 'launchpad.Edit')
     >>> login(owner_email)
     >>> milestone = trunk.newMilestone('8.0', code_name='ralph')
-    >>> milestone.createProductRelease(firefox.owner, changelog='New in v2')
+    >>> milestone.createProductRelease(firefox.owner, now,
+    ...                                changelog='New in v2')
     <ProductRelease at ...>
     >>> for release in release_set.getReleasesForSerieses(series):
     ...     print release.version
