@@ -10,6 +10,8 @@ import os
 import mimetypes
 import urlparse
 import urllib
+from datetime import datetime
+import pytz
 
 from cscvs.dircompare import path
 
@@ -121,10 +123,11 @@ class ProductReleaseFinder:
                 # Normally, a milestone is deactived when that version is
                 # released. This is only safe to do in an automated script
                 # if we are not using a pre-existing milestone.
-                milestone.active = False
+                milestone.visible = False
             release = milestone.product_release
             if release is None:
-                release = milestone.createProductRelease(owner=product.owner)
+                release = milestone.createProductRelease(
+                    owner=product.owner, datereleased=datetime.now(pytz.UTC))
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
 

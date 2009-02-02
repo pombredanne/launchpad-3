@@ -49,6 +49,7 @@ Add a file alias to the productrelease.
     >>> from canonical.launchpad.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")
+    >>> from datetime import datetime
     >>> from pytz import UTC
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO

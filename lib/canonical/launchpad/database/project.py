@@ -17,7 +17,7 @@ from sqlobject import (
 from storm.expr import And, In, SQL
 from storm.store import Store
 
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol

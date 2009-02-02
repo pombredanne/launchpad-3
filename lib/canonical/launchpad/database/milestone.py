@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import datetime
-import pytz
 from zope.interface import implements
 
 from sqlobject import (
@@ -30,7 +29,6 @@ from canonical.launchpad.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.structuralsubscription import (

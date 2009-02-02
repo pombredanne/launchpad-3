@@ -12,7 +12,6 @@ from sqlobject import (
     BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import SQL, Join
-from storm.store import Store
 
 from canonical.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty

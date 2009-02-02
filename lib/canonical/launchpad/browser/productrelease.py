@@ -17,14 +17,13 @@ import mimetypes
 
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.schema import Bool
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
+    IProductRelease, IProductReleaseFileAddForm)
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
