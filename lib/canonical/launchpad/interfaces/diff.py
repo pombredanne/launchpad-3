@@ -12,7 +12,7 @@ __all__ = [
     'IStaticDiffSource',
     ]
 
-from zope.schema import Object, Int, Text, TextLine
+from zope.schema import Bytes, Int, Text, TextLine
 from zope.interface import Interface
 
 from canonical.lazr.fields import Reference
@@ -20,18 +20,15 @@ from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
-    text = exported(
-        Text(title=_('Textual contents of a diff.'), readonly=True))
+    text = Text(title=_('Textual contents of a diff.'), readonly=True)
 
-    diff_text = Object(
-        title=_('Content of this diff'), required=True,
-        schema=ILibraryFileAlias)
+    diff_text = exported(
+        Bytes(title=_('Content of this diff'), required=True, readonly=True))
 
     diff_lines_count = exported(
         Int(title=_('The number of lines in this diff.'), readonly=True))
@@ -102,8 +99,7 @@ class IPreviewDiff(IDiff):
                     'generate the diff.'),
             readonly=True))
 
-    diff = exported(
-        Reference(IDiff, title=_('The Diff object.'), readonly=True))
+    diff =  Reference(IDiff, title=_('The Diff object.'), readonly=True)
 
     conflicts = exported(
         Text(title=_(

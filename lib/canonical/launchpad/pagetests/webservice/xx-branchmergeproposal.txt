@@ -70,8 +70,22 @@ merge would look like if the source branch was merged into the target branch.
 The diff is now visible through the merge proposal.
 
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
-    >>> merge_proposal['preview_diff_link']
     >>> preview_diff = webservice.get(
     ...     merge_proposal['preview_diff_link']).jsonBody()
     >>> pprint_entry(preview_diff)
+    added_lines_count: None
+    branch_merge_proposal_link:
+      u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
+    conflicts: u'oh, no conflicts'
+    dependent_revision_id: u'OOPS'
+    diff_lines_count: None
+    diff_text_link:
+      u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
+    diffstat: u'M fooix.txt'
+    removed_lines_count: None
+    resource_type_link: u'http://api.launchpad.dev/beta/#preview_diff'
+    self_link:
+      u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff'
+    source_revision_id: u'rev-a'
+    target_revision_id: u'rev-b'
 
