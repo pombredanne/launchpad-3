@@ -24,7 +24,8 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
@@ -45,8 +46,8 @@ from canonical.launchpad.interfaces import (
     SpecificationImplementationStatus, SpecificationSort)
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                    HasTranslationImportsMixin,
+class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
+                    HasSpecificationsMixin, HasTranslationImportsMixin,
                     StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
@@ -101,6 +102,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def releases(self):
+        """See `IProductSeries`."""
         store = Store.of(self)
         result = store.find(
             ProductRelease,
@@ -119,19 +121,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def displayname(self):
         return self.name
-
-    @property
-    def all_milestones(self):
-        """See IProductSeries."""
-        return Milestone.selectBy(
-            productseries=self, orderBy=['-dateexpected', '-name'])
-
-    @property
-    def milestones(self):
-        """See IProductSeries."""
-        return Milestone.selectBy(
-            productseries=self, visible=True,
-            orderBy=['-dateexpected', '-name'])
 
     @property
     def parent(self):

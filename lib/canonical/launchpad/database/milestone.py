@@ -43,13 +43,14 @@ class HasMilestonesMixin:
 
     _FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)
 
-    def _sort_key(self, milestone):
+    @classmethod
+    def milestone_sort_key(cls, milestone):
         """Enable sorting by the Milestone dateexpected and name."""
         if milestone.dateexpected is None:
             # A datetime.datetime object cannot be compared with None.
             # Milestones with dateexpected=None are sorted as being
             # way in the future.
-            date = self._FUTURE_NONE
+            date = cls._FUTURE_NONE
         elif isinstance(milestone.dateexpected, datetime.datetime):
             # XXX: The Milestone.dateexpected should be changed into
             # a date column, since the class defines the field as a DateCol,
@@ -66,19 +67,20 @@ class HasMilestonesMixin:
             return (Milestone.product == self)
         elif IProductSeries.providedBy(self):
             return (Milestone.productseries == self)
-        elif IProject.providedBy(self):
-            return (Milestone.project == self)
         elif IDistribution.providedBy(self):
             return (Milestone.distribution == self)
         elif IDistroSeries.providedBy(self):
             return (Milestone.distroseries == self)
+        else:
+            raise AssertionError(
+                "Unexpected class for mixin: %r" % self)
 
     @property
     def all_milestones(self):
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getCondition())
-        return sorted(result, key=self._sort_key, reverse=True)
+        return sorted(result, key=self.milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
@@ -87,7 +89,7 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getCondition(),
                                 Milestone.visible == True))
-        return sorted(result, key=self._sort_key, reverse=True)
+        return sorted(result, key=self.milestone_sort_key, reverse=True)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
@@ -106,6 +108,11 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
+    # XXX: The Milestone.dateexpected should be changed into
+    # a date column, since the class defines the field as a DateCol,
+    # so that a list of milestones can't have some dateexpected
+    # attributes that are datetimes and others that are dates, which
+    # can't be compared.
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
     summary = StringCol(notNull=False, default=None)

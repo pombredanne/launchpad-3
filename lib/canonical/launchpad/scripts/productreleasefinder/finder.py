@@ -118,6 +118,10 @@ class ProductReleaseFinder:
             if milestone is None:
                 series = product.getSeries(series_name)
                 milestone = series.newMilestone(release_name)
+                # Normally, a milestone is deactived when that version is
+                # released. This is only safe to do in an automated script
+                # if we are not using a pre-existing milestone.
+                milestone.active = False
             release = milestone.product_release
             if release is None:
                 release = milestone.createProductRelease(owner=product.owner)

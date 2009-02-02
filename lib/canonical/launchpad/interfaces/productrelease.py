@@ -245,17 +245,18 @@ class IProductReleasePublic(Interface):
         title=_('Release series'), readonly=True,
         vocabulary='FilteredProductSeries')
 
-    codename = TextLine(title=u'Code name', required=False, readonly=True,
-                 description=u'The release code-name. Famously, one Gnome '
-                 'release was code-named "that, and a pair of testicles", '
-                 "but you don't have to be as brave with your own release "
-                 'codenames.')
+    codename = TextLine(
+        title=u'Code name', required=False, readonly=True,
+        description=u'The release code-name. Famously, one Gnome '
+        'release was code-named "that, and a pair of testicles", '
+        "but you don't have to be as brave with your own release "
+        'codenames.')
 
     summary = Text(
-            title=_("Summary"), required=False, readonly=True,
-            description=_('A brief summary of the release highlights, to '
-                          'be shown at the top of the release page, and in '
-                          'listings.'))
+        title=_("Summary"), required=False, readonly=True,
+        description=_('A brief summary of the release highlights, to '
+                        'be shown at the top of the release page, and in '
+                        'listings.'))
 
     release_notes = exported(
         Text(
@@ -300,11 +301,11 @@ class IProductReleasePublic(Interface):
             value_type=Reference(schema=IProductReleaseFile)))
 
     milestone = exported(
-            Reference(
-                title=u"The milestone for this release.",
-                # Schema is set to IMilestone in interfaces/milestone.py.
-                schema=Interface,
-                required=True))
+        Reference(
+            title=u"The milestone for this release.",
+            # Schema is set to IMilestone in interfaces/milestone.py.
+            schema=Interface,
+            required=True))
 
     def getFileAliasByName(name):
         """Return the `LibraryFileAlias` by file name.

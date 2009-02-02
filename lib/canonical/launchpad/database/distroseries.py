@@ -56,7 +56,8 @@ from canonical.launchpad.database.distroseries_translations_copy import (
     copy_active_translations)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -109,7 +110,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin,
+                   HasTranslationImportsMixin, HasMilestonesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
@@ -197,19 +198,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         DistroArchSeries.distroseries = %s AND
         DistroArchSeries.supports_virtualized = True
         """ % sqlvalues(self), orderBy='architecturetag')
-
-    @property
-    def all_milestones(self):
-        """See IDistroSeries."""
-        return Milestone.selectBy(
-            distroseries=self, orderBy=['-dateexpected', '-name'])
-
-    @property
-    def milestones(self):
-        """See `IDistroSeries`."""
-        return Milestone.selectBy(
-            distroseries=self, visible=True,
-            orderBy=['-dateexpected', '-name'])
 
     @property
     def parent(self):

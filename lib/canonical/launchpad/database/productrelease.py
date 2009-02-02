@@ -55,6 +55,7 @@ class ProductRelease(SQLBase):
         """Backwards compatibile codename attribute.
 
         This attribute was moved to the Milestone."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
         return self.milestone.code_name
 
     @property
@@ -62,6 +63,7 @@ class ProductRelease(SQLBase):
         """Backwards compatibile version attribute.
 
         This attribute was replaced by the Milestone.name."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
         return self.milestone.name
 
     @property
@@ -69,6 +71,7 @@ class ProductRelease(SQLBase):
         """Backwards compatibile summary attribute.
 
         This attribute was replaced by the Milestone.summary."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
         return self.milestone.summary
 
     @property
@@ -76,6 +79,7 @@ class ProductRelease(SQLBase):
         """Backwards compatibile summary attribute.
 
         This attribute was replaced by the Milestone.productseries."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
         return self.milestone.productseries
 
     @property
@@ -83,6 +87,7 @@ class ProductRelease(SQLBase):
         """Backwards compatibile summary attribute.
 
         This attribute was replaced by the Milestone.productseries.product."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
         return self.productseries.product
 
     @property
