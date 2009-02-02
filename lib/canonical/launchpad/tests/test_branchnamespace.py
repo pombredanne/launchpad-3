@@ -531,6 +531,15 @@ class TestNamespaceSet(TestCaseWithFactory):
         found_branch = self.namespace_set.traverse(segments)
         self.assertEqual(branch, found_branch)
 
+    def test_traverse_project_branch(self):
+        # IBranchNamespaceSet.traverse raises NoSuchProduct if the product is
+        # actually a project.
+        person = self.factory.makePerson()
+        project = self.factory.makeProject()
+        segments = iter([person.name, project.name, 'branch'])
+        self.assertRaises(
+            NoSuchProduct, self.namespace_set.traverse, segments)
+
     def test_traverse_package_branch(self):
         # IBranchNamespaceSet.traverse returns a branch based on an iterable
         # of path segments, including package branches.
@@ -608,6 +617,16 @@ class TestNamespaceSet(TestCaseWithFactory):
         self.assertRaises(
             InvalidNamespace,
             self.namespace_set.traverse, iter([person.name]))
+
+    def test_last_segment_none(self):
+        # If the last name passed to traverse is None, raise an error (rather
+        # than returning None).
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            AssertionError,
+            self.namespace_set.traverse,
+            iter([person.name, product.name, None]))
 
 
 def test_suite():

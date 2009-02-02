@@ -33,8 +33,13 @@ from canonical.lazr.fields import Reference
 class IOpenIDAuthorization(Interface):
     id = Int(title=u'ID', required=True)
 
+    # person and personID are deprecated, as the OpenIDAuthorization
+    # database table now references Account rather than Person.
     personID = Int(title=u'Person', required=True, readonly=True)
     person = Attribute('The IPerson this is for')
+
+    accountID = Int(title=u'Account', required=True, readonly=True)
+    account = Attribute('The IAccount this is for')
 
     client_id = TextLine(title=u'Client ID', required=False)
 

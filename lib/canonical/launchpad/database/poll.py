@@ -202,10 +202,19 @@ class Poll(SQLBase):
         # For now, this method works only for SIMPLE-style polls. This is
         # not a problem as CONDORCET-style polls are disabled.
         assert self.type == PollAlgorithm.SIMPLE
-        query = ("SELECT option FROM Vote WHERE poll = %d GROUP BY option "
-                 "HAVING COUNT(*) = (SELECT COUNT(*) FROM Vote WHERE poll = %d "
-                 "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)"
-                 % (self.id, self.id))
+        query = """
+            SELECT option
+            FROM Vote
+            WHERE poll = %d AND option IS NOT NULL
+            GROUP BY option
+            HAVING COUNT(*) = (
+                SELECT COUNT(*)
+                FROM Vote
+                WHERE poll = %d
+                GROUP BY option
+                ORDER BY COUNT(*) DESC LIMIT 1
+                )
+            """ % (self.id, self.id)
         results = Store.of(self).execute(query).get_all()
         if not results:
             return None

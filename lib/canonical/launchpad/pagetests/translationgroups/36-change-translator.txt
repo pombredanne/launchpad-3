@@ -45,11 +45,11 @@ exist.
     >>> browser.getControl('Language').value = ['ab']
     >>> browser.getControl('Change').click()
 
-    # We stay in the same page (+edit is the default view for
+    # We stay in the same page (+admin is the default view for
     # polyglot/af/).
 
     >>> print browser.url
-    http://translations.launchpad.dev/+groups/polyglot/af/+edit
+    http://translations.launchpad.dev/+groups/polyglot/af/+admin
 
 the system detects it and notify the user that is not possible.
 

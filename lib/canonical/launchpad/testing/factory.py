@@ -31,40 +31,66 @@ from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.interfaces import (
-    AccountStatus, BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
-    CodeImportResultStatus, CodeImportReviewStatus,
-    CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
-    EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
-    ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
-    ILibraryFileAliasSet, IPOTemplateSet, IPerson, IPersonSet, IProductSet,
-    IProjectSet, IRevisionSet, IShippingRequestSet, ISourcePackageNameSet,
-    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
-    License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
-    ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
+from canonical.launchpad.interfaces.branch import (
+    BranchType, IBranchSet, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
-from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.codeimport import ICodeImportSet
+from canonical.launchpad.interfaces.codeimportevent import ICodeImportEventSet
+from canonical.launchpad.interfaces.codeimportmachine import (
+    CodeImportMachineState, ICodeImportMachineSet)
+from canonical.launchpad.interfaces.codeimportresult import (
+    CodeImportResultStatus, ICodeImportResultSet)
+from canonical.launchpad.interfaces.codeimport import CodeImportReviewStatus
+from canonical.launchpad.interfaces.country import ICountrySet
+from canonical.launchpad.interfaces.distribution import (
+    IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.poll import (
     IPollSet, PollAlgorithm, PollSecrecy)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License)
+from canonical.launchpad.interfaces.productseries import (
+    IProductSeries, RevisionControlSystems)
+from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.shipit import (
+    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
+    ShippingRequestStatus)
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.interfaces.specification import (
+    ISpecificationSet, SpecificationDefinitionStatus)
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroupSet)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
@@ -321,7 +347,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             poll_type=PollAlgorithm.SIMPLE)
 
     def makeTranslationGroup(
-        self, owner, name=None, title=None, summary=None):
+        self, owner, name=None, title=None, summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
         if name is None:
             name = self.getUniqueString("translationgroup")
@@ -330,7 +356,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if summary is None:
             summary = self.getUniqueString("summary")
         return getUtility(ITranslationGroupSet).new(
-            name, title, summary, owner)
+            name, title, summary, url, owner)
 
     def makeMilestone(self, product=None, distribution=None, name=None):
         if product is None and distribution is None:
@@ -515,6 +541,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.user_branch = branch
         return branch
+
+    def makeBranchMergeQueue(self, name=None):
+        """Create a new multi branch merge queue."""
+        if name is None:
+            name = self.getUniqueString('name')
+        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
+            registrant=self.makePerson(),
+            owner=self.makePerson(),
+            name=name,
+            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
@@ -1124,15 +1160,16 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
         """Make a new `POTMsgSet` in the given template."""
-        if sequence is None:
-            sequence = self.getUniqueInteger()
         if singular is None and plural is None:
             singular = self.getUniqueString()
-        return potemplate.createMessageSetFromText(singular, plural)
+        potmsgset = potemplate.createMessageSetFromText(singular, plural)
+        if sequence is not None:
+            potmsgset.setSequence(potemplate, sequence)
+        return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, reviewer=None,
-                               translations=None):
+                               translations=None, lock_timestamp=None):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -1145,7 +1182,34 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return potmsgset.updateTranslation(pofile, translator, translations,
                                            is_imported=False,
-                                           lock_timestamp=None)
+                                           lock_timestamp=lock_timestamp)
+
+    def makeTranslation(self, pofile, sequence,
+                        english=None, translated=None,
+                        is_imported=False):
+        """Add a single current translation entry to the given pofile.
+        This should only be used on pristine pofiles with pristine
+        potemplates to avoid conflicts in the sequence numbers.
+        For each entry a new POTMsgSet is created.
+
+        :pofile: The pofile to add to.
+        :sequence: The sequence number for the POTMsgSet.
+        :english: The english string which becomes the msgid in the POTMsgSet.
+        :translated: The translated string which becomes the msgstr.
+        :is_imported: The is_imported flag of the translation message.
+        """
+        if english is None:
+            english = self.getUniqueString('english')
+        if translated is None:
+            translated = self.getUniqueString('translated')
+        naked_pofile = removeSecurityProxy(pofile)
+        potmsgset = self.makePOTMsgSet(naked_pofile.potemplate, english,
+            sequence=sequence)
+        translation = removeSecurityProxy(
+            self.makeTranslationMessage(naked_pofile, potmsgset,
+                translations=[translated]))
+        translation.is_imported = is_imported
+        translation.is_current = True
 
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.

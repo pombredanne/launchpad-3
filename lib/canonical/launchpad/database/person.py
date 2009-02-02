@@ -121,6 +121,7 @@ from canonical.launchpad.interfaces.teammembership import (
     TeamMembershipStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
+from canonical.launchpad.interfaces.translator import ITranslatorSet
 from canonical.launchpad.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
@@ -2134,6 +2135,11 @@ class Person(
         """See `IPerson`."""
         return getUtility(ITranslationGroupSet).getByPerson(self)
 
+    @property
+    def translators(self):
+        """See `IPerson`."""
+        return getUtility(ITranslatorSet).getByTranslator(self)
+
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
@@ -2946,14 +2952,6 @@ class PersonSet:
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
-
-        # Update OpenID. Just trash the authorizations for from_id - don't
-        # risk opening up auth wider than the user actually wants.
-        cur.execute("""
-                DELETE FROM OpenIDAuthorization WHERE person=%(from_id)d
-                """ % vars()
-                )
-        skip.append(('openidauthorization', 'person'))
 
         # Update shipit shipments.
         cur.execute('''

@@ -543,14 +543,14 @@ minimise long lines.
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> header, body =  raw_msg.split('\n\n')
     >>> for line in body.split('\n'):
-    ...     print line, '\\'
-    Can you help me? Can you help me? Can you help me? Can you help me? Can \
-    you help me? Can you help me? Can you help me? Can you help me? \
-    --  \
-    This message was sent from Launchpad by the user \
-    Sample Person (http://launchpad.dev/~name12) \
-    using the "Contact this team" link on the Landscape Developers \
-    team page to each member directly. \
-    For more information see \
-    https://help.launchpad.net/YourAccount/ContactingPeople \
+    ...     print "^%s$" % line
+    ^Can you help me? Can you help me? Can you help me? Can you help me? Can$
+    ^you help me? Can you help me? Can you help me? Can you help me?$
+    ^-- $
+    ^This message was sent from Launchpad by the user$
+    ^Sample Person (http://launchpad.dev/~name12)$
+    ^using the "Contact this team" link on the Landscape Developers$
+    ^team page to each member directly.$
+    ^For more information see$
+    ^https://help.launchpad.net/YourAccount/ContactingPeople$
 

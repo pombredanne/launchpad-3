@@ -68,6 +68,8 @@ The same request will be accepted if the group is given a saner name,
 such as just "polyglot" (no upper-case letters).
 
     >>> admin_browser.getControl('Name').value='polyglot'
+    >>> admin_browser.getControl('Translation instructions').value=(
+    ...     u'https://help.launchpad.net/Translations/PolyglotPolicies')
     >>> admin_browser.getControl('Add').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/+groups/polyglot
@@ -80,6 +82,13 @@ that group's page.
 
     >>> admin_browser.title
     '...The PolyGlot Translation Group...'
+
+    >>> docs = find_tag_by_id(admin_browser.contents, 'documentation')
+    >>> print extract_text(docs)
+    Please read translation instructions...
+    >>> docs_url = docs.find('a')
+    >>> extract_link_from_tag(docs_url)
+    u'https://help.launchpad.net/Translations/PolyglotPolicies'
 
 A Rosetta administrator is also allowed to create groups.
 
