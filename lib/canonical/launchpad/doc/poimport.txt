@@ -98,6 +98,21 @@ This is the file that'll get imported.
     ... msgstr ""
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
+We sometimes saw deadlocks as POFile statistics were updated after
+importing a template.  The operation would read all translation messages
+for the entire template in the same transaction that did the import.
+To prevent this, the importer now does intermediate commits while
+recomputing statistics.
+
+    >>> class FakeTransactionManager:
+    ...     """Pretend to manage a transaction, log what happens."""
+    ...     def begin(self):
+    ...         pass
+    ...     def commit(self):
+    ...         print "Committing."
+    ...     def abort(self):
+    ...         print "Aborting."
+
 Attach the import to the translations import queue:
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
@@ -121,7 +136,9 @@ The entry gets approved, so it can be imported.
 
 Now, we tell the PO template to import from the file data it has.
 
-    >>> (subject, body) = potemplate.importFromQueue(entry, FakeLogger())
+    >>> (subject, body) = potemplate.importFromQueue(
+    ...     entry, FakeLogger(), txn=FakeTransactionManager())
+    Committing.
 
 Our request has now been serviced.
 

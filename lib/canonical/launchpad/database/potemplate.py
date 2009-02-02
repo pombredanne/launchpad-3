@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """`SQLObject` implementation of `IPOTemplate` interface."""
@@ -14,6 +14,7 @@ __all__ = [
 import datetime
 import logging
 import os
+from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
@@ -656,7 +657,7 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
 
-    def importFromQueue(self, entry_to_import, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None, txn=None):
         """See `IPOTemplate`."""
         assert entry_to_import is not None, "Attempt to import None entry."
         assert entry_to_import.import_into.id == self.id, (
@@ -722,9 +723,26 @@ class POTemplate(SQLBase, RosettaStats):
             self.messagecount = self.getPOTMsgSetsCount()
 
             # The upload affects the statistics for all translations of this
-            # template.  Recalculate those as well.
+            # template.  Recalculate those as well.  This takes time and
+            # covers a lot of data, so if appropriate, break this up
+            # into smaller transactions.
+            if txn is not None:
+                txn.commit()
+                txn.begin()
+
             for pofile in self.pofiles:
-                pofile.updateStatistics()
+                try:
+                    pofile.updateStatistics()
+                    if txn is not None:
+                        txn.commit()
+                        txn.begin()
+                except TransactionRollbackError, error:
+                    if txn is not None:
+                        txn.abort()
+                        txn.begin()
+                    if logger:
+                        logger.warn(
+                            "Statistics update failed: %s" % unicode(error))
 
         template = helpers.get_email_template(template_mail)
         message = template % replacements
