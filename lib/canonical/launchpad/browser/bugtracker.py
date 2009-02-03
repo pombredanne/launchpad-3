@@ -300,6 +300,28 @@ class BugTrackerEditView(LaunchpadEditFormView):
         # Go back to the bug tracker listing.
         self.next_url = canonical_url(getUtility(IBugTrackerSet))
 
+    def disable_condition(self, action):
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        return self.user.inTeam(admin_team) and self.context.enabled
+
+    @action('Disable', name='disable', condition=disable_condition)
+    def disable_action(self, action, data):
+        self.context.enabled = False
+        self.next_url = canonical_url(self.context)
+
+    def enable_condition(self, action):
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        return self.user.inTeam(admin_team) and not self.context.enabled
+
+    @action('Enable', name='enable', condition=enable_condition)
+    def disable_action(self, action, data):
+        self.context.enabled = True
+        self.request.response.addInfoNotification(
+            'Bug watch updates for %s have been enabled.' %
+            self.context.title)
+
+        self.next_url = canonical_url(self.context)
+
 
 class BugTrackerNavigation(Navigation):
 

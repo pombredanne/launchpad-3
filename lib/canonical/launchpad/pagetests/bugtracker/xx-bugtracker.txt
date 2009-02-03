@@ -437,6 +437,55 @@ deleting bug watches en masse:
   LookupError: label 'Delete'
 
 
+== Disabling a bug tracker ==
+
+It's also possible for bug trackers to be disabled, for example if they
+misbehave and cause a lot of noise in the checkwatches output.
+
+Ordinary users can't disable a bug tracker.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
+    >>> user_browser.getControl('Disable')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Disable'
+
+But admins can.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
+    >>> admin_browser.getControl('Disable').click()
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Bug watch updates for Debian Bug tracker are currently disabled.
+
+If a user looks at a disabled bug tracker they'll see a warning message
+notifying them that it has been disabled.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/debbugs')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    Bug watch updates for Debian Bug tracker are currently disabled.
+
+The admin can re-enable the bug tracker.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
+    >>> admin_browser.getControl('Enable').click()
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Bug watch updates for Debian Bug tracker have been enabled.
+
+And the user will no longer see any messages.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/debbugs')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+
+
 == Overview pages ==
 
 When looking at a bug tracker page, a list of bug watches is
