@@ -4,22 +4,20 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from datetime import datetime
 from unittest import TestCase, TestLoader
 
 from pytz import UTC
-from sqlobject import SQLObjectNotFound
-import transaction
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposalGetter, CreateMergeProposalJob,
-    is_valid_transition, MessageJob, MessageJobAction)
-from canonical.launchpad.database.job import Job
+    is_valid_transition)
+from canonical.launchpad.database.tests.test_message import (
+    TestCaseForMessageJob)
 from canonical.launchpad.interfaces import (
-    ICreateMergeProposalJob, ICreateMergeProposalJobSource, IMessageJob,
+    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     WrongBranchMergeProposal,)
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
@@ -29,10 +27,10 @@ from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.mail.sendmail import MailController
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
@@ -1000,53 +998,6 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
                          vote_reference.registrant)
         self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
-
-
-class TestCaseForMessageJob(TestCaseWithFactory):
-
-    def makeLibraryFileAlias(self, message=None):
-        if message is None:
-            content = 'foo'
-        else:
-            content = message.as_string()
-        return getUtility(ILibraryFileAliasSet).create(
-            'static.diff', len(content), StringIO(content), 'text/x-diff')
-
-
-class TestMessageJob(TestCaseForMessageJob):
-    """Tests for MessageJob."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def makeMessageJob(self, message=None):
-        lfa = self.makeLibraryFileAlias(message)
-        return MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
-
-    def test_providesInterface(self):
-        """Ensure that BranchJob implements IBranchJob."""
-        # Ensure database constraints are satisfied.
-        job = self.makeMessageJob()
-        job.sync()
-        verifyObject(IMessageJob, job)
-
-    def test_destroySelf_destroys_job(self):
-        """Ensure that MessageJob.destroySelf destroys the Job as well."""
-        message_job = self.makeMessageJob()
-        job_id = message_job.job.id
-        message_job.destroySelf()
-        self.assertRaises(SQLObjectNotFound, Job.get, job_id)
-
-    def test_getMessage(self):
-        """getMessage should return a Message with appropriate values."""
-        ctrl = MailController(
-            'from@example.com', ['to@example.com'], 'subject', 'body')
-        message_job = self.makeMessageJob(ctrl.makeMessage())
-        transaction.commit()
-        message = message_job.getMessage()
-        self.assertEqual('from@example.com', message['From'])
-        self.assertEqual('to@example.com', message['To'])
-        self.assertEqual('subject', message['Subject'])
-        self.assertEqual('body', message.get_payload())
 
 
 class TestCreateMergeProposalJob(TestCaseForMessageJob):

@@ -16,7 +16,6 @@ __all__ = [
     'IBranchMergeProposalListingBatchNavigator',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
-    'IMessageJob',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -28,8 +27,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import IBranch
 from canonical.launchpad.interfaces.diff import IStaticDiff
-from canonical.launchpad.interfaces.job import IJob
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
@@ -524,19 +521,6 @@ class IBranchMergeProposalGetter(Interface):
 
 for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
-
-
-class IMessageJob(Interface):
-    """Interface for merge directive jobs."""
-
-    job = Object(schema=IJob, required=True)
-
-    message_bytes = Object(
-        title=_('Full MIME content of Email.'), required=True,
-        schema=ILibraryFileAlias)
-
-    def getMessage():
-        """Return an email.Message representing this job's message."""
 
 
 class ICreateMergeProposalJob(Interface):

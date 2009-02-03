@@ -9,11 +9,8 @@ __all__ = [
     'BranchMergeProposalGetter',
     'CreateMergeProposalJob',
     'is_valid_transition',
-    'MessageJob',
-    'MessageJobAction'
     ]
 
-from email import message_from_string
 from email.Utils import make_msgid
 
 from lazr.delegates import delegates
@@ -31,16 +28,14 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.codereviewvote import (
     CodeReviewVoteReference)
-from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.message import (
-    Message, MessageChunk)
+    Message, MessageChunk, MessageJob, MessageJobAction)
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -49,10 +44,11 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource, IMessageJob, UserNotBranchReviewer,
+    ICreateMergeProposalJobSource, UserNotBranchReviewer,
     WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.mailout.branch import RecipientReason
@@ -752,46 +748,6 @@ class BranchMergeProposalQueryBuilder:
                 """ % {'tables': ', '.join(self._tables),
                        'where_clause': ' AND '.join(self._where_clauses)})
         return query
-
-
-class MessageJobAction(DBEnumeratedType):
-    """MessageJob action
-
-    The action that a job should perform.
-    """
-
-    CREATE_MERGE_PROPOSAL = DBItem(1, """
-        Create a merge proposal.
-
-        Create a merge proposal from a message which must contain a merge
-        directive.
-        """)
-
-
-class MessageJob(SQLBase):
-    """A job for processing messages."""
-
-    implements(IMessageJob)
-
-    _table = 'MergeDirectiveJob'
-
-    job = ForeignKey(foreignKey='Job', notNull=True)
-
-    message_bytes = ForeignKey(
-        dbName='merge_directive', foreignKey='LibraryFileAlias', notNull=True)
-
-    action = EnumCol(enum=MessageJobAction)
-
-    def __init__(self, message_bytes, action):
-        SQLBase.__init__(
-            self, job=Job(), message_bytes=message_bytes, action=action)
-
-    def destroySelf(self):
-        SQLBase.destroySelf(self)
-        self.job.destroySelf()
-
-    def getMessage(self):
-        return message_from_string(self.message_bytes.read())
 
 
 class CreateMergeProposalJob(object):
