@@ -75,7 +75,7 @@ from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
-    MirrorContent, MirrorStatus)
+    IDistributionMirror, MirrorContent, MirrorStatus)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
@@ -390,9 +390,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if not self.full_functionality:
             return None
 
-        url = http_base_url or ftp_base_url
+        urls = {'http_base_url' : http_base_url,
+                'ftp_base_url' : ftp_base_url,
+                'rsync_base_url' : rsync_base_url}
+        for name, value in urls:
+            if value is not None:
+                name[value] = IDistributionMirror[name].toFieldValue(value)
+
+        url = urls['http_base_url'] or urls['ftp_base_url']
         assert url is not None, (
             "A mirror must provide either an HTTP or FTP URL (or both).")
+
         dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
         name = sanitize_name('%s-%s' % (host, content.name.lower()))
 
@@ -405,8 +413,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
             country=country, content=content, displayname=displayname,
-            description=description, http_base_url=http_base_url,
-            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            description=description, http_base_url=urls['http_base_url'],
+            ftp_base_url=urls['ftp_base_url'],
+            rsync_base_url=urls['rsync_base_url'],
             official_candidate=official_candidate, enabled=enabled)
 
     def createBug(self, bug_params):
