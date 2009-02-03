@@ -7,18 +7,21 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
+    'CreateMergeProposalJob',
     'is_valid_transition',
     'MessageJob',
     'MessageJobAction'
     ]
 
+from email import message_from_string
 from email.Utils import make_msgid
 
+from lazr.delegates import delegates
 from storm.expr import And
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
 from storm.expr import Desc, Join, LeftJoin
 from storm.references import Reference
@@ -45,8 +48,9 @@ from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, IMessageJob,
-    UserNotBranchReviewer, WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter, ICreateMergeProposalJob,
+    ICreateMergeProposalJobSource, IMessageJob, UserNotBranchReviewer,
+    WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
@@ -785,3 +789,33 @@ class MessageJob(SQLBase):
     def destroySelf(self):
         SQLBase.destroySelf(self)
         self.job.destroySelf()
+
+    def getMessage(self):
+        return message_from_string(self.message_bytes.read())
+
+
+class CreateMergeProposalJob(object):
+    """See `ICreateMergeProposalJob` and `ICreateMergeProposalJobSource`."""
+
+    classProvides(ICreateMergeProposalJobSource)
+
+    delegates(IMessageJob)
+
+    implements(ICreateMergeProposalJob)
+
+    def __init__(self, context):
+        """Create an instance of CreateMergeProposalJob.
+
+        :param context: a MessageJob.
+        """
+        self.context = context
+
+    @classmethod
+    def create(klass, message_bytes):
+        """See `ICreateMergeProposalJobSource`."""
+        context = MessageJob(
+            message_bytes, MessageJobAction.CREATE_MERGE_PROPOSAL)
+        return klass(context)
+
+    def run(self):
+        """See `ICreateBranchMergeProposalJob`."""

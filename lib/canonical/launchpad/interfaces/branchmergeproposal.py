@@ -14,6 +14,8 @@ __all__ = [
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICreateMergeProposalJob',
+    'ICreateMergeProposalJobSource',
     'IMessageJob',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
@@ -532,3 +534,23 @@ class IMessageJob(Interface):
     message_bytes = Object(
         title=_('Full MIME content of Email.'), required=True,
         schema=ILibraryFileAlias)
+
+    def getMessage():
+        """Return an email.Message representing this job's message."""
+
+
+class ICreateMergeProposalJob(Interface):
+    """Acquire MergeProposalJobs."""
+
+    def run():
+        """Run this job and create the merge proposals."""
+
+
+class ICreateMergeProposalJobSource(Interface):
+    """A Job that creates a branch merge proposal.
+
+    It uses a Message, which must contain a merge directive.
+    """
+
+    def create(message_bytes):
+        """Return a CreateMergeProposalJob for this message."""

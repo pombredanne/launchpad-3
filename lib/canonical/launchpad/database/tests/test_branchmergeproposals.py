@@ -10,15 +10,17 @@ from unittest import TestCase, TestLoader
 
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
+import transaction
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter, is_valid_transition, MessageJob,
-    MessageJobAction)
+    BranchMergeProposalGetter, CreateMergeProposalJob,
+    is_valid_transition, MessageJob, MessageJobAction)
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import (
-    IMessageJob, WrongBranchMergeProposal,)
+    ICreateMergeProposalJob, ICreateMergeProposalJobSource, IMessageJob,
+    WrongBranchMergeProposal,)
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -31,6 +33,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.mail.sendmail import MailController
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.testing import verifyObject
@@ -999,14 +1002,24 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote_reference.comment)
 
 
-class TestMessageJob(TestCaseWithFactory):
+class TestCaseForMessageJob(TestCaseWithFactory):
+
+    def makeLibraryFileAlias(self, message=None):
+        if message is None:
+            content = 'foo'
+        else:
+            content = message.as_string()
+        return getUtility(ILibraryFileAliasSet).create(
+            'static.diff', len(content), StringIO(content), 'text/x-diff')
+
+
+class TestMessageJob(TestCaseForMessageJob):
     """Tests for MessageJob."""
 
     layer = LaunchpadFunctionalLayer
 
-    def makeMessageJob(self):
-        lfa = getUtility(ILibraryFileAliasSet).create(
-            'static.diff', len('foo'), StringIO('foo'), 'text/x-diff')
+    def makeMessageJob(self, message=None):
+        lfa = self.makeLibraryFileAlias(message)
         return MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
 
     def test_providesInterface(self):
@@ -1022,6 +1035,34 @@ class TestMessageJob(TestCaseWithFactory):
         job_id = message_job.job.id
         message_job.destroySelf()
         self.assertRaises(SQLObjectNotFound, Job.get, job_id)
+
+    def test_getMessage(self):
+        """getMessage should return a Message with appropriate values."""
+        ctrl = MailController(
+            'from@example.com', ['to@example.com'], 'subject', 'body')
+        message_job = self.makeMessageJob(ctrl.makeMessage())
+        transaction.commit()
+        message = message_job.getMessage()
+        self.assertEqual('from@example.com', message['From'])
+        self.assertEqual('to@example.com', message['To'])
+        self.assertEqual('subject', message['Subject'])
+        self.assertEqual('body', message.get_payload())
+
+
+class TestCreateMergeProposalJob(TestCaseForMessageJob):
+    """Tests for CreateMergeProposalJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        """The class and instances correctly implement their interfaces."""
+        verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
+        ctrl = MailController(
+            'from@example.com', ['to@example.com'], 'subject', 'body')
+        lfa = self.makeLibraryFileAlias(ctrl.makeMessage())
+        job = CreateMergeProposalJob.create(lfa)
+        verifyObject(IMessageJob, job)
+        verifyObject(ICreateMergeProposalJob, job)
 
 
 def test_suite():
