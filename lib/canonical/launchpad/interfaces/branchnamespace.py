@@ -162,6 +162,8 @@ class IBranchNamespaceSet(Interface):
 
         :param segments: An iterable of names of Launchpad components.
             The first segment is the username, *not* preceded by a '~`.
+        :raise InvalidNamespace: if there are not enough segments to define a
+            branch.
         :raise NoSuchPerson: if the person referred to cannot be found.
         :raise NoSuchProduct: if the product or distro referred to cannot be
             found.

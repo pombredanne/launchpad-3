@@ -49,3 +49,11 @@ class TranslationFileFormat(DBEnumeratedType):
         msgids, even if the source format uses symbolic identifiers.  Useful
         for exporting XPI translations to the gettext world.
         """)
+
+    POCHANGED = DBItem(6, """
+        Changes from packaged translations in partial PO format
+
+        Gettext's standard text file format but contains only those msgids
+        that were changed since the packaged version was imported.
+        """)
+

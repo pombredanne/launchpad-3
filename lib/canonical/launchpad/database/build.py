@@ -280,6 +280,7 @@ class Build(SQLBase):
                 Build.buildstate = 0 AND
                 Build.processor = %s AND
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 ((BuildQueue.lastscore > %s) OR
                  ((BuildQueue.lastscore = %s) AND
                   (Build.id < %s)))
@@ -343,6 +344,7 @@ class Build(SQLBase):
                     Builder.id = BuildQueue.builder
             WHERE
                 Archive.require_virtualized = %s AND
+                Archive.enabled = TRUE AND
                 Build.buildstate = %s AND
                 Builder.processor = %s
             ORDER BY
@@ -721,10 +723,11 @@ class BuildSet:
             )
 
     def _handleOptionalParams(
-        self, queries, status=None, name=None, pocket=None):
+        self, queries, tables, status=None, name=None, pocket=None):
         """Construct query clauses needed/shared by all getBuild..() methods.
 
         :param queries: container to which to add any resulting query clauses.
+        :param tables: container to which to add joined tables.
         :param status: optional build state for which to add a query clause if
             present.
         :param name: optional source package release name for which to add a
@@ -745,17 +748,12 @@ class BuildSet:
         # latter is provided.
         if name is not None:
             queries.append('''
-                Build.sourcepackagerelease IN (
-                    SELECT DISTINCT SourcePackageRelease.id
-                    FROM    SourcePackageRelease
-                        JOIN
-                            SourcePackagename
-                        ON
-                            SourcePackageRelease.sourcepackagename = 
-                            SourcePackageName.id
-                        WHERE Sourcepackagename.name LIKE
-                        '%%' || %s || '%%')
+                Build.sourcepackagerelease = SourcePackageRelease.id AND
+                SourcePackageRelease.sourcepackagename = SourcePackageName.id
+                AND SourcepackageName.name LIKE '%%' || %s || '%%'
             ''' % quote_like(name))
+            tables.extend(['SourcePackageRelease', 'SourcePackageName'])
+
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
                             user=None):
@@ -763,7 +761,7 @@ class BuildSet:
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(queries, status, name)
+        self._handleOptionalParams(queries, clauseTables, status, name)
 
         # This code MUST match the logic in the Build security adapter,
         # otherwise users are likely to get 403 errors, or worse.
@@ -792,7 +790,8 @@ class BuildSet:
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(queries, status, name, pocket)
+        self._handleOptionalParams(
+            queries, clauseTables, status, name, pocket)
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
@@ -837,9 +836,12 @@ class BuildSet:
 
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
-        condition_clauses.append(
-            "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
-            % sqlvalues(BuildStatus.FULLYBUILT))
+        if status == BuildStatus.FULLYBUILT:
+            condition_clauses.append("Build.datebuilt IS NOT NULL")
+        else:
+            condition_clauses.append(
+                "(Build.buildstate <> %s OR Build.datebuilt IS NOT NULL)"
+                % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
         # * NEEDSBUILD & BUILDING by -lastscore
@@ -857,19 +859,13 @@ class BuildSet:
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        self._handleOptionalParams(condition_clauses, status, name, pocket)
+        self._handleOptionalParams(
+            condition_clauses, clauseTables, status, name, pocket)
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.extend(["DistroArchSeries",
-                             "Archive",
-                             "DistroSeries",
-                             "Distribution"])
+        clauseTables.append("Archive")
         condition_clauses.append("""
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.id = Archive.distribution AND
             Archive.purpose IN (%s) AND
             Archive.id = Build.archive
             """ % ','.join(

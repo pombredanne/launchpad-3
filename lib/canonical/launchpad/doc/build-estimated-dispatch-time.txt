@@ -50,7 +50,6 @@ the pending job.
     ...     hoary.main_archive)
     >>> alsa_bqueue = alsa_build.createBuildQueueEntry()
     >>> alsa_bqueue.lastscore = 500
-    >>> alsa_build.buildduration = timedelta(minutes=72)
     >>> alsa_build.buildstate = BuildStatus.NEEDSBUILD
 
 Access the currently building job via the builder.
@@ -91,7 +90,8 @@ The estimated start time for the pending job is either now or lies
 in the future.
 
     >>> now = datetime.utcnow()
-    >>> alsa_build.getEstimatedBuildStartTime() > now
+    >>> estimate = alsa_build.getEstimatedBuildStartTime()
+    >>> estimate > now
     True
 
 The estimated build start time may only be requested for jobs that are
@@ -101,3 +101,76 @@ pending.
     Traceback (most recent call last):
     ...
     AssertionError: The start time is only estimated for pending builds.
+
+Now let's add two PPA packages to the mix in order to show how builds
+associated with disabled archives get ignored when it comes to the calculation
+of estimated dispatch times.
+
+We first add a build for the 'pmount' source package to cprov's PPA.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> [pmount_source] = cprov.archive.getPublishedSources(
+    ...     name='pmount', version='0.1-1')
+    >>> pmount_spr = pmount_source.sourcepackagerelease
+    >>> print pmount_spr.title
+    pmount - 0.1-1
+
+    >>> pmount_build = pmount_spr.createBuild(
+    ...     hoary['i386'], PackagePublishingPocket.RELEASE, cprov.archive)
+    >>> pmount_bqueue = pmount_build.createBuildQueueEntry()
+    >>> pmount_bqueue.lastscore = 66
+    >>> pmount_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> naked_build = removeSecurityProxy(pmount_build)
+    >>> naked_build.estimated_build_duration = timedelta(minutes=12)
+
+Followed by another build for the 'iceweasel' source package that is added
+to sabdfl's PPA.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> [iceweasel_source] = cprov.archive.getPublishedSources(
+    ...     name='iceweasel', version='1.0')
+    >>> iceweasel_spr = iceweasel_source.sourcepackagerelease
+    >>> print iceweasel_spr.title
+    iceweasel - 1.0
+
+    >>> iceweasel_build = iceweasel_spr.createBuild(
+    ...     hoary['i386'], PackagePublishingPocket.RELEASE, sabdfl.archive)
+    >>> iceweasel_bqueue = iceweasel_build.createBuildQueueEntry()
+    >>> iceweasel_bqueue.lastscore = 666
+    >>> iceweasel_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> naked_build = removeSecurityProxy(iceweasel_build)
+    >>> naked_build.estimated_build_duration = timedelta(minutes=48)
+
+Since the 'iceweasel' build has a higher score (666) than the 'pmount'
+build (66) its estimated dispatch time is essentially "now".
+
+    >>> now = datetime.utcnow()
+    >>> estimate = iceweasel_build.getEstimatedBuildStartTime()
+    >>> estimate > now
+    True
+    >>> estimate - now
+    datetime.timedelta(0, 0, ...)
+
+The 'pmount' build comes next in the queue and its estimated dispatch
+time is the estimated build time of the 'iceweasel' package i.e. 2880
+seconds (48 minutes * 60).
+
+    >>> estimate = pmount_build.getEstimatedBuildStartTime()
+    >>> estimate > now
+    True
+    >>> estimate - now
+    datetime.timedelta(0, 2880, ...)
+
+Now sabdfl's PPA will be disabled. This has the effect that all builds
+associated with it (i.e. the 'iceweasel' build) are ignored while
+calculating the estimated dispatch time and the latter becomes effectively
+"now" for the 'pmount' build.
+
+    >>> sabdfl.archive.enabled = False
+    >>> syncUpdate(sabdfl.archive)
+    >>> estimate = pmount_build.getEstimatedBuildStartTime()
+    >>> estimate > now
+    True
+    >>> estimate - now
+    datetime.timedelta(0, 0, ...)
