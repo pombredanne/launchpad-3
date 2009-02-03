@@ -99,8 +99,6 @@ class IPreviewDiff(IDiff):
                     'generate the diff.'),
             readonly=True))
 
-    diff =  Reference(IDiff, title=_('The Diff object.'), readonly=True)
-
     conflicts = exported(
         Text(title=_(
                 'The conflicts text describing any path or text conflicts.'),
