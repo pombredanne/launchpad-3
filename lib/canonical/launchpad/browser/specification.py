@@ -353,18 +353,12 @@ class SpecificationContextMenu(ContextMenu):
         if user is None:
             text = 'Edit subscription'
             icon = 'edit'
-        elif user is not None and self.context.isSubscribed(user):
+        elif self.context.isSubscribed(user):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
-            for team in user.teams_participated_in:
-                if self.context.isSubscribed(team):
-                    text = 'Subscribe/Unsubscribe'
-                    icon = 'edit'
-                    break
-            else:
-                text = 'Subscribe'
-                icon = 'add'
+            text = 'Subscribe'
+            icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')

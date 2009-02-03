@@ -305,11 +305,11 @@
         </li>
       </ul>
       </div>
+    </div>
   </div>
-</div>
   <div id="portlets">
     <div tal:replace="structure context/@@+portlet-subscribers" />
   </div>
-    </div>
-  </body>
+</div>
+</body>
 </html>
