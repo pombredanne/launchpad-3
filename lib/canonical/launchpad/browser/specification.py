@@ -348,10 +348,10 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):
-        """Return the 'Subscribe/Unsubscribe' Link."""
-        user = getUtility(ILaunchBag).user
+        """Return the 'Edit Subscription' Link."""
+        user = self.user
         if user is None:
-            text = 'Subscribe/Unsubscribe'
+            text = 'Edit subscription'
             icon = 'edit'
         elif user is not None and self.context.isSubscribed(user):
             text = 'Unsubscribe'
@@ -374,7 +374,7 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
-        text = 'Link to bug report'
+        text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
@@ -401,7 +401,7 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linksprint(self):
-        text = 'Propose for Sprint'
+        text = 'Propose for sprint'
         return Link('+linksprint', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
