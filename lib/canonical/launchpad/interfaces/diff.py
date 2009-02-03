@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDiff',
+    'IPreviewDiff',
     'IStaticDiff',
     'IStaticDiffSource',
     ]
@@ -63,3 +64,29 @@ class IStaticDiffSource(Interface):
 
         If a StaticDiff exists for this revision_id pair, the text is ignored.
         """
+
+
+class IPreviewDiff(Interface):
+    """A diff generated to show actual diff between two branches.
+
+    This diff will be used primarily for branch merge proposals where we are
+    trying to determine the effective changes of landing the source branch on
+    the target branch.
+    """
+
+    source_revision_id = TextLine(
+        title=_('The tip revision id of the source branch used to generate '
+                'the diff.'))
+
+    target_revision_id = TextLine(
+        title=_('The tip revision id of the target branch used to generate '
+                'the diff.'))
+
+    dependent_revision_id = TextLine(
+        title=_('The tip revision id of the dependent branch used to '
+                'generate the diff.'))
+
+    diff = Object(title=_('The Diff object.'), schema=IDiff)
+
+    conflicts = Text(
+        title=_('The text describing any path or text conflicts.'))

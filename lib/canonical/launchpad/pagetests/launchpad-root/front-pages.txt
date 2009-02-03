@@ -22,7 +22,7 @@ And links to the important applications and facets:
   'http://launchpad.dev/people/+newteam'
 
   >>> people_link.text
-  '[IMG] Create a new Team'
+  '[IMG]'
 
   >>> code_link = browser.getLink(url='code')
   >>> code_link.url

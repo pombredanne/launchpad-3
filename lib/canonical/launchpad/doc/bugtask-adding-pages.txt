@@ -173,7 +173,7 @@ package linked to an inactive upstream. -- Guilherme Salgado, 2007-09-18
     ...     ChooseProductStep)
     >>> view = ChooseProductStep(
     ...     ubuntu_firefox_task, LaunchpadTestRequest(method='GET', form={}))
-    >>> upstream = view._getUpstream(view.context.target)
+    >>> upstream = view.context.target.upstream_product
     >>> upstream.active
     True
 
