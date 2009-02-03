@@ -24,6 +24,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND
 
 from storm.expr import Or, SQL
+from storm.locals import Bool
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
@@ -154,6 +155,9 @@ class BugTracker(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=False)
     baseurl = StringCol(notNull=True)
+    enabled = Bool(
+        name='enabled', allow_none=False, default=True)
+
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)

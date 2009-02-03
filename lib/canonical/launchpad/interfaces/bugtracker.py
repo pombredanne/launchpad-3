@@ -231,6 +231,14 @@ class IBugTracker(Interface):
         'Bug messages that have been imported from this bug tracker.')
     multi_product = Attribute(
         "This bug tracker tracks multiple remote products.")
+    enabled = exported(
+        Bool(
+            title=_(
+                "This bug tracker's watches will be checked for "
+                "updates"),
+            required=False,
+            default=True))
+
 
     def getBugFilingLink(remote_product):
         """Return the bug filing link for a given product on the tracker.
