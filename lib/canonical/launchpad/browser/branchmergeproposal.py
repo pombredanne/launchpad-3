@@ -59,7 +59,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, Navigation)
+    stepthrough, stepto, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
@@ -294,6 +294,11 @@ class BranchMergeProposalNavigation(Navigation):
             return self.context.getComment(id)
         except WrongBranchMergeProposal:
             return None
+
+    @stepto("+preview-diff")
+    def preview_diff(self):
+        """Step to the preview diff."""
+        return self.context.preview_diff
 
 
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
