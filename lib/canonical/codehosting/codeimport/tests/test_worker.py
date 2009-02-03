@@ -428,7 +428,9 @@ class TestActualImportMixin:
         # the branch.
         worker = self.makeImportWorker()
         worker.run()
-        bazaar_tree = worker.getBazaarWorkingTree()
+        t = self.makeTemporaryDirectory()
+        bazaar_tree = worker.bazaar_branch_store.pull(
+            self.source_details.branch_id, t)
         # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
         # are importing has two revisions. Looking at the test, it's not
         # obvious why we make this assumption, hence the XXX. The two
