@@ -40,8 +40,9 @@ class POFileTranslatorSet:
     def prefetchPOFileTranslatorRelations(self, pofiletranslators):
         """See `IPOFileTranslatorSet`."""
         ids = set(record.id for record in pofiletranslators)
-        return POFileTranslator.select(
-            "id IN %s" % sqlvalues(ids),
+        # Listify prefetch query to force its execution here.
+        return list(POFileTranslator.select(
+            "POFileTranslator.id IN %s" % sqlvalues(ids),
             prejoins=[
                 'pofile',
                 'pofile.potemplate',
@@ -53,4 +54,4 @@ class POFileTranslatorSet:
                 'latest_message.potmsgset',
                 'latest_message.potmsgset.msgid_singular',
                 'latest_message.msgstr0',
-                ])
+                ]))
