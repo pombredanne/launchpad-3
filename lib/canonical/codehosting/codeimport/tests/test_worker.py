@@ -550,32 +550,6 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
         return self.factory.makeCodeImportSourceDetails(
             rcstype='svn', svn_branch_url=svn_branch_url)
 
-    def test_bazaarBranchStored(self):
-        # The worker stores the Bazaar branch after it has imported the new
-        # revisions.
-        # XXX: JonathanLange 2008-02-22: This test ought to be VCS-neutral.
-        worker = self.makeImportWorker()
-        worker.run()
-
-        bazaar_tree = worker.bazaar_branch_store.pull(
-            self.source_details.branch_id, 'tmp-bazaar-tree')
-        self.assertEqual(
-            bazaar_tree.branch.last_revision(),
-            worker.getBazaarWorkingTree().last_revision())
-
-    def test_foreignTreeStored(self):
-        # The worker archives the foreign tree after it has imported the new
-        # revisions.
-        # XXX: JonathanLange 2008-02-22: This test ought to be VCS-neutral.
-        worker = self.makeImportWorker()
-        worker.run()
-
-        os.mkdir('tmp-foreign-tree')
-        foreign_tree = worker.foreign_tree_store.fetchFromArchive(
-            self.source_details, 'tmp-foreign-tree')
-        self.assertDirectoryTreesEqual(
-            foreign_tree.local_path, worker.getForeignTree().local_path)
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
