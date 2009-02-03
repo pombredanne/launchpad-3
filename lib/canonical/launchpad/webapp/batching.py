@@ -90,20 +90,22 @@ class BatchNavigator:
         # there is no 'start' param in the query string, default to the old
         # behaviour of using the request (which implicitely gets them
         # from the request.form dict):
-        get_params = dict(
-            cgi.parse_qsl(request.get('QUERY_STRING') or '',
-                      keep_blank_values=True))
+        query_string = request.get('QUERY_STRING')
+        if query_string is None:
+            query_string = ''
+        query_string_params = dict(
+            cgi.parse_qsl(query_string, keep_blank_values=True))
 
-        if get_params.has_key(self.start_variable_name):
-            batch_params_source = get_params
+        if query_string_params.has_key(self.start_variable_name):
+            batch_params_source = query_string_params
         else:
             batch_params_source = request
 
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We
         # could raise UnexpectedFormData, but is there a good reason?
-        request_start = batch_params_source.get(self.start_variable_name,
-                                               None)
+        request_start = batch_params_source.get(
+            self.start_variable_name, None)
         if request_start is None:
             self.start = start
         else:
