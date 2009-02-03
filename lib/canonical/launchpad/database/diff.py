@@ -173,4 +173,17 @@ class PreviewDiff(Storm):
         """See `IPreviewDiff`."""
         # A preview diff is stale if the revision ids used to make the diff
         # are different from the tips of the source or target branches.
-        
+        bmp = self.branch_merge_proposal
+        is_stale = False
+        if (self.source_revision_id != bmp.source_branch.last_scanned_id or
+            self.target_revision_id != bmp.target_branch.last_scanned_id):
+            # This is the simple frequent case.
+            return True
+
+        # More complex involves the dependent branch too.
+        if (bmp.dependent_branch is not None and
+            (self.dependent_revision_id !=
+             bmp.dependent_branch.last_scanned_id)):
+            return True
+        else:
+            return False
