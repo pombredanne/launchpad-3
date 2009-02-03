@@ -24,6 +24,7 @@
     </class>
 
     <adapter
+        name="all_messages"
         for="canonical.launchpad.interfaces.IPOTemplate"
         provides="canonical.launchpad.interfaces.ITranslationFileData"
         factory="canonical.launchpad.database.POTemplateToTranslationFileDataAdapter" />

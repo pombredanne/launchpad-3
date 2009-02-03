@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BranchMergeProposalExists',
     'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
@@ -18,17 +19,18 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, List, Object, Text
+from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import IBranch
-from canonical.launchpad.interfaces.diff import IStaticDiff
+from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -36,6 +38,10 @@ class InvalidBranchMergeProposal(Exception):
 
     The text of the exception is the rule violation.
     """
+
+
+class BranchMergeProposalExists(InvalidBranchMergeProposal):
+    """Raised if there is already a matching BranchMergeProposal."""
 
 
 class UserNotBranchReviewer(Exception):
@@ -168,7 +174,8 @@ class IBranchMergeProposal(Interface):
     queue_status = exported(
         Choice(
             title=_('Status'),
-            vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
+            vocabulary=BranchMergeProposalStatus, required=True,
+            readonly=True,
             description=_("The current state of the proposal.")))
 
     reviewer = exported(
@@ -188,8 +195,15 @@ class IBranchMergeProposal(Interface):
             description=_("The person that accepted (or rejected) the code "
                           "for merging.")))
 
-    review_diff = Object(
-        title=_('The diff to be used for reviews.'), schema=IStaticDiff)
+    review_diff = Reference(
+        IStaticDiff, title=_('The diff to be used for reviews.'),
+        readonly=True)
+
+    preview_diff = exported(
+        Reference(
+            IPreviewDiff,
+            title=_('The current diff of the source branch against the '
+                    'target branch.'), readonly=True))
 
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
@@ -456,6 +470,31 @@ class IBranchMergeProposal(Interface):
 
     def deleteProposal():
         """Delete the proposal to merge."""
+
+    @operation_parameters(
+        diff_content=Bytes(), diff_stat=Text(),
+        source_revision_id=TextLine(), target_revision_id=TextLine(),
+        dependent_revision_id=TextLine(), conflicts=Text())
+    @export_write_operation()
+    def updatePreviewDiff(diff_content, diff_stat,
+                        source_revision_id, target_revision_id,
+                        dependent_revision_id=None, conflicts=None):
+        """Update the preview diff for this proposal.
+
+        If there is not an existing preview diff, one will be created.
+
+        :param diff_content: The raw bytes of the diff content to be put in
+            the librarian.
+        :param diff_stat: Text describing the files added, remove or modified.
+        :param source_revision_id: The revision id that was used from the
+            source branch.
+        :param target_revision_id: The revision id that was used from the
+            target branch.
+        :param dependent_revision_id: The revision id that was used from the
+            dependent branch.
+        :param conflicts: Text describing the conflicts if any.
+        """
+
 
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):

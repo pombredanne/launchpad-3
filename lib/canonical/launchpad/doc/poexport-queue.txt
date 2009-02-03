@@ -260,6 +260,73 @@ The confirmation email shows no errors at all.
     > 
     >     http://localhost:58000/.../po_evolution-2.2.pot
 
+Let's have a closer look at what is being exported. Usually all messages are
+exported but not all messages are equal. Some messages have been imported
+from upstream and then changed, others have been left as they are.
+This pofile has both kind of messages.
+
+    >>> potemplate = factory.makePOTemplate()
+    >>> pofile = factory.makePOFile('eo', potemplate=potemplate)
+    >>> factory.makeTranslation(pofile, 1, "english1", "esperanto1", True)
+    >>> factory.makeTranslation(pofile, 2, "english2", "esperanto2", False)
+
+To see what is being exported we need to retrieve the exported file from the
+librarian.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from storm.expr import Desc
+    >>> def getLatestLibrarianFile():
+    ...     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    ...     alias = store.find(LibraryFileAlias).order_by(
+    ...         Desc(LibraryFileAlias.date_created)).first()
+    ...     return getUtility(ILibrarianClient).getFileByAlias(alias.id)
+
+Exporting this pofile yields both messages in the resulting file.
+
+    >>> export_request_set.addRequest(
+    ...     carlos, pofiles=[pofile], format=TranslationFileFormat.PO)
+    >>> process_queue(transaction, logging.getLogger())
+    INFO:root:Stored file at http://...eo.po
+
+    >>> transaction.commit()
+    >>> print getLatestLibrarianFile().read()
+    # Esperanto translation for ...
+    ...
+    "X-Generator: Launchpad (build ...)\n"
+    <BLANKLINE>
+    msgid "english1"
+    msgstr "esperanto1"
+    <BLANKLINE>
+    msgid "english2"
+    msgstr "esperanto2"
+    <BLANKLINE>
+
+Setting the format to POCHANGED yields only the message that was changed
+after having been imported.
+
+    >>> export_request_set.addRequest(
+    ...     carlos, pofiles=[pofile], format=TranslationFileFormat.POCHANGED)
+    >>> process_queue(transaction, logging.getLogger())
+    INFO:root:Stored file at http://...eo.po
+
+    >>> transaction.commit()
+    >>> print getLatestLibrarianFile().read()
+    # IMPORTANT: This file does NOT contain a complete PO file structure.
+    # DO NOT attempt to import this file back into Launchpad.
+    ...
+    <BLANKLINE>
+    msgid "english2"
+    msgstr "esperanto2"
+    <BLANKLINE>
+
+Two more email notifications were sent, we'd better get rid of them.
+
+    >>> email = test_emails.pop()
+    >>> email = test_emails.pop()
+
 Finally, if we try to do an export with an empty queue, we don't do
 anything:
 

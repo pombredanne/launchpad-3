@@ -387,6 +387,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
@@ -698,6 +699,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     translation_groups = Attribute(
         "The set of TranslationGroup objects this person is a member of.")
+
+    translators = Attribute(
+        "The set of Translator objects this person is a member of.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')

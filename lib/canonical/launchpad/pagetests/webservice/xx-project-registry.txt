@@ -132,6 +132,7 @@ Projects are available at their canonical URL on the API virtual host.
     qualifies_for_free_hosting: False
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
+    remote_product: None
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard: None
     screenshots_url: None
@@ -179,6 +180,7 @@ several that are not available to non-privileged users marked as
     qualifies_for_free_hosting: False
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
+    remote_product: None
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard:...redacted...
     screenshots_url: None
@@ -918,7 +920,7 @@ retrieved through the API.
     >>> # Do some housekeeping not using the API to setup the Mega
     >>> # Money Maker with a commercial subscription.
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('bac@canonical.com')
     >>> product_set = getUtility(IProductSet)
