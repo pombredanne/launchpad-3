@@ -106,6 +106,7 @@ class IPreviewDiff(IDiff):
                 'The conflicts text describing any path or text conflicts.'),
              readonly=True))
 
+    # The schema for the Reference gets patched in _schema_circular_imports.
     branch_merge_proposal = exported(
         Reference(
             Interface, readonly=True,
