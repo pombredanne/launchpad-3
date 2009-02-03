@@ -77,10 +77,14 @@ class Diff(SQLBase):
 
     def _update(self, diff_content, diffstat, filename):
         """Update the diff content and diffstat."""
-        alias = getUtility(ILibraryFileAliasSet).create(
-            filename, len(diff_content), StringIO(diff_content),
-            'text/x-diff')
-        self.diff_text = alias
+        if diff_content is None or len(diff_content) == 0:
+            self.diff_text = None
+            self.diff_lines_count = 0
+        else:
+            self.diff_text = getUtility(ILibraryFileAliasSet).create(
+                filename, len(diff_content), StringIO(diff_content),
+                'text/x-diff')
+            self.diff_lines_count = len(diff_content.strip().split('\n'))
         self.diffstat = diffstat
 
 

@@ -4,7 +4,12 @@
 
 import unittest
 
+from storm.store import Store
+from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
+
+from canonical.launchpad.testing import login, TestCaseWithFactory
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 def test_requestapi():
@@ -182,9 +187,58 @@ def test_break_long_words():
     """
 
 
+class TestPreviewDiffFormatter(TestCaseWithFactory):
+    """Test the PreviewDiffFormatterAPI class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _createPreviewDiff(self, line_count=0, added=None, removed=None,
+                           conflicts=None):
+        # Login an admin to avoid the launchpad.Edit requirements.
+        login('admin@canonical.com')
+        # Create a dummy preview diff, and make sure the branches have the
+        # correct last scanned ids to ensure that the new diff is not stale.
+        bmp = self.factory.makeBranchMergeProposal()
+        if line_count:
+            content = 'random content'
+        else:
+            content = None
+        preview = bmp.updatePreviewDiff(
+            content, u'diff stat', u'rev-a', u'rev-b', conflicts=conflicts)
+        bmp.source_branch.last_scanned_id = preview.source_revision_id
+        bmp.target_branch.last_scanned_id = preview.target_revision_id
+        # Update the values directly sidestepping the security.
+        naked_diff = removeSecurityProxy(preview.diff)
+        naked_diff.diff_lines_count = line_count
+        naked_diff.added_lines_count = added
+        naked_diff.removed_lines_count = removed
+        # Make sure that the preview diff is in the db for the test.
+        Store.of(bmp).add(preview)
+        return preview
+
+    def _createStalePreviewDiff(self, line_count=0, added=None, removed=None,
+                                conflicts=None):
+        preview = self._createPreviewDiff(
+            line_count, added, removed, conflicts)
+        preview.branch_merge_proposal.source_branch.last_scanned_id = 'other'
+        return preview
+
+    def test_creation_method(self):
+        # Just confirm that our helpers do what they say.
+        preview = self._createPreviewDiff(234, 45, 23)
+        self.assertEqual(234, preview.diff_lines_count)
+        self.assertEqual(45, preview.added_lines_count)
+        self.assertEqual(23, preview.removed_lines_count)
+        self.assertEqual(False, preview.stale)
+        from storm.tracer import debug; debug(1)
+        self.assertEqual(True, self._createStalePreviewDiff().stale)
+
+
 def test_suite():
-    """Return this module's doctest Suite. Unit tests are not run."""
-    suite = DocTestSuite()
+    """Return this module's doctest Suite. Unit tests are also run."""
+    suite = unittest.TestSuite()
+    suite.addTests(DocTestSuite())
+    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
 
 
