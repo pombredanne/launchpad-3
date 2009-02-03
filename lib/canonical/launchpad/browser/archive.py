@@ -1,3 +1,4 @@
+import pdb
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Browser views for archive."""
@@ -448,6 +449,11 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         Setup sources list entries widget, package filter widget and the
         search result list.
         """
+        pdb.set_trace() ############################## Breakpoint ##############################
+        if self.context.is_main:
+            self.request.response.redirect(
+                canonical_url(self.context.distribution))
+            return
         self.setupSourcesListEntries()
         self.setupStatusFilterWidget()
         self.setupSeriesFilterWidget()

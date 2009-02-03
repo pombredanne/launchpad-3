@@ -172,6 +172,9 @@ class IArchivePublic(IHasOwner):
 
     is_copy = Attribute("True if this archive is a copy archive.")
 
+    is_main = Bool(
+        title=_("True if archive is a main archive type"), required=False)
+
     title = exported(
         Text(title=_("Archive Title."), required=False))
 
