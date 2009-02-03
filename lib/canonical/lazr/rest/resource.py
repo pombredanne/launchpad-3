@@ -318,8 +318,8 @@ class HTTPResource:
 
         The web service supports WADL, XHTML, and JSON
         representations. If no supported media type is requested, JSON
-        is the default. This method whether the client would rather
-        have WADL, XHTML, or JSON.
+        is the default. This method determines whether the client
+        would rather have WADL, XHTML, or JSON.
         """
         content_types = self.getPreferredContentTypes()
         preferences = []
