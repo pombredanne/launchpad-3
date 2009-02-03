@@ -38,7 +38,7 @@ And on that page, we expect to see that the spec is targeted to the 1.0
 milestone.
 
   >>> find_main_content(admin_browser.contents)
-  <...Milestone target:
+  <...Milestone target:...
   <.../firefox/+milestone/1.0...
 
   >>> admin_browser.getLink('1.0').url
