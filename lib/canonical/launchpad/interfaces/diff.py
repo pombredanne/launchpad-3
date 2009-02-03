@@ -12,7 +12,7 @@ __all__ = [
     'IStaticDiffSource',
     ]
 
-from zope.schema import Object, Int, Text, TextLine
+from zope.schema import Bool, Object, Int, Text, TextLine
 from zope.interface import Interface
 
 from canonical.launchpad import _
@@ -90,3 +90,9 @@ class IPreviewDiff(Interface):
 
     conflicts = Text(
         title=_('The text describing any path or text conflicts.'))
+
+    stale = Bool(
+        readonly=True, description=_(
+            'If the preview diff is stale, it is out of date when compared '
+            'to the tip revisions of the source, target, and possibly '
+            'dependent branches.'))

@@ -160,3 +160,10 @@ class PreviewDiff(Storm):
         self.conflicts = conflicts
 
         self.diff._update(diff_content, diffstat, 'merge.diff')
+
+    @property
+    def stale(self):
+        """See `IPreviewDiff`."""
+        # A preview diff is stale if the revision ids used to make the diff
+        # are different from the tips of the source or target branches.
+        
