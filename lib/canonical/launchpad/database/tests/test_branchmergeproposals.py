@@ -9,6 +9,7 @@ from unittest import TestCase, TestLoader
 
 from pytz import UTC
 from zope.component import getUtility
+import transaction
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
@@ -36,8 +37,7 @@ from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.testing import verifyObject
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer,)
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -1003,7 +1003,10 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
 class TestCreateMergeProposalJob(TestCaseForMessageJob):
     """Tests for CreateMergeProposalJob."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def test_providesInterface(self):
         """The class and instances correctly implement their interfaces."""
@@ -1014,6 +1017,16 @@ class TestCreateMergeProposalJob(TestCaseForMessageJob):
         job = CreateMergeProposalJob.create(lfa)
         verifyObject(IMessageJob, job)
         verifyObject(ICreateMergeProposalJob, job)
+
+    def test_run_creates_proposal(self):
+        """CreateMergeProposalJob.run should create a merge proposal."""
+        message, source, target = self.makeMergeDirectiveEmail()
+        lfa = self.makeLibraryFileAlias(message)
+        job = CreateMergeProposalJob.create(lfa)
+        transaction.commit()
+        proposal, comment = job.run()
+        self.assertEqual(proposal.source_branch, source)
+        self.assertEqual(proposal.target_branch, target)
 
 
 def test_suite():

@@ -6,7 +6,6 @@ from textwrap import dedent
 import transaction
 import unittest
 
-from bzrlib.merge_directive import MergeDirective2
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
@@ -298,25 +297,6 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertRaises(InvalidBranchMergeProposalAddress,
                           self.code_handler.getBranchMergeProposal, 'mp+abc@')
 
-    def makeMergeDirective(self, source_branch=None, target_branch=None,
-        source_branch_url=None, target_branch_url=None):
-        if source_branch_url is None:
-            if source_branch is None:
-                source_branch = self.factory.makeAnyBranch()
-            source_branch_url = (
-                config.codehosting.supermirror_root +
-                source_branch.unique_name)
-        if target_branch_url is None:
-            if target_branch is None:
-                target_branch = self.factory.makeAnyBranch()
-            target_branch_url = (
-                config.codehosting.supermirror_root +
-                target_branch.unique_name)
-        return MergeDirective2(
-            'revid', 'sha', 0, 0, target_branch_url,
-            source_branch=source_branch_url, base_revision_id='base-revid',
-            patch='booga')
-
     def test_acquireBranchesForProposal(self):
         """Ensure CodeHandler._acquireBranchesForProposal works."""
         target_branch = self.factory.makeAnyBranch()
@@ -428,20 +408,6 @@ class TestCodeHandler(TestCaseWithFactory):
             code_handler.findMergeDirectiveAndComment, message)
         transaction.commit()
 
-    def makeMergeDirectiveEmail(self, body='Hi!\n'):
-        """Create an email with a merge directive attached.
-
-        :param body: The message body to use for the email.
-        :return: message, source_branch, target_branch
-        """
-        target_branch = self.factory.makeProductBranch()
-        source_branch = self.factory.makeProductBranch(
-            product=target_branch.product)
-        md = self.makeMergeDirective(source_branch, target_branch)
-        message = self.factory.makeSignedMessage(body=body,
-            subject='My subject', attachment_contents=''.join(md.to_lines()))
-        return message, source_branch, target_branch
-
     def test_processMergeProposal(self):
         """processMergeProposal creates a merge proposal and comment."""
         message, source_branch, target_branch = self.makeMergeDirectiveEmail()
@@ -499,8 +465,8 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
-            notification.get_payload(),
-            'The branch %s is already propos=\ned for merging into %s.\n\n' % (
+            notification.get_payload(decode=True),
+            'The branch %s is already proposed for merging into %s.\n\n' % (
                 source_branch.bzr_identity, target_branch.bzr_identity))
 
 

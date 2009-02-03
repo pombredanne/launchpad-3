@@ -775,3 +775,6 @@ class CreateMergeProposalJob(object):
 
     def run(self):
         """See `ICreateBranchMergeProposalJob`."""
+        # Avoid circular import
+        from canonical.launchpad.mail.codehandler import CodeHandler
+        return CodeHandler().processMergeProposal(self.getMessage())
