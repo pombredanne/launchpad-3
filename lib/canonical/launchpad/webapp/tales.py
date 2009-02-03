@@ -31,9 +31,12 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IHasIcon, IHasLogo,
-    IHasMugshot, IPerson, IPersonSet, IProduct, IProject, ISprint,
-    LicenseStatus, NotFoundError)
+    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
+    ISprint, LicenseStatus, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -904,6 +907,31 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             url, image_html, cgi.escape(person.browsername))
 
 
+class TeamFormatterAPI(PersonFormatterAPI):
+    """Adapter for `ITeam` objects to a formatted string."""
+
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).url(view_name)
+
+    def api_url(self, context):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).api_url(context)
+
+    def link(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return '&lt;redacted&gt;'
+        return super(TeamFormatterAPI, self).link(view_name, rootsite)
+
+
 class CustomizableFormatter(ObjectFormatterAPI):
     """A ObjectFormatterAPI that is easy to customize.
 
@@ -1694,8 +1722,9 @@ class PageTemplateContextsAPI:
         underscores, and use this to look up a string, unicode or
         function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles, emit a
-        warning that this page has no title, and return the default page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit
+        a warning that this page has no title, and return the default page
+        title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)

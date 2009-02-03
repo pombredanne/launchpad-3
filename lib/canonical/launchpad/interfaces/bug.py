@@ -200,6 +200,9 @@ class IBug(ICanBeMentored):
             value_type=Reference(schema=IBugTask),
             readonly=True),
         exported_as='bug_tasks')
+    default_bugtask = Reference(
+        title=_("The first bug task to have been filed."),
+        schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')

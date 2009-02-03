@@ -5,10 +5,13 @@
 __metaclass__ = type
 
 from datetime import datetime
+from textwrap import dedent
+import transaction
 from unittest import TestCase, TestLoader
 
 from pytz import UTC
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
@@ -28,7 +31,8 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -51,7 +55,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.target_branch = self.factory.makeBranch()
+        self.target_branch = self.factory.makeProductBranch()
         login_person(self.target_branch.owner)
 
     def assertProposalState(self, proposal, state):
@@ -259,8 +263,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
 
     def _createMergeProposal(self, needs_review):
         # Create and return a merge proposal.
-        source_branch = self.factory.makeBranch()
-        target_branch = self.factory.makeBranch(
+        source_branch = self.factory.makeProductBranch()
+        target_branch = self.factory.makeProductBranch(
             product=source_branch.product)
         login_person(target_branch.owner)
         return source_branch.addLandingTarget(
@@ -305,8 +309,8 @@ class TestBranchMergeProposalCanReview(TestCase):
         login('test@canonical.com')
 
         factory = LaunchpadObjectFactory()
-        self.source_branch = factory.makeBranch()
-        self.target_branch = factory.makeBranch(
+        self.source_branch = factory.makeProductBranch()
+        self.target_branch = factory.makeProductBranch(
             product=self.source_branch.product)
         registrant = factory.makePerson()
         self.proposal = self.source_branch.addLandingTarget(
@@ -336,7 +340,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         login(ANONYMOUS)
         factory = LaunchpadObjectFactory()
         owner = factory.makePerson()
-        self.target_branch = factory.makeBranch(owner=owner)
+        self.target_branch = factory.makeProductBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
         self.proposals = [
             factory.makeBranchMergeProposal(self.target_branch)
@@ -524,8 +528,9 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_notifyOnCreate(self):
         """Ensure that a notification is emitted on creation"""
-        source_branch = self.factory.makeBranch()
-        target_branch = self.factory.makeBranch(product=source_branch.product)
+        source_branch = self.factory.makeProductBranch()
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product)
         registrant = self.factory.makePerson()
         result, event = self.assertNotifies(
             NewBranchMergeProposalEvent,
@@ -586,7 +591,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
                          set(recipients.keys()))
 
     def test_getNotificationRecipientsAnyBranch(self):
-        dependent_branch = self.factory.makeBranch()
+        dependent_branch = self.factory.makeProductBranch()
         bmp = self.factory.makeBranchMergeProposal(
             dependent_branch=dependent_branch)
         recipients = bmp.getNotificationRecipients(
@@ -686,14 +691,14 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             product = self.factory.makeProduct(name=product_name)
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeProductBranch(
             product=product, owner=owner, registrant=registrant,
             name=branch_name)
         if registrant is None:
             registrant = owner
         bmp = branch.addLandingTarget(
             registrant=registrant,
-            target_branch=self.factory.makeBranch(product=product))
+            target_branch=self.factory.makeProductBranch(product=product))
         if needs_review:
             bmp.requestReview()
         return bmp
@@ -988,6 +993,66 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
                          vote_reference.registrant)
         self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
+
+
+class TestUpdatePreviewDiff(TestCaseWithFactory):
+    """Test the updateMergeDiff method of BranchMergeProposal."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _updatePreviewDiff(self, merge_proposal):
+        # Update the preview diff for the merge proposal.
+        diff_text = dedent("""\
+            === modified file 'sample.py'
+            --- sample     2009-01-15 23:44:22 +0000
+            +++ sample     2009-01-29 04:10:57 +0000
+            @@ -19,7 +19,7 @@
+             from zope.interface import implements
+
+             from storm.expr import Desc, Join, LeftJoin
+            -from storm.references import Reference
+            +from storm.locals import Int, Reference
+             from sqlobject import ForeignKey, IntCol
+
+             from canonical.config import config
+            """)
+        diff_stat = u"M sample.py"
+        login_person(merge_proposal.registrant)
+        merge_proposal.updatePreviewDiff(
+            diff_text, diff_stat, u"source_id", u"target_id")
+        # Have to commit the transaction to make the Librarian file
+        # available.
+        transaction.commit()
+        return diff_text, diff_stat
+
+    def test_new_diff(self):
+        # Test that both the PreviewDiff and the Diff get created.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+
+    def test_update_diff(self):
+        # Test that both the PreviewDiff and the Diff get updated.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.registrant)
+        merge_proposal.updatePreviewDiff("random text", u"junk", u"a", u"b")
+        transaction.commit()
+        # Extract the primary key ids for the preview diff and the diff to
+        # show that we are reusing the objects.
+        preview_diff_id = removeSecurityProxy(
+            merge_proposal.preview_diff).id
+        diff_id = removeSecurityProxy(
+            merge_proposal.preview_diff.diff).id
+        diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+        self.assertEqual(
+            preview_diff_id,
+            removeSecurityProxy(merge_proposal.preview_diff).id)
+        self.assertEqual(
+            diff_id,
+            removeSecurityProxy(merge_proposal.preview_diff.diff).id)
 
 
 def test_suite():

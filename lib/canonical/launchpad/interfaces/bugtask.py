@@ -24,6 +24,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -321,6 +322,9 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+class IllegalTarget(Exception):
+    """Exception raised when trying to set an illegal bug task target."""
+    webservice_error(400) #Bad request.
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -341,8 +345,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone')
+    milestone = exported(Choice(
+        title=_('Milestone'), required=False, vocabulary='Milestone'))
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
@@ -447,9 +451,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                  "and now."))
     owner = exported(
         Reference(title=_("The owner"), schema=IPerson, readonly=True))
-    target = Reference(
+    target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
-        description=_("The software in which this bug should be fixed."))
+        readonly=True,
+        description=_("The software in which this bug should be fixed.")))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
@@ -589,6 +594,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         object, the date_assigned is set on the task. If the assignee
         value is set to None, date_assigned is also set to None.
         """
+
+    @operation_parameters(
+        target=copy_field(target))
+    @export_write_operation()
+    def transitionToTarget(target):
+        """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():
         """Update the targetnamecache field in the database.

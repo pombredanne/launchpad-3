@@ -47,7 +47,7 @@
       <a tal:define="link context_menu/delete_branch"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/remove" /></a>
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/trash-icon" /></a>
       <a tal:define="link context_menu/edit"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
