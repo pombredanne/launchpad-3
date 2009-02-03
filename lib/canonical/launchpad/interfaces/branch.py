@@ -494,6 +494,8 @@ def get_blacklisted_hostnames():
 
 class BranchURIField(URIField):
 
+    trailing_slash = False
+
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
@@ -506,7 +508,7 @@ class BranchURIField(URIField):
         # reused in the XMLRPC code, and the Authserver.
         # This also means we could get rid of the imports above.
 
-        uri = URI(self._toFieldValue(value))
+        uri = URI(self.normalize(value))
         supermirror_root = URI(config.codehosting.supermirror_root)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):

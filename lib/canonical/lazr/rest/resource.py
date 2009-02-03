@@ -38,7 +38,7 @@ from zope.component import (
     getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
-from zope.publisher.http import status_reasons
+from zope.publisher.http import init_status_codes, status_reasons
 from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
@@ -80,6 +80,7 @@ WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
 for code, reason in [(209, 'Content Returned')]:
     if not code in status_reasons:
         status_reasons[code] = reason
+init_status_codes()
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
     "A page template class for generating web service-related documents."

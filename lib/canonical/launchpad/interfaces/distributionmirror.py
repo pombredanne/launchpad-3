@@ -238,7 +238,7 @@ class DistroMirrorURIField(URIField):
         from canonical.launchpad.webapp.uri import URI
 
         super(DistroMirrorURIField, self)._validate(value)
-        uri = URI(self._toFieldValue(value))
+        uri = URI(self.normalize(value))
 
         # This field is also used when creating new mirrors and in that case
         # self.context is not an IDistributionMirror so it doesn't make sense

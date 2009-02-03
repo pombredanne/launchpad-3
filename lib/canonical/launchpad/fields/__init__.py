@@ -221,6 +221,15 @@ class IURIField(ITextLine):
                       'automatically removed. If set to None, URIs will '
                       'not be normalized.'))
 
+    def normalize(input):
+        """Normalize a URI.
+
+         * whitespace is stripped from the input value
+         * if the field requires (or forbids) a trailing slash on the URI,
+           ensures that the widget ends in a slash (or doesn't end in a slash).
+         * the URI is canonicalized.
+         """
+
 
 class IBaseImageUpload(IBytes):
     """Marker interface for ImageUpload fields."""
@@ -594,17 +603,11 @@ class URIField(TextLine):
 
     def set(self, object, value):
         """Canonicalize a URL and set it as a field value."""
-        value = self._toFieldValue(value)
+        value = self.normalize(value)
         super(URIField, self).set(object, value)
 
-    def _toFieldValue(self, input):
-        """The URIField has the following special behavior:
-
-         * whitespace is stripped from the input value
-         * if the field requires (or forbids) a trailing slash on the URI,
-           ensures that the widget ends in a slash (or doesn't end in a slash).
-         * the URI is canonicalized.
-        """
+    def normalize(self, input):
+        """See `IURIField`."""
         input = input.strip()
         if input:
             try:
@@ -625,7 +628,7 @@ class URIField(TextLine):
     def _validate(self, value):
         """Ensure the value is a valid URI."""
 
-        uri = URI(self._toFieldValue(value))
+        uri = URI(self.normalize(value))
 
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(

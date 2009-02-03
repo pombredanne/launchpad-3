@@ -1039,7 +1039,7 @@ class BranchSet:
 
         # Run any necessary data massage on the branch URL.
         if url is not None:
-            url = IBranch['url']._toFieldValue(url)
+            url = IBranch['url'].normalize(url)
 
         # Make sure that the new branch has a unique name if not a junk
         # branch.
