@@ -88,7 +88,7 @@ class BatchNavigator:
         # compatibility (as in the past a work-around has been to include
         # the url batch params in hidden fields within posted forms), if
         # there is no 'start' param in the query string, default to the old
-        # behaviour of using the request (which implicitely gets them
+        # behaviour of using the request (which automatically gets them
         # from the request.form dict):
         query_string = request.get('QUERY_STRING')
         if query_string is None:
