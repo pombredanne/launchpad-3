@@ -244,4 +244,9 @@
       provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
     <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalGetter" />
   </securedutility>
+  <securedutility
+      component="canonical.launchpad.database.CreateMergeProposalJob"
+      provides="canonical.launchpad.interfaces.ICreateMergeProposalJobSource" >
+    <allow interface="canonical.launchpad.interfaces.ICreateMergeProposalJobSource" />
+  </securedutility>
 </configure>
