@@ -467,8 +467,7 @@ class BranchURIField(URIField):
         # reused in the XMLRPC code, and the Authserver.
         # This also means we could get rid of the imports above.
 
-        # URIField has already established that we have a valid URI
-        uri = URI(value)
+        uri = URI(self._toFieldValue(value))
         supermirror_root = URI(config.codehosting.supermirror_root)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
