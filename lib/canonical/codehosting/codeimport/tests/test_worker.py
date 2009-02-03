@@ -423,14 +423,24 @@ class TestActualImportMixin:
             self.source_details, self.foreign_store, self.bazaar_store,
             logging.getLogger())
 
+    def getBazaarWorkingTree(self, worker):
+        t = self.makeTemporaryDirectory()
+        return worker.bazaar_branch_store.pull(
+            self.source_details.branch_id, t)
+
+    def getForeignTree(self, worker):
+        t = self.makeTemporaryDirectory()
+        #s = os.getcwd()
+        os.chdir(t)
+        return worker.foreign_tree_store.fetch(
+            self.source_details, t)
+
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
         # the branch.
         worker = self.makeImportWorker()
         worker.run()
-        t = self.makeTemporaryDirectory()
-        bazaar_tree = worker.bazaar_branch_store.pull(
-            self.source_details.branch_id, t)
+        bazaar_tree = self.getBazaarWorkingTree(worker)
         # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
         # are importing has two revisions. Looking at the test, it's not
         # obvious why we make this assumption, hence the XXX. The two
@@ -442,18 +452,18 @@ class TestActualImportMixin:
         # Do an import.
         worker = self.makeImportWorker()
         worker.run()
-        bazaar_tree = worker.getBazaarWorkingTree()
+        bazaar_tree = self.getBazaarWorkingTree(worker)
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
         # Change the remote branch.
-        foreign_tree = worker.getForeignTree()
+        foreign_tree = self.getForeignTree(worker)
         self.commitInForeignTree(foreign_tree)
 
         # Run the same worker again.
         worker.run()
 
         # Check that the new revisions are in the Bazaar branch.
-        bazaar_tree = worker.getBazaarWorkingTree()
+        bazaar_tree = self.getBazaarWorkingTree(worker)
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
     def test_import_script(self):
