@@ -15,7 +15,8 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter, UserNotBranchReviewer)
+    BranchMergeProposalExists, IBranchMergeProposalGetter,
+    UserNotBranchReviewer)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
@@ -28,6 +29,7 @@ from canonical.launchpad.mail.commands import (
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_error_message, get_main_body,
     get_person_or_team, IncomingEmailError, parse_commands)
+from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
@@ -94,6 +96,8 @@ class VoteEmailCommand(CodeReviewEmailCommand):
         '0': CodeReviewVote.ABSTAIN,
         '-0': CodeReviewVote.ABSTAIN,
         '-1': CodeReviewVote.DISAPPROVE,
+        'needsfixing': CodeReviewVote.NEEDS_FIXING,
+        'needs-fixing': CodeReviewVote.NEEDS_FIXING,
         }
 
     def execute(self, context):
@@ -356,7 +360,14 @@ class CodeHandler:
         CodeReviewComment.
         """
         submitter = getUtility(ILaunchBag).user
-        comment_text, md = self.findMergeDirectiveAndComment(message)
+        try:
+            comment_text, md = self.findMergeDirectiveAndComment(message)
+        except MissingMergeDirective:
+            body = get_error_message('missingmergedirective.txt')
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
         source, target = self._acquireBranchesForProposal(md, submitter)
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
@@ -365,11 +376,24 @@ class CodeHandler:
             transaction.commit()
         else:
             review_diff = None
-        bmp = source.addLandingTarget(submitter, target, needs_review=True,
-                                      review_diff=review_diff)
-        if comment_text.strip() == '':
-            comment = None
-        else:
-            comment = bmp.createComment(
-                submitter, message['Subject'], comment_text)
-        return bmp, comment
+        try:
+            bmp = source.addLandingTarget(submitter, target,
+                                          needs_review=True,
+                                          review_diff=review_diff)
+
+            if comment_text.strip() == '':
+                comment = None
+            else:
+                comment = bmp.createComment(
+                    submitter, message['Subject'], comment_text)
+            return bmp, comment
+
+        except BranchMergeProposalExists:
+            body = get_error_message(
+                'branchmergeproposal-exists.txt',
+                source_branch=source.bzr_identity,
+                target_branch=target.bzr_identity)
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+

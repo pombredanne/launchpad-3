@@ -16,7 +16,8 @@ Source packages can be obtained from the context of a distribution.
      u'name': u'mozilla-firefox',
      u'resource_type_link': u'http://.../#distribution_source_package',
      u'self_link': u'http://.../debian/+source/mozilla-firefox',
-     u'title': u'\u201cmozilla-firefox\u201d source package in Debian'}
+     u'title': u'\u201cmozilla-firefox\u201d source package in Debian',
+     u'upstream_product_link': None}
 
 You can obtain a collection of bug tasks associated with the source
 package using the "getBugTasks" method.
@@ -69,3 +70,26 @@ It's also possible to search for tasks with the "searchTasks" method:
     0. Bug #3 in mozilla-firefox (Debian): "Bug Title Test"
        New, Unknown, <http://api.launchpad.dev/beta/bugs/3>
        <http://api.launchpad.dev/beta/debian/+source/mozilla-firefox/+bug/3>
+
+If the package is linked to an upstream product in Launchpad you can
+retrieve that product using the upstream_product_link of the source
+package.
+
+    >>> ubuntu = webservice.get('/ubuntu').jsonBody()
+    >>> ubuntu_firefox = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSourcePackage',
+    ...     name='mozilla-firefox').jsonBody()
+
+    >>> upstream_product = webservice.get(
+    ...     ubuntu_firefox['upstream_product_link']).jsonBody()
+
+    >>> print pretty(upstream_product)
+    {...
+     u'display_name': u'Mozilla Firefox'...
+     u'self_link': u'http://.../firefox'...}
+
+If the package isn't linked to an upstream product its
+upstream_product_link will be None.
+
+    >>> print mozilla_firefox['upstream_product_link']
+    None

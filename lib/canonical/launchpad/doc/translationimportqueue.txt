@@ -172,11 +172,6 @@ Reset any pofile/potemplate information we have for the po_sr_entry.
     >>> po_sr_entry.potemplate = None
     >>> po_sr_entry.pofile = None
 
-XXX: CarlosPerelloMarin 20060331 If flush_database_updates is removed from
-here we don't see the pofile.path change and the internal code path that we
-want to check here doesn't work. For more information, see bug #3989
-
-    >>> flush_database_updates()
     >>> transaction.commit()
 
 Now, let's check that we cannot find the pot_entry as a POTemplate because
@@ -200,9 +195,9 @@ We can see that we got the same POFile as before:
     >>> guessed_pofile == pofile
     True
 
-And because it's a publised upload, the IPOFile in our database got
-its path changed to the one noted by this upload instead of having the one
-we set a couple of lines ago (u'po/sr-old.pot'):
+And because it's a published upload, the IPOFile in our database got
+its path changed to the one noted by this upload instead of having the
+one we set a couple of lines ago (u'po/sr-old.pot'):
 
     >>> po_sr_entry.is_published
     True
@@ -1285,7 +1280,6 @@ tarball were exactly as the filename filter returned them.
     netapplet       | None               | new-directory/fr.po
 
 
-
 = Invalid data =
 
 If administrators fail to correct certain errors in requests while approving
@@ -1323,8 +1317,6 @@ raise errors about them.
 
     >>> entry.status = RosettaImportStatus.APPROVED
 
-    >>> import logging
-    >>> from canonical.launchpad.scripts.po_import import ImportProcess
     >>> ImportProcess(transaction, logging).run()
     Traceback (most recent call last):
     ...
