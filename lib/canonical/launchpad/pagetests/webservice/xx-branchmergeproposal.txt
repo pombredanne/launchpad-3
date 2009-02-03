@@ -87,5 +87,6 @@ The diff is now visible through the merge proposal.
     self_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff'
     source_revision_id: u'rev-a'
+    stale: True
     target_revision_id: u'rev-b'
 
