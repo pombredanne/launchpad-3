@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -9,7 +9,6 @@ __all__ = [
     'DummyPOFile',
     'POFileSet',
     'POFileToTranslationFileDataAdapter',
-    'POFileTranslator',
     ]
 
 import datetime
@@ -31,15 +30,14 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
-    DummyTranslationMessage, make_plurals_sql_fragment, TranslationMessage)
+    make_plurals_sql_fragment, TranslationMessage)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet, IPOFileTranslator,
+    ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
-    IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
-    OutdatedTranslationError, RosettaImportStatus, TooManyPluralFormsError,
-    TranslationConstants, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError, TranslationPermission,
-    TranslationValidationStatus)
+    IVPOExportSet, NotExportedFromLaunchpad, OutdatedTranslationError,
+    RosettaImportStatus, TooManyPluralFormsError, TranslationConstants,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
+    TranslationPermission, TranslationValidationStatus)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
@@ -1196,20 +1194,6 @@ class POFileSet:
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
-
-
-class POFileTranslator(SQLBase):
-    """See `IPOFileTranslator`."""
-
-    implements(IPOFileTranslator)
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(
-        dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    latest_message = ForeignKey(foreignKey='TranslationMessage',
-        dbName='latest_message', notNull=True)
-    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
-        notNull=False, default=None)
 
 
 class POFileToTranslationFileDataAdapter:

@@ -133,7 +133,7 @@ from canonical.launchpad.database.emailaddress import (
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pillar import PillarName
-from canonical.launchpad.database.pofile import POFileTranslator
+from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.shipit import ShippingRequest
@@ -2133,21 +2133,9 @@ class Person(
     @property
     def translation_history(self):
         """See `IPerson`."""
-        # Note that we can't use selectBy here because of the prejoins.
-        query = ['POFileTranslator.person = %s' % sqlvalues(self),
-                 'POFileTranslator.pofile = POFile.id',
-                 'POFile.language = Language.id',
-                 "Language.code <> 'en'"]
-        history = POFileTranslator.select(
-            ' AND '.join(query),
-            prejoins=[
-                'pofile.potemplate',
-                'latest_message',
-                'latest_message.potmsgset.msgid_singular',
-                'latest_message.msgstr0'],
-            clauseTables=['Language', 'POFile'],
-            orderBy="-date_last_touched")
-        return history
+        return POFileTranslator.select(
+            'POFileTranslator.person = %s' % sqlvalues(self),
+            orderBy='-date_last_touched')
 
     @property
     def translation_groups(self):
