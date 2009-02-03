@@ -393,9 +393,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         urls = {'http_base_url' : http_base_url,
                 'ftp_base_url' : ftp_base_url,
                 'rsync_base_url' : rsync_base_url}
-        for name, value in urls:
+        for name, value in urls.items():
             if value is not None:
-                name[value] = IDistributionMirror[name].toFieldValue(value)
+                urls[name] = IDistributionMirror[name]._toFieldValue(value)
 
         url = urls['http_base_url'] or urls['ftp_base_url']
         assert url is not None, (
