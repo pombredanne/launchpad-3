@@ -424,16 +424,10 @@ class TestActualImportMixin:
             logging.getLogger())
 
     def getBazaarWorkingTree(self, worker):
-        t = self.makeTemporaryDirectory()
+        """Get the Bazaar tree 'worker' stored into its BazaarBranchStore."""
+        tree_dir = self.makeTemporaryDirectory()
         return worker.bazaar_branch_store.pull(
-            self.source_details.branch_id, t)
-
-    def getForeignTree(self, worker):
-        t = self.makeTemporaryDirectory()
-        #s = os.getcwd()
-        os.chdir(t)
-        return worker.foreign_tree_store.fetch(
-            self.source_details, t)
+            worker.source_details.branch_id, tree_dir)
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
@@ -456,7 +450,15 @@ class TestActualImportMixin:
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
         # Change the remote branch.
-        foreign_tree = self.getForeignTree(worker)
+
+        tree_dir = self.makeTemporaryDirectory()
+        # This is pretty gross, but it works: the call to worker.run() will
+        # chdir() again to the worker's scratch directory, and in any case the
+        # tests subclass bzrlib's TestCaseInTempdir, so the directory will be
+        # restored at the end of the test.
+        os.chdir(tree_dir)
+        foreign_tree = worker.foreign_tree_store.fetch(
+            worker.source_details, tree_dir)
         self.commitInForeignTree(foreign_tree)
 
         # Run the same worker again.
