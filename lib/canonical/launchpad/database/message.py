@@ -629,27 +629,37 @@ class MessageJobAction(DBEnumeratedType):
         """)
 
 
-class MessageJob(SQLBase):
+class MessageJob(Storm):
     """A job for processing messages."""
 
     implements(IMessageJob)
 
-    _table = 'MergeDirectiveJob'
+    __storm_table__ = 'MergeDirectiveJob'
 
-    job = ForeignKey(foreignKey='Job', notNull=True)
+    id = Int(primary=True)
 
-    message_bytes = ForeignKey(
-        dbName='merge_directive', foreignKey='LibraryFileAlias', notNull=True)
+    jobID = Int('job', allow_none=False)
+    job = Reference(jobID, Job.id)
+
+    message_bytesID = Int('merge_directive', allow_none=False)
+    message_bytes = Reference(message_bytesID, 'LibraryFileAlias.id')
 
     action = EnumCol(enum=MessageJobAction)
 
     def __init__(self, message_bytes, action):
-        SQLBase.__init__(
-            self, job=Job(), message_bytes=message_bytes, action=action)
+        Storm.__init__(self)
+        self.job = Job()
+        self.message_bytes = message_bytes
+        self.action = action
 
     def destroySelf(self):
-        SQLBase.destroySelf(self)
+        Store.of(self).remove(self)
         self.job.destroySelf()
+
+    def sync(self):
+        store = Store.of(self)
+        store.flush()
+        store.autoreload(self)
 
     def getMessage(self):
         return email.message_from_string(self.message_bytes.read())
