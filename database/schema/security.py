@@ -86,9 +86,9 @@ class DbSchema(dict):
                 LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
                 LEFT JOIN pg_catalog.pg_language l ON l.oid = p.prolang
                 LEFT JOIN pg_catalog.pg_user u ON u.usesysid = p.proowner
-            WHERE p.prorettype <> 'pg_catalog.cstring'::pg_catalog.regtype
-                AND p.proargtypes[0] <> 'pg_catalog.cstring'::pg_catalog.regtype
-                AND NOT p.proisagg
+                LEFT JOIN pg_catalog.pg_type r ON r.oid = p.prorettype
+            WHERE
+                r.typname NOT IN ('trigger', 'language_handler')
                 AND pg_catalog.pg_function_is_visible(p.oid)
                 AND n.nspname <> 'pg_catalog'
                 """)
