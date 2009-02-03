@@ -2,7 +2,12 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
+__all__ = [
+    'LibraryFileAlias',
+    'LibraryFileAliasSet',
+    'LibraryFileContent',
+    'LibraryFileDownloadCount',
+    'ParsedLibrarianApacheLog']
 
 from datetime import datetime, timedelta
 import pytz
@@ -10,7 +15,9 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.locals import Date, Int, Reference, Storm, Unicode
+from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from storm.locals import (
+    Date, DateTime, Int, RawStr, Reference, Storm, Unicode)
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import (
@@ -21,7 +28,8 @@ from canonical.librarian.interfaces import (
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class LibraryFileContent(SQLBase):
@@ -207,6 +215,12 @@ class ParsedLibrarianApacheLog(Storm):
     __storm_table__ = 'ParsedLibrarianApacheLog'
 
     id = Int(primary=True)
-    file_name = Unicode(allow_none=False)
+    file_name = RawStr(allow_none=False)
     first_line = Unicode(allow_none=False)
     bytes_read = Int(allow_none=False)
+
+    def __init__(self, file_name, first_line, bytes_read):
+        self.file_name = file_name
+        self.first_line = unicode(first_line)
+        self.bytes_read = bytes_read
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)

@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'ILibraryFileAlias',
-    'ILibraryFileContent',
     'ILibraryFileAliasSet',
+    'ILibraryFileContent',
+    'ILibraryFileDownloadCount',
+    'IParsedLibrarianApacheLog',
     'NEVER_EXPIRES',
     ]
 
@@ -159,7 +161,7 @@ class IParsedLibrarianApacheLog(Interface):
 
     file_name = TextLine(
         title=_('Name of the file'), required=True, readonly=True)
-    first_line = Datetime(
+    first_line = TextLine(
         title=_("The log file's first line"), required=True,
         readonly=True)
     bytes_read = Int(
