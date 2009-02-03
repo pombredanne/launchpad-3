@@ -1029,8 +1029,8 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         # Test that both the PreviewDiff and the Diff get created.
         merge_proposal = self.factory.makeBranchMergeProposal()
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
-        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
 
     def test_update_diff(self):
         # Test that both the PreviewDiff and the Diff get updated.
@@ -1043,16 +1043,16 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         preview_diff_id = removeSecurityProxy(
             merge_proposal.preview_diff).id
         diff_id = removeSecurityProxy(
-            merge_proposal.preview_diff.diff).id
+            merge_proposal.preview_diff).diff_id
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
-        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
         self.assertEqual(
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertEqual(
             diff_id,
-            removeSecurityProxy(merge_proposal.preview_diff.diff).id)
+            removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
 
 def test_suite():
