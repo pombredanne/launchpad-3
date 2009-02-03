@@ -17,19 +17,31 @@
     <class class="canonical.launchpad.database.Translator">
         <allow interface="canonical.launchpad.interfaces.ITranslator" />
         <require
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IAdminTranslator" />
+        <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.ITranslator" />
+            set_schema="canonical.launchpad.interfaces.IEditTranslator" />
     </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslator"
-        name="+edit"
+        name="+admin"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+admin"
+        for="canonical.launchpad.interfaces.ITranslator"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.TranslatorAdminView"
+        template="../templates/translator-admin.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
         name="+edit"
-        for="canonical.launchpad.interfaces.ITranslator"
+        for="canonical.launchpad.interfaces.IEditTranslator"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslatorEditView"
         template="../templates/translator-edit.pt"

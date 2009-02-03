@@ -21,6 +21,7 @@ __all__ = [
     'BranchListingSort',
     'BranchPersonSearchContext',
     'BranchPersonSearchRestriction',
+    'BranchMergeControlStatus',
     'BranchType',
     'BranchTypeError',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
@@ -42,6 +43,8 @@ __all__ = [
     'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
     'RepositoryFormat',
+    'IRevisionMailJob',
+    'IRevisionMailJobSource',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
@@ -71,7 +74,8 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat7)
 from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
-from zope.schema import Bool, Int, Choice, Object, Text, TextLine, Datetime
+from zope.schema import (
+    Bool, Bytes, Int, Choice, Object, Text, TextLine, Datetime)
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
@@ -88,7 +92,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -137,6 +142,44 @@ class BranchLifecycleStatus(DBEnumeratedType):
         """)
 
     ABANDONED = DBItem(80, "Abandoned")
+
+
+class BranchMergeControlStatus(DBEnumeratedType):
+    """Branch Merge Control Status
+
+    Does the branch want Launchpad to manage a merge queue, and if it does,
+    how does the branch owner handle removing items from the queue.
+    """
+
+    NO_QUEUE = DBItem(1, """
+        Does not use a merge queue
+
+        The branch does not use the merge queue managed by Launchpad.  Merges
+        are tracked and managed elsewhere.  Users will not be able to queue up
+        approved branch merge proposals.
+        """)
+
+    MANUAL = DBItem(2, """
+        Manual processing of the merge queue
+
+        One or more people are responsible for manually processing the queued
+        branch merge proposals.
+        """)
+
+    ROBOT = DBItem(3, """
+        A branch merge robot is used to process the merge queue
+
+        An external application, like PQM, is used to merge in the queued
+        approved proposed merges.
+        """)
+
+    ROBOT_RESTRICTED = DBItem(4, """
+        The branch merge robot used to process the queue is in restricted mode
+
+        When the robot is in restricted mode, normal queued branches are not
+        returned for merging, only those with "Queued for Restricted
+        merging" will be.
+        """)
 
 
 class BranchType(DBEnumeratedType):
@@ -429,12 +472,10 @@ class BranchTypeError(Exception):
     """
 
 
-class NoSuchBranch(Exception):
+class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
-    def __init__(self, unique_name):
-        self.unique_name = unique_name
-        Exception.__init__(self, "No such branch: %s" % (unique_name,))
+    _message_prefix = "No such branch"
 
 
 class BadBranchSearchContext(Exception):
@@ -680,6 +721,14 @@ class IBranch(IHasOwner):
             "The source package that this is a branch of. Source package "
             "branches always belong to a distribution series."))
 
+    distribution = Attribute(
+        "The IDistribution that this branch belongs to. None if not a "
+        "package branch.")
+
+    sourcepackage = Attribute(
+        "The ISourcePackage that this branch belongs to. None if not a "
+        "package branch.")
+
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
@@ -856,6 +905,14 @@ class IBranch(IHasOwner):
         not yet succeeded. Failed branches are included.
         """
 
+    merge_queue = Attribute(
+        "The queue that contains the QUEUED proposals for this branch.")
+
+    merge_control_status = Choice(
+        title=_('Merge Control Status'), required=True,
+        vocabulary=BranchMergeControlStatus,
+        default=BranchMergeControlStatus.NO_QUEUE)
+
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
@@ -864,6 +921,13 @@ class IBranch(IHasOwner):
 
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
+
+    def codebrowse_url(*extras):
+        """Construct a URL for this branch in codebrowse.
+
+        :param extras: Zero or more path segments that will be joined onto the
+            end of the URL (with `bzrlib.urlutils.join`).
+        """
 
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
@@ -874,6 +938,18 @@ class IBranch(IHasOwner):
         "development focus, then the result should be lp:product.  If "
         "the branch is related to a series, then lp:product/series. "
         "Otherwise the result is lp:~user/product/branch-name.")
+
+    def addToLaunchBag(launchbag):
+        """Add information about this branch to `launchbag'.
+
+        Use this when traversing to this branch in the web UI.
+
+        In particular, add information about the branch's container to the
+        launchbag. If the branch has a product, add that; if it has a source
+        package, add lots of information about that.
+
+        :param launchbag: `ILaunchBag`.
+        """
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.
@@ -1053,7 +1129,7 @@ class IBranchSet(Interface):
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            author=None, summary=None, whiteboard=None, date_created=None,
+            summary=None, whiteboard=None, date_created=None,
             distroseries=None, sourcepackagename=None):
         """Create a new branch.
 
@@ -1464,6 +1540,33 @@ class IBranchDiffJobSource(Interface):
         :param from_revision_spec: The revision spec to diff from.
         :param to_revision_spec: The revision spec to diff to.
         """
+
+
+class IRevisionMailJob(Interface):
+    """A Job to send email a revision change in a branch."""
+
+    revno = Int(title=u'The revno to send mail about.')
+
+    from_address = Bytes(title=u'The address to send mail from.')
+
+    perform_diff = Text(title=u'Determine whether diff should be performed.')
+
+    body = Text(title=u'The main text of the email to send.')
+
+    subject = Text(title=u'The subject of the email to send.')
+
+    def run():
+        """Send the mail as specified by this job."""
+
+
+class IRevisionMailJobSource(Interface):
+    """A utility to create and retrieve RevisionMailJobs."""
+
+    def create(db_branch, revno, email_from, message, perform_diff, subject):
+        """Create and return a new object that implements IRevisionMailJob."""
+
+    def iterReady():
+        """Iterate through ready IRevisionMailJobs."""
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):

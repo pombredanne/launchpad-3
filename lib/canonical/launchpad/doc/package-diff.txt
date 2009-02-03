@@ -71,14 +71,17 @@ Its main attributes are:
     >>> print package_diff.to_source.title
     pmount - 0.1-2
 
-Since the PackageDiff was not yet performed, both, 'date_fulfilled'
-and 'diff_content' attributes are empty.
+The PackageDiff record is not yet 'performed', so 'status' is PENDING
+and both 'date_fullfiled' and 'diff_content' fields are empty.
 
     >>> print package_diff.date_fulfilled
     None
 
     >>> print package_diff.diff_content
     None
+
+    >>> print package_diff.status.name
+    PENDING
 
 IPackageDiff offers a property that return the 'title' of the diff
 request.
@@ -307,7 +310,11 @@ was uploaded.
     >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
 
 The PackageDiff record is not yet 'performed', so both,
-'date_fullfiled' and 'diff_content' fields, are empty.
+'date_fullfiled' and 'diff_content' fields, are empty and 'status' is
+PENDING.
+
+    >>> print diff.status.name
+    PENDING
 
     >>> print diff.date_fulfilled
     None
@@ -320,11 +327,14 @@ Performing the diff.
     >>> diff.performDiff()
 
 The record is immediatelly updated, now the record contains a
-'date_fullfilled' and 'diff_content' points to a LibraryFileAlias
-with a proper mimetype.
+'date_fullfilled', its status is COMPLETED and 'diff_content' points
+to a LibraryFileAlias with a proper mimetype.
 
     >>> diff.date_fulfilled is not None
     True
+
+    >>> print diff.status.name
+    COMPLETED
 
     >>> print diff.diff_content.filename
     biscuit_1.0-1_1.0-8.diff.gz
@@ -520,6 +530,9 @@ the diff file can be retrieved.
 The PackageDiff request was correctly performed and the result is a
 empty library file, which is what the user expects.
 
+    >>> print diff.status.name
+    COMPLETED
+
     >>> diff.date_fulfilled is not None
     True
 
@@ -594,6 +607,9 @@ Let's do the commit dance again and generate the diff.
 The package-diff subsystem has dealt with the filename conflicts and
 the diff was properly generated.
 
+    >>> print diff.status.name
+    COMPLETED
+
     >>> diff.date_fulfilled is not None
     True
 
@@ -606,6 +622,54 @@ the diff was properly generated.
     @@ -2,0 +3 @@
     +I am evil.
     <BLANKLINE>
+
+The 'debdiff' application may fail to process the given pair of
+sources, usually due to hardlink within the source package or other
+very rare (thus unknown yet) conditions.
+
+Anyway, the package-diff request infrastructure copes fine with
+'debdiff' failures. When it happens the request is simply marked as
+FAILED, this way it will not block the pending-diff processor neither
+be processed again, unless it gets reset.
+
+In order to cause a 'debdiff' failure we will taint the DSC file of an
+uploaded source.
+
+    >>> packager = FakePackager(
+    ...     'broken-source', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+
+    >>> packager.buildUpstream(suite='breezy-autotest')
+    >>> packager.buildSource()
+    >>> ignore = packager.uploadSourceVersion('1.0-1', policy='sync')
+
+    >>> packager.buildVersion('1.0-2', changelog_text="I am broken.")
+    >>> packager.buildSource()
+    >>> pub = packager.uploadSourceVersion(
+    ...     '1.0-2', archive=foobar.archive)
+    >>> transaction.commit()
+
+    >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+    >>> [orig, upload_diff, dsc] = pub.sourcepackagerelease.files
+    >>> fillLibrarianFile(dsc.libraryfile.id)
+
+    >>> [broken_diff] = pub.sourcepackagerelease.package_diffs
+    >>> print broken_diff.title
+    1.0-1 (in Ubuntu) to 1.0-2
+
+With a tainted DSC 'debdiff' cannot do much and fails, resulting in a
+FAILED request (empty 'diff_content' and 'date_fullfilled').
+
+    >>> broken_diff.performDiff()
+    >>> transaction.commit()
+
+    >>> print broken_diff.status.name
+    FAILED
+
+    >>> broken_diff.date_fulfilled is None
+    True
+
+    >>> print broken_diff.diff_content
+    None
 
 
 == PackageDiff privacy ==

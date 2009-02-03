@@ -14,7 +14,7 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by title
                        date_created date_review_requested date_reviewed
-                       review_diff votes root_comment all_comments
+                       review_diff preview_diff votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
                        getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions root_message_id
@@ -27,6 +27,7 @@
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
                     enqueue dequeue moveToFrontOfQueue nominateReviewer
+                    updatePreviewDiff
                     " />
     <require
         permission="launchpad.AnyPerson"
@@ -60,6 +61,10 @@
       factory="canonical.launchpad.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"
       />
 
+  <class class="canonical.launchpad.database.MergeProposalCreatedJob">
+    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalJob"/>
+    <allow interface="canonical.launchpad.interfaces.IMergeProposalCreatedJob"/>
+  </class>
   <!-- hierarchy -->
   <browser:page
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
@@ -81,17 +86,12 @@
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       name="+index" />
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IBranchMergeProposal"
-    facet="branches"
-    permission="launchpad.View">
-    <browser:page
-        name="+heading"
-        template="../templates/branchmergeproposal-heading.pt" />
-    <browser:page
-        name="+heading-links"
-        template="../templates/branchmergeproposal-heading-links.pt" />
-  </browser:pages>
+  <browser:page
+      name="+heading"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branchmergeproposal-heading.pt" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
@@ -248,5 +248,11 @@
       class="canonical.launchpad.database.BranchMergeProposalGetter"
       provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
     <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalGetter" />
+  </securedutility>
+  <securedutility
+      component="canonical.launchpad.database.MergeProposalCreatedJob"
+      provides="canonical.launchpad.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource" >
+    <allow
+    interface="canonical.launchpad.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource" />
   </securedutility>
 </configure>

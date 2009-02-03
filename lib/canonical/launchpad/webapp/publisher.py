@@ -23,17 +23,19 @@ __all__ = [
     'UserAttributeCache',
     ]
 
-from zope.interface import implements
-from zope.component import getUtility, queryMultiAdapter
-from zope.app import zapi
-from zope.interface.advice import addClassAdvisor
+
 import zope.security.management
-from zope.security.checker import ProxyFactory, NamesChecker
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
+
+from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
+from zope.component import getUtility, queryMultiAdapter
+from zope.interface import implements
+from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces.http import IHTTPApplicationRequest
+from zope.security.checker import ProxyFactory, NamesChecker
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.layers import (
@@ -80,11 +82,55 @@ class DecoratorAdvisor:
 
 
 class stepthrough(DecoratorAdvisor):
+    """Add the decorated method to stepthrough traversals for a class.
+
+    A stepthrough method must take single argument that's the path segment for
+    the object that it's returning. A common pattern is something like:
+
+      @stepthrough('+foo')
+      def traverse_foo(self, name):
+          return getUtility(IFooSet).getByName(name)
+
+    which looks up an object in IFooSet called 'name', allowing a URL
+    traversal that looks like:
+
+      launchpad.net/.../+foo/name
+
+    See also doc/navigation.txt.
+
+    This uses Zope's class advisor stuff to make sure that the path segment
+    passed to `stepthrough` is handled by the decorated method.
+
+    That is::
+      cls.__stepthrough_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepthrough_traversals__'
 
 
 class stepto(DecoratorAdvisor):
+    """Add the decorated method to stepto traversals for a class.
+
+    A stepto method must take no arguments and return an object for the URL at
+    that point.
+
+      @stepto('+foo')
+      def traverse_foo(self):
+          return getUtility(IFoo)
+
+    which looks up an object for '+foo', allowing a URL traversal that looks
+    like:
+
+      launchpad.net/.../+foo
+
+    See also doc/navigation.txt.
+
+    This uses Zope's class advisor stuff to make sure that the path segment
+    passed to `stepto` is handled by the decorated method.
+
+    That is::
+      cls.__stepto_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepto_traversals__'
 
@@ -602,6 +648,7 @@ class Navigation:
 
         Otherwise, return the object.
         """
+        # Avoid circular imports.
         if nextobj is None:
             raise NotFound(self.context, name)
         elif isinstance(nextobj, redirection):

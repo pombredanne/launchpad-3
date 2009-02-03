@@ -29,7 +29,9 @@
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
                     branch_format repository_format control_format stacked_on
-                    createBranchRevisionFromIDs distroseries sourcepackagename"
+                    createBranchRevisionFromIDs distroseries sourcepackagename
+                    addToLaunchBag distribution sourcepackage codebrowse_url
+                    merge_queue"
                     />
     <require
         permission="launchpad.Edit"
@@ -40,11 +42,15 @@
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
                         reviewer branch_format repository_format
-                        control_format stacked_on"
+                        control_format stacked_on merge_queue
+                        merge_control_status"
         />
     <require
         permission="launchpad.AnyPerson"
-        set_attributes="date_last_modified whiteboard"/>
+        set_attributes="whiteboard"/>
+    <require
+        permission="zope.Public"
+        set_attributes="date_last_modified"/>
   </class>
 
   <adapter
@@ -337,7 +343,8 @@
       handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications" />
 
   <class class="canonical.launchpad.mailout.branch.RecipientReason">
-      <allow attributes="getReason branch mail_header recipient" />
+      <allow attributes="getReason branch mail_header recipient max_diff_lines"
+      />
   </class>
   <class class="canonical.launchpad.database.branch.BranchJob">
     <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
@@ -351,5 +358,17 @@
       provides="canonical.launchpad.interfaces.branch.IBranchDiffJobSource" >
     <allow
      interface="canonical.launchpad.interfaces.branch.IBranchDiffJobSource" />
+  </securedutility>
+  <class class="canonical.launchpad.database.branch.RevisionMailJob">
+    <allow interface="canonical.launchpad.interfaces.branch.IRevisionMailJob"
+    />
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
+  </class>
+  <securedutility
+      component="canonical.launchpad.database.branch.RevisionMailJob"
+      provides="canonical.launchpad.interfaces.branch.IRevisionMailJobSource" >
+    <allow
+     interface="canonical.launchpad.interfaces.branch.IRevisionMailJobSource"
+    />
   </securedutility>
 </configure>

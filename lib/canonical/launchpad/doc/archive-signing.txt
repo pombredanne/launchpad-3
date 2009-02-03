@@ -224,7 +224,7 @@ The generated key UID follows "Launchpad %(ppa.title)s" format.
 
     >>> [uid] = retrieved_key.uids
     >>> print uid.name
-    Launchpad PPA for Celso Providelo
+    Launchpad PPA for Celso áéíóú Providelo
 
 The secret key is securily stored in the designed configuration
 path. So only the IGPGHandler itself can access it.
@@ -268,7 +268,7 @@ the expected file.
     Traceback (most recent call last):
     ...
     AssertionError: Release file doesn't exist in the repository:
-    /var/tmp/ppa.test/cprov/ubuntutest/dists/hoary/Release
+    /var/tmp/ppa.test/cprov/ppa/ubuntutest/dists/hoary/Release
 
 It produces a detached signature for the repository Release current
 file contents.

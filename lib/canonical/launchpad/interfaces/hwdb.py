@@ -663,6 +663,11 @@ class IHWDevice(Interface):
         Only submissions matching all given criteria are returned.
         """
 
+    drivers = exported(
+        CollectionField(
+            title=_(u"The IHWDriver records related to this device."),
+            value_type=Reference(schema=IHWDriver)))
+
 
 class IHWDeviceSet(Interface):
     """The set of devices."""
