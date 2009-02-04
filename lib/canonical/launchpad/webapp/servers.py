@@ -960,6 +960,13 @@ class TranslationsPublication(LaunchpadBrowserPublication):
 class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.TranslationsLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(TranslationsBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Some of the translations responses vary based on languages.
+        self.response.setHeader(
+            'Vary', 'Cookie, WWW-Authenticate, Accept-Language')
+
 # ---- bugs
 
 class BugsPublication(LaunchpadBrowserPublication):

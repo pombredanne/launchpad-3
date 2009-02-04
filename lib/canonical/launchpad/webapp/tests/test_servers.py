@@ -9,9 +9,9 @@ from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
 from canonical.launchpad.webapp.servers import (
-    AnswersBrowserRequest, ApplicationServerSettingRequestFactory, 
+    AnswersBrowserRequest, ApplicationServerSettingRequestFactory,
     BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
-    VHostWebServiceRequestPublicationFactory,
+    TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
     WEBSERVICE_PATH_OVERRIDE, WebServiceClientRequest, WebServicePublication,
     WebServiceTestRequest)
@@ -320,6 +320,16 @@ class TestAnswersBrowserRequest(unittest.TestCase):
 
     def test_response_should_vary_based_on_language(self):
         request = AnswersBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, WWW-Authenticate, Accept-Language')
+
+
+class TestTranslationsBrowserRequest(unittest.TestCase):
+    """Tests for the Translations request class."""
+
+    def test_response_should_vary_based_on_language(self):
+        request = TranslationsBrowserRequest(StringIO.StringIO(''), {})
         self.assertEquals(
             request.response.getHeader('Vary'),
             'Cookie, WWW-Authenticate, Accept-Language')
