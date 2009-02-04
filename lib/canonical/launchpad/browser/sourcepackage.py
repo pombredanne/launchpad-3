@@ -113,7 +113,7 @@ class SourcePackageTranslationsMenu(NavigationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['overview', 'translationdownload', 'imports']
+    links = ('overview', 'translationdownload', 'imports')
 
     def imports(self):
         text = 'Import queue'
