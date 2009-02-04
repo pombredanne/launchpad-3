@@ -262,7 +262,7 @@ When an OOPS is triggered by the request, its identifier is logged:
 
 Two lines are logged. The first one is for the request in the slave
 store. When that fails, the request is retried in the master store,
-causing another lined to be logged.
+causing another line to be logged.
 
     >>> (timestamp, page_id, first_oops_id, duration,
     ...  start_vss, start_rss, end_vss, end_rss) = (
