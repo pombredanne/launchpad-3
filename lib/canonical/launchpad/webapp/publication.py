@@ -594,7 +594,7 @@ class LaunchpadBrowserPublication(
             profiler = self.thread_locals.profiler
             profiler.disable()
 
-            if not oopsid:
+            if oopsid is None:
                 info = (ProfilingOops, None, None)
                 error_utility = getUtility(IErrorReportingUtility)
                 error_utility.raising(info, request)
