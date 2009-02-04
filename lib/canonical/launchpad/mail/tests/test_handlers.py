@@ -11,12 +11,15 @@ from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
+from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
+from canonical.launchpad.database.branchmergeproposal import (
+    CreateMergeProposalJob)
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -450,6 +453,7 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler = CodeHandler()
         self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
+        JobRunner.fromReady(CreateMergeProposalJob).runAll()
         self.assertEqual(target, source.landing_targets[0].target_branch)
         # ensure the DB operations violate no constraints.
         transaction.commit()
