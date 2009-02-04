@@ -21,7 +21,7 @@ import sets
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
+    Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -31,6 +31,8 @@ from canonical.launchpad.fields import (
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
 from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposal)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -528,6 +530,20 @@ class IProductPublic(
         Products may override language code definitions for translation
         import purposes.
         """
+
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=TextLine()))
+    @operation_returns_collection_of(IBranchMergeProposal)
+    @export_read_operation()
+    def getMergeProposals(status):
+        """Returns all merge proposals of a given status.
+
+        :param status: A list of statuses to filter with.
+        :returns: A list of `IBranchMergeProposal`.
+        """
+
 
     def userCanEdit(user):
         """Can the user edit this product?"""
