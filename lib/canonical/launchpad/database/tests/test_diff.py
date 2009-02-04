@@ -98,7 +98,8 @@ class TestPreviewDiff(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def _createProposalWithPreviewDiff(self, dependent_branch=None):
+    def _createProposalWithPreviewDiff(self, dependent_branch=None,
+                                       content='content'):
         # Create and return a preview diff.
         mp = self.factory.makeBranchMergeProposal(
             dependent_branch=dependent_branch)
@@ -108,7 +109,7 @@ class TestPreviewDiff(TestCaseWithFactory):
         else:
             dependent_revision_id = u'rev-c'
         mp.updatePreviewDiff(
-            'content', u'stat', u'rev-a', u'rev-b',
+            content, u'stat', u'rev-a', u'rev-b',
             dependent_revision_id=dependent_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
@@ -127,6 +128,15 @@ class TestPreviewDiff(TestCaseWithFactory):
         self.assertEqual(
             canonical_url(mp) + '/+preview-diff',
             canonical_url(mp.preview_diff))
+
+    def test_empty_diff(self):
+        # Once the source is merged into the target, the diff between the
+        # branches will be empty.
+        mp = self._createProposalWithPreviewDiff(content=None)
+        preview = mp.preview_diff
+        self.assertIs(None, preview.diff_text)
+        self.assertEqual(0, preview.diff_lines_count)
+        self.assertEqual(mp, preview.branch_merge_proposal)
 
     def test_stale_allInSync(self):
         # If the revision ids of the preview diff match the source and target

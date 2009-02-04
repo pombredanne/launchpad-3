@@ -1094,10 +1094,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         if librarian_alias is None:
             return None
         else:
-            url = canonical_url(
-                librarian_alias, path_only_if_possible=True,
-                view_name=view_name)
-            return url
+            return librarian_alias.getURL()
 
     def link(self, view_name):
         """The link to the diff should show the line count.
@@ -1138,11 +1135,11 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         if args['url'] is None:
             return (
                 '<span title="%(title)s" class="%(style)s">'
-                '%(line_count)s</span>' % args(view_name))
+                '%(line_count)s</span>' % args)
         else:
             return (
                 '<a href="%(url)s" title="%(title)s" class="%(style)s">'
-                '%(line_count)s</a>' % args(view_name))
+                '%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):

@@ -115,7 +115,11 @@
     </tr>
     <tr tal:condition="context/preview_diff">
       <th>Diff against target:</th>
-      <td>xxx</td>
+      <td>
+        <tal:diff replace="structure context/preview_diff/fmt:link"/>
+        <pre tal:condition="context/preview_diff/conflicts"
+             tal:content="context/preview_diff/conflicts"/>
+      </td>
     </tr>
   </tbody>
 </table>
