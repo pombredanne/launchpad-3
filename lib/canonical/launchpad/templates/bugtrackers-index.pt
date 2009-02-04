@@ -37,7 +37,8 @@
     </thead>
 
     <tbody>
-      <tr tal:repeat="bugtracker view/bugtrackers">
+      <tr tal:repeat="bugtracker view/bugtrackers"
+          tal:attributes="class python:not bugtracker.enabled and 'disabled' or None">
           <td>
             <a tal:replace="structure bugtracker/fmt:link" />
           </td>

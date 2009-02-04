@@ -459,7 +459,7 @@ But admins can.
 
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message
-    Bug watch updates for Debian Bug tracker are currently disabled.
+    Bug watch updates for Debian Bug tracker are disabled.
 
 If a user looks at a disabled bug tracker they'll see a warning message
 notifying them that it has been disabled.
@@ -467,7 +467,15 @@ notifying them that it has been disabled.
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/debbugs')
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    Bug watch updates for Debian Bug tracker are currently disabled.
+    Bug watch updates for Debian Bug tracker are disabled.
+
+The list of bug trackers will display the disabled bug tracker
+'greyed-out' to indicate that it's disabled.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
+    >>> for tag in find_tags_by_class(user_browser.contents, 'disabled'):
+    ...     print extract_text(tag)
+    Debian Bug tracker  http://bugs.debian.org...
 
 The admin can re-enable the bug tracker.
 

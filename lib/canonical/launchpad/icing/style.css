@@ -288,6 +288,11 @@ table.listing table.simple td {padding: 0.25em;}
 table.compressed { width: auto }
 table.compressed td { padding: 0.25em 0.5em }
 
+/* For disabled items in a listing table, we show the row as greyed out */
+table.listing tr.disabled { color: grey }
+table.listing tr.disabled a { color: grey }
+
+
 /* ==== Summary tables ==== */
 
 /* Tables presenting summary information have subdued headers and a little
