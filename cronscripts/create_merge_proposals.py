@@ -10,7 +10,6 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.codehosting.branchfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource,)
@@ -22,19 +21,14 @@ class RunCreateMergeProposalJobs(LaunchpadCronScript):
     """Run create merge proposal jobs."""
 
     def main(self):
-        globalErrorUtility.configure('mpcreationjobs')
+        globalErrorUtility.configure('create_merge_proposals')
         job_source = getUtility(ICreateMergeProposalJobSource)
         runner = JobRunner.fromReady(job_source)
-        server = get_scanner_server()
-        server.setUp()
-        try:
-            runner.runAll()
-        finally:
-            server.tearDown()
+        runner.runAll()
         print 'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs)
 
 
 if __name__ == '__main__':
     script = RunCreateMergeProposalJobs(
-        'sendcodemail', config.mpcreationjobs.dbuser)
+        'create_merge_proposals', config.create_merge_proposals.dbuser)
     script.lock_and_run()

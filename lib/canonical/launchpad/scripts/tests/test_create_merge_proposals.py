@@ -1,7 +1,7 @@
 #! /usr/bin/python2.4
 # Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
-"""Test the sendbranchmail script"""
+"""Test the create_merge_proposals script"""
 
 import unittest
 import transaction
@@ -17,20 +17,27 @@ class TestCreateMergeProposals(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
-    def test_mpcreationjobs(self):
-        """Ensure mpcreationjobs runs and generates diffs."""
+    def test_create_merge_proposals(self):
+        """Ensure create_merge_proposals runs and creates proposals."""
         email, file_alias, source, target = (
             self.factory.makeMergeDirectiveEmail())
         CreateMergeProposalJob.create(file_alias)
         self.assertEqual(0, source.landing_targets.count())
         transaction.commit()
-        self.assertEqual(1, len(list(CreateMergeProposalJob.iterReady())))
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual('Ran 1 CreateMergeProposalJobs.\n', stdout)
         self.assertEqual('INFO    creating lockfile\n', stderr)
         self.assertEqual(1, source.landing_targets.count())
+
+    def test_oops(self):
+        file_alias = self.factory.makeLibraryFileAlias('bogus')
+        CreateMergeProposalJob.create(file_alias)
+        transaction.commit()
+        retcode, stdout, stderr = run_script(
+            'cronscripts/create_merge_proposals.py', [])
+        self.assertEqual('Ran 0 CreateMergeProposalJobs.\n', stdout)
 
 
 def test_suite():
