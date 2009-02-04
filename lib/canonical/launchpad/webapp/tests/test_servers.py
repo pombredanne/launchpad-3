@@ -291,6 +291,24 @@ class TestWebServiceRequest(unittest.TestCase):
         self.assertEqual(request.getApplicationURL(), server_url)
 
 
+class TestBasicLaunchpadRequest(unittest.TestCase):
+    """Tests for the base request class"""
+
+    def test_baserequest_response_should_vary(self):
+        """Test that our base response has a proper vary header."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'), 'Cookie, WWW-Authenticate')
+
+    def test_baserequest_response_should_vary_after_retry(self):
+        """Test that our base response has a proper vary header."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        retried_request = request.retry()
+        self.assertEquals(
+            retried_request.response.getHeader('Vary'),
+            'Cookie, WWW-Authenticate')
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(

@@ -482,6 +482,9 @@ class BasicLaunchpadRequest:
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
+        # Our response always vary based on authentication.
+        self.response.setHeader('Vary', 'Cookie, WWW-Authenticate')
+
     @property
     def stepstogo(self):
         return StepsToGo(self)
@@ -489,7 +492,7 @@ class BasicLaunchpadRequest:
     def retry(self):
         """See IPublisherRequest."""
         new_request = super(BasicLaunchpadRequest, self).retry()
-        # propagate the list of keys we have set in the WSGI environment
+        # Propagate the list of keys we have set in the WSGI environment.
         new_request._wsgi_keys = self._wsgi_keys
         return new_request
 
