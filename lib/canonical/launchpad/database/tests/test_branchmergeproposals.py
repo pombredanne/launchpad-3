@@ -1008,14 +1008,15 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
     def test_providesInterface(self):
         """The class and instances correctly implement their interfaces."""
         verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
-        file_alias = self.makeMergeDirectiveEmail()[1]
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
         job = CreateMergeProposalJob.create(file_alias)
         verifyObject(IMessageJob, job)
         verifyObject(ICreateMergeProposalJob, job)
 
     def test_run_creates_proposal(self):
         """CreateMergeProposalJob.run should create a merge proposal."""
-        message, file_alias, source, target = self.makeMergeDirectiveEmail()
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail())
         job = CreateMergeProposalJob.create(file_alias)
         transaction.commit()
         proposal, comment = job.run()

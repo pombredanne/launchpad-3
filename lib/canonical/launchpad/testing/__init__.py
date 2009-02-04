@@ -2,11 +2,9 @@
 # pylint: disable-msg=W0401,C0301
 
 import os, shutil, tempfile, unittest
-from cStringIO import StringIO
 
 from storm.store import Store
 
-from zope.component import getUtility
 import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -16,7 +14,6 @@ from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.factory import *
 
 
@@ -389,43 +386,6 @@ class TestCaseWithFactory(TestCase):
         server = FakeTransportServer(get_transport('.'))
         server.setUp()
         self.addCleanup(server.tearDown)
-
-    def makeMergeDirective(self, source_branch=None, target_branch=None,
-        source_branch_url=None, target_branch_url=None):
-        from bzrlib.merge_directive import MergeDirective2
-        if source_branch_url is None:
-            if source_branch is None:
-                source_branch = self.factory.makeAnyBranch()
-            source_branch_url = (
-                config.codehosting.supermirror_root +
-                source_branch.unique_name)
-        if target_branch_url is None:
-            if target_branch is None:
-                target_branch = self.factory.makeAnyBranch()
-            target_branch_url = (
-                config.codehosting.supermirror_root +
-                target_branch.unique_name)
-        return MergeDirective2(
-            'revid', 'sha', 0, 0, target_branch_url,
-            source_branch=source_branch_url, base_revision_id='base-revid',
-            patch='booga')
-
-    def makeMergeDirectiveEmail(self, body='Hi!\n'):
-        """Create an email with a merge directive attached.
-
-        :param body: The message body to use for the email.
-        :return: message, file_alias, source_branch, target_branch
-        """
-        target_branch = self.factory.makeProductBranch()
-        source_branch = self.factory.makeProductBranch(
-            product=target_branch.product)
-        md = self.makeMergeDirective(source_branch, target_branch)
-        message = self.factory.makeSignedMessage(body=body,
-            subject='My subject', attachment_contents=''.join(md.to_lines()))
-        message_string = message.as_string()
-        file_alias = getUtility(ILibraryFileAliasSet).create(
-            '*', len(message_string), StringIO(message_string), '*')
-        return message, file_alias, source_branch, target_branch
 
 
 def capture_events(callable_obj, *args, **kwargs):

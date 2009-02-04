@@ -116,14 +116,14 @@ class TestMessageJob(TestCaseWithFactory):
     def test_providesInterface(self):
         """Ensure that BranchJob implements IBranchJob."""
         # Ensure database constraints are satisfied.
-        file_alias = self.makeMergeDirectiveEmail()[1]
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
         job = MessageJob(file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
         job.sync()
         verifyObject(IMessageJob, job)
 
     def test_destroySelf_destroys_job(self):
         """Ensure that MessageJob.destroySelf destroys the Job as well."""
-        file_alias = self.makeMergeDirectiveEmail()[1]
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
         message_job = MessageJob(
             file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
         job_id = message_job.job.id
