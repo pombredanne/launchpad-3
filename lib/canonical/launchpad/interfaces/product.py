@@ -537,7 +537,7 @@ class IProductPublic(
             value_type=TextLine()))
     @operation_returns_collection_of(IBranchMergeProposal)
     @export_read_operation()
-    def getMergeProposals(status):
+    def getMergeProposals(status=None):
         """Returns all merge proposals of a given status.
 
         :param status: A list of statuses to filter with.

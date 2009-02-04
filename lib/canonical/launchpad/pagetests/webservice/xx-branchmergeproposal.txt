@@ -95,10 +95,9 @@ The diff is now visible through the merge proposal.
 It is possible to view all of a project's merge proposals or filter the
 proposals by their status.
 
-    >>> project = webservice.get('/fooix').jsonBody()
-    >>> proposals = webservice.get(
-    ...     project.getMergeProposals()).jsonBody()
+    >>> proposals = webservice.named_get(
+    ...     '/fooix', 'getMergeProposals').jsonBody()
     >>> for proposal in proposals['entries']:
-    ...     print proposals['self_link']
+    ...     print proposal
 
 
