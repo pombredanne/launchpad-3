@@ -32,6 +32,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         self.assertEqual(1, source.landing_targets.count())
 
     def test_oops(self):
+        """A bogus request should cause an oops, not an exception."""
         file_alias = self.factory.makeLibraryFileAlias('bogus')
         CreateMergeProposalJob.create(file_alias)
         transaction.commit()

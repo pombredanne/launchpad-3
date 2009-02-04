@@ -914,6 +914,10 @@ class CreateMergeProposalJob(object):
         """
         self.context = context
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.context == other.context)
+
     @classmethod
     def create(klass, message_bytes):
         """See `ICreateMergeProposalJobSource`."""

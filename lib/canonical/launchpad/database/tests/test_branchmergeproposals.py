@@ -1144,6 +1144,21 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
         self.assertEqual(proposal.source_branch, source)
         self.assertEqual(proposal.target_branch, target)
 
+    def test_iterReady_includes_ready_jobs(self):
+        """Ready jobs should be listed."""
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        job.job.sync()
+        job.context.sync()
+        self.assertEqual([job], list(CreateMergeProposalJob.iterReady()))
+
+    def test_iterReady_excludes_unready_jobs(self):
+        """Unready jobs should not be listed."""
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        job.job.start()
+        job.job.complete()
+        self.assertEqual([], list(CreateMergeProposalJob.iterReady()))
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):
     """Test the updateMergeDiff method of BranchMergeProposal."""
