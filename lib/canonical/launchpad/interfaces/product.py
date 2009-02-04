@@ -32,7 +32,7 @@ from canonical.launchpad.fields import (
     Summary, Title, URIField)
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
-    IBranchMergeProposal)
+    IBranchMergeProposal, BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -534,7 +534,7 @@ class IProductPublic(
     @operation_parameters(
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
-            value_type=TextLine()))
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
     @operation_returns_collection_of(IBranchMergeProposal)
     @export_read_operation()
     def getMergeProposals(status=None):
