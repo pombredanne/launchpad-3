@@ -98,7 +98,8 @@ proposals by their status.
     >>> proposals = webservice.named_get(
     ...     '/fooix', 'getMergeProposals').jsonBody()
     >>> for proposal in proposals['entries']:
-    ...     print proposal['self_link']
-    http://.../~source/fooix/fix-it/+merge/1
+    ...     print proposal['self_link'] + ' - ' + \
+    ...         proposal['queue_status']
+    http://.../~source/fooix/fix-it/+merge/1 - Work in progress
 
 
