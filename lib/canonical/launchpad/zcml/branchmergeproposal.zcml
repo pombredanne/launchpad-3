@@ -61,6 +61,10 @@
       factory="canonical.launchpad.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"
       />
 
+  <class class="canonical.launchpad.database.MergeProposalCreatedJob">
+    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalJob"/>
+    <allow interface="canonical.launchpad.interfaces.IMergeProposalCreatedJob"/>
+  </class>
   <!-- hierarchy -->
   <browser:page
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
@@ -244,5 +248,11 @@
       class="canonical.launchpad.database.BranchMergeProposalGetter"
       provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
     <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalGetter" />
+  </securedutility>
+  <securedutility
+      component="canonical.launchpad.database.MergeProposalCreatedJob"
+      provides="canonical.launchpad.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource" >
+    <allow
+    interface="canonical.launchpad.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource" />
   </securedutility>
 </configure>
