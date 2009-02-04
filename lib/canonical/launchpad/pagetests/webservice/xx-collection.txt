@@ -33,6 +33,14 @@ collection.
   >>> bugs_entries[-1]['title']
   u'jokosher exposes personal details in its actions portlet'
 
+There are no XHTML representations available for collections.
+
+  >>> print webservice.get('/bugs', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
+
 You can get other pages of the collection by following links:
 
   >>> result = webservice.get("/bugs?ws.start=5&ws.size=5")

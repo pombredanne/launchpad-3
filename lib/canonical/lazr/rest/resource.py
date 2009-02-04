@@ -139,6 +139,7 @@ class HTTPResource:
     # Some interesting media types.
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
+    XHTML_TYPE = 'application/xhtml+xml'
 
     # The representation value used when the client doesn't have
     # authorization to see the real value.
@@ -146,6 +147,10 @@ class HTTPResource:
 
     HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
                                   "with a POST request.")
+
+    # All resources serve WADL and JSON representations. Only entry
+    # resources serve XHTML representations.
+    SUPPORTED_CONTENT_TYPES = [WADL_TYPE, JSON_TYPE]
 
     def __init__(self, context, request):
         self.context = context
@@ -191,10 +196,7 @@ class HTTPResource:
         """
         incoming_etags = self._parseETags('If-None-Match')
 
-        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
-            media_type = self.WADL_TYPE
-        else:
-            media_type = self.JSON_TYPE
+        media_type = self.getPreferredSupportedContentType()
         existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
@@ -322,22 +324,25 @@ class HTTPResource:
     def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
 
-        The web service supports WADL and JSON representations. The
-        default is JSON. This method determines whether the client
-        would rather have WADL or JSON.
+        The web service supports WADL, XHTML, and JSON
+        representations. If no supported media type is requested, JSON
+        is the default. This method determines whether the client
+        would rather have WADL, XHTML, or JSON.
         """
         content_types = self.getPreferredContentTypes()
-        try:
-            wadl_pos = content_types.index(self.WADL_TYPE)
-        except ValueError:
-            wadl_pos = float("infinity")
-        try:
-            json_pos = content_types.index(self.JSON_TYPE)
-        except ValueError:
-            json_pos = float("infinity")
-        if wadl_pos < json_pos:
-            return self.WADL_TYPE
-        return self.JSON_TYPE
+        preferences = []
+        winner = None
+        for media_type in self.SUPPORTED_CONTENT_TYPES:
+            try:
+                pos = content_types.index(media_type)
+                if winner is None or pos < winner[1]:
+                    winner = (media_type, pos)
+            except ValueError:
+                pass
+        if winner is None:
+            return self.JSON_TYPE
+        else:
+            return winner[0]
 
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
@@ -618,6 +623,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.WADL_TYPE,
+                               HTTPResource.XHTML_TYPE,
+                               HTTPResource.JSON_TYPE]
+
     missing = object()
 
     def __init__(self, context, request):
@@ -645,8 +654,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.etags_by_media_type[media_type] = etag
             return etag
 
-        # Calculate the ETag for a JSON representation only.
-        if media_type != self.JSON_TYPE:
+        # Calculate the ETag for a JSON or XHTML representation only.
+        if media_type not in (self.JSON_TYPE, self.XHTML_TYPE):
             return None
 
         hash_object = sha.new()
@@ -688,6 +697,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
         data['http_etag'] = etag
         return data
+
+    def toXHTML(self, template_name="html-resource.pt"):
+        """Represent this resource as an XHTML document."""
+        template = LazrPageTemplateFile('../templates/' + template_name)
+        namespace = template.pt_getContext()
+        data = sorted([{'name' : name, 'value': value}
+                       for name, value in self.toDataForJSON().items()])
+        namespace['context'] = data
+        return template.pt_render(namespace)
 
     def processAsJSONHash(self, media_type, representation):
         """Process an incoming representation as a JSON hash.
@@ -739,6 +757,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 result = self.toWADL().encode("utf-8")
             elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
+            elif media_type == self.XHTML_TYPE:
+                result = self.toXHTML().encode("utf-8")
 
         self.request.response.setHeader('Content-Type', media_type)
         return result

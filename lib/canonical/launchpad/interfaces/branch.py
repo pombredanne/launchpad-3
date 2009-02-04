@@ -79,7 +79,7 @@ from zope.schema import (
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from canonical.lazr.fields import ReferenceChoice
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported)
 
@@ -858,16 +858,33 @@ class IBranch(IHasOwner):
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
-    landing_targets = Attribute(
-        "The BranchMergeProposals where this branch is the source branch.")
-    landing_candidates = Attribute(
-        "The BranchMergeProposals where this branch is the target branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
-    dependent_branches = Attribute(
-        "The BranchMergeProposals where this branch is the dependent branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
+    # These attributes actually have a value_type of IBranchMergeProposal,
+    # but uses Interface to prevent circular imports, and the value_type is set
+    # near IBranchMergeProposal.
+    landing_targets = exported(
+        CollectionField(
+            title=_('Landing Targets'),
+            description=_(
+                'A collection of the merge proposals where this branch is '
+                'the source branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
+    landing_candidates = exported(
+        CollectionField(
+            title=_('Landing Candidates'),
+            description=_(
+                'A collection of the merge proposals where this branch is '
+                'the target branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
+    dependent_branches = exported(
+        CollectionField(
+            title=_('Dependent Branches'),
+            description=_(
+                'A collection of the merge proposals that are dependent '
+                'on this branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
 
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
@@ -933,12 +950,18 @@ class IBranch(IHasOwner):
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
-    bzr_identity = Attribute(
-        "The shortest lp spec URL for this branch. "
-        "If the branch is associated with a product as the primary "
-        "development focus, then the result should be lp:product.  If "
-        "the branch is related to a series, then lp:product/series. "
-        "Otherwise the result is lp:~user/product/branch-name.")
+    bzr_identity = exported(
+        Text(
+            title=_('Bazaar Identity'),
+            readonly=True,
+            description=_(
+                'The bzr branch path as accessed by Launchpad. If the '
+                'branch is associated with a product as the primary '
+                'development focus, then the result should be lp:product.  '
+                'If the branch is related to a series, then '
+                'lp:product/series.  Otherwise the result is '
+                'lp:~user/product/branch-name.'
+                )))
 
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
