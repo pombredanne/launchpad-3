@@ -611,6 +611,26 @@ class ReadWriteResource(HTTPResource):
         return self.applyTransferEncoding(result)
 
 
+class EntryHTMLView:
+    """An HTML view of an entry."""
+
+    def __init__(self, context, request):
+        """Initialize with respect to a data object and request."""
+        self.context = context
+        self.request = request
+        self.resource = EntryResource(context, request)
+
+    def __call__(self):
+        """Send the entry data through an HTML template."""
+        template = LazrPageTemplateFile('../templates/html-resource.pt')
+        namespace = template.pt_getContext()
+        names_and_values = self.resource.toDataForJSON().items()
+        data = sorted([{'name' : name, 'value': value}
+                       for name, value in names_and_values])
+        namespace['context'] = data
+        return template.pt_render(namespace)
+
+
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
@@ -690,14 +710,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data['http_etag'] = etag
         return data
 
-    def toXHTML(self, template_name="html-resource.pt"):
+    def toXHTML(self):
         """Represent this resource as an XHTML document."""
-        template = LazrPageTemplateFile('../templates/' + template_name)
-        namespace = template.pt_getContext()
-        data = sorted([{'name' : name, 'value': value}
-                       for name, value in self.toDataForJSON().items()])
-        namespace['context'] = data
-        return template.pt_render(namespace)
+        return getMultiAdapter((self.context, self.request), name="entry")()
 
     def processAsJSONHash(self, media_type, representation):
         """Process an incoming representation as a JSON hash.
