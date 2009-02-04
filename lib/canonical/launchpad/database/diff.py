@@ -14,6 +14,7 @@ from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.uuid import generate_uuid
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces.diff import (
@@ -83,7 +84,7 @@ class Diff(SQLBase):
         else:
             self.diff_text = getUtility(ILibraryFileAliasSet).create(
                 filename, len(diff_content), StringIO(diff_content),
-                'text/x-diff')
+                'text/plain')
             self.diff_lines_count = len(diff_content.strip().split('\n'))
         self.diffstat = diffstat
 
@@ -170,7 +171,8 @@ class PreviewDiff(Storm):
             self.dependent_revision_id = dependent_revision_id
         self.conflicts = conflicts
 
-        self.diff._update(diff_content, diffstat, 'merge.diff')
+        filename = generate_uuid() + '.txt'
+        self.diff._update(diff_content, diffstat, filename)
 
     @property
     def stale(self):
