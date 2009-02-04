@@ -108,36 +108,24 @@ class TestMessageSet(unittest.TestCase):
         self.assertEqual('This is the diff, honest.', diff.blob.read())
 
 
-class TestCaseForMessageJob(TestCaseWithFactory):
-
-    def makeLibraryFileAlias(self, message=None):
-        if message is None:
-            content = 'foo'
-        else:
-            content = message.as_string()
-        return getUtility(ILibraryFileAliasSet).create(
-            'static.diff', len(content), StringIO(content), 'text/x-diff')
-
-
-class TestMessageJob(TestCaseForMessageJob):
+class TestMessageJob(TestCaseWithFactory):
     """Tests for MessageJob."""
 
     layer = LaunchpadFunctionalLayer
 
-    def makeMessageJob(self, message=None):
-        lfa = self.makeLibraryFileAlias(message)
-        return MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
-
     def test_providesInterface(self):
         """Ensure that BranchJob implements IBranchJob."""
         # Ensure database constraints are satisfied.
-        job = self.makeMessageJob()
+        file_alias = self.makeMergeDirectiveEmail()[1]
+        job = MessageJob(file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
         job.sync()
         verifyObject(IMessageJob, job)
 
     def test_destroySelf_destroys_job(self):
         """Ensure that MessageJob.destroySelf destroys the Job as well."""
-        message_job = self.makeMessageJob()
+        file_alias = self.makeMergeDirectiveEmail()[1]
+        message_job = MessageJob(
+            file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
         job_id = message_job.job.id
         message_job.destroySelf()
         self.assertRaises(SQLObjectNotFound, Job.get, job_id)
@@ -146,7 +134,10 @@ class TestMessageJob(TestCaseForMessageJob):
         """getMessage should return a Message with appropriate values."""
         ctrl = MailController(
             'from@example.com', ['to@example.com'], 'subject', 'body')
-        message_job = self.makeMessageJob(ctrl.makeMessage())
+        content = ctrl.makeMessage().as_string()
+        lfa = getUtility(ILibraryFileAliasSet).create(
+            'message', len(content), StringIO(content), 'text/x-diff')
+        message_job = MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
         transaction.commit()
         message = message_job.getMessage()
         self.assertEqual('from@example.com', message['From'])

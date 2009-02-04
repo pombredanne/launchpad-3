@@ -15,8 +15,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposalGetter, CreateMergeProposalJob,
     is_valid_transition)
-from canonical.launchpad.database.tests.test_message import (
-    TestCaseForMessageJob)
 from canonical.launchpad.interfaces import (
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     WrongBranchMergeProposal,)
@@ -32,7 +30,6 @@ from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
-from canonical.launchpad.mail.sendmail import MailController
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.testing import verifyObject
@@ -1000,7 +997,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote_reference.comment)
 
 
-class TestCreateMergeProposalJob(TestCaseForMessageJob):
+class TestCreateMergeProposalJob(TestCaseWithFactory):
     """Tests for CreateMergeProposalJob."""
 
     layer = LaunchpadZopelessLayer
@@ -1011,10 +1008,8 @@ class TestCreateMergeProposalJob(TestCaseForMessageJob):
     def test_providesInterface(self):
         """The class and instances correctly implement their interfaces."""
         verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
-        ctrl = MailController(
-            'from@example.com', ['to@example.com'], 'subject', 'body')
-        lfa = self.makeLibraryFileAlias(ctrl.makeMessage())
-        job = CreateMergeProposalJob.create(lfa)
+        file_alias = self.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
         verifyObject(IMessageJob, job)
         verifyObject(ICreateMergeProposalJob, job)
 
