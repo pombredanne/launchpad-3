@@ -176,9 +176,10 @@ Making another request will create another profile.
     RootObject:index.html-OOPS-...-MainThread.prof
     RootObject:index.html-OOPS-...-MainThread.prof
 
-If the request resulted in an OOPS, the OOPS id will be included in the
-filename. Two files are logged. One for the first request in the slave
-store, and one for the retried request in the master store:
+If the request resulted in an OOPS, the logged OOPS will have the real
+exception information, instead of the fake ProfilingOops one.  Two files
+are logged. One for the first request in the slave store, and one for
+the retried request in the master store:
 
     >>> http('GET /no-such-file HTTP/1.0', handle_errors=False)
     Traceback (most recent call last):
@@ -189,6 +190,14 @@ store, and one for the retried request in the master store:
     RootObject:index.html-OOPS-...-MainThread.prof
     Unknown-OOPS-...-MainThread.prof
     Unknown-OOPS-...-MainThread.prof
+
+    >>> oops = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> oops.write(stdout)
+    Oops-Id: OOPS-...
+    Exception-Type: NotFound
+    ...
+    URL: http://localhost/no-such-file
+    ...
 
 
 == Profiling scripts ==
@@ -252,7 +261,7 @@ When an OOPS is triggered by the request, its identifier is logged:
     NotFound:...
 
 Two lines are logged. The first one is for the request in the slave
-store. When that fails, the request is reqtried in the master store,
+store. When that fails, the request is retried in the master store,
 causing another lined to be logged.
 
     >>> (timestamp, page_id, first_oops_id, duration,
