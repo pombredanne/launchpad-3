@@ -121,9 +121,6 @@ the thread that processed it.
 
     >>> old_stat_float_times = os.stat_float_times()
     >>> os.stat_float_times(True)
-    >>> from glob import glob
-    >>> def list_prof_files():
-    ...     return glob(os.path.join(profile_dir, '*.prof'))
     >>> def get_profiles():
     ...     """Return the profile file names sorted by name.
     ...
@@ -131,8 +128,8 @@ the thread that processed it.
     ...     failures. The time resolution isn't great enough to reliably
     ...     sort on it.
     ...     """
-    ...     profiles = [
-    ...         '-'.join(name.split('-')[-4:]) for name in list_prof_files()]
+    ...     profiles = ['-'.join(name.split('-')[-4:])
+    ...                 for name in os.listdir(profile_dir)]
     ...     return sorted(profiles)
 
     >>> profiles = get_profiles()
@@ -169,7 +166,7 @@ These profile can be loaded using the pstats2 module.
 
     >>> import pstats2
     >>> stats = pstats2.Stats(
-    ...     os.path.join(profile_dir, list_prof_files()[0]))
+    ...     os.path.join(profile_dir, os.listdir(profile_dir)[0]))
 
 Making another request will create another profile.
 
