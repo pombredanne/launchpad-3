@@ -469,6 +469,15 @@ notifying them that it has been disabled.
     ...     print message
     Bug watch updates for Debian Bug tracker are disabled.
 
+And if the users views a bug with a watch against a disabled bug
+tracker they'll see a notification telling them that the bug tracker has
+been disabled.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/15')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    Bug watch updates for Debian Bug tracker are disabled.
+
 The list of bug trackers will display the disabled bug tracker
 'greyed-out' to indicate that it's disabled.
 
