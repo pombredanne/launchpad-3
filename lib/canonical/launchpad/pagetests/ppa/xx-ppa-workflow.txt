@@ -146,6 +146,23 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
     PPA whiteboard:
     Not here, John Wayne !
 
+Empty 'description' or 'whiteboard' cause the corresponding sections to
+not be rendered.
+
+    >>> sample_browser.getLink("Change details").click()
+    >>> sample_browser.getControl(name="field.description").value = ('')
+    >>> sample_browser.getControl(name="field.whiteboard").value = ('')
+    >>> sample_browser.getControl("Save").click()
+
+    >>> sample_browser.url
+    'http://launchpad.dev/~name12/+archive/ppa'
+
+    >>> print find_tag_by_id(sample_browser.contents, 'description')
+    None
+
+    >>> print find_tag_by_id(sample_browser.contents, 'whiteboard')
+    None
+
 
 == Activating Personal Package Archives for Teams ==
 

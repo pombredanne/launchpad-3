@@ -35,6 +35,8 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
 from canonical.launchpad.interfaces.branch import (
     BranchType, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -540,6 +542,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.user_branch = branch
         return branch
+
+    def makeBranchMergeQueue(self, name=None):
+        """Create a new multi branch merge queue."""
+        if name is None:
+            name = self.getUniqueString('name')
+        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
+            registrant=self.makePerson(),
+            owner=self.makePerson(),
+            name=name,
+            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
