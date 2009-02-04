@@ -976,6 +976,14 @@ class AnswersPublication(LaunchpadBrowserPublication):
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.AnswersLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(AnswersBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Many of Answers responses vary based on languages.
+        self.response.setHeader(
+            'Vary', 'Cookie, WWW-Authenticate, Accept-Language')
+
+
 # ---- shipit
 
 class ShipItPublication(LaunchpadBrowserPublication):
@@ -1289,6 +1297,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
     implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(WebServiceClientRequest, self).__init__(
+            body_instream, environ, response)
+        # Web service requests uses content negotiation.
+        self.response.setHeader('Vary', 'Cookie, WWW-Authenticate, Accept')
 
 
 def website_request_to_web_service_request(website_request):
