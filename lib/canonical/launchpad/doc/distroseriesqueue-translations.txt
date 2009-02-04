@@ -130,19 +130,19 @@ An upload to the RELEASE pocket will add items to the import queue:
 As we can see from the translation import queue content.
 
   >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-  ...     print '%s/%s: %s' % (
+  ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
-  ...         entry.path)
-  dapper/pmount: po/es_ES.po
-  dapper/pmount: po/ca.po
-  dapper/pmount: po/de.po
-  dapper/pmount: po/cs.po
-  dapper/pmount: po/es.po
-  dapper/pmount: po/fr.po
-  dapper/pmount: po/hr.po
-  dapper/pmount: po/nb.po
-  dapper/pmount: po/pmount.pot
-  dapper/pmount: po/it_IT.po
+  ...         entry.importer.name, entry.path)
+  dapper/pmount by sabdfl: po/es_ES.po
+  dapper/pmount by sabdfl: po/ca.po
+  dapper/pmount by sabdfl: po/de.po
+  dapper/pmount by sabdfl: po/cs.po
+  dapper/pmount by sabdfl: po/es.po
+  dapper/pmount by sabdfl: po/fr.po
+  dapper/pmount by sabdfl: po/hr.po
+  dapper/pmount by sabdfl: po/nb.po
+  dapper/pmount by sabdfl: po/pmount.pot
+  dapper/pmount by sabdfl: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -180,19 +180,19 @@ But an upload to the UPDATE pocket will add items to the import queue:
 As we can see from the translation import queue content.
 
   >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-  ...     print '%s/%s: %s' % (
+  ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
-  ...         entry.path)
-  dapper/pmount: po/es_ES.po
-  dapper/pmount: po/ca.po
-  dapper/pmount: po/de.po
-  dapper/pmount: po/cs.po
-  dapper/pmount: po/es.po
-  dapper/pmount: po/fr.po
-  dapper/pmount: po/hr.po
-  dapper/pmount: po/nb.po
-  dapper/pmount: po/pmount.pot
-  dapper/pmount: po/it_IT.po
+  ...         entry.importer.name, entry.path)
+  dapper/pmount by sabdfl: po/es_ES.po
+  dapper/pmount by sabdfl: po/ca.po
+  dapper/pmount by sabdfl: po/de.po
+  dapper/pmount by sabdfl: po/cs.po
+  dapper/pmount by sabdfl: po/es.po
+  dapper/pmount by sabdfl: po/fr.po
+  dapper/pmount by sabdfl: po/hr.po
+  dapper/pmount by sabdfl: po/nb.po
+  dapper/pmount by sabdfl: po/pmount.pot
+  dapper/pmount by sabdfl: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -213,19 +213,19 @@ Uploads to restricted component are accepted too.
 As we can see from the translation import queue content.
 
   >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-  ...     print '%s/%s: %s' % (
+  ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
-  ...         entry.path)
-  dapper/pmount: po/es_ES.po
-  dapper/pmount: po/ca.po
-  dapper/pmount: po/de.po
-  dapper/pmount: po/cs.po
-  dapper/pmount: po/es.po
-  dapper/pmount: po/fr.po
-  dapper/pmount: po/hr.po
-  dapper/pmount: po/nb.po
-  dapper/pmount: po/pmount.pot
-  dapper/pmount: po/it_IT.po
+  ...         entry.importer.name, entry.path)
+  dapper/pmount by sabdfl: po/es_ES.po
+  dapper/pmount by sabdfl: po/ca.po
+  dapper/pmount by sabdfl: po/de.po
+  dapper/pmount by sabdfl: po/cs.po
+  dapper/pmount by sabdfl: po/es.po
+  dapper/pmount by sabdfl: po/fr.po
+  dapper/pmount by sabdfl: po/hr.po
+  dapper/pmount by sabdfl: po/nb.po
+  dapper/pmount by sabdfl: po/pmount.pot
+  dapper/pmount by sabdfl: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # component.
