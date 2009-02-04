@@ -132,7 +132,7 @@ the thread that processed it.
     ...     sort on it.
     ...     """
     ...     profiles = [
-    ...         '-'.join(name.split('-')[3:]) for name in list_prof_files()]
+    ...         '-'.join(name.split('-')[-4:]) for name in list_prof_files()]
     ...     return sorted(profiles)
 
     >>> profiles = get_profiles()
