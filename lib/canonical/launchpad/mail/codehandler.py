@@ -227,10 +227,6 @@ class CodeHandler:
         """
         if email_addr.startswith('merge@'):
             job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
-            try:
-                job.run()
-            finally:
-                job.destroySelf()
             return True
         else:
             return self.processComment(mail, email_addr, file_alias)

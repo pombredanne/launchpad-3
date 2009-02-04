@@ -903,6 +903,8 @@ class CreateMergeProposalJob(object):
 
     delegates(IMessageJob)
 
+    class_action = MessageJobAction.CREATE_MERGE_PROPOSAL
+
     implements(ICreateMergeProposalJob)
 
     def __init__(self, context):
@@ -919,11 +921,26 @@ class CreateMergeProposalJob(object):
             message_bytes, MessageJobAction.CREATE_MERGE_PROPOSAL)
         return klass(context)
 
+    @classmethod
+    def iterReady(klass):
+        """Iterate through all ready BranchMergeProposalJobs."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.find(
+            (MessageJob),
+            And(MessageJob.action == klass.class_action,
+                MessageJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs)))
+        return (klass(job) for job in jobs)
+
     def run(self):
         """See `ICreateBranchMergeProposalJob`."""
         # Avoid circular import
         from canonical.launchpad.mail.codehandler import CodeHandler
-        return CodeHandler().processMergeProposal(self.getMessage())
+        from canonical.launchpad.mail.incoming import authenticateEmail
+        message = self.getMessage()
+        authenticateEmail(message)
+        return CodeHandler().processMergeProposal(message)
+
 
 class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     """See `IMergeProposalCreatedJob`."""

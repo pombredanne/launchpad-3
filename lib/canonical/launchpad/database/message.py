@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
     IMessageSet, IUserToUserEmail, InvalidEmailMessage)
+from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
 from lazr.config import as_timedelta
 
@@ -665,7 +666,7 @@ class MessageJob(Storm):
 
     def getMessage(self):
         """See `IMessageJob`."""
-        return email.message_from_string(self.message_bytes.read())
+        return signed_message_from_string(self.message_bytes.read())
 
 
 class DirectEmailAuthorization:
