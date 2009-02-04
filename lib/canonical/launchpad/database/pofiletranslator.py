@@ -40,6 +40,9 @@ class POFileTranslatorSet:
     def prefetchPOFileTranslatorRelations(self, pofiletranslators):
         """See `IPOFileTranslatorSet`."""
         ids = set(record.id for record in pofiletranslators)
+        if not ids:
+            return None
+
         # Listify prefetch query to force its execution here.
         return list(POFileTranslator.select(
             "POFileTranslator.id IN %s" % sqlvalues(ids),
