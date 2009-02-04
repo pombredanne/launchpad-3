@@ -26,7 +26,7 @@ listed which Carlos has contributed to.
     ...         extract_text(heading_cells[1])[:6] + '...',
     ...         extract_text(heading_cells[2])[:6] + '...',
     ...         extract_text(heading_cells[3]))
-    ...     listing_body = listing.findAll('tbody')[0]
+    ...     listing_body = listing.find('tbody')
     ...     for row in listing_body.findAll('tr'):
     ...         cells = row.findAll('td')
     ...         pofile = extract_text(cells[0])
