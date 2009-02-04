@@ -963,7 +963,7 @@ class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     def __init__(self, body_instream, environ, response=None):
         super(TranslationsBrowserRequest, self).__init__(
             body_instream, environ, response)
-        # Some of the translations responses vary based on languages.
+        # Some of the responses from translations vary based on language.
         self.response.setHeader(
             'Vary', 'Cookie, WWW-Authenticate, Accept-Language')
 
@@ -986,7 +986,7 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
     def __init__(self, body_instream, environ, response=None):
         super(AnswersBrowserRequest, self).__init__(
             body_instream, environ, response)
-        # Many of Answers responses vary based on languages.
+        # Many of the responses from Answers vary based on language.
         self.response.setHeader(
             'Vary', 'Cookie, WWW-Authenticate, Accept-Language')
 
@@ -1308,7 +1308,7 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
     def __init__(self, body_instream, environ, response=None):
         super(WebServiceClientRequest, self).__init__(
             body_instream, environ, response)
-        # Web service requests uses content negotiation.
+        # Web service requests use content negotiation.
         self.response.setHeader('Vary', 'Cookie, WWW-Authenticate, Accept')
 
 
