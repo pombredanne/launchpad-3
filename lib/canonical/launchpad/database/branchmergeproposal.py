@@ -216,6 +216,10 @@ class BranchMergeProposal(SQLBase):
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
+        branch_identity_cache = {
+            self.source_branch: self.source_branch.bzr_identity,
+            self.target_branch: self.target_branch.bzr_identity,
+            }
         branches = [self.source_branch, self.target_branch]
         if self.dependent_branch is not None:
             branches.append(self.dependent_branch)
@@ -227,7 +231,8 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
-                    subscription, recipient, rationale, self)
+                    subscription, recipient, rationale, self,
+                    branch_identity_cache=branch_identity_cache)
         # Add in all the individuals that have been asked for a review,
         # or who have reviewed.  These people get added to the recipients
         # with the rationale of "Reviewer".
@@ -239,7 +244,8 @@ class BranchMergeProposal(SQLBase):
             reviewer = review.reviewer
             if not reviewer.is_team:
                 recipients[reviewer] = RecipientReason.forReviewer(
-                    review, reviewer)
+                    review, reviewer,
+                    branch_identity_cache=branch_identity_cache)
 
         return recipients
 
