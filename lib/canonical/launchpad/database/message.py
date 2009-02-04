@@ -653,15 +653,18 @@ class MessageJob(Storm):
         self.action = action
 
     def destroySelf(self):
+        """See `IMessageJob`."""
         self.job.destroySelf()
         Store.of(self).remove(self)
 
     def sync(self):
+        """Update the database with all changes for this object."""
         store = Store.of(self)
         store.flush()
         store.autoreload(self)
 
     def getMessage(self):
+        """See `IMessageJob`."""
         return email.message_from_string(self.message_bytes.read())
 
 
