@@ -595,6 +595,9 @@ class LaunchpadBrowserPublication(
             profiler.disable()
 
             if oopsid is None:
+                # Log an OOPS to get a log of the SQL queries, and other
+                # useful information,  together with the profiling
+                # information.
                 info = (ProfilingOops, None, None)
                 error_utility = getUtility(IErrorReportingUtility)
                 error_utility.raising(info, request)
