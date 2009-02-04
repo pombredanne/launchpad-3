@@ -19,6 +19,7 @@ __all__ = [
     'QuestionSetNavigation',
     'QuestionRejectView',
     'QuestionSetView',
+    'QuestionSubscribersView',
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
@@ -619,6 +620,22 @@ class QuestionRejectView(LaunchpadFormView):
             return
 
         LaunchpadFormView.initialize(self)
+
+
+class QuestionSubscribersView(LaunchpadView):
+    """View that provides question subscriber information."""
+
+    @property
+    def direct_subscribers(self):
+        """The direct subscribers to the question."""
+        question = self.context
+        return question.subscribers
+
+    @property
+    def indirect_subscribers(self):
+        """The indirect subscribers (answer contacts) to the question."""
+        question = self.context
+        return question.target.getAnswerContactsForLanguage(question.language)
 
 
 class QuestionWorkflowView(LaunchpadFormView):

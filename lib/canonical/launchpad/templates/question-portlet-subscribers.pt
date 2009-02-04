@@ -8,8 +8,8 @@
   <h2>Subscribers</h2>
 
   <div class="portletBody portletContent"
-       tal:define="subscribers  context/getDirectSubscribers;
-                   indirect_subscribers context/getIndirectSubscribers">
+       tal:define="subscribers  view/direct_subscribers;
+                   indirect_subscribers view/indirect_subscribers">
 
     <ul class="person" tal:condition="subscribers">
       <li tal:repeat="subscriber subscribers">
