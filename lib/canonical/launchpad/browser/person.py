@@ -740,7 +740,8 @@ class PersonBranchCountMixin:
     @cachedproperty
     def requested_review_count(self):
         """Return the number of active reviews for the user."""
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
+        utility = getUtility(IBranchMergeProposalGetter)
+        query = utility.getProposalsForReviewer(
             self.context, [
                 BranchMergeProposalStatus.CODE_APPROVED,
                 BranchMergeProposalStatus.NEEDS_REVIEW],

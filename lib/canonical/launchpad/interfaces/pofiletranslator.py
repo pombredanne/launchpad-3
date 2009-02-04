@@ -45,7 +45,7 @@ class IPOFileTranslatorSet(Interface):
     """Interface representing the set of `IPOFileTranslator`records.
 
     You won't find a "new" method here.  POFileTranslator records are
-    created directly in the databas by a trigger that watches for
+    created directly in the database by a trigger that watches for
     translation updates.
     """
 
