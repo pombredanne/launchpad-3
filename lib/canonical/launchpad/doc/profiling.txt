@@ -122,40 +122,47 @@ the thread that processed it.
     >>> old_stat_float_times = os.stat_float_times()
     >>> os.stat_float_times(True)
     >>> def get_profiles():
-    ...     """Return the profile file names sorted by ctime."""
-    ...     profiles = [(os.stat(os.path.join(profile_dir, name)).st_ctime,
-    ...                  name)
+    ...     """Return the profile file names sorted by name.
+    ...
+    ...     The time information is stripped out to avoid spurious test
+    ...     failures. The time resolution isn't great enough to reliably
+    ...     sort on it.
+    ...     """
+    ...     profiles = ['-'.join(name.split('-')[3:])
     ...                 for name in os.listdir(profile_dir)]
-    ...     return [name for ctime, name in sorted(profiles)]
+    ...     return sorted(profiles)
 
     >>> profiles = get_profiles()
     >>> print "\n".join(profiles)
-    20...-RootObject:index.html-MainThread.prof
+    RootObject:index.html-MainThread.prof
 
 These profile can be loaded using the pstats2 module.
 
     >>> import pstats2
-    >>> stats = pstats2.Stats(os.path.join(profile_dir, profiles[0]))
+    >>> stats = pstats2.Stats(
+    ...     os.path.join(profile_dir, os.listdir(profile_dir)[0]))
 
 Making another request will create another profile.
 
     >>> response = http('GET / HTTP/1.0')
 
     >>> print "\n".join(get_profiles())
-    20...-RootObject:index.html-MainThread.prof
-    20...-RootObject:index.html-MainThread.prof
+    RootObject:index.html-MainThread.prof
+    RootObject:index.html-MainThread.prof
 
 If the request resulted in an OOPS, the OOPS id will be included in the
-filename:
+filename. Two files are logged. One for the first request in the slave
+store, and one for the retried request in the master store:
 
     >>> http('GET /no-such-file HTTP/1.0', handle_errors=False)
     Traceback (most recent call last):
       ...
     NotFound:...
     >>> print "\n".join(get_profiles())
-    20...-RootObject:index.html-MainThread.prof
-    20...-RootObject:index.html-MainThread.prof
-    20...-Unknown-OOPS-...-MainThread.prof
+    RootObject:index.html-MainThread.prof
+    RootObject:index.html-MainThread.prof
+    Unknown-MainThread.prof
+    Unknown-OOPS-...-MainThread.prof
 
 
 == Profiling scripts ==
@@ -217,11 +224,28 @@ When an OOPS is triggered by the request, its identifier is logged:
     Traceback (most recent call last):
       ...
     NotFound:...
+
+Two lines are logged. The first one doesn't have an OOPS id, since the
+request was made in the slave store, and will be retried in the master
+store.
+
+    >>> (timestamp, page_id, oops_id, duration,
+    ...  start_vss, start_rss, end_vss, end_rss) = (
+    ...     memory_profile_fh.readline().split())
+    >>> print oops_id
+    -
+    >>> print page_id
+    Unknown
+
+After being retried in the master store, an OOPS is finally logged.
+
     >>> (timestamp, page_id, oops_id, duration,
     ...  start_vss, start_rss, end_vss, end_rss) = (
     ...     memory_profile_fh.readline().split())
     >>> print oops_id
     OOPS-...
+    >>> print page_id
+    Unknown
 
 
 == Clean up ==

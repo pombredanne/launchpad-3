@@ -26,6 +26,7 @@ Branch merge proposals can be fetched through the API.
     dependent_branch_link: None
     merge_reporter_link: None
     merged_revno: None
+    preview_diff_link: None
     queue_position: None
     queue_status: u'Work in progress'
     queued_revision_id: None
@@ -39,4 +40,52 @@ Branch merge proposals can be fetched through the API.
     supersedes_link: None
     target_branch_link: u'http://api.launchpad.dev/beta/~target/fooix/trunk'
 
+
+== Updating the preview diff ==
+
+The merge proposal can now be updated with the diff that reflects what the
+merge would look like if the source branch was merged into the target branch.
+
+    >>> diff_content = '''\
+    ... === modified file 'fooix.txt'
+    ... --- fooix.txt 2009-01-01 12:00:00 +0000
+    ... +++ fooix.txt 2009-02-02 12:34:56 +0000
+    ... @@ some numbers @@
+    ...  original
+    ... -removed
+    ... +added
+    ... '''
+    >>> response = webservice.named_post(
+    ...     merge_proposal['self_link'], 'updatePreviewDiff',
+    ...     diff_content=diff_content,
+    ...     diff_stat='M fooix.txt', source_revision_id='rev-a',
+    ...     target_revision_id='rev-b', conflicts='oh, no conflicts')
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    Content-Length: 4
+    Content-Type: application/json
+    <BLANKLINE>
+    null
+
+The diff is now visible through the merge proposal.
+
+    >>> merge_proposal = webservice.get(proposal_url).jsonBody()
+    >>> preview_diff = webservice.get(
+    ...     merge_proposal['preview_diff_link']).jsonBody()
+    >>> pprint_entry(preview_diff)
+    added_lines_count: None
+    branch_merge_proposal_link:
+      u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
+    conflicts: u'oh, no conflicts'
+    dependent_revision_id: u'OOPS'
+    diff_lines_count: None
+    diff_text_link:
+      u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
+    diffstat: u'M fooix.txt'
+    removed_lines_count: None
+    resource_type_link: u'http://api.launchpad.dev/beta/#preview_diff'
+    self_link:
+      u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff'
+    source_revision_id: u'rev-a'
+    target_revision_id: u'rev-b'
 

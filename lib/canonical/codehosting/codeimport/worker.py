@@ -367,10 +367,13 @@ class ImportWorker:
             shutil.rmtree(working_directory)
         os.makedirs(working_directory)
         os.chdir(working_directory)
-        foreign_tree = self.getForeignTree()
-        bazaar_tree = self.getBazaarWorkingTree()
-        self.importToBazaar(foreign_tree, bazaar_tree)
-        self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree)
-        self.foreign_tree_store.archive(
-            self.source_details, foreign_tree)
+        try:
+            foreign_tree = self.getForeignTree()
+            bazaar_tree = self.getBazaarWorkingTree()
+            self.importToBazaar(foreign_tree, bazaar_tree)
+            self.bazaar_branch_store.push(
+                self.source_details.branch_id, bazaar_tree)
+            self.foreign_tree_store.archive(
+                self.source_details, foreign_tree)
+        finally:
+            shutil.rmtree(working_directory)
