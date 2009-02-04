@@ -1020,9 +1020,8 @@ class TestCreateMergeProposalJob(TestCaseForMessageJob):
 
     def test_run_creates_proposal(self):
         """CreateMergeProposalJob.run should create a merge proposal."""
-        message, source, target = self.makeMergeDirectiveEmail()
-        lfa = self.makeLibraryFileAlias(message)
-        job = CreateMergeProposalJob.create(lfa)
+        message, file_alias, source, target = self.makeMergeDirectiveEmail()
+        job = CreateMergeProposalJob.create(file_alias)
         transaction.commit()
         proposal, comment = job.run()
         self.assertEqual(proposal.source_branch, source)

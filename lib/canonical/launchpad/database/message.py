@@ -653,8 +653,8 @@ class MessageJob(Storm):
         self.action = action
 
     def destroySelf(self):
-        Store.of(self).remove(self)
         self.job.destroySelf()
+        Store.of(self).remove(self)
 
     def sync(self):
         store = Store.of(self)

@@ -410,12 +410,12 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processMergeProposal(self):
         """processMergeProposal creates a merge proposal and comment."""
-        message, source_branch, target_branch = self.makeMergeDirectiveEmail()
+        message, file_alias, source, target = self.makeMergeDirectiveEmail()
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
-        self.assertEqual(source_branch, bmp.source_branch)
-        self.assertEqual(target_branch, bmp.target_branch)
+        self.assertEqual(source, bmp.source_branch)
+        self.assertEqual(target, bmp.target_branch)
         self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
@@ -427,7 +427,7 @@ class TestCodeHandler(TestCaseWithFactory):
         Messages with empty bodies produce merge proposals only, not
         comments.
         """
-        message, source_branch, target_branch = (
+        message, file_alias, source_branch, target_branch = (
             self.makeMergeDirectiveEmail(body=' '))
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
@@ -440,12 +440,16 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processWithMergeDirectiveEmail(self):
         """process creates a merge proposal from a merge directive email."""
-        message, source, target = self.makeMergeDirectiveEmail()
+        message, file_alias, source, target = self.makeMergeDirectiveEmail()
+        # Ensure the message is stored in the librarian.
+        # mail.incoming.handleMail also explicitly does this.
+        transaction.commit()
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         self.assertEqual(0, source.landing_targets.count())
-        code_handler.process(message, 'merge@code.launchpad.net', None)
+        code_handler.process(message, 'merge@code.launchpad.net', file_alias)
         self.assertEqual(target, source.landing_targets[0].target_branch)
+        # ensure the DB operations violate no constraints.
         transaction.commit()
 
     def test_processMergeProposalExists(self):
@@ -454,7 +458,7 @@ class TestCodeHandler(TestCaseWithFactory):
         If there is already a merge proposal with the same target and source
         branches of the merge directive, an email is sent to the user.
         """
-        message, source_branch, target_branch = self.makeMergeDirectiveEmail()
+        message, file_alias, source, target = self.makeMergeDirectiveEmail()
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
@@ -467,7 +471,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification.get_payload(decode=True),
             'The branch %s is already proposed for merging into %s.\n\n' % (
-                source_branch.bzr_identity, target_branch.bzr_identity))
+                source.bzr_identity, target.bzr_identity))
 
 
 class TestVoteEmailCommand(TestCase):

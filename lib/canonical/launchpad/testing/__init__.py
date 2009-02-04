@@ -2,9 +2,11 @@
 # pylint: disable-msg=W0401,C0301
 
 import os, shutil, tempfile, unittest
+from cStringIO import StringIO
 
 from storm.store import Store
 
+from zope.component import getUtility
 import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -14,6 +16,7 @@ from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.factory import *
 
 
@@ -411,7 +414,7 @@ class TestCaseWithFactory(TestCase):
         """Create an email with a merge directive attached.
 
         :param body: The message body to use for the email.
-        :return: message, source_branch, target_branch
+        :return: message, file_alias, source_branch, target_branch
         """
         target_branch = self.factory.makeProductBranch()
         source_branch = self.factory.makeProductBranch(
@@ -419,7 +422,10 @@ class TestCaseWithFactory(TestCase):
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.factory.makeSignedMessage(body=body,
             subject='My subject', attachment_contents=''.join(md.to_lines()))
-        return message, source_branch, target_branch
+        message_string = message.as_string()
+        file_alias = getUtility(ILibraryFileAliasSet).create(
+            '*', len(message_string), StringIO(message_string), '*')
+        return message, file_alias, source_branch, target_branch
 
 
 def capture_events(callable_obj, *args, **kwargs):

@@ -287,6 +287,9 @@ class IMessageJob(Interface):
     def getMessage():
         """Return an email.Message representing this job's message."""
 
+    def destroySelf():
+        """Remove this object (and its job) from the database."""
+
 
 class UnknownSender(NotFoundError):
     """Raised if we cannot lookup an email message's sender in the database"""
