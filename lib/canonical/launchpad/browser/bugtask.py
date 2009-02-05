@@ -765,7 +765,28 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     def getBugCommentsForDisplay(self):
         """Return all the bug comments together with their index."""
-        return get_visible_comments(self.comments)
+        # More comments than this will cause truncation.
+        above = 600
+        # If truncated, truncate to this many comments.
+        cutoff = 10
+        # Should all comments be shown anyway?
+        show_all = (
+            self.request.form_ng.getOne('show-all-comments') not in (
+                None, '', '0'))
+
+        visible_comments = get_visible_comments(self.comments)
+        if not show_all and len(visible_comments) > above:
+            return {
+                'comments': visible_comments[:cutoff],
+                'total_count': len(visible_comments),
+                'hidden_count': len(visible_comments) - cutoff,
+                }
+        else:
+            return {
+                'comments': visible_comments,
+                'total_count': len(visible_comments),
+                'hidden_count': 0,
+                }
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""

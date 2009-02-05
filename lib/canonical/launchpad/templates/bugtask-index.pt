@@ -262,12 +262,20 @@
             replace="structure link/render" />
       </div>
 
-      <tal:comment repeat="comment view/getBugCommentsForDisplay">
-        <tal:comment-box condition="comment/can_be_shown">
-          <metal:comment-box
-              metal:use-macro="context/@@bugcomment-macros/comment-box" />
-        </tal:comment-box>
-      </tal:comment>
+      <tal:comments define="comments view/getBugCommentsForDisplay">
+        <tal:comment repeat="comment comments/comments">
+          <tal:comment-box condition="comment/can_be_shown">
+            <metal:comment-box
+                metal:use-macro="context/@@bugcomment-macros/comment-box" />
+          </tal:comment-box>
+        </tal:comment>
+        <div class="warning message" tal:condition="comments/hidden_count">
+          <span tal:replace="comments/hidden_count" /> comments are
+          not shown. <a href="" tal:attributes="href
+          string:${context/fmt:url}?show-all-comments=1">Show all
+          <span tal:replace="comments/total_count" /> comments</a>.
+        </div>
+      </tal:comments>
 
       <tal:logged-in condition="view/user">
         <fieldset class="collapsible collapsed">
