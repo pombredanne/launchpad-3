@@ -1309,10 +1309,15 @@ beside the mugshot. */
   padding: 1em;
   border: 1px solid #000;
   width: auto;
+  overflow: hidden;
 }
 .important-notice-buttons {
   width: 100%;
   text-align: right;
+}
+.important-notice-cancel-button {
+  visibility: hidden;
+  cursor: pointer;
 }
 .important-notice {
   //background: url(/@@/info-large) center left no-repeat;
