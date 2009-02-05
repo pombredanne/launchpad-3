@@ -5,10 +5,8 @@ __metaclass__ = type
 
 import logging
 
-from storm.store import Store
-
 import zope.app.publication.interfaces
-from zope.interface import Attribute, classImplements, implements, Interface
+from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.traversing.interfaces import IContainmentRoot
