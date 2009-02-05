@@ -403,6 +403,14 @@ class IBug(ICanBeMentored):
         tracker, owned by the person given as the owner.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        productseries='product_series', distroseries='distro_series',
+        sourcepackagename='source_package_name')
+    @export_factory_operation(
+        IBugTask, ['product', 'productseries', 'distribution',
+                   'distroseries', 'sourcepackagename', 'status',
+                   'importance', 'assignee', 'milestone'])
     def addTask(owner, product=None, productseries=None, distribution=None,
                 distroseries=None, sourcepackagename=None, status=None,
                 importance=None, assignee=None, milestone=None):

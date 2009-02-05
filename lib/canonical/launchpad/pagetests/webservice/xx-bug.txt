@@ -1041,3 +1041,9 @@ And link new CVEs to the bug.
     ...
     self_link: u'http://.../bugs/cve/2005-2733'
     ...
+
+Add a new task to the bug.
+
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'addTask',
+    ...     
