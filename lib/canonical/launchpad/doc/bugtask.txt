@@ -61,8 +61,6 @@ Next, we need to grab some values to provide for importance and status.
     >>> IUpstreamBugTask.providedBy(upstream_task)
     True
 
-  ii. Distro -- a bug that has to be fixed in a specific distro
-
     >>> ubuntu = distroset.get(1)
     >>> distro_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,

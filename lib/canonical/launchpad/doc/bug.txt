@@ -526,6 +526,27 @@ parameters as createTask() above.
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
+You can also add bugs for a specific distro.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> ubuntu_task = firefox_bug.addTask(
+    ...     owner=foobar, distribution=debian)
+    >>> notify(SQLObjectCreatedEvent(ubuntu_task))
+
+    >>> print ubuntu_task.distribution.title
+    Debian GNU/Linux
+
+And for a specific distribution series.
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty = ubuntu.getSeries('warty')
+    >>> warty_task = firefox_bug.addTask(
+    ...     owner=foobar, distroseries=warty)
+    >>> notify(SQLObjectCreatedEvent(warty_task))
+
+    >>> print warty_task.distroseries.title
+    The Warty Warthog Release
 
 The first task is available as default_bugtask. Launchpad often views
 bugs in the context of a bugtask, and the default choice is the first
@@ -765,19 +786,19 @@ Adding a comment imported from an external bugtracker.
 Subscribing and unsubscribing does *not* trigger an update of
 IBug.date_last_updated.
 
+    >>> current_date_last_updated = firefox_bug.date_last_updated
+
+    >>> firefox_bug.unsubscribe(ubuntu_team)
+
+    >>> firefox_bug.date_last_updated == current_date_last_updated
+    True
+
     >>> firefox_bug.isSubscribed(ubuntu_team)
     False
 
     >>> subscription = firefox_bug.subscribe(ubuntu_team, ubuntu_team)
 
-    >>> current_date_last_updated = firefox_bug.date_last_updated
-
     >>> notify(SQLObjectCreatedEvent(subscription))
-
-    >>> firefox_bug.date_last_updated == current_date_last_updated
-    True
-
-    >>> firefox_bug.unsubscribe(ubuntu_team)
 
     >>> firefox_bug.date_last_updated == current_date_last_updated
     True
@@ -785,7 +806,7 @@ IBug.date_last_updated.
 
 == Bug Completeness ==
 
-A bug is considered "complete" iff all of its bugtasks are themselves
+A bug is considered "complete" if all of its bugtasks are themselves
 complete. The definition of completeness for a bugtask is that the bug
 has been marked invalid or a fix has been released.
 
