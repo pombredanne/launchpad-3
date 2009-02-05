@@ -564,40 +564,41 @@ class ProductBountiesMenu(ApplicationMenu):
         return Link('+linkbounty', text, icon='edit')
 
 
-class ProductTranslationsMenu(ApplicationMenu):
+class ProductTranslationsMenu(NavigationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = [
+    links = (
+        'overview',
         'translators',
-        'imports',
         'translationdownload',
-        'help_translate',
-        ]
+        'imports',
+        )
 
     def imports(self):
-        text = 'See import queue'
+        text = 'Import queue'
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.Edit')
     def translators(self):
-        text = 'Change translators'
+        text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
-        text = 'Download translations'
+        text = 'Download'
         preferred_series = self.context.primary_translatable
         enabled = (self.context.official_rosetta and
             preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
+            text = 'Download "%s"' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
 
-    def help_translate(self):
-        text = 'Help translate'
+    def overview(self):
+        text = 'Overview'
         link = canonical_url(self.context, rootsite='translations')
         return Link(link, text, icon='translation')
 
