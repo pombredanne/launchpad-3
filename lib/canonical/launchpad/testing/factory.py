@@ -1302,21 +1302,27 @@ class LaunchpadObjectFactory(ObjectFactory):
         source_branch_url=None, target_branch_url=None):
         """Return a bzr merge directive object.
 
-        :param source_branch: The source branch in the merge directive.
-        :param target_branch: The target branch in the merge directive.
+        :param source_branch: The source database branch in the merge
+            directive.
+        :param target_branch: The target database branch in the merge
+            directive.
         :param source_branch_url: The URL of the source for the merge
-            directive.
+            directive.  Overrides source_branch.
         :param target_branch_url: The URL of the target for the merge
-            directive.
+            directive.  Overrides target_branch.
         """
         from bzrlib.merge_directive import MergeDirective2
-        if source_branch_url is None:
+        if source_branch_url is not None:
+            assert source_branch is None
+        else:
             if source_branch is None:
                 source_branch = self.makeAnyBranch()
             source_branch_url = (
                 config.codehosting.supermirror_root +
                 source_branch.unique_name)
-        if target_branch_url is None:
+        if target_branch_url is not None:
+            assert target_branch is None
+        else:
             if target_branch is None:
                 target_branch = self.makeAnyBranch()
             target_branch_url = (

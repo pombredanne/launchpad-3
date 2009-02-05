@@ -27,8 +27,10 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
-        self.assertEqual('Ran 1 CreateMergeProposalJobs.\n', stdout)
-        self.assertEqual('INFO    creating lockfile\n', stderr)
+        self.assertEqual(
+            'INFO    creating lockfile\n'
+            'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
+        self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())
 
     def test_oops(self):
@@ -38,7 +40,10 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
-        self.assertEqual('Ran 0 CreateMergeProposalJobs.\n', stdout)
+        self.assertEqual(
+            'INFO    creating lockfile\n'
+            'INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
+        self.assertEqual('', stdout)
 
 
 def test_suite():

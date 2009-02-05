@@ -25,7 +25,8 @@ class RunCreateMergeProposalJobs(LaunchpadCronScript):
         job_source = getUtility(ICreateMergeProposalJobSource)
         runner = JobRunner.fromReady(job_source)
         runner.runAll()
-        print 'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs)
+        self.logger.info(
+            'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs))
 
 
 if __name__ == '__main__':

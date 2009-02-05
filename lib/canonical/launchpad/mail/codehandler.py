@@ -223,7 +223,7 @@ class CodeHandler:
         """Process an email for the code domain.
 
         Emails may be converted to CodeReviewComments, and / or
-        BranchMergeProposals.
+        deferred to jobs to create BranchMergeProposals.
         """
         if email_addr.startswith('merge@'):
             job = getUtility(ICreateMergeProposalJobSource).create(file_alias)

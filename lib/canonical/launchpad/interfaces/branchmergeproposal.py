@@ -577,17 +577,17 @@ for name in ['supersedes', 'superseded_by']:
 
 
 class ICreateMergeProposalJob(Interface):
-    """Acquire MergeProposalJobs."""
-
-    def run():
-        """Perform the diff and email specified by this job."""
-
-
-class ICreateMergeProposalJobSource(Interface):
     """A Job that creates a branch merge proposal.
 
     It uses a Message, which must contain a merge directive.
     """
+
+    def run():
+        """Run this job and create the merge proposals."""
+
+
+class ICreateMergeProposalJobSource(Interface):
+    """Acquire MergeProposalJobs."""
 
     def create(message_bytes):
         """Return a CreateMergeProposalJob for this message."""
@@ -597,10 +597,10 @@ class ICreateMergeProposalJobSource(Interface):
 
 
 class IMergeProposalCreatedJob(Interface):
-    """Interface for review diffs."""
+    """Interface for jobs run when a merge proposal is created."""
 
     def run():
-        """Run this job and create the merge proposals."""
+        """Perform the diff and email specified by this job."""
 
 
 class IMergeProposalCreatedJobSource(Interface):

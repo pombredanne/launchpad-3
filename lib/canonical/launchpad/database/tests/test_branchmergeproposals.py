@@ -1131,6 +1131,7 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
         verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
         file_alias = self.factory.makeMergeDirectiveEmail()[1]
         job = CreateMergeProposalJob.create(file_alias)
+        job.context.sync()
         verifyObject(IMessageJob, job)
         verifyObject(ICreateMergeProposalJob, job)
 
@@ -1148,8 +1149,6 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
         """Ready jobs should be listed."""
         file_alias = self.factory.makeMergeDirectiveEmail()[1]
         job = CreateMergeProposalJob.create(file_alias)
-        job.job.sync()
-        job.context.sync()
         self.assertEqual([job], list(CreateMergeProposalJob.iterReady()))
 
     def test_iterReady_excludes_unready_jobs(self):
@@ -1159,6 +1158,7 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
         job.job.start()
         job.job.complete()
         self.assertEqual([], list(CreateMergeProposalJob.iterReady()))
+
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):
     """Test the updateMergeDiff method of BranchMergeProposal."""

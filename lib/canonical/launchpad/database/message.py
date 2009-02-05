@@ -634,7 +634,7 @@ class MessageJob(Storm):
     """A job for processing messages."""
 
     implements(IMessageJob)
-
+    # XXX: AaronBentley 2009-02-05 bug=325883: This table is poorly named.
     __storm_table__ = 'MergeDirectiveJob'
 
     id = Int(primary=True)
