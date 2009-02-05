@@ -252,6 +252,14 @@
         name="+index" />
 
     <browser:page
+      name="+bug-portlet-subscribers-content"
+      for="canonical.launchpad.interfaces.IBugTask"
+      class="canonical.launchpad.browser.BugTaskView"
+      permission="launchpad.View"
+      template="../templates/bug-portlet-subscribers-content.pt"
+      />
+
+    <browser:page
         name="+choose-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
