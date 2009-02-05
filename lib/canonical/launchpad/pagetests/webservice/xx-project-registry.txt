@@ -628,10 +628,10 @@ virtual host.
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
     resource_type_link: u'...'
     self_link: u'http://.../babadoo/foobadoo'
-    series_branch_link: u'http://api.launchpad.dev/beta/~person-name12/babadoo/fooey'
     status: u'Active Development'
     summary: u'Foobadoo support for Babadoo'
     title: u'Babadoo Series: foobadoo'
+    user_branch_link: u'http://api.launchpad.dev/beta/~person-name12/babadoo/fooey'
 
 = Creating a milestone on the product series =
 

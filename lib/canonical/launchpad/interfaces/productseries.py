@@ -352,19 +352,19 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     # vcs-imports branch (which used to be called branch) doesn't use
     # this attribute by accident.
 
-    series_branch = exported(
-        Choice(
-            title=_('Series Branch'),
-            vocabulary='BranchRestrictedOnProduct',
-            readonly=True,
-            description=_("The Bazaar branch for this series.")))
-
-    user_branch = Choice(
-        title=_('Branch'),
+    series_branch = Choice(
+        title=_('Series Branch'),
         vocabulary='BranchRestrictedOnProduct',
-        required=False,
-        description=_("The Bazaar branch for this series.  Leave blank "
-                      "if this series is not maintained in Bazaar."))
+        readonly=True,
+        description=_("The Bazaar branch for this series."))
+
+    user_branch = exported(
+        Choice(
+            title=_('Branch'),
+            vocabulary='BranchRestrictedOnProduct',
+            required=False,
+            description=_("The Bazaar branch for this series.  Leave blank "
+                          "if this series is not maintained in Bazaar.")))
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
