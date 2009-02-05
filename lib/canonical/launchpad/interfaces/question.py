@@ -402,7 +402,18 @@ class IQuestion(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this question."""
 
-    def getSubscribers():
+    def getDirectSubscribers():
+        """Return the persons who are subscribed to this question.
+
+        :return: A list of persons sorted by displayname.
+        """
+    def getIndirectSubscribers():
+        """Return the persons who are implicitly subscribed to this question.
+
+        :return: A list of persons sorted by displayname.
+        """
+
+    def getRecipients():
         """Return the set of person to notify about changes in this question.
 
         That is the union of getDirectSubscribers() and
@@ -412,16 +423,15 @@ class IQuestion(IHasOwner):
             notify along the rationale for doing so.
         """
 
-    def getDirectSubscribers():
+    def getDirectRecipients():
         """Return the set of persons who are subscribed to this question.
 
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
         """
 
-    def getIndirectSubscribers():
-        """Return the set of persons who are implicitely subscribed to this
-        question.
+    def getIndirectRecipients():
+        """Return the set of persons implicitely subscribed to this question.
 
         That includes  the answer contacts for the question's target as well
         as the question's assignee.
