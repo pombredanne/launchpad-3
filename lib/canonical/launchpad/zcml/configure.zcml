@@ -114,6 +114,7 @@
     <include file="personnotification.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
+    <include file="pofiletranslator.zcml" />
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
     <include file="potemplate.zcml" />

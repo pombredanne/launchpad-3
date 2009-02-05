@@ -13,10 +13,6 @@
             set_schema="canonical.launchpad.interfaces.IPOFile" />
     </class>
 
-    <class class="canonical.launchpad.database.POFileTranslator">
-        <allow interface="canonical.launchpad.interfaces.IPOFileTranslator" />
-    </class>
-
     <adapter
         name="all_messages"
         for="canonical.launchpad.interfaces.IPOFile"
