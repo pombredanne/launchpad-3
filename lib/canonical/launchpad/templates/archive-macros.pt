@@ -66,7 +66,7 @@ function doUpdate(transaction_id, response, args) {
  */
 function startUpdate(row) {
     var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Updating publishing information ...');
+    text.set('innerHTML', 'Fetching publishing information ...');
 
     var in_progress_message = Y.Node.create('<p>');
     in_progress_message.set('id', 'in-progress-message');
@@ -74,7 +74,6 @@ function startUpdate(row) {
 
     var pub_id = row.get('id').replace('pub', '');
     container = Y.get('#xhr_placeholder' + pub_id)
-    container.set('innerHTML', '');
     container.appendChild(in_progress_message);
 
     var config = {
