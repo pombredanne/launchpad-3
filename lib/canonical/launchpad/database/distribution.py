@@ -955,7 +955,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Create a function that will decorate the results, converting
         # them from the find_spec above into DSPs:
         def result_to_dsp(result):
-            result = cache, source_package_name, rank
+            cache, source_package_name, rank = result
             return DistributionSourcePackage(
                 self,
                 source_package_name
