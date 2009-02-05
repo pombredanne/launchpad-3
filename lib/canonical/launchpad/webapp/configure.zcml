@@ -498,6 +498,22 @@
         provides="canonical.launchpad.webapp.interfaces.IStoreSelector">
     </utility>
 
+    <!-- Storm Store adapters, adapting a Storm subclass or instance
+         to the correct Store for that tables replication set.
+      -->
+    <adapter
+        provides="canonical.launchpad.interfaces.IMasterStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_master_store"
+        permission="zope.Public"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.ISlaveStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_slave_store"
+        permission="zope.Public"
+        />
+
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />
 

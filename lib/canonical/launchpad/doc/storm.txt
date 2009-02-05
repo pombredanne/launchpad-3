@@ -1,0 +1,40 @@
+In addition to what Storm provides, we also have some Launchpad
+specific Storm tools.
+
+    >>> import canonical.launchpad.webapp.adapter
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMasterStore, ISlaveStore)
+    >>> from canonical.launchpad.database import (
+    ...     Account, AccountPassword, Person)
+
+
+You need to use the correct master Store to make changes to
+a Launchpad database object. You can use adapters to
+retrieve the correct Store.
+
+    >>> auth_master = IMasterStore(Account)
+    >>> main_master = IMasterStore(Person)
+    >>> auth_master is main_master
+    False
+
+
+You can read most tables from any Store, which is required for doing
+fast joins in the database. However, when it is not necessary to
+retrieve objects from the same store as another object, it is better to
+explicitly use the explicit Store for its replication set. Some tables
+are only available from this store, such as the AccountPassword table.
+
+    >>> auth_slave = ISlaveStore(AccountPassword)
+    >>> main_slave = ISlaveStore(Person)
+    >>> auth_slave is main_slave
+    False
+
+
+You can detect if a store is writable by checking what interfaces it
+provides.
+
+    >>> IMasterStore.providedBy(auth_master)
+    True
+    >>> ISlaveStore.providedBy(auth_master)
+    False
+

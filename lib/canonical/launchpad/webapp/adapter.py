@@ -23,14 +23,18 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 import transaction
-from zope.component import getUtility
-from zope.interface import classImplements, classProvides, implements
+from zope.component import adapter, getUtility, provideAdapter
+from zope.interface import (
+    classImplements, classProvides, directlyProvides,
+    implementer, implements, Interface)
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.lazr.utils import safe_hasattr
+from canonical.launchpad.interfaces import IMasterStore, ISlaveStore, IStore
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR, MAIN_STORE,
+    MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 
 
@@ -429,11 +433,56 @@ class StoreSelector:
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
+        assert flavor in (MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR), (
+            'Invalid flavor %s' % flavor)
+
         if flavor == DEFAULT_FLAVOR:
             flavor = StoreSelector.getDefaultFlavor()
             if flavor == DEFAULT_FLAVOR:
                 # None set, use MASTER by default.
                 flavor = MASTER_FLAVOR
-        return getUtility(IZStorm).get(
+        store = getUtility(IZStorm).get(
             '%s-%s' % (name, flavor),
             'launchpad:%s-%s' % (name, flavor))
+
+        # Attach our marker interfaces
+        if flavor == MASTER_FLAVOR:
+            directlyProvides(store, IMasterStore)
+        else:
+            directlyProvides(store, ISlaveStore)
+
+        return store
+
+
+
+# There are not many tables outside of the main replication set, so we
+# can just maintain a hardcoded list of what isn't in there for now.
+_auth_store_tables = frozenset([
+    'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
+    'OpenIdRpSummary', 'OpenIdAuthorization'])
+
+# We want to be able to adapt a Storm class to an IMasterStore or
+# ISlaveStore. Unfortunately, the component architecture provides no
+# way for us to declare that a class, and all its subclasses, provides
+# a given interface. This means we need to use an global adapter.
+
+def get_master_store(storm_class):
+    """Return the master Store for the given database class."""
+    table = getattr(storm_class, '__storm_table__', None)
+    if table in _auth_store_tables:
+        return getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+    elif table is not None:
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    else:
+        return None
+
+def get_slave_store(storm_class):
+    """Return the master Store for the given database class."""
+    table = getattr(storm_class, '__storm_table__', None)
+    if table in _auth_store_tables:
+        return getUtility(IStoreSelector).get(AUTH_STORE, SLAVE_FLAVOR)
+    elif table is not None:
+        return getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+    else:
+        return None
+
