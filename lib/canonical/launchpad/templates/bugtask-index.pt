@@ -269,25 +269,36 @@
                 metal:use-macro="context/@@bugcomment-macros/comment-box" />
           </tal:comment-box>
         </tal:comment>
-        <div class="warning message" tal:condition="comments/hidden_count">
-          Displaying first <span tal:replace="comments/hidden_count"
-          /> comments. <a href="" tal:attributes="href
-          string:${context/fmt:url}?show-all-comments=1">View all
-          <span tal:replace="comments/total_count" /> comments</a>.
-        </div>
+        <tal:comment-list-complete
+            tal:condition="not:comments/hidden_count">
+          <tal:logged-in condition="view/user">
+            <fieldset class="collapsible collapsed" id="add-comment-form">
+              <legend><a href="+addcomment">Add a comment/attachment</a></legend>
+              <div tal:content="structure context/@@+addcomment-form" />
+            </fieldset>
+          </tal:logged-in>
+          <tal:not-logged-in condition="not: view/user">
+            <div align="center">
+              To post a comment you must <a href="+login">log in</a>.
+            </div>
+          </tal:not-logged-in>
+        </tal:comment-list-complete>
+        <tal:comment-list-truncated
+            tal:condition="comments/hidden_count">
+          <div class="warning message">
+            Displaying first <span tal:replace="comments/hidden_count"
+            /> comments.
+            <tal:what-next
+                define="view_all_href
+                        string:${context/fmt:url}?comments=all">
+              <a href="#" tal:attributes="href view_all_href">
+                View all <span tal:replace="comments/total_count" />
+                comments</a>.
+            </tal:what-next>
+          </div>
+        </tal:comment-list-truncated>
       </tal:comments>
 
-      <tal:logged-in condition="view/user">
-        <fieldset class="collapsible collapsed">
-          <legend><a href="+addcomment">Add a comment/attachment</a></legend>
-          <div tal:content="structure context/@@+addcomment-form" />
-        </fieldset>
-      </tal:logged-in>
-      <tal:not-logged-in condition="not: view/user">
-        <div align="center">
-          To post a comment you must <a href="+login">log in</a>.
-        </div>
-      </tal:not-logged-in>
       <div id="mentoring" style="margin-top: 2em;">
         <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
                      condition="mentoring_offers">

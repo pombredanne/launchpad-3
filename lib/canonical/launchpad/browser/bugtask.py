@@ -765,26 +765,29 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     def getBugCommentsForDisplay(self):
         """Return all the bug comments together with their index."""
-        # More comments than this will cause truncation.
-        max_comments = config.malone.comments_list_max_length
-        # Should all comments be shown anyway?
-        show_all = (
-            self.request.form_ng.getOne('show-all-comments') not in (
-                None, '', '0'))
-
         visible_comments = get_visible_comments(self.comments)
-        if not show_all and len(visible_comments) > max_comments:
+
+        # Have we been asked to display comments in any special way?
+        comments_display = (
+            self.request.form_ng.getOne('comments', '').split(','))
+        show_all = 'all' in comments_display
+
+        # We need to consider truncating the comment list if there are
+        # tons of comments.
+        max_comments = config.malone.comments_list_max_length
+
+        if show_all or len(visible_comments) <= max_comments:
+            return {
+                'comments': visible_comments,
+                'total_count': len(visible_comments),
+                'hidden_count': 0,
+                }
+        else:
             truncate_to = config.malone.comments_list_truncate_to
             return {
                 'comments': visible_comments[:truncate_to],
                 'total_count': len(visible_comments),
                 'hidden_count': len(visible_comments) - truncate_to,
-                }
-        else:
-            return {
-                'comments': visible_comments,
-                'total_count': len(visible_comments),
-                'hidden_count': 0,
                 }
 
     def wasDescriptionModified(self):

@@ -159,19 +159,26 @@ Now only 3 comments will be displayed.
 
 With a warning telling the user where the comments have gone:
 
-    >>> messages = find_tags_by_class(
-    ...     user_browser.contents, 'warning message')
-    >>> for message in messages:
-    ...     print extract_text(message)
+    >>> print extract_text(first_tag_by_class(
+    ...     user_browser.contents, 'warning message'))
     Displaying first 3 comments. View all 6 comments.
 
+The add comment box is not present so people don't accidentally reply
+to the wrong message.
+
+    >>> print find_tag_by_id(user_browser.contents, 'add-comment-form')
+    None
+
 In amongst that message is a link that will let us see all the
-comments.
+comments and the add comment box.
 
     >>> user_browser.getLink('View all 6 comments').click()
     >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
     >>> len(comments)
     6
+
+    >>> print find_tag_by_id(user_browser.contents, 'add-comment-form').name
+    fieldset
 
 Restore the configuration to its previous setting.
 
