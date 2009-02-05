@@ -58,6 +58,7 @@
   </tr>
   <tr tal:attributes="id string:pub${context/id}" style="display: none">
     <td colspan="7">
+      <div tal:attributes="id string:xhr_placeholder${context/id}" />
     </td>
   </tr>
 
