@@ -766,9 +766,9 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def getBugCommentsForDisplay(self):
         """Return all the bug comments together with their index."""
         # More comments than this will cause truncation.
-        above = 600
+        above = 100
         # If truncated, truncate to this many comments.
-        cutoff = 10
+        cutoff = 80
         # Should all comments be shown anyway?
         show_all = (
             self.request.form_ng.getOne('show-all-comments') not in (
