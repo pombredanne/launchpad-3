@@ -55,7 +55,7 @@ line.
     ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out
-        ''
+    ''
     >>> process.returncode
     0
 
