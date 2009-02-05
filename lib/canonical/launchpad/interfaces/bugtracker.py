@@ -239,17 +239,10 @@ class IBugTracker(Interface):
     multi_product = Attribute(
         "This bug tracker tracks multiple remote products.")
     active = exported(
-        Bool(
-            title=_(
-                "This bug tracker's watches will be checked for "
-                "updates"),
-            required=False,
-            default=True))
-    is_active = Choice(
-        title=_('Updates for this bug tracker are'),
-        vocabulary=BUG_TRACKER_ACTIVE_VOCABULARY,
-        required=True, default=True)
-
+        Choice(
+            title=_('Updates for this bug tracker are'),
+            vocabulary=BUG_TRACKER_ACTIVE_VOCABULARY,
+            required=True, default=True))
 
     def getBugFilingLink(remote_product):
         """Return the bug filing link for a given product on the tracker.

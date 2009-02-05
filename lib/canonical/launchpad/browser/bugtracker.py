@@ -182,11 +182,11 @@ class BugTrackerEditView(LaunchpadEditFormView):
     schema = IBugTracker
     field_names = ['name', 'title', 'bugtrackertype',
                    'summary', 'baseurl', 'aliases', 'contactdetails',
-                   'is_active']
+                   'active']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
-    custom_widget('is_active', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
 
     def validate(self, data):
         # Normalise aliases to an empty list if it's None.
@@ -216,12 +216,6 @@ class BugTrackerEditView(LaunchpadEditFormView):
         requested_baseurl = data['baseurl']
         if requested_baseurl != current_baseurl:
             data['aliases'].append(current_baseurl)
-
-        data['active'] = data['is_active']
-
-        # Get rid of is_active since it's not data we care about saving;
-        # it's just a nice way of exposing things to the interface.
-        del data['is_active']
 
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
