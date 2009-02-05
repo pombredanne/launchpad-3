@@ -270,9 +270,9 @@
           </tal:comment-box>
         </tal:comment>
         <div class="warning message" tal:condition="comments/hidden_count">
-          <span tal:replace="comments/hidden_count" /> comments are
-          not shown. <a href="" tal:attributes="href
-          string:${context/fmt:url}?show-all-comments=1">Show all
+          Displaying first <span tal:replace="comments/hidden_count"
+          /> comments. <a href="" tal:attributes="href
+          string:${context/fmt:url}?show-all-comments=1">View all
           <span tal:replace="comments/total_count" /> comments</a>.
         </div>
       </tal:comments>

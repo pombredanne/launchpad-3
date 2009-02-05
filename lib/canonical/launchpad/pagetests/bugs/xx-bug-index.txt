@@ -157,6 +157,14 @@ Now only 3 comments will be displayed.
     >>> len(comments)
     3
 
+With a warning telling the user where the comments have gone:
+
+    >>> messages = find_tags_by_class(
+    ...     user_browser.contents, 'warning message')
+    >>> for message in messages:
+    ...     print extract_text(message)
+    Displaying first 3 comments. View all 6 comments.
+
 Restore the configuration to its previous setting.
 
     >>> config.pop('malone')
