@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, NoSuchProduct)
 from canonical.launchpad.interfaces.sourcepackagename import (
@@ -294,10 +295,20 @@ class BranchNamespaceSet:
             NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
 
     def _findPillar(self, pillar_name):
+        """Find and return the pillar with the given name.
+
+        If the given name is '+junk' or None, return None.
+
+        :raise NoSuchProduct if there's no pillar with the given name or it is
+            a project.
+        """
         if pillar_name == '+junk':
             return None
-        return self._findOrRaise(
+        pillar = self._findOrRaise(
             NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
+        if IProject.providedBy(pillar):
+            raise NoSuchProduct(pillar_name)
+        return pillar
 
     def _findProduct(self, product_name):
         if product_name == '+junk':

@@ -360,7 +360,14 @@ class CodeHandler:
         CodeReviewComment.
         """
         submitter = getUtility(ILaunchBag).user
-        comment_text, md = self.findMergeDirectiveAndComment(message)
+        try:
+            comment_text, md = self.findMergeDirectiveAndComment(message)
+        except MissingMergeDirective:
+            body = get_error_message('missingmergedirective.txt')
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
         source, target = self._acquireBranchesForProposal(md, submitter)
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
