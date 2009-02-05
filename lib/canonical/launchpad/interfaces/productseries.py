@@ -352,11 +352,12 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     # vcs-imports branch (which used to be called branch) doesn't use
     # this attribute by accident.
 
-    series_branch = Choice(
-        title=_('Series Branch'),
-        vocabulary='BranchRestrictedOnProduct',
-        readonly=True,
-        description=_("The Bazaar branch for this series."))
+    series_branch = exported(
+        Choice(
+            title=_('Series Branch'),
+            vocabulary='BranchRestrictedOnProduct',
+            readonly=True,
+            description=_("The Bazaar branch for this series.")))
 
     user_branch = Choice(
         title=_('Branch'),

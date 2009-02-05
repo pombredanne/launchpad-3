@@ -620,6 +620,7 @@ virtual host.
     releases_collection_link: u'http://.../firefox/1.0/releases'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/1.0'
+    series_branch_link: None
     status: u'Active Development'
     summary: u'The 1.0 branch of the Mozilla web browser...'
     title: u'Mozilla Firefox Series: 1.0'
