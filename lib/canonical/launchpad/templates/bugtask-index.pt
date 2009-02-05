@@ -278,7 +278,7 @@
             </fieldset>
           </tal:logged-in>
           <tal:not-logged-in condition="not: view/user">
-            <div align="center">
+            <div align="center" id="add-comment-login-first">
               To post a comment you must <a href="+login">log in</a>.
             </div>
           </tal:not-logged-in>

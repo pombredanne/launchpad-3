@@ -180,6 +180,23 @@ comments and the add comment box.
     >>> print find_tag_by_id(user_browser.contents, 'add-comment-form').name
     fieldset
 
+Anonymous users have a slightly different experience. If the comment
+list is truncated, the usual "to post a comment you must log in" note
+is also removed.
+
+    >>> anon_browser.open('http://launchpad.dev/bugs/11')
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'add-comment-login-first')
+    None
+
+When an anonymous user views all comments, the "you must log in" note
+returns.
+
+    >>> anon_browser.getLink('View all 6 comments').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'add-comment-login-first'))
+    To post a comment you must log in.
+
 Restore the configuration to its previous setting.
 
     >>> config.pop('malone')
