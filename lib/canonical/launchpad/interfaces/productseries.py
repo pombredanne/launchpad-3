@@ -428,7 +428,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             " Only MAIN branches are imported."))
     svnrepository = URIField(title=_("Branch"), required=False,
         description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
+            "The URL of a Subversion trunk, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
         allowed_schemes=["http", "https", "svn", "svn+ssh"],
         allow_userinfo=False, # Only anonymous access is supported.
