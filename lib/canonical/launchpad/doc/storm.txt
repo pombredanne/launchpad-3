@@ -38,3 +38,15 @@ provides.
     >>> ISlaveStore.providedBy(auth_master)
     False
 
+
+You can also adapt database object instances to Stores, although
+this is less generally useful.
+
+    >>> janitor = ISlaveStore(Person).find(Person, name='janitor').one()
+    >>> ISlaveStore(janitor) is ISlaveStore(Person)
+    True
+    >>> IMasterStore(janitor) is IMasterStore(Person)
+    True
+    >>> IMasterStore(janitor) is ISlaveStore(Person)
+    False
+
