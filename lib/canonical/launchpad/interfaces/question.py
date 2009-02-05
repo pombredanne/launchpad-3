@@ -431,7 +431,7 @@ class IQuestion(IHasOwner):
         """
 
     def getIndirectRecipients():
-        """Return the set of persons implicitely subscribed to this question.
+        """Return the set of persons implicitly subscribed to this question.
 
         That includes  the answer contacts for the question's target as well
         as the question's assignee.
