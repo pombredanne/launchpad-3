@@ -512,6 +512,21 @@ Adding a new task.
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
+A new task can also be added using IBug.addTask(), which takes the same
+parameters as createTask() above.
+
+    >>> redfish = getUtility(IProductSet).getByName('redfish')
+    >>> redfish_task = firefox_bug.addTask(
+    ...     owner=foobar, product=redfish)
+
+    >>> current_date_last_updated = firefox_bug.date_last_updated
+
+    >>> notify(SQLObjectCreatedEvent(redfish_task))
+
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
+
+
 The first task is available as default_bugtask. Launchpad often views
 bugs in the context of a bugtask, and the default choice is the first
 or oldest bugtask.

@@ -403,6 +403,11 @@ class IBug(ICanBeMentored):
         tracker, owned by the person given as the owner.
         """
 
+    def addTask(owner, product=None, productseries=None, distribution=None,
+                distroseries=None, sourcepackagename=None, status=None,
+                importance=None, assignee=None, milestone=None):
+        """Create a new bug task on this bug."""
+
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 

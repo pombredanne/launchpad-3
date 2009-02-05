@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'Bug', 'BugBecameQuestionEvent', 'BugSet', 'get_bug_tags',
-    'get_bug_tags_open_count']
+    'Bug',
+    'BugBecameQuestionEvent',
+    'BugSet',
+    'get_bug_tags',
+    'get_bug_tags_open_count',
+    ]
 
 
 import mimetypes
@@ -30,11 +34,12 @@ from storm.store import Store
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
     DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
-    IBugBranch, IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet,
-    ICveSet, IDistribution, IDistroSeries, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IPersonSet, IProduct, IProductSeries,
-    IQuestionTarget, ISourcePackage, IStructuralSubscriptionTarget,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
+    IBugBranch, IBugNotificationSet, IBugSet, IBugTask, IBugTaskSet,
+    IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IPersonSet,
+    IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
+    IStructuralSubscriptionTarget, NominationError,
+    NominationSeriesObsoleteError, NotFoundError,
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
@@ -667,6 +672,22 @@ class Bug(SQLBase):
             # they are created.
             Store.of(result).flush()
             return result
+
+    def addTask(self, owner, product=None, productseries=None,
+                distribution=None, distroseries=None,
+                sourcepackagename=None,
+                status=IBugTask['status'].default,
+                importance=IBugTask['importance'].default,
+                assignee=None, milestone=None):
+        """See `IBug`."""
+        new_task = getUtility(IBugTaskSet).createTask(
+            self, owner=owner, product=product,
+            productseries=productseries, distribution=distribution,
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename, status=status,
+            importance=importance, assignee=assignee, milestone=milestone)
+
+        return new_task
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
