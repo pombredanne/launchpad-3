@@ -125,3 +125,39 @@ comment/attachment" page, for use when JavaScript isn't available.
 
     >>> print user_browser.getLink('Add a comment/attachment').url
     http://launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
+
+
+== Bugs with lots of comments ==
+
+When a bug has a very large number of comments, only some of them are
+displayed. A notice is added at the end of the comment list to tell
+the user about this.
+
+Bug 11 has quite a few comments.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/11')
+    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> len(comments)
+    6
+
+Let's briefly override the configuration to push bug 11 over the
+threshold.
+
+    >>> from canonical.config import config
+    >>> config.push('malone', '''
+    ... [malone]
+    ... comments_list_max_length: 5
+    ... comments_list_truncate_to: 3
+    ... ''')
+
+Now only 3 comments will be displayed.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/11')
+    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> len(comments)
+    3
+
+Restore the configuration to its previous setting.
+
+    >>> config.pop('malone')
+    (...)
