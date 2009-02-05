@@ -157,7 +157,7 @@ class LaunchBag:
     def time_zone(self):
         if getattr(self._store, "time_zone", None) is None:
             if self.user and self.user.time_zone:
-                 self._store.time_zone = pytz.timezone(self.user.time_zone)
+                self._store.time_zone = pytz.timezone(self.user.time_zone)
             else:
                 # fall back to UTC
                 self._store.time_zone = _utc_tz
