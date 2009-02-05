@@ -1963,10 +1963,6 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-
-            if not root_url.endswith('/'):
-                root_url += '/'
-
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         else:
