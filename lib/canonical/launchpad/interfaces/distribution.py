@@ -366,6 +366,14 @@ class IDistributionPublic(
         matching.
         """
 
+    def searchExactBinaryPackages(package_name):
+        """Search for binary packages with an exact match to the name.
+
+        :param package_name: The binary package name to match.
+        :return: A result set containing appropriate sourcepackagereleases
+            for the matching source.
+        """
+
     def getFileByName(filename, archive=None, source=True, binary=True):
         """Find and return a LibraryFileAlias for the filename supplied.
 

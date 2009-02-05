@@ -32,6 +32,7 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionmirror import DistributionMirror
@@ -41,6 +42,7 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
+from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -49,8 +51,8 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishingHistory)
+    BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
+    SourcePackageFilePublishing, SourcePackagePublishingHistory)
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
@@ -952,7 +954,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Create a function that will decorate the results, converting
         # them from the find_spec above into DSPs:
-        def result_to_dsp((cache, source_package_name, rank)):
+        def result_to_dsp(result):
+            result = cache, source_package_name, rank
             return DistributionSourcePackage(
                 self,
                 source_package_name
@@ -961,6 +964,34 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Return the decorated result set so the consumer of these
         # results will only see DSPs
         return DecoratedResultSet(dsp_caches, result_to_dsp)
+
+    def searchExactBinaryPackages(self, package_name):
+        """See `IDistribution`."""
+
+        # Return results only in active distroseries.
+        store = Store.of(self)
+
+        result_set = store.find(
+            SourcePackageName,
+            # SQL("ARRAY(BinaryPackageName.name)")),
+            DistroSeries.distribution == self,
+            DistroSeries.status != DistroSeriesStatus.OBSOLETE,
+            BinaryPackageName.name == package_name,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.build == Build.id,
+            Build.sourcepackagerelease == SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagename == SourcePackageName.id)
+        
+        result_set = result_set.config(distinct=True)
+        def names_to_dsp(result):
+            return DistributionSourcePackage(self, result)
+
+        return DecoratedResultSet(result_set, names_to_dsp)
 
     def guessPackageNames(self, pkgname):
         """See `IDistribution`"""
