@@ -179,6 +179,14 @@ In the current case, the subscribers will include the owner
     >>> [s.person.displayname for s in firefox_question.subscriptions]
     [u'Sample Person', u'No Privileges Person']
 
+The getDirectSubscribers() method returns a sorted list of subscribers.
+This method iterates like the NotificationRecipientSet returned by the
+getDirectRecipients() method.
+
+    >>> [person.displayname
+    ...  for person in firefox_question.getDirectSubscribers()]
+    [u'No Privileges Person', u'Sample Person']
+
 To remove a person from the subscriptions list, we use the unsubscribe()
 method.
 
@@ -189,9 +197,9 @@ method.
 The persons who are on the subscription list are said to be directly
 subscribed to the question. They explicitly choose to get notifications
 about that particular question. This list of persons is available through
-the getDirectSubscribers() method.
+the getDirectRecipients() method.
 
-    >>> subscribers = firefox_question.getDirectSubscribers()
+    >>> subscribers = firefox_question.getDirectRecipients()
 
 That method returns an INotificationRecipientSet, containing the direct
 subscribers along the rationale for contacting them:
@@ -212,7 +220,7 @@ question target are part of the indirect subscribers list.
 
     # There are no answer contacts on the firefox product.
     >>> [person.displayname
-    ...     for person in firefox_question.getIndirectSubscribers()]
+    ...     for person in firefox_question.getIndirectRecipients()]
     []
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> english = getUtility(ILanguageSet)['en']
@@ -220,7 +228,7 @@ question target are part of the indirect subscribers list.
     >>> firefox.addAnswerContact(no_priv)
     True
 
-    >>> indirect_subscribers = firefox_question.getIndirectSubscribers()
+    >>> indirect_subscribers = firefox_question.getIndirectRecipients()
     >>> verifyObject(INotificationRecipientSet, indirect_subscribers)
     True
     >>> [person.displayname for person in indirect_subscribers]
@@ -251,7 +259,7 @@ source package are part of the indirect subscribers list.
     ...     "The FnordsHighlighter plug-in doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_question.subscriptions]
     [u'Sample Person']
-    >>> indirect_subscribers = package_question.getIndirectSubscribers()
+    >>> indirect_subscribers = package_question.getIndirectRecipients()
     >>> [person.displayname for person in indirect_subscribers]
     [u'No Privileges Person', u'Ubuntu Team']
     >>> indirect_subscribers.getReason(ubuntu_team)
@@ -267,7 +275,7 @@ The question's assignee is also part of the indirect subscription list:
 
     >>> login('foo.bar@canonical.com')
     >>> package_question.assignee = getUtility(IPersonSet).getByName('name16')
-    >>> indirect_subscribers = package_question.getIndirectSubscribers()
+    >>> indirect_subscribers = package_question.getIndirectRecipients()
     >>> [person.displayname for person in indirect_subscribers]
     [u'Foo Bar', u'No Privileges Person', u'Ubuntu Team']
     >>> indirect_subscribers.getReason(package_question.assignee)
@@ -275,12 +283,20 @@ The question's assignee is also part of the indirect subscription list:
       for this question.',
      'Assignee')
 
+The getIndirectSubscribers() method iterates like the getIndirectRecipients()
+method, but it returns a sorted list instead of a NotificationRecipientSet.
+It too contains the question assignee.
+
+    >>> indirect_subscribers = package_question.getIndirectSubscribers()
+    >>> [person.displayname for person in indirect_subscribers]
+    [u'Foo Bar', u'No Privileges Person', u'Ubuntu Team']
+
 Notifications are sent to the list of direct and indirect subscribers.
 The notification recipients list can be obtained by using the
-getSubscribers() method.
+getRecipients() method.
 
     >>> login('no-priv@canonical.com')
-    >>> subscribers = firefox_question.getSubscribers()
+    >>> subscribers = firefox_question.getRecipients()
     >>> verifyObject(INotificationRecipientSet, subscribers)
     True
     >>> [person.displayname for person in subscribers]
@@ -288,6 +304,7 @@ getSubscribers() method.
 
 (More documentation on the question notifications can be found in
 'answer-tracker-notifications.txt'.)
+
 
 == Workflow ==
 

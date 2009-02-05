@@ -517,6 +517,11 @@ class IBranchMergeProposalJob(Interface):
         """Destroy this object."""
 
 
+IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
+IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
+IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
