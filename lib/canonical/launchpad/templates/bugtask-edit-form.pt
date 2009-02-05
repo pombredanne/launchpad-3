@@ -33,15 +33,15 @@
   <tal:has_watch
       condition="context/bugwatch"
       define="watch context/bugwatch">
-    <tal:bugtracker-enabled
-        condition="watch/bugtracker/enabled">
+    <tal:bugtracker-active
+        condition="watch/bugtracker/active">
       <p tal:condition="watch/last_error_type"
           class="error message"
           tal:content="watch/getLastErrorMessage"
       />
-    </tal:bugtracker-enabled>
+    </tal:bugtracker-active>
     <p class="warning message"
-        condition="not:watch/bugtracker/enabled">
+        condition="not:watch/bugtracker/active">
       Bug watch updates for
       <tal:bugtracker content="watch/bugtracker/title" /> are disabled.
     </p>

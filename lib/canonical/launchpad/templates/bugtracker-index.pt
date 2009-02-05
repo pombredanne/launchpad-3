@@ -16,7 +16,7 @@
         overview
       </h1>
 
-      <p tal:condition="not: context/enabled" class="informational message">
+      <p tal:condition="not: context/active" class="informational message">
       Bug watch updates for <tal:bugtracker content="context/title" />
       are disabled.
       </p>

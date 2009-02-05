@@ -155,8 +155,8 @@ class BugTracker(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=False)
     baseurl = StringCol(notNull=True)
-    enabled = Bool(
-        name='enabled', allow_none=False, default=True)
+    active = Bool(
+        name='active', allow_none=False, default=True)
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -185,6 +185,10 @@ class BugTracker(SQLBase):
             "func=add&group_id=%(group_id)s&atid=%(at_id)s"),
         BugTrackerType.TRAC: "%(base_url)s/newticket",
         }
+
+    @property
+    def is_active(self):
+        return self.active
 
     @property
     def latestwatches(self):

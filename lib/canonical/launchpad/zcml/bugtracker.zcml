@@ -26,7 +26,8 @@
                       getLinkedPersonByName id imported_bug_messages
                       latestwatches name owner products projects
                       summary title watches getBugFilingLink
-                      has_lp_plugin multi_product enabled" />
+                      has_lp_plugin multi_product active
+                      is_active" />
       <require
           permission="launchpad.Edit"
           attributes="destroySelf ensurePersonForSelf linkPersonToSelf"
@@ -34,7 +35,8 @@
                           name owner summary title has_lp_plugin" />
       <require
           permission="launchpad.Admin"
-          set_attributes="enabled" />
+          set_attributes="active" />
+
     </class>
 
     <adapter

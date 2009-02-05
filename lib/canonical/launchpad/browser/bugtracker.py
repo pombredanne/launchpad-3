@@ -28,17 +28,20 @@ from zope.schema import Choice
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
+from canonical.launchpad.database import BugTracker
 from canonical.launchpad.helpers import english_list, shortlist
-from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag,
-    ILaunchpadCelebrities, IRemoteBug)
+from canonical.launchpad.interfaces.bugtracker import (
+    BUG_TRACKER_ACTIVE_VOCABULARY, BugTrackerType, IBugTracker,
+    IBugTrackerSet, IRemoteBug)
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchBag, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
     redirection, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.widgets import DelimitedListWidget
+from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
 
 
 # A set of bug tracker types for which there can only ever be one bug
@@ -178,10 +181,12 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
     field_names = ['name', 'title', 'bugtrackertype',
-                   'summary', 'baseurl', 'aliases', 'contactdetails']
+                   'summary', 'baseurl', 'aliases', 'contactdetails',
+                   'is_active']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
+    custom_widget('is_active', LaunchpadRadioWidget, orientation='vertical')
 
     def validate(self, data):
         # Normalise aliases to an empty list if it's None.
@@ -211,6 +216,12 @@ class BugTrackerEditView(LaunchpadEditFormView):
         requested_baseurl = data['baseurl']
         if requested_baseurl != current_baseurl:
             data['aliases'].append(current_baseurl)
+
+        data['active'] = data['is_active']
+
+        # Get rid of is_active since it's not data we care about saving;
+        # it's just a nice way of exposing things to the interface.
+        del data['is_active']
 
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
@@ -299,28 +310,6 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
         # Go back to the bug tracker listing.
         self.next_url = canonical_url(getUtility(IBugTrackerSet))
-
-    def disable_condition(self, action):
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        return self.user.inTeam(admin_team) and self.context.enabled
-
-    @action('Disable', name='disable', condition=disable_condition)
-    def disable_action(self, action, data):
-        self.context.enabled = False
-        self.next_url = canonical_url(self.context)
-
-    def enable_condition(self, action):
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        return self.user.inTeam(admin_team) and not self.context.enabled
-
-    @action('Enable', name='enable', condition=enable_condition)
-    def disable_action(self, action, data):
-        self.context.enabled = True
-        self.request.response.addInfoNotification(
-            'Bug watch updates for %s have been enabled.' %
-            self.context.title)
-
-        self.next_url = canonical_url(self.context)
 
 
 class BugTrackerNavigation(Navigation):
