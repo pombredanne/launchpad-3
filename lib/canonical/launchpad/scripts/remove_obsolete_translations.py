@@ -35,7 +35,7 @@ CollectObsoletePOFilesSQL = """
     AS SELECT pofile.id AS id
     FROM pofile
         JOIN obsolete_pots ON pofile.potemplate = obsolete_pots.id;
-        CREATE UNIQUE INDEX obsolete_pofiles_idx ON obsolete_pofiles (id);
+    CREATE UNIQUE INDEX obsolete_pofiles_idx ON obsolete_pofiles (id);
     ANALYZE obsolete_pofiles"""
 
 # Query to collect all obsolete translationmessages into a table
@@ -58,6 +58,14 @@ DeleteObsoletePofiletranslatorsSQL = """
     WHERE pofile IN ( 
         SELECT id
         FROM obsolete_pofiles
+        )"""
+
+# Query Delete obsolete translationtemplateitems
+DeleteObsoleteTranslationTemplateItemsSQL = """
+    DELETE FROM translationtemplateitem
+    WHERE potemplate IN ( 
+        SELECT id
+        FROM obsolete_pots
         )"""
 
 # Query delete obsolete translation messages in batches of batch_size
@@ -144,16 +152,12 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         store.execute(CollectObsoletePOFilesSQL)
         store.execute(CollectObsoleteTranslationmessagesSQL)
         self._do_commit()
-        num_pots = self._count_rows("obsolete_pots")
-        num_pofiles = self._count_rows("obsolete_pofiles")
         num_tms = self._count_rows("obsolete_tms")
 
         # Delete these first because they reference Translationmessage
         # and POFiles
-        restult = store.execute(DeleteObsoletePofiletranslatorsSQL)
-        # XXX Not sure how to get a count of deleted rows. This assumes
-        # that the statement just returns it.
-        num_pofiletranslators = result.get_one()
+        num_pofiletranslators = store.execute(
+            DeleteObsoletePofiletranslatorsSQL).count()
         self._do_commit()
 
         # Delete the translation messages in batches because the deletion
@@ -161,20 +165,22 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         LoopTuner(DeletionLoopRunner(store, num_tms, self._do_commit),
                   self.options.loop_time).run()
 
-        # Delete the remaining data
-        restult = store.execute(DeleteObsoletePOTMsgSetSQL)
-        # XXX Not sure how to get a count of deleted rows. This assumes
-        # that the statement just returns it.
-        num_potmsgsets = result.get_one()
         self._do_commit()
-        store.execute(DeleteObsoletePofilesSQL)
-        store.execute(DeleteObsoletePOTemplatesSQL)
+        # Delete these now because they reference POTemplates and POTMsgSets
+        num_templateitems = store.execute(
+            DeleteObsoleteTranslationTemplateItemsSQL).count()
+        # Delete the remaining data
+        num_potmsgsets = store.execute(DeleteObsoletePOTMsgSetSQL).count()
+        self._do_commit()
+        num_pofiles = store.execute(DeleteObsoletePofilesSQL).count()
+        num_pots = store.execute(DeleteObsoletePOTemplatesSQL).count()
         self._do_commit()
 
         self.logger.info("Done.")
         self.logger.info("Deletion statistics:")
         self.logger.info("Pofiletranslators:   %d" % num_pofiletranslators)
         self.logger.info("Translationmessages: %d" % num_tms)
+        self.logger.info("Trans.TemplateItems: %d" % num_templateitems)
         self.logger.info("POFiles:             %d" % num_pofiles)
         self.logger.info("POTMsgSets:          %d" % num_potmsgsets)
         self.logger.info("POTemplates:         %d" % num_pots)
