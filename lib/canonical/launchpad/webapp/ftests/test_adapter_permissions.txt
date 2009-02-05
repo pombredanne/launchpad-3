@@ -35,7 +35,6 @@ Test this once more to ensure the settings stick across transactions.
     ...
     InternalError: transaction is read-only
 
-
 If a MASTER_FLAVOR is requested, it should allow writes to table in that
 store's replication set.
 
