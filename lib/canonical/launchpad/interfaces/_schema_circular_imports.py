@@ -12,7 +12,11 @@ __metaclass__ = type
 
 
 from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposal)
+from canonical.launchpad.interfaces.diff import IPreviewDiff
 from canonical.launchpad.interfaces.product import IProduct
 
 
 IBranch['product'].schema = IProduct
+IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal

@@ -98,6 +98,21 @@ This is the file that'll get imported.
     ... msgstr ""
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
+We sometimes saw deadlocks as POFile statistics were updated after
+importing a template.  The operation would read all translation messages
+for the entire template in the same transaction that did the import.
+To prevent this, the importer now does intermediate commits while
+recomputing statistics.
+
+    >>> class FakeTransactionManager:
+    ...     """Pretend to manage a transaction, log what happens."""
+    ...     def begin(self):
+    ...         pass
+    ...     def commit(self):
+    ...         print "Committing."
+    ...     def abort(self):
+    ...         print "Aborting."
+
 Attach the import to the translations import queue:
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
@@ -121,7 +136,9 @@ The entry gets approved, so it can be imported.
 
 Now, we tell the PO template to import from the file data it has.
 
-    >>> (subject, body) = potemplate.importFromQueue(entry, FakeLogger())
+    >>> (subject, body) = potemplate.importFromQueue(
+    ...     entry, FakeLogger(), txn=FakeTransactionManager())
+    Committing.
 
 Our request has now been serviced.
 
@@ -148,6 +165,11 @@ A successful import is confirmed by email.
     Thank you,
     <BLANKLINE>
     The Launchpad team
+
+Since there was no error, the queue entry's error_output is blank.
+
+    >>> print entry.error_output
+    None
 
 The correct message IDs now show up in the template.
 
@@ -381,6 +403,18 @@ The import process produces an email warning us of partial failure.
     <BLANKLINE>
     ...
 
+The error information is also stored more compactly in the entry's
+error_output.
+
+    >>> print entry.error_output
+    Imported, but with errors:
+    <BLANKLINE>
+    4. "format spec... 'msgid' and 'msgstr' for argument 1 are not the same":
+    <BLANKLINE>
+    #, c-format
+    msgid "Foo %s"
+    msgstr "blah %i"
+
 
 === Import Without Errors ===
 
@@ -407,6 +441,11 @@ Now, let's import one without errors.
     ...     pofile.path, pofile_without_errors, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
+
+The new upload clears the entry's error_output.
+
+    >>> print entry.error_output
+    None
 
 The guess IPOFile should be the same we already had.
 
@@ -462,6 +501,11 @@ This time, our notification email reports complete success.
     Hello Rosetta Administrators,
     <BLANKLINE>
     ...
+
+There was no error output either.
+
+    >>> print entry.error_output
+    None
 
 The translation has been augmented with the strings from the imported
 file.  The translation credits are special; upstream uploads can
