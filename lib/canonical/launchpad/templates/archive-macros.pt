@@ -29,7 +29,9 @@ function informFailure(transaction_id, response, args) {
         'click',
         function (e) {
             e.preventDefault();
-            startUpdate(row);
+            placeholder = e.target.get('parentNode').get('parentNode');
+            row_id = placeholder.get('id').replace('xhr_placeholder', 'pub');
+            startUpdate(Y.get('#' + row_id));
             }
     );
 
