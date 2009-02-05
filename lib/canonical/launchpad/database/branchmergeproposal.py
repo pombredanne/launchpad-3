@@ -544,6 +544,21 @@ class BranchMergeProposal(SQLBase):
             CodeReviewVoteReference.branch_merge_proposal == self,
             query).one()
 
+    def _getTeamVoteReference(self, user, review_type):
+        """Get a vote reference where the user is in the review team.
+
+        Only return those reviews where the review_type matches.
+        """
+        refs = Store.of(self).find(
+            CodeReviewVoteReference,
+            CodeReviewVoteReference.branch_merge_proposal == self,
+            CodeReviewVoteReference.review_type == review_type,
+            CodeReviewVoteReference.comment == None)
+        for ref in refs:
+            if user.inTeam(ref.reviewer):
+                return ref
+        return None
+
     def _getVoteReference(self, user, review_type):
         """Get the vote reference for the user.
 
@@ -559,14 +574,15 @@ class BranchMergeProposal(SQLBase):
             return ref
         # Get all the unclaimed CodeReviewVoteReferences with the review_type
         # specified.
-        refs = Store.of(self).find(
-            CodeReviewVoteReference,
-            CodeReviewVoteReference.branch_merge_proposal == self,
-            CodeReviewVoteReference.review_type == review_type,
-            CodeReviewVoteReference.comment == None)
-        for ref in refs:
-            if user.inTeam(ref.reviewer):
-                return ref
+        team_ref = self._getTeamVoteReference(user, review_type)
+        if team_ref is not None:
+            return team_ref
+        # If the review_type is not None, check to see if there is an
+        # outstanding team review requested with no specified type.
+        if review_type is not None:
+            team_ref = self._getTeamVoteReference(user, None)
+            if team_ref is not None:
+                return team_ref
         # Create a new reference.
         return CodeReviewVoteReference(
             branch_merge_proposal=self,
