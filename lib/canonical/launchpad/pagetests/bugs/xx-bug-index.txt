@@ -165,6 +165,14 @@ With a warning telling the user where the comments have gone:
     ...     print extract_text(message)
     Displaying first 3 comments. View all 6 comments.
 
+In amongst that message is a link that will let us see all the
+comments.
+
+    >>> user_browser.getLink('View all 6 comments').click()
+    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> len(comments)
+    6
+
 Restore the configuration to its previous setting.
 
     >>> config.pop('malone')
