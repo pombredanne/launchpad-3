@@ -94,6 +94,7 @@ class LaunchBag:
         for attribute in self._registry.values():
             setattr(store, attribute, None)
         store.login = None
+        store.time_zone = None
 
     @property
     def site(self):
@@ -154,10 +155,13 @@ class LaunchBag:
 
     @property
     def time_zone(self):
-        if self.user and self.user.time_zone:
-            return pytz.timezone(self.user.time_zone)
-        # fall back to UTC
-        return _utc_tz
+        if getattr(self._store, "time_zone", None) is None:
+            if self.user and self.user.time_zone:
+                 self._store.time_zone = pytz.timezone(self.user.time_zone)
+            else:
+                # fall back to UTC
+                self._store.time_zone = _utc_tz
+        return self._store.time_zone
 
 
 class LaunchBagView(object):
