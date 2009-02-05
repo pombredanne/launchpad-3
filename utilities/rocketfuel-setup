@@ -139,13 +139,34 @@ if [ ! -e ~/.ssh/config ]; then
     touch ~/.ssh/config
 fi
 
+ssh_config_mod=0
 grep -q "^GSSAPIAuthentication" ~/.ssh/config
 if [ $? -ne 0 ]; then
+  ssh_config_mod=1
   echo "Please add the following directive to your ~/.ssh/config:
 ------------------------------------------------------------
 GSSAPIAuthentication no
 ------------------------------------------------------------
+
 "
+fi
+if [ "$whoami" != "$lpusername" ]; then
+  if [ "$ssh_config_mod" -ne "0" ]
+  then
+    intro="Also ensure"
+  else
+    ssh_config_mod=1
+    intro="Ensure"
+  fi
+  echo "$intro the following directive is in your ~/.ssh/config:
+------------------------------------------------------------
+Host bazaar.launchpad.net
+    User $lpusername
+------------------------------------------------------------
+"
+fi
+
+if [ "$ssh_config_mod" -ne "0" ]; then
   read
 fi
 
@@ -252,19 +273,19 @@ fi
 
 grep -q "^deb http://lpdebs.canonical.com/" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
-  echo "Adding LP package respository to package source list."
+  echo "Adding lpdebs package repository to package source list."
   echo "deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./" | sudo tee -a $LPDEV_SOURCES
 fi
 
 grep -q "^deb http://ppa.launchpad.net/launchpad/ppa/ubuntu intrepid/" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
-  echo "Adding LP package respository to package source list."
+  echo "Adding ~launchpad PPA repository to package source list."
   echo "deb http://ppa.launchpad.net/launchpad/ppa/ubuntu intrepid main"  | sudo tee -a $LPDEV_SOURCES
 fi
 
 grep -q "^deb http://ppa.launchpad.net/bzr/ubuntu" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
-  echo "Adding Bazaar PPA repository to package source list."
+  echo "Adding ~bzr PPA repository to package source list."
   echo "deb http://ppa.launchpad.net/bzr/ppa/ubuntu ${DISTRIB_CODENAME} main" | sudo tee -a $LPDEV_SOURCES
 fi
 
@@ -288,7 +309,7 @@ for key in $REQUIRED_PPA_KEYS; do
 done
 
 do_install() {
-  dpkg -s $pkg | grep -q "^Status:.*installed"
+  dpkg -s $pkg | grep -q "^Status: install ok installed"
   if [ $? -ne 0 ]; then
     echo "Installing $pkg package..."
     sudo aptitude install $pkg
@@ -524,10 +545,10 @@ Thank you for using this script. You can improve it for everyone by
 committing changes to LP in utilities/rocketfuel-setup.
 
 Before you can submit branches to PQM, you need to visit:
-https://wiki.canonical.com/EmailSetup
-and find the current SMTP server password and enter it in the appropriate
-place in $HOME/.bazaar/locations.conf and $HOME/.bazaar/bazaar.conf.
-Alternatively, configure it to use your own SMTP server locally.
+https://wiki.canonical.com/EmailSetup and find the current SMTP server
+password and enter it in the appropriate place in
+HOME/.bazaar/bazaar.conf.  Alternatively, configure it to use your own
+SMTP server locally.
 
 You should use the following commands to manage your Rocketfuel:
 
