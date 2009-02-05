@@ -712,7 +712,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
     def toXHTML(self):
         """Represent this resource as an XHTML document."""
-        return getMultiAdapter((self.context, self.request), name="entry")()
+        view = getMultiAdapter(
+            (self.context, self.request),
+            name="lib.canonical.lazr.rest.resource.EntryResource")
+        return view()
 
     def processAsJSONHash(self, media_type, representation):
         """Process an incoming representation as a JSON hash.
