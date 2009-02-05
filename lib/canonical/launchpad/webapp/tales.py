@@ -1110,19 +1110,23 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
             that name on this object.
         """
         title_words = []
+        if self._context.conflicts is not None:
+            style = 'conflicts-diff'
+            title_words.append(_('CONFLICTS'))
+        else:
+            style = 'clean-diff'
+        # Stale style overrides conflicts or clean.
+        if self._context.stale:
+            style = 'stale-diff'
+            title_words.append(_('Stale'))
+
         if self._context.added_lines_count:
             title_words.append(
                 _("%s added") % self._context.added_lines_count)
+
         if self._context.removed_lines_count:
             title_words.append(
                 _("%s removed") % self._context.removed_lines_count)
-        if self._context.stale:
-            style = 'stale-diff'
-            title_words.append(_('(stale)'))
-        elif self._context.conflicts is not None:
-            style = 'conflicts-diff'
-        else:
-            style = 'clean-diff'
 
         args = {
             'line_count': _('%s lines') % self._context.diff_lines_count,
