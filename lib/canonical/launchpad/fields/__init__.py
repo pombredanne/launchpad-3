@@ -390,6 +390,14 @@ class UniqueField(TextLine):
         """
         return self._getByAttribute(value) is not None
 
+    def unchanged(self, input):
+        """Return True if the attribute on the object is unchanged."""
+        _marker = object()
+        if (self._content_iface.providedBy(self.context) and
+            input == getattr(self.context, self.attribute, _marker)):
+            return True
+        return False
+
     def _validate(self, input):
         """Raise a LaunchpadValidationError if the attribute is not available.
 
@@ -399,13 +407,10 @@ class UniqueField(TextLine):
         """
         super(UniqueField, self)._validate(input)
         assert self._content_iface is not None
-        _marker = object()
 
-        # If we are editing an existing object and the attribute is
-        # unchanged...
-        if (self._content_iface.providedBy(self.context) and
-            input == getattr(self.context, self.attribute, _marker)):
-            # ...then do nothing: we already know the value is unique.
+        if self.unchanged(input):
+            # The value is not being changed, thus it already existed, so we
+            # know it is unique.
             return
 
         # Now we know we are dealing with either a new object, or an
@@ -447,9 +452,7 @@ class BlacklistableContentNameField(ContentNameField):
         # Although this check is performed in UniqueField._validate(), we need
         # to do it here again to avoid checking whether or not the name is
         # blacklisted when it hasn't been changed.
-        _marker = object()
-        if (self._content_iface.providedBy(self.context) and
-            input == getattr(self.context, self.attribute, _marker)):
+        if self.unchanged(input):
             # The attribute wasn't changed.
             return
 
@@ -458,7 +461,7 @@ class BlacklistableContentNameField(ContentNameField):
         if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
-                "administrators" % input)
+                "administrators." % input)
 
 
 class PillarAliases(TextLine):
