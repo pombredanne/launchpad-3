@@ -746,27 +746,6 @@ scanned ID is.
     False
 
 
-== Getting the branch count and last commit for products ==
-
-    >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> products = [
-    ...     productset.getByName('evolution'),
-    ...     productset.getByName('firefox'),
-    ...     productset.getByName('gnome-terminal'),
-    ...     ]
-
-    >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
-    >>> for product in products:
-    ...     print "%s %s %s" % (
-    ...         product.name,
-    ...         summary[product]['branch_count'],
-    ...         summary[product]['last_commit'])
-    evolution      1 None
-    firefox        5 2005-03-09 15:50:00
-    gnome-terminal 7 None
-
-
 == Getting all branches for a person ==
 
 Batching of the branch pages relies (ideally) on a quick simple query

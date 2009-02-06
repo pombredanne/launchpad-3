@@ -1297,32 +1297,6 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''' % quote(BranchType.REMOTE))
 
-    def getActiveUserBranchSummaryForProducts(self, products):
-        """See `IBranchSet`."""
-        product_ids = [product.id for product in products]
-        if not product_ids:
-            return []
-        lifecycle_clause = self._lifecycleClause(
-            DEFAULT_BRANCH_STATUS_IN_LISTING)
-        cur = cursor()
-        cur.execute("""
-            SELECT
-                Branch.product, COUNT(Branch.id), MAX(Revision.revision_date)
-            FROM Branch
-            LEFT OUTER JOIN Revision
-            ON Branch.last_scanned_id = Revision.revision_id
-            WHERE Branch.product in %s
-            AND Branch.branch_type in (1, 2) %s
-            GROUP BY Product
-            """ % (quote(product_ids), lifecycle_clause))
-        result = {}
-        product_map = dict([(product.id, product) for product in products])
-        for product_id, branch_count, last_commit in cur.fetchall():
-            product = product_map[product_id]
-            result[product] = {'branch_count' : branch_count,
-                               'last_commit' : last_commit}
-        return result
-
     def getRecentlyChangedBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,

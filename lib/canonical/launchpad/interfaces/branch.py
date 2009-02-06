@@ -1204,16 +1204,6 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
-    # XXX: This seems like a strangely motivated method. It gets passed many
-    # products and returns a list summaries for each of them. It's really an
-    # implementation detail, not an API.
-    def getActiveUserBranchSummaryForProducts(products):
-        """Return the branch count and last commit time for the products.
-
-        Only active branches are counted (i.e. not Merged or Abandoned),
-        and only non import branches are counted.
-        """
-
     def getRecentlyChangedBranches(
         branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
