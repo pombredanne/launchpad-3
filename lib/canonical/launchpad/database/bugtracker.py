@@ -23,13 +23,12 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Or, SQL
+from storm.expr import Or
 from storm.locals import Bool
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, sqlvalues)
+from canonical.database.sqlbase import SQLBase, flush_database_updates
 
 from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
