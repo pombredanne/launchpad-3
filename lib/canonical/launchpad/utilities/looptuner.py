@@ -65,7 +65,7 @@ class LoopTuner:
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
 
-    def run(self):
+    def run(self, sleep_between_commits=0.0):
         """Run the loop to completion."""
         chunk_size = self.minimum_chunk_size
         iteration = 0
@@ -80,6 +80,10 @@ class LoopTuner:
             last_clock = new_clock
             logging.info("Iteration %d (size %.1f): %.3f seconds" %
                          (iteration, chunk_size, time_taken))
+
+            if sleep_between_commits:
+                time.sleep(sleep_between_commits)
+                last_clock = self._time()
 
             total_size += chunk_size
 

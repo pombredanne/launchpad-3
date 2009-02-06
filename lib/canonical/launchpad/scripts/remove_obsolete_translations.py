@@ -50,6 +50,16 @@ CollectObsoleteTranslationmessagesSQL = """
     CREATE UNIQUE INDEX obsolete_tms_idx ON obsolete_tms (id);
     ANALYZE obsolete_tms"""
 
+# Query to collect all obsolete TranslationTemplateItems into a table
+CollectObsoleteTranslationTemplateItemsSQL = """
+    DROP TABLE IF EXISTS obsolete_tti;
+    CREATE TEMP TABLE obsolete_tti
+    AS SELECT TranslationTemplateItem.id AS id
+    FROM TranslationTemplateItem
+        WHERE potemplate IN obsolete_pots;
+    CREATE UNIQUE INDEX obsolete_tti_idx ON obsolete_tti (id);
+    ANALYZE obsolete_tti"""
+
 # Query to count all rows in a table
 CountRowsSQL = """
     SELECT count(*) FROM %s"""
@@ -104,6 +114,19 @@ DeleteObsoletePOTemplatesSQL = """
         )"""
 
 
+types = [
+    { 'table' : 'TranslationMessage'
+      'temporary_table' : 'obsolete_tms',
+      'removal_sql' : DeleteObsoleteTranslationmessagesSQL,
+      'collection' : CollectObsoleteTranslationmessagesSQL,
+      },
+    { 'table' : 'TranslationTemplateItem'
+      'temporary_table' : 'obsolete_tti',
+      'removal_sql' : DeleteObsoleteTranslationTemplateItemsSQL,
+      'collection' : CollectObsoleteTranslationTemplateItemsSQL,
+      },
+    ]
+
 def commit_transaction(transaction, logger, throttle=0.0, dry_run=False):
     """Commit ongoing transaction, start a new one.
 
@@ -149,14 +172,19 @@ class DeletionLoopRunner(object):
                 result.row_count(),
                 self._iterations_done + result.row_count(), 
                 self._iteration_end))
-        self._iterations_done += chunk_size
-        commit_transaction(self._txn, self._logger, throttle=self._throttle,
-                           dry_run=self._dry_run)
+        self._iterations_done += result.row_count()
+        commit_transaction(self._txn, self._logger,dry_run=self._dry_run)
         self._commit_count += 1
+
+        result = self._store.execute("SELECT * FROM TranslationMessage WHERE "
+                                     "  id IN (SELECT id FROM obsolete_tms)")
+        remaining = result.row_count()
+        if remaining:
+            self._logger.info(
+                "Still %d remaining TranslationMessages" % remaining)
 
     def getTotalCommits(self):
         return self._commit_count
-
 
 class RemoveObsoleteTranslations(LaunchpadScript):
 
@@ -206,7 +234,8 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         loop = DeletionLoopRunner(self.txn, self.logger, store, num_tms,
                                   throttle=float(self.options.throttle),
                                   dry_run=self.options.dry_run)
-        LoopTuner(loop, self.options.loop_time).run()
+        LoopTuner(loop, self.options.loop_time).run(
+            sleep_between_commits=float(self.options.throttle))
         self._commit_count += loop.getTotalCommits()
 
         # Delete these now because they reference POTemplates and POTMsgSets
@@ -218,6 +247,7 @@ class RemoveObsoleteTranslations(LaunchpadScript):
 
         # XXX Danilo: we have to pause here for a bit to allow the transaction
         # to catch up; if we don't do that, POTMsgSet removal might still fail.
+        time.sleep(3.0)
 
         # Delete the remaining data
         num_potmsgsets = store.execute(DeleteObsoletePOTMsgSetSQL).row_count()
