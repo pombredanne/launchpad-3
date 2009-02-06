@@ -26,6 +26,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
     IRevisionParent, IRevisionProperty, IRevisionSet)
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -389,29 +391,8 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getPublicRevisionsForProduct(product, day_limit=30):
-        """See `IRevisionSet`."""
-        # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
-
-        origin = [
-            Revision,
-            Join(BranchRevision, BranchRevision.revision == Revision.id),
-            Join(Branch, BranchRevision.branch == Branch.id),
-            ]
-
-        result_set = Store.of(product).using(*origin).find(
-            Revision,
-            And(revision_time_limit(day_limit),
-                Not(Branch.private),
-                Branch.product == product))
-        result_set.config(distinct=True)
-        return result_set.order_by(Desc(Revision.revision_date))
-
-    @staticmethod
-    def getPublicRevisionsForProject(project, day_limit=30):
-        """See `IRevisionSet`."""
+    def _getPublicRevisionsHelper(obj, day_limit):
+        """Helper method for Products and Projects."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.product import Product
@@ -421,16 +402,34 @@ class RevisionSet:
             Revision,
             Join(BranchRevision, BranchRevision.revision == Revision.id),
             Join(Branch, BranchRevision.branch == Branch.id),
-            Join(Product, Branch.product == Product.id),
             ]
 
-        result_set = Store.of(project).using(*origin).find(
-            Revision,
-            And(revision_time_limit(day_limit),
-                Not(Branch.private),
-                Product.project == project))
+        conditions = And(revision_time_limit(day_limit),
+                         Not(Branch.private))
+
+        if IProduct.providedBy(obj):
+            conditions = And(conditions, Branch.product == obj)
+        elif IProject.providedBy(obj):
+            origin.append(Join(Product, Branch.product == Product.id))
+            conditions = And(conditions, Product.project == obj)
+        else:
+            raise AssertionError(
+                "obj parameter must be an IProduct or IProject: %r" % obj)
+
+        result_set = Store.of(obj).using(*origin).find(
+            Revision, conditions)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
+
+    @classmethod
+    def getPublicRevisionsForProduct(cls, product, day_limit=30):
+        """See `IRevisionSet`."""
+        return cls._getPublicRevisionsHelper(product, day_limit)
+
+    @classmethod
+    def getPublicRevisionsForProject(cls, project, day_limit=30):
+        """See `IRevisionSet`."""
+        return cls._getPublicRevisionsHelper(project, day_limit)
 
 
 def revision_time_limit(day_limit):
