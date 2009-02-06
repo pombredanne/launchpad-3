@@ -108,6 +108,8 @@ class MenuAPI:
         if not self._has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
+        if menu is None:
+            menu = queryAdapter(self._context, INavigationMenu, facet)
         if menu is not None:
             menu.request = self._request
             links_map = dict(
@@ -115,7 +117,7 @@ class MenuAPI:
                 for link in menu.iterlinks(request_url=self._request_url()))
         else:
             # The object has the facet, but does not have a menu, this
-            # is propbably the overview menu with is the default facet.
+            # is probably the overview menu with is the default facet.
             links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
@@ -1038,24 +1040,11 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink'}
-
-    def traverse(self, name, furtherPath):
-        """Special case traversal to support multiple link formats."""
-        for link_name, func in (('project-link', self.projectLink),
-                           ('title-link', self.titleLink),
-                           ('bzr-link', self.bzrLink)):
-            if name == link_name:
-                extra_path = '/'.join(reversed(furtherPath))
-                del furtherPath[:]
-                return func(extra_path)
-        return ObjectFormatterAPI.traverse(self, name, furtherPath)
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        url = canonical_url(branch)
-        url = self.url(view_name)
         if branch.title is not None:
             title = branch.title
         else:
@@ -1066,7 +1055,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             'name': branch.name,
             'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
-            'url': url,
+            'url': self.url(view_name),
             }
 
     def link(self, view_name):
@@ -1077,7 +1066,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             '&nbsp;%(unique_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
-        """A hyperlinked branch icon with the unique name."""
+        """A hyperlinked branch icon with the bazaar identity."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
@@ -1976,10 +1965,6 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-
-            if not root_url.endswith('/'):
-                root_url += '/'
-
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         else:

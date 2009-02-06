@@ -16,6 +16,7 @@ import transaction
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionSpec
+from bzrlib import urlutils
 import pytz
 import simplejson
 
@@ -41,47 +42,56 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.database.branchcontainer import (
+    PackageContainer, PersonContainer, ProductContainer)
+from canonical.launchpad.database.branchmergeproposal import (
+     BranchMergeProposal)
+from canonical.launchpad.database.branchrevision import BranchRevision
+from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.diff import StaticDiff
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
-    BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationForbidden,
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProject,
+    NotFoundError)
+from canonical.launchpad.interfaces.branch import (
+    BadBranchSearchContext, BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
-    BranchMergeProposalStatus, BranchPersonSearchRestriction,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
-    CodeReviewNotificationLevel, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
-    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
+    BranchMergeControlStatus,
+    BranchPersonSearchRestriction,
+    BranchType, BranchTypeError,
+    CannotDeleteBranch,
+    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchPersonSearchContext, IBranchSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchDiffJob, IBranchDiffJobSource,
     IBranchJob, IBranchNavigationMenu, IRevisionMailJob,
     IRevisionMailJobSource, NoSuchBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+     BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
+     BranchMergeProposalStatus, InvalidBranchMergeProposal)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.database.branchcontainer import (
-    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.interfaces.product import NoSuchProduct
-from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal)
-from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.mailout.branch import BranchMailer
-from canonical.launchpad.validators.person import (
-    validate_public_person)
-from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.database.job import Job
-from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.mailout.branch import BranchMailer
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
@@ -258,7 +268,7 @@ class Branch(SQLBase):
             """ % sqlvalues(self, target_branch,
                             BRANCH_MERGE_PROPOSAL_FINAL_STATES))
         if target.count() > 0:
-            raise InvalidBranchMergeProposal(
+            raise BranchMergeProposalExists(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.'
                 % (self.unique_name, target_branch.unique_name))
@@ -293,6 +303,15 @@ class Branch(SQLBase):
 
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
+
+    # XXX: Tim Penhey, 2008-06-18, bug 240881
+    merge_queue = ForeignKey(
+        dbName='merge_robot', foreignKey='MultiBranchMergeQueue',
+        default=None)
+
+    merge_control_status = EnumCol(
+        enum=BranchMergeControlStatus, notNull=True,
+        default=BranchMergeControlStatus.NO_QUEUE)
 
     def addToLaunchBag(self, launchbag):
         """See `IBranch`."""
@@ -330,8 +349,15 @@ class Branch(SQLBase):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return ((self.revision_count > 0  or self.last_mirrored != None)
-            and not self.private)
+        return (self.revision_count > 0  or self.last_mirrored != None)
+
+    def codebrowse_url(self, *extras):
+        """See `IBranch`."""
+        if self.private:
+            root = config.codehosting.secure_codebrowse_root
+        else:
+            root = config.codehosting.codebrowse_root
+        return urlutils.join(root, self.unique_name, *extras)
 
     @property
     def bzr_identity(self):
@@ -994,7 +1020,8 @@ class BranchSet:
             url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             summary=None, whiteboard=None, date_created=None,
             branch_format=None, repository_format=None, control_format=None,
-            distroseries=None, sourcepackagename=None):
+            distroseries=None, sourcepackagename=None,
+            merge_control_status=BranchMergeControlStatus.NO_QUEUE):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW
@@ -1028,7 +1055,9 @@ class BranchSet:
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename,
+            merge_control_status=merge_control_status)
+
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
         # a later date if desired.
@@ -1178,53 +1207,49 @@ class BranchSet:
     def _getByPath(self, path):
         """Given a path within a branch, return the branch and the path."""
         namespace_set = getUtility(IBranchNamespaceSet)
-        parsed = namespace_set.parseBranchPath(path)
-        parsed_path = None
-        for parsed_path, branch_name, suffix in parsed:
-            branch = self._getBranchInNamespace(parsed_path, branch_name)
-            if branch is not None:
-                return branch, suffix
-
-        if parsed_path is None:
-            raise NoSuchBranch(path)
-
-        # This will raise an interesting error if any of the given objects
-        # don't exist.
-        namespace_set.interpret(
-            person=parsed_path['person'],
-            product=parsed_path['product'],
-            distribution=parsed_path['distribution'],
-            distroseries=parsed_path['distroseries'],
-            sourcepackagename=parsed_path['sourcepackagename'])
-        raise NoSuchBranch(path)
+        if not path.startswith('~'):
+            raise InvalidNamespace(path)
+        segments = iter(path.lstrip('~').split('/'))
+        branch = namespace_set.traverse(segments)
+        return branch, '/'.join(segments)
 
     def getByLPPath(self, path):
         """See `IBranchSet`."""
+        branch = suffix = series = None
         try:
             branch, suffix = self._getByPath(path)
-        except InvalidNamespace:
-            pass
-        else:
             if suffix == '':
                 suffix = None
-            return branch, suffix, None
+        except NoSuchBranch:
+            raise
+        except InvalidNamespace:
+            # If the first element doesn't start with a tilde, then maybe
+            # 'path' is a shorthand notation for a branch.
+            branch, series = self._getDefaultProductBranch(path)
+        return branch, suffix, series
 
-        path_segments = path.split('/')
-        if len(path_segments) < 3:
-            branch, series = self._getDefaultProductBranch(*path_segments)
+    def _getDefaultProductBranch(self, path):
+        """Return the branch with the shortcut 'path'.
+
+        :param path: A shortcut to a branch.
+        :raise InvalidBranchIdentifier: if 'path' has too many segments to be
+            a shortcut.
+        :raise InvalidProductIdentifier: if 'path' starts with an invalid
+            name for a product.
+        :raise NoSuchProduct: if 'path' starts with a non-existent product.
+        :raise NoSuchSeries: if 'path' refers to a product series and that
+            series does not exist.
+        :raise NoBranchForSeries: if 'path' refers to a product series that
+            exists, but does not have a branch.
+        :return: The branch.
+        """
+        segments = path.split('/')
+        if len(segments) == 1:
+            product_name, series_name = segments[0], None
+        elif len(segments) == 2:
+            product_name, series_name = tuple(segments)
         else:
             raise faults.InvalidBranchIdentifier(path)
-        return branch, None, series
-
-    def _getDefaultProductBranch(self, product_name, series_name=None):
-        """Return the branch for a product.
-
-        :param product_name: The name of the branch's product.
-        :param series_name: The name of the branch's series.  If not supplied,
-            the product development focus will be used.
-        :return: The branch.
-        :raise: A subclass of LaunchpadFault.
-        """
         if not valid_name(product_name):
             raise faults.InvalidProductIdentifier(product_name)
         product = getUtility(IProductSet).getByName(product_name)
@@ -1685,7 +1710,6 @@ class BranchDiffJob(object):
 
     def run(self):
         """See IBranchDiffJob."""
-        self.job.start()
         bzr_branch = self.branch.getBzrBranch()
         from_revision_id = self._get_revision_id(
             bzr_branch, self.from_revision_spec)
@@ -1693,7 +1717,6 @@ class BranchDiffJob(object):
             bzr_branch, self.to_revision_spec)
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
-        self.job.complete()
         return static_diff
 
 
@@ -1703,6 +1726,12 @@ class RevisionMailJob(BranchDiffJob):
     implements(IRevisionMailJob)
 
     classProvides(IRevisionMailJobSource)
+
+    def __eq__(self, other):
+        return (self.context == other.context)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     @classmethod
     def create(
@@ -1725,6 +1754,17 @@ class RevisionMailJob(BranchDiffJob):
                         to_revision_spec))
         branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
         return klass(branch_job)
+
+    @staticmethod
+    def iterReady():
+        """See `IRevisionMailJobSource`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.find(
+            (BranchJob),
+            And(BranchJob.job_type == BranchJobType.REVISION_MAIL,
+                BranchJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs)))
+        return (RevisionMailJob(job) for job in jobs)
 
     @property
     def revno(self):
@@ -1754,12 +1794,12 @@ class RevisionMailJob(BranchDiffJob):
         if self.perform_diff and self.to_revision_spec is not None:
             diff = BranchDiffJob.run(self)
             transaction.commit()
-            diff = diff.diff.text
+            diff_text = diff.diff.text
         else:
-            diff = None
+            diff_text = None
         return BranchMailer.forRevision(
             self.branch, self.revno, self.from_address, self.body,
-            diff, self.subject)
+            diff_text, self.subject)
 
     def run(self):
         """See `IRevisionMailJob`."""

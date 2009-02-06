@@ -185,7 +185,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
 
-    def test_noSuchBranch(self):
+    def test_noSuchBranch_product(self):
         # Resolve paths to branches even if there is no branch of that name.
         # We do this so that users can push new branches to lp: URLs.
         owner = self.factory.makePerson()
@@ -193,12 +193,21 @@ class TestExpandURL(TestCaseWithFactory):
             owner.name, self.product.name)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
-    def test_noSuchJunkBranch(self):
+    def test_noSuchBranch_personal(self):
         # Resolve paths to junk branches.
         # This test added to make sure we don't raise a fault when looking for
         # the '+junk' project, which doesn't actually exist.
         owner = self.factory.makePerson()
         nonexistent_branch = '~%s/+junk/doesntexist' % owner.name
+        self.assertResolves(nonexistent_branch, nonexistent_branch)
+
+    def test_noSuchBranch_package(self):
+        # Resolve paths to package branches even if there's no branch of that
+        # name, so that we can push new branches using lp: URLs.
+        owner = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        nonexistent_branch = '~%s/%s/doesntexist' % (
+            owner.name, sourcepackage.path)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
     def test_resolveBranchWithNoSuchProduct(self):

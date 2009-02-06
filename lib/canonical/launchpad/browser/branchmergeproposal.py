@@ -37,7 +37,6 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
@@ -59,7 +58,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, Navigation)
+    stepthrough, stepto, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
@@ -235,8 +234,7 @@ class UnmergedRevisionsMixin:
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return (config.codehosting.codebrowse_root +
-                self.context.source_branch.unique_name)
+        return self.context.source_branch.codebrowse_url()
 
 
 class BranchMergeProposalRevisionIdMixin:
@@ -296,6 +294,11 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
+    @stepto("+preview-diff")
+    def preview_diff(self):
+        """Step to the preview diff."""
+        return self.context.preview_diff
+
 
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
@@ -336,6 +339,15 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    @property
+    def review_diff(self):
+        """Return a (hopefully) intelligently encoded review diff."""
+        try:
+            diff = self.context.review_diff.diff.text.decode('utf-8')
+        except UnicodeDecodeError:
+            diff = self.context.review_diff.diff.text.decode('windows-1252')
+        return diff
 
     @property
     def has_bug_or_spec(self):

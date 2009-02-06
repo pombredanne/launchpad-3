@@ -9,6 +9,7 @@
     <include file="announcement.zcml" />
     <include file="archivearch.zcml" />
     <include file="archiveauthtoken.zcml" />
+    <include file="archivesubscriber.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
@@ -19,6 +20,7 @@
     <include file="branch.zcml" />
     <include file="branchcontainer.zcml" />
     <include file="branchmergeproposal.zcml" />
+    <include file="branchmergequeue.zcml" />
     <include file="branchnamespace.zcml" />
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
@@ -86,6 +88,7 @@
     <include file="hwdb.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
+    <include file="job.zcml" />
     <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="languagepack.zcml" />
@@ -111,6 +114,7 @@
     <include file="personnotification.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
+    <include file="pofiletranslator.zcml" />
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
     <include file="potemplate.zcml" />

@@ -125,6 +125,10 @@ class StepsToGo:
     >>> bool(stepstogo)
     False
 
+    >>> request = FakeRequest([], ['baz', 'bar', 'foo'])
+    >>> list(StepsToGo(request))
+    ['foo', 'bar', 'baz']
+
     """
 
     @property
@@ -151,7 +155,11 @@ class StepsToGo:
         self.request.setTraversalStack(stack)
         return nextstep
 
-    next = consume
+    def next(self):
+        value = self.consume()
+        if value is None:
+            raise StopIteration
+        return value
 
     def startswith(self, *args):
         """Return whether the steps to go start with the names given."""
@@ -474,6 +482,9 @@ class BasicLaunchpadRequest:
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
+        # Our response always vary based on authentication.
+        self.response.setHeader('Vary', 'Cookie, Authorization')
+
     @property
     def stepstogo(self):
         return StepsToGo(self)
@@ -481,7 +492,7 @@ class BasicLaunchpadRequest:
     def retry(self):
         """See IPublisherRequest."""
         new_request = super(BasicLaunchpadRequest, self).retry()
-        # propagate the list of keys we have set in the WSGI environment
+        # Propagate the list of keys we have set in the WSGI environment.
         new_request._wsgi_keys = self._wsgi_keys
         return new_request
 
@@ -949,6 +960,13 @@ class TranslationsPublication(LaunchpadBrowserPublication):
 class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.TranslationsLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(TranslationsBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Some of the responses from translations vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 # ---- bugs
 
 class BugsPublication(LaunchpadBrowserPublication):
@@ -964,6 +982,14 @@ class AnswersPublication(LaunchpadBrowserPublication):
 
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.AnswersLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(AnswersBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Many of the responses from Answers vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 
 # ---- shipit
 
@@ -1278,6 +1304,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
     implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(WebServiceClientRequest, self).__init__(
+            body_instream, environ, response)
+        # Web service requests use content negotiation.
+        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
 
 
 def website_request_to_web_service_request(website_request):

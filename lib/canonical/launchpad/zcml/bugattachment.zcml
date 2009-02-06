@@ -17,8 +17,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugAttachment"
-        path_expression="string:attachments/${id}"
-        attribute_to_parent="bug"
+        urldata="canonical.launchpad.browser.bugattachment.BugAttachmentURL"
         />
 
     <browser:defaultView
