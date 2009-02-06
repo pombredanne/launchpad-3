@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Object, Int, TextLine
+from zope.schema import Choice, Object, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -85,7 +85,7 @@ class ICodeReviewComment(Interface):
     message = Object(schema=IMessage, title=_('The message.'))
 
     vote = exported(
-        ReferenceChoice(
+        Choice(
             title=_('Reviewer says'), required=False,
             vocabulary=CodeReviewVote))
 
@@ -97,19 +97,10 @@ class ICodeReviewComment(Interface):
         TextLine(
             title=_('The title of the comment')))
 
-    # XXX: rockstar - 6 Feb 2009 - This is a hack around the fact that we
-    # don't have an @property equivalent in the API, so getMessage can't
-    # be used to get the message body. See bug #326307.
     message_body = exported(
         TextLine(
             title=_('The body of the code review message.'),
             readonly=True))
-
-    def getMessage():
-        """Get the message content from the message attribute.
-
-        :return: a bytestring, the message itself.
-        """
 
     def getAttachments():
         """Get the attachments from the original message.
