@@ -11,10 +11,37 @@
     <div tal:content="structure context_menu/subscription/render" />
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
-  <script type="text/javascript"
-          tal:define="revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-                      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-                      icingroot string:${rooturl}+icing/rev${revno}"
-          tal:attributes="src string:${icingroot}/build/malone/bug-portlet-subscribers.js">
+  <a id="subscribers-content-link"
+     tal:attributes="href context/fmt:url/+bug-portlet-subscribers-content" />
+  <script type="text/javascript">
+    YUI().use('io', 'node', 'LP', function(Y) {
+      Y.on('contentready', function() {
+        var portlet = Y.get('#portlet-subscribers');
+        portlet.set('innerHTML',
+                    portlet.get('innerHTML') +
+                    '<' + 'div id="subscribers-portlet-spinner"' +
+                    '     style="text-align: center">' +
+                    '<img src="/@@/spinner" /><' + '/div>');
+      }, '#portlet-subscribers');
+
+      Y.on('domready', function() {
+        var portlet = Y.get('#portlet-subscribers');
+
+        function remove_spinner() {
+          portlet.removeChild(Y.get('#subscribers-portlet-spinner'));
+        }
+
+        function on_success(transactionid, response, arguments) {
+          remove_spinner();
+          portlet.set('innerHTML',
+                      portlet.get('innerHTML') + response.responseText);
+        }
+
+        var config = {on: {success: on_success,
+                           failure: remove_spinner}};
+        var url = Y.get('#subscribers-content-link').getAttribute('href');
+        var request = Y.io(url, config);
+      });
+    });
   </script>
 </div>
