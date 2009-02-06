@@ -6,27 +6,22 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-releases" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
+  <div id="portlets" style="float:right;">
+    <div tal:replace="structure context/@@+portlet-releases" />
+  </div>
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
   </div>
 
 </div>
-    
+
 </body>
 </html>
 

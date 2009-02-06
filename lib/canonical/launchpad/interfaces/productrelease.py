@@ -233,7 +233,7 @@ class IProductReleasePublic(Interface):
             description= u'The specific version number assigned to this '
             'release. Letters and numbers are acceptable, for releases like '
             '"1.2rc3".',
-            readonly=True, constraint=sane_version)
+            constraint=sane_version)
         )
 
     owner = exported(
