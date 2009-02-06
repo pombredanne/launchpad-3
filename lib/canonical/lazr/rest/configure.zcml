@@ -270,7 +270,7 @@
         for="zope.interface.Interface"
         type="canonical.lazr.interfaces.rest.WebServiceLayer"
         factory="canonical.lazr.rest.resource.EntryHTMLView"
-        name="lib.canonical.lazr.rest.resource.EntryResource"
+        name="canonical.lazr.rest.resource.EntryResource"
         />
 
     <!-- System Errors -->

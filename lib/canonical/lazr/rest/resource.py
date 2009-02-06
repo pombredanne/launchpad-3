@@ -10,6 +10,7 @@ __all__ = [
     'CollectionResource',
     'Entry',
     'EntryAdapterUtility',
+    'EntryHTMLView',
     'EntryResource',
     'HTTPResource',
     'JSONItem',
@@ -714,7 +715,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         """Represent this resource as an XHTML document."""
         view = getMultiAdapter(
             (self.context, self.request),
-            name="lib.canonical.lazr.rest.resource.EntryResource")
+            name="canonical.lazr.rest.resource.EntryResource")
         return view()
 
     def processAsJSONHash(self, media_type, representation):
