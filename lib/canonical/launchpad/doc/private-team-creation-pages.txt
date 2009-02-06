@@ -42,6 +42,9 @@ must be 'Restricted.'
     ...     personset, '+newteam',
     ...     form=form, principal=foo_bar)
 
+    >>> print len(view.request.notifications)
+    0
+
     >>> for error in view.errors:
     ...     print error
     Private teams must have a Restricted subscription policy.
@@ -90,6 +93,60 @@ And a non-public team must have restricted membership.
     ...     super_secret, '+edit',
     ...     form=form, principal=foo_bar)
 
+    >>> print len(view.request.notifications)
+    0
+
     >>> for error in view.errors:
     ...     print error
     Private teams must have a Restricted subscription policy.
+
+= Use of 'private_' prefix =
+
+Commerial admins can create private projects with the 'private_' prefix.
+
+    >>> login('foo.bar@canonical.com')
+    >>> form = {
+    ...     'field.name': 'private-super-secret',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+    >>> print len(view.errors)
+    0
+
+When trying to register a project with a 'private-' prefix, regular
+users will get a blacklist message.
+
+    >>> login('no-priv@canonical.com')
+    >>> form = {
+    ...     'field.name': 'private-top-secret',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=nopriv)
+
+    >>> print len(view.request.notifications)
+    0
+
+    >>> for msg in view.errors:
+    ...     print msg[2]
+    The name 'private-top-secret' has been blocked by the Launchpad administrators.
