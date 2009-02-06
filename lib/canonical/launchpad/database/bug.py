@@ -35,10 +35,10 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
     DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
     IBugBranch, IBugNotificationSet, IBugSet, IBugTask, IBugTaskSet,
-    IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IPersonSet,
-    IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, NominationError,
+    IBugWatchSet, ICveSet, IDistribution, IDistributionSourcePackage,
+    IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
+    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError,
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -693,8 +693,18 @@ class Bug(SQLBase):
             distribution = target
         if IDistroSeries.providedBy(target):
             distro_series = target
+        if IDistributionSourcePackage.providedBy(target):
+            distribution = target.distribution
+            source_package_name = target.sourcepackagename
         if ISourcePackage.providedBy(target):
-            source_package_name = target.name
+            if target.distroseries is not None:
+                distro_series = target.distroseries
+                source_package_name = target.sourcepackagename
+            elif target.distribution is not None:
+                distribution = target.distribution
+                source_package_name = target.sourcepackagename
+            else:
+                source_package_name = target.sourcepackagename
 
         new_task = getUtility(IBugTaskSet).createTask(
             self, owner=owner, product=product,
