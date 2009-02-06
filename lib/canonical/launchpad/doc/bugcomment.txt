@@ -235,6 +235,84 @@ hidden.
      (7, u'Ho', u'Hello there')]
 
 
+Bugs with lots of comments
+--------------------------
+
+BugTaskView has another property for helping render bugs with lots of
+comments: visible_comments_truncated_for_display.
+
+This is normally false, but for bugs with lots of comments, the
+visible_comments_truncated_for_display property becomes True and the
+visible_comments_for_display list is truncated.
+
+Let's briefly override the configuration so we don't have to create
+hundreds of messages.
+
+    >>> from canonical.config import config
+    >>> config.push('malone', '''
+    ... [malone]
+    ... comments_list_max_length: 10
+    ... comments_list_truncate_to: 8
+    ... ''')
+
+We'll create an example bug with 9 comments.
+
+    >>> from canonical.launchpad.interfaces.bugmessage import (
+    ...     IBugMessageSet)
+
+    >>> def add_comments(bug, how_many):
+    ...     bug_message_set = getUtility(IBugMessageSet)
+    ...     for num in range(how_many):
+    ...         bug_message_set.createMessage(
+    ...             "Comment %d" % (num + 1), bug, bug.owner,
+    ...             "Something or other #%d" % (num + 1))
+
+    >>> bug = factory.makeBug()
+    >>> add_comments(bug, 9)
+
+If we create a view for this, we can see that all 9 comments are
+visible, and we can see that the list has not been truncated.
+
+    >>> bug_view = getMultiAdapter(
+    ...     (bug.default_bugtask, LaunchpadTestRequest()), name='+index')
+    >>> bug_view.initialize()
+
+    >>> len(bug_view.visible_comments_for_display)
+    9
+    >>> bug_view.visible_comments_truncated_for_display
+    False
+
+Add two more comments, and the list will be truncated to only 8.
+
+    >>> add_comments(bug, 2)
+
+    >>> bug_view = getMultiAdapter(
+    ...     (bug.default_bugtask, LaunchpadTestRequest()), name='+index')
+    >>> bug_view.initialize()
+
+    >>> len(bug_view.visible_comments_for_display)
+    8
+    >>> bug_view.visible_comments_truncated_for_display
+    True
+
+The display of all comments can be requested with a form parameter.
+
+    >>> request = LaunchpadTestRequest(form={'comments': 'all'})
+    >>> bug_view = getMultiAdapter(
+    ...     (bug.default_bugtask, request), name='+index')
+    >>> bug_view.initialize()
+
+    >>> len(bug_view.visible_comments_for_display)
+    11
+    >>> bug_view.visible_comments_truncated_for_display
+    False
+
+Restore the configuration to its previous setting.
+
+    >>> config.pop('malone')
+    (...)
+
+
 Wrapping up
 -----------
 
