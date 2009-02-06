@@ -13,32 +13,30 @@
   </div>
   <a id="subscribers-content-link"
      tal:attributes="href context/fmt:url/+bug-portlet-subscribers-content" />
+  <div id="subscribers-portlet-spinner"
+       style="text-align: center; display: none">
+    <img src="/@@/spinner" />
+  </div>
   <script type="text/javascript">
     YUI().use('io', 'node', function(Y) {
       Y.on('contentready', function() {
-        var portlet = Y.get('#portlet-subscribers');
-        portlet.set('innerHTML',
-                    portlet.get('innerHTML') +
-                    '<' + 'div id="subscribers-portlet-spinner"' +
-                    '     style="text-align: center">' +
-                    '<img src="/@@/spinner" /><' + '/div>');
-      }, '#portlet-subscribers');
+        Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
+      }, '#subscribers-portlet-spinner');
 
       Y.on('domready', function() {
-        var portlet = Y.get('#portlet-subscribers');
-
-        function remove_spinner() {
-          portlet.removeChild(Y.get('#subscribers-portlet-spinner'));
+        function hide_spinner() {
+          Y.get('#subscribers-portlet-spinner').setStyle('display', 'none');
         }
 
         function on_success(transactionid, response, arguments) {
-          remove_spinner();
+          hide_spinner();
+          var portlet = Y.get('#portlet-subscribers');
           portlet.set('innerHTML',
-                      portlet.get('innerHTML') + response.responseText);
+              portlet.get('innerHTML') + response.responseText);
         }
 
         var config = {on: {success: on_success,
-                           failure: remove_spinner}};
+                           failure: hide_spinner}};
         var url = Y.get('#subscribers-content-link').getAttribute('href');
         var request = Y.io(url, config);
       });
