@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Exists, Not, Select
+from storm.expr import And, Asc, Desc, Exists, Join, Not, Select
 from storm.locals import Min
 from storm.store import Store
 from zope.component import getUtility
@@ -364,24 +364,28 @@ class RevisionSet:
 
         store = Store.of(person)
 
-        if person.is_team:
-            person_query = And(
-                RevisionAuthor.personID == TeamParticipation.personID,
-                TeamParticipation.team == person)
-        else:
-            person_query = RevisionAuthor.person == person
-
-        result_set = store.find(
+        origin = [
             Revision,
-            Revision.revision_author == RevisionAuthor.id,
-            revision_time_limit(day_limit),
-            person_query,
-            Exists(
-                Select(True,
-                       And(BranchRevision.revision == Revision.id,
-                           BranchRevision.branch == Branch.id,
-                           Not(Branch.private)),
-                       (Branch, BranchRevision))))
+            Join(BranchRevision, BranchRevision.revision == Revision.id),
+            Join(Branch, BranchRevision.branch == Branch.id),
+            Join(RevisionAuthor,
+                 Revision.revision_author == RevisionAuthor.id),
+            ]
+
+        if person.is_team:
+            origin.append(
+                Join(TeamParticipation,
+                     RevisionAuthor.personID == TeamParticipation.personID))
+            person_condition = TeamParticipation.team == person
+        else:
+            person_condition = RevisionAuthor.person == person
+
+        result_set = store.using(*origin).find(
+            Revision,
+            And(revision_time_limit(day_limit),
+                person_condition,
+                Not(Branch.private)))
+        result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
@@ -391,16 +395,18 @@ class RevisionSet:
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
 
-        result_set = Store.of(product).find(
+        origin = [
             Revision,
-            revision_time_limit(day_limit),
-            Exists(
-                Select(True,
-                       And(BranchRevision.revision == Revision.id,
-                           BranchRevision.branch == Branch.id,
-                           Not(Branch.private),
-                           Branch.product == product),
-                       (Branch, BranchRevision))))
+            Join(BranchRevision, BranchRevision.revision == Revision.id),
+            Join(Branch, BranchRevision.branch == Branch.id),
+            ]
+
+        result_set = Store.of(product).using(*origin).find(
+            Revision,
+            And(revision_time_limit(day_limit),
+                Not(Branch.private),
+                Branch.product == product))
+        result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
@@ -411,17 +417,19 @@ class RevisionSet:
         from canonical.launchpad.database.product import Product
         from canonical.launchpad.database.branchrevision import BranchRevision
 
-        result_set = Store.of(project).find(
+        origin = [
             Revision,
-            revision_time_limit(day_limit),
-            Exists(
-                Select(True,
-                       And(BranchRevision.revision == Revision.id,
-                           BranchRevision.branch == Branch.id,
-                           Not(Branch.private),
-                           Product.project == project,
-                           Branch.product == Product.id),
-                       (Branch, BranchRevision, Product))))
+            Join(BranchRevision, BranchRevision.revision == Revision.id),
+            Join(Branch, BranchRevision.branch == Branch.id),
+            Join(Product, Branch.product == Product.id),
+            ]
+
+        result_set = Store.of(project).using(*origin).find(
+            Revision,
+            And(revision_time_limit(day_limit),
+                Not(Branch.private),
+                Product.project == project))
+        result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
 
