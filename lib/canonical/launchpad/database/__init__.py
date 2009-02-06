@@ -42,6 +42,7 @@ from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
 from canonical.launchpad.database.pofile import *
+from canonical.launchpad.database.pofiletranslator import *
 from canonical.launchpad.database.potemplate import *
 from canonical.launchpad.database.potmsgset import *
 from canonical.launchpad.database.pomsgid import *

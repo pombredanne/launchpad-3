@@ -66,6 +66,8 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces.branch import (
     BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
@@ -946,6 +948,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
+
+    def getMergeProposals(self, status=None):
+        """See `IProduct`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status)
+
 
     def userCanEdit(self, user):
         """See `IProduct`."""

@@ -130,6 +130,8 @@
         <response>
           <representation
              tal:attributes="href context/wadl_entry:full_representation_link" />
+          <representation mediaType="application/xhtml+xml"
+            tal:attributes="id string:${context/wadl_entry:singular_type}-xhtml" />
           <representation mediaType="application/vd.sun.wadl+xml"
             tal:attributes="id string:${context/wadl_entry:singular_type}-wadl" />
         </response>

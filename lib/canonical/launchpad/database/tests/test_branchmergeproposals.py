@@ -5,10 +5,13 @@
 __metaclass__ = type
 
 from datetime import datetime
+from textwrap import dedent
+import transaction
 from unittest import TestCase, TestLoader
 
 from pytz import UTC
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
@@ -28,7 +31,8 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -989,6 +993,109 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
                          vote_reference.registrant)
         self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
+
+    def test_claiming_team_review(self):
+        # A person in a team claims a team review of the same type.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general')
+        [vote] = list(merge_proposal.votes)
+        self.assertEqual(team, vote.reviewer)
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE, review_type='general')
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual('general', vote.review_type)
+        self.assertEqual(comment, vote.comment)
+
+    def test_claiming_tagless_team_review_with_tag(self):
+        # A person in a team claims a team review of the same type, or if
+        # there isn't a team review with that specified type, but there is a
+        # team review that doesn't have a review type set, then claim that
+        # one.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type=None)
+        [vote] = list(merge_proposal.votes)
+        self.assertEqual(team, vote.reviewer)
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE, review_type='general')
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual('general', vote.review_type)
+        self.assertEqual(comment, vote.comment)
+        # Still only one vote.
+        self.assertEqual(1, len(list(merge_proposal.votes)))
+
+
+class TestUpdatePreviewDiff(TestCaseWithFactory):
+    """Test the updateMergeDiff method of BranchMergeProposal."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _updatePreviewDiff(self, merge_proposal):
+        # Update the preview diff for the merge proposal.
+        diff_text = dedent("""\
+            === modified file 'sample.py'
+            --- sample     2009-01-15 23:44:22 +0000
+            +++ sample     2009-01-29 04:10:57 +0000
+            @@ -19,7 +19,7 @@
+             from zope.interface import implements
+
+             from storm.expr import Desc, Join, LeftJoin
+            -from storm.references import Reference
+            +from storm.locals import Int, Reference
+             from sqlobject import ForeignKey, IntCol
+
+             from canonical.config import config
+            """)
+        diff_stat = u"M sample.py"
+        login_person(merge_proposal.registrant)
+        merge_proposal.updatePreviewDiff(
+            diff_text, diff_stat, u"source_id", u"target_id")
+        # Have to commit the transaction to make the Librarian file
+        # available.
+        transaction.commit()
+        return diff_text, diff_stat
+
+    def test_new_diff(self):
+        # Test that both the PreviewDiff and the Diff get created.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
+
+    def test_update_diff(self):
+        # Test that both the PreviewDiff and the Diff get updated.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.registrant)
+        merge_proposal.updatePreviewDiff("random text", u"junk", u"a", u"b")
+        transaction.commit()
+        # Extract the primary key ids for the preview diff and the diff to
+        # show that we are reusing the objects.
+        preview_diff_id = removeSecurityProxy(
+            merge_proposal.preview_diff).id
+        diff_id = removeSecurityProxy(
+            merge_proposal.preview_diff).diff_id
+        diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
+        self.assertEqual(
+            preview_diff_id,
+            removeSecurityProxy(merge_proposal.preview_diff).id)
+        self.assertEqual(
+            diff_id,
+            removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
 
 def test_suite():

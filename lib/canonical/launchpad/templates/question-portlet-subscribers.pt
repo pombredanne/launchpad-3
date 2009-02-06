@@ -8,7 +8,7 @@
   <h2>Subscribers</h2>
 
   <div class="portletBody portletContent"
-       tal:define="subscribers  context/getDirectSubscribers;
+       tal:define="subscribers context/getDirectSubscribers;
                    indirect_subscribers context/getIndirectSubscribers">
 
     <ul class="person" tal:condition="subscribers">
