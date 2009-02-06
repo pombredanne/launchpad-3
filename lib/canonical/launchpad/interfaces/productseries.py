@@ -18,7 +18,7 @@ __all__ = [
 
 import re
 
-from zope.schema import  Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
@@ -43,7 +43,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
     rename_parameters_as, REQUEST_USER)
@@ -359,12 +359,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         description=_("The Bazaar branch for this series."))
 
     user_branch = exported(
-        Choice(
+        ReferenceChoice(
             title=_('Branch'),
             vocabulary='BranchRestrictedOnProduct',
             required=False,
             description=_("The Bazaar branch for this series.  Leave blank "
-                          "if this series is not maintained in Bazaar.")))
+                          "if this series is not maintained in Bazaar.")),
+        exported_as='branch')
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

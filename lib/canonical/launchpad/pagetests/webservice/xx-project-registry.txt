@@ -617,6 +617,7 @@ virtual host.
     >>> pprint_entry(babadoo_foobadoo)
     active_milestones_collection_link: u'http://.../babadoo/foobadoo/active_milestones'
     all_milestones_collection_link: u'http://.../babadoo/foobadoo/all_milestones'
+    branch_link: u'http://api.launchpad.dev/beta/~person-name12/babadoo/fooey'
     bug_reporting_guidelines: None
     date_created: u'...'
     display_name: u'foobadoo'
@@ -631,7 +632,6 @@ virtual host.
     status: u'Active Development'
     summary: u'Foobadoo support for Babadoo'
     title: u'Babadoo Series: foobadoo'
-    user_branch_link: u'http://api.launchpad.dev/beta/~person-name12/babadoo/fooey'
 
 = Creating a milestone on the product series =
 
