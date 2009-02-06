@@ -59,8 +59,9 @@ The comments on a branch merge proposal are exposed through the API.
 
     >>> all_comments = webservice.get(
     ...     merge_proposal['all_comments_collection_link']).jsonBody()
-    >>> for comment in all_comments['entries']:
-    ...     pprint_entry(comment)
+    >>> print len(all_comments['entries'])
+    2
+    >>> pprint_entry(all_comments['entries'][0])
     branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
     id: 1
     message_body: u'This is great work'
@@ -69,15 +70,6 @@ The comments on a branch merge proposal are exposed through the API.
     title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
     vote: u'Approve'
     vote_tag: u'code'
-    branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
-    id: 2
-    message_body: u'This is mediocre work.'
-    resource_type_link: u'http://api.launchpad.dev/beta/#code_review_comment'
-    self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/comments/2'
-    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
-    vote: u'Abstain'
-    vote_tag: None
-
 
 
 == Updating the preview diff ==
