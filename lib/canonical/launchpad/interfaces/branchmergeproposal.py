@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -14,6 +14,8 @@ __all__ = [
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICreateMergeProposalJob',
+    'ICreateMergeProposalJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -558,3 +560,22 @@ class IBranchMergeProposalGetter(Interface):
 for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
+
+class ICreateMergeProposalJob(Interface):
+    """A Job that creates a branch merge proposal.
+
+    It uses a Message, which must contain a merge directive.
+    """
+
+    def run():
+        """Run this job and create the merge proposals."""
+
+
+class ICreateMergeProposalJobSource(Interface):
+    """Acquire MergeProposalJobs."""
+
+    def create(message_bytes):
+        """Return a CreateMergeProposalJob for this message."""
+
+    def iterReady():
+        """Iterate through jobs that are ready to run."""
