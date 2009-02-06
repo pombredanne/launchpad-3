@@ -28,6 +28,7 @@ Branch merge proposals can be fetched through the API.
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(merge_proposal)
+    all_comments_collection_link: u'http://.../~source/fooix/fix-it/+merge/1/all_comments'
     commit_message: None
     date_created: ...
     date_merged: None
@@ -42,14 +43,14 @@ Branch merge proposals can be fetched through the API.
     queue_status: u'Work in progress'
     queued_revision_id: None
     queuer_link: None
-    registrant_link: u'http://api.launchpad.dev/beta/~person-name13'
-    resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
+    registrant_link: u'http://.../~person-name13'
+    resource_type_link: u'http://.../#branch_merge_proposal'
     reviewer_link: None
-    self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/...'
-    source_branch_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    source_branch_link: u'http://.../~source/fooix/fix-it'
     superseded_by_link: None
     supersedes_link: None
-    target_branch_link: u'http://api.launchpad.dev/beta/~target/fooix/trunk'
+    target_branch_link: u'http://.../~target/fooix/trunk'
 
 
 == Updating the preview diff ==

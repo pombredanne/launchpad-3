@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import IBranch
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported,
     operation_parameters)
@@ -289,8 +289,11 @@ class IBranchMergeProposal(Interface):
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
-    all_comments = Attribute(
-        _("All messages discussing this merge proposal"))
+    all_comments = exported(
+        CollectionField(
+            title=_("All messages discussing this merge proposal"),
+            value_type=Reference(schema=Interface), # ICodeReviewComment
+            readonly=True))
 
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""

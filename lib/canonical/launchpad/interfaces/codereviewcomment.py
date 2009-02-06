@@ -100,6 +100,9 @@ class ICodeReviewComment(Interface):
         """
 
 
+IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
+
+
 class ICodeReviewCommentDeletion(Interface):
     """This interface provides deletion of CodeReviewComments.
 
