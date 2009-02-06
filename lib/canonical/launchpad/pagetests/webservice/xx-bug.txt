@@ -1054,7 +1054,8 @@ Add a new task to the bug.
     >>> firefox = webservice.get('/firefox').jsonBody()
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'addTask',
-    ...     product=firefox['self_link'])
+    ...     target=firefox['self_link'], status='New',
+    ...     importance='Undecided')
     HTTP/1.1 200 Ok...
 
     >>> bugtasks_url = bug_one['bug_tasks_collection_link']
