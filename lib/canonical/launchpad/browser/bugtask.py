@@ -763,32 +763,38 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
-    def getBugCommentsForDisplay(self):
-        """Return all the bug comments together with their index."""
-        visible_comments = get_visible_comments(self.comments)
+    @cachedproperty
+    def visible_comments(self):
+        """All visible comments.
 
-        # Have we been asked to display comments in any special way?
-        comments_display = (
+        See `get_visible_comments` for the definition of a "visible"
+        comment.
+        """
+        return get_visible_comments(self.comments)
+
+    @cachedproperty
+    def visible_comments_for_display(self):
+        """The list of visible comments to be rendered.
+
+        This considers truncating the comment list if there are tons
+        of comments, but also obeys any explicitly requested ways to
+        display comments (currently only "all" is recognised).
+        """
+        display_hints = (
             self.request.form_ng.getOne('comments', '').split(','))
-        show_all = 'all' in comments_display
-
-        # We need to consider truncating the comment list if there are
-        # tons of comments.
+        show_all = 'all' in display_hints
         max_comments = config.malone.comments_list_max_length
-
-        if show_all or len(visible_comments) <= max_comments:
-            return {
-                'comments': visible_comments,
-                'total_count': len(visible_comments),
-                'hidden_count': 0,
-                }
+        if show_all or len(self.visible_comments) <= max_comments:
+            return self.visible_comments
         else:
             truncate_to = config.malone.comments_list_truncate_to
-            return {
-                'comments': visible_comments[:truncate_to],
-                'total_count': len(visible_comments),
-                'hidden_count': len(visible_comments) - truncate_to,
-                }
+            return self.visible_comments[:truncate_to]
+
+    @property
+    def visible_comments_truncated_for_display(self):
+        """Wether the visible comment list truncated for display."""
+        return (len(self.visible_comments) >
+                len(self.visible_comments_for_display))
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
