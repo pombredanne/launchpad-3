@@ -969,7 +969,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Return results only in active distroseries.
         find_spec = (
-            SourcePackageName,
+            DistributionSourcePackageCache,
             DistroSeries.distribution == self,
             DistroSeries.status != DistroSeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
@@ -980,7 +980,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 BinaryPackageRelease.id,
             BinaryPackageRelease.build == Build.id,
             Build.sourcepackagerelease == SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagename == SourcePackageName.id)
+            SourcePackageRelease.sourcepackagename == SourcePackageName.id,
+            DistributionSourcePackageCache.sourcepackagename ==
+                SourcePackageName.id)
 
         if exact_match:
             match_clause = (BinaryPackageName.name == package_name,)
@@ -991,10 +993,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         result_set = store.find(
             *(find_spec + match_clause)).config(distinct=True)
 
-        def names_to_dsp(result):
-            return DistributionSourcePackage(self, result)
-
-        return DecoratedResultSet(result_set, names_to_dsp)
+        return result_set
 
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""

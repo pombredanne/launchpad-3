@@ -384,8 +384,8 @@ class IDistributionPublic(
         """Do an FTI search on binary packages.
 
         :param package_name: The binary package name to search for.
-        :return: A result set containing DistributionSourcePackage objects
-            for the matching binaries found via an FTI search on
+        :return: A result set containing DistributionSourcePackageCache
+            objects for the matching binaries found via an FTI search on
             DistroSeriesPackageCache.
         """
 
