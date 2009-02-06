@@ -132,8 +132,12 @@ The bug listing pages save their search criteria.
     10 another test bug linux-source-2.6.15 Medium New
     2 Blackhole Trash folder &mdash; Medium New
 
-If, for example, you click on one of the canned search links:
+If, for example, you click on one of the canned search links. These
+links are in the portlet "Filters"; its content is served in a separate
+request, issued by regular browsers via Javascript.
 
+    >>> browser.open(
+    ...     "http://launchpad.dev/ubuntu/+bugtarget-portlet-bugfilters-content")
     >>> browser.getLink("New").click()
 
 The result set is filtered to show only New bugs.

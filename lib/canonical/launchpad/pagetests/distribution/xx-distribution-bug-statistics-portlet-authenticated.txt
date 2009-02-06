@@ -1,9 +1,11 @@
 The distribution bug listing contains a portlet that shows bug
 statistics for the distro. Each statistic is a link to filter the
-listing to show just those bugs.
+listing to show just those bugs. This portlet is served in a separate
+request; the request is issued via Javascript from main bugs page
+of a distribution.
 
   >>> print http(r"""
-  ... GET /debian/+bugs HTTP/1.1
+  ... GET /debian/+bugtarget-portlet-bugfilters-content HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
