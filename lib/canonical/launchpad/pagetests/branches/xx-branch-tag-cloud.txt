@@ -15,23 +15,23 @@ the link is shown.
     >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
     >>> for anchor in tags.fetch('a'):
     ...     print anchor.renderContents(), anchor['class']
-    evolution cloud-size-small cloud-shade-light
     firefox cloud-size-medium cloud-shade-light
-    gnome-terminal cloud-size-medium cloud-shade-light
-    iso-codes cloud-size-small cloud-shade-light
-    landscape cloud-size-small cloud-shade-light
-    thunderbird cloud-size-small cloud-shade-light
 
 If the project is using bzr as its main branch repository then the class is
 different from the other projects.  This allows the CSS to show these projects
 in a different colour.
 
-Update the development series of firefox to specify a user's branch.
+Update firefox to officially use codehosting:
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/trunk')
-    >>> admin_browser.getLink('Change details').click()
-    >>> admin_browser.getControl('Branch').value = '~name12/firefox/main'
-    >>> admin_browser.getControl('Change').click()
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox = removeSecurityProxy(firefox)
+    >>> firefox.official_codehosting = True
+    >>> logout()
 
 The class for firefox in the project tag cloud will now show 'highlight' rather
 than shade.

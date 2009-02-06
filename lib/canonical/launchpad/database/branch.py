@@ -91,7 +91,7 @@ from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
@@ -1777,3 +1777,29 @@ class RevisionMailJob(BranchDiffJob):
     def run(self):
         """See `IRevisionMailJob`."""
         self.getMailer().sendAll()
+
+
+class BranchCloud:
+    """See `IBranchCloud`."""
+
+    def getProductsWithInfo(self, num_products=None):
+        """See `IBranchCloud`."""
+        # This is used only by browser/bazaar.py.
+        from canonical.launchpad.database import Branch, Product, Revision
+        from canonical.launchpad.interfaces.branch import BranchType
+        from storm.locals import Count, Max, Or
+        # It doesn't matter if this query is even a whole day out of date, so
+        # use the slave store.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        # Get all products, the count of all hosted & mirrored branches and
+        # the last revision date.
+        result = store.find(
+            (Product, Count(Branch.id), Max(Revision.revision_date)),
+            Branch.product == Product.id,
+            Or(Branch.branch_type == BranchType.HOSTED,
+               Branch.branch_type == BranchType.MIRRORED),
+            Branch.last_scanned_id == Revision.revision_id).group_by(Product)
+        result = result.order_by(Count(Branch.id))
+        if num_products:
+            result.config(limit=num_products)
+        return result

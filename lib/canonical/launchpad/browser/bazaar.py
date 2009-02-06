@@ -18,14 +18,12 @@ import bzrlib
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branch import IBranchCloud, IBranchSet
 from canonical.launchpad.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from canonical.launchpad.interfaces.product import IProduct, IProductSet
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lazr.delegates import delegates
 
@@ -149,33 +147,9 @@ class ProductInfo:
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
-    def _findProductInfo(self, num_products):
-        """Get products with their branch activity information.
-
-        :return: a `ResultSet` of (product, num_branches, last_revision_date).
-        """
-        from canonical.launchpad.database import Branch, Product, Revision
-        from canonical.launchpad.interfaces.branch import BranchType
-        from storm.locals import Count, Max, Or
-        # It doesn't matter if this query is even a whole day out of date, so
-        # use the slave store.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        # Get all products, the count of all hosted & mirrored branches and
-        # the last revision date.
-        result = store.find(
-            (Product, Count(Branch.id), Max(Revision.revision_date)),
-            Branch.product == Product.id,
-            Or(Branch.branch_type == BranchType.HOSTED,
-               Branch.branch_type == BranchType.MIRRORED),
-            Branch.last_scanned_id == Revision.revision_id).group_by(Product)
-        result = result.order_by(Count(Branch.id))
-        if num_products:
-            result.config(limit=num_products)
-        return result
-
     def products(self, num_products=None):
         product_info = sorted(
-            list(self._findProductInfo(num_products)),
+            list(getUtility(IBranchCloud).getProductsWithInfo(num_products)),
             key=lambda data: data[0].name)
         now = datetime.today()
         counts = sorted(zip(*product_info)[1])

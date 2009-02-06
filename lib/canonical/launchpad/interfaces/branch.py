@@ -31,6 +31,7 @@ __all__ = [
     'get_blacklisted_hostnames',
     'IBranch',
     'IBranchBatchNavigator',
+    'IBranchCloud',
     'IBranchDelta',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
@@ -1580,6 +1581,20 @@ class IRevisionMailJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IRevisionMailJobs."""
+
+
+class IBranchCloud(Interface):
+    """A utility to generate data for branch clouds.
+
+    A branch cloud is a tag cloud of products, sized and styled based on the
+    branches in those products.
+    """
+
+    def getProductsWithInfo(num_products=None):
+        """Get products with their branch activity information.
+
+        :return: a `ResultSet` of (product, num_branches, last_revision_date).
+        """
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):
