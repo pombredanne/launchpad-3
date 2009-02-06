@@ -238,7 +238,7 @@ def handleMail(trans=transaction):
                         "Got a multipart/report message.",
                         file_alias_url, notify=False)
                     continue
-                if mail['Precedence'] is not None:
+                if 'precedence' in mail:
                     _handle_error(
                         "Got a message with a precedence header.",
                         file_alias_url, notify=False
