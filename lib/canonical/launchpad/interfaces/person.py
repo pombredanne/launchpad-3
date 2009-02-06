@@ -28,8 +28,10 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchPerson',
     'PersonCreationRationale',
+    'PersonNameField',
     'PersonVisibility',
     'PersonalStanding',
+    'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
@@ -83,6 +85,9 @@ from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
+
+
+PRIVATE_TEAM_PREFIX = 'private-'
 
 
 class PersonalStanding(DBEnumeratedType):
