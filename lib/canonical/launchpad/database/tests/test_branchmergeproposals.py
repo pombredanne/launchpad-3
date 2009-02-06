@@ -994,6 +994,49 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
 
+    def test_claiming_team_review(self):
+        # A person in a team claims a team review of the same type.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general')
+        [vote] = list(merge_proposal.votes)
+        self.assertEqual(team, vote.reviewer)
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE, review_type='general')
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual('general', vote.review_type)
+        self.assertEqual(comment, vote.comment)
+
+    def test_claiming_tagless_team_review_with_tag(self):
+        # A person in a team claims a team review of the same type, or if
+        # there isn't a team review with that specified type, but there is a
+        # team review that doesn't have a review type set, then claim that
+        # one.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type=None)
+        [vote] = list(merge_proposal.votes)
+        self.assertEqual(team, vote.reviewer)
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE, review_type='general')
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual('general', vote.review_type)
+        self.assertEqual(comment, vote.comment)
+        # Still only one vote.
+        self.assertEqual(1, len(list(merge_proposal.votes)))
+
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):
     """Test the updateMergeDiff method of BranchMergeProposal."""
@@ -1029,8 +1072,8 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         # Test that both the PreviewDiff and the Diff get created.
         merge_proposal = self.factory.makeBranchMergeProposal()
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
-        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
 
     def test_update_diff(self):
         # Test that both the PreviewDiff and the Diff get updated.
@@ -1043,16 +1086,16 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         preview_diff_id = removeSecurityProxy(
             merge_proposal.preview_diff).id
         diff_id = removeSecurityProxy(
-            merge_proposal.preview_diff.diff).id
+            merge_proposal.preview_diff).diff_id
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
-        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
         self.assertEqual(
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertEqual(
             diff_id,
-            removeSecurityProxy(merge_proposal.preview_diff.diff).id)
+            removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
 
 def test_suite():
