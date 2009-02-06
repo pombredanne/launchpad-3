@@ -376,9 +376,17 @@ class IDistributionPublic(
         :return: A result set containing appropriate DistributionSourcePackage
             objects for the matching source.
 
-        The returned results will consist first of source packages that match
-        a substring of their binary package names followed by any rows
-        resulting from the FTI match (which is on name, summary etc).
+        The returned results will consist of source packages that match
+        (a substring of) their binary package names.
+        """
+
+    def searchBinaryPackagesFTI(package_name):
+        """Do an FTI search on binary packages.
+
+        :param package_name: The binary package name to search for.
+        :return: A result set containing DistributionSourcePackage objects
+            for the matching binaries found via an FTI search on
+            DistroSeriesPackageCache.
         """
 
     def getFileByName(filename, archive=None, source=True, binary=True):

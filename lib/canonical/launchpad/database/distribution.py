@@ -11,7 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Join, Like, SQL
+from storm.locals import Join, SQL
 from storm.store import Store
 
 from canonical.archivepublisher.debversion import Version
@@ -102,8 +102,6 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 
 
@@ -924,7 +922,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
         # be short like "at", both things which users do search for.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = Store.of(self)
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,
@@ -997,6 +995,46 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return DistributionSourcePackage(self, result)
 
         return DecoratedResultSet(result_set, names_to_dsp)
+
+    def searchBinaryPackagesFTI(self, package_name):
+        """See `IDistribution`."""
+        # I tried hard to get this to work in Storm, but after a whole
+        # day hacking at it in the Brazilian heat and being beaten back at
+        # every turn by Storm, I gave up.
+
+        order_constant = "rank(DistroSeriesPackageCache.fti, ftq(%s))" % (
+            sqlvalues(package_name))
+
+        results = DistributionSourcePackageCache.select("""
+            DistroSeries.distribution = %s AND
+            DistroSeries.releasestatus != %s AND
+            BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.build = Build.id AND
+            Build.sourcepackagerelease = SourcePackageRelease.id AND
+            DistributionSourcePackageCache.sourcepackagename =
+                SourcePackageRelease.sourcepackagename AND
+            DistroSeriesPackageCache.binarypackagename =
+                BinaryPackageName.id AND
+            DistroSeriesPackageCache.archive IN %s AND
+            DistroSeriesPackageCache.fti @@ ftq(%s)
+            """ % (sqlvalues(self, DistroSeriesStatus.OBSOLETE,
+                             self.all_distro_archive_ids, package_name)),
+            clauseTables=[
+                'SourcePackageRelease', 'DistroSeries',
+                'BinaryPackageRelease', 'BinaryPackageName',
+                'DistroArchSeries', 'BinaryPackagePublishingHistory',
+                'Build', 'DistroSeriesPackageCache',
+                ],
+            distinct=True,
+            selectAlso=order_constant,
+            orderBy=[SQLConstant(order_constant + " DESC")])
+
+        return results
 
     def guessPackageNames(self, pkgname):
         """See `IDistribution`"""
