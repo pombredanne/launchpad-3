@@ -611,10 +611,10 @@ class BranchMergeProposal(SQLBase):
                           dependent_revision_id=None, conflicts=None):
         """See `IBranchMergeProposal`."""
         if self.preview_diff is None:
-             # Create the PreviewDiff.
-             preview = PreviewDiff()
-             preview.diff = Diff()
-             self.preview_diff = preview
+            # Create the PreviewDiff.
+            preview = PreviewDiff()
+            preview.diff = Diff()
+            self.preview_diff = preview
 
         self.preview_diff.update(
             diff_content, diff_stat, source_revision_id, target_revision_id,
