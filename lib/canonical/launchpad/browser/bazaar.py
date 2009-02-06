@@ -168,9 +168,10 @@ class BazaarProductView:
             Or(Branch.branch_type == BranchType.HOSTED,
                Branch.branch_type == BranchType.MIRRORED),
             Branch.last_scanned_id == Revision.revision_id).group_by(Product)
+        result = result.order_by(Count(Branch.id))
         if num_products:
             result.config(limit=num_products)
-        return result.order_by(Count(Branch.id))
+        return result
 
     def products(self, num_products=None):
         product_info = sorted(
