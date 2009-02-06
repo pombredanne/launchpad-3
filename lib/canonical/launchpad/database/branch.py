@@ -1302,7 +1302,6 @@ class BranchSet:
         product_ids = [product.id for product in products]
         if not product_ids:
             return []
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         lifecycle_clause = self._lifecycleClause(
             DEFAULT_BRANCH_STATUS_IN_LISTING)
         cur = cursor()
@@ -1313,9 +1312,9 @@ class BranchSet:
             LEFT OUTER JOIN Revision
             ON Branch.last_scanned_id = Revision.revision_id
             WHERE Branch.product in %s
-            AND Branch.owner <> %d %s
+            AND Branch.branch_type in (1, 2) %s
             GROUP BY Product
-            """ % (quote(product_ids), vcs_imports.id, lifecycle_clause))
+            """ % (quote(product_ids), lifecycle_clause))
         result = {}
         product_map = dict([(product.id, product) for product in products])
         for product_id, branch_count, last_commit in cur.fetchall():
