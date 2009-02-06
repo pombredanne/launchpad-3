@@ -258,7 +258,7 @@ the collection of people.
   HTTP/1.1 201 Created
   ...
   Location: http://.../~serviceteam
-  <BLANKLINE>
+  ...
 
   >>> print webservice.get('/~serviceteam')
   HTTP/1.1 200 Ok
@@ -268,7 +268,7 @@ the collection of people.
   HTTP/1.1 201 Created
   ...
   Location: http://.../~serviceteam2
-  <BLANKLINE>
+  ...
 
   >>> print webservice.get('/~serviceteam2')
   HTTP/1.1 200 Ok
