@@ -53,8 +53,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     PostedMessageStatus)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    ImmutableVisibilityError, PersonVisibility, TeamContactMethod,
-    TeamSubscriptionPolicy)
+    ImmutableVisibilityError, PRIVATE_TEAM_PREFIX, PersonNameField,
+    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -107,6 +107,44 @@ class HasRenewalPolicyMixin:
             field_name)
 
 
+
+
+class TeamNameField(PersonNameField):
+    """A team name, which is unique and performs psuedo blacklisting.
+
+    If the team name is not unique, and the clash is with a private team,
+    return the blacklist message.  Also return the blacklist message if the
+    private prefix is used but the user is not privileged to create private
+    teams.
+    """
+    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
+                         "administrators.")
+
+    def _isValueTaken(self, value):
+        other = self.get_byAttribute(value)
+
+    def _validate(self, input):
+        if check_permission('launchpad.Commercial', self.context):
+            # Commercial admins can create private teams, with or without the
+            # private prefix.
+            return
+
+        # If the name didn't change then we needn't worry about validating it.
+        if self.unchanged(input):
+            return
+
+        if input.startswith(PRIVATE_TEAM_PREFIX):
+            raise LaunchpadValidationError(self.blacklistmessage % input)
+
+        existing_object = self._getByAttribute(input)
+        if (existing_object is not None and
+            existing_object.visibility != PersonVisibility.PUBLIC):
+            raise LaunchpadValidationError(self.blacklistmessage % input)
+
+        # Perform the normal validation, including the real blacklist checks.
+        super(TeamNameField, self)._validate(input)
+
+
 class TeamFormMixin:
     """Form to be used on forms which conditionally display team visiblity.
 
@@ -119,6 +157,7 @@ class TeamFormMixin:
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod",  "teamowner",
         ]
+    private_prefix = PRIVATE_TEAM_PREFIX
 
     @property
     def _validate_visibility_consistency(self):
@@ -129,11 +168,20 @@ class TeamFormMixin:
         """
         return self.context.visibility_consistency_warning
 
+    @property
+    def _visibility(self):
+        """Return the visibility for the object."""
+        return self.context.visibility
+
+    @property
+    def _name(self):
+        return self.context.name
+
     def validate(self, data):
         if 'visibility' in data:
             visibility = data['visibility']
         else:
-            visibility = self.context.visibility
+            visibility = self._visibility
         if visibility != PersonVisibility.PUBLIC:
             if 'visibility' in data:
                 warning = self._validate_visibility_consistency
@@ -150,7 +198,6 @@ class TeamFormMixin:
         """Remove the visibility field if not authorized."""
         if not check_permission('launchpad.Commercial', self.context):
             self.form_fields = self.form_fields.omit('visibility')
-
 
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadEditFormView):
 
@@ -174,6 +221,19 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadEditFormView):
         self.field_names.remove('contactemail')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
+        name_field = self.schema['name']
+        team_name_field = form.Fields(
+            TeamNameField(
+                __name__='name',
+                title=name_field.title,
+                required=name_field.required,
+                readonly=name_field.readonly,
+                constraint=name_field.constraint,
+                description=name_field.description),
+            render_context=self.render_context)
+        # Replace the name field with the team_name_field.
+        self.form_fields = self.form_fields.omit('name')
+        self.form_fields = team_name_field + self.form_fields
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -754,6 +814,19 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         """
         super(TeamAddView, self).setUpFields()
         self.conditionallyOmitVisibility()
+        name_field = self.schema['name']
+        team_name_field = form.Fields(
+            TeamNameField(
+                __name__='name',
+                title=name_field.title,
+                required=name_field.required,
+                readonly=name_field.readonly,
+                constraint=name_field.constraint,
+                description=name_field.description),
+            render_context=self.render_context)
+        # Replace the name field with the team_name_field.
+        self.form_fields = self.form_fields.omit('name')
+        self.form_fields = team_name_field + self.form_fields
 
     @action('Create', name='create')
     def create_action(self, action, data):
@@ -783,8 +856,21 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
 
     @property
     def _validate_visibility_consistency(self):
-        """See `TeamFormView`."""
+        """See `TeamFormMixin`."""
         return None
+
+    @property
+    def _visibility(self):
+        """Return the visibility for the object.
+
+        For a new team it is PUBLIC unless otherwise set in the form data.
+        """
+        return PersonVisibility.PUBLIC
+
+    @property
+    def _name(self):
+        return None
+
 
 
 class ProposedTeamMembersEditView(LaunchpadFormView):
