@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Object, Choice, Int, TextLine
+from zope.schema import Object, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -20,9 +20,7 @@ from canonical.launchpad.interfaces.message import IMessage
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters)
-
+    export_as_webservice_entry, exported)
 
 
 class CodeReviewVote(DBEnumeratedType):
@@ -99,9 +97,9 @@ class ICodeReviewComment(Interface):
         TextLine(
             title=_('The title of the comment')))
 
-    # XXX: rockstar - 6 Feb 2009 - This is a hack around the fact that we don't
-    # have an @property equivalent in the API, so getMessage can't be used to
-    # get the message body.
+    # XXX: rockstar - 6 Feb 2009 - This is a hack around the fact that we
+    # don't have an @property equivalent in the API, so getMessage can't
+    # be used to get the message body. See bug #326307.
     message_body = exported(
         TextLine(
             title=_('The body of the code review message.'),
