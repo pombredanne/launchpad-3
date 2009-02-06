@@ -1,10 +1,7 @@
 PO Export Request Browser Views
 -------------------------------
 
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
     >>> from canonical.launchpad.layers import TranslationsLayer
-    >>> LaunchpadFunctionalTestSetup().setUp()
 
 Check there are no requests in the database to start with.
 
@@ -38,8 +35,9 @@ And here's the view processing that request.
 
 Check that the request has been added to the DB.
 
-    >>> for request in POExportRequest.select(
-    ...         orderBy=['person', 'potemplate', 'pofile']):
+    >>> requests = POExportRequest.select(
+    ...         orderBy=['person', 'potemplate', 'pofile'])
+    >>> for request in requests:
     ...     things = [
     ...         request.person.displayname,
     ...         request.potemplate.name]
@@ -49,13 +47,10 @@ Check that the request has been added to the DB.
     [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2', u'Spanish']
     [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2']
 
-Now forget that request happened.
+Clear the queue.
 
-    >>> LaunchpadFunctionalTestSetup().tearDown()
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
-See, no requests!
-
+    >>> POExportRequest.delete(requests[1].id)
+    >>> POExportRequest.delete(requests[0].id)
     >>> POExportRequest.select().count()
     0
 
@@ -74,23 +69,14 @@ https://launchpad.net/products/rosetta/+bug/68261
 
 Check that the request has been added to the DB.
 
-    >>> for request in POExportRequest.select(
-    ...         orderBy=['person', 'potemplate', 'pofile']):
-    ...     things = [
-    ...         request.person.displayname,
-    ...         request.potemplate.name]
-    ...     if request.pofile:
-    ...         things.append(request.pofile.language.englishname)
-    ...     print things
+    >>> requests = POExportRequest.select(
+    ...         orderBy=['person', 'potemplate', 'pofile'])
+    >>> print [requests[0].person.displayname, requests[0].potemplate.name]
     [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2-test']
 
-Now forget that request happened.
+Clear the queue.
 
-    >>> LaunchpadFunctionalTestSetup().tearDown()
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
-The queue is now empty.
-
+    >>> POExportRequest.delete(requests[0].id)
     >>> POExportRequest.select().count()
     0
 
@@ -107,9 +93,39 @@ Here's the request getting processed.
     >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 
-And there it is.
+And there it is, format is PO.
 
-    >>> POExportRequest.select().count()
+    >>> from canonical.launchpad.interfaces.translationfileformat import (
+    ...     TranslationFileFormat)
+    >>> requests = POExportRequest.select()
+    >>> requests.count()
     1
+    >>> requests[0].format == TranslationFileFormat.PO
+    True
 
-    >>> LaunchpadFunctionalTestSetup().tearDown()
+Clear the queue.
+
+    >>> POExportRequest.delete(requests[0].id)
+    >>> POExportRequest.select().count()
+    0
+
+Let's request a partial PO file instead this time. In the form this is done
+by ticking the checkbox 'pochanged'.
+
+    >>> from canonical.launchpad.database import POFile
+    >>> pofile = POFile.get(1)
+    >>> form = {'format': 'PO', 'pochanged': 'POCHANGED'}
+    >>> pofile_view = create_view(
+    ...     pofile, '+export', form=form, layer=TranslationsLayer)
+    >>> pofile_view.request.method = 'POST'
+    >>> pofile_view.initialize()
+
+And there it is, and its format is POCHANGED.
+
+    >>> from canonical.launchpad.interfaces.translationfileformat import (
+    ...     TranslationFileFormat)
+    >>> requests = POExportRequest.select()
+    >>> requests.count()
+    1
+    >>> requests[0].format == TranslationFileFormat.POCHANGED
+    True
