@@ -366,12 +366,19 @@ class IDistributionPublic(
         matching.
         """
 
-    def searchExactBinaryPackages(package_name):
-        """Search for binary packages with an exact match to the name.
+    def searchBinaryPackages(package_name, exact_match=False):
+        """Search for binary packages in this distribution.
 
         :param package_name: The binary package name to match.
-        :return: A result set containing appropriate sourcepackagereleases
-            for the matching source.
+        :param exact_match: If False, substring matches are done on the
+            binary package names; if True only a full string match is
+            returned.
+        :return: A result set containing appropriate DistributionSourcePackage
+            objects for the matching source.
+
+        The returned results will consist first of source packages that match
+        a substring of their binary package names followed by any rows
+        resulting from the FTI match (which is on name, summary etc).
         """
 
     def getFileByName(filename, archive=None, source=True, binary=True):

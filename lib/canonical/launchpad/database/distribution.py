@@ -11,7 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import SQL, Join
+from storm.locals import Join, Like, SQL
 from storm.store import Store
 
 from canonical.archivepublisher.debversion import Version
@@ -965,18 +965,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # results will only see DSPs
         return DecoratedResultSet(dsp_caches, result_to_dsp)
 
-    def searchExactBinaryPackages(self, package_name):
+    def searchBinaryPackages(self, package_name, exact_match=False):
         """See `IDistribution`."""
-
-        # Return results only in active distroseries.
         store = Store.of(self)
 
-        result_set = store.find(
+        # Return results only in active distroseries.
+        find_spec = (
             SourcePackageName,
-            # SQL("ARRAY(BinaryPackageName.name)")),
             DistroSeries.distribution == self,
             DistroSeries.status != DistroSeriesStatus.OBSOLETE,
-            BinaryPackageName.name == package_name,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             BinaryPackagePublishingHistory.distroarchseries ==
@@ -986,8 +983,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             BinaryPackageRelease.build == Build.id,
             Build.sourcepackagerelease == SourcePackageRelease.id,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id)
-        
-        result_set = result_set.config(distinct=True)
+
+        if exact_match:
+            match_clause = (BinaryPackageName.name == package_name,)
+        else:
+            match_clause = (
+                BinaryPackageName.name.like("%%%s%%" % package_name.lower()),)
+
+        result_set = store.find(
+            *(find_spec + match_clause)).config(distinct=True)
+
         def names_to_dsp(result):
             return DistributionSourcePackage(self, result)
 
