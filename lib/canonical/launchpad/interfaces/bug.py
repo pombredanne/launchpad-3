@@ -404,16 +404,16 @@ class IBug(ICanBeMentored):
         """
 
     @call_with(owner=REQUEST_USER)
-    @rename_parameters_as(
-        productseries='product_series', distroseries='distro_series',
-        sourcepackagename='source_package_name')
-    @export_factory_operation(
-        IBugTask, ['product', 'productseries', 'distribution',
-                   'distroseries', 'sourcepackagename', 'status',
-                   'importance', 'assignee', 'milestone'])
-    def addTask(owner, product=None, productseries=None, distribution=None,
-                distroseries=None, sourcepackagename=None, status=None,
-                importance=None, assignee=None, milestone=None):
+    @operation_parameters(
+        target=Reference(IBugTarget, title=_('Target'), required=True),
+        status=copy_field(IBugTask['status']),
+        importance=copy_field(IBugTask['importance']),
+        assignee=copy_field(IBugTask['assignee']),
+        milestone=copy_field(IBugTask['milestone'])
+        )
+    @export_factory_operation(IBugTask, [])
+    def addTask(owner, target, status=None, importance=None,
+                assignee=None, milestone=None):
         """Create a new bug task on this bug."""
 
     def hasBranch(branch):

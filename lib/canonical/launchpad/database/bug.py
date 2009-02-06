@@ -673,19 +673,36 @@ class Bug(SQLBase):
             Store.of(result).flush()
             return result
 
-    def addTask(self, owner, product=None, productseries=None,
-                distribution=None, distroseries=None,
-                sourcepackagename=None,
+    def addTask(self, owner, target,
                 status=IBugTask['status'].default,
                 importance=IBugTask['importance'].default,
                 assignee=None, milestone=None):
         """See `IBug`."""
+        product = None
+        product_series = None
+        distribution = None
+        distro_series = None
+        source_package_name = None
+
+        # Turn `target` into something more useful.
+        if IProduct.providedBy(target):
+            product = target
+        if IProductSeries.providedBy(target):
+            product_series = target
+        if IDistribution.providedBy(target):
+            distribution = target
+        if IDistroSeries.providedBy(target):
+            distro_series = target
+        if ISourcePackage.providedBy(target):
+            source_package_name = target.name
+
         new_task = getUtility(IBugTaskSet).createTask(
             self, owner=owner, product=product,
-            productseries=productseries, distribution=distribution,
-            distroseries=distroseries,
-            sourcepackagename=sourcepackagename, status=status,
-            importance=importance, assignee=assignee, milestone=milestone)
+            productseries=product_series, distribution=distribution,
+            distroseries=distro_series,
+            sourcepackagename=source_package_name, status=status,
+            importance=importance, assignee=assignee,
+            milestone=milestone)
 
         return new_task
 
