@@ -28,11 +28,9 @@ from zope.schema import Choice
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
-from canonical.launchpad.database import BugTracker
 from canonical.launchpad.helpers import english_list, shortlist
 from canonical.launchpad.interfaces.bugtracker import (
-    BUG_TRACKER_ACTIVE_VOCABULARY, BugTrackerType, IBugTracker,
-    IBugTrackerSet, IRemoteBug)
+    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
