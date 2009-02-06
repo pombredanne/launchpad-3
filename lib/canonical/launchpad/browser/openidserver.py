@@ -693,6 +693,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
             logInPerson(self.request, principal, email)
+            # Clear the attribute holding the cached user.
             self._user = principal.person
             return self.renderOpenIDResponse(self.createPositiveResponse())
         elif action == 'resetpassword':
