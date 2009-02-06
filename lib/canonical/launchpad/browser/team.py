@@ -29,7 +29,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.widgets import (
-    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
+    HiddenUserWidget, LaunchpadRadioWidget)
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -199,7 +199,8 @@ class TeamFormMixin:
         if not check_permission('launchpad.Commercial', self.context):
             self.form_fields = self.form_fields.omit('visibility')
 
-class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadEditFormView):
+class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
+                   LaunchpadEditFormView):
 
     schema = ITeam
 
