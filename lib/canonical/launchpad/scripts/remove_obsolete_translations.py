@@ -115,12 +115,12 @@ DeleteObsoletePOTemplatesSQL = """
 
 
 types = [
-    { 'table' : 'TranslationMessage'
+    { 'table' : 'TranslationMessage',
       'temporary_table' : 'obsolete_tms',
       'removal_sql' : DeleteObsoleteTranslationmessagesSQL,
       'collection' : CollectObsoleteTranslationmessagesSQL,
       },
-    { 'table' : 'TranslationTemplateItem'
+    { 'table' : 'TranslationTemplateItem',
       'temporary_table' : 'obsolete_tti',
       'removal_sql' : DeleteObsoleteTranslationTemplateItemsSQL,
       'collection' : CollectObsoleteTranslationTemplateItemsSQL,
@@ -170,18 +170,18 @@ class DeletionLoopRunner(object):
         self._logger.info(
             " * Removed another %d TranslationMessages (%d of %d)." % (
                 result.row_count(),
-                self._iterations_done + result.row_count(), 
+                self._iterations_done + result.row_count(),
                 self._iteration_end))
         self._iterations_done += result.row_count()
         commit_transaction(self._txn, self._logger,dry_run=self._dry_run)
         self._commit_count += 1
 
-        result = self._store.execute("SELECT * FROM TranslationMessage WHERE "
-                                     "  id IN (SELECT id FROM obsolete_tms)")
-        remaining = result.row_count()
-        if remaining:
-            self._logger.info(
-                "Still %d remaining TranslationMessages" % remaining)
+        #result = self._store.execute("SELECT * FROM TranslationMessage WHERE "
+        #                             "  id IN (SELECT id FROM obsolete_tms)")
+        #remaining = result.row_count()
+        #if remaining:
+        #    self._logger.info(
+        #        "Still %d remaining TranslationMessages" % remaining)
 
     def getTotalCommits(self):
         return self._commit_count
