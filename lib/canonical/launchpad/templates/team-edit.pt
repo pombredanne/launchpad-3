@@ -12,9 +12,9 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
+  <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+  </metal:portlets>
 
   <div metal:fill-slot="main">
 
@@ -46,9 +46,8 @@
            // bug=http://yuilibrary.com/projects/yui3/ticket/2423101
            // Dotted CSS selectors not parsed correctly.
            Y.on('change', visibility_on_change, document.getElementById('field.visibility'));
-       });
-
+      });
+    </script>
   </div>
-
 </body>
 </html>
