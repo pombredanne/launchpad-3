@@ -18,6 +18,11 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference, ReferenceChoice
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters)
+
 
 
 class CodeReviewVote(DBEnumeratedType):
@@ -67,23 +72,40 @@ class CodeReviewVote(DBEnumeratedType):
 
 class ICodeReviewComment(Interface):
     """A link between a merge proposal and a message."""
+    export_as_webservice_entry()
 
-    id = Int(
-        title=_('DB ID'), required=True, readonly=True,
-        description=_("The tracking number for this comment."))
+    id = exported(
+        Int(
+            title=_('DB ID'), required=True, readonly=True,
+            description=_("The tracking number for this comment.")))
 
-    branch_merge_proposal = Object(
-        schema=IBranchMergeProposal, title=_('The branch merge proposal'))
+    branch_merge_proposal = exported(
+        Reference(
+            title=_('The branch merge proposal'), schema=IBranchMergeProposal,
+            required=True, readonly=True))
 
     message = Object(schema=IMessage, title=_('The message.'))
 
-    vote = Choice(
-        title=_('Reviewer says'), required=False, vocabulary=CodeReviewVote)
+    vote = exported(
+        ReferenceChoice(
+            title=_('Reviewer says'), required=False,
+            vocabulary=CodeReviewVote))
 
-    vote_tag = TextLine(
-        title=_('Vote tag'), required=False)
+    vote_tag = exported(
+        TextLine(
+            title=_('Vote tag'), required=False))
 
-    title = TextLine()
+    title = exported(
+        TextLine(
+            title=_('The title of the comment')))
+
+    # XXX: rockstar - 6 Feb 2009 - This is a hack around the fact that we don't
+    # have an @property equivalent in the API, so getMessage can't be used to
+    # get the message body.
+    message_body = exported(
+        TextLine(
+            title=_('The body of the code review message.'),
+            readonly=True))
 
     def getMessage():
         """Get the message content from the message attribute.
