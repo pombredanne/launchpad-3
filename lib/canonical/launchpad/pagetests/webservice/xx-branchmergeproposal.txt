@@ -2,6 +2,8 @@
 
 Branch merge proposals can be fetched through the API.
 
+    >>> from canonical.launchpad.interfaces.codereviewcomment import (
+    ...     CodeReviewVote)
 
     >>> login('foo.bar@canonical.com')
     >>> fixit_proposal = factory.makeBranchMergeProposal()
@@ -11,6 +13,15 @@ Branch merge proposals can be fetched through the API.
     >>> fixit_proposal.target_branch.owner.name = 'target'
     >>> fixit_proposal.target_branch.name = 'trunk'
     >>> fixit_proposal.target_branch.product.name = 'fooix'
+    >>> comment = factory.makeCodeReviewComment(
+    ...     subject='Looks good', body='This is great work',
+    ...     vote=CodeReviewVote.APPROVE, vote_tag='code',
+    ...     merge_proposal=fixit_proposal)
+    >>> comment2 = factory.makeCodeReviewComment(
+    ...     subject='Not really', body='This is mediocre work.',
+    ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
+    ...     merge_proposal=fixit_proposal)
+
     >>> proposal_url = canonical_url(fixit_proposal, rootsite='api')
     >>> logout()
 
