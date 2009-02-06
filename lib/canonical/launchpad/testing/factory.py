@@ -25,6 +25,7 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
@@ -34,6 +35,8 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
 from canonical.launchpad.interfaces.branch import (
     BranchType, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -539,6 +542,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.user_branch = branch
         return branch
+
+    def makeBranchMergeQueue(self, name=None):
+        """Create a new multi branch merge queue."""
+        if name is None:
+            name = self.getUniqueString('name')
+        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
+            registrant=self.makePerson(),
+            owner=self.makePerson(),
+            name=name,
+            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
@@ -1284,3 +1297,55 @@ class LaunchpadObjectFactory(ObjectFactory):
                     'attachment; filename="%s"' % filename)
                 msg.attach(attachment)
         return msg
+
+    def makeMergeDirective(self, source_branch=None, target_branch=None,
+        source_branch_url=None, target_branch_url=None):
+        """Return a bzr merge directive object.
+
+        :param source_branch: The source database branch in the merge
+            directive.
+        :param target_branch: The target database branch in the merge
+            directive.
+        :param source_branch_url: The URL of the source for the merge
+            directive.  Overrides source_branch.
+        :param target_branch_url: The URL of the target for the merge
+            directive.  Overrides target_branch.
+        """
+        from bzrlib.merge_directive import MergeDirective2
+        if source_branch_url is not None:
+            assert source_branch is None
+        else:
+            if source_branch is None:
+                source_branch = self.makeAnyBranch()
+            source_branch_url = (
+                config.codehosting.supermirror_root +
+                source_branch.unique_name)
+        if target_branch_url is not None:
+            assert target_branch is None
+        else:
+            if target_branch is None:
+                target_branch = self.makeAnyBranch()
+            target_branch_url = (
+                config.codehosting.supermirror_root +
+                target_branch.unique_name)
+        return MergeDirective2(
+            'revid', 'sha', 0, 0, target_branch_url,
+            source_branch=source_branch_url, base_revision_id='base-revid',
+            patch='booga')
+
+    def makeMergeDirectiveEmail(self, body='Hi!\n'):
+        """Create an email with a merge directive attached.
+
+        :param body: The message body to use for the email.
+        :return: message, file_alias, source_branch, target_branch
+        """
+        target_branch = self.makeProductBranch()
+        source_branch = self.makeProductBranch(
+            product=target_branch.product)
+        md = self.makeMergeDirective(source_branch, target_branch)
+        message = self.makeSignedMessage(body=body,
+            subject='My subject', attachment_contents=''.join(md.to_lines()))
+        message_string = message.as_string()
+        file_alias = getUtility(ILibraryFileAliasSet).create(
+            '*', len(message_string), StringIO(message_string), '*')
+        return message, file_alias, source_branch, target_branch
