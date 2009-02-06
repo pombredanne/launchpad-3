@@ -26,7 +26,7 @@ from zope.interface import classProvides, implements
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
-from storm.expr import And, Join, LeftJoin, Or
+from storm.expr import And, Count, Join, LeftJoin, Max, Or
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -1784,10 +1784,8 @@ class BranchCloud:
 
     def getProductsWithInfo(self, num_products=None):
         """See `IBranchCloud`."""
-        # This is used only by browser/bazaar.py.
-        from canonical.launchpad.database import Branch, Product, Revision
-        from canonical.launchpad.interfaces.branch import BranchType
-        from storm.locals import Count, Max, Or
+        # Circular imports are fun.
+        from canonical.launchpad.database.product import Product
         # It doesn't matter if this query is even a whole day out of date, so
         # use the slave store.
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
