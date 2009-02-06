@@ -14,7 +14,7 @@
   <a id="subscribers-content-link"
      tal:attributes="href context/fmt:url/+bug-portlet-subscribers-content" />
   <script type="text/javascript">
-    YUI().use('io', 'node', 'LP', function(Y) {
+    YUI().use('io', 'node', function(Y) {
       Y.on('contentready', function() {
         var portlet = Y.get('#portlet-subscribers');
         portlet.set('innerHTML',
