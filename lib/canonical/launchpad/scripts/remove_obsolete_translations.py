@@ -235,20 +235,13 @@ class DeletionLoopRunner(object):
         result = self._store.execute(query)
         self._logger.debug(
             " * Removed another %d %ss (%d of %d)." % (
-                result.row_count(),
+                result._raw_cursor.rowcount,
                 self.table,
-                self._iterations_done + result.row_count(),
+                self._iterations_done + result._raw_cursor.rowcount,
                 self._iteration_end))
-        self._iterations_done += result.row_count()
+        self._iterations_done += result._raw_cursor.rowcount
         commit_transaction(self._txn, self._logger,dry_run=self._dry_run)
         self._commit_count += 1
-
-        #result = self._store.execute("SELECT * FROM %s WHERE "
-        #                             "  id IN (SELECT id FROM %s)" % (self.table, self.obsolete_table))
-        #remaining = result.row_count()
-        #if remaining:
-        #    self._logger.info(
-        #        "Still %d remaining %ss" % (remaining, self.table))
 
     def getTotalCommits(self):
         return self._commit_count
