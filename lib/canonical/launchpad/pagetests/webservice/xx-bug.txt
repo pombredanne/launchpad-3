@@ -76,7 +76,7 @@ Distribution or a DistributionSourcePackage.
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
-    <BLANKLINE>
+    ...
 
     >>> print webservice.named_post(
     ...     '/bugs', 'createBug',
@@ -85,7 +85,7 @@ Distribution or a DistributionSourcePackage.
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
-    <BLANKLINE>
+    ...
 
     >>> print webservice.named_post(
     ...     '/bugs', 'createBug',
@@ -94,7 +94,7 @@ Distribution or a DistributionSourcePackage.
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
-    <BLANKLINE>
+    ...
 
 A ProductSeries can't be the target of a new bug.
 
@@ -178,7 +178,7 @@ We can add a new message to a bug by calling the newMessage method.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/1
-  <BLANKLINE>
+  ...
 
   >>> pprint_entry(webservice.get("/firefox/+bug/5/comments/1").jsonBody())
   bug_attachments_collection_link: ...
@@ -246,6 +246,7 @@ It's possible to change the task's assignee.
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
+  ...
   <BLANKLINE>
   null
 
@@ -274,6 +275,7 @@ The task's importance can be modified directly...
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
+  ...
   <BLANKLINE>
   null
   >>> body = webservice.get(bugtask_path).jsonBody()
@@ -545,6 +547,7 @@ But we can't change other things, like the URL.
   HTTP/1.1 400 Bad Request
   Content-Length: 47
   Content-Type: text/plain
+  ...
   <BLANKLINE>
   url: You tried to modify a read-only attribute.
 
@@ -561,6 +564,7 @@ associated with a bug.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/1/+watch/13
+  ...
 
 Following the redirect, we can see the new bug watch:
 
@@ -620,7 +624,7 @@ We can change various aspects of bug trackers.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/bugtrackers/bob
-  <BLANKLINE>
+  ...
 
 Note the 301 response. We changed the name, so the API URL at which
 the bug tracker can be found has changed.
@@ -681,6 +685,7 @@ An attachment can be added to the bug:
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/1/+attachment/1
+  ...
 
 Now, bug 1 has one attachment:
 
@@ -721,6 +726,7 @@ we must follow to download the data.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://localhost:58000/.../numbers.txt
+  ...
 
   >>> from urllib2 import urlopen
 
