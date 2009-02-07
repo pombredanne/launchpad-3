@@ -11,6 +11,9 @@ email addresses.
     >>> foobar = factory.makePerson(
     ...     email='foobar@baz.com', name='foobar', password='test')
     >>> foobar_dupe = factory.makePerson(name='foobar-dupe')
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
     >>> login_person(foobar_dupe)
     >>> foobar_dupe.hide_email_addresses = True
     >>> logout()

@@ -29,6 +29,7 @@ from zope.interface import alsoProvides, directlyProvides, Interface
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
@@ -882,14 +883,13 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
-        # EmailAddress.{person,status} are readonly fields, so we need to
-        # remove the security proxy before changing them.
         from zope.security.proxy import removeSecurityProxy
+        email = removeSecurityProxy(email).master
         # As a person can have at most one preferred email, ensure
         # that this new email does not have the PREFERRED status.
-        removeSecurityProxy(email).status = EmailAddressStatus.NEW
-        removeSecurityProxy(email).person = requester.id
-        email.account = requester.account
+        email.status = EmailAddressStatus.NEW
+        email.person = requester.id
+        email.account = removeSecurityProxy(requester.account).master
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make

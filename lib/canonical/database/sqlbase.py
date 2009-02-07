@@ -215,6 +215,15 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
+    @property
+    def master(self):
+        """Return this object as retrieved from the master store."""
+        from canonical.launchpad.interfaces import IMasterStore
+        master_store = IMasterStore(self)
+        if Store.of(self) is master_store:
+            return self
+        return master_store.find(self.__class__, id=self.id).one()
+
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")

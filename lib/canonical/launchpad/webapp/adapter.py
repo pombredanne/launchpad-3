@@ -459,7 +459,7 @@ class StoreSelector:
 # can just maintain a hardcoded list of what isn't in there for now.
 _auth_store_tables = frozenset([
     'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
-    'OpenIdRpSummary', 'OpenIdAuthorization'])
+    'OpenIDRPSummary', 'OpenIDAuthorization'])
 
 # We want to be able to adapt a Storm class to an IStore, IMasterStore or
 # ISlaveStore. Unfortunately, the component architecture provides no

@@ -58,6 +58,7 @@ from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
+from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -3459,7 +3460,7 @@ class PersonSet:
                     'team = %s' % sqlvalues(from_person, team_id))
 
         # Transfer the OpenIDRPSummaries to the new account.
-        cur.execute("""
+        IMasterStore(OpenIDRPSummary).execute("""
             UPDATE OpenIDRPSummary
             SET account = %s
             WHERE account = %s
@@ -3471,7 +3472,7 @@ class PersonSet:
             ''' % vars())
 
         # And nuke any referencing Account
-        cur.execute('''
+        IMasterStore(Account).execute('''
             DELETE FROM Account USING Person
             WHERE Person.account = Account.id AND Person.id=%(from_id)d
             ''' % vars())
