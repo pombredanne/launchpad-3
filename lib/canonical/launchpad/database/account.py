@@ -22,8 +22,7 @@ from canonical.launchpad.interfaces.account import (
         IAccount, IAccountSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.interfaces import IStore, IMasterStore
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -60,9 +59,8 @@ class Account(SQLBase):
         # We have to force the switch to the auth store, because the
         # AccountPassword table is not visible via the main store
         # for security reasons.
-        auth_store = getUtility(IStoreSelector).get(
-            AUTH_STORE, DEFAULT_FLAVOR)
-        password = auth_store.find(AccountPassword, accountID=self.id).one()
+        password = IStore(AccountPassword).find(
+            AccountPassword, accountID=self.id).one()
         if password is None:
             return None
         else:
@@ -70,17 +68,16 @@ class Account(SQLBase):
 
     def _set_password(self, value):
         # Making a modification, so we explicitly use the auth store master.
-        auth_store = getUtility(IStoreSelector).get(
-            AUTH_STORE, MASTER_FLAVOR)
-        password = auth_store.find(AccountPassword, accountID=self.id).one()
+        store = IMasterStore(AccountPassword)
+        password = store.find(
+            AccountPassword, accountID=self.id).one()
 
         if value is not None and password is None:
             # There is currently no AccountPassword record and we need one.
-            auth_store.add(
-                AccountPassword(accountID=self.id, password=value))
+            store.add(AccountPassword(accountID=self.id, password=value))
         elif value is None and password is not None:
             # There is an AccountPassword record that needs removing.
-            auth_store.remove(password)
+            store.remove(password)
         elif value is not None:
             # There is an AccountPassword record that needs updating.
             password.password = value
