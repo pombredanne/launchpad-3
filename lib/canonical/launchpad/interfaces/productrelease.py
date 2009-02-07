@@ -247,16 +247,14 @@ class IProductReleasePublic(Interface):
 
     codename = TextLine(
         title=u'Code name', required=False, readonly=True,
-        description=u'The release code-name. Famously, one Gnome '
-        'release was code-named "that, and a pair of testicles", '
-        "but you don't have to be as brave with your own release "
-        'codenames.')
+        description=_('The release code-name. This is deprecated, '
+                      'since it was moved to the milestone.'))
 
     summary = Text(
         title=_("Summary"), required=False, readonly=True,
         description=_('A brief summary of the release highlights, to '
-                        'be shown at the top of the release page, and in '
-                        'listings.'))
+                      'be shown at the top of the release page, and in '
+                      'listings.'))
 
     release_notes = exported(
         Text(

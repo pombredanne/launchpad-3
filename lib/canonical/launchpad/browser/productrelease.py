@@ -109,10 +109,10 @@ class ProductReleaseAddView(LaunchpadFormView):
         if self.context.visible is True:
             self.form_fields += FormFields(
                 Bool(
-                    __name__='dont_deactivate_milestone',
-                    title=_("Don't deactivate milestone."),
+                    __name__='keep_milestone_active',
+                    title=_("Keep the milestone active."),
                     description=_(
-                        "Only select this if bugs or bluepints still need to "
+                        "Only select this if bugs or blueprints still need to "
                         "be targeted to this product release&rsquo;s "
                         "milestone.")),
                 render_context=self.render_context)
@@ -126,19 +126,12 @@ class ProductReleaseAddView(LaunchpadFormView):
             datereleased=data['datereleased'])
         # Set Milestone.visible to false, since bugs & blueprints
         # should not be targeted to a milestone in the past.
-        if data['dont_deactivate_milestone'] is True:
-            pass
-        elif data['dont_deactivate_milestone'] is False:
+        if data['keep_milestone_active'] is False:
             self.context.visible = False
             self.request.response.addWarningNotification(
                 _("The milestone for this product release was deactivated "
                   "so that bugs & blueprints cannot be targeted "
                   "to a milestone in the past."))
-        else:
-            raise AssertionError(
-                "dont_deactivate_milestone must be True or False: %r"
-                % data['dont_deactivate_milestone'])
-
         self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 

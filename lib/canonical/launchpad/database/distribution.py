@@ -229,6 +229,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return [archive.id for archive in self.all_distro_archives]
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.distribution == self)
+
     def getArchiveIDList(self, archive=None):
         """See `IDistribution`."""
         if archive is None:

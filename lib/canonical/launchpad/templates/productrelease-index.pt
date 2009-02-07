@@ -20,7 +20,8 @@
   <h1 tal:content="context/title">Foo Release</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="has_edit context/required:launchpad.Edit">
 
     <p class="documentDescription" tal:content="context/summary"
        tal:condition="context/summary">
@@ -35,12 +36,14 @@
     </div>
 
     <p tal:condition="not: context/release_notes">
-      <i>This release does not have release notes. You may want to edit it
-      and add release notes, including new features and other highlights.</i>
+      <em>This release does not have release notes.
+        <tal:add-release-notes condition="has_edit">
+          You may want to edit it and add release notes, including new
+          features and other highlights.
+        </tal:add-release-notes></em>
     </p>
 
     <form method="POST"
-          tal:define="has_edit context/required:launchpad.Edit"
           tal:condition="context/files"
           tal:attributes="action request/URL">
 
@@ -90,8 +93,7 @@
     </div>
 
     <p tal:condition="not: context/changelog">
-      <i>This release does not have a changelog. You may want to edit the
-      release to add a changelog.</i>
+      <em>This release does not have a changelog.</em>
     </p>
 
 </div>

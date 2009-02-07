@@ -49,14 +49,15 @@ will be warned that the milestone has been deactivated.
     >>> print get_feedback_messages(browser.contents)
     [u'A product release already exists for this milestone.']
 
-    # The "Don't deactivate milestone" checkbox will eliminate
-    # the error message.
+The milestone deactivation notice is not shown when the user selects the
+the "Keep the milestone active" checkbox.
+
     >>> browser.open('http://launchpad.dev/firefox/trunk/+addmilestone')
     >>> browser.getControl('Name').value = 'bar'
     >>> browser.getControl('Register milestone').click()
     >>> browser.open('http://launchpad.dev/firefox/+milestone/bar/+addrelease')
     >>> browser.getControl("Date released").value = '2009-01-01'
-    >>> browser.getControl("Don't deactivate milestone.").selected = True
+    >>> browser.getControl("Keep the milestone active.").selected = True
     >>> browser.getControl('Publish release').click()
     >>> print get_feedback_messages(browser.contents)
     []

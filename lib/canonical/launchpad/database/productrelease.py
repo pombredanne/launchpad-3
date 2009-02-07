@@ -52,7 +52,7 @@ class ProductRelease(SQLBase):
     # properties
     @property
     def codename(self):
-        """Backwards compatibile codename attribute.
+        """Backwards compatible codename attribute.
 
         This attribute was moved to the Milestone."""
         # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
@@ -60,7 +60,7 @@ class ProductRelease(SQLBase):
 
     @property
     def version(self):
-        """Backwards compatibile version attribute.
+        """Backwards compatible version attribute.
 
         This attribute was replaced by the Milestone.name."""
         # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
@@ -68,7 +68,7 @@ class ProductRelease(SQLBase):
 
     @property
     def summary(self):
-        """Backwards compatibile summary attribute.
+        """Backwards compatible summary attribute.
 
         This attribute was replaced by the Milestone.summary."""
         # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
@@ -76,7 +76,7 @@ class ProductRelease(SQLBase):
 
     @property
     def productseries(self):
-        """Backwards compatibile summary attribute.
+        """Backwards compatible summary attribute.
 
         This attribute was replaced by the Milestone.productseries."""
         # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
@@ -84,7 +84,7 @@ class ProductRelease(SQLBase):
 
     @property
     def product(self):
-        """Backwards compatibile summary attribute.
+        """Backwards compatible summary attribute.
 
         This attribute was replaced by the Milestone.productseries.product."""
         # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.

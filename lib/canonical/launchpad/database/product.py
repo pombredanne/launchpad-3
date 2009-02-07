@@ -228,6 +228,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.product == self)
+
     @property
     def upstream_bug_filing_url(self):
         """Return the URL of the upstream bug filing form for this project.

@@ -300,6 +300,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.distroseries == self)
+
     def canUploadToPocket(self, pocket):
         """See `IDistroSeries`."""
         # Allow everything for distroseries in FROZEN state.

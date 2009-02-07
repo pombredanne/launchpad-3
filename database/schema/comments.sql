@@ -600,6 +600,11 @@ COMMENT ON COLUMN ProductLicense.license IS 'An integer referencing a value in t
 
 COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific ''upstream'' software release, like Apache 2.0.49 or Evolution 1.5.4.';
 COMMENT ON COLUMN ProductRelease.milestone IS 'The milestone for this product release. This is scheduled to become a NOT NULL column, so every product release will be linked to a unique milestone.';
+COMMENT ON COLUMN ProductRelease.datecreated IS 'The timestamp when this product release was created.';
+COMMENT ON COLUMN ProductRelease.datereleased IS 'The date when this version of the product was released.';
+COMMENT ON COLUMN ProductRelease.release_notes IS 'Description of changes in this product release.';
+COMMENT ON COLUMN ProductRelease.changelog IS 'Detailed description of changes in this product release.';
+COMMENT ON COLUMN ProductRelease.owner IS 'The person who created this product release.';
 
 -- ProductReleaseFile
 

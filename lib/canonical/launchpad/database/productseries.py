@@ -100,6 +100,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.productseries == self)
+
     @property
     def releases(self):
         """See `IProductSeries`."""

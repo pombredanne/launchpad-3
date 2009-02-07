@@ -50,34 +50,31 @@ class HasMilestonesMixin:
             # way in the future.
             date = cls._FUTURE_NONE
         elif isinstance(milestone.dateexpected, datetime.datetime):
-            # XXX: The Milestone.dateexpected should be changed into
-            # a date column, since the class defines the field as a DateCol,
-            # so that a list of milestones can't have some dateexpected
-            # attributes that are datetimes and others that are dates, which
-            # can't be compared.
+            # XXX: EdwinGrubbs 2009-02-06 bug=326384:
+            # The Milestone.dateexpected should be changed into a date column,
+            # since the class defines the field as a DateCol, so that a list of
+            # milestones can't have some dateexpected attributes that are
+            # datetimes and others that are dates, which can't be compared.
             date = milestone.dateexpected.date()
         else:
             date = milestone.dateexpected
         return (date, expand_numbers(milestone.name))
 
-    def _getCondition(self):
-        if IProduct.providedBy(self):
-            return (Milestone.product == self)
-        elif IProductSeries.providedBy(self):
-            return (Milestone.productseries == self)
-        elif IDistribution.providedBy(self):
-            return (Milestone.distribution == self)
-        elif IDistroSeries.providedBy(self):
-            return (Milestone.distroseries == self)
-        else:
-            raise AssertionError(
-                "Unexpected class for mixin: %r" % self)
+    def _getMilestoneCondition(self):
+        """Provides condition for milestones and all_milestones properties.
+
+        Subclasses need to override this method.
+
+        :return: Storm ComparableExpr object.
+        """
+        raise NotImplementedError(
+            "Unexpected class for mixin: %r" % self)
 
     @property
     def all_milestones(self):
         """See `IHasMilestones`."""
         store = Store.of(self)
-        result = store.find(Milestone, self._getCondition())
+        result = store.find(Milestone, self._getMilestoneCondition())
         return sorted(result, key=self.milestone_sort_key, reverse=True)
 
     @property
@@ -85,7 +82,7 @@ class HasMilestonesMixin:
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone,
-                            And(self._getCondition(),
+                            And(self._getMilestoneCondition(),
                                 Milestone.visible == True))
         return sorted(result, key=self.milestone_sort_key, reverse=True)
 
@@ -106,11 +103,11 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
-    # XXX: The Milestone.dateexpected should be changed into
-    # a date column, since the class defines the field as a DateCol,
-    # so that a list of milestones can't have some dateexpected
-    # attributes that are datetimes and others that are dates, which
-    # can't be compared.
+    # XXX: EdwinGrubbs 2009-02-06 bug=326384:
+    # The Milestone.dateexpected should be changed into a date column,
+    # since the class defines the field as a DateCol, so that a list of
+    # milestones can't have some dateexpected attributes that are
+    # datetimes and others that are dates, which can't be compared.
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
     summary = StringCol(notNull=False, default=None)
