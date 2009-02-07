@@ -23,7 +23,7 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 import transaction
-from zope.component import adapter, getUtility, provideAdapter
+from zope.component import getUtility
 from zope.interface import (
     classImplements, classProvides, directlyProvides,
     implementer, implements, Interface)
@@ -461,28 +461,28 @@ _auth_store_tables = frozenset([
     'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
     'OpenIdRpSummary', 'OpenIdAuthorization'])
 
-# We want to be able to adapt a Storm class to an IMasterStore or
+# We want to be able to adapt a Storm class to an IStore, IMasterStore or
 # ISlaveStore. Unfortunately, the component architecture provides no
 # way for us to declare that a class, and all its subclasses, provides
 # a given interface. This means we need to use an global adapter.
 
-def get_master_store(storm_class):
-    """Return the master Store for the given database class."""
+def get_store(storm_class, flavor=DEFAULT_FLAVOR):
+    """Return a flavored Store for the given database class."""
     table = getattr(storm_class, '__storm_table__', None)
     if table in _auth_store_tables:
-        return getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+        return getUtility(IStoreSelector).get(AUTH_STORE, flavor)
     elif table is not None:
-        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
     else:
         return None
 
+
+def get_master_store(storm_class):
+    """Return the master Store for the given database class."""
+    return get_store(storm_class, MASTER_FLAVOR)
+
+
 def get_slave_store(storm_class):
     """Return the master Store for the given database class."""
-    table = getattr(storm_class, '__storm_table__', None)
-    if table in _auth_store_tables:
-        return getUtility(IStoreSelector).get(AUTH_STORE, SLAVE_FLAVOR)
-    elif table is not None:
-        return getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-    else:
-        return None
+    return get_store(storm_class, SLAVE_FLAVOR)
 

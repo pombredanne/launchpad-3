@@ -502,6 +502,12 @@
          to the correct Store for that tables replication set.
       -->
     <adapter
+        provides="canonical.launchpad.interfaces.IStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_store"
+        permission="zope.Public"
+        />
+    <adapter
         provides="canonical.launchpad.interfaces.IMasterStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_master_store"

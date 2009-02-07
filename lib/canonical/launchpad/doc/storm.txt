@@ -3,7 +3,7 @@ specific Storm tools.
 
     >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.interfaces import (
-    ...     IMasterStore, ISlaveStore)
+    ...     IMasterStore, ISlaveStore, IStore)
     >>> from canonical.launchpad.database import (
     ...     Account, AccountPassword, Person)
 
@@ -36,6 +36,21 @@ provides.
     >>> IMasterStore.providedBy(auth_master)
     True
     >>> ISlaveStore.providedBy(auth_master)
+    False
+
+
+Changes to the slave Stores will lag behind the master Stores. If
+you only need to read an object but require it to be in sync with the
+master, you should use the default Store. Launchpad will give you the
+slave store if it is sure all your recent changes have been replicated.
+Otherwise, it gives you the master. See IStoreSelector for details.
+
+    >>> main_default = IStore(Person)
+    >>> main_master = IMasterStore(Person)
+    >>> main_slave = ISlaveStore(Person)
+    >>> main_default is main_master
+    True
+    >>> main_default is main_slave
     False
 
 
