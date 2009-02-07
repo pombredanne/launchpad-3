@@ -601,6 +601,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
     @property
     def initial_values(self):
         values = super(LoginServiceLoginView, self).initial_values
+        if self.user:
+            values['email'] = self.user.preferredemail.email
         values['action'] = 'login'
         return values
 
@@ -688,10 +690,11 @@ class LoginServiceLoginView(LoginServiceBaseView):
         action = data['action']
         self.trashRequest()
         if action == 'login':
-            password = data['password']
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
             logInPerson(self.request, principal, email)
+            # Update the attribute holding the cached user.
+            self._user = principal.person
             return self.renderOpenIDResponse(self.createPositiveResponse())
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
