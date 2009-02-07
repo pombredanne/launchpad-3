@@ -370,6 +370,9 @@ Let's make the iceweasel package available in Warty.  First log in as
 an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     StoreSelector, MASTER_FLAVOR)
+    >>> StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> [source_pub] = cprov.archive.getPublishedSources(name="iceweasel")
