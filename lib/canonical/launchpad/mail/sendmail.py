@@ -203,7 +203,7 @@ def simple_sendmail_from_person(
         from_addr, to_addrs, subject, body, headers=headers)
 
 
-def sendmail(message, to_addrs=None):
+def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message
 
     If you just need to send dumb ASCII or Unicode, simple_sendmail
@@ -220,6 +220,9 @@ def sendmail(message, to_addrs=None):
 
     Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
+
+    :param bulk: By default, a Precedence: bulk header is added to the
+        message. Pass False to disable this.
 
     Returns the Message-Id
     """
@@ -262,10 +265,11 @@ def sendmail(message, to_addrs=None):
     if 'return-path' not in message:
         message['Return-Path'] = config.canonical.bounce_address
 
-    # Add Precedence header to prevent automatic reply programs
-    # (e.g. vacation) from trying to respond to our messages.
-    del message['Precedence']
-    message['Precedence'] = 'bulk'
+    if bulk:
+        # Add Precedence header to prevent automatic reply programs
+        # (e.g. vacation) from trying to respond to our messages.
+        del message['Precedence']
+        message['Precedence'] = 'bulk'
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']

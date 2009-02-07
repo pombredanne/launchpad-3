@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Update the interface schema values due to circular imports.
 
@@ -9,6 +9,9 @@ types are defined.
 """
 
 __metaclass__ = type
+
+
+__all__ = []
 
 
 from canonical.launchpad.interfaces.branch import IBranch
