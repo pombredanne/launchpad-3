@@ -13,6 +13,9 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
+from storm.locals import Storm
+from storm.store import Store
+
 from sqlobject.sqlbuilder import sqlrepr
 import transaction
 
@@ -20,6 +23,7 @@ from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.interfaces import ISQLBase
@@ -168,9 +172,42 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     # SQLBase-derived objects missing an id.
     id = None
 
-    @staticmethod
-    def _get_store():
-        return _get_sqlobject_store()
+    def __init__(self, *args, **kwargs):
+        """Extended version of the SQLObjectBase constructor.
+        
+        We we force use of the use of the master Store.
+        We refetch any parameters from different stores from the
+        correct master Store.
+        """
+        from canonical.launchpad.interfaces import IMasterStore
+        store = IMasterStore(self.__class__)
+
+        # The constructor will fail if objects from a different Store
+        # are passed in. We need to refetch these objects from the correct
+        # master Store if necessary so the foreign key references can be
+        # constructed.
+        for key, argument in kwargs.items():
+            argument = removeSecurityProxy(argument)
+            if not isinstance(argument, Storm):
+                continue
+            argument_store = Store.of(argument)
+            if argument_store is not store:
+                argument = store.find(
+                    argument.__class__, id=argument.id).one()
+                assert argument is not None
+                kwargs[key] = argument
+                
+        store.add(self)
+        try:
+            self._create(None, **kwargs)
+        except:
+            store.remove(self)
+            raise
+
+    @classmethod
+    def _get_store(cls):
+        from canonical.launchpad.interfaces import IStore
+        return IStore(cls)
 
     def __repr__(self):
         # XXX jamesh 2008-05-09:

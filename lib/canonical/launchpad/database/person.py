@@ -68,6 +68,7 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
+from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
@@ -1788,9 +1789,11 @@ class Person(
         if self.is_team:
             raise AssertionError(
                 "Teams cannot be activated with this method.")
-        self.account.status = AccountStatus.ACTIVE
-        self.account.status_comment = comment
-        self.password = password
+        account = IMasterStore(Account).find(
+            Account, id=self.accountID)
+        account.status = AccountStatus.ACTIVE
+        account.status_comment = comment
+        account.password = password
         if preferred_email is not None:
             self.validateAndEnsurePreferredEmail(preferred_email)
         # sync so validpersoncache updates.
@@ -2154,8 +2157,8 @@ class Person(
                 "interface. %s doesn't." % email)
         # XXX Steve Alexander 2005-07-05:
         # This is here because of an SQLobject comparison oddity.
-        assert email.person.id == self.id, 'Wrong person! %r, %r' % (
-            email.person, self)
+        assert email.personID == self.id, 'Wrong person! %r, %r' % (
+            email.personID, self.id)
 
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
@@ -2583,7 +2586,7 @@ class PersonSet:
             displayname = name.capitalize()
 
         person = Person(
-            name=name, displayname=displayname, account=account,
+            name=name, displayname=displayname, accountID=account.id,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
         return person

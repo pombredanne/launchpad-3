@@ -31,6 +31,7 @@ from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
@@ -221,24 +222,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname,
             hide_email_addresses=hide_email_addresses)
+        person = removeSecurityProxy(person)
+        email = removeSecurityProxy(email)
+
+        email.status = email_address_status
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
-            # Remove the security proxy because setLocation() is protected
-            # with launchpad.EditLocation.
-            removeSecurityProxy(person).setLocation(
-                latitude, longitude, time_zone, person)
+            person.setLocation(latitude, longitude, time_zone, person)
 
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
-            person.validateAndEnsurePreferredEmail(email)
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-        # Make the account ACTIVE if we have a preferred email address now.
-        if (person.preferredemail is not None and
-            person.preferredemail.status == EmailAddressStatus.PREFERRED):
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-        removeSecurityProxy(email).status = email_address_status
+            from canonical.launchpad.database.account import Account
+            account = IMasterStore(Account).find(
+                Account, id=person.accountID).one()
+            account.status = AccountStatus.ACTIVE
+        
         syncUpdate(email)
         return person
 
