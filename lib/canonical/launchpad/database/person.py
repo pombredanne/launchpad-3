@@ -2752,11 +2752,19 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
+        # We lookup the EmailAddress in the auth store so we can
+        # lookup a Person by EmailAddress in the same transaction
+        # that the Person or EmailAddress was created. This is not
+        # optimal for production as it requires two database lookups,
+        # but is required by much of the test suite.
         from canonical.launchpad.database.emailaddress import EmailAddress
-        return IStore(Person).find(
-            Person,
-            EmailAddress.person == Person.id,
-            EmailAddress.email == email).one()
+        email_address = IStore(EmailAddress).find(
+            EmailAddress, EmailAddress.email == email).one()
+        if email_address is None:
+            return None
+        else:
+            return IStore(Person).find(
+                Person, Person.id == email_address.personID).one()
 
     def getPOFileContributors(self, pofile):
         """See `IPersonSet`."""
