@@ -8,6 +8,7 @@ __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 from cStringIO import StringIO
 
 from bzrlib.diff import show_diff_trees
+from lazr.delegates import delegates
 from sqlobject import ForeignKey, IntCol, StringCol
 from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
@@ -131,7 +132,9 @@ class StaticDiff(SQLBase):
 class PreviewDiff(Storm):
     """See `IPreviewDiff`."""
     implements(IPreviewDiff)
+    delegates(IDiff, context='diff')
     __storm_table__ = 'PreviewDiff'
+
 
     id = Int(primary=True)
 
@@ -145,6 +148,10 @@ class PreviewDiff(Storm):
     dependent_revision_id = Unicode()
 
     conflicts = Unicode()
+
+    branch_merge_proposal = Reference(
+        "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
+        on_remote=True)
 
     def update(self, diff_content, diffstat,
                source_revision_id, target_revision_id,

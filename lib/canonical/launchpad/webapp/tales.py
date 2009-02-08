@@ -108,6 +108,8 @@ class MenuAPI:
         if not self._has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
+        if menu is None:
+            menu = queryAdapter(self._context, INavigationMenu, facet)
         if menu is not None:
             menu.request = self._request
             links_map = dict(
@@ -115,7 +117,7 @@ class MenuAPI:
                 for link in menu.iterlinks(request_url=self._request_url()))
         else:
             # The object has the facet, but does not have a menu, this
-            # is propbably the overview menu with is the default facet.
+            # is probably the overview menu with is the default facet.
             links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
@@ -1963,10 +1965,6 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-
-            if not root_url.endswith('/'):
-                root_url += '/'
-
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         else:

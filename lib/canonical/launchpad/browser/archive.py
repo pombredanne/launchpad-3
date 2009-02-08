@@ -448,6 +448,10 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         Setup sources list entries widget, package filter widget and the
         search result list.
         """
+        if self.context.is_main:
+            self.request.response.redirect(
+                canonical_url(self.context.distribution))
+            return
         self.setupSourcesListEntries()
         self.setupStatusFilterWidget()
         self.setupSeriesFilterWidget()
