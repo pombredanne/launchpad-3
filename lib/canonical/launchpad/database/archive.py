@@ -53,8 +53,8 @@ from canonical.launchpad.database.queue import (
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
-    IArchive, IArchiveSet, IDistributionArchive, IPPA, PocketNotFound,
-    SourceNotFound)
+    IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
+    PocketNotFound, SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
@@ -174,6 +174,11 @@ class Archive(SQLBase):
     def is_copy(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.COPY
+
+    @property
+    def is_main(self):
+        """See `IArchive`."""
+        return self.purpose in MAIN_ARCHIVE_PURPOSES
 
     @property
     def title(self):

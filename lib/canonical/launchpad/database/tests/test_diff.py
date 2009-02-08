@@ -94,7 +94,7 @@ class TestStaticDiff(TestCaseWithFactory):
 
 
 class TestPreviewDiff(TestCaseWithFactory):
-    """Test that StaticDiff objects work."""
+    """Test that PreviewDiff objects work."""
 
     layer = LaunchpadFunctionalLayer
 
