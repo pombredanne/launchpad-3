@@ -1092,7 +1092,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
     def url(self, view_name=None):
         """Use the url of the librarian file containing the diff.
         """
-        librarian_alias = self._context.diff.diff_text
+        librarian_alias = self._context.diff_text
         if librarian_alias is None:
             return None
         else:

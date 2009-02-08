@@ -209,7 +209,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         bmp.source_branch.last_scanned_id = preview.source_revision_id
         bmp.target_branch.last_scanned_id = preview.target_revision_id
         # Update the values directly sidestepping the security.
-        naked_diff = removeSecurityProxy(preview.diff)
+        naked_diff = removeSecurityProxy(preview)
         naked_diff.diff_lines_count = line_count
         naked_diff.added_lines_count = added
         naked_diff.removed_lines_count = removed
