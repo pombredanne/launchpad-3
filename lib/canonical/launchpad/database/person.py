@@ -118,6 +118,7 @@ from canonical.launchpad.interfaces.shipit import (
 from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from canonical.launchpad.interfaces.teammembership import (
     TeamMembershipStatus)
@@ -2751,11 +2752,11 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
-        if emailaddress is None:
-            return None
-        assert emailaddress.person is not None
-        return emailaddress.person
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        return IStore(Person).find(
+            Person,
+            EmailAddress.person == Person.id,
+            EmailAddress.email == email).one()
 
     def getPOFileContributors(self, pofile):
         """See `IPersonSet`."""
