@@ -483,7 +483,7 @@ class BasicLaunchpadRequest:
             body_instream, environ, response)
 
         # Our response always vary based on authentication.
-        self.response.setHeader('Vary', 'Cookie, WWW-Authenticate')
+        self.response.setHeader('Vary', 'Cookie, Authorization')
 
     @property
     def stepstogo(self):
@@ -965,7 +965,7 @@ class TranslationsBrowserRequest(LaunchpadBrowserRequest):
             body_instream, environ, response)
         # Some of the responses from translations vary based on language.
         self.response.setHeader(
-            'Vary', 'Cookie, WWW-Authenticate, Accept-Language')
+            'Vary', 'Cookie, Authorization, Accept-Language')
 
 # ---- bugs
 
@@ -988,7 +988,7 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
             body_instream, environ, response)
         # Many of the responses from Answers vary based on language.
         self.response.setHeader(
-            'Vary', 'Cookie, WWW-Authenticate, Accept-Language')
+            'Vary', 'Cookie, Authorization, Accept-Language')
 
 
 # ---- shipit
@@ -1309,7 +1309,7 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
         super(WebServiceClientRequest, self).__init__(
             body_instream, environ, response)
         # Web service requests use content negotiation.
-        self.response.setHeader('Vary', 'Cookie, WWW-Authenticate, Accept')
+        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
 
 
 def website_request_to_web_service_request(website_request):
