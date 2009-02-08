@@ -49,6 +49,38 @@ must be 'Restricted.'
     ...     print error
     Private teams must have a Restricted subscription policy.
 
+Admins who attempt to create a new team with the name of an existing
+team get the normal error message.
+
+    >>> # Create a private team using the factory to ensure it is
+    >>> # properly configured.
+    >>> super_secret = factory.makeTeam(owner=foo_bar, name='super-secret')
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> form = {
+    ...     'field.name': 'super-secret',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+
+    >>> for error in view.errors:
+    ...     print error[2]
+    super-secret is already in use by another person or team.
+
+
 = Private Team Editing =
 
 Like creation, only commercial admins are given the option of changing
@@ -74,9 +106,6 @@ And a non-public team must have restricted membership.
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> # Create the team using the factory to ensure it is properly
-    >>> # configured.
-    >>> super_secret = factory.makeTeam(owner=foo_bar, name='super-secret')
 
     >>> form = {
     ...     'field.name': 'super-secret',
