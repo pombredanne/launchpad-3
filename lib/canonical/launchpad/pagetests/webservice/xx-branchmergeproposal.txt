@@ -2,6 +2,8 @@
 
 Branch merge proposals can be fetched through the API.
 
+    >>> from canonical.launchpad.interfaces.codereviewcomment import (
+    ...     CodeReviewVote)
 
     >>> login('foo.bar@canonical.com')
     >>> fixit_proposal = factory.makeBranchMergeProposal()
@@ -11,12 +13,22 @@ Branch merge proposals can be fetched through the API.
     >>> fixit_proposal.target_branch.owner.name = 'target'
     >>> fixit_proposal.target_branch.name = 'trunk'
     >>> fixit_proposal.target_branch.product.name = 'fooix'
+    >>> comment = factory.makeCodeReviewComment(
+    ...     subject='Looks good', body='This is great work',
+    ...     vote=CodeReviewVote.APPROVE, vote_tag='code',
+    ...     merge_proposal=fixit_proposal)
+    >>> comment2 = factory.makeCodeReviewComment(
+    ...     subject='Not really', body='This is mediocre work.',
+    ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
+    ...     merge_proposal=fixit_proposal)
+
     >>> proposal_url = canonical_url(fixit_proposal, rootsite='api')
     >>> logout()
 
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(merge_proposal)
+    all_comments_collection_link: u'http://.../~source/fooix/fix-it/+merge/1/all_comments'
     commit_message: None
     date_created: ...
     date_merged: None
@@ -31,14 +43,33 @@ Branch merge proposals can be fetched through the API.
     queue_status: u'Work in progress'
     queued_revision_id: None
     queuer_link: None
-    registrant_link: u'http://api.launchpad.dev/beta/~person-name13'
-    resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
+    registrant_link: u'http://.../~person-name13'
+    resource_type_link: u'http://.../#branch_merge_proposal'
     reviewer_link: None
-    self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/...'
-    source_branch_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    source_branch_link: u'http://.../~source/fooix/fix-it'
     superseded_by_link: None
     supersedes_link: None
-    target_branch_link: u'http://api.launchpad.dev/beta/~target/fooix/trunk'
+    target_branch_link: u'http://.../~target/fooix/trunk'
+
+
+== Read the comments ==
+
+The comments on a branch merge proposal are exposed through the API.
+
+    >>> all_comments = webservice.get(
+    ...     merge_proposal['all_comments_collection_link']).jsonBody()
+    >>> print len(all_comments['entries'])
+    2
+    >>> pprint_entry(all_comments['entries'][0])
+    branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
+    id: 1
+    message_body: u'This is great work'
+    resource_type_link: u'http://api.launchpad.dev/beta/#code_review_comment'
+    self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/comments/1'
+    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    vote: u'Approve'
+    vote_tag: u'code'
 
 
 == Updating the preview diff ==
@@ -62,10 +93,10 @@ merge would look like if the source branch was merged into the target branch.
     ...     target_revision_id='rev-b', conflicts='oh, no conflicts')
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
-    Content-Length: 4
+    Content-Length: ...
     Content-Type: application/json
-    <BLANKLINE>
-    null
+    Vary: ...
+    ...
 
 The diff is now visible through the merge proposal.
 
@@ -78,7 +109,7 @@ The diff is now visible through the merge proposal.
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
     dependent_revision_id: u'OOPS'
-    diff_lines_count: None
+    diff_lines_count: 7
     diff_text_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
     diffstat: u'M fooix.txt'
@@ -87,6 +118,7 @@ The diff is now visible through the merge proposal.
     self_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff'
     source_revision_id: u'rev-a'
+    stale: True
     target_revision_id: u'rev-b'
 
 
