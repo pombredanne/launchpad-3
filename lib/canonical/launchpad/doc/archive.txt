@@ -36,6 +36,10 @@ records to disk, including configuration and indexes.
     3
     >>> cprov_archive.is_ppa
     True
+    >>> cprov_archive.is_main
+    False
+    >>> cprov_archive.distribution.main_archive.is_main
+    True
     >>> cprov_archive.total_count
     4
     >>> cprov_archive.pending_count
@@ -709,7 +713,7 @@ IArchive provides properties to calculate the number and the size of
 the packages (sources and binaries) currently published in the
 archive. They are based in the publication lookup methods.
 
-    >>> cprov_archive.number_of_sources_published
+    >>> cprov_archive.number_of_sources
     3
     >>> cprov_archive.number_of_binaries
     3
@@ -726,7 +730,7 @@ in the archive (+1kbytes for each publication)
     ...     cprov_archive.sources_size + cprov_archive.binaries_size)
 
     >>> number_of_publications = (
-    ...     cprov_archive.number_of_sources_published +
+    ...     cprov_archive.number_of_sources +
     ...     cprov_archive.number_of_binaries)
     >>> indexes_size = number_of_publications * 1024
 
@@ -790,14 +794,14 @@ see if the counter decreases.
 Superseding a source package and verifying that the source counter
 decreases.
 
-    >>> cprov_archive.number_of_sources_published
+    >>> cprov_archive.number_of_sources
     3
     >>> superseded = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(superseded)
 
-    >>> cprov_archive.number_of_sources_published
+    >>> cprov_archive.number_of_sources
     2
 
 Superseding a binary package and verifying that the binary counter

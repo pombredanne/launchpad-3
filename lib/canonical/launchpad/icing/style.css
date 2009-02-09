@@ -45,6 +45,7 @@
 .clearfix {display: block;}
 /* End hiding from MSIE for Mac */
 .visualClear {display: block; clear: both;} /* XXX Remove this */
+a {outline: none;}
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
@@ -1306,7 +1307,8 @@ beside the mugshot. */
 }
 
 #package_counters {
-    clear: left;
+    clear: both;
+    float: left;
 }
 
 div#build-status-summary {
@@ -1358,7 +1360,9 @@ form.package-search-filter {
 h1.disabled {
     color: grey;
 }
-
+table#packages_list {
+    margin-top: 1em;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
@@ -1415,6 +1419,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusMERGE_FAILED      {color: red;}
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
+
+.stale-diff { color: #f60; }
+.conflicts-diff { color: red; }
 
 .branch-no-dev-focus {
   background: #FFF59C;
