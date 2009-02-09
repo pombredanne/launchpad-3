@@ -20,7 +20,7 @@
   </div>
   <script type="text/javascript">
     YUI().use('io', 'node', function(Y) {
-      Y.on('contentready', function() {
+      Y.on('domready', function() {
         Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
 
         function hide_spinner() {
@@ -31,14 +31,14 @@
           hide_spinner();
           var portlet = Y.get('#portlet-subscribers');
           portlet.set('innerHTML',
-              portlet.get('innerHTML') + response.responseText);
+                      portlet.get('innerHTML') + response.responseText);
         }
 
         var config = {on: {success: on_success,
                            failure: hide_spinner}};
-        var url = Y.get('#subscribers-content-link').getAttribute('href');
-        var request = Y.io(url, config);
-      }, '#portlet-subscribers');
+        var url = Y.get('#subscribers-content-link').getAttribute('href').replace('bugs.', '');
+        Y.io(url, config);
+      });
     });
   </script>
 </div>
