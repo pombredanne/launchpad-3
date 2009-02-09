@@ -702,11 +702,6 @@ class Bug(SQLBase):
         distro_series = None
         source_package_name = None
 
-        if not status:
-            status = IBugTask['status'].default
-        if not importance:
-            importance = IBugTask['importance'].default
-
         # Turn `target` into something more useful.
         if IProduct.providedBy(target):
             product = target
