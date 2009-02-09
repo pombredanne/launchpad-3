@@ -22,18 +22,17 @@ function informFailure(transaction_id, response, args) {
     text.set('innerHTML', 'Failed to fetch package details.');
 
     var retry_link = Y.Node.create('<a>')
-    retry_link.set('id', 'retry-package-details');
+    retry_link.set(
+        'id', args.container.get('id').replace('container', 'retry'));
     retry_link.set('href', '');
     retry_link.set('innerHTML', 'Retry');
     retry_link.on(
         'click',
         function (e) {
             e.preventDefault();
-            var placeholder = e.target.get(
-                'parentNode').get('parentNode');
-            var row_id = placeholder.get('id').replace(
-                'xhr_placeholder', 'pub');
-            startUpdate(Y.get('#' + row_id));
+            var row = Y.get(
+                '#' + e.currentTarget.get('id').replace('-retry', ''));
+            startUpdate(row);
             }
     );
 
@@ -42,44 +41,42 @@ function informFailure(transaction_id, response, args) {
     failure_message.appendChild(text);
     failure_message.appendChild(retry_link);
 
-    var container = args.destination;
-    container.set('innerHTML', '');
-    container.appendChild(failure_message);
+    args.container.set('innerHTML', '');
+    args.container.appendChild(failure_message);
 
     var anim = Y.lazr.anim.red_flash({
-        node: args.destination
+        node: args.container
         });
     anim.run();
 }
 
 /*
- * Update the row with the XHR response.
+ * Update the row with the XHR response, a link to hide the
+ * expanded section.
  */
 function doUpdate(transaction_id, response, args) {
-    var container = args.destination;
-    container.set('innerHTML', response.responseText);
+    args.container.set('innerHTML', response.responseText);
 
     var hide_link = Y.Node.create('<a>')
-    hide_link.set('id', 'hide-package-details');
+    hide_link.set(
+        'id', args.container.get('id').replace('container', 'hide'));
     hide_link.set('href', '');
     hide_link.set('innerHTML', 'Hide details');
     hide_link.on(
         'click',
         function (e) {
             e.preventDefault();
-            var placeholder = e.target.get(
-                'parentNode').get('parentNode');
-            var row_expander_id = placeholder.get('id').replace(
-                'xhr_placeholder', 'pub') + '-expander';
-            toggleExpandableRow(Y.get('#' + row_expander_id));
+            var expander = Y.get(
+                '#' + e.currentTarget.get('id').replace('hide', 'expander'));
+            toggleExpandableRow(expander);
             }
     );
     var hide_section = Y.Node.create('<p>')
     hide_section.appendChild(hide_link);
-    container.appendChild(hide_section);
+    args.container.appendChild(hide_section);
 
     var anim = Y.lazr.anim.green_flash({
-        node: container
+        node: args.container
     });
     anim.run();
 }
@@ -96,8 +93,7 @@ function startUpdate(row) {
     in_progress_message.set('id', 'in-progress-message');
     in_progress_message.appendChild(text);
 
-    var pub_id = row.get('id').replace('pub', '');
-    var container = Y.get('#xhr_placeholder' + pub_id);
+    var container = Y.get('#' + row.get('id') + '-container');
     container.set('innerHTML', '');
     container.appendChild(in_progress_message);
 
@@ -107,10 +103,12 @@ function startUpdate(row) {
             'failure': informFailure
         },
         arguments: {
-            'destination': container,
+            'container': container,
         }
     };
-    var uri = '+sourcepub/' + pub_id + '/+listing-archive-extra';
+
+    var uri = '+sourcepub/' + row.get('id').replace('pub', '') +
+              '/+listing-archive-extra';
     Y.io(uri, config);
 }
 
@@ -128,7 +126,7 @@ function toggleExpandableRow(expander) {
     if (row_display == 'none') {
         row.setStyle('display', 'table-row');
         icon.set('src', '/@@/treeExpanded');
-        var container = Y.get('#xhr_placeholder' + row_id.replace('pub', ''))
+        var container = Y.get('#' + row.get('id') + '-container');
         if (trim(container.get('innerHTML')) == ''){
             startUpdate(row);
         }
