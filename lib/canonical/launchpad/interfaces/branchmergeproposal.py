@@ -29,8 +29,8 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported,
-    operation_parameters)
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -292,6 +292,12 @@ class IBranchMergeProposal(Interface):
     all_comments = Attribute(
         _("All messages discussing this merge proposal"))
 
+
+    @operation_parameters(
+        status=List(
+            title=_("A CodeReviewComment ID."),
+            value_type=Int()))
+    @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
