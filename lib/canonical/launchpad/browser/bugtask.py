@@ -780,9 +780,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         of comments, but also obeys any explicitly requested ways to
         display comments (currently only "all" is recognised).
         """
-        display_hints = (
-            self.request.form_ng.getOne('comments', '').split(','))
-        show_all = 'all' in display_hints
+        show_all = (self.request.form_ng.getOne('comments') == 'all')
         max_comments = config.malone.comments_list_max_length
         if show_all or len(self.visible_comments) <= max_comments:
             return self.visible_comments

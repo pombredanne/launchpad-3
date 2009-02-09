@@ -245,8 +245,10 @@ This is normally false, but for bugs with lots of comments, the
 visible_comments_truncated_for_display property becomes True and the
 visible_comments_for_display list is truncated.
 
-Let's briefly override the configuration so we don't have to create
-hundreds of messages.
+The configuration keys comments_list_max_length and
+comments_list_truncate_to control the thresholds. If there are more
+comments than comments_list_max_length, the list is truncated to
+comments_list_truncate_to.
 
     >>> from canonical.config import config
     >>> config.push('malone', '''
@@ -257,15 +259,18 @@ hundreds of messages.
 
 We'll create an example bug with 9 comments.
 
+    >>> import itertools
     >>> from canonical.launchpad.interfaces.bugmessage import (
     ...     IBugMessageSet)
 
+    >>> comment_counter = itertools.count(1)
     >>> def add_comments(bug, how_many):
     ...     bug_message_set = getUtility(IBugMessageSet)
-    ...     for num in range(how_many):
+    ...     for i in range(how_many):
+    ...         num = comment_counter.next()
     ...         bug_message_set.createMessage(
-    ...             "Comment %d" % (num + 1), bug, bug.owner,
-    ...             "Something or other #%d" % (num + 1))
+    ...             "Comment %d" % num, bug, bug.owner,
+    ...             "Something or other #%d" % num)
 
     >>> bug = factory.makeBug()
     >>> add_comments(bug, 9)
