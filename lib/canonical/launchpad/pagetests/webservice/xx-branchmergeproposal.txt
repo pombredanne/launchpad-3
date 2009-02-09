@@ -93,11 +93,10 @@ merge would look like if the source branch was merged into the target branch.
     ...     target_revision_id='rev-b', conflicts='oh, no conflicts')
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
-    Content-Length: 4
+    Content-Length: ...
     Content-Type: application/json
     Vary: ...
-    <BLANKLINE>
-    null
+    ...
 
 The diff is now visible through the merge proposal.
 
@@ -110,7 +109,7 @@ The diff is now visible through the merge proposal.
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
     dependent_revision_id: u'OOPS'
-    diff_lines_count: None
+    diff_lines_count: 7
     diff_text_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
     diffstat: u'M fooix.txt'
@@ -119,6 +118,7 @@ The diff is now visible through the merge proposal.
     self_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff'
     source_revision_id: u'rev-a'
+    stale: True
     target_revision_id: u'rev-b'
 
 

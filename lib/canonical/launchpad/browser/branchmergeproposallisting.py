@@ -70,6 +70,10 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
+        # Add preview_diff to self.show_column dict if there are any diffs.
+        for proposal in self.proposals:
+            if proposal.preview_diff is not None:
+                self.show_column['preview_diff'] = True
 
     @cachedproperty
     def _proposals_for_current_batch(self):
@@ -88,7 +92,7 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
         return BranchMergeProposalListingItem(proposal, summary,
             proposal_reviewer=self.view.getUserFromContext())
 
-    @property
+    @cachedproperty
     def proposals(self):
         """Return a list of BranchListingItems."""
         proposals = self._proposals_for_current_batch
