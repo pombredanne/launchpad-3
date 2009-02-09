@@ -68,6 +68,23 @@ Registering the merge proposal takes the user to the new merge proposal.
 An email notification is emitted when the merge proposal is created.
 
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from canonical.launchpad.database.branchmergeproposal import (
+    ...     MergeProposalCreatedJob,)
+    >>> login('admin@canonical.com')
+    >>> from canonical.launchpad.database.diff import StaticDiff
+    >>> review_diff = StaticDiff.acquireFromText('x', 'y', 'z')
+    >>> transaction.commit()
+    >>> def do_notifications():
+    ...     for job in ready_jobs():
+    ...         # Avoid accessing "lp-mirrored:" URL.
+    ...         if job.branch_merge_proposal.review_diff is None:
+    ...             job.branch_merge_proposal.review_diff = review_diff
+    ...         job.context.job.start()
+    ...         _unused_diff = job.run()
+    ...         job.context.job.complete()
+    >>> ready_jobs = MergeProposalCreatedJob.iterReady
+    >>> do_notifications()
+    >>> logout()
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
     [Merge] lp://dev/~name12/gnome-terminal/klingon into
@@ -117,9 +134,10 @@ shown.
     ~name12/gnome-terminal/main - view proposal details
     Needs review
 
-Consume notification.
+Delete pending job.
 
-    >>> [_unused] = pop_notifications()
+    >>> [job,] = list(ready_jobs())
+    >>> job.destroySelf()
 
 
 == Landing Candidates ==
@@ -186,9 +204,9 @@ yet in the target branch are also shown.
       Import of Mozilla Firefox 0.9
     >>> firefox_merge_url = sample_browser.url
 
-Consume notification.
+Delete pending jobs.
 
-    >>> [_unused] = pop_notifications()
+    >>> _unused = [job.destroySelf() for job in ready_jobs()]
 
 
 == Deleting merge proposals ==
@@ -461,6 +479,9 @@ This takes the user to the resubmission page.
 Emails are sent out to say the the old proposal was superseded, and that the
 new proposal has been created.
 
+    >>> login('admin@canonical.com')
+    >>> do_notifications()
+    >>> logout()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     2
@@ -680,8 +701,6 @@ they'll get a 404.
 
 Create merge proposal with a review diff, and go to its index page.
 
-    >>> import transaction
-    >>> from canonical.launchpad.database.diff import StaticDiff
     >>> login('admin@canonical.com')
     >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
     ...     u'\u1010'.encode('utf-8'))
