@@ -31,6 +31,7 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
+from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
 from canonical.launchpad.interfaces.bugattachment import (
@@ -57,9 +58,7 @@ from canonical.launchpad.interfaces.message import (
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.question import IQuestionTarget
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
-
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.helpers import shortlist
