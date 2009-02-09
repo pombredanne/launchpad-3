@@ -519,6 +519,28 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             source.branch.last_revision(), local_source.last_revision())
 
+    def test_processMergeDirectiveWithBundleExistingBranch(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree('target')
+        tree.branch.set_public_branch(branch.bzr_identity)
+        tree.commit('rev1')
+        lp_source, lp_source_tree = self.create_branch_and_tree(
+            'lpsource', branch.product)
+        lp_source_tree.pull(tree.branch)
+        lp_source_tree.commit('rev2', rev_id='rev2')
+        source = lp_source_tree.bzrdir.sprout('source').open_workingtree()
+        source.commit('rev3', rev_id='rev3')
+        source.branch.set_public_branch(lp_source.bzr_identity)
+        message = self.factory.makeBundleMergeDirectiveEmail(
+            source.branch, branch)
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        bmp, comment = code_handler.processMergeProposal(message)
+        local_source = removeSecurityProxy(bmp.source_branch).getBzrBranch()
+        self.assertEqual(
+            source.last_revision(), local_source.last_revision())
+        self.assertEqual(lp_source, bmp.source_branch)
+
 
 class TestVoteEmailCommand(TestCase):
     """Test the vote and tag processing of the VoteEmailCommand."""

@@ -312,14 +312,17 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
-    def create_branch_and_tree(self, tree_location='.'):
+    def create_branch_and_tree(self, tree_location='.', product=None):
         """Create a database branch, bzr branch and bzr checkout.
 
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
         from bzrlib.transport import get_transport
-        db_branch = self.factory.makeAnyBranch()
+        if product is None:
+            db_branch = self.factory.makeAnyBranch()
+        else:
+            db_branch = self.factory.makeProductBranch(product)
         transport = get_transport(db_branch.warehouse_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()

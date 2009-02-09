@@ -1303,6 +1303,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
+            public_branch=source_branch.get_public_branch(),
             target_branch=target_branch.warehouse_url,
             local_target_branch=target_branch.warehouse_url, time=0,
             timezone=0)

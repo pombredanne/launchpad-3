@@ -310,6 +310,11 @@ class CodeHandler:
         except SQLObjectNotFound:
             raise NonExistantBranchMergeProposalAddress(email_addr)
 
+    @staticmethod
+    def _getBranchByUrl(url):
+        branches = getUtility(IBranchSet)
+        return branches.getByUrl(url)
+
     def _acquireBranchesForProposal(self, md, submitter):
         """Find or create DB Branches from a MergeDirective.
 
@@ -322,8 +327,7 @@ class CodeHandler:
             performed.
         :return: source_branch, target_branch
         """
-        branches = getUtility(IBranchSet)
-        mp_target = branches.getByUrl(md.target_branch)
+        mp_target = self._getBranchByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
         if md.bundle is None:
@@ -348,8 +352,7 @@ class CodeHandler:
             branch_type, basename, submitter, url=db_url)
 
     def _getSourceNoBundle(self, md, product, submitter):
-        branches = getUtility(IBranchSet)
-        mp_source = branches.getByUrl(md.source_branch)
+        mp_source = self._getBranchByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, product, submitter)
@@ -358,8 +361,7 @@ class CodeHandler:
     def _getSourceWithBundle(self, md, target, submitter):
         mp_source = None
         if md.source_branch is not None:
-            branches = getUtility(IBranchSet)
-            mp_source = branches.getByUrl(md.source_branch)
+            mp_source = self._getBranchByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.HOSTED, md.source_branch, target.product,
