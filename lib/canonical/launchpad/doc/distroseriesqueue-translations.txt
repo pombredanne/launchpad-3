@@ -144,7 +144,7 @@ As we can see from the translation import queue content.
   dapper/pmount by sabdfl: po/pmount.pot
   dapper/pmount by sabdfl: po/it_IT.po
 
-  # Let's abort the transaction so we can check the same upload in a different
+  # Abort the transaction so we can check the same upload in a different
   # pocket.
   >>> transaction.abort()
 

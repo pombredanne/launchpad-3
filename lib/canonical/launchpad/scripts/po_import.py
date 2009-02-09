@@ -105,7 +105,7 @@ class ImportProcess:
 
                     from_email = config.rosetta.admin_email
                     katie = getUtility(ILaunchpadCelebrities).katie
-                    if katie == entry_to_import.importer:
+                    if entry_to_import.importer == katie:
                         # Email import state to Debian imports email.
                         to_email = config.rosetta.debian_import_email
                     else:

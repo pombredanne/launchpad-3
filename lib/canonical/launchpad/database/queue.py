@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -1549,7 +1549,7 @@ class PackageUploadCustom(SQLBase):
         importer_email = importer.preferredemail
         katie = getUtility(ILaunchpadCelebrities).katie
         if (importer == katie and
-            not self.packageupload.isAutoSyncUpload(katie.email)):
+            not self.packageupload.isAutoSyncUpload(importer_email.email)):
             importer = None
 
         # Attach the translation tarball. It's always published.
