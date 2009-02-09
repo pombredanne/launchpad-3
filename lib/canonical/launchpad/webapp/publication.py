@@ -31,6 +31,7 @@ from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
+from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
@@ -60,6 +61,10 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
+
+
+class ProfilingOops(Exception):
+    """Fake exception used to log OOPS information when profiling pages."""
 
 
 class LoginRoot:
@@ -589,12 +594,16 @@ class LaunchpadBrowserPublication(
             profiler = self.thread_locals.profiler
             profiler.disable()
 
-            if oopsid:
-                oopsid_part = '-%s' % oopsid
-            else:
-                oopsid_part = ''
-            filename = '%s-%s%s-%s.prof' % (
-                timestamp, pageid, oopsid_part,
+            if oopsid is None:
+                # Log an OOPS to get a log of the SQL queries, and other
+                # useful information,  together with the profiling
+                # information.
+                info = (ProfilingOops, None, None)
+                error_utility = getUtility(IErrorReportingUtility)
+                error_utility.raising(info, request)
+                oopsid = request.oopsid
+            filename = '%s-%s-%s-%s.prof' % (
+                timestamp, pageid, oopsid,
                 threading.currentThread().getName())
 
             profiler.dump_stats(

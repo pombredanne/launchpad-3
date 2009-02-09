@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -14,6 +14,8 @@ __all__ = [
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICreateMergeProposalJob',
+    'ICreateMergeProposalJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -27,7 +29,7 @@ from canonical.launchpad.interfaces import IBranch
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported,
     operation_parameters)
@@ -289,8 +291,11 @@ class IBranchMergeProposal(Interface):
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
-    all_comments = Attribute(
-        _("All messages discussing this merge proposal"))
+    all_comments = exported(
+        CollectionField(
+            title=_("All messages discussing this merge proposal"),
+            value_type=Reference(schema=Interface), # ICodeReviewComment
+            readonly=True))
 
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
@@ -497,6 +502,11 @@ class IBranchMergeProposal(Interface):
 
 
 
+IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
+IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
+IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
@@ -553,3 +563,22 @@ class IBranchMergeProposalGetter(Interface):
 for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
+
+class ICreateMergeProposalJob(Interface):
+    """A Job that creates a branch merge proposal.
+
+    It uses a Message, which must contain a merge directive.
+    """
+
+    def run():
+        """Run this job and create the merge proposals."""
+
+
+class ICreateMergeProposalJobSource(Interface):
+    """Acquire MergeProposalJobs."""
+
+    def create(message_bytes):
+        """Return a CreateMergeProposalJob for this message."""
+
+    def iterReady():
+        """Iterate through jobs that are ready to run."""
