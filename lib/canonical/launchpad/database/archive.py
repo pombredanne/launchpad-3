@@ -53,8 +53,8 @@ from canonical.launchpad.database.queue import (
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
-    IArchive, IArchiveSet, IDistributionArchive, IPPA, PocketNotFound,
-    SourceNotFound)
+    IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
+    PocketNotFound, SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
@@ -174,6 +174,11 @@ class Archive(SQLBase):
     def is_copy(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.COPY
+
+    @property
+    def is_main(self):
+        """See `IArchive`."""
+        return self.purpose in MAIN_ARCHIVE_PURPOSES
 
     @property
     def title(self):
@@ -438,11 +443,6 @@ class Archive(SQLBase):
     @property
     def number_of_sources(self):
         """See `IArchive`."""
-        return self.getPublishedSources().count()
-
-    @property
-    def number_of_sources_published(self):
-        """See `IArchive`."""
         return self.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED).count()
 
@@ -633,7 +633,7 @@ class Archive(SQLBase):
         # indexes related to each publication. We assume it is around 1K
         # but that's over-estimated.
         cruft = (
-            self.number_of_sources_published + self.number_of_binaries) * 1024
+            self.number_of_sources + self.number_of_binaries) * 1024
         return size + cruft
 
     def allowUpdatesToReleasePocket(self):
@@ -843,7 +843,7 @@ class Archive(SQLBase):
         # there may be a number of corresponding buildstate counts.
         # So for each buildstate count in the result set...
         for buildstate, count in result:
-            # ...go through the count map checking which counts this 
+            # ...go through the count map checking which counts this
             # buildstate belongs to and add it to the aggregated
             # count.
             for count_type, build_states in count_map.items():
@@ -1031,7 +1031,7 @@ class Archive(SQLBase):
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):
         """Private helper function to copy sources to this archive.
-        
+
         It takes a list of SourcePackagePublishingHistory but the other args
         are strings.
         """

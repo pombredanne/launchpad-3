@@ -189,16 +189,6 @@ class ChooseProductStep(AlsoAffectsStep):
     label = u"Record as affecting another project"
     step_name = "choose_product"
 
-    def _getUpstream(self, distro_package):
-        """Return the upstream if there is a packaging link."""
-        for distroseries in distro_package.distribution.serieses:
-            source_package = distroseries.getSourcePackage(
-                distro_package.sourcepackagename)
-            if source_package.direct_packaging is not None:
-                return source_package.direct_packaging.productseries.product
-        else:
-            return None
-
     def initialize(self):
         super(ChooseProductStep, self).initialize()
         if (self.widgets['product'].hasInput() or
@@ -216,7 +206,7 @@ class ChooseProductStep(AlsoAffectsStep):
         for it yet, we teleport the user straight to the next step.
         """
         bugtask = self.context
-        upstream = self._getUpstream(bugtask.target)
+        upstream = bugtask.target.upstream_product
         if upstream is not None:
             if not upstream.active:
                 # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only

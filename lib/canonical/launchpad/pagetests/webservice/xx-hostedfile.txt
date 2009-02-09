@@ -43,6 +43,7 @@ Internet.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../mugshot
+    ...
 
 Note that the name of the file is "mugshot", the same as the field
 whose value we set to the file. This is because we didn't specify a
@@ -66,6 +67,7 @@ filename obtained from Content-Disposition:
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../person-mugshot.png
+    ...
 
 If a file has a custom filename (set through the website or a previous
 request that included Content-Disposition), and you modify it without
@@ -81,6 +83,7 @@ specifying a value for Content-Disposition, it retains its old value.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../person-mugshot.png
+    ...
 
 Deleting a mugshot (with DELETE) disables the redirect.
 
@@ -138,18 +141,21 @@ by the librarian.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../icon
+    ...
 
     >>> result = webservice.get(project['logo_link'])
     >>> print result
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../logo
+    ...
 
     >>> result = webservice.get(project['brand_link'])
     >>> print result
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../brand
+    ...
 
 
 == Error handling ==
