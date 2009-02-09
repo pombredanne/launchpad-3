@@ -26,6 +26,7 @@ from CVS.protocol import CVSRoot, CvsRootError
 from canonical.config import config
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title, URIField)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -362,6 +363,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         ReferenceChoice(
             title=_('Branch'),
             vocabulary='BranchRestrictedOnProduct',
+            schema=IBranch,
             required=False,
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")),
