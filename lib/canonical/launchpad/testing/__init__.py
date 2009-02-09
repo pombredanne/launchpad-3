@@ -324,7 +324,8 @@ class TestCaseWithFactory(TestCase):
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
         bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
-        return db_branch, bzr_branch.create_checkout(tree_location)
+        return db_branch, bzr_branch.create_checkout(
+            tree_location, lightweight=True)
 
     @staticmethod
     def getMirroredPath(branch):

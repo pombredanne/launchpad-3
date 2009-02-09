@@ -6,12 +6,14 @@ import operator
 import re
 import transaction
 
-from bzrlib.errors import NotAMergeDirective
+from bzrlib.errors import NotAMergeDirective, NotBranchError
 from bzrlib.merge_directive import MergeDirective
+from bzrlib.transport import get_transport
 from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -321,16 +323,62 @@ class CodeHandler:
         :return: source_branch, target_branch
         """
         branches = getUtility(IBranchSet)
-        mp_source = branches.getByUrl(md.source_branch)
         mp_target = branches.getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        if mp_source is None:
-            basename = urlparse(md.source_branch)[2].split('/')[-1]
-            namespace = get_branch_namespace(submitter, mp_target.product)
-            mp_source = namespace.createBranchWithPrefix(
-                BranchType.REMOTE, basename, submitter, url=md.source_branch)
+        if md.bundle is None:
+            mp_source = self._getSourceNoBundle(
+                md, mp_target.product, submitter)
+        else:
+            mp_source = self._getSourceWithBundle(
+                md, mp_target, submitter)
         return mp_source, mp_target
+
+    def _getNewBranch(self, branch_type, url, product, submitter):
+        if url is None:
+            basename = 'merge'
+        else:
+            basename = urlparse(url)[2].split('/')[-1]
+        namespace = get_branch_namespace(submitter, product)
+        if branch_type == BranchType.REMOTE:
+            db_url = url
+        else:
+            db_url = None
+        return namespace.createBranchWithPrefix(
+            branch_type, basename, submitter, url=db_url)
+
+    def _getSourceNoBundle(self, md, product, submitter):
+        branches = getUtility(IBranchSet)
+        mp_source = branches.getByUrl(md.source_branch)
+        if mp_source is None:
+            mp_source = self._getNewBranch(
+                BranchType.REMOTE, md.source_branch, product, submitter)
+        return mp_source
+
+    def _getSourceWithBundle(self, md, target, submitter):
+        mp_source = None
+        if md.source_branch is not None:
+            branches = getUtility(IBranchSet)
+            mp_source = branches.getByUrl(md.source_branch)
+        if mp_source is None:
+            mp_source = self._getNewBranch(
+                BranchType.HOSTED, md.source_branch, target.product,
+                submitter)
+        assert mp_source.branch_type == BranchType.HOSTED
+        try:
+            bzr_branch = removeSecurityProxy(mp_source).getBzrBranch()
+        except NotBranchError:
+            bzr_target = removeSecurityProxy(target).getBzrBranch()
+            transport = get_transport(
+                mp_source.warehouse_url,
+                possible_transports=[bzr_target.bzrdir.root_transport])
+            transport.clone('../..').ensure_base()
+            transport.clone('..').ensure_base()
+            bzrdir = bzr_target.bzrdir.clone_on_transport(transport)
+            bzr_branch = bzrdir.open_branch()
+        md.install_revisions(bzr_branch.repository)
+        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
+        return mp_source
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""

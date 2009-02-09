@@ -8,6 +8,7 @@ import unittest
 
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
+from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
@@ -501,6 +502,22 @@ class TestCodeHandler(TestCaseWithFactory):
             )
         self.assertEqual(notification['to'],
             message['from'])
+
+    def test_processMergeDirectiveWithBundle(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.branch.set_public_branch(branch.bzr_identity)
+        tree.commit('rev1')
+        source = tree.bzrdir.sprout('source').open_workingtree()
+        source.commit('rev2')
+        message = self.factory.makeBundleMergeDirectiveEmail(
+            source.branch, branch)
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        bmp, comment = code_handler.processMergeProposal(message)
+        local_source = removeSecurityProxy(bmp.source_branch).getBzrBranch()
+        self.assertEqual(
+            source.branch.last_revision(), local_source.last_revision())
 
 
 class TestVoteEmailCommand(TestCase):
