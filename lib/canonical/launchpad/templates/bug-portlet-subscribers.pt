@@ -13,13 +13,13 @@
   </div>
   <a id="subscribers-content-link"
      tal:define="bug context/bug|context"
-     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content" />
+     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content"></a>
   <div id="subscribers-portlet-spinner"
        style="text-align: center; display: none">
     <img src="/@@/spinner" />
   </div>
   <script type="text/javascript">
-    YUI().use('io', 'node', function(Y) {
+    YUI().use('io-base', 'node', function(Y) {
       Y.on('domready', function() {
         Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
 
