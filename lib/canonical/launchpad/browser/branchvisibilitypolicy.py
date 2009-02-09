@@ -46,7 +46,7 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 
     initial_values = {'rule': BranchVisibilityRule.PRIVATE}
 
-    @action(_('Set team policy'), name='set_team_policy')
+    @action(_('Set Team Policy'), name='set_team_policy')
     def set_team_policy_action(self, action, data):
         "Set the branch visibility rule for the team."
         team = data['team']
@@ -104,7 +104,7 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
         """Override the setup to define own fields."""
         self.form_fields = self._currentPolicyItemsField()
 
-    @action(_('Remove selected policy items'), name='remove')
+    @action(_('Remove Selected Policy Items'), name='remove')
     def remove_action(self, action, data):
         """Remove selected policy items."""
         for item in data['policy_items']:
