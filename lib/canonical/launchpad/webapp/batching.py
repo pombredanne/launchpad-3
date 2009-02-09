@@ -82,22 +82,16 @@ class BatchNavigator:
         :raises InvalidBatchSizeError: if the requested batch size is higher
             than the maximum allowed.
         """
-        # We grab the request variables directly from the query string, as
-        # zope does not include the batching params in a query string in the
-        # request.form dict when the request is POSTed. For backwards
+        # We grab the request variables directly from the requests
+        # query_string_parameters so that they will be recognized
+        # even during post operations. For backwards
         # compatibility (as in the past a work-around has been to include
         # the url batch params in hidden fields within posted forms), if
-        # there is no 'start' param in the query string, default to the old
-        # behaviour of using the request (which automatically gets them
-        # from the request.form dict):
-        query_string = request.get('QUERY_STRING')
-        if query_string is None:
-            query_string = ''
-        query_string_params = dict(
-            cgi.parse_qsl(query_string, keep_blank_values=True))
-
-        if query_string_params.has_key(self.start_variable_name):
-            batch_params_source = query_string_params
+        # there is no 'start' param in the query string params, default to
+        # the old behaviour of using the request (which automatically gets
+        # them from the request.form dict):
+        if request.query_string_params.has_key(self.start_variable_name):
+            batch_params_source = request.query_string_params
         else:
             batch_params_source = request
 
