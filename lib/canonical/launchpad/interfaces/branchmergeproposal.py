@@ -600,16 +600,15 @@ class ICreateMergeProposalJobSource(Interface):
     def create(message_bytes):
         """Return a CreateMergeProposalJob for this message."""
 
+    def iterReady():
+        """Iterate through jobs that are ready to run."""
+
 
 class IMergeProposalCreatedJob(Interface):
     """Interface for review diffs."""
 
     def run():
         """Perform the diff and email specified by this job."""
-
-
-    def iterReady():
-        """Iterate through jobs that are ready to run."""
 
 
 class IMergeProposalCreatedJobSource(Interface):
