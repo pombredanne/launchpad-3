@@ -15,11 +15,11 @@
 
   <h1>Delete packages from <tal:title replace="context/title" /></h1>
 
-    <tal:inactive_ppa_header condition="not: view/has_sources_before_filtering">
+    <tal:inactive_ppa_header condition="not: view/has_sources">
       <p>This PPA does not contain any source packages published.</p>
     </tal:inactive_ppa_header>
 
-    <tal:package_filter_form condition="view/has_sources_before_filtering">
+    <tal:package_filter_form condition="view/has_sources">
       <metal:package_filter_form
         use-macro="context/@@+macros/package-filter-form" />
     </tal:package_filter_form>
@@ -27,7 +27,7 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div class="form" metal:fill-slot="widgets"
-         tal:condition="view/has_sources_before_filtering">
+         tal:condition="view/has_sources">
 
       <metal:selectable-sources
         use-macro="context/@@+macros/source-package-list" />

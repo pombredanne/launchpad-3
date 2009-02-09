@@ -286,8 +286,8 @@ class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
 
     @cachedproperty
-    def has_sources_before_filtering(self):
-        """Whether or not this PPA has any sources before filtering.
+    def has_sources(self):
+        """Whether or not this PPA has any sources for the view.
 
         This can be overridden by subclasses as necessary. It allows
         the view to determine whether to display "This PPA does not yet
@@ -318,7 +318,7 @@ class ArchiveViewBase(LaunchpadView):
     @property
     def archive_url(self):
         """Return an archive_url where available, or None."""
-        if self.has_sources_before_filtering and not self.context.is_copy:
+        if self.has_sources and not self.context.is_copy:
             return self.context.archive_url
         else:
             return None
@@ -644,10 +644,10 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             distroseries=self.selected_series_filter.value)
 
     @cachedproperty
-    def has_sources_before_filtering(self):
+    def has_sources(self):
         """Whether or not this PPA has any sources before filtering.
 
-        Overrides the ArchiveViewBase.has_sources_before_filtering
+        Overrides the ArchiveViewBase.has_sources
         to ensure that it only returns true if there are sources
         that can be deleted in this archive."
         """

@@ -604,12 +604,12 @@ by default).
     >>> view.has_sources_for_display
     False
 
-In this case, the template can use the has_sources_before_filtering
+In this case, the template can use the has_sources
 property to identify that, even though there aren't any sources to
 display, it's not because the archive isn't active, but rather just
 that the user has filtered the sources:
 
-    >>> view.has_sources_before_filtering
+    >>> view.has_sources
     True
 
 All sources in Celso's PPA were just-deleted, so we have to tweak the

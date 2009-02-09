@@ -130,7 +130,7 @@ div#package_counters #retry-repository-size-update {
     </metal:block>
 
     <div metal:fill-slot="main"
-         tal:define="archive_active view/has_sources_before_filtering;
+         tal:define="archive_active view/has_sources;
                      archive_label view/archive_label"
          tal:attributes="class string:archive">
 
