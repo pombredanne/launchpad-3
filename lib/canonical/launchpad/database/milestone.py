@@ -52,8 +52,8 @@ class HasMilestonesMixin:
         elif isinstance(milestone.dateexpected, datetime.datetime):
             # XXX: EdwinGrubbs 2009-02-06 bug=326384:
             # The Milestone.dateexpected should be changed into a date column,
-            # since the class defines the field as a DateCol, so that a list of
-            # milestones can't have some dateexpected attributes that are
+            # since the class defines the field as a DateCol, so that a list
+            # of milestones can't have some dateexpected attributes that are
             # datetimes and others that are dates, which can't be compared.
             date = milestone.dateexpected.date()
         else:

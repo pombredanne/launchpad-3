@@ -18,6 +18,7 @@ SET client_min_messages=ERROR;
 SUMMARY OF CHANGES:
     RENAME
         Milestone.description TO summary
+        Milestone.visible TO active
         ProductRelease.description TO release_notes
     DELETE
         ProductRelease.summary (append to Milestone.summary)
