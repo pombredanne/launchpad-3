@@ -4,7 +4,7 @@ SET client_min_messages=ERROR;
 -- codehosting.
 
 ALTER TABLE ProductSeries
-  ADD COLUMN translations_sync integer NOT NULL DEFAULT 0;
+  ADD COLUMN translations_sync integer NOT NULL DEFAULT 1;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
 
