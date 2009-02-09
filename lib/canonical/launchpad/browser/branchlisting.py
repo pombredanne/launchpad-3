@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces import (
     IProductSeriesSet,
     IRevisionSet,
     ISpecificationBranchSet)
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from lazr.delegates import delegates
@@ -174,8 +173,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             self._branches_for_current_batch)
         result = {}
         for series in series_resultset:
-            if series.status != DistroSeriesStatus.OBSOLETE:
-                result.setdefault(series.series_branch.id, []).append(series)
+            result.setdefault(series.series_branch.id, []).append(series)
         return result
 
     def getProductSeries(self, branch):

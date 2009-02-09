@@ -528,10 +528,6 @@ class Branch(SQLBase):
             Or(ProductSeries.user_branch == self,
                ProductSeries.import_branch == self),
             ProductSeries.status != DistroSeriesStatus.OBSOLETE)
-        #return ProductSeries.select("""
-        #    ProductSeries.user_branch = %s OR
-        #    ProductSeries.import_branch = %s
-        #    """ % sqlvalues(self, self))
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,

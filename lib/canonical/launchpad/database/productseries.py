@@ -10,7 +10,9 @@ __all__ = [
 
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+from storm.expr import In, Or
 from warnings import warn
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -41,6 +43,8 @@ from canonical.launchpad.interfaces import (
     RevisionControlSystems, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationGoalStatus,
     SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -534,11 +538,10 @@ class ProductSeriesSet:
 
     def getSeriesForBranches(self, branches):
         """See `IProductSeriesSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch_ids = [branch.id for branch in branches]
-        if not branch_ids:
-            return []
-
-        return ProductSeries.select("""
-            ProductSeries.user_branch in %s OR
-            ProductSeries.import_branch in %s
-            """ % sqlvalues(branch_ids, branch_ids), orderBy=["name"])
+        return store.find(
+            ProductSeries,
+            Or(In(ProductSeries.user_branch, branch_ids),
+               In(ProductSeries.import_branch, branch_ids)),
+            ProductSeries.status != DistroSeriesStatus.OBSOLETE)
