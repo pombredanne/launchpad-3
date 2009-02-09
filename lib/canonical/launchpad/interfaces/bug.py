@@ -404,8 +404,7 @@ class IBug(ICanBeMentored):
         """
 
     @call_with(owner=REQUEST_USER)
-    @operation_parameters(
-        target=Reference(IBugTarget, title=_('Target'), required=True))
+    @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])
     def addTask(owner, target):
         """Create a new bug task on this bug."""
