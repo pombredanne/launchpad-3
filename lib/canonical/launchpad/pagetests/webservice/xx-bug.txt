@@ -1046,21 +1046,20 @@ Add a new task to the bug.
 
     >>> bugtasks_url = bug_one['bug_tasks_collection_link']
     >>> pprint_collection(webservice.get(bugtasks_url).jsonBody())
-    resource_type_link: u'http://.../#bug_task-page-resource
+    resource_type_link: u'http://.../#bug_task-page-resource'
     start: 0
-    total_size: 2
+    total_size: 3
     ...
 
-    >>> firefox = webservice.get('/firefox').jsonBody()
+    >>> redfish = webservice.get('/redfish').jsonBody()
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'addTask',
-    ...     target=firefox['self_link'], status='New',
-    ...     importance='Undecided')
-    HTTP/1.1 200 Ok...
+    ...     target=redfish['self_link'])
+    HTTP/1.1 201 Created...
 
     >>> bugtasks_url = bug_one['bug_tasks_collection_link']
     >>> pprint_collection(webservice.get(bugtasks_url).jsonBody())
-    resource_type_link: u'http://.../#bug_task-page-resource
+    resource_type_link: u'http://.../#bug_task-page-resource'
     start: 0
-    total_size: 2
+    total_size: 4
     ...

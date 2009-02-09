@@ -403,7 +403,9 @@ class IBug(ICanBeMentored):
         tracker, owned by the person given as the owner.
         """
 
-    @call_with(owner=REQUEST_USER)
+    @call_with(
+        owner=REQUEST_USER, status=IBugTask['status'].default,
+        importance=IBugTask['importance'].default)
     @operation_parameters(
         target=Reference(IBugTarget, title=_('Target'), required=True),
         status=copy_field(IBugTask['status']),
