@@ -691,10 +691,7 @@ class Bug(SQLBase):
             Store.of(result).flush()
             return result
 
-    def addTask(self, owner, target,
-                status=IBugTask['status'].default,
-                importance=IBugTask['importance'].default,
-                assignee=None, milestone=None):
+    def addTask(self, owner, target):
         """See `IBug`."""
         product = None
         product_series = None
@@ -728,9 +725,7 @@ class Bug(SQLBase):
             self, owner=owner, product=product,
             productseries=product_series, distribution=distribution,
             distroseries=distro_series,
-            sourcepackagename=source_package_name, status=status,
-            importance=importance, assignee=assignee,
-            milestone=milestone)
+            sourcepackagename=source_package_name)
 
         return new_task
 
