@@ -8,7 +8,7 @@
   </a>
   <h2>Filters</h2>
   <script type="text/javascript">
-    YUI().use('io', 'node', function(Y) {
+    YUI().use('io-base', 'node', function(Y) {
       Y.on('contentready', function() {
         var portlet = Y.get('#portlet-bugfilters');
         portlet.set('innerHTML',
