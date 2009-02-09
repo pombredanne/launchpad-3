@@ -294,7 +294,7 @@ class TestWebServiceRequest(unittest.TestCase):
         request = WebServiceClientRequest(StringIO.StringIO(''), {})
         self.assertEquals(
             request.response.getHeader('Vary'),
-            'Cookie, WWW-Authenticate, Accept')
+            'Cookie, Authorization, Accept')
 
 
 class TestBasicLaunchpadRequest(unittest.TestCase):
@@ -304,7 +304,7 @@ class TestBasicLaunchpadRequest(unittest.TestCase):
         """Test that our base response has a proper vary header."""
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
         self.assertEquals(
-            request.response.getHeader('Vary'), 'Cookie, WWW-Authenticate')
+            request.response.getHeader('Vary'), 'Cookie, Authorization')
 
     def test_baserequest_response_should_vary_after_retry(self):
         """Test that our base response has a proper vary header."""
@@ -312,7 +312,7 @@ class TestBasicLaunchpadRequest(unittest.TestCase):
         retried_request = request.retry()
         self.assertEquals(
             retried_request.response.getHeader('Vary'),
-            'Cookie, WWW-Authenticate')
+            'Cookie, Authorization')
 
 
 class TestAnswersBrowserRequest(unittest.TestCase):
@@ -322,7 +322,7 @@ class TestAnswersBrowserRequest(unittest.TestCase):
         request = AnswersBrowserRequest(StringIO.StringIO(''), {})
         self.assertEquals(
             request.response.getHeader('Vary'),
-            'Cookie, WWW-Authenticate, Accept-Language')
+            'Cookie, Authorization, Accept-Language')
 
 
 class TestTranslationsBrowserRequest(unittest.TestCase):
@@ -332,7 +332,7 @@ class TestTranslationsBrowserRequest(unittest.TestCase):
         request = TranslationsBrowserRequest(StringIO.StringIO(''), {})
         self.assertEquals(
             request.response.getHeader('Vary'),
-            'Cookie, WWW-Authenticate, Accept-Language')
+            'Cookie, Authorization, Accept-Language')
 
 
 def test_suite():

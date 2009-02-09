@@ -107,8 +107,6 @@ class HasRenewalPolicyMixin:
             field_name)
 
 
-
-
 class TeamNameField(PersonNameField):
     """A team name, which is unique and performs psuedo blacklisting.
 
@@ -120,26 +118,26 @@ class TeamNameField(PersonNameField):
     blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
                          "administrators.")
 
-    def _isValueTaken(self, value):
-        other = self.get_byAttribute(value)
-
     def _validate(self, input):
-        if check_permission('launchpad.Commercial', self.context):
-            # Commercial admins can create private teams, with or without the
-            # private prefix.
-            return
-
+        """See `UniqueField`."""
         # If the name didn't change then we needn't worry about validating it.
         if self.unchanged(input):
             return
 
-        if input.startswith(PRIVATE_TEAM_PREFIX):
-            raise LaunchpadValidationError(self.blacklistmessage % input)
+        if not check_permission('launchpad.Commercial', self.context):
+            # Commercial admins can create private teams, with or without the
+            # private prefix.
 
-        existing_object = self._getByAttribute(input)
-        if (existing_object is not None and
-            existing_object.visibility != PersonVisibility.PUBLIC):
-            raise LaunchpadValidationError(self.blacklistmessage % input)
+            if input.startswith(PRIVATE_TEAM_PREFIX):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
+
+            # If a non-privileged user attempts to use an existing name AND
+            # the existing project is private, then return the blacklist
+            # message rather than the message indicating the project exists.
+            existing_object = self._getByAttribute(input)
+            if (existing_object is not None and
+                existing_object.visibility != PersonVisibility.PUBLIC):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
 
         # Perform the normal validation, including the real blacklist checks.
         super(TeamNameField, self)._validate(input)
