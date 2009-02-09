@@ -29,7 +29,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.widgets import (
-    HiddenUserWidget, LaunchpadRadioWidget)
+    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -203,7 +203,9 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
-    custom_widget('teamowner', HiddenUserWidget)
+    # teamowner cannot be a HiddenUserWidget or the edit form would change the
+    # owner to the person doing the editing.
+    custom_widget('teamowner', SinglePopupWidget, visible=False)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
