@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd
+# Copyright 2004-2009 Canonical Ltd
 
 __metaclass__ = type
 __all__ = [
@@ -199,9 +199,10 @@ class TeamFormMixin:
         if not check_permission('launchpad.Commercial', self.context):
             self.form_fields = self.form_fields.omit('visibility')
 
+
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
                    LaunchpadEditFormView):
-
+    """View for editing team details."""
     schema = ITeam
 
     custom_widget('teamowner', HiddenUserWidget)
@@ -797,7 +798,7 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
 
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
-
+    """View for adding a new team."""
     schema = ITeamCreation
     label = ''
 
@@ -841,7 +842,9 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
-
+        visibility = data.get('visibility')
+        if visibility:
+            team.visibility = visibility
         email = data.get('contactemail')
         if email is not None:
             generateTokenAndValidationEmail(email, team)
