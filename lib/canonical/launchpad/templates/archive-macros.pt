@@ -10,7 +10,7 @@
   </tal:comment>
 
 <script type="text/javascript">
-YUI().use('node', 'io-base', 'lazr.anim', function(Y) {
+YUI().use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
 
 
 /*
@@ -18,28 +18,13 @@ YUI().use('node', 'io-base', 'lazr.anim', function(Y) {
  * the operation.
  */
 function informFailure(transaction_id, response, args) {
-    var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Failed to fetch package details.');
+    function retry_handler(e) {
+        e.preventDefault();
+        startUpdate(args.container);
+    };
 
-    var retry_link = Y.Node.create('<a>')
-    retry_link.set(
-        'id', args.container.get('id').replace('container', 'retry'));
-    retry_link.set('href', '');
-    retry_link.set('innerHTML', 'Retry');
-    retry_link.on(
-        'click',
-        function (e) {
-            e.preventDefault();
-            var row = Y.get(
-                '#' + e.currentTarget.get('id').replace('-retry', ''));
-            startUpdate(row);
-            }
-    );
-
-    var failure_message = Y.Node.create('<p>');
-    failure_message.set('id', 'failure-message');
-    failure_message.appendChild(text);
-    failure_message.appendChild(retry_link);
+    var failure_message = Y.soyuz.makeFailureNode(
+        'Failed to fetch package details.', retry_handler);
 
     args.container.set('innerHTML', '');
     args.container.appendChild(failure_message);
@@ -50,6 +35,7 @@ function informFailure(transaction_id, response, args) {
     anim.run();
 }
 
+
 /*
  * Update the row with the XHR response, a link to hide the
  * expanded section.
@@ -57,23 +43,16 @@ function informFailure(transaction_id, response, args) {
 function doUpdate(transaction_id, response, args) {
     args.container.set('innerHTML', response.responseText);
 
-    var hide_link = Y.Node.create('<a>')
-    hide_link.set(
-        'id', args.container.get('id').replace('container', 'hide'));
-    hide_link.set('href', '');
-    hide_link.set('innerHTML', 'Hide details');
-    hide_link.on(
-        'click',
-        function (e) {
-            e.preventDefault();
-            var expander = Y.get(
-                '#' + e.currentTarget.get('id').replace('hide', 'expander'));
-            toggleExpandableRow(expander);
-            }
-    );
-    var hide_section = Y.Node.create('<p>')
-    hide_section.appendChild(hide_link);
-    args.container.appendChild(hide_section);
+    function hide_handler(e) {
+       e.preventDefault();
+       var expander = Y.get(
+           '#' + args.container.get('id').replace('container', 'expander'));
+       toggleExpandableRow(expander);
+    };
+
+    var hide_message = Y.soyuz.makeHideNode(
+        'Hide package details.', hide_handler);
+    args.container.appendChild(hide_message);
 
     var anim = Y.lazr.anim.green_flash({
         node: args.container
@@ -83,17 +62,12 @@ function doUpdate(transaction_id, response, args) {
 
 
 /*
- * Dispatch a XHR for updating the given row.
+ * Dispatch a XHR for updating the given container.
  */
-function startUpdate(row) {
-    var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Fetching package details ...');
+function startUpdate(container) {
+    in_progress_message = Y.soyuz.makeInProgressNode(
+        'Fetching package details ...')
 
-    var in_progress_message = Y.Node.create('<p>');
-    in_progress_message.set('id', 'in-progress-message');
-    in_progress_message.appendChild(text);
-
-    var container = Y.get('#' + row.get('id') + '-container');
     container.set('innerHTML', '');
     container.appendChild(in_progress_message);
 
@@ -107,8 +81,9 @@ function startUpdate(row) {
         }
     };
 
-    var uri = '+sourcepub/' + row.get('id').replace('pub', '') +
-              '/+listing-archive-extra';
+    var pub_id = container.get('id').replace(
+        '-container', '').replace('pub', '');
+    var uri = '+sourcepub/' + pub_id + '/+listing-archive-extra';
     Y.io(uri, config);
 }
 
@@ -118,8 +93,7 @@ function startUpdate(row) {
  * the expander itself.
  */
 function toggleExpandableRow(expander) {
-    var row_id = expander.get('id').replace('-expander', '');
-    var row = Y.get('#' + row_id);
+    var row = Y.get('#' + expander.get('id').replace('-expander', ''));
     var icon = expander.query('img');
 
     var row_display = row.getStyle('display');
@@ -128,7 +102,7 @@ function toggleExpandableRow(expander) {
         icon.set('src', '/@@/treeExpanded');
         var container = Y.get('#' + row.get('id') + '-container');
         if (trim(container.get('innerHTML')) == ''){
-            startUpdate(row);
+            startUpdate(container);
         }
     }
     else {
@@ -137,13 +111,17 @@ function toggleExpandableRow(expander) {
     }
 }
 
+
 /*
- * Setup expander handlers and pre-load 'treeExpanded' and 'spinner'
- * images for better reponsiveness.
+ * Setup expander handlers and pre-load 'treeExpanded', 'no' and
+ * 'spinner' images for better reponsiveness.
  */
 function setupPackageListExpanders() {
     var spinner = new Image();
     spinner.src = '/@@/spinner';
+
+    var no = new Image();
+    no.src = '/@@/no';
 
     var tree_expanded = new Image();
     tree_expanded.src = '/@@/treeExpanded';
@@ -165,20 +143,6 @@ Y.on('domready', setupPackageListExpanders);
 div.package-details {
     padding-left: 4em;
     padding-bottom: 1em;
-}
-
-td p#failure-message {
-    background: url(/@@/no) center left no-repeat;
-    padding-left: 18px;
-}
-
-td p#failure-message a#retry-repository-size-update {
-    padding-left: .5em;
-}
-
-td p#in-progress-message {
-    background: url(/@@/spinner) center left no-repeat;
-    padding-left: 18px;
 }
 </style>
 

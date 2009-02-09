@@ -14,6 +14,9 @@
       <tal:devmode condition="devmode">
         <tal:archive_js define="lp_js string:${icingroot}/build">
           <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/base.js">
+          </script>
+          <script type="text/javascript"
                   tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js">
           </script>
           <script type="text/javascript"
@@ -22,23 +25,18 @@
         </tal:archive_js>
       </tal:devmode>
       <script type="text/javascript">
-YUI().use(
-    'node', 'soyuz.update_archive_build_statuses', 'io-base',
-    'lazr.anim', function(Y) {
+YUI().use('io-base', 'lazr.anim', 'node', 'soyuz-base',
+          'soyuz.update_archive_build_statuses', function(Y) {
+
 
 /*
  * Update the page based on the XHR response.
  */
-function doUpdate(transaction_id, response) {
-    var container = Y.Node.create('<div>');
-    container.set('innerHTML', response.responseText);
-
-    var target_node = Y.get('#package_counters');
-    target_node.replaceChild(
-        container, target_node.query('p'));
+function doUpdate(transaction_id, response, args) {
+    args.container.set('innerHTML', response.responseText);
 
     var anim = Y.lazr.anim.green_flash({
-        node: container
+        node: args.container
     });
     anim.run();
 }
@@ -48,30 +46,18 @@ function doUpdate(transaction_id, response) {
  * Communicate the update has failed and allow the user to retry
  * the operation.
  */
-function informFailure(transaction_id, response) {
-    var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Failed to fetch information.');
+function informFailure(transaction_id, response, args) {
+    function retry_handler (e) {
+        e.preventDefault();
+        dispatchUpdate();
+    };
 
-    var retry_link = Y.Node.create('<a>')
-    retry_link.set('id', 'retry-repository-size-update');
-    retry_link.set('href', '');
-    retry_link.set('innerHTML', 'Retry');
-    retry_link.on(
-        'click',
-        function (e) {
-            e.preventDefault();
-            dispatchUpdate();
-            }
-    );
+    var failure_message = Y.soyuz.makeFailureNode(
+        'Failed to fetch repository size ...', retry_handler);
 
-    var failure_message = Y.Node.create('<p>');
-    failure_message.set('id', 'failure-message');
-    failure_message.appendChild(text);
-    failure_message.appendChild(retry_link);
+    args.container.set('innerHTML', '');
+    args.container.appendChild(failure_message);
 
-    var target_node = Y.get('#package_counters');
-    target_node.replaceChild(
-        failure_message, target_node.query('p'));
     var anim = Y.lazr.anim.red_flash({
         node: failure_message
         });
@@ -83,27 +69,26 @@ function informFailure(transaction_id, response) {
  * Communicate an update is in progress and fire the XHR.
  */
 function dispatchUpdate () {
-    var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Updating archive size information ...');
+    in_progress_message = Y.soyuz.makeInProgressNode(
+        'Fetching repository size ...')
 
-    var in_progress_message = Y.Node.create('<p>');
-    in_progress_message.set('id', 'in-progress-message');
-    in_progress_message.appendChild(text);
+    var container = Y.get('#package_counters div');
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message)
 
-    var target_node = Y.get('#package_counters');
-    target_node.replaceChild(
-        in_progress_message, target_node.query('p'));
+    var uri = '+repository-size';
+    var xhr_config = {
+        on: {
+            success: doUpdate,
+            failure: informFailure
+        },
+        arguments: {
+            'container': container
+        }
+    };
 
     Y.io(uri, xhr_config);
 }
-
-var uri = '+repository-size';
-var xhr_config = {
-    on: {
-        success: doUpdate,
-        failure: informFailure
-    }
-};
 
 Y.on("domready", dispatchUpdate);
 });
@@ -111,20 +96,6 @@ Y.on("domready", dispatchUpdate);
       <style type="text/css" media="screen, print">
 div#package_counters p {
     line-height: 3.6em;
-}
-
-div#package_counters p#failure-message {
-    background: url(/@@/no) center left no-repeat;
-    padding-left: 18px;
-}
-
-div#package_counters p#in-progress-message {
-    background: url(/@@/spinner) center left no-repeat;
-    padding-left: 18px;
-}
-
-div#package_counters #retry-repository-size-update {
-    padding-left: 5px;
 }
       </style>
     </metal:block>
@@ -255,10 +226,12 @@ div#package_counters #retry-repository-size-update {
 
       <div id="package_counters">
         <h2>Repository disk usage</h2>
-        <p class="discreet">
-           Package counters and estimated archive size temporarily
-           unavailable.
-        </p>
+        <div>
+          <p class="discreet">
+            Package counters and estimated archive size temporarily
+            unavailable.
+          </p>
+        </div>
       </div>
 
       <div class="actions" style="clear:right;float:right;">
