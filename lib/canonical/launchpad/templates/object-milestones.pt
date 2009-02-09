@@ -31,7 +31,7 @@
           </strong>
         </td>
         <td tal:content="milestone/dateexpected/fmt:date" />
-        <td><strong tal:condition="not: milestone/visible"
+        <td><strong tal:condition="not: milestone/active"
                >(Inactive)</strong>
         </td>
         <td>

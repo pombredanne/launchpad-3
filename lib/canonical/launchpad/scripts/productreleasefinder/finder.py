@@ -123,7 +123,7 @@ class ProductReleaseFinder:
                 # Normally, a milestone is deactived when that version is
                 # released. This is only safe to do in an automated script
                 # if we are not using a pre-existing milestone.
-                milestone.visible = False
+                milestone.active = False
             release = milestone.product_release
             if release is None:
                 release = milestone.createProductRelease(

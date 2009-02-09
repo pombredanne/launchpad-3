@@ -419,10 +419,10 @@ They're ordered by dateexpected.
     1.0     2056-10-16 18:31:44.293448
     1.0-rc1 2018-10-01
 
-Only milestones which have visible=True are returned by the .milestones
+Only milestones which have active=True are returned by the .milestones
 property.
 
-    >>> firefox_milestone.visible = False
+    >>> firefox_milestone.active = False
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 

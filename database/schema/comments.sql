@@ -1508,7 +1508,7 @@ COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this mile
 COMMENT ON COLUMN Milestone.distroseries IS 'The distroseries for which this is a milestone. A milestone on a distroseries is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
-COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
+COMMENT ON COLUMN Milestone.active IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
 COMMENT ON COLUMN Milestone.summary IS 'This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';

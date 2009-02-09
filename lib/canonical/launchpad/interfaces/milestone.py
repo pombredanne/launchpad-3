@@ -93,12 +93,12 @@ class IMilestone(IHasBugs):
         Date(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),
         exported_as='date_targeted')
-    visible = exported(
+    active = exported(
         Bool(
             title=_("Active"),
             description=_("Whether or not this milestone should be shown "
                           "in web forms for bug targeting.")),
-        exported_as='is_visible')
+        exported_as='is_active')
     summary = exported(
         Description(
             title=_("Summary"),

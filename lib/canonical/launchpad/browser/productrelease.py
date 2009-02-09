@@ -106,7 +106,7 @@ class ProductReleaseAddView(LaunchpadFormView):
 
     def setUpFields(self):
         super(ProductReleaseAddView, self).setUpFields()
-        if self.context.visible is True:
+        if self.context.active is True:
             self.form_fields += FormFields(
                 Bool(
                     __name__='keep_milestone_active',
@@ -124,10 +124,10 @@ class ProductReleaseAddView(LaunchpadFormView):
             self.user, changelog=data['changelog'],
             release_notes=data['release_notes'],
             datereleased=data['datereleased'])
-        # Set Milestone.visible to false, since bugs & blueprints
+        # Set Milestone.active to false, since bugs & blueprints
         # should not be targeted to a milestone in the past.
         if data['keep_milestone_active'] is False:
-            self.context.visible = False
+            self.context.active = False
             self.request.response.addWarningNotification(
                 _("The milestone for this product release was deactivated "
                   "so that bugs & blueprints cannot be targeted "

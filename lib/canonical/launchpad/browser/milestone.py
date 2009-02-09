@@ -177,11 +177,11 @@ class MilestoneEditView(LaunchpadEditFormView):
 
     This view supports editing of properties such as the name, the date it is
     expected to complete, the milestone description, and whether or not it is
-    visible (i.e. active).
+    active (i.e. active).
     """
 
     schema = IMilestone
-    field_names = ['name', 'visible', 'dateexpected', 'summary']
+    field_names = ['name', 'active', 'dateexpected', 'summary']
     label = "Modify milestone details"
 
     custom_widget('dateexpected', DateWidget)

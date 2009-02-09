@@ -41,6 +41,9 @@ ADD COLUMN codename TEXT;
 ALTER TABLE Milestone
 RENAME COLUMN description TO summary;
 
+ALTER TABLE Milestone
+RENAME COLUMN visible TO active;
+
 ALTER TABLE ProductRelease
 RENAME COLUMN description TO release_notes;
 
@@ -66,7 +69,7 @@ INSERT INTO Milestone (
     name,
     summary,
     codename,
-    visible)
+    active)
 SELECT
     series.product,
     release.productseries,

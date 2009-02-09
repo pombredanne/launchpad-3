@@ -1437,7 +1437,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                 getUtility(IMilestoneSet), longest_expected=40)
 
         visible_milestones = [
-            milestone for milestone in milestones if milestone.visible]
+            milestone for milestone in milestones if milestone.active]
         if (IBugTask.providedBy(milestone_context) and
             milestone_context.milestone is not None and
             milestone_context.milestone not in visible_milestones):

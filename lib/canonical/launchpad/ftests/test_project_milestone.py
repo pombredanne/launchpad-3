@@ -31,9 +31,9 @@ class ProjectMilestoneTest(unittest.TestCase):
         milestones.
 
     Visibility:
-      - All milestones named '1.1' are visible
-      - One milestone named '1.2' is visible, the other is not visible
-      - All milestones named '1.3' are not visible
+      - All milestones named '1.1' are active
+      - One milestone named '1.2' is active, the other is not active
+      - All milestones named '1.3' are not active
 
     Additionally, a milestone with a "typo" in its name and a milestone
     for firefox, i.e., for the mozilla project, named '1.1' is created.
@@ -49,7 +49,7 @@ class ProjectMilestoneTest(unittest.TestCase):
     def setUp(self):
         """Login an admin user to perform the tests."""
         # From the persons defined in the test data, only those with
-        # admin rights can change the 'visible' attribute of milestones.
+        # admin rights can change the 'active' attribute of milestones.
         login('foo.bar@canonical.com')
 
     def createProductMilestone(
@@ -125,36 +125,36 @@ class ProjectMilestoneTest(unittest.TestCase):
         gnome_milestone = gnome.getMilestone('1.1')
         self.assertEqual(gnome_milestone.dateexpected, datetime(2007, 4, 1))
 
-    def test_milestone_visibility(self):
-        """A project milestone is visible, if at least one product milestone
-        is visible."""
+    def test_milestone_activity(self):
+        """A project milestone is active, if at least one product milestone
+        is active."""
         gnome = getUtility(IProjectSet)['gnome']
         evolution_milestone = self.createProductMilestone(
             '1.1', 'evolution', None)
         gnomebaker_milestone = self.createProductMilestone(
             '1.1', 'gnomebaker', None)
 
-        self.assertEqual(evolution_milestone.visible, True)
-        self.assertEqual(gnomebaker_milestone.visible, True)
+        self.assertEqual(evolution_milestone.active, True)
+        self.assertEqual(gnomebaker_milestone.active, True)
         gnome_milestone = gnome.getMilestone('1.1')
-        self.assertEqual(gnome_milestone.visible, True)
+        self.assertEqual(gnome_milestone.active, True)
 
-        gnomebaker_milestone.visible = False
+        gnomebaker_milestone.active = False
         syncUpdate(gnomebaker_milestone)
         gnome_milestone = gnome.getMilestone('1.1')
-        self.assertEqual(gnome_milestone.visible, True)
+        self.assertEqual(gnome_milestone.active, True)
 
-        evolution_milestone.visible = False
+        evolution_milestone.active = False
         syncUpdate(evolution_milestone)
         gnome_milestone = gnome.getMilestone('1.1')
-        self.assertEqual(gnome_milestone.visible, False)
+        self.assertEqual(gnome_milestone.active, False)
 
-        # Since the milestone 1.1 is now invisible, it will not show
+        # Since the milestone 1.1 is now inactive, it will not show
         # up in the gnome.milestones attribute.
         self.assertEqual(
             [milestone.name for milestone in gnome.milestones], [])
 
-        # ... while project.all_milestones lists invisible milestones too.
+        # ... while project.all_milestones lists inactive milestones too.
         self.assertEqual(
             [milestone.name for milestone in gnome.all_milestones],
             [u'2.1.6', u'1.1', u'1.0'])
@@ -284,15 +284,15 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.createProductMilestone('1.2', 'evolution', datetime(2011, 4, 1))
         gnomebaker_milestone = self.createProductMilestone(
             '1.2', 'gnomebaker', datetime(2011, 4, 2))
-        gnomebaker_milestone.visible = False
+        gnomebaker_milestone.active = False
         syncUpdate(gnomebaker_milestone)
 
         evolution_milestone = self.createProductMilestone(
             '1.3', 'evolution', datetime(2012, 4, 1))
-        evolution_milestone.visible = False
+        evolution_milestone.active = False
         gnomebaker_milestone = self.createProductMilestone(
             '1.3', 'gnomebaker', datetime(2012, 4, 2))
-        gnomebaker_milestone.visible = False
+        gnomebaker_milestone.active = False
         syncUpdate(evolution_milestone)
         syncUpdate(gnomebaker_milestone)
 

@@ -83,7 +83,7 @@ class HasMilestonesMixin:
         store = Store.of(self)
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
-                                Milestone.visible == True))
+                                Milestone.active == True))
         return sorted(result, key=self.milestone_sort_key, reverse=True)
 
 
@@ -109,7 +109,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     # milestones can't have some dateexpected attributes that are
     # datetimes and others that are dates, which can't be compared.
     dateexpected = DateCol(notNull=False, default=None)
-    visible = BoolCol(notNull=True, default=True)
+    active = BoolCol(notNull=True, default=True)
     summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
@@ -216,15 +216,15 @@ class ProjectMilestone(HasBugsBase):
     The current database schema has no formal concept of milestones related to
     projects. A milestone named `milestone` is considererd to belong to
     a project if the project contains at least one product with a milestone
-    of the same name. A project milestone is considered to be visible if at
-    least one product milestone with the same name is visible.  The
+    of the same name. A project milestone is considered to be active if at
+    least one product milestone with the same name is active.  The
     `dateexpected` attribute of a project milestone is set to the minimum of
     the `dateexpected` values of the product milestones.
     """
 
     implements(IProjectMilestone)
 
-    def __init__(self, target, name, dateexpected, visible):
+    def __init__(self, target, name, dateexpected, active):
         self.name = name
         self.id = None
         self.product = None
@@ -232,7 +232,7 @@ class ProjectMilestone(HasBugsBase):
         self.productseries = None
         self.distroseries = None
         self.dateexpected = dateexpected
-        self.visible = visible
+        self.active = active
         self.target = target
         self.series_target = None
         self.summary = None

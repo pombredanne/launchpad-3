@@ -765,7 +765,7 @@ host.
     ...     '/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
     date_targeted: u'2056-10-16T18:31:44.293448'
-    is_visible: True
+    is_active: True
     name: u'1.0'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'

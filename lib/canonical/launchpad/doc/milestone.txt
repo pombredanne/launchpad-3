@@ -152,24 +152,24 @@ appear as separate project milestones.
     >>> print [milestone.name for milestone in gnome.all_milestones]
     [u'2.1.6', u'1.1.', u'1.1', u'1.0']
 
-A project milestone is visible, if at least one product milestone with the
-same name is visible.
+A project milestone is active, if at least one product milestone with the
+same name is active.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> print applets_1_1.visible, evolution_1_1.visible
+    >>> print applets_1_1.active, evolution_1_1.active
     True True
-    >>> print gnome.getMilestone('1.1').visible
+    >>> print gnome.getMilestone('1.1').active
     True
-    >>> applets_1_1.visible = False
+    >>> applets_1_1.active = False
     >>> syncUpdate(applets_1_1)
-    >>> print gnome.getMilestone('1.1').visible
+    >>> print gnome.getMilestone('1.1').active
     True
-    >>> evolution_1_1.visible = False
+    >>> evolution_1_1.active = False
     >>> syncUpdate(evolution_1_1)
-    >>> print gnome.getMilestone('1.1').visible
+    >>> print gnome.getMilestone('1.1').active
     False
 
-A project milestone is not shown for visible milestones from inactive products.
+A project milestone is not shown for active milestones from inactive products.
 
     >>> print [milestone.name for milestone in gnome.milestones]
     [u'1.1.']
