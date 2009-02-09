@@ -20,8 +20,6 @@ __all__ = [
     'traverse_named_ppa',
     ]
 
-from cgi import parse_qsl
-
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
@@ -351,12 +349,6 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
 
         Setup status filter widget and the series filter widget.
         """
-        # Because BrowserRequest.processInputs ignores GET vars when the
-        # method=POST, store them here (as the filtering always uses GET
-        # even when other forms are posted).
-        self.get_params = dict(
-            parse_qsl(self.request.get('QUERY_STRING') or '',True))
-
         self.setupNameFilterWidget()
         self.setupStatusFilterWidget()
         self.setupSeriesFilterWidget()
@@ -410,14 +402,16 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
 
     def setupNameFilterWidget(self):
         """Set the specified name filter property."""
-        self.specified_name_filter = self.get_params.get('field.name_filter')
+        self.specified_name_filter = self.request.query_string_params.get(
+            'field.name_filter')
 
     def setupStatusFilterWidget(self):
         """Build a customized publishing status select widget.
 
         See `status_vocabulary`.
         """
-        requested_status_filter = self.get_params.get('field.status_filter')
+        requested_status_filter = self.request.query_string_params.get(
+            'field.status_filter')
 
         # If the request included a status filter, try to use it:
         self.selected_status_filter = None
@@ -448,7 +442,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         Allows users to select between a valid distribution series for the
         archive distribution, or 'Any Series'.
         """
-        series_filter = self.get_params.get('field.series_filter', 'any')
+        series_filter = self.request.query_string_params.get(
+            'field.series_filter', 'any')
         self.selected_series_filter = (
             self.series_vocabulary.getTermByToken(series_filter))
 
