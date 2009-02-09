@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = ['RemoveObsoleteTranslations']
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 import time
 
@@ -270,7 +270,7 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         self._commit_count = 0
 
         # Working on the writable master store
-        store = getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self._store = store
 
         for table in collect_order:
