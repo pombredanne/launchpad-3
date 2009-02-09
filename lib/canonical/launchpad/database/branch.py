@@ -85,6 +85,7 @@ from canonical.launchpad.interfaces.branchsubscription import (
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.mailout.branch import BranchMailer
@@ -522,10 +523,15 @@ class Branch(SQLBase):
         """See `IBranch`."""
         # Imported here to avoid circular import.
         from canonical.launchpad.database.productseries import ProductSeries
-        return ProductSeries.select("""
-            ProductSeries.user_branch = %s OR
-            ProductSeries.import_branch = %s
-            """ % sqlvalues(self, self))
+        return Store.of(self).find(
+            ProductSeries,
+            Or(ProductSeries.user_branch == self,
+               ProductSeries.import_branch == self),
+            ProductSeries.status != DistroSeriesStatus.OBSOLETE)
+        #return ProductSeries.select("""
+        #    ProductSeries.user_branch = %s OR
+        #    ProductSeries.import_branch = %s
+        #    """ % sqlvalues(self, self))
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
