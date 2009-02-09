@@ -836,7 +836,7 @@ IBug.date_last_updated.
 
 == Bug Completeness ==
 
-A bug is considered "complete" IFF all of its bugtasks are themselves
+A bug is considered "complete" iff all of its bugtasks are themselves
 complete. The definition of completeness for a bugtask is that the bug
 has been marked invalid or a fix has been released.
 
