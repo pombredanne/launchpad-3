@@ -19,18 +19,20 @@ YUI().use('node', 'io-base', 'lazr.anim', function(Y) {
  */
 function informFailure(transaction_id, response, args) {
     var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Failed to fetch information.');
+    text.set('innerHTML', 'Failed to fetch package details.');
 
     var retry_link = Y.Node.create('<a>')
-    retry_link.set('id', 'retry-repository-size-update');
+    retry_link.set('id', 'retry-package-details');
     retry_link.set('href', '');
     retry_link.set('innerHTML', 'Retry');
     retry_link.on(
         'click',
         function (e) {
             e.preventDefault();
-            placeholder = e.target.get('parentNode').get('parentNode');
-            row_id = placeholder.get('id').replace('xhr_placeholder', 'pub');
+            var placeholder = e.target.get(
+                'parentNode').get('parentNode');
+            var row_id = placeholder.get('id').replace(
+                'xhr_placeholder', 'pub');
             startUpdate(Y.get('#' + row_id));
             }
     );
@@ -40,7 +42,7 @@ function informFailure(transaction_id, response, args) {
     failure_message.appendChild(text);
     failure_message.appendChild(retry_link);
 
-    container = args.destination;
+    var container = args.destination;
     container.set('innerHTML', '');
     container.appendChild(failure_message);
 
@@ -54,8 +56,28 @@ function informFailure(transaction_id, response, args) {
  * Update the row with the XHR response.
  */
 function doUpdate(transaction_id, response, args) {
-    container = args.destination;
+    var container = args.destination;
     container.set('innerHTML', response.responseText);
+
+    var hide_link = Y.Node.create('<a>')
+    hide_link.set('id', 'hide-package-details');
+    hide_link.set('href', '');
+    hide_link.set('innerHTML', 'Hide details');
+    hide_link.on(
+        'click',
+        function (e) {
+            e.preventDefault();
+            var placeholder = e.target.get(
+                'parentNode').get('parentNode');
+            var row_expander_id = placeholder.get('id').replace(
+                'xhr_placeholder', 'pub') + '-expander';
+            toggleExpandableRow(Y.get('#' + row_expander_id));
+            }
+    );
+    var hide_section = Y.Node.create('<p>')
+    hide_section.appendChild(hide_link);
+    container.appendChild(hide_section);
+
     var anim = Y.lazr.anim.green_flash({
         node: container
     });
@@ -68,14 +90,14 @@ function doUpdate(transaction_id, response, args) {
  */
 function startUpdate(row) {
     var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Fetching publishing information ...');
+    text.set('innerHTML', 'Fetching package details ...');
 
     var in_progress_message = Y.Node.create('<p>');
     in_progress_message.set('id', 'in-progress-message');
     in_progress_message.appendChild(text);
 
     var pub_id = row.get('id').replace('pub', '');
-    container = Y.get('#xhr_placeholder' + pub_id);
+    var container = Y.get('#xhr_placeholder' + pub_id);
     container.set('innerHTML', '');
     container.appendChild(in_progress_message);
 
@@ -99,28 +121,36 @@ function startUpdate(row) {
  */
 function toggleExpandableRow(expander) {
     var row_id = expander.get('id').replace('-expander', '');
-    row = Y.get('#' + row_id);
-    icon = expander.query('img');
+    var row = Y.get('#' + row_id);
+    var icon = expander.query('img');
 
-    row_display = row.getStyle('display');
+    var row_display = row.getStyle('display');
     if (row_display == 'none') {
         row.setStyle('display', 'table-row');
-        icon.set('src', '/@@/treeExpanded')
-        container = Y.get('#xhr_placeholder' + row_id.replace('pub', ''))
+        icon.set('src', '/@@/treeExpanded');
+        var container = Y.get('#xhr_placeholder' + row_id.replace('pub', ''))
         if (trim(container.get('innerHTML')) == ''){
             startUpdate(row);
         }
     }
     else {
         row.setStyle('display', 'none');
-        icon.set('src', '/@@/treeCollapsed')
+        icon.set('src', '/@@/treeCollapsed');
     }
 }
 
+/*
+ * Setup expander handlers and pre-load 'treeExpanded' and 'spinner'
+ * images for better reponsiveness.
+ */
 function setupPackageListExpanders() {
-    var packages_list = Y.get('#packages_list');
-    var expanders = packages_list.queryAll('a.expander');
-    expanders.each(function(expander) {
+    var spinner = new Image();
+    spinner.src = '/@@/spinner';
+
+    var tree_expanded = new Image();
+    tree_expanded.src = '/@@/treeExpanded';
+
+    Y.all('#packages_list a.expander').each(function(expander) {
         expander.on("click", function(e) {
             e.preventDefault();
             var expander = e.currentTarget;
@@ -129,11 +159,16 @@ function setupPackageListExpanders() {
     });
 }
 
-Y.on("domready", setupPackageListExpanders);
+Y.on('domready', setupPackageListExpanders);
 });
 </script>
 
 <style type="text/css" media="screen, print">
+div.package-details {
+    padding-left: 4em;
+    padding-bottom: 1em;
+}
+
 td p#failure-message {
     background: url(/@@/no) center left no-repeat;
     padding-left: 18px;

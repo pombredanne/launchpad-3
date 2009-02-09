@@ -223,8 +223,8 @@ div#package_counters #retry-repository-size-update {
            tal:condition="signing_key">
         <p>This repository is signed with
           <a tal:attributes="href signing_key/keyserverURL">
-            <code tal:content="signing_key/fingerprint">
-              0123456789012345678901234567890123456789
+            <code tal:content="signing_key/displayname">
+              1024R/23456789
             </code></a> OpenPGP key.
           <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories"
           >Follow these instructions</a>
