@@ -82,10 +82,24 @@ class BatchNavigator:
         :raises InvalidBatchSizeError: if the requested batch size is higher
             than the maximum allowed.
         """
+        # We grab the request variables directly from the requests
+        # query_string_parameters so that they will be recognized
+        # even during post operations. For backwards
+        # compatibility (as in the past a work-around has been to include
+        # the url batch params in hidden fields within posted forms), if
+        # there is no 'start' param in the query string params, default to
+        # the old behaviour of using the request (which automatically gets
+        # them from the request.form dict):
+        if request.query_string_params.has_key(self.start_variable_name):
+            batch_params_source = request.query_string_params
+        else:
+            batch_params_source = request
+
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We
         # could raise UnexpectedFormData, but is there a good reason?
-        request_start = request.get(self.start_variable_name, None)
+        request_start = batch_params_source.get(
+            self.start_variable_name, None)
         if request_start is None:
             self.start = start
         else:
@@ -96,7 +110,7 @@ class BatchNavigator:
 
         self.default_size = size
 
-        request_size = request.get(self.batch_variable_name, None)
+        request_size = batch_params_source.get(self.batch_variable_name, None)
         if request_size:
             try:
                 size = int(request_size)

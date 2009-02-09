@@ -291,6 +291,44 @@ class TestWebServiceRequest(unittest.TestCase):
         self.assertEqual(request.getApplicationURL(), server_url)
 
 
+class TestLaunchpadBrowserRequest(unittest.TestCase):
+
+    def test_query_string_params_on_get(self):
+        """query_string_params is populated from the QUERY_STRING during
+        GET requests."""
+        request = LaunchpadBrowserRequest('', {
+            'QUERY_STRING': "a=1&b=2&c=3"})
+        self.assertEqual(
+            request.query_string_params, 
+            {'a':'1', 'b': '2', 'c': '3'},
+            "The query_string_params dict is populated from the "
+            "QUERY_STRING during GET requests.")
+
+    def test_query_string_params_on_post(self):
+        """query_string_params is populated from the QUERY_STRING during
+        POST requests."""
+        request = LaunchpadBrowserRequest('',
+            {'QUERY_STRING': "a=1&b=2&c=3", 'REQUEST_METHOD': 'POST'})
+
+        self.assertEqual(request.method, 'POST')
+        self.assertEqual(
+            request.query_string_params, 
+            {'a':'1', 'b': '2', 'c': '3'},
+            "The query_string_params dict is populated from the "
+            "QUERY_STRING during POST requests.")
+
+    def test_query_string_params_empty(self):
+        """The query_string_params dict is always empty when QUERY_STRING
+        is empty, None or undefined.
+        """
+        request = LaunchpadBrowserRequest('', {'QUERY_STRING': ''})
+        self.assertEqual(request.query_string_params, {})
+        request = LaunchpadBrowserRequest('', {'QUERY_STRING': None})
+        self.assertEqual(request.query_string_params, {})
+        request = LaunchpadBrowserRequest('', {})
+        self.assertEqual(request.query_string_params, {})
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(

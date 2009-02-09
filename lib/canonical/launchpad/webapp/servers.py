@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import cgi
 import pytz
 import threading
 import xmlrpclib
@@ -538,6 +539,20 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
 
+    @cachedproperty
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        query_string = self.get('QUERY_STRING', '')
+
+        # Just in case QUERY_STRING is in the environment explicitely as
+        # None (Note to reviewer: is it only in tests that this could be
+        # possible?)
+        if query_string is None:
+            query_string = ''
+
+        return  dict(
+            cgi.parse_qsl(query_string, keep_blank_values=True))
+
     def setPrincipal(self, principal):
         self.clearSecurityPolicyCache()
         BrowserRequest.setPrincipal(self, principal)
@@ -725,6 +740,14 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
 
+    It also provides the query_string_params dict that is available from
+    LaunchpadBrowserRequest.
+
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
+    ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.query_string_params == {'a': '1', 'b': '2', 'c': '3'}
+    True
+
     It also provides the  hooks for popup calendar iframes:
 
     >>> request.needs_datetimepicker_iframe
@@ -787,6 +810,13 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    @property
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        # Just ensure that we return exactly what the LaunchpadBrowserRequest
+        # class returns:
+        return LaunchpadBrowserRequest.query_string_params.fn(self)
 
     def setPrincipal(self, principal):
         """See `IPublicationRequest`."""

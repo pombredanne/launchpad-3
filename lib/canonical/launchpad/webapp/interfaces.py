@@ -454,6 +454,8 @@ class ILaunchpadBrowserApplicationRequest(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
 
+    query_string_params = Attribute(
+        'A dictionary of the query string parameters.')
 
 # XXX SteveAlexander 2005-09-14: These need making into a launchpad version
 #     rather than the zope versions for the publisher simplification work.
