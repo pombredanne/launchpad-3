@@ -35,7 +35,7 @@ currently subscribed to the bug:
     ...     print_direct_subscribers, print_indirect_subscribers)
 
     >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bug/1/'
+    ...     'http://bugs.launchpad.dev/bugs/1/'
     ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
     Sample Person (Subscribed by Launchpad Janitor)
@@ -74,7 +74,7 @@ He is notified that David Allouche has been subscribed.
 The subscribers portlet now contains the new subscriber's name.
 
     >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bug/1/'
+    ...     'http://bugs.launchpad.dev/bugs/1/'
     ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
     David Allouche (Subscribed by No Privileges Person)
@@ -117,7 +117,7 @@ He is notified that Landscape developers team has been subscribed.
 The subscribers portlet displays the new subscribed team.
 
     >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bug/1/'
+    ...     'http://bugs.launchpad.dev/bugs/1/'
     ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
     David Allouche (Subscribed by No Privileges Person)

@@ -12,7 +12,8 @@
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
   <a id="subscribers-content-link"
-     tal:attributes="href context/fmt:url/+bug-portlet-subscribers-content" />
+     tal:define="bug context/bug|context"
+     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content" />
   <div id="subscribers-portlet-spinner"
        style="text-align: center; display: none">
     <img src="/@@/spinner" />
@@ -21,9 +22,7 @@
     YUI().use('io', 'node', function(Y) {
       Y.on('contentready', function() {
         Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
-      }, '#subscribers-portlet-spinner');
 
-      Y.on('domready', function() {
         function hide_spinner() {
           Y.get('#subscribers-portlet-spinner').setStyle('display', 'none');
         }
@@ -39,7 +38,7 @@
                            failure: hide_spinner}};
         var url = Y.get('#subscribers-content-link').getAttribute('href');
         var request = Y.io(url, config);
-      });
+      }, '#portlet-subscribers');
     });
   </script>
 </div>
