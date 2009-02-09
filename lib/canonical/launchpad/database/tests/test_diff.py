@@ -14,7 +14,8 @@ import transaction
 from canonical.launchpad.database.diff import Diff, StaticDiff
 from canonical.launchpad.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
-from canonical.launchpad.testing import login_person, TestCaseWithFactory
+from canonical.launchpad.testing import (
+    login, login_person, TestCaseWithFactory)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -97,11 +98,19 @@ class TestPreviewDiff(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def _createProposalWithPreviewDiff(self):
+    def _createProposalWithPreviewDiff(self, dependent_branch=None,
+                                       content='content'):
         # Create and return a preview diff.
-        mp = self.factory.makeBranchMergeProposal()
+        mp = self.factory.makeBranchMergeProposal(
+            dependent_branch=dependent_branch)
         login_person(mp.registrant)
-        mp.updatePreviewDiff('content', u'stat', u'rev-a', u'rev-b')
+        if dependent_branch is None:
+            dependent_revision_id = None
+        else:
+            dependent_revision_id = u'rev-c'
+        mp.updatePreviewDiff(
+            content, u'stat', u'rev-a', u'rev-b',
+            dependent_revision_id=dependent_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
         return mp
@@ -119,6 +128,57 @@ class TestPreviewDiff(TestCaseWithFactory):
         self.assertEqual(
             canonical_url(mp) + '/+preview-diff',
             canonical_url(mp.preview_diff))
+
+    def test_empty_diff(self):
+        # Once the source is merged into the target, the diff between the
+        # branches will be empty.
+        mp = self._createProposalWithPreviewDiff(content=None)
+        preview = mp.preview_diff
+        self.assertIs(None, preview.diff_text)
+        self.assertEqual(0, preview.diff_lines_count)
+        self.assertEqual(mp, preview.branch_merge_proposal)
+
+    def test_stale_allInSync(self):
+        # If the revision ids of the preview diff match the source and target
+        # branches, then not stale.
+        mp = self._createProposalWithPreviewDiff()
+        # Log in an admin to avoid the launchpad.Edit needs for last_scanned.
+        login('admin@canonical.com')
+        mp.source_branch.last_scanned_id = 'rev-a'
+        mp.target_branch.last_scanned_id = 'rev-b'
+        self.assertEqual(False, mp.preview_diff.stale)
+
+    def test_stale_sourceNewer(self):
+        # If the source branch has a different rev id, the diff is stale.
+        mp = self._createProposalWithPreviewDiff()
+        # Log in an admin to avoid the launchpad.Edit needs for last_scanned.
+        login('admin@canonical.com')
+        mp.source_branch.last_scanned_id = 'rev-c'
+        mp.target_branch.last_scanned_id = 'rev-b'
+        self.assertEqual(True, mp.preview_diff.stale)
+
+    def test_stale_targetNewer(self):
+        # If the source branch has a different rev id, the diff is stale.
+        mp = self._createProposalWithPreviewDiff()
+        # Log in an admin to avoid the launchpad.Edit needs for last_scanned.
+        login('admin@canonical.com')
+        mp.source_branch.last_scanned_id = 'rev-a'
+        mp.target_branch.last_scanned_id = 'rev-d'
+        self.assertEqual(True, mp.preview_diff.stale)
+
+    def test_stale_dependentBranch(self):
+        # If the merge proposal has a dependent branch, then the tip revision
+        # id of the dependent branch is also checked.
+        dep_branch = self.factory.makeProductBranch()
+        mp = self._createProposalWithPreviewDiff(dep_branch)
+        # Log in an admin to avoid the launchpad.Edit needs for last_scanned.
+        login('admin@canonical.com')
+        mp.source_branch.last_scanned_id = 'rev-a'
+        mp.target_branch.last_scanned_id = 'rev-b'
+        dep_branch.last_scanned_id = 'rev-c'
+        self.assertEqual(False, mp.preview_diff.stale)
+        dep_branch.last_scanned_id = 'rev-d'
+        self.assertEqual(True, mp.preview_diff.stale)
 
 
 def test_suite():
