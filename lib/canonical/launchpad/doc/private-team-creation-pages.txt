@@ -1,7 +1,9 @@
 = Private Team Creation =
 
 Private teams may only be created by commercial admins
-(launchpad.Commercial permission).
+(launchpad.Commercial permission).  This permission is controlled in
+the UI by only displaying the 'visibility' control to commercial
+admins.
 
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
@@ -49,15 +51,41 @@ must be 'Restricted.'
     ...     print error
     Private teams must have a Restricted subscription policy.
 
+Admins can successfully create a private team.
+
+    >>> login('foo.bar@canonical.com')
+    >>> form = {
+    ...     'field.name': 'super-secret',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+
+    >>> print len(view.errors)
+    0
+
+    >>> import transaction
+    >>> transaction.commit()
+    >>> super_secret = personset.getByName('super-secret')
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> print removeSecurityProxy(super_secret).visibility
+    Private Membership
+
 Admins who attempt to create a new team with the name of an existing
 team get the normal error message.
 
-    >>> # Create a private team using the factory to ensure it is
-    >>> # properly configured.
-    >>> super_secret = factory.makeTeam(owner=foo_bar, name='super-secret')
-    >>> import transaction
-    >>> transaction.commit()
-
+    >>> login('foo.bar@canonical.com')
     >>> form = {
     ...     'field.name': 'super-secret',
     ...     'field.displayname': 'Shhhh',
@@ -80,14 +108,37 @@ team get the normal error message.
     ...     print error[2]
     super-secret is already in use by another person or team.
 
+Regular users who try to create a team with a name that is already
+taken by a private team get the blacklist message.
+
+    >>> login('no-priv@canonical.com')
+    >>> form = {
+    ...     'field.name': 'super-secret',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=nopriv)
+
+    >>> print len(view.request.notifications)
+    0
+
+    >>> for error in view.errors:
+    ...     print error[2]
+    The name 'super-secret' has been blocked by the Launchpad administrators.
 
 = Private Team Editing =
 
-Like creation, only commercial admins are given the option of changing
-a team's visibility.
+The same as when creating a new team, only commercial admins are given
+the option of changing a team's visibility.
 
     >>> launchpad = personset.getByName('launchpad')
-    >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(
     ...     launchpad, '+edit',
     ...     form={}, principal=nopriv)
@@ -179,3 +230,5 @@ users will get a blacklist message.
     >>> for msg in view.errors:
     ...     print msg[2]
     The name 'private-top-secret' has been blocked by the Launchpad administrators.
+
+When a regular user tries to create a 'private_'
