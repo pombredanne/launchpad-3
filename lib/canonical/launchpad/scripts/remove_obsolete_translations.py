@@ -11,7 +11,6 @@ import time
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadScript
@@ -240,7 +239,7 @@ class DeletionLoopRunner(object):
                 self._iterations_done + result._raw_cursor.rowcount,
                 self._iteration_end))
         self._iterations_done += result._raw_cursor.rowcount
-        commit_transaction(self._txn, self._logger,dry_run=self._dry_run)
+        commit_transaction(self._txn, self._logger, dry_run=self._dry_run)
         self._commit_count += 1
 
     def getTotalCommits(self):
