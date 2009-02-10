@@ -53,8 +53,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     PostedMessageStatus)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    ImmutableVisibilityError, PRIVATE_TEAM_PREFIX, PersonNameField,
-    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
+    ImmutableVisibilityError, PRIVATE_TEAM_PREFIX, PersonVisibility,
+    TeamContactMethod, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -105,42 +105,6 @@ class HasRenewalPolicyMixin:
             return False
         return super(HasRenewalPolicyMixin, self).isSingleLineLayout(
             field_name)
-
-
-class TeamNameField(PersonNameField):
-    """A team name, which is unique and performs psuedo blacklisting.
-
-    If the team name is not unique, and the clash is with a private team,
-    return the blacklist message.  Also return the blacklist message if the
-    private prefix is used but the user is not privileged to create private
-    teams.
-    """
-    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators.")
-
-    def _validate(self, input):
-        """See `UniqueField`."""
-        # If the name didn't change then we needn't worry about validating it.
-        if self.unchanged(input):
-            return
-
-        if not check_permission('launchpad.Commercial', self.context):
-            # Commercial admins can create private teams, with or without the
-            # private prefix.
-
-            if input.startswith(PRIVATE_TEAM_PREFIX):
-                raise LaunchpadValidationError(self.blacklistmessage % input)
-
-            # If a non-privileged user attempts to use an existing name AND
-            # the existing project is private, then return the blacklist
-            # message rather than the message indicating the project exists.
-            existing_object = self._getByAttribute(input)
-            if (existing_object is not None and
-                existing_object.visibility != PersonVisibility.PUBLIC):
-                raise LaunchpadValidationError(self.blacklistmessage % input)
-
-        # Perform the normal validation, including the real blacklist checks.
-        super(TeamNameField, self)._validate(input)
 
 
 class TeamFormMixin:
@@ -223,19 +187,6 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         self.field_names.remove('contactemail')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
-        name_field = self.schema['name']
-        team_name_field = form.Fields(
-            TeamNameField(
-                __name__='name',
-                title=name_field.title,
-                required=name_field.required,
-                readonly=name_field.readonly,
-                constraint=name_field.constraint,
-                description=name_field.description),
-            render_context=self.render_context)
-        # Replace the name field with the team_name_field.
-        self.form_fields = self.form_fields.omit('name')
-        self.form_fields = team_name_field + self.form_fields
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -816,19 +767,6 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         """
         super(TeamAddView, self).setUpFields()
         self.conditionallyOmitVisibility()
-        name_field = self.schema['name']
-        team_name_field = form.Fields(
-            TeamNameField(
-                __name__='name',
-                title=name_field.title,
-                required=name_field.required,
-                readonly=name_field.readonly,
-                constraint=name_field.constraint,
-                description=name_field.description),
-            render_context=self.render_context)
-        # Replace the name field with the team_name_field.
-        self.form_fields = self.form_fields.omit('name')
-        self.form_fields = team_name_field + self.form_fields
 
     @action('Create', name='create')
     def create_action(self, action, data):
