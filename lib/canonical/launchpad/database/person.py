@@ -1804,14 +1804,14 @@ class Person(
             raise AssertionError(
                 "Teams cannot be activated with this method.")
         account = IMasterStore(Account).find(
-            Account, id=self.accountID)
+            Account, id=self.accountID).one()
         account.status = AccountStatus.ACTIVE
         account.status_comment = comment
         account.password = password
         if preferred_email is not None:
             self.validateAndEnsurePreferredEmail(preferred_email)
         # sync so validpersoncache updates.
-        self.account.sync()
+        account.sync()
 
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
@@ -2216,7 +2216,7 @@ class Person(
                 preferred_email=email)
         # Anonymous users may claim their profile; remove the proxy
         # to set the account.
-        removeSecurityProxy(email).account = self.account
+        removeSecurityProxy(email).accountID = self.accountID
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2232,7 +2232,7 @@ class Person(
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        assert email.person.id == self.id
+        assert email.personID == self.id
 
         if self.preferredemail is not None:
             self.preferredemail.status = EmailAddressStatus.VALIDATED
@@ -2565,6 +2565,8 @@ class PersonSet:
         email = getUtility(IEmailAddressSet).new(
                 email, person, account=account)
 
+        assert email.accountID is not None, (
+            'Failed to link EmailAddress to Account')
         return person, email
 
     def createPersonWithoutEmail(

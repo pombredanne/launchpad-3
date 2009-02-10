@@ -369,7 +369,7 @@ class MailingList(SQLBase):
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
-        if address is not None and address.person != person:
+        if address is not None and address.personID != person.id:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
         subscription = self.getSubscription(person)
