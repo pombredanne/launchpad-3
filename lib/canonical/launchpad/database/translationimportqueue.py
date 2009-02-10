@@ -78,6 +78,7 @@ class TranslationImportQueueEntry(SQLBase):
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
         notNull=True, default=DEFAULT)
+    error_output = StringCol(notNull=False, default=None)
 
     @property
     def sourcepackage(self):
@@ -731,6 +732,7 @@ class TranslationImportQueue:
                 pofile=pofile, format=format)
         else:
             # It's an update.
+            entry.error_output = None
             entry.content = alias
             entry.is_published = is_published
             if potemplate is not None:

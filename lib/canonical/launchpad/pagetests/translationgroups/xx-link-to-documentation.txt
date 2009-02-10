@@ -45,7 +45,7 @@ Back on the translations page, the link is now present, too.
     >>> style_guide_url = first_tag_by_class(
     ...     anon_browser.contents, 'style_guide_url')
     >>> print extract_text(style_guide_url)
-    Documentation
+    Translation guidelines
     >>> print style_guide_url['href']
     http://www.ubuntu.com/
 
@@ -85,9 +85,9 @@ the documentation url through the edit view.
     >>> translator_listing = find_tags_by_class(
     ...     test_browser.contents, 'listing')[1]
     >>> print extract_text(translator_listing)
-    Translation Group
+    Translation group
     Language
-    Documentation URL
+    Translation guidelines
     Just a testing team
     Esperanto
     http://www.launchpad.net/

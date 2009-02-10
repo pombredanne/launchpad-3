@@ -559,8 +559,13 @@ class BugSecrecyEditView(BugEditViewBase):
             default=False)
         super(BugSecrecyEditView, self).setUpFields()
         self.form_fields = self.form_fields.omit('private')
-        self.form_fields += formlib.form.Fields(private_field)
+        self.form_fields = formlib.form.Fields(private_field) + self.form_fields
 
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'private': self.context.bug.private,
+                'security_related': self.context.bug.security_related}
 
     @action('Change', name='change')
     def change_action(self, action, data):
