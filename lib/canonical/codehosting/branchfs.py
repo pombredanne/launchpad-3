@@ -148,7 +148,7 @@ def get_puller_server():
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
-        config.codehosting.branches_root)
+        config.codehosting.hosted_branches_root)
     mirrored_transport = get_chrooted_transport(
         config.supermirror.branchesdest)
     hosted_server = LaunchpadInternalServer(

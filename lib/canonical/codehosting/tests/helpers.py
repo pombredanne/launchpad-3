@@ -151,7 +151,8 @@ def make_bazaar_branch_and_tree(db_branch):
         "Can only create branches for HOSTED branches: %r"
         % db_branch)
     branch_dir = os.path.join(
-        config.codehosting.branches_root, branch_id_to_path(db_branch.id))
+        config.codehosting.hosted_branches_root,
+        branch_id_to_path(db_branch.id))
     return create_branch_with_one_revision(branch_dir)
 
 

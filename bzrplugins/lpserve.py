@@ -41,7 +41,7 @@ class cmd_launchpad_server(Command):
                type=str),
         Option('upload-directory',
                help='upload branches to this directory. Defaults to '
-                    'config.codehosting.branches_root.',
+                    'config.codehosting.hosted_branches_root.',
                type=unicode),
         Option('mirror-directory',
                help='serve branches from this directory. Defaults to '
@@ -89,7 +89,7 @@ class cmd_launchpad_server(Command):
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, branchfs_endpoint_url=None, inet=False):
         if upload_directory is None:
-            upload_directory = config.codehosting.branches_root
+            upload_directory = config.codehosting.hosted_branches_root
         if mirror_directory is None:
             mirror_directory = config.supermirror.branchesdest
         if branchfs_endpoint_url is None:
