@@ -405,6 +405,9 @@ class IBasicLaunchpadRequest(Interface):
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
 
+    query_string_params = Attribute(
+        'A dictionary of the query string parameters.')
+
     def getNearest(*some_interfaces):
         """Searches for the last traversed object to implement one of
         the given interfaces.
@@ -453,9 +456,6 @@ class ILaunchpadBrowserApplicationRequest(
     form_ng = Object(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
-
-    query_string_params = Attribute(
-        'A dictionary of the query string parameters.')
 
 # XXX SteveAlexander 2005-09-14: These need making into a launchpad version
 #     rather than the zope versions for the publisher simplification work.

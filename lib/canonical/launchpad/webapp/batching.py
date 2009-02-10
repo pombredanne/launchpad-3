@@ -84,7 +84,7 @@ class BatchNavigator:
         """
         # We grab the request variables directly from the requests
         # query_string_parameters so that they will be recognized
-        # even during post operations. 
+        # even during post operations.
         batch_params_source = request.query_string_params
 
         # For backwards compatibility (as in the past a work-around has been
