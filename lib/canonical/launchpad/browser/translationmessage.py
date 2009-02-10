@@ -274,10 +274,9 @@ class POTMsgSetBatchNavigator(BatchNavigator):
 
         sequence = batch.startNumber()
         url = '/'.join([self.start_path, str(sequence), self.page])
-        qs = self.request.environment.get('QUERY_STRING', '')
         # cleanQueryString ensures we get rid of any bogus 'start' or
         # 'batch' form variables we may have received via the URL.
-        qs = self.cleanQueryString(qs)
+        qs = self.cleanQueryString(self.request.query_string_params)
         if qs:
             # There are arguments that we should preserve.
             url = '%s?%s' % (url, qs)

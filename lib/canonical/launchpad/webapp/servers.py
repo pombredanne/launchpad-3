@@ -518,6 +518,20 @@ class BasicLaunchpadRequest:
         self._orig_env[key] = value
         self._wsgi_keys.add(key)
 
+    @cachedproperty
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        query_string = self.get('QUERY_STRING', '')
+
+        # Just in case QUERY_STRING is in the environment explicitely as
+        # None (Some tests seem to do this, but not sure if it can ever
+        # happen outside of tests.)
+        if query_string is None:
+            query_string = ''
+
+        return  dict(
+            cgi.parse_qsl(query_string, keep_blank_values=True))
+
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
                               NotificationRequest, ErrorReportRequest):
@@ -541,20 +555,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
-
-    @cachedproperty
-    def query_string_params(self):
-        """See ILaunchpadBrowserApplicationRequest."""
-        query_string = self.get('QUERY_STRING', '')
-
-        # Just in case QUERY_STRING is in the environment explicitely as
-        # None (Note to reviewer: is it only in tests that this could be
-        # possible?)
-        if query_string is None:
-            query_string = ''
-
-        return  dict(
-            cgi.parse_qsl(query_string, keep_blank_values=True))
 
     def setPrincipal(self, principal):
         self.clearSecurityPolicyCache()
