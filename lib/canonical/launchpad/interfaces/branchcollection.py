@@ -22,28 +22,20 @@ class IBranchCollection(Interface):
         """Return a result sest of all branches in this collection."""
 
 
-
-# XXX: filters for
-# - "visible to user"
-# - registered by person?
-# - subscribed by person?
-# - lifecycle_status
-
 # XXX: revision support
-# - Add recent revision count
-# - Add recent committer count
-
 
 # XXX: counts
 # - Add team_owner_count
 # - Add person_owner_count
+# - others?
 
 # XXX: find existing tests for all of this crap and migrate / delete it.
 # - database.tests.test_branch
 #   - TestGetBranchForContextVisibleUser
 #   - BranchSorting
+# - others?
 
-# XXX: types of subsets
+# XXX: adapters / easy access methods for common views / concepts
 # - source package
 # - registered by person
 # - subscribed by person

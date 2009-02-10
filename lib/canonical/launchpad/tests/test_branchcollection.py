@@ -75,6 +75,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         self.assertEqual(3, collection.count)
 
     def test_count_respects_filter(self):
+        # XXX: comment
         branch = self.factory.makeProductBranch()
         branch2 = self.factory.makeAnyBranch()
         collection = GenericBranchCollection(
@@ -82,12 +83,14 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         self.assertEqual(1, collection.count)
 
     def test_owned_by(self):
+        # XXX: comment
         branch = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
         collection = GenericBranchCollection(self.store).ownedBy(branch.owner)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_in_product(self):
+        # XXX: comment
         branch = self.factory.makeProductBranch()
         branch2 = self.factory.makeProductBranch()
         branch3 = self.factory.makeAnyBranch()
@@ -96,6 +99,12 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
 
     # XXX: visible by user filter
+
+    # XXX: registered by person filter
+
+    # XXX: subscribed by person filter
+
+    # XXX: lifecycle_status filter
 
 
 def test_suite():

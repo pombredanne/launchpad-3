@@ -34,6 +34,8 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
+        # XXX: if branch is duplicated. store as list of expressions
+        # internally that are ANDed together.
         expression = self._branch_filter_expr
         if expression is None:
             return self._store.find(Branch)
@@ -51,6 +53,7 @@ class GenericBranchCollection:
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
+        # XXX: duplicate of inProduct code -- refactor
         expression = (Branch.owner == person)
         if self._branch_filter_expr is not None:
             expression = And(self._branch_filter_expr, expression)
