@@ -20,8 +20,9 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
-    BranchDiffJob, BranchSet, ClearDependentBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation)
+    BranchSet, ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
+    DeletionCallable, DeletionOperation)
+from canonical.launchpad.database.branchjob import BranchDiffJob
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.bugbranch import BugBranch
