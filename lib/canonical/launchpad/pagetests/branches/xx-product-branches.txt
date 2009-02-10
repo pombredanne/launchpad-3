@@ -143,21 +143,6 @@ Firstly lets associate release--0.9.1 with the 1.0 series.
     lp://dev/firefox/1.0
       Series: 1.0                   New ...
 
-If a series is marked as obsolete, then it is no longer shown at the start of
-the branch listings.
-
-    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+edit')
-    >>> admin_browser.getControl('Status').value = ['OBSOLETE']
-    >>> admin_browser.getControl('Change').click()
-
-    >>> browser.open('http://code.launchpad.dev/firefox')
-    >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr')[0:2]:
-    ...     print extract_text(row)
-    lp://dev/firefox
-      Series: trunk                 New ...
-    lp://dev/~sabdfl/firefox/release--0.9.1  New ...
-
 If series branches are marked as Abandoned they will not show up on the
 default listings.
 
