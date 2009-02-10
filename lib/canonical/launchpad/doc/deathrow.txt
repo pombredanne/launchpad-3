@@ -1,284 +1,428 @@
-= Testing the Package Death Row =
+= Package Death Row =
 
-  >>> import datetime
-  >>> import pytz
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-  >>> from canonical.archivepublisher.deathrow import DeathRow
-  >>> from canonical.archivepublisher.diskpool import DiskPool
-  >>> from canonical.launchpad.database import Distribution
-  >>> from canonical.launchpad.database import \
-  ...   SecureBinaryPackagePublishingHistory as SBPPH
-  >>> from canonical.launchpad.database import \
-  ...   SecureSourcePackagePublishingHistory as SSPPH
-  >>> from canonical.launchpad.database import \
-  ...   SourcePackageReleaseFile as SPRF
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
-  ...     def info(self, s):
-  ...         print "INFO:", s
-  ...     def exception(self, s):
-  ...         print "EXC:", s
+We start by creating a pair of temporary directories to be used in
+this test.
 
-We're working inside Ubuntu:
+    >>> import os
+    >>> pool_path = '/tmp/pool'
+    >>> os.makedirs(pool_path)
+    >>> temp_path = '/tmp/temp'
+    >>> os.makedirs(temp_path)
 
-  >>> distro = Distribution.selectOneBy(name="ubuntu")
+We will work within the Ubuntu distribution context only.
 
-Temporary directories to be used in tests:
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...      IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
-  >>> import os
-  >>> pool_path = '/tmp/pool'
-  >>> os.makedirs(pool_path)
-  >>> temp_path = '/tmp/temp'
-  >>> os.makedirs(temp_path)
+The no-operation use case, reflects the sampledata status.
+
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from canonical.archivepublisher.deathrow import DeathRow
+    >>> from canonical.archivepublisher.diskpool import DiskPool
+
+    >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
+    >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
+    >>> death_row.reap(dry_run=True)
+    DEBUG 0 Sources
+    DEBUG 0 Binaries
+    INFO Removing 0 files marked for reaping
+    INFO Total bytes freed: 0
+    DEBUG Marking 0 condemned packages as removed.
 
 
-== Nothing to do ==
+== Removal unreferenced packages ==
 
-The no-operation use case:
+Setup `SoyuzTestPublisher` for creating publications for Ubuntu/hoary.
 
-  >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
-  >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
-  >>> death_row.reap(dry_run=True)
-  DEBUG: 0 Sources
-  DEBUG: 0 Binaries
-  INFO: Removing 0 files marked for reaping
-  INFO: Total bytes freed: 0
-  DEBUG: Marking 0 condemned packages as removed.
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingPocket, PackagePublishingStatus)
 
-= Package Removal (dry-run) =
+    >>> hoary = ubuntu.getSeries('hoary')
 
-And, if we mark some packages to be pending removal. Source publication
-15 refers to alsa-utils_1.0.9a-4.dsc:
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
 
-  >>> this_year = datetime.datetime.now().year
-  >>> old_date = datetime.datetime(year=this_year - 2, month=1, day=1,
-  ...                              tzinfo=pytz.timezone('UTC'))
-  >>> future_date = datetime.datetime(year=this_year + 2, month=1, day=1,
-  ...                                 tzinfo=pytz.timezone('UTC'))
+Build a 'past' and a 'future' timestamps to be used as
+'scheduleddeletiondate'.
 
-  >>> publishing_record = SSPPH.get(15)
-  >>> print publishing_record.dateremoved
-  None
-  >>> publishing_record.status = PackagePublishingStatus.DELETED
-  >>> publishing_record.scheduleddeletiondate = old_date
+    >>> import datetime
+    >>> import pytz
 
-Source publication 25 includes 'foobar-1.0.dsc' (but the source pacakge
-is 'cdrkit'; our sample data is not entirely consistent but it
-doesn't matter for this test.)  It will be considered for file deletion
-but nothing actually deleted because other publications are referring to
-the files.
+    >>> UTC = pytz.timezone('UTC')
+    >>> this_year = datetime.datetime.now().year
 
-  >>> publishing_record = SSPPH.get(25)
-  >>> print publishing_record.distroseries.name
-  breezy-autotest
-  >>> print publishing_record.dateremoved
-  None
-  >>> publishing_record.status = PackagePublishingStatus.OBSOLETE
-  >>> publishing_record.scheduleddeletiondate = old_date
+    >>> past_date = datetime.datetime(
+    ...     year=this_year - 2, month=1, day=1, tzinfo=UTC)
+    >>> future_date = datetime.datetime(
+    ...     year=this_year + 2, month=1, day=1, tzinfo=UTC)
 
-Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
+Create source publications ready to be removed in different status.
 
-  >>> publishing_record = SSPPH.get(12)
-  >>> print publishing_record.distroseries.name
-  hoary
-  >>> print publishing_record.dateremoved
-  None
-  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> publishing_record.scheduleddeletiondate = old_date
+    >>> deleted_source = test_publisher.getPubSource(
+    ...     sourcename="deleted",
+    ...     status=PackagePublishingStatus.DELETED,
+    ...     scheduleddeletiondate=past_date)
 
-But so does source publication 20, which we'll set to pending removal
-but with a scheduled deletion date in the future. Because not all of the
-references to the file are ready to be removed, the file will not be
-deleted yet.
+    >>> superseded_source = test_publisher.getPubSource(
+    ...     sourcename="superseded",
+    ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     scheduleddeletiondate=past_date)
 
-  >>> publishing_record = SSPPH.get(20)
-  >>> print publishing_record.distroseries.name
-  warty
-  >>> print [f.libraryfile.filename
-  ...        for f in publishing_record.sourcepackagerelease.files]
-  [u'alsa-utils_1.0.9a-4ubuntu1.dsc']
-  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> publishing_record.scheduleddeletiondate = future_date
+    >>> obsolete_source = test_publisher.getPubSource(
+    ...     sourcename="obsolete",
+    ...     status=PackagePublishingStatus.OBSOLETE,
+    ...     scheduleddeletiondate=past_date)
 
-Knock off some binaries as well:
+Create a chain of dependent source publications:
 
-  >>> publishing_record = SBPPH.get(17)
-  >>> print publishing_record.dateremoved
-  None
-  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> publishing_record.scheduleddeletiondate = old_date
+ * 'removed_source': ready to be removed;
+ * 'postponed_source': still in quarantine time;
+ * 'published_source': still published.
 
-  >>> publishing_record = SBPPH.get(19)
-  >>> print publishing_record.dateremoved
-  None
-  >>> publishing_record.status = PackagePublishingStatus.DELETED
-  >>> publishing_record.scheduleddeletiondate = old_date
+    >>> removed_source = test_publisher.getPubSource(
+    ...     sourcename="stuck",
+    ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     scheduleddeletiondate=past_date)
 
-  >>> publishing_record = SBPPH.get(24)
-  >>> print publishing_record.dateremoved
-  None
-  >>> publishing_record.status = PackagePublishingStatus.OBSOLETE
-  >>> publishing_record.scheduleddeletiondate = old_date
+    >>> postponed_source = test_publisher.getPubSource(
+    ...     sourcename="stuck", version="667",
+    ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     scheduleddeletiondate=future_date)
 
-As above, both 19 and 21 binary publication refer to the same pmount
-binaries, and since 21 is not to be removed, 19 is supposed to be left
-alone too.  Publishing record 23 refers to package 'cdrkit'
-which we just made obsolete, and is also considered for death row
-processing.
+    >>> published_source = test_publisher.getPubSource(
+    ...     sourcename="stuck", version="668",
+    ...     status=PackagePublishingStatus.PUBLISHED)
 
-  >>> publishing_record = SBPPH.get(21)
-  >>> print [f.libraryfile.filename
-  ...        for f in publishing_record.binarypackagerelease.files]
-  [u'pmount_1.9-1_all.deb']
+They all share a source file.
 
-  >>> publishing_record = SBPPH.get(19)
-  >>> print [f.libraryfile.filename
-  ...        for f in publishing_record.binarypackagerelease.files]
-  [u'pmount_1.9-1_all.deb']
+    >>> shared_file = test_publisher.addMockFile('shared.tar.gz')
+    >>> discard = removed_source.sourcepackagerelease.addFile(shared_file)
+    >>> discard = postponed_source.sourcepackagerelease.addFile(shared_file)
+    >>> discard = published_source.sourcepackagerelease.addFile(shared_file)
 
-Our sample data has "cdrkit" with a .deb name of "foobar".  Go figure.
+Create binary publications ready to be removed in different status.
 
-  >>> publishing_record = SBPPH.get(24)
-  >>> print [f.libraryfile.filename
-  ...        for f in publishing_record.binarypackagerelease.files]
-  [u'foobar_1.0_all.deb']
+    >>> deleted_base_source = test_publisher.getPubSource(
+    ...     sourcename='ignored-one', architecturehintlist='i386')
+    >>> [deleted_binary] = test_publisher.getPubBinaries(
+    ...     binaryname="deleted-bin",
+    ...     pub_source=deleted_base_source,
+    ...     status=PackagePublishingStatus.DELETED,
+    ...     scheduleddeletiondate = past_date)
 
-Flush our these updates and kick the DeathRow processor again.
+    >>> superseded_base_source = test_publisher.getPubSource(
+    ...     sourcename='ignored-two', architecturehintlist='i386')
+    >>> [superseded_binary] = test_publisher.getPubBinaries(
+    ...     binaryname="superseded-bin",
+    ...     pub_source=superseded_base_source,
+    ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     scheduleddeletiondate = past_date)
 
-  >>> flush_database_updates()
-  >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
-  >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
-  >>> death_row.reap(dry_run=True)
-  DEBUG: ...
-  ...
-  DEBUG: (Not really!) removing main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb
-  DEBUG: File to remove main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb is not in pool, skipping
-  DEBUG: (Not really!) removing main cdrkit/foobar_1.0_all.deb
-  DEBUG: File to remove main cdrkit/foobar_1.0_all.deb is not in pool, skipping
-  DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.9a-4.dsc
-  DEBUG: File to remove main alsa-utils/alsa-utils_1.0.9a-4.dsc is not in pool, skipping
-  INFO: Total bytes freed: 0
-  DEBUG: Marking 3 condemned packages as removed.
+    >>> obsolete_base_source = test_publisher.getPubSource(
+    ...     sourcename='ignored-three', architecturehintlist='i386')
+    >>> [obsolete_binary] = test_publisher.getPubBinaries(
+    ...     binaryname="obsolete-bin",
+    ...     pub_source=obsolete_base_source,
+    ...     status=PackagePublishingStatus.OBSOLETE,
+    ...     scheduleddeletiondate = past_date)
 
-Note that while we are in dry run mode, the database queries are
-actually executed; the process-death-row script however does not commit
-the transaction when that flag is set.
+Dependent binary publications.
 
-Look at the results of our actions. Two packages removed (one source
-and one binary) and the date removed properly set up:
+    >>> removed_base_source = test_publisher.getPubSource(
+    ...     sourcename='ignored-four', architecturehintlist='i386',
+    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> [removed_binary] = test_publisher.getPubBinaries(
+    ...     binaryname="stuck-bin",
+    ...     pub_source=removed_base_source,
+    ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     scheduleddeletiondate = past_date)
 
-  >>> from canonical.database.sqlbase import get_transaction_timestamp
-  >>> transaction_timestamp = get_transaction_timestamp()
+    >>> [postponed_binary] =  removed_binary.copyTo(
+    ...     hoary, PackagePublishingPocket.PROPOSED, ubuntu.main_archive)
+    >>> postponed_binary.secure_record.status = (
+    ...     PackagePublishingStatus.SUPERSEDED)
+    >>> postponed_binary.secure_record.scheduleddeletiondate = future_date
 
-  >>> source_publishing_record = SSPPH.get(15)
-  >>> source_publishing_record.status.name
-  'DELETED'
+    >>> [published_binary] =  removed_binary.copyTo(
+    ...     hoary, PackagePublishingPocket.UPDATES, ubuntu.main_archive)
+    >>> published_binary.secure_record.status = (
+    ...     PackagePublishingStatus.PUBLISHED)
 
-  >>> source_publishing_record.dateremoved == transaction_timestamp
-  True
+Store the 'removable' context in the database as a checkpoint, so it
+can be reused later.
 
-  >>> binary_publishing_record = SBPPH.get(17)
-  >>> binary_publishing_record.status.name
-  'SUPERSEDED'
+    >>> transaction.commit()
 
-  >>> binary_publishing_record.dateremoved == transaction_timestamp
-  True
+Creating files on the temporary repository containing only one byte of
+data.
 
-Source publication 20 (has a future 'scheduled deletion date') and
-binary publication 19 (file hold by another active publication), of
-course are left alone:
+    >>> file_paths = (
+    ...     'd/deleted/deleted_666.dsc',
+    ...     'o/obsolete/obsolete_666.dsc',
+    ...     's/superseded/superseded_666.dsc',
+    ...     's/stuck/stuck_666.dsc',
+    ...     's/stuck/stuck_667.dsc',
+    ...     's/stuck/stuck_668.dsc',
+    ...     's/stuck/shared.tar.gz',
+    ...     'i/ignored-one/deleted-bin_666_i386.deb',
+    ...     'i/ignored-two/superseded-bin_666_i386.deb',
+    ...     'i/ignored-three/obsolete-bin_666_i386.deb',
+    ...     'i/ignored-four/stuck-bin_666_i386.deb',
+    ... )
 
-  >>> publishing_record = SSPPH.get(20)
-  >>> publishing_record.dateremoved is None
-  True
+    >>> for path in file_paths:
+    ...     full_path = os.path.join(pool_path, 'main', path)
+    ...     dir_path = os.path.dirname(full_path)
+    ...     if not os.path.exists(dir_path):
+    ...         os.makedirs(dir_path)
+    ...     open(full_path, 'w').write('X')
 
-  >>> publishing_record = SBPPH.get(19)
-  >>> publishing_record.dateremoved is None
-  True
+Create a helper function to check if the files exist in the temporary
+repository.
 
-Deathrow is also able to ignore files if there is any reference not
-yet dominated, for instance, just-deleted packages, they will contain
-empty 'scheduleddeletiondate' (see archivepublish/domination.py).
+    >>> def check_pool_files(file_paths):
+    ...     for path in file_paths:
+    ...         full_path = os.path.join(pool_path, 'main', path)
+    ...         if os.path.exists(full_path):
+    ...             print '%s: OK' % os.path.basename(path)
+    ...         else:
+    ...             print '%s: REMOVED' % os.path.basename(path)
 
-  >>> publishing_record = SSPPH.get(20)
-  >>> publishing_record.status = PackagePublishingStatus.DELETED
-  >>> publishing_record.scheduleddeletiondate = None
+    >>> check_pool_files(file_paths)
+    deleted_666.dsc:             OK
+    obsolete_666.dsc:            OK
+    superseded_666.dsc:          OK
+    stuck_666.dsc:               OK
+    stuck_667.dsc:               OK
+    stuck_668.dsc:               OK
+    shared.tar.gz:               OK
+    deleted-bin_666_i386.deb:    OK
+    superseded-bin_666_i386.deb: OK
+    obsolete-bin_666_i386.deb:   OK
+    stuck-bin_666_i386.deb:      OK
 
-Deathrow will simply ignore references to the just-deleted package,
-since it can't be sure whether or not they can be removed.
+Let's run DeathRow against the current 'removable' context.
 
-  >>> flush_database_updates()
-  >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
-  >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
-  >>> death_row.reap(dry_run=True)
-  DEBUG: ...
-  ...
-  INFO: Removing 0 files marked for reaping
-  INFO: Total bytes freed: 0
-  DEBUG: Marking 0 condemned packages as removed.
+    >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
+    >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
+    >>> death_row.reap()
+    DEBUG 4 Sources
+    DEBUG 3 Binaries
+    DEBUG Checking deleted_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
+    DEBUG Checking superseded_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
+    DEBUG Checking obsolete_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
+    DEBUG Checking stuck_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
+    DEBUG Checking shared.tar.gz (3e47b75000b0924b6c9ba5759a7cf15d)
+    DEBUG Cannot remove.
+    DEBUG Batch ...
+    DEBUG Checking deleted-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking superseded-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking obsolete-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Batch ...
+    INFO Removing 7 files marked for reaping
+    DEBUG Removing superseded/superseded_666.dsc from main
+    DEBUG Removing ignored-two/superseded-bin_666_i386.deb from main
+    DEBUG Removing stuck/stuck_666.dsc from main
+    DEBUG Removing obsolete/obsolete_666.dsc from main
+    DEBUG Removing ignored-three/obsolete-bin_666_i386.deb from main
+    DEBUG Removing deleted/deleted_666.dsc from main
+    DEBUG Removing ignored-one/deleted-bin_666_i386.deb from main
+    INFO Total bytes freed: 7
+    DEBUG Marking 7 condemned packages as removed.
 
-Since the just-deleted package was ignored its related publications
-were not removed from disk.
+Few details to pay attention in the log output:
 
-  >>> publishing_record = SSPPH.get(20)
-  >>> publishing_record.dateremoved is None
-  True
+ * All files were checked despite of having the same content. In
+   normal circunstances it can be achieved by having the same tarball
+   used with different names for two distinct sourcepackages
+   (openoffice and openoffice-l10n is an example);
 
-  >>> publishing_record = SBPPH.get(19)
-  >>> publishing_record.dateremoved is None
-  True
+ * The source file shared across publications ('shared.tar.gz') wasn't
+   removed as it is still related with 'live' or 'future-deletion'
+   publications.
 
+ * Dependent binaries are only possible via publication copies and are
+   only removed 'atomically', i.e. since there is a 'live' publication
+   in the UPDATES pocket they are not even considered for removal. See
+   more about this specific use-case below.
 
-== Package Removal (simulated real run) ==
+ * The files created in the temporary repository have only 1 byte,
+   thus removing 7 files results in the right sum of bytes freed (7
+   bytes).
 
-Test that bytes freed computing is handled correctly:
+The removed publications were marked as 'removed' and their publishing
+status was preserved in the database.
 
-  >>> def removeFileReturningSize(cn, sn, fn):
-  ...    print "DEBUG: (Not really!) removing %s %s/%s" % (cn, sn, fn)
-  ...    return 5
-  >>> death_row._removeFile = removeFileReturningSize
-  >>> publishing_record = SSPPH.get(2)
-  >>> publishing_record.status = PackagePublishingStatus.DELETED
-  >>> publishing_record.scheduleddeletiondate = old_date
-  >>> publishing_record.dateremoved = None
-  >>> publishing_record = SBPPH.get(24)
-  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> publishing_record.scheduleddeletiondate = old_date
-  >>> publishing_record.dateremoved = None
-  >>> flush_database_updates()
-  >>> death_row.reap()
-  DEBUG: ...
-  ...
-  INFO: Removing 2 files marked for reaping
-  DEBUG: (Not really!) removing main cdrkit/foobar_1.0_all.deb
-  DEBUG: (Not really!) removing main evolution/evolution-1.0.tar.gz
-  INFO: Total bytes freed: 10
-  DEBUG: Marking 2 condemned packages as removed.
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
 
-Test that random exceptions are handled correctly:
+    >>> removed_records = (
+    ...     deleted_source,
+    ...     superseded_source,
+    ...     obsolete_source,
+    ...     deleted_binary,
+    ...     superseded_binary,
+    ...     obsolete_binary,
+    ...     )
 
-  >>> def removeFileRaisingOtherException(cn, sn, fn):
-  ...    print "DEBUG: (Not really!) removing %s %s/%s" % (cn, sn, fn)
-  ...    raise TypeError
-  >>> death_row._removeFile = removeFileRaisingOtherException
-  >>> publishing_record = SSPPH.get(10)
-  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> publishing_record.scheduleddeletiondate = old_date
-  >>> flush_database_updates()
-  >>> death_row.reap()
-  DEBUG: ...
-  ...
-  INFO: Removing 1 files marked for reaping
-  DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc
-  EXC: Removing file main alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc generated exception, continuing
-  INFO: Total bytes freed: 0
-  DEBUG: Marking 1 condemned packages as removed.
+    >>> def check_removed(pub):
+    ...     properly_removed = pub.dateremoved == transaction_timestamp
+    ...     print pub.displayname, pub.status.name, properly_removed
 
+    >>> for pub in removed_records:
+    ...     check_removed(pub)
+    deleted 666 in hoary             DELETED    True
+    superseded 666 in hoary          SUPERSEDED True
+    obsolete 666 in hoary            OBSOLETE   True
+    deleted-bin 666 in hoary i386    DELETED    True
+    superseded-bin 666 in hoary i386 SUPERSEDED True
+    obsolete-bin 666 in hoary i386   OBSOLETE   True
 
-Remove temporary diretories used for tests:
+The dependent publications were processed as expected; only the one
+with 'scheduleddeletiondate' set to the past was removed, the one with
+future timestamp and the published one were kept. No binary
+publications was removed (see more below).
 
-  >>> import shutil
-  >>> shutil.rmtree(pool_path)
-  >>> shutil.rmtree(temp_path)
+    >>> dependent_records = (
+    ...    removed_source,
+    ...    postponed_source,
+    ...    published_source,
+    ...    removed_binary,
+    ...    postponed_binary,
+    ...    published_binary,
+    ...    )
+
+    >>> for pub in dependent_records:
+    ...     check_removed(pub)
+    stuck 666 in hoary          SUPERSEDED True
+    stuck 667 in hoary          SUPERSEDED False
+    stuck 668 in hoary          PUBLISHED  False
+    stuck-bin 666 in hoary i386 SUPERSEDED False
+    stuck-bin 666 in hoary i386 SUPERSEDED False
+    stuck-bin 666 in hoary i386 PUBLISHED  False
+
+Now let's check if the repository was also left in the expected status.
+
+    >>> check_pool_files(file_paths)
+    deleted_666.dsc:             REMOVED
+    obsolete_666.dsc:            REMOVED
+    superseded_666.dsc:          REMOVED
+    stuck_666.dsc:               REMOVED
+    stuck_667.dsc:               OK
+    stuck_668.dsc:               OK
+    shared.tar.gz:               OK
+    deleted-bin_666_i386.deb:    REMOVED
+    superseded-bin_666_i386.deb: REMOVED
+    obsolete-bin_666_i386.deb:   REMOVED
+    stuck-bin_666_i386.deb:      OK
+
+As mentioned above, binary publications are only removed attomically
+since 'live' publications implies in the same files anyways. In order
+to trigger the consideration of these specific publications we have to
+remove any 'live' publications.
+
+    >>> published_binary.secure_record.status = (
+    ...    PackagePublishingStatus.SUPERSEDED)
+    >>> published_binary.secure_record.scheduleddeletiondate = past_date
+
+Now DeathRow considers 'stuck-bin' publications.
+
+    >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
+    >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
+    >>> death_row.reap()
+    DEBUG 0 Sources
+    DEBUG 2 Binaries
+    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Cannot remove.
+    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Already verified.
+    DEBUG Batch ...
+    INFO Removing 0 files marked for reaping
+    INFO Total bytes freed: 0
+    DEBUG Marking 0 condemned packages as removed.
+
+After being considered for removal, DeathRow realized that this binary
+could not be removed because there is still a publishing record
+imposing quarantine on it. Once the quarantine is lifted, by setting a
+'past' scheduleddeletiondate, the binary file finally gets removed
+from the repository.
+
+    >>> postponed_binary.secure_record.scheduleddeletiondate = past_date
+
+That done, the publication and its files are free to be removed in a
+single pass.
+
+    >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
+    >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
+    >>> death_row.reap()
+    DEBUG 0 Sources
+    DEBUG 3 Binaries
+    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Already verified.
+    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Already verified.
+    DEBUG Batch ...
+    INFO Removing 1 files marked for reaping
+    DEBUG Removing ignored-four/stuck-bin_666_i386.deb from main
+    INFO Total bytes freed: 1
+    DEBUG Marking 3 condemned packages as removed.
+
+The file was removed from the repository.
+
+    >>> bin_paths = (
+    ...     'i/ignored-four/stuck-bin_666_i386.deb',
+    ... )
+
+    >>> check_pool_files(bin_paths)
+    stuck-bin_666_i386.deb: REMOVED
+
+And the related publishing records are marked as removed in the
+database.
+
+    >>> dependent_binaries = (
+    ...     published_binary,
+    ...     postponed_binary,
+    ...     removed_binary,
+    ... )
+
+    >>> for pub in dependent_binaries:
+    ...     check_removed(pub)
+    stuck-bin 666 in hoary i386 SUPERSEDED True
+    stuck-bin 666 in hoary i386 SUPERSEDED True
+    stuck-bin 666 in hoary i386 SUPERSEDED True
+
+We will rollback the DB changes to the checkpoint previously set where
+we still having publications pending removals.
+
+    >>> transaction.abort()
+
+DeathRow copes fine with random exceptions that may happen while
+removing files from disk. For testing this we will monkey-patch a
+remover-function that raise TypeError for all removal attempts.
+
+    >>> def removeFileRaisingOtherException(cn, sn, fn):
+    ...    print "DEBUG (Not really!) removing %s %s/%s" % (cn, sn, fn)
+    ...    raise TypeError
+
+    >>> death_row._removeFile = removeFileRaisingOtherException
+
+    >>> death_row.reap()
+    DEBUG 4 Sources
+    DEBUG 3 Binaries
+    ...
+    INFO Total bytes freed: 0
+    DEBUG Marking 7 condemned packages as removed.
+
+Note that when a removal fails it doesn't consider the space as being
+freed.
+
+Remove temporary diretories used for tests.
+
+    >>> import shutil
+    >>> shutil.rmtree(pool_path)
+    >>> shutil.rmtree(temp_path)
