@@ -46,6 +46,7 @@ __all__ = [
     'get_request_statements',
     'get_request_start_time',
     'get_request_duration',
+    'get_store_name',
     'hard_timeout_expired',
     'soft_timeout_expired',
     'StoreSelector',
@@ -486,3 +487,7 @@ def get_slave_store(storm_class):
     """Return the master Store for the given database class."""
     return get_store(storm_class, SLAVE_FLAVOR)
 
+
+def get_store_name(store):
+    """Helper to retrieve the store name for a ZStorm Store."""
+    getUtility(IZStorm)._name_index.get(store, None)
