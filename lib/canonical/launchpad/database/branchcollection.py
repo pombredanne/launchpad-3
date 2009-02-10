@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Implementations of `IBranchCollection`."""
 
 __metaclass__ = type
 __all__ = [
@@ -19,7 +19,6 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
-
 
 
 def revision_time_limit(day_limit):
