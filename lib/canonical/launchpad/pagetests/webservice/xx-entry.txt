@@ -112,9 +112,12 @@ Register the view as the WebServiceLayer view for an IPerson entry...
   >>> from canonical.lazr.rest.resource import EntryHTMLView
   >>> from canonical.launchpad.interfaces import IPerson
   >>> from zope.interface.interfaces import IInterface
-  >>> provideView(for_=IPerson, type=WebServiceLayer, providing=IInterface,
-  ...             name="canonical.lazr.rest.resource.EntryResource",
-  ...             factory=DummyView)
+  >>> view_name = "canonical.lazr.rest.resource.EntryResource"
+  >>> from zope.component import getGlobalSiteManager
+  >>> manager = getGlobalSiteManager()
+  >>> manager.registerAdapter(
+  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      provided=IInterface, name=view_name)
 
 ...and the XHTML representation of an IPerson will be the result of
 calling a DummyView object.
@@ -123,6 +126,21 @@ calling a DummyView object.
   HTTP/1.1 200 Ok
   ...
   <html>foo</html>
+
+Before we continue, here's some cleanup code to remove the custom view
+we just defined.
+
+  >>> from zope.component import getGlobalSiteManager
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(
+  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      provided=IInterface, name=view_name)
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
 
 
 == Custom operations ==
