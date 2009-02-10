@@ -67,7 +67,7 @@ from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     mutator_for, rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -374,8 +374,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
              readonly=True),
         exported_as='bug_target_name')
     bugwatch = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Remote Bug Details"), required=False,
+            schema=IBugWatch,
             vocabulary='BugWatch', description=_(
                 "Select the bug watch that "
                 "represents this task in the relevant bug tracker. If none "

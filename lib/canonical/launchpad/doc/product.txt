@@ -629,6 +629,15 @@ sorted active series.
     ...     print series.name
     trunk
 
+It is possible for the development series to be obsolete, and in that case, it
+still shows up in the list.
+
+    >>> firefox.development_focus.status = DistroSeriesStatus.OBSOLETE
+    >>> firefox_view = create_initialized_view(firefox, '+index')
+    >>> for series in firefox_view.sorted_active_series_list:
+    ...     print series.name
+    trunk
+
 
 = Stacking policy =
 

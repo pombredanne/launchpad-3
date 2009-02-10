@@ -21,7 +21,8 @@
                   getBugCounts bug_subscriptions getSubscriptions
                   getSubscription parent_subscription_target
                   getBugNotificationsRecipients
-                  getReleasesAndPublishingHistory" />
+                  getReleasesAndPublishingHistory
+                  upstream_product" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription
