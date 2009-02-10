@@ -106,6 +106,21 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = all_branches.inProduct(branch.product)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_ownedBy_and_inProduct(self):
+        # 'ownedBy' and 'inProduct' can combine to form a collection that is
+        # restricted to branches of a particular product owned by a particular
+        # person.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=person)
+        branch2 = self.factory.makeAnyBranch(owner=person)
+        branch3 = self.factory.makeProductBranch(product=product)
+        all_branches = GenericBranchCollection(self.store)
+        collection = all_branches.inProduct(product).ownedBy(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = all_branches.ownedBy(person).inProduct(product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
     # XXX: visible by user filter
 
     # XXX: registered by person filter
