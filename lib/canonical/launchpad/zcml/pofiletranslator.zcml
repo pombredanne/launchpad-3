@@ -1,0 +1,24 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <class class="canonical.launchpad.database.POFileTranslator">
+        <allow interface="canonical.launchpad.interfaces.IPOFileTranslator" />
+    </class>
+
+    <class class="canonical.launchpad.database.POFileTranslatorSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IPOFileTranslatorSet" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.POFileTranslatorSet"
+        provides="canonical.launchpad.interfaces.IPOFileTranslatorSet">
+
+        <allow
+            interface="canonical.launchpad.interfaces.IPOFileTranslatorSet" />
+
+    </securedutility>
+</configure>

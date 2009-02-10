@@ -12,7 +12,7 @@ __all__ = [
     'IStaticDiffSource',
     ]
 
-from zope.schema import Bytes, Int, Text, TextLine
+from zope.schema import Bool, Bytes, Int, Text, TextLine
 from zope.interface import Interface
 
 from canonical.lazr.fields import Reference
@@ -109,3 +109,9 @@ class IPreviewDiff(IDiff):
         Reference(
             Interface, readonly=True,
             title=_('The branch merge proposal that diff relates to.')))
+
+    stale = exported(
+        Bool(readonly=True, description=_(
+                'If the preview diff is stale, it is out of date when '
+                'compared to the tip revisions of the source, target, and '
+                'possibly dependent branches.')))

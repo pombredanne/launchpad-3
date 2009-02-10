@@ -31,6 +31,7 @@ that person's canonical URL.
   HTTP/1.1 303 See Other
   ...
   Location: http://.../~salgado
+  ...
 
 Data is served encoded in UTF-8; a good client will automatically
 convert it into Unicode.
@@ -237,7 +238,7 @@ use the web service to change the person's name to 'salgado2'.
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../~salgado2
-  <BLANKLINE>
+  ...
 
 At this point we can no longer manipulate the 'salgado' Person by
 sending HTTP requests to http://api.launchpad.dev/~salgado,
@@ -249,7 +250,7 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../~salgado
-  <BLANKLINE>
+  ...
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH. It's possible to fake a PATCH request with

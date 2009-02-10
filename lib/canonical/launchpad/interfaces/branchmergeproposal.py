@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -13,26 +13,23 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
-    'IBranchMergeProposalJob',
     'IBranchMergeProposalListingBatchNavigator',
-    'IMergeProposalCreatedJob',
-    'IMergeProposalCreatedJobSource',
+    'ICreateMergeProposalJob',
+    'ICreateMergeProposalJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import (
-    Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import IBranch
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
-from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported,
     operation_parameters)
@@ -294,8 +291,11 @@ class IBranchMergeProposal(Interface):
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
-    all_comments = Attribute(
-        _("All messages discussing this merge proposal"))
+    all_comments = exported(
+        CollectionField(
+            title=_("All messages discussing this merge proposal"),
+            value_type=Reference(schema=Interface), # ICodeReviewComment
+            readonly=True))
 
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
@@ -501,21 +501,6 @@ class IBranchMergeProposal(Interface):
         """
 
 
-class IBranchMergeProposalJob(Interface):
-    """A Job related to a Branch Merge Proposal."""
-
-    branch_merge_proposal = Object(
-        title=_('The BranchMergeProposal this job is about'),
-        schema=IBranchMergeProposal, required=True)
-
-    job = Object(title=_('The common Job attributes'), schema=IJob,
-        required=True)
-
-    metadata = Attribute('A dict of data about the job.')
-
-    def destroySelf():
-        """Destroy this object."""
-
 
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
@@ -579,18 +564,21 @@ for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
 
-class IMergeProposalCreatedJob(Interface):
-    """Interface for review diffs."""
+class ICreateMergeProposalJob(Interface):
+    """A Job that creates a branch merge proposal.
+
+    It uses a Message, which must contain a merge directive.
+    """
 
     def run():
-        """Perform the diff and email specified by this job."""
+        """Run this job and create the merge proposals."""
 
 
-class IMergeProposalCreatedJobSource(Interface):
-    """Interface for acquiring MergeProposalCreatedJobs."""
+class ICreateMergeProposalJobSource(Interface):
+    """Acquire MergeProposalJobs."""
 
-    def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
+    def create(message_bytes):
+        """Return a CreateMergeProposalJob for this message."""
 
     def iterReady():
-        """Iterate through all ready MergeProposalCreatedJobs."""
+        """Iterate through jobs that are ready to run."""

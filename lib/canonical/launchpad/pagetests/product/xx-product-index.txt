@@ -9,7 +9,9 @@ Check that the product main page works.
 
 The product page has a link to help translate it.
 
-    >>> user_browser.getLink('Help translate').click()
+    >>> link = user_browser.getLink(
+    ...     url='http://translations.launchpad.dev/evolution')
+    >>> link.click()
     >>> print user_browser.title
     Translations of The Evolution Groupware Application in Launchpad
 
