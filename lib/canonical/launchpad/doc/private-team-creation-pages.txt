@@ -180,9 +180,9 @@ And a non-public team must have restricted membership.
     ...     print error
     Private teams must have a Restricted subscription policy.
 
-= Use of 'private_' prefix =
+= Use of 'private-' prefix =
 
-Commerial admins can create private projects with the 'private_' prefix.
+Commercial admins can create private projects with the 'private-' prefix.
 
     >>> login('foo.bar@canonical.com')
     >>> form = {
@@ -230,5 +230,3 @@ users will get a blacklist message.
     >>> for msg in view.errors:
     ...     print msg[2]
     The name 'private-top-secret' has been blocked by the Launchpad administrators.
-
-When a regular user tries to create a 'private_'

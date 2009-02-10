@@ -12,8 +12,7 @@ explicit. There are two implicit subscribers.
     ...     print_direct_subscribers, print_indirect_subscribers)
 
     >>> browser.open(
-    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-    ...     "+bug/2/+bug-portlet-subscribers-content")
+    ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
 
     >>> print_direct_subscribers(browser.contents)
     Steve Alexander (Subscribed by Launchpad Janitor)
@@ -40,8 +39,7 @@ anyway, because he is an admin.
 All the implicit subscribers have been made explicit.
 
   >>> browser.open(
-  ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-  ...     "+bug/2/+bug-portlet-subscribers-content")
+  ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
   >>> print_direct_subscribers(browser.contents)
   Mark Shuttleworth (Subscribed by Foo Bar)
   Sample Person (Subscribed by Foo Bar)

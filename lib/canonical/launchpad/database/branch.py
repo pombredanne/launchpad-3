@@ -522,10 +522,10 @@ class Branch(SQLBase):
         """See `IBranch`."""
         # Imported here to avoid circular import.
         from canonical.launchpad.database.productseries import ProductSeries
-        return ProductSeries.select("""
-            ProductSeries.user_branch = %s OR
-            ProductSeries.import_branch = %s
-            """ % sqlvalues(self, self))
+        return Store.of(self).find(
+            ProductSeries,
+            Or(ProductSeries.user_branch == self,
+               ProductSeries.import_branch == self))
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
