@@ -126,13 +126,12 @@ function setupPackageListExpanders() {
     var tree_expanded = new Image();
     tree_expanded.src = '/@@/treeExpanded';
 
-    Y.all('#packages_list a.expander').each(function(expander) {
-        expander.on("click", function(e) {
-            e.preventDefault();
-            var expander = e.currentTarget;
-            toggleExpandableRow(expander);
-        });
-    });
+    function expander_handler (e) {
+        e.preventDefault();
+        toggleExpandableRow(e.currentTarget);
+    };
+
+    Y.all('#packages_list a.expander').on("click", expander_handler);
 }
 
 Y.on('domready', setupPackageListExpanders);
