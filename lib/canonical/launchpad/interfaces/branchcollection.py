@@ -25,8 +25,6 @@ class IBranchCollection(Interface):
 
 # XXX: filters for
 # - "visible to user"
-# - within product
-# - owned by person
 # - registered by person?
 # - subscribed by person?
 # - lifecycle_status

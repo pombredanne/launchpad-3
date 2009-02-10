@@ -81,6 +81,22 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             self.store, Branch.product == branch.product)
         self.assertEqual(1, collection.count)
 
+    def test_owned_by(self):
+        branch = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        collection = GenericBranchCollection(self.store).ownedBy(branch.owner)
+        self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_in_product(self):
+        branch = self.factory.makeProductBranch()
+        branch2 = self.factory.makeProductBranch()
+        branch3 = self.factory.makeAnyBranch()
+        all_branches = GenericBranchCollection(self.store)
+        collection = all_branches.inProduct(branch.product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
+    # XXX: visible by user filter
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
