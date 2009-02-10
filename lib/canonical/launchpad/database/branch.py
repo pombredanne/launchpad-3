@@ -26,7 +26,7 @@ from zope.interface import classProvides, implements
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
-from storm.expr import And, Join, LeftJoin, Or
+from storm.expr import And, Join, LeftJoin, Or, Select
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -468,11 +468,6 @@ class Branch(SQLBase):
             dependent_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))
 
-        for subscription in self.subscriptions:
-            deletion_operations.append(
-                DeletionCallable(subscription,
-                    _('This is a subscription to this branch.'),
-                    subscription.destroySelf))
         for bugbranch in self.bug_branches:
             deletion_operations.append(
                 DeletionCallable(bugbranch,
@@ -522,10 +517,10 @@ class Branch(SQLBase):
         """See `IBranch`."""
         # Imported here to avoid circular import.
         from canonical.launchpad.database.productseries import ProductSeries
-        return ProductSeries.select("""
-            ProductSeries.user_branch = %s OR
-            ProductSeries.import_branch = %s
-            """ % sqlvalues(self, self))
+        return Store.of(self).find(
+            ProductSeries,
+            Or(ProductSeries.user_branch == self,
+               ProductSeries.import_branch == self))
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -770,11 +765,21 @@ class Branch(SQLBase):
         if self.canBeDeleted():
             # BranchRevisions are taken care of a cascading delete
             # in the database.
-            # XXX: TimPenhey 28-Nov-2008, bug 302956
-            # cascading delete removed by accident, adding explicit delete
-            # back in temporarily.
-            Store.of(self).find(
-                BranchRevision, BranchRevision.branch == self).remove()
+            store = Store.of(self)
+            # Delete the branch subscriptions.
+            subscriptions = store.find(
+                BranchSubscription, BranchSubscription.branch == self)
+            subscriptions.remove()
+            # Delete any linked jobs.
+            # Using a sub-select here as joins in delete statements is not
+            # valid standard sql.
+            jobs = store.find(
+                Job,
+                Job.id.is_in(Select([BranchJob.jobID],
+                                    And(BranchJob.job == Job.id,
+                                        BranchJob.branch == self))))
+            jobs.remove()
+            # Now destroy the branch.
             SQLBase.destroySelf(self)
         else:
             raise CannotDeleteBranch(

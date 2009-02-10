@@ -7,7 +7,6 @@ To access /malone/assigned we have to be logged in.
   ...
   Location: http://localhost/bugs/assigned/+login
   ...
-  <BLANKLINE>
 
 
 When we're logged in as Foo Bar we can see our own bugs. Note that
@@ -21,4 +20,4 @@ report (at least by intent, if not by design) in FOAF.
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost/~name16/+assignedbugs
-  <BLANKLINE>
+  ...

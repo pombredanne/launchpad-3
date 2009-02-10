@@ -67,7 +67,7 @@ Go to the link sent by email.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost/token/.../+newaccount
-    <BLANKLINE>
+    ...
 
 
     >>> path = '%s/+newaccount' % base_path
@@ -160,7 +160,7 @@ Go to the link sent by email.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost/token/.../+newaccount
-    <BLANKLINE>
+    ...
 
 
     >>> path = '%s/+newaccount' % base_path

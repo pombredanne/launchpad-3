@@ -187,7 +187,7 @@ scheme (and don't require OAuth).
     HTTP/1.1 303 See Other
     ...
     Location: http://bugs.launchpad.dev/api/beta/~name12
-    <BLANKLINE>
+    ...
 
 But the regular authentication still doesn't work on the normal API
 virtual host:
