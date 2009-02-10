@@ -151,12 +151,10 @@ class BatchNavigator:
         self._singular_heading = singular
         self._plural_heading = plural
 
-    def cleanQueryString(self, query_string):
+    def cleanQueryString(self, query_string_params):
         """Removes start and batch params from a query string."""
-        query_parts = cgi.parse_qsl(query_string, keep_blank_values=True,
-                                    strict_parsing=False)
         return urllib.urlencode(
-            [(key, value) for (key, value) in query_parts
+            [(key, value) for (key, value) in query_string_params.items()
              if key not in self.transient_parameters])
 
     def generateBatchURL(self, batch):
@@ -164,8 +162,7 @@ class BatchNavigator:
         if not batch:
             return url
 
-        qs = self.request.environment.get('QUERY_STRING', '')
-        qs = self.cleanQueryString(qs)
+        qs = self.cleanQueryString(self.request.query_string_params)
         if qs:
             qs += "&"
 
