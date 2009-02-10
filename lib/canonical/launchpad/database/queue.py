@@ -1520,10 +1520,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX: dsilvers 2005-11-15: We should be able to get a
-        # sourcepackagerelease directly.
-        sourcepackagerelease = (
-            self.packageupload.builds[0].build.sourcepackagerelease)
+        sourcepackagerelease = self.packageupload.sourcepackagerelease
 
         # Ignore translation coming from PPA.
         if self.packageupload.isPPA():
