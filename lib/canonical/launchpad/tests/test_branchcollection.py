@@ -75,22 +75,30 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         self.assertEqual(3, collection.count)
 
     def test_count_respects_filter(self):
-        # XXX: comment
+        # If a collection is a subset of all possible branches, then the count
+        # will be the size of that subset. That is, 'count' respects any
+        # filters that are applied.
         branch = self.factory.makeProductBranch()
         branch2 = self.factory.makeAnyBranch()
         collection = GenericBranchCollection(
             self.store, Branch.product == branch.product)
         self.assertEqual(1, collection.count)
 
-    def test_owned_by(self):
-        # XXX: comment
+    def test_ownedBy(self):
+        # 'ownedBy' returns a new collection restricted to branches owned by
+        # the given person.
         branch = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
         collection = GenericBranchCollection(self.store).ownedBy(branch.owner)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_in_product(self):
-        # XXX: comment
+        # 'inProduct' returns a new collection restricted to branches in the
+        # given product.
+        #
+        # XXX: JonathanLange 2009-02-11: Maybe this should be a more generic
+        # method called 'onTarget' that takes a person (for junk), package or
+        # product.
         branch = self.factory.makeProductBranch()
         branch2 = self.factory.makeProductBranch()
         branch3 = self.factory.makeAnyBranch()
@@ -109,4 +117,3 @@ class TestGenericBranchCollection(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
