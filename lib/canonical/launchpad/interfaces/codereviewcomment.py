@@ -11,13 +11,16 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Object, Choice, Int, TextLine
+from zope.schema import Choice, Object, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference, ReferenceChoice
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class CodeReviewVote(DBEnumeratedType):
@@ -67,29 +70,37 @@ class CodeReviewVote(DBEnumeratedType):
 
 class ICodeReviewComment(Interface):
     """A link between a merge proposal and a message."""
+    export_as_webservice_entry()
 
-    id = Int(
-        title=_('DB ID'), required=True, readonly=True,
-        description=_("The tracking number for this comment."))
+    id = exported(
+        Int(
+            title=_('DB ID'), required=True, readonly=True,
+            description=_("The tracking number for this comment.")))
 
-    branch_merge_proposal = Object(
-        schema=IBranchMergeProposal, title=_('The branch merge proposal'))
+    branch_merge_proposal = exported(
+        Reference(
+            title=_('The branch merge proposal'), schema=IBranchMergeProposal,
+            required=True, readonly=True))
 
     message = Object(schema=IMessage, title=_('The message.'))
 
-    vote = Choice(
-        title=_('Reviewer says'), required=False, vocabulary=CodeReviewVote)
+    vote = exported(
+        Choice(
+            title=_('Reviewer says'), required=False,
+            vocabulary=CodeReviewVote))
 
-    vote_tag = TextLine(
-        title=_('Vote tag'), required=False)
+    vote_tag = exported(
+        TextLine(
+            title=_('Vote tag'), required=False))
 
-    title = TextLine()
+    title = exported(
+        TextLine(
+            title=_('The title of the comment')))
 
-    def getMessage():
-        """Get the message content from the message attribute.
-
-        :return: a bytestring, the message itself.
-        """
+    message_body = exported(
+        TextLine(
+            title=_('The body of the code review message.'),
+            readonly=True))
 
     def getAttachments():
         """Get the attachments from the original message.
@@ -103,6 +114,8 @@ class ICodeReviewComment(Interface):
 IBranchMergeProposal['getComment'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].value_type.schema = \
     ICodeReviewComment
+IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
+
 
 class ICodeReviewCommentDeletion(Interface):
     """This interface provides deletion of CodeReviewComments.

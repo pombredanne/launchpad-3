@@ -35,6 +35,11 @@
     />
   </class>
 
+  <class class="canonical.launchpad.database.CreateMergeProposalJob">
+    <allow interface="canonical.launchpad.interfaces.IMessageJob" />
+    <allow interface="canonical.launchpad.interfaces.ICreateMergeProposalJob" />
+  </class>
+
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
@@ -244,5 +249,10 @@
       class="canonical.launchpad.database.BranchMergeProposalGetter"
       provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
     <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalGetter" />
+  </securedutility>
+  <securedutility
+      component="canonical.launchpad.database.CreateMergeProposalJob"
+      provides="canonical.launchpad.interfaces.ICreateMergeProposalJobSource" >
+    <allow interface="canonical.launchpad.interfaces.ICreateMergeProposalJobSource" />
   </securedutility>
 </configure>
