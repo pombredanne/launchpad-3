@@ -339,7 +339,9 @@ class HTTPResource:
 
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
-        return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
+        accept_header = (self.request.form.pop('ws.accept', None)
+            or self.request.get('HTTP_ACCEPT'))
+        return self._parseAcceptStyleHeader(accept_header)
 
     def _parseETags(self, header_name):
         """Extract a list of ETags from a header and parse the list.
