@@ -51,6 +51,10 @@ class PPABinaryExpirer(LaunchpadCronScript):
 
         stay_of_execution = '30 days'
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # The subquery here has to repeat the checks for privacy and
+        # blacklistiing on *other* publications that are also done in
+        # the main loop for the archive being considered.
         store.execute("""
             UPDATE libraryfilealias AS lfa
             SET expires=now()
