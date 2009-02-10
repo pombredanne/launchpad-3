@@ -4,12 +4,9 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
 import unittest
 
-import pytz
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
