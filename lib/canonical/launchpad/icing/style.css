@@ -45,6 +45,7 @@
 .clearfix {display: block;}
 /* End hiding from MSIE for Mac */
 .visualClear {display: block; clear: both;} /* XXX Remove this */
+a {outline: none;}
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
@@ -224,7 +225,6 @@ table.listing div.actions {
 /* Text fields occupy as much of the page width as possible, minus a safety
 margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
-.codereviewcomment {font: 120% monospace;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
@@ -1166,7 +1166,7 @@ ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news {
-  list-style-image: url(/@@/news);
+  list-style-type: none;
   margin-bottom: 1em;
 }
 ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
@@ -1243,6 +1243,120 @@ beside the mugshot. */
 .product.series, .project {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
+/* --- Home --- */
+#home-description {
+  font-size: 1.5em;
+  font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
+  text-align: center;
+  margin: 1em 0 1em 0;
+  padding: 0.2em;
+  background-color: #ededed;
+}
+#home-stats {
+  margin: auto;
+  text-align: center;
+  color: gray;
+  max-width: 40em;
+}
+#home-page h2 {
+  width: 100%;
+  text-align: center;
+  margin-left: -0.8em;
+}
+#home-page img {
+  vertical-align: middle;
+}
+#featured-projects ul {
+  list-style-type: none;
+  width: 50%;
+  margin: 0;
+  padding: 0 ;
+  float: left;
+}
+#featured-projects li {
+  padding-bottom: 2px;
+}
+.home-banners {
+  background-color: #8890ff;
+  width: 220px;
+  padding: 1em 0 1em 1em;
+  margin-top: 1em;
+  overflow: hidden;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+.home-banners a {
+  font-weight: bold;
+  color: white;
+}
+.home-banner-container {
+  width: 100%;
+  background-color: #ededed;
+  padding: 1em;
+  padding-top: 0;
+}
+
+/* Soyuz-related styles (that don't have a facet, but generally are
+ * under Overview)
+ */
+#sources-list-entries {
+  border: 1px solid gray;
+  padding: 0.3em;
+  float: left; /* So the border doesn't use 100% of the page */
+}
+
+#package_counters {
+    clear: both;
+    float: left;
+}
+
+div#build-status-summary {
+    clear:right;
+    float:right;
+}
+
+div#build-status-summary h2 {
+    margin-top:0;
+}
+
+div#build-status-summary th {
+    text-align:left;
+}
+
+div#signing-key {
+    clear: both;
+    float: left;
+}
+
+div#signing-key p {
+    max-width: none;
+    background: url(/@@/info) center left no-repeat;
+    padding-left: 18px;
+}
+
+div#signing-key a {
+    font-weight: bold;
+}
+
+div.archive #description {
+    width: 50em;
+}
+div.archive #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
+table#package-requests {
+    width: 60em;
+    margin: 1em 0;
+}
+table#package-requests td{
+    padding: 0.5em;
+}
+h1.disabled {
+    color: grey;
+}
 
 /* --- Code --- */
 
@@ -1301,6 +1415,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
 
+.stale-diff { color: #f60; }
+.conflicts-diff { color: red; }
+
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -1323,7 +1440,10 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .commentVote {
   float: right;
 }
-
+.codereviewcomment {font: 120% monospace;}
+.codereviewcomment .attachment {
+  background-color: #f6f6f6;
+}
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */
@@ -1617,11 +1737,13 @@ div.right div.portlet { /* is this necessary? */
 }
 div.columns div.right div.portlet {border: none; padding: 0;} /* BlueprintsFP */
 
-div.three.column {width: 30%; margin-right: 3%;}
+div.three.column.middle {margin-right: 1%;}
 div.three.column.left, div.three.column.middle, div.three.column.right {
   clear: none;
   float: left;
+  width: 33%;
 }
+div.three.column.left, div.three.column.right { margin: 0;}
 .title {
   font-weight: bold;
 }

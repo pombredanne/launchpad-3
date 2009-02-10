@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -7,23 +7,32 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BranchMergeProposalExists',
     'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICreateMergeProposalJob',
+    'ICreateMergeProposalJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, List, Text
+from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -31,6 +40,10 @@ class InvalidBranchMergeProposal(Exception):
 
     The text of the exception is the rule violation.
     """
+
+
+class BranchMergeProposalExists(InvalidBranchMergeProposal):
+    """Raised if there is already a matching BranchMergeProposal."""
 
 
 class UserNotBranchReviewer(Exception):
@@ -123,105 +136,166 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
 class IBranchMergeProposal(Interface):
     """Branch merge proposals show intent of landing one branch on another."""
 
+    export_as_webservice_entry()
+
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
         description=_("The tracking number for this question."))
 
-    registrant = PublicPersonChoice(
-        title=_('Person'), required=True,
-        vocabulary='ValidPersonOrTeam', readonly=True,
-        description=_('The person who registered the landing target.'))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_('Person'), required=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
+            description=_('The person who registered the landing target.')))
 
-    source_branch = Choice(
-        title=_('Source Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
-        description=_("The branch that has code to land."))
+    source_branch = exported(
+        Reference(
+            title=_('Source Branch'), schema=IBranch,
+            required=True, readonly=True,
+            description=_("The branch that has code to land.")))
 
-    target_branch = Choice(
-        title=_('Target Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
-        description=_(
-            "The branch that the source branch will be merged into."))
+    target_branch = exported(
+        Reference(
+            title=_('Target Branch'),
+            schema=IBranch, required=True, readonly=True,
+            description=_(
+                "The branch that the source branch will be merged into.")))
 
-    dependent_branch = Choice(
-        title=_('Dependent Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=False, readonly=True,
-        description=_("The branch that the source branch branched from. "
-                      "If this is the same as the target branch, then leave "
-                      "this field blank."))
+    dependent_branch = exported(
+        Reference(
+            title=_('Dependent Branch'),
+            schema=IBranch, required=False, readonly=True,
+            description=_("The branch that the source branch branched from. "
+                          "If this is the same as the target branch, then "
+                          "leave this field blank.")))
 
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
 
-    queue_status = Choice(
-        title=_('Status'),
-        vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
-        description=_("The current state of the proposal."))
+    queue_status = exported(
+        Choice(
+            title=_('Status'),
+            vocabulary=BranchMergeProposalStatus, required=True,
+            readonly=True,
+            description=_("The current state of the proposal.")))
 
-    reviewer = Attribute(
-        _("The person that accepted (or rejected) the code for merging."))
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Default Review Team'),
+            required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The reviewer of a branch is the person or team "
+                          "that is responsible for reviewing proposals and "
+                          "merging into this branch.")))
+
+
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Review person or team'), required=False,
+            readonly=True, vocabulary='ValidPersonOrTeam',
+            description=_("The person that accepted (or rejected) the code "
+                          "for merging.")))
+
+    review_diff = Reference(
+        IStaticDiff, title=_('The diff to be used for reviews.'),
+        readonly=True)
+
+    preview_diff = exported(
+        Reference(
+            IPreviewDiff,
+            title=_('The current diff of the source branch against the '
+                    'target branch.'), readonly=True))
 
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
 
 
-    commit_message = Summary(
-        title=_("Commit Message"), required=False,
-        description=_("The commit message that should be used when merging "
-                      "the source branch."))
+    commit_message = exported(
+        Summary(
+            title=_("Commit Message"), required=False,
+            description=_("The commit message that should be used when "
+                          "merging the source branch.")))
 
-    queue_position = Int(
-        title=_("Queue Position"), required=False, readonly=True,
-        description=_("The position in the queue."))
+    queue_position = exported(
+        Int(
+            title=_("Queue Position"), required=False, readonly=True,
+            description=_("The position in the queue.")))
 
-    queuer = Choice(
-        title=_('Queuer'), vocabulary='ValidPerson',
-        required=False, readonly=True,
-        description=_("The person that queued up the branch."))
+    queuer = exported(
+        PublicPersonChoice(
+            title=_('Queuer'), vocabulary='ValidPerson',
+            required=False, readonly=True,
+            description=_("The person that queued up the branch.")))
 
-    queued_revision_id = Attribute(
-        _("The revision id that has been queued for landing."))
+    queued_revision_id = exported(
+        Text(
+            title=_("Queued Revision ID"), readonly=True,
+            required=False,
+            description=_("The revision id that has been queued for "
+                          "landing.")))
 
-    merged_revno = Int(
-        title=_("Merged Revision Number"), required=False,
-        description=_("The revision number on the target branch which "
-                      "contains the merge from the source branch."))
+    merged_revno = exported(
+        Int(
+            title=_("Merged Revision Number"), required=False,
+            readonly=True,
+            description=_("The revision number on the target branch which "
+                          "contains the merge from the source branch.")))
 
-    date_merged = Datetime(
-        title=_('Date Merged'), required=False,
-        description=_("The date that the source branch was merged into the "
-                      "target branch"))
+    date_merged = exported(
+        Datetime(
+            title=_('Date Merged'), required=False,
+            readonly=True,
+            description=_("The date that the source branch was merged into "
+                          "the target branch")))
 
     title = Attribute(
         "A nice human readable name to describe the merge proposal. "
         "This is generated from the source and target branch, and used "
         "as the tal fmt:link text and for email subjects.")
 
-    merge_reporter = Attribute(
-        "The user that marked the branch as merged.")
+    merge_reporter = exported(
+        PublicPersonChoice(
+            title=_("Merge Reporter"), vocabulary="ValidPerson",
+            required=False, readonly=True,
+            description=_("The user that marked the branch as merged.")))
 
-    supersedes = Attribute(
-        "The branch merge proposal that this one supersedes.")
-    superseded_by = Attribute(
-        "The branch merge proposal that supersedes this one.")
+    supersedes = exported(
+        Reference(
+            title=_("Supersedes"),
+            schema=Interface, required=False, readonly=True,
+            description=_("The branch merge proposal that this one "
+                          "supersedes.")))
+    superseded_by = exported(
+        Reference(
+            title=_("Superseded By"), schema=Interface,
+            required=False, readonly=True,
+            description=_(
+                "The branch merge proposal that supersedes this one.")))
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_review_requested = Datetime(
-        title=_('Date Review Requested'), required=False, readonly=True)
-    date_reviewed = Datetime(
-        title=_('Date Reviewed'), required=False, readonly=True)
-    date_queued = Datetime(
-        title=_('Date Queued'), required=False, readonly=True)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'), required=True, readonly=True))
+    date_review_requested = exported(
+        Datetime(
+            title=_('Date Review Requested'), required=False, readonly=True))
+    date_reviewed = exported(
+        Datetime(
+            title=_('Date Reviewed'), required=False, readonly=True))
+    date_queued = exported(
+        Datetime(
+            title=_('Date Queued'), required=False, readonly=True))
     # Cannote use Object as this would cause circular dependencies.
     root_comment = Attribute(
         _("The first message in discussion of this merge proposal"))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
-    all_comments = Attribute(
-        _("All messages discussing this merge proposal"))
+    all_comments = exported(
+        CollectionField(
+            title=_("All messages discussing this merge proposal"),
+            value_type=Reference(schema=Interface), # ICodeReviewComment
+            readonly=True))
 
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
@@ -389,16 +463,48 @@ class IBranchMergeProposal(Interface):
             unspecified, the root message is used.
         """
 
-    def createCommentFromMessage(message, vote, review_type):
+    def createCommentFromMessage(message, vote, review_type,
+                                 original_email=None):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
+        :param original_email: Optional original email message.
         """
 
     def deleteProposal():
         """Delete the proposal to merge."""
+
+    @operation_parameters(
+        diff_content=Bytes(), diff_stat=Text(),
+        source_revision_id=TextLine(), target_revision_id=TextLine(),
+        dependent_revision_id=TextLine(), conflicts=Text())
+    @export_write_operation()
+    def updatePreviewDiff(diff_content, diff_stat,
+                        source_revision_id, target_revision_id,
+                        dependent_revision_id=None, conflicts=None):
+        """Update the preview diff for this proposal.
+
+        If there is not an existing preview diff, one will be created.
+
+        :param diff_content: The raw bytes of the diff content to be put in
+            the librarian.
+        :param diff_stat: Text describing the files added, remove or modified.
+        :param source_revision_id: The revision id that was used from the
+            source branch.
+        :param target_revision_id: The revision id that was used from the
+            target branch.
+        :param dependent_revision_id: The revision id that was used from the
+            dependent branch.
+        :param conflicts: Text describing the conflicts if any.
+        """
+
+
+
+IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
+IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
+IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
 
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
@@ -428,6 +534,23 @@ class IBranchMergeProposalGetter(Interface):
             understood.
         """
 
+    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+        """Returen BranchMergeProposals associated with a reviewer.
+
+        :param context: Either a 'Person' or 'Product'.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        :param visible_by_user: If a person is not supplied, only merge
+            proposals based on public branches are returned.  If a person is
+            supplied, merge proposals based on both public branches, and the
+            private branches that the person is entitled to see are returned.
+            Private branches are only visible to the owner and subscribers of
+            the branch, and to LP admins.
+        :raises BadBranchMergeProposalSearchContext: If the context is not
+            understood.
+        """
+
     def getVoteSummariesForProposals(proposals):
         """Return the vote summaries for the proposals.
 
@@ -436,3 +559,26 @@ class IBranchMergeProposalGetter(Interface):
 
         :return: A dict keyed on the proposals.
         """
+
+for name in ['supersedes', 'superseded_by']:
+    IBranchMergeProposal[name].schema = IBranchMergeProposal
+
+
+class ICreateMergeProposalJob(Interface):
+    """A Job that creates a branch merge proposal.
+
+    It uses a Message, which must contain a merge directive.
+    """
+
+    def run():
+        """Run this job and create the merge proposals."""
+
+
+class ICreateMergeProposalJobSource(Interface):
+    """Acquire MergeProposalJobs."""
+
+    def create(message_bytes):
+        """Return a CreateMergeProposalJob for this message."""
+
+    def iterReady():
+        """Iterate through jobs that are ready to run."""

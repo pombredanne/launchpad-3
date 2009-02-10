@@ -1,4 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -34,7 +35,7 @@ from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.server.http.commonaccesslogger import CommonAccessLogger
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -124,6 +125,10 @@ class StepsToGo:
     >>> bool(stepstogo)
     False
 
+    >>> request = FakeRequest([], ['baz', 'bar', 'foo'])
+    >>> list(StepsToGo(request))
+    ['foo', 'bar', 'baz']
+
     """
 
     @property
@@ -132,6 +137,9 @@ class StepsToGo:
 
     def __init__(self, request):
         self.request = request
+
+    def __iter__(self):
+        return self
 
     def consume(self):
         """Remove the next path step and return it.
@@ -146,6 +154,12 @@ class StepsToGo:
         self.request._traversed_names.append(nextstep)
         self.request.setTraversalStack(stack)
         return nextstep
+
+    def next(self):
+        value = self.consume()
+        if value is None:
+            raise StopIteration
+        return value
 
     def startswith(self, *args):
         """Return whether the steps to go start with the names given."""
@@ -177,6 +191,10 @@ class ApplicationServerSettingRequestFactory:
 
     def __call__(self, body_instream, environ, response=None):
         """Equivalent to the request's __init__ method."""
+        # Make sure that HTTPS variable is set so that request.getURL() is
+        # sane
+        if self.protocol == 'https':
+            environ['HTTPS'] = 'on'
         request = self.requestfactory(body_instream, environ, response)
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request
@@ -464,6 +482,9 @@ class BasicLaunchpadRequest:
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
+        # Our response always vary based on authentication.
+        self.response.setHeader('Vary', 'Cookie, Authorization')
+
     @property
     def stepstogo(self):
         return StepsToGo(self)
@@ -471,7 +492,7 @@ class BasicLaunchpadRequest:
     def retry(self):
         """See IPublisherRequest."""
         new_request = super(BasicLaunchpadRequest, self).retry()
-        # propagate the list of keys we have set in the WSGI environment
+        # Propagate the list of keys we have set in the WSGI environment.
         new_request._wsgi_keys = self._wsgi_keys
         return new_request
 
@@ -939,6 +960,13 @@ class TranslationsPublication(LaunchpadBrowserPublication):
 class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.TranslationsLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(TranslationsBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Some of the responses from translations vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 # ---- bugs
 
 class BugsPublication(LaunchpadBrowserPublication):
@@ -954,6 +982,14 @@ class AnswersPublication(LaunchpadBrowserPublication):
 
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.AnswersLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(AnswersBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Many of the responses from Answers vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 
 # ---- shipit
 
@@ -1269,6 +1305,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
     """Request type for a resource published through the web service."""
     implements(canonical.launchpad.layers.WebServiceLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(WebServiceClientRequest, self).__init__(
+            body_instream, environ, response)
+        # Web service requests use content negotiation.
+        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
+
 
 def website_request_to_web_service_request(website_request):
     """An adapter from a web browser request to a web service request.
@@ -1277,8 +1319,11 @@ def website_request_to_web_service_request(website_request):
     browser requests.
     """
     body = website_request.bodyStream.getCacheStream().read()
-    web_service_request = WebServiceClientRequest(
-        body, website_request._environ)
+    environ = dict(website_request._environ)
+    # Zope picks up on SERVER_URL when setting the _app_server attribute
+    # of the new request.
+    environ['SERVER_URL'] = website_request.getApplicationURL()
+    web_service_request = WebServiceClientRequest(body, environ)
     web_service_request.setVirtualHostRoot(names=["api", "beta"])
     web_service_request.setPublication(WebServicePublication(None))
     return web_service_request

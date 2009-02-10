@@ -9,6 +9,7 @@ __all__ = [
     'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
+    'DistributionArchivesView',
     'DistributionBreadcrumbBuilder',
     'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
@@ -43,7 +44,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.archive import traverse_archive
+from canonical.launchpad.browser.archive import traverse_distro_archive
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
@@ -53,13 +54,13 @@ from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.interfaces.archive import IArchiveSet
+from canonical.launchpad.interfaces.archive import (
+    IArchiveSet, ArchivePurpose)
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -146,7 +147,7 @@ class DistributionNavigation(
 
     @stepthrough('+archive')
     def traverse_archive(self, name):
-        return traverse_archive(self.context, name)
+        return traverse_distro_archive(self.context, name)
 
 
 class DistributionSetNavigation(Navigation):
@@ -594,6 +595,23 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
         return english_list(linked_milestones)
 
 
+class DistributionArchivesView(LaunchpadView):
+
+    @property
+    def batchnav(self):
+        """Return the batch navigator for the archives."""
+        return BatchNavigator(self.archive_list, self.request)
+
+    @cachedproperty
+    def archive_list(self):
+        """Returns the list of archives for the given distribution.
+
+        The context may be an IDistroSeries or a users archives.
+        """
+        results = getUtility(IArchiveSet).getArchivesForDistribution(
+            self.context, purposes=[ArchivePurpose.COPY], user=self.user)
+        return results.order_by('date_created DESC')
+
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
@@ -716,16 +734,6 @@ class DistributionEditView(LaunchpadEditFormView):
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-
-    def isAdmin(self):
-        return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-
-    def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        if not self.isAdmin():
-            self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers',
-                'enable_bug_expiration')
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""

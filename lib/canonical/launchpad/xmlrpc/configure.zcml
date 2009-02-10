@@ -193,4 +193,12 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.PermissionDenied">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NotFound">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
 </configure>

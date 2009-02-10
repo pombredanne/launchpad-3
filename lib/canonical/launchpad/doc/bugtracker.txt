@@ -13,6 +13,15 @@ and an external bug, see bugwatch.txt.
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.timezone('UTC'))
 
+    >>> def print_watches(bugtracker):
+    ...     watches = sorted(
+    ...         bugtracker.getBugWatchesNeedingUpdate(23),
+    ...         key=lambda watch: (watch.remotebug, watch.bug.id))
+    ...
+    ...     for bug_watch in watches:
+    ...         print "Remote bug: %s LP bug: %s" % (
+    ...             bug_watch.remotebug, bug_watch.bug.id)
+
 We must be an admin to modify bug watches later on.
 
     >>> login('foo.bar@canonical.com')
@@ -47,11 +56,46 @@ remote bug.
 The watches needing updating should the ones with old statuses, 2000 and 42:
 
     >>> flush_database_updates()
-    >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate(23):
-    ...     print bug_watch.remotebug, bug_watch.bug.id
-    2000 1
-    42 2
-    42 1
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 2000 LP bug: 1
+    Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
+
+getBugWatchesNeedingUpdate() will also return bug watches that have
+un-pushed bug comments that need pushing to remote bug trackers,
+regardless of whether they have been checked recently or not. We'll add
+a comment to the bug watch against remote bug 123543 to demonstrate
+this.
+
+    >>> import transaction
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> message = factory.makeMessage(
+    ...     'Unpushed comment', '... is unpushed')
+
+    >>> print bug_watches[1].remotebug
+    123543
+
+    >>> bug_message = bug_watches[1].addComment(None, message)
+    >>> transaction.commit()
+
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 123543 LP bug: 1
+    Remote bug: 2000   LP bug: 1
+    Remote bug: 42     LP bug: 1
+    Remote bug: 42     LP bug: 2
+
+Once the comment has been pushed to the remote bug the bug watch will no
+longer appear in the set returned by getBugWatchesNeedingUpdate().
+
+    >>> bug_message.remote_comment_id = '1'
+    >>> transaction.commit()
+
+    >>> print_watches(mozilla_bugzilla)
+    Remote bug: 2000 LP bug: 1
+    Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
 
 
 == Auto-creating bug trackers ==
@@ -266,9 +310,12 @@ bug messages which have been imported for a given bug tracker.
     ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
     ...         print '- message subject: %s' % bug_message.message.subject
 
-The Mozilla Bugzilla has no imported bug messages:
+The Mozilla Bugzilla has only one imported bug message.
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
 
 We will forge some BugMessage records before trying again:
 
@@ -284,6 +331,9 @@ We will forge some BugMessage records before trying again:
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
     * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
+    * bug: 1
     - remote bug: 2000
     - message subject: You are Number 1.
     * bug: 1
@@ -295,3 +345,122 @@ We will forge some BugMessage records before trying again:
     * bug: 2
     - remote bug: 42
     - message subject: You are Number 4.
+
+
+== Filing a bug on the remote tracker ==
+
+The IBugTracker interface defines a method, getBugFilingLink(), which
+returns the URL of the bug filing form on the remote bug tracker. It
+accepts a parameter, remote_product, which is the name of the
+product on the remote tracker and is used to ensure that the bug filing
+form is set to file a bug on the correct remote product.
+
+    >>> print mozilla_bugzilla.getBugFilingLink('testproduct')
+    https://bugzilla.mozilla.org/enter_bug.cgi?product=testproduct
+
+For the RT tracker we specify a Queue in which to file a ticket.
+
+    >>> example_rt = factory.makeBugTracker(
+    ...     'http://rt.example.com', BugTrackerType.RT)
+    >>> print example_rt.getBugFilingLink('42')
+    http://rt.example.com/Ticket/Create.html?Queue=42
+
+SourceForge and its kin use a Group ID and an ATID to specify which
+product a bug should be filed against.
+
+    >>> example_sourceforge = factory.makeBugTracker(
+    ...     'http://forge.example.com', BugTrackerType.SOURCEFORGE)
+    >>> print example_sourceforge.getBugFilingLink(('123', '456'))
+    http://forge.example.com/tracker/?func=add&group_id=123&atid=456
+
+The URL returned by the SourceForge celebrity points to the new version
+of the SourceForge bug tracker.
+
+    >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
+    >>> print sourceforge.getBugFilingLink(('123', '456'))
+    http://sourceforge.net/tracker2/?func=add&group_id=123&atid=456
+
+Savane uses a single group URL parameter to specify which product the
+bug should be filed against.
+
+    >>> example_savane = factory.makeBugTracker(
+    ...     'http://savane.example.com', BugTrackerType.SAVANE)
+    >>> print example_savane.getBugFilingLink('testproduct')
+    http://savane.example.com/bugs/?func=additem&group=testproduct
+
+Some bug trackers will ignore the passed remote_product because they use
+static URLs or track only one product.
+
+    >>> example_phpproject = factory.makeBugTracker(
+    ...     'http://php.example.com', BugTrackerType.PHPPROJECT)
+    >>> print example_phpproject.getBugFilingLink('testproduct')
+    http://php.example.com/report.php
+
+    >>> example_trac = factory.makeBugTracker(
+    ...     'http://trac.example.com', BugTrackerType.TRAC)
+    >>> print example_trac.getBugFilingLink('testproduct')
+    http://trac.example.com/newticket
+
+    >>> example_roundup = factory.makeBugTracker(
+    ...     'http://roundup.example.com', BugTrackerType.ROUNDUP)
+    >>> print example_roundup.getBugFilingLink('testproduct')
+    http://roundup.example.com/issue?@template=item
+
+    >>> example_mantis = factory.makeBugTracker(
+    ...     'http://mantis.example.com', BugTrackerType.MANTIS)
+    >>> print example_mantis.getBugFilingLink('testproduct')
+    http://mantis.example.com/bug_report_advanced_page.php
+
+The EMAILADDRESS BugTrackerType is a special case and returns None.
+
+    >>> example_emailaddress = factory.makeBugTracker(
+    ...     'http://bork.example.com', BugTrackerType.EMAILADDRESS)
+    >>> print example_emailaddress.getBugFilingLink('testproduct')
+    None
+
+As does DebBugs, which is also an email-based bugtracker.
+
+    >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
+    >>> print debbugs.getBugFilingLink('testproduct')
+    None
+
+The remote_product values passed to getBugFilingLink() are URL-encoded
+to ensure that the returned URL is valid.
+
+    >>> print mozilla_bugzilla.getBugFilingLink('@testproduct&')
+    https://bugzilla.mozilla.org/enter_bug.cgi?product=%40testproduct%26
+
+
+== BugTracker.multi_product ==
+
+As described above, some bug trackers don't need to have a remote
+product passed to `getBugFilingLink()` in order to be able to return a
+bug filing URL because they use static URLs for bug filing or only track
+one product.
+
+`IBugTracker` defines an attribute, `multi_product` which can be used to
+check whether a given bug tracker can return a bug filing URL without
+being passed a remote product.
+
+Our example Trac bug tracker's `multi_product` property will
+be False, since it only tracks one product at a time.
+
+    >>> print example_trac.multi_product
+    False
+
+However, Bugzilla instances require remote products in order to be able
+to return a bug filing URL.
+
+    >>> print mozilla_bugzilla.multi_product
+    True
+
+There is a test in database/tests/test_bugtracker.py that checks that
+the constraints of multi_product=True are not violated by any
+BugTracker.
+
+If you try passing remote_product=None to a multi product bugtracker's
+getBugFilingLink() method you'll get None back, since it requires a
+remote product in order to generate a URL.
+
+    >>> print mozilla_bugzilla.getBugFilingLink(None)
+    None

@@ -3,19 +3,23 @@
 """Tests for BranchMergeProposal mailings"""
 
 from unittest import TestLoader, TestCase
+import transaction
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
+from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.mailout.branchmergeproposal import (
-    BMPMailer, send_merge_proposal_modified_notifications, RecipientReason)
+    BMPMailer, send_merge_proposal_modified_notifications)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing import (
@@ -25,19 +29,27 @@ from canonical.launchpad.testing import (
 class TestMergeProposalMailing(TestCase):
     """Test that reasonable mailings are generated"""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
         login('admin@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
-    def makeProposalWithSubscriber(self):
+    def makeProposalWithSubscriber(self, diff_text=None):
+        if diff_text is not None:
+            review_diff = StaticDiff.acquireFromText(
+                self.factory.getUniqueString('revid'),
+                self.factory.getUniqueString('revid'),
+                diff_text)
+            transaction.commit()
+        else:
+            review_diff = None
         registrant = self.factory.makePerson(
             name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
         product = self.factory.makeProduct(name='super-product')
-        bmp = self.factory.makeBranchMergeProposal(registrant=registrant,
-            product=product)
+        bmp = self.factory.makeBranchMergeProposal(
+            registrant=registrant, product=product, review_diff=review_diff)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
@@ -58,7 +70,7 @@ class TestMergeProposalMailing(TestCase):
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0]
         bmp.root_message_id = None
-        headers, subject, body = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual("""\
 Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar.
 
@@ -66,18 +78,18 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
 --\x20
 %s
 %s
-""" % (canonical_url(bmp), reason.getReason()), body)
-        self.assertEqual('Proposed merge of '
+""" % (canonical_url(bmp), reason.getReason()), ctrl.body)
+        self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
-            'lp://dev/~mary/super-product/bar', subject)
+            'lp://dev/~mary/super-product/bar', ctrl.subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
              'X-Launchpad-Project': bmp.source_branch.product.name,
              'Reply-To': bmp.address,
              'Message-Id': '<foobar-example-com>'},
-            headers)
-        self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
+            ctrl.headers)
+        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
         mailer.sendAll()
 
     def test_RecordMessageId(self):
@@ -85,9 +97,9 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         mailer.message_id = '<foobar-example-com>'
-        headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('<foobar-example-com>', headers['Message-Id'])
-        self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertEqual('<foobar-example-com>', ctrl.headers['Message-Id'])
+        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
         bmp.root_message_id = None
         pop_notifications()
         mailer.sendAll()
@@ -104,8 +116,26 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         bmp, subscriber = self.makeProposalWithSubscriber()
         bmp.root_message_id = '<root-message-id>'
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('<root-message-id>', headers['In-Reply-To'])
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertEqual('<root-message-id>', ctrl.headers['In-Reply-To'])
+
+    def test_generateEmail_attaches_diff(self):
+        """A diff should be attached, with the correct metadata.
+
+        The attached diff should be inline, should have a filename,
+        and should be of type text/x-diff (or text/x-patch), with no declared
+        encoding.  (The only encoding in a diff is the encoding of the input
+        files, which may be inconsistent.)
+        """
+        bmp, subscriber = self.makeProposalWithSubscriber(
+            diff_text="Fake diff")
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        (attachment,) = ctrl.attachments
+        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual('inline; filename="review.diff"',
+                         attachment['Content-Disposition'])
+        self.assertEqual('Fake diff', attachment.get_payload(decode=True))
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""
@@ -146,10 +176,10 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
     def test_generateEmail(self):
         """Ensure that contents of modification mails are right."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
-        headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('Proposed merge of '
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
-            'lp://dev/~mary/super-product/bar updated', subject)
+            'lp://dev/~mary/super-product/bar updated', ctrl.subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
@@ -164,7 +194,7 @@ new commit message
 --\x20
 %s
 %s
-""" % (url, reason), body)
+""" % (url, reason), ctrl.body)
 
     def test_send_merge_proposal_modified_notifications(self):
         """Should send emails when invoked with correct parameters."""
@@ -222,83 +252,6 @@ new commit message
         mailer = BMPMailer.forReviewRequest(
             request, request.merge_proposal, requester)
         assert mailer.message_id is not None, 'message_id not set'
-
-
-class TestRecipientReason(TestCaseWithFactory):
-    """Test the RecipientReason class."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Need to set target_branch.date_last_modified.
-        TestCaseWithFactory.setUp(self, user='test@canonical.com')
-
-    def makeProposalWithSubscription(self, subscriber=None):
-        """Test fixture."""
-        if subscriber is None:
-            subscriber = self.factory.makePerson()
-        source_branch = self.factory.makeBranch(title='foo')
-        target_branch = self.factory.makeBranch(product=source_branch.product,
-                title='bar')
-        merge_proposal = source_branch.addLandingTarget(
-            source_branch.owner, target_branch)
-        subscription = merge_proposal.source_branch.subscribe(
-            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
-        return merge_proposal, subscription
-
-    def test_forBranchSubscriber(self):
-        """Test values when created from a branch subscription."""
-        merge_proposal, subscription = self.makeProposalWithSubscription()
-        subscriber = subscription.person
-        reason = RecipientReason.forBranchSubscriber(
-            subscription, subscriber, merge_proposal, '')
-        self.assertEqual(subscriber, reason.subscriber)
-        self.assertEqual(subscriber, reason.recipient)
-        self.assertEqual(merge_proposal.source_branch, reason.branch)
-
-    def makeReviewerAndSubscriber(self):
-        merge_proposal, subscription = self.makeProposalWithSubscription()
-        subscriber = subscription.person
-        login(merge_proposal.registrant.preferredemail.email)
-        vote_reference = merge_proposal.nominateReviewer(
-            subscriber, subscriber)
-        return vote_reference, subscriber
-
-    def test_forReviewer(self):
-        """Test values when created from a branch subscription."""
-        vote_reference, subscriber = self.makeReviewerAndSubscriber()
-        reason = RecipientReason.forReviewer(vote_reference, subscriber)
-        self.assertEqual(subscriber, reason.subscriber)
-        self.assertEqual(subscriber, reason.recipient)
-        self.assertEqual(
-            vote_reference.branch_merge_proposal.source_branch, reason.branch)
-
-    def test_getReasonReviewer(self):
-        vote_reference, subscriber = self.makeReviewerAndSubscriber()
-        reason = RecipientReason.forReviewer(vote_reference, subscriber)
-        self.assertEqual(
-            'You are requested to review the proposed merge of lp://dev/~person-name5/product-name11/branch7 into lp://dev/~person-name16/product-name11/branch18.',
-            reason.getReason())
-
-    def test_getReasonPerson(self):
-        """Ensure the correct reason is generated for individuals."""
-        merge_proposal, subscription = self.makeProposalWithSubscription()
-        reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, merge_proposal, '')
-        self.assertEqual('You are subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
-            reason.getReason())
-
-    def test_getReasonTeam(self):
-        """Ensure the correct reason is generated for teams."""
-        team_member = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com')
-        team = self.factory.makeTeam(team_member, displayname='Qux')
-        bmp, subscription = self.makeProposalWithSubscription(team)
-        reason = RecipientReason.forBranchSubscriber(
-            subscription, team_member, bmp, '')
-        self.assertEqual('Your team Qux is subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
-            reason.getReason())
 
 
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):

@@ -4,7 +4,7 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.1.11 (r${revno});
+    version string:Launchpad 2.2.1 (r${revno});
   "
 ><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
@@ -75,10 +75,57 @@
       </style>
     </noscript>
 
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
+    <tal:devmode define="yui string:${icingroot}/yui/3.0.0pr2/build;
+                         lazr_js string:${icingroot}/lazr/build;
+                         lp_js string:${icingroot}/build"
+                    condition="devmode">
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/yui/yui.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/oop/oop.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/event/event.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/dom/dom.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/node/node.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/io/io-base.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/io/io-form.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/json/json.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/attribute/attribute.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/base/base.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/anim/anim.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/plugin/plugin.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget.js"></script>
+
+      <script type="text/javascript"
+              tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/client/client.js"></script>
+    </tal:devmode>
+    <tal:production condition="not:devmode">
+      <script type="text/javascript"
+              tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+    </tal:production>
+
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
@@ -89,56 +136,21 @@
       registerLaunchpadFunction(onLoadFunction);
     </script>
 
-    <tal:yui define="yui string:${icingroot_contrib}/yui/3.0.0pr1">
-      <tal:devmode condition="devmode">
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/yui/yui.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/oop/oop.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/event/event.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/dom/dom.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/node/node.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/io/io.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/json/json.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/attribute/attribute.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/base/base.js"></script>
-        <script type="text/javascript" tal:attributes="src string:${yui}/build/anim/anim.js"></script>
-      </tal:devmode>
-      <tal:production condition="not:devmode">
-          <script type="text/javascript" tal:attributes="src string:${yui}/yui-launchpad.js"></script>
-      </tal:production>
-    </tal:yui>
-
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
-
-    <script tal:condition="view/user|nothing"
-     tal:content="structure string:LP.client.links.me =
-       '${view/user/fmt:api_url}';">
-    </script>
-
-    <script tal:condition="context/webservice:is_entry"
-     tal:content="structure string:LP.client.cache.context =
-       ${context/webservice:json_entry};">
-    </script>
-
     <tal:needs_json tal:condition="request/needs_json">
       <script type="text/javascript"
         tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
       <script type="text/javascript"
         tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
     </tal:needs_json>
-    <tal:comment condition="nothing">
-      XXX: salgado, 2008-08-19: For some reason the 2.122 and above versions of
-      the gmap javascript don't work properly when displaying a team's map, so we
-      use v=2.121 rather than v=2 for now.
-    </tal:comment>
     <tal:needs-gmap2 condition="request/needs_gmap2">
       <tal:devmode condition="devmode">
         <script type="text/javascript"
-                tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2.121&amp;key=${modules/canonical.config/config/google/maps_api_key};"
+                tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
                 ></script>
       </tal:devmode>
       <tal:not-devmode condition="not: devmode">
         <script type="text/javascript"
-                tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical&amp;file=api&amp;v=2.121&amp;key=${modules/canonical.config/config/google/maps_api_key};"
+                tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
                 ></script>
       </tal:not-devmode>
     </tal:needs-gmap2>
@@ -177,7 +189,7 @@
       </tal:XXX>
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
-          tal:condition="link/selected"
+          tal:condition="python: link.enabled and link.selected"
           tal:attributes="title link/summary; class string:${link/name} active"
           ><strong
             tal:condition="not:link/linked"
@@ -187,7 +199,7 @@
             tal:attributes="href link/url"
             tal:content="structure link/escapedtext"
         /></span><span
-          tal:condition="python:link.selected is False and link.enabled is True"
+          tal:condition="python: link.enabled and not link.selected"
           tal:attributes="title link/summary; class link/name"
           ><a
             tal:condition="link/enabled"
@@ -256,7 +268,9 @@
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
-                              <!-- XXX Mark Shuttleworth 2007-04-30: Obsolete -->
+                             <tal:XXX condition="nothing">
+                              # XXX Mark Shuttleworth 2007-04-30: Obsolete
+                             </tal:XXX>
                             </metal:block>
                           </div>
                           <tal:notifications
@@ -297,10 +311,10 @@
           <a tal:condition="not:request/lp:person" href="/+tour"
           >What is Launchpad?</a>
           <a tal:condition="request/lp:person" href="/feedback"
-          >Help improve Launchpad</a>
+          >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
         <div id="lp-arcana">
-            &copy;&nbsp;2004-2008&nbsp;<a
+            &copy;&nbsp;2004-2009&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           |
           <a href="/legal">Terms of use</a>
@@ -404,6 +418,26 @@
                  top:-500px; left:-500px;">
       </iframe>
     </tal:datepicker>
+
+    <tal:cache condition="view/user|nothing"
+               define="cache request/webservicerequest:cache;
+                       links cache/links;
+                       objects cache/objects;">
+      <script tal:repeat="key links"
+        tal:content="structure string:LP.client.links['${key}'] =
+                        '${links/?key/fmt:api_url}';">
+      </script>
+      <script tal:repeat="key objects"
+        tal:content="structure string:LP.client.cache['${key}'] =
+         ${objects/?key/webservice:json};">
+      </script>
+    </tal:cache>
+
+    <script tal:condition="context/webservice:is_entry"
+     tal:content="structure string:LP.client.cache['context'] =
+       ${context/webservice:json};">
+    </script>
+
   </body>
 </html>
 <tal:requestlog

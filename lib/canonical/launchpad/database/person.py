@@ -12,6 +12,7 @@ __all__ = [
     'JabberID',
     'JabberIDSet',
     'Person',
+    'PersonLanguage',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
@@ -20,6 +21,7 @@ __all__ = [
     'WikiNameSet']
 
 from datetime import datetime, timedelta
+from operator import attrgetter
 import pytz
 import random
 import re
@@ -35,7 +37,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
-from storm.expr import And
+from storm.expr import And, Join
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -46,6 +48,8 @@ from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -62,7 +66,7 @@ from canonical.launchpad.database.translationrelicensingagreement import (
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet,
@@ -117,19 +121,19 @@ from canonical.launchpad.interfaces.teammembership import (
     TeamMembershipStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
+from canonical.launchpad.interfaces.translator import ITranslatorSet
 from canonical.launchpad.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
-from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pillar import PillarName
-from canonical.launchpad.database.pofile import POFileTranslator
+from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.shipit import ShippingRequest
@@ -336,12 +340,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = SQLRelatedJoin('Language', joinColumn='person',
-                            otherColumn='language',
-                            intermediateTable='PersonLanguage',
-                            orderBy='englishname')
-
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -369,6 +367,57 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @cachedproperty('_languages_cache')
+    def languages(self):
+        """See `IPerson`."""
+        results = Store.of(self).find(
+            Language, And(Language.id == PersonLanguage.languageID,
+                          PersonLanguage.personID == self.id))
+        results.order_by(Language.englishname)
+        return list(results)
+
+    def getLanguagesCache(self):
+        """Return this person's cached languages.
+
+        :raises AttributeError: If the cache doesn't exist.
+        """
+        return self._languages_cache
+
+    def setLanguagesCache(self, languages):
+        """Set this person's cached languages.
+
+        Order them by name if necessary.
+        """
+        self._languages_cache = sorted(
+            languages, key=attrgetter('englishname'))
+
+    def deleteLanguagesCache(self):
+        """Delete this person's cached languages, if it exists."""
+        if safe_hasattr(self, '_languages_cache'):
+            del self._languages_cache
+
+    def addLanguage(self, language):
+        """See `IPerson`."""
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        if person_language is not None:
+            # Nothing to do.
+            return
+        PersonLanguage(person=self, language=language)
+        self.deleteLanguagesCache()
+
+    def removeLanguage(self, language):
+        """See `IPerson`."""
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        if person_language is None:
+            # Nothing to do.
+            return
+        PersonLanguage.delete(person_language.id)
+        self.deleteLanguagesCache()
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -618,12 +667,7 @@ class Person(
 
     @property
     def browsername(self):
-        """Return a name suitable for display on a web page.
-
-        Originally, this was calculated but now we just use displayname.
-        You should continue to use this method, however, as we may want to
-        change again, such as returning '$displayname ($name)'.
-        """
+        """See `IPersonPublic`."""
         return self.displayname
 
     @property
@@ -870,19 +914,6 @@ class Person(
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBranch(self, product_name, branch_name):
-        """See `IPerson`."""
-        if product_name is None or product_name == '+junk':
-            return Branch.selectOne(
-                'owner=%d AND product is NULL AND name=%s'
-                % (self.id, quote(branch_name)))
-        else:
-            product = getUtility(IPillarNameSet).getByName(product_name)
-            if product is None:
-                return None
-            return Branch.selectOneBy(owner=self, product=product,
-                                      name=branch_name)
-
     def findPathToTeam(self, team):
         """See `IPerson`."""
         # This is our guarantee that _getDirectMemberIParticipateIn() will
@@ -1096,6 +1127,7 @@ class Person(
         """See `IPerson`."""
         # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
+
         clauses = ["""
             SELECT DISTINCT Product.id
             FROM Product, TeamParticipation
@@ -1376,7 +1408,7 @@ class Person(
         assert self.is_team
         to_addrs = set()
         for person in self.getDirectAdministrators():
-            to_addrs.update(contactEmailAddresses(person))
+            to_addrs.update(get_contact_email_addresses(person))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,
@@ -1405,12 +1437,7 @@ class Person(
 
         expires = self.defaultexpirationdate
         tm = TeamMembership.selectOneBy(person=person, team=self)
-        if tm is not None:
-            # We can't use tm.setExpirationDate() here because the reviewer
-            # here will be the member themselves when they join an OPEN team.
-            tm.dateexpires = expires
-            tm.setStatus(status, reviewer, comment)
-        else:
+        if tm is None:
             tm = TeamMembershipSet().new(
                 person, self, status, reviewer, dateexpires=expires,
                 comment=comment)
@@ -1418,6 +1445,11 @@ class Person(
             # creation has been flushed to the database.
             tm_id = tm.id
             notify(event(person, self))
+        else:
+            # We can't use tm.setExpirationDate() here because the reviewer
+            # here will be the member themselves when they join an OPEN team.
+            tm.dateexpires = expires
+            tm.setStatus(status, reviewer, comment)
 
         if not person.is_team and may_subscribe_to_list:
             person.autoSubscribeToMailingList(self.mailing_list,
@@ -1551,6 +1583,40 @@ class Person(
             TeamParticipation.person != %s
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
+
+    def _getMembersWithPreferredEmails(self, include_teams=False):
+        """Helper method for public getMembersWithPreferredEmails.
+
+        We can't return the preferred email address directly to the
+        browser code, since it would circumvent the security restrictions
+        on accessing person.preferredemail.
+        """
+        store = Store.of(self)
+        origin = [
+            Person,
+            Join(TeamParticipation, TeamParticipation.person == Person.id),
+            Join(EmailAddress, EmailAddress.person == Person.id),
+            ]
+        conditions = And(
+            TeamParticipation.team == self.id,
+            EmailAddress.status == EmailAddressStatus.PREFERRED)
+        return store.using(*origin).find((Person, EmailAddress), conditions)
+
+    def getMembersWithPreferredEmails(self, include_teams=False):
+        """See `IPerson`."""
+        result = self._getMembersWithPreferredEmails(
+            include_teams=include_teams)
+        person_list = []
+        for person, email in result:
+            person._preferredemail_cached = email
+            person_list.append(person)
+        return person_list
+
+    def getMembersWithPreferredEmailsCount(self, include_teams=False):
+        """See `IPerson`."""
+        result = self._getMembersWithPreferredEmails(
+            include_teams=include_teams)
+        return result.count()
 
     @property
     def all_member_count(self):
@@ -2048,26 +2114,19 @@ class Person(
     @property
     def translation_history(self):
         """See `IPerson`."""
-        # Note that we can't use selectBy here because of the prejoins.
-        query = ['POFileTranslator.person = %s' % sqlvalues(self),
-                 'POFileTranslator.pofile = POFile.id',
-                 'POFile.language = Language.id',
-                 "Language.code <> 'en'"]
-        history = POFileTranslator.select(
-            ' AND '.join(query),
-            prejoins=[
-                'pofile.potemplate',
-                'latest_message',
-                'latest_message.potmsgset.msgid_singular',
-                'latest_message.msgstr0'],
-            clauseTables=['Language', 'POFile'],
-            orderBy="-date_last_touched")
-        return history
+        return POFileTranslator.select(
+            'POFileTranslator.person = %s' % sqlvalues(self),
+            orderBy='-date_last_touched')
 
     @property
     def translation_groups(self):
         """See `IPerson`."""
         return getUtility(ITranslationGroupSet).getByPerson(self)
+
+    @property
+    def translators(self):
+        """See `IPerson`."""
+        return getUtility(ITranslatorSet).getByTranslator(self)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
@@ -2881,14 +2940,6 @@ class PersonSet:
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
-
-        # Update OpenID. Just trash the authorizations for from_id - don't
-        # risk opening up auth wider than the user actually wants.
-        cur.execute("""
-                DELETE FROM OpenIDAuthorization WHERE person=%(from_id)d
-                """ % vars()
-                )
-        skip.append(('openidauthorization', 'person'))
 
         # Update shipit shipments.
         cur.execute('''

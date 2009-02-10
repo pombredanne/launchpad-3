@@ -22,11 +22,12 @@
     <form name="edit_wikiname" action="" method="POST">
     <table id="wikinames">
 
-      <tal:comment condition="nothing">
-        XXX: salgado, 2008-11-25: We should use context/wiki_names/is_empty
-        here, but we can't do that because there's a bug preventing us from
-        updating our version of storm to trunk.
-      </tal:comment>  
+      <tal:XXX condition="nothing">
+        # XXX: salgado, 2008-11-25 bug=296739: We should use
+        # context/wiki_names/is_empty here, but we can't do that because
+        # there's a bug preventing us from # updating our version of storm
+        # to trunk.
+      </tal:XXX>
       <tal:block condition="context/wiki_names/any">
 
         <tr><td colspan="2"><h2>Wiki names</h2></td></tr>

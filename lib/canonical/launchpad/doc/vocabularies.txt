@@ -1613,14 +1613,12 @@ URL, then the title is linkified instead.
 When there is no logged-in user, the title is much different. The
 email address is hidden, and there is no hyperlink.
 
-    >>> current_user = launchbag.user.preferredemail.email
+    >>> current_user = launchbag.user
     >>> login(ANONYMOUS)
 
     >>> for term in vocab:
     ...     print term.title
     Lionel Richtea (mailto:&lt;email address hidden&gt;)
-
-    >>> login(current_user)
 
 
 === DistributionOrProductVocabulary ===
@@ -1634,6 +1632,18 @@ heterogeneous.
     ...         print term.title, '- class', term.value.__class__.__name__
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu Test (Distribution) - class Distribution
+
+They can be looked up by their aliases too.
+
+    >>> vocab.getTermByToken('firefox').token
+    'firefox'
+    >>> login('mark@hbd.com')
+    >>> product_set['firefox'].setAliases(['iceweasel'])
+    >>> login_person(current_user)
+    >>> vocab.getTermByToken('iceweasel').token
+    'firefox'
+    >>> [term.token for term in vocab.searchForTerms(query='iceweasel')]
+    ['firefox']
 
 Inactive projects and project groups are not available.
 
@@ -1673,6 +1683,20 @@ heterogeneous.
     ...         print term.title, '- class', term.value.__class__.__name__
     Ubuntu Linux (Distribution) - class Distribution
     Ubuntu Test (Distribution) - class Distribution
+
+They can be looked up by their aliases too.
+
+    >>> vocab.getTermByToken('ubuntu').token
+    'ubuntu'
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> login('mark@hbd.com')
+    >>> getUtility(IDistributionSet)['ubuntu'].setAliases(['ubantoo'])
+    >>> login_person(current_user)
+    >>> vocab.getTermByToken('ubantoo').token
+    'ubuntu'
+    >>> [term.token for term in vocab.searchForTerms(query='ubantoo')]
+    ['ubuntu']
 
 Inactive projects and project groups are not available.
 
@@ -2044,3 +2068,59 @@ do not raise an exception when instantiated.
     ...     # Assign the return value of pytz.timezone() to the zone
     ...     # variable to prevent printing out the return value.
     ...     zone = pytz.timezone(timezone.value)
+
+
+== CommercialProjectsVocabulary ==
+
+The commercial projects vocabulary contains all commercial projects,
+ordered by displayname.  Note:  a project is considered commercial if
+it has a proprietary license or no license.  That's why some of these
+clearly FOSS project in our test data show up as commercial.
+
+For a normal user (one who does not have launchpad.Commercial
+permission) the owned commercial project vocabulary is a list of
+project the user either owns or manages.
+
+The test data has one project with a proprietary license.  Let's
+change bzr's so we will get more interesting results.
+
+    >>> from canonical.launchpad.interfaces import License
+    >>> bzr = product_set.getByName('bzr')
+    >>> bzr.licenses = [License.OTHER_PROPRIETARY]
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login('bac@canonical.com')
+    >>> bac = person_set.getByEmail('bac@canonical.com')
+    >>> check_permission('launchpad.Commercial', bac)
+    False
+
+    >>> comm_proj_vocab = vocabulary_registry.get(bac, "CommercialProjects")
+    >>> print comm_proj_vocab.displayname
+    Select a commercial project
+
+    >>> len(comm_proj_vocab)
+    1
+
+    >>> for term in comm_proj_vocab:
+    ...     print term.value.displayname
+    Mega Money Maker
+
+If the user has launchpad.Commercial permission then all commercial
+projects are returned.
+
+    >>> login('commercial-member@canonical.com')
+    >>> commercial_member = person_set.getByEmail('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Commercial', commercial_member)
+    True
+
+    >>> comm_proj_vocab = vocabulary_registry.get(commercial_member, "CommercialProjects")
+    >>> print comm_proj_vocab.displayname
+    Select a commercial project
+
+    >>> len(comm_proj_vocab)
+    2
+
+    >>> for term in list(comm_proj_vocab)[:5]:
+    ...     print term.value.displayname
+    Bazaar
+    Mega Money Maker

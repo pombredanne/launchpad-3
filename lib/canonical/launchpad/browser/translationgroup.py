@@ -17,12 +17,13 @@ import operator
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
-    NotFoundError
-    )
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroup, ITranslationGroupSet)
+from canonical.launchpad.interfaces.translator import (
+    ITranslator, ITranslatorSet)
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
@@ -53,7 +54,9 @@ class TranslationGroupView:
             result.append({'lang': item.language.englishname,
                            'person': item.translator,
                            'code': item.language.code,
-                           'datecreated': item.datecreated})
+                           'datecreated': item.datecreated,
+                           'style_guide_url': item.style_guide_url,
+                           })
         result.sort(key=operator.itemgetter('lang'))
         return result
 
@@ -62,7 +65,7 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
     """View class for the "appoint a translator" page"""
 
     schema = ITranslator
-    field_names = ['language', 'translator']
+    field_names = ['language', 'translator', 'style_guide_url']
 
     @action("Add", name="add")
     def add_action(self, action, data):
@@ -75,7 +78,9 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         """
         language = data.get('language')
         translator = data.get('translator')
-        getUtility(ITranslatorSet).new(self.context, language, translator)
+        style_guide_url = data.get('style_guide_url')
+        getUtility(ITranslatorSet).new(
+            self.context, language, translator, style_guide_url)
 
     def validate(self, data):
         """Do not allow new translators for already existing languages."""
@@ -93,7 +98,7 @@ class TranslationGroupEditView(LaunchpadEditFormView):
     """View class to edit ITranslationGroup details."""
 
     schema = ITranslationGroup
-    field_names = ['name', 'title', 'summary']
+    field_names = ['name', 'title', 'summary', 'translation_guide_url']
 
     @action("Change")
     def change_action(self, action, data):
@@ -124,7 +129,7 @@ class TranslationGroupAddView(LaunchpadFormView):
     """View class to add ITranslationGroup objects."""
 
     schema = ITranslationGroup
-    field_names = ['name', 'title', 'summary']
+    field_names = ['name', 'title', 'summary', 'translation_guide_url']
 
     @action("Add", name="add")
     def add_action(self, action, data):
@@ -132,8 +137,10 @@ class TranslationGroupAddView(LaunchpadFormView):
         name = data.get('name')
         title = data.get('title')
         summary = data.get('summary')
+        translation_guide_url = data.get('translation_guide_url')
         new_group = getUtility(ITranslationGroupSet).new(
-            name=name, title=title, summary=summary, owner=self.user)
+            name=name, title=title, summary=summary,
+            translation_guide_url=translation_guide_url, owner=self.user)
 
         self.next_url = canonical_url(new_group)
 

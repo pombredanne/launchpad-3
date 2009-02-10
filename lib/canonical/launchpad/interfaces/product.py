@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
@@ -8,18 +8,20 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductEditRestricted',
+    'IProductCommercialRestricted',
     'IProductPublic',
     'IProductReviewSearch',
     'IProductSet',
     'License',
     'LicenseStatus',
+    'NoSuchProduct',
     ]
 
 import sets
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
+    Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -29,6 +31,8 @@ from canonical.launchpad.fields import (
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
 from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposal, BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -40,6 +44,9 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.commercialsubscription import (
+    ICommercialSubscription)
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -50,8 +57,7 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -81,8 +87,15 @@ class LicenseStatus(DBEnumeratedType):
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
+    sort_order = (
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC', 'ECLIPSE',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
+        'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
+        'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
+        'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
+
     ACADEMIC = DBItem(10, "Academic Free License")
-    AFFERO = DBItem(20, "Affero GPL")
+    AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
@@ -107,10 +120,55 @@ class License(DBEnumeratedType):
 
 
 class IProductEditRestricted(Interface):
-    """IProduct properties which require launchpad.Edit permission."""
+    """`IProduct` properties which require launchpad.Edit permission."""
 
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
+
+
+
+class IProductCommercialRestricted(Interface):
+    """`IProduct` properties which require launchpad.Commercial permission."""
+
+    qualifies_for_free_hosting = exported(
+        Bool(
+            title=_("Qualifies for free hosting"),
+            readonly=True,
+            description=_(
+                "Whether the project's licensing qualifies it for free "
+                "use of launchpad.")))
+
+    reviewer_whiteboard = exported(
+        Text(
+            title=_('Notes for the project reviewer'),
+            required=False,
+            description=_(
+                "Notes on the project's license, editable only by reviewers "
+                "(Admins & Commercial Admins).")))
+
+    is_permitted = exported(
+        Bool(
+            title=_("Is Permitted"),
+            readonly=True,
+            description=_(
+                "Whether the project's licensing qualifies for free "
+                "hosting or the project has an up-to-date "
+                "subscription.")))
+
+    license_reviewed = exported(
+        Bool(
+            title=_('License reviewed'),
+            description=_("Whether or not this project's license has been "
+                          "reviewed. Editable only by reviewers (Admins & "
+                          "Commercial Admins).")))
+
+    license_approved = exported(
+        Bool(
+            title=_("License approved"),
+            description=_(
+                "Whether a license is manually approved for free "
+                "hosting after automatic approval fails.  May only "
+                "be applied to licenses of 'Other/Open Source'.")))
 
 
 class IProductPublic(
@@ -212,6 +270,7 @@ class IProductPublic(
     datecreated = exported(
         Datetime(
             title=_('Date Created'),
+            required=True, readonly=True,
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
 
@@ -310,26 +369,15 @@ class IProductPublic(
                 "should be no bigger than 100kb in size.")),
         exported_as='brand')
 
-    autoupdate = Bool(title=_('Automatic update'),
-        description=_("""Whether or not this project's attributes are
-        updated automatically."""))
+    autoupdate = Bool(
+        title=_('Automatic update'),
+        description=_("Whether or not this project's attributes are "
+                      "updated automatically."))
 
-    license_reviewed = Bool(
-        title=_('License reviewed'),
-        description=_("""Whether or not this project's license has been
-        reviewed. Editable only by reviewers (Admins & Commercial Admins).
-        """))
-
-    private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
-        or not bugs reported into this project are private by default"""))
-
-    reviewer_whiteboard = Text(
-        title=_('Notes for the project reviewer'),
-        required=False,
-        description=_(
-            "Notes on the project's license, editable only by reviewers "
-            "(Admins & Commercial Admins)."))
-
+    private_bugs = Bool(title=_('Private bugs'),
+                        description=_(
+                            "Whether or not bugs reported into this project "
+                            "are private by default."))
     licenses = exported(
         Set(title=_('Licenses'),
             value_type=Choice(vocabulary=License)))
@@ -411,31 +459,33 @@ class IProductPublic(
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
-    commercial_subscription = Attribute("""
-        An object which contains the timeframe and the voucher
-        code of a subscription.""")
+    commercial_subscription = exported(
+        Reference(
+            ICommercialSubscription,
+            title=_("Commercial subscriptions"),
+            description=_(
+                "An object which contains the timeframe and the voucher "
+                "code of a subscription.")))
 
-    qualifies_for_free_hosting = Attribute("""
-        Whether the project's licensing qualifies it for free
-        use of launchpad.""")
-
-    commercial_subscription_is_due = Attribute("""
-        Whether the project's licensing requires a new commercial
-        subscription to use launchpad.""")
-
-    is_permitted = Attribute("""
-        Whether the project's licensing qualifies for free
-        hosting or the project has an up-to-date subscription.""")
-
-    license_approved = Bool(
-        title=_("License approved"),
-        description=_(
-            "Whether a license is manually approved for free "
-            "hosting after automatic approval fails.  May only "
-            "be applied to licenses of 'Other/Open Source'."))
+    commercial_subscription_is_due = exported(
+            Bool(
+                title=_("Commercial subscription is due"),
+                readonly=True,
+                description=_(
+                    "Whether the project's licensing requires a new "
+                    "commercial subscription to use launchpad.")))
 
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
+
+    remote_product = exported(
+        TextLine(
+            title=_('Remote product'),
+            description=_(
+                "The ID of this project on its remote bug tracker.")))
+
+    upstream_bug_filing_url = Attribute(
+        "The URL of bug filing form on this project's upstream bug tracker")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -481,10 +531,25 @@ class IProductPublic(
         import purposes.
         """
 
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
+    @operation_returns_collection_of(IBranchMergeProposal)
+    @export_read_operation()
+    def getMergeProposals(status=None):
+        """Returns all merge proposals of a given status.
+
+        :param status: A list of statuses to filter with.
+        :returns: A list of `IBranchMergeProposal`.
+        """
+
+
     def userCanEdit(user):
         """Can the user edit this product?"""
 
-class IProduct(IProductEditRestricted, IProductPublic):
+class IProduct(IProductEditRestricted, IProductCommercialRestricted,
+               IProductPublic):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -501,7 +566,6 @@ IProductRelease['product'].schema = IProduct
 
 
 class IProductSet(Interface):
-    """The collection of products."""
     export_as_webservice_collection(IProduct)
 
     title = Attribute("The set of Products registered in the Launchpad")
@@ -561,7 +625,8 @@ class IProductSet(Interface):
                    'project', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
-                   'licenses', 'license_info', 'registrant'])
+                   'license_reviewed', 'licenses', 'license_info',
+                   'registrant'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -576,7 +641,40 @@ class IProductSet(Interface):
         See `IProduct` for a description of the parameters.
         """
 
-    def forReview():
+    @operation_parameters(
+        search_text=TextLine(title=_("Search text")),
+        active=Bool(title=_("Is the project active")),
+        license_reviewed=Bool(title=_("Is the project license reviewed")),
+        licenses = Set(title=_('Licenses'),
+                       value_type=Choice(vocabulary=License)),
+        license_info_is_empty=Bool(title=_("License info is empty")),
+        has_zero_licenses=Bool(title=_("Has zero licenses")),
+        created_after=Date(title=_("Created after date")),
+        created_before=Date(title=_("Created before date")),
+        subscription_expires_after=Date(
+            title=_("Subscription expires after")),
+        subscription_expires_before=Date(
+            title=_("Subscription expired before")),
+        subscription_modified_after=Date(
+            title=_("Subscription modified after")),
+        subscription_modified_before=Date(
+            title=_("Subscription modified before"))
+        )
+    @operation_returns_collection_of(IProduct)
+    @export_read_operation()
+    @export_operation_as('licensing_search')
+    def forReview(search_text=None,
+                  active=None,
+                  license_reviewed=None,
+                  licenses=None,
+                  license_info_is_empty=None,
+                  has_zero_licenses=None,
+                  created_after=None,
+                  created_before=None,
+                  subscription_expires_after=None,
+                  subscription_expires_before=None,
+                  subscription_modified_after=None,
+                  subscription_modified_before=None):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
@@ -597,7 +695,7 @@ class IProductSet(Interface):
     @call_with(quantity=None)
     @export_read_operation()
     def latest(quantity=5):
-        """Return the latest projects registered in the Launchpad.
+        """Return the latest projects registered in Launchpad.
 
         If the quantity is not specified or is a value that is not 'None'
         then the set of projects returned is limited to that value (the
@@ -664,6 +762,7 @@ class IProductSet(Interface):
 emptiness_vocabulary = SimpleVocabulary.fromItems(
         [('Empty', True), ('Not Empty', False)])
 
+
 class IProductReviewSearch(Interface):
     """A search form for products being reviewed."""
 
@@ -714,3 +813,15 @@ class IProductReviewSearch(Interface):
 
     subscription_modified_before = Date(
         title=_("and"), required=False)
+
+
+class NoSuchProduct(NameLookupFailed):
+    """Raised when we try to find a product that doesn't exist."""
+
+    _message_prefix = "No such product"
+
+
+# Fix a circular import.
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+IDistributionSourcePackage['upstream_product'].schema = IProduct

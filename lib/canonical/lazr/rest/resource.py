@@ -43,7 +43,7 @@ from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError, getFields, getFieldsInOrder
+from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
@@ -131,6 +131,7 @@ class HTTPResource:
     # Some interesting media types.
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
+    XHTML_TYPE = 'application/xhtml+xml'
 
     # The representation value used when the client doesn't have
     # authorization to see the real value.
@@ -138,6 +139,10 @@ class HTTPResource:
 
     HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
                                   "with a POST request.")
+
+    # All resources serve WADL and JSON representations. Only entry
+    # resources serve XHTML representations.
+    SUPPORTED_CONTENT_TYPES = [WADL_TYPE, JSON_TYPE]
 
     def __init__(self, context, request):
         self.context = context
@@ -183,10 +188,7 @@ class HTTPResource:
         """
         incoming_etags = self._parseETags('If-None-Match')
 
-        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
-            media_type = self.WADL_TYPE
-        else:
-            media_type = self.JSON_TYPE
+        media_type = self.getPreferredSupportedContentType()
         existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
@@ -314,22 +316,25 @@ class HTTPResource:
     def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
 
-        The web service supports WADL and JSON representations. The
-        default is JSON. This method determines whether the client
-        would rather have WADL or JSON.
+        The web service supports WADL, XHTML, and JSON
+        representations. If no supported media type is requested, JSON
+        is the default. This method determines whether the client
+        would rather have WADL, XHTML, or JSON.
         """
         content_types = self.getPreferredContentTypes()
-        try:
-            wadl_pos = content_types.index(self.WADL_TYPE)
-        except ValueError:
-            wadl_pos = float("infinity")
-        try:
-            json_pos = content_types.index(self.JSON_TYPE)
-        except ValueError:
-            json_pos = float("infinity")
-        if wadl_pos < json_pos:
-            return self.WADL_TYPE
-        return self.JSON_TYPE
+        preferences = []
+        winner = None
+        for media_type in self.SUPPORTED_CONTENT_TYPES:
+            try:
+                pos = content_types.index(media_type)
+                if winner is None or pos < winner[1]:
+                    winner = (media_type, pos)
+            except ValueError:
+                pass
+        if winner is None:
+            return self.JSON_TYPE
+        else:
+            return winner[0]
 
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
@@ -610,43 +615,61 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.WADL_TYPE,
+                               HTTPResource.XHTML_TYPE,
+                               HTTPResource.JSON_TYPE]
+
     missing = object()
 
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
+        self.etags_by_media_type = {}
         self.entry = IEntry(context)
         self._unmarshalled_field_cache = {}
 
-    def getETag(self, media_type):
-        """Calculate an ETag for a representation of this resource.
+    def getETag(self, media_type, unmarshalled_field_values=None):
+        """Calculate the ETag for an entry.
 
-        We implement a simple (though not terribly efficient) ETag
-        algorithm that concatenates the current values of all the
-        fields that aren't read-only, and calculates a SHA1 hash of
-        the resulting string.
+        :arg unmarshalled_field_values: A dict mapping field names to
+        unmarshalled values, obtained during some other operation such
+        as the construction of a representation.
         """
-        etag = super(EntryResource, self).getETag(media_type)
+        # Try to find a cached value.
+        etag = self.etags_by_media_type.get(media_type)
         if etag is not None:
             return etag
 
-        if media_type != self.JSON_TYPE:
+        # Try to make the superclass handle it.
+        etag = super(EntryResource, self).getETag(media_type)
+        if etag is not None:
+            self.etags_by_media_type[media_type] = etag
+            return etag
+
+        # Calculate the ETag for a JSON or XHTML representation only.
+        if media_type not in (self.JSON_TYPE, self.XHTML_TYPE):
             return None
 
+        hash_object = sha.new()
         values = []
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
-                ignored, value = self._unmarshallField(name, field)
+                if (unmarshalled_field_values is not None
+                    and unmarshalled_field_values.get(name)):
+                    value = unmarshalled_field_values[name]
+                else:
+                    ignored, value = self._unmarshallField(name, field)
                 values.append(unicode(value))
-
-        hash_object = sha.new()
         hash_object.update("\0".join(values).encode("utf-8"))
 
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
         hash_object.update("\0" + str(versioninfo.revno))
-        return '"%s"' % hash_object.hexdigest()
+
+        etag = '"%s"' % hash_object.hexdigest()
+        self.etags_by_media_type[media_type] = etag
+        return etag
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -657,10 +680,24 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data = {}
         data['self_link'] = canonical_url(self.context, self.request)
         data['resource_type_link'] = self.type_url
-        for name, field in getFields(self.entry.schema).items():
+        unmarshalled_field_values = {}
+        for name, field in getFieldsInOrder(self.entry.schema):
             repr_name, repr_value = self._unmarshallField(name, field)
             data[repr_name] = repr_value
+            unmarshalled_field_values[name] =  repr_value
+
+        etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
+        data['http_etag'] = etag
         return data
+
+    def toXHTML(self, template_name="html-resource.pt"):
+        """Represent this resource as an XHTML document."""
+        template = LazrPageTemplateFile('../templates/' + template_name)
+        namespace = template.pt_getContext()
+        data = sorted([{'name' : name, 'value': value}
+                       for name, value in self.toDataForJSON().items()])
+        namespace['context'] = data
+        return template.pt_render(namespace)
 
     def processAsJSONHash(self, media_type, representation):
         """Process an incoming representation as a JSON hash.
@@ -712,6 +749,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 result = self.toWADL().encode("utf-8")
             elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
+            elif media_type == self.XHTML_TYPE:
+                result = self.toXHTML().encode("utf-8")
 
         self.request.response.setHeader('Content-Type', media_type)
         return result
@@ -842,6 +881,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 errors.append(modified_read_only_attribute %
                               'resource_type_link')
             del changeset['resource_type_link']
+
+        if 'http_etag' in changeset:
+            if changeset['http_etag'] != self.getETag(self.JSON_TYPE):
+                errors.append(modified_read_only_attribute %
+                              'http_etag')
+            del changeset['http_etag']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.

@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -112,17 +112,20 @@ from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import IMilestoneSet
+from canonical.launchpad.interfaces.milestone import (
+    IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License)
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import (
@@ -698,9 +701,13 @@ class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
 
     def __init__(self, context):
         if context.productseries != None:
-            self._filter = POTemplate.productseries == context.productseries
+            self._filter = AND(
+                POTemplate.iscurrent == True,
+                POTemplate.productseries == context.productseries
+            )
         else:
             self._filter = AND(
+                POTemplate.iscurrent == True,
                 POTemplate.distroseries == context.distroseries,
                 POTemplate.sourcepackagename == context.sourcepackagename
             )
@@ -1459,6 +1466,17 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         for milestone in self.visible_milestones:
             yield self.toTerm(milestone)
 
+    def __contains__(self, obj):
+        if IProjectMilestone.providedBy(obj):
+            # Project milestones are pseudo content objects
+            # which aren't really a part of this vocabulary,
+            # but sometimes we want to pass them to fields
+            # that rely on this vocabulary for validation
+            # so we special-case them here just for that purpose.
+            return obj.target.getMilestone(obj.name)
+        else:
+            return SQLObjectVocabularyBase.__contains__(self, obj)
+
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
     """List specifications for the current product or distribution in
@@ -1497,9 +1515,12 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
 
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
-    """List commercial projects a user administers.
+    """List all commercial projects.
 
-    A commercial project is one that does not qualify for free hosting.
+    A commercial project is one that does not qualify for free hosting.  For
+    normal users only commercial projects for which the user is the
+    maintainer, or in the maintainers team, will be listed.  For users with
+    launchpad.Commercial permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1509,8 +1530,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     @property
     def displayname(self):
-        return 'Select one of the commercial projects administered by %s' % (
-            self.context.displayname)
+        return 'Select a commercial project'
 
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""
@@ -1520,17 +1540,22 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             if not project.qualifies_for_free_hosting
             ]
 
-    def _doSearch(self, query):
+    def _doSearch(self, query=None):
         """Return terms where query is in the text of name
         or displayname, or matches the full text index.
         """
         user = self.context
         if user is None:
             return self.emptySelectResults()
-
-        projects = user.getOwnedProjects(match_name=query)
-        commercial_projects = self._filter_projs(projects)
-        return commercial_projects
+        if check_permission('launchpad.Commercial', user):
+            product_set = getUtility(IProductSet)
+            projects = product_set.forReview(search_text=query,
+                                             licenses=[License.OTHER_PROPRIETARY],
+                                             active=True)
+        else:
+            projects = user.getOwnedProjects(match_name=query)
+            projects = self._filter_projs(projects)
+        return projects
 
     def toTerm(self, project):
         """Return the term for this object."""
@@ -1555,14 +1580,15 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def searchForTerms(self, query=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
-        return CountableIterator(len(results), results, self.toTerm)
+        if type(results) is list:
+            num = len(results)
+        else:
+            num = results.count()
+        return CountableIterator(num, results, self.toTerm)
 
     def _commercial_projects(self):
         """Return the list of commercial project owned by this user."""
-        user = self.context
-        if user is None:
-            return self.emptySelectResults()
-        return self._filter_projs(user.getOwnedProjects())
+        return self._filter_projs(self._doSearch())
 
     def __iter__(self):
         """See `IVocabulary`."""
@@ -1571,7 +1597,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def __contains__(self, obj):
         """See `IVocabulary`."""
-        return obj in self._commercial_projects()
+        return obj in self._filter_projs([obj])
 
 
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
@@ -1999,14 +2025,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
             assert obj.active, 'Inactive object %s %d' % (
                     obj.__class__.__name__, obj.id
                     )
-            if obj.product is not None:
-                obj = obj.product
-            elif obj.distribution is not None:
-                obj = obj.distribution
-            elif obj.project is not None:
-                obj = obj.project
-            else:
-                raise AssertionError('Broken PillarName')
+            obj = obj.pillar
 
         # It is a hack using the class name here, but it works
         # fine and avoids an ugly if statement.
@@ -2020,10 +2039,19 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
-    _filter = AND(OR(
-            PillarName.q.distributionID != None,
-            PillarName.q.productID != None
-            ), PillarName.q.active == True)
+    _filter = """
+        -- An active product/distro.
+        (active IS TRUE
+         AND (product IS NOT NULL OR distribution IS NOT NULL)
+        )
+        OR
+        -- Or an alias for an active product/distro.
+        (alias_for IN (
+            SELECT id FROM PillarName
+            WHERE active IS TRUE AND
+                (product IS NOT NULL OR distribution IS NOT NULL))
+        )
+        """
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):

@@ -52,10 +52,23 @@ class CodeReviewCommentView(LaunchpadView):
     # Show comment expanders?
     show_expanders = False
 
+    @cachedproperty
+    def all_attachments(self):
+        return self.context.getAttachments()
 
-class CodeReviewCommentSummary(LaunchpadView):
+    @cachedproperty
+    def display_attachments(self):
+        # Attachments to show.
+        return self.all_attachments[0]
+
+    @cachedproperty
+    def other_attachments(self):
+        # Attachments to not show.
+        return self.all_attachments[1]
+
+
+class CodeReviewCommentSummary(CodeReviewCommentView):
     """Summary view of a CodeReviewComment"""
-    __used_for__ = ICodeReviewComment
 
     # How many lines do we show in the main view?
     SHORT_MESSAGE_LENGTH = 3
@@ -98,6 +111,20 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     schema = IEditCodeReviewComment
 
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+
+    @property
+    def initial_values(self):
+        """The initial values are used to populate the form fields.
+
+        In this case, the default value of the the comment should be the
+        quoted comment being replied to.
+        """
+        if self.reply_to:
+            comment = '"%s"' % self.reply_to.message_body
+        else:
+            comment = ''
+        return {'comment': comment}
+
 
     @property
     def is_reply(self):

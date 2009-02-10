@@ -162,6 +162,16 @@ http://savannah.nognu.org/
     http://savannah.nognu.org/
 
 
+== Gnome Bugzilla ==
+
+There is a 'Gnome Bugzilla' celebrity, which is used to represent the
+Gnome Bugzilla instance by the checkwatches script.
+
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugs')
+    >>> celebs.gnome_bugzilla == gnome_bugzilla
+    True
+
+
 == PPA key guard ==
 
 There is a 'PPA key guard' celebrity which owns all PPA

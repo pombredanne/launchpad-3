@@ -109,11 +109,6 @@ relevant publishing information:
     0.1-1
      * hoary - SUPERSEDED
 
-Binary packages of 'pmount in Ubuntu':
-
-    >>> dsp.binary_package_names
-    u'pmount'
-
 Current release of 'pmount in Ubuntu':
 
     >>> dsp.currentrelease.version
@@ -196,3 +191,20 @@ This means that packages can be used as keys in dictionaries.
     True
     >>> mapping[ubuntu.getSourcePackage('mozilla-firefox')] is firefox_marker
     True
+
+
+== Upstream links ==
+
+DistributionSourcePackages can be linked to upstream Products. You can
+retrieve a DistributionSourcePackage's upstream product using its
+upstream_product property.
+
+    >>> firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> print firefox.upstream_product.displayname
+    Mozilla Firefox
+
+If the package isn't linked to an upstream product, upstream_product
+will be None.
+
+    >>> print pmount.upstream_product
+    None

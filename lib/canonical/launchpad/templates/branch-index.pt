@@ -47,7 +47,7 @@
       <a tal:define="link context_menu/delete_branch"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/remove" /></a>
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/trash-icon" /></a>
       <a tal:define="link context_menu/edit"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
@@ -178,7 +178,7 @@
       </tr>
       <tr id="stacked-on" tal:condition="context/stacked_on">
         <th>Stacked on:</th>
-        <td tal:content="structure context/stacked_on/fmt:link" />
+        <td tal:content="structure context/stacked_on/fmt:bzr-link" />
       </tr>
       </tbody>
   </table>

@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'POExportView',
-    'POFileAppMenus',
     'POFileFacets',
     'POFileFilteredView',
     'POFileNavigation',
@@ -114,13 +113,6 @@ class POFileMenuMixin:
         return Link('+export', text, icon='download')
 
 
-class POFileAppMenus(ApplicationMenu, POFileMenuMixin):
-    """Application menus for `IPOFile` objects."""
-    usedfor = IPOFile
-    facet = 'translations'
-    links = ['description', 'translate', 'upload', 'download']
-
-
 class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
@@ -180,12 +172,15 @@ class POFileView(LaunchpadView):
                 translator = group.query_translator(language)
                 if translator is None:
                     team = None
+                    style_guide_url = None
                 else:
                     team = translator.translator
+                    style_guide_url = translator.style_guide_url
                 managers.append({
                     'group': group,
                     'team': team,
-                })
+                    'style_guide_url': style_guide_url,
+                    })
             groups.add(group)
         return managers
 
@@ -279,6 +274,9 @@ class POFileUploadView(POFileView):
 
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
+        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
+        # productseries and potemplate and should be unified.
+
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
@@ -342,11 +340,14 @@ class POFileUploadView(POFileView):
 
         self.request.response.addInfoNotification(
             structured(
-            'Thank you for your upload. The translation content will be'
-            ' imported soon into Launchpad. You can track its status from the'
-            ' <a href="%s/+imports">Translation Import Queue</a>' %
-                canonical_url(self.context.potemplate.translationtarget)))
-
+            'Thank you for your upload.  It will be automatically '
+            'reviewed in the next hours.  If that is not '
+            'enough to determine whether and where your file '
+            'should be imported, it will be reviewed manually by an '
+            'administrator in the coming few days.  You can track '
+            'your upload\'s status in the '
+            '<a href="%s/+imports">Translation Import Queue</a>' %(
+            canonical_url(self.context.potemplate.translationtarget))))
 
 class POFileTranslateView(BaseTranslationView):
     """The View class for a `POFile` or a `DummyPOFile`.
@@ -536,40 +537,44 @@ class POFileTranslateView(BaseTranslationView):
         if show_option_changed and 'start' in self.request:
             del self.request.form['start']
 
+    def _handleShowAll(self):
+        """Get `POTMsgSet`s when filtering for "all" (but possibly searching).
+
+        Normally returns all `POTMsgSet`s for this `POFile`, but also handles
+        search requests which act as a separate form of filtering.
+        """
+        if self.search_text is None:
+            return self.context.potemplate.getPOTMsgSets()
+
+        if len(self.search_text) <= 1:
+            self.request.response.addWarningNotification(
+                "Please try searching for a longer string.")
+            return self.context.potemplate.getPOTMsgSets()
+
+        return self.context.findPOTMsgSetsContaining(text=self.search_text)
+
     def _getSelectedPOTMsgSets(self):
         """Return a list of the POTMsgSets that will be rendered."""
         # The set of message sets we get is based on the selection of kind
         # of strings we have in our form.
-        pofile = self.context
-        potemplate = pofile.potemplate
-        if self.show == 'all':
-            if self.search_text is not None:
-                if len(self.search_text) > 1:
-                    ret = pofile.findPOTMsgSetsContaining(
-                        text=self.search_text)
-                else:
-                    self.request.response.addWarningNotification(
-                        "Please try searching for a longer string.")
-                    ret = potemplate.getPOTMsgSets()
-            else:
-                ret = potemplate.getPOTMsgSets()
-        elif self.show == 'translated':
-            ret = pofile.getPOTMsgSetTranslated()
-        elif self.show == 'untranslated':
-            ret = pofile.getPOTMsgSetUntranslated()
-        elif self.show == 'new_suggestions':
-            ret = pofile.getPOTMsgSetWithNewSuggestions()
-        elif self.show == 'changed_in_launchpad':
-            ret = pofile.getPOTMsgSetChangedInLaunchpad()
-        else:
+        get_functions = {
+            'all': self._handleShowAll,
+            'translated': self.context.getPOTMsgSetTranslated,
+            'untranslated': self.context.getPOTMsgSetUntranslated,
+            'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
+            'changed_in_launchpad': 
+                self.context.getPOTMsgSetChangedInLaunchpad,
+            }
+
+        if self.show not in get_functions:
             raise UnexpectedFormData('show = "%s"' % self.show)
+
         # We cannot listify the results to avoid additional count queries,
-        # because we could end with a list of more than 32000 items with
+        # because we could end up with a list of more than 32000 items with
         # an average list of 5000 items.
         # The batch system will slice the list of items so we will fetch only
-        # the exact amount of entries we need to render the page and thus is a
-        # waste of resources to fetch all items always.
-        return ret
+        # the exact number of entries we need to render the page.
+        return get_functions[self.show]()
 
     @property
     def completeness(self):
@@ -577,6 +582,12 @@ class POFileTranslateView(BaseTranslationView):
 
 
 class POExportView(BaseExportView):
+
+    def modifyFormat(self, format):
+        pochanged = self.request.form.get("pochanged")
+        if format == 'PO' and pochanged == 'POCHANGED':
+            return 'POCHANGED'
+        return format
 
     def processForm(self):
         return (None, [self.context])

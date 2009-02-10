@@ -19,11 +19,12 @@ import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -65,6 +66,8 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces.branch import (
     BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
@@ -121,7 +124,7 @@ def get_license_status(license_approved, license_reviewed, licenses):
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
 
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product, licenses):
         self.product = product
@@ -220,6 +223,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    remote_product = Unicode(
+        name='remote_product', allow_none=True, default=None)
+
+    @property
+    def upstream_bug_filing_url(self):
+        """Return the URL of the upstream bug filing form for this project.
+
+        Return None if self.bugtracker is None or self.remote_product is
+        None and self.bugtracker is a multi-product bugtracker.
+        """
+        if not self.bugtracker:
+            return None
+        else:
+            return self.bugtracker.getBugFilingLink(self.remote_product)
 
     @property
     def official_anything(self):
@@ -280,7 +297,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        return self.development_focus.series_branch
+        default_branch = self.development_focus.series_branch
+        if default_branch is None:
+            return None
+        elif default_branch.last_mirrored is None:
+            return None
+        else:
+            return default_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -925,6 +948,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
+
+    def getMergeProposals(self, status=None):
+        """See `IProduct`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status)
+
 
     def userCanEdit(self, user):
         """See `IProduct`."""

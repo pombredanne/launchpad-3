@@ -24,8 +24,6 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
@@ -203,17 +201,6 @@ class DistributionSourcePackage(BugTargetBase,
             orderBy='-datecreated',
             limit=quantity)
 
-    @property
-    def binary_package_names(self):
-        """See `IDistributionSourcePackage`."""
-        cache = DistributionSourcePackageCache.selectOne("""
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id))
-        if cache is None:
-            return None
-        return cache.binpkgnames
-
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""
         result = []
@@ -230,6 +217,14 @@ class DistributionSourcePackage(BugTargetBase,
     def publishing_history(self):
         """See `IDistributionSourcePackage`."""
         return self._getPublishingHistoryQuery()
+
+    @property
+    def upstream_product(self):
+        for distroseries in self.distribution.serieses:
+            source_package = distroseries.getSourcePackage(
+                self.sourcepackagename)
+            if source_package.direct_packaging is not None:
+                return source_package.direct_packaging.productseries.product
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property

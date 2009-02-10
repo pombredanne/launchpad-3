@@ -9,7 +9,9 @@ Check that the product main page works.
 
 The product page has a link to help translate it.
 
-    >>> user_browser.getLink('Help translate').click()
+    >>> link = user_browser.getLink(
+    ...     url='http://translations.launchpad.dev/evolution')
+    >>> link.click()
     >>> print user_browser.title
     Translations of The Evolution Groupware Application in Launchpad
 
@@ -301,3 +303,14 @@ Launchpad administrators will see the expiration information.
     >>> print find_tag_by_id(admin_browser.contents,
     ...                      'commercial_subscription')
     <p...Commercial subscription expires:...</p>
+
+
+= Aliases =
+
+When a project has one or more aliases, they're shown on the project's home
+page.
+
+    >>> Product.byName("firefox").setAliases(['iceweasel', 'snowchicken'])
+    >>> anon_browser.open('http://launchpad.dev/firefox')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'aliases'))
+    Also known as: iceweasel, snowchicken

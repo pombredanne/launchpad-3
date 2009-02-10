@@ -100,6 +100,8 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 
 
@@ -920,7 +922,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
         # be short like "at", both things which users do search for.
-        store = Store.of(self)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,
@@ -1202,16 +1204,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # of excluded packages. Otherwise return an empty list.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if self == ubuntu:
+            #XXX gmb 2009-02-02: bug 324298
+            #    This needs to be managed in a nicer, non-hardcoded
+            #    fashion.
             excluded_packages = [
                 'apport',
                 'casper',
                 'displayconfig-gtk',
+                'flashplugin-nonfree',
                 'gnome-app-install',
+                'nvidia-graphics-drivers-177',
                 'software-properties',
+                'sun-java6',
                 'synaptic',
                 'ubiquity',
                 'ubuntu-meta',
                 'update-manager',
+                'update-notifier',
+                'usb-creator',
                 'usplash',
                 ]
         else:

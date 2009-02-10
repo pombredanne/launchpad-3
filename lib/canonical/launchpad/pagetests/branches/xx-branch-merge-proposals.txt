@@ -70,7 +70,7 @@ An email notification is emitted when the merge proposal is created.
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
-    Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
+    [Merge] lp://dev/~name12/gnome-terminal/klingon into
       lp://dev/~name12/gnome-terminal/main
 
 == Landing Targets ==
@@ -366,7 +366,7 @@ and the reviewers.
     Sample Person <test@canonical.com>
     >>> notification = notifications[0]
     >>> print notification['Subject']
-    Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
+    [Merge] lp://dev/~name12/gnome-terminal/klingon into
       lp://dev/~name12/gnome-terminal/main updated
     >>> print notification.get_payload(decode=True)
     The proposal to merge lp://dev/~name12/gnome-terminal/klingon
@@ -468,10 +468,10 @@ new proposal has been created.
     >>> # The order of notifications appears to be non-deterministic
     >>> subjects.sort()
     >>> print subjects[0]
-    Proposed merge of lp://dev/~name12/gnome-terminal/scanned into
+    [Merge] lp://dev/~name12/gnome-terminal/scanned into
       lp://dev/~name12/gnome-terminal/main
     >>> print subjects[1]
-    Proposed merge of lp://dev/~name12/gnome-terminal/scanned into
+    [Merge] lp://dev/~name12/gnome-terminal/scanned into
       lp://dev/~name12/gnome-terminal/main updated
 
 The new merge proposal is created as needs review, and there is
@@ -675,3 +675,31 @@ they'll get a 404.
     Traceback (most recent call last):
     ...
     NotFound: ...
+
+== Displaying a review diff ==
+
+Create merge proposal with a review diff, and go to its index page.
+
+    >>> import transaction
+    >>> from canonical.launchpad.database.diff import StaticDiff
+    >>> login('admin@canonical.com')
+    >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
+    ...     u'\u1010'.encode('utf-8'))
+    >>> transaction.commit()
+    >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
+    >>> url = canonical_url(bmp)
+    >>> logout()
+    >>> def get_review_diff():
+    ...    nopriv_browser.open(url)
+    ...    return find_tag_by_id(nopriv_browser.contents, 'review-diff')
+
+The text of the review diff is in the page.
+    >>> print repr(extract_text(get_review_diff()))
+    u'Review Diff\nFake Diff\u1010'
+
+If no diff is present, nothing is shown.
+    >>> login('admin@canonical.com')
+    >>> bmp.review_diff = None
+    >>> logout()
+    >>> print get_review_diff()
+    None

@@ -39,7 +39,8 @@ immediately.
 Let's make a mirrored branch to play with:
 
     >>> login(ANONYMOUS)
-    >>> branch = removeSecurityProxy(factory.makeBranch(BranchType.MIRRORED))
+    >>> branch = removeSecurityProxy(
+    ...     factory.makeAnyBranch(branch_type=BranchType.MIRRORED))
     >>> logout()
 
 At the moment, it's not scheduled to be mirrored.
@@ -73,9 +74,11 @@ time goes on.
     >>> login(ANONYMOUS)
     >>> eric = factory.makePerson(name='eric')
     >>> fooix = factory.makeProduct(name='fooix')
-    >>> branch = factory.makeBranch(
-    ...     BranchType.HOSTED, owner=eric, product=fooix, name='trunk',
-    ...     title='The Fooix Trunk')
+    >>> branch = factory.makeProductBranch(
+    ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
+    ...     name='trunk', title='The Fooix Trunk')
+    >>> merge_proposal = factory.makeBranchMergeProposal(
+    ...     target_branch=branch, registrant=eric)
     >>> branch_url = '/' + branch.unique_name
     >>> logout()
 
@@ -86,25 +89,56 @@ time goes on.
     >>> pprint_entry(details)
     branch_format: None
     branch_type: u'Hosted'
+    bzr_identity: u'lp://dev/~eric/fooix/trunk'
     control_format: None
     date_created: ...
     date_last_modified: ...
+    dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
     display_name: u'The Fooix Trunk'
+    landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
+    landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     lifecycle_status: u'New'
     mirror_status_message: None
     name: u'trunk'
-    owner_link: u'http://api.launchpad.dev/beta/~eric'
-    project_link: u'http://api.launchpad.dev/beta/fooix'
-    registrant_link: u'http://api.launchpad.dev/beta/~eric'
+    owner_link: u'.../~eric'
+    project_link: u'.../fooix'
+    registrant_link: u'.../~eric'
     repository_format: None
-    resource_type_link: u'http://api.launchpad.dev/beta/#branch'
+    resource_type_link: u'.../#branch'
     reviewer_link: None
-    self_link: u'http://api.launchpad.dev/beta/~eric/fooix/trunk'
+    self_link: u'.../~eric/fooix/trunk'
     summary: None
     title: u'The Fooix Trunk'
     unique_name: u'~eric/fooix/trunk'
     url: None
     whiteboard: None
+
+
+There is a branch merge proposal with Fooix trunk as the target branch, so it
+should have a branch at the endpoint of landing_candidates.
+
+    >>> landing_candidates = webservice.get(
+    ...     details['landing_candidates_collection_link']).jsonBody()
+    >>> for candidate in landing_candidates['entries']:
+    ...     print candidate['source_branch_link']
+    http://.../~person-name23/fooix/branch25
+
+
+The source_branch of the landing candidate should have this same merge proposal
+in its landing_targets.
+
+    >>> feature_branch_link = \
+    ...     '/~person-name23/fooix/branch25'
+    >>> feature_branch = webservice.get(feature_branch_link).jsonBody()
+    >>> print feature_branch['unique_name']
+    ~person-name23/fooix/branch25
+
+    >>> landing_targets = webservice.get(
+    ...     feature_branch['landing_targets_collection_link']).jsonBody()
+    >>> for target in landing_targets['entries']:
+    ...     print target['target_branch_link']
+    http://.../~eric/fooix/trunk
+
 
 
 == Project branches ==
@@ -117,3 +151,4 @@ The branches of a project are also available.
     >>> for branch in branches['entries']:
     ...     print branch['unique_name']
     ~eric/fooix/trunk
+    ~person-name23/fooix/branch25

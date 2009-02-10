@@ -19,7 +19,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
@@ -135,13 +135,16 @@ class IBugTarget(IHasBugs):
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")
 
-    bug_reporting_guidelines = Text(
-        title=(
-            u"If I\N{right single quotation mark}m reporting a bug, "
-            u"I should include, if possible"),
-        description=(
-            u"These guidelines will be shown to anyone reporting a bug."),
-        required=False, max_length=50000)
+    bug_reporting_guidelines = exported(
+        Text(
+            title=(
+                u"If I\N{right single quotation mark}m reporting a bug, "
+                u"I should include, if possible"),
+            description=(
+                u"These guidelines will be shown to "
+                "anyone reporting a bug."),
+            required=False,
+            max_length=50000))
 
     def getMostCommonBugs(user, limit=10):
         """Return the list of most commonly-reported bugs.
@@ -160,6 +163,8 @@ class IBugTarget(IHasBugs):
 # We assign the schema for an `IBugTask` attribute here
 # in order to avoid circular dependencies.
 IBugTask['target'].schema = IBugTarget
+IBugTask['transitionToTarget'].getTaggedValue(
+    'lazr.webservice.exported')['params']['target'].schema = IBugTarget
 
 
 class BugDistroSeriesTargetDetails:

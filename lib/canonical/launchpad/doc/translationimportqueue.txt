@@ -172,11 +172,6 @@ Reset any pofile/potemplate information we have for the po_sr_entry.
     >>> po_sr_entry.potemplate = None
     >>> po_sr_entry.pofile = None
 
-XXX: CarlosPerelloMarin 20060331 If flush_database_updates is removed from
-here we don't see the pofile.path change and the internal code path that we
-want to check here doesn't work. For more information, see bug #3989
-
-    >>> flush_database_updates()
     >>> transaction.commit()
 
 Now, let's check that we cannot find the pot_entry as a POTemplate because
@@ -200,9 +195,9 @@ We can see that we got the same POFile as before:
     >>> guessed_pofile == pofile
     True
 
-And because it's a publised upload, the IPOFile in our database got
-its path changed to the one noted by this upload instead of having the one
-we set a couple of lines ago (u'po/sr-old.pot'):
+And because it's a published upload, the IPOFile in our database got
+its path changed to the one noted by this upload instead of having the
+one we set a couple of lines ago (u'po/sr-old.pot'):
 
     >>> po_sr_entry.is_published
     True
@@ -1074,8 +1069,7 @@ We get a sample tarball to be uploaded into the system.
 
 We will need this helper function to print the queue content.
 
-    >>> def print_queue_entries():
-    ...     translationimportqueue = getUtility(ITranslationImportQueue)
+    >>> def print_queue_entries(translationimportqueue):
     ...     for entry in translationimportqueue:
     ...         if entry.productseries is not None:
     ...             context = entry.productseries.product.name
@@ -1089,7 +1083,8 @@ We will need this helper function to print the queue content.
 
 Current entries in the queue are:
 
-    >>> print_queue_entries()
+    >>> queue = getUtility(ITranslationImportQueue)
+    >>> print_queue_entries(queue)
     hoary evolution | None               | po/sr.po
     firefox         | None               | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
@@ -1106,11 +1101,11 @@ product. There will be three new entries from the tarball.
     ...     tarfile_content, is_published, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_test_template)
-    3
+    (3, [])
 
 And those new entries in the queue appear in the list.
 
-    >>> print_queue_entries()
+    >>> print_queue_entries(queue)
     hoary evolution | None               | po/sr.po
     firefox         | None               | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
@@ -1122,6 +1117,61 @@ And those new entries in the queue appear in the list.
     evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
     evolution       | evolution-2.2-test | fr.po
+
+It is possible to update the content of an entry in the queue.
+
+    >>> def getFirstEvoEntryByPath(queue,path):
+    ...     for entry in queue.getAllEntries(evolution_productseries):
+    ...         if entry.path == path:
+    ...             return entry
+    ...     return None
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> transaction.commit()
+
+    >>> existing_entry = getFirstEvoEntryByPath(queue, 'foo.pot')
+    >>> existing_entry = removeSecurityProxy(existing_entry)
+    >>> print existing_entry.content.read()
+    Foo template
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     "foo.pot", "New content", is_published, rosetta_experts,
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_test_template)
+    >>> entry = removeSecurityProxy(entry)
+    >>> transaction.commit()
+    >>> entry is existing_entry
+    True
+    >>> print entry.content.read()
+    New content
+
+Not specifying the potemplate in this situation still selects the same entry
+on a best match basis. The entry is updated.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     "foo.pot", "Even newer content", is_published, rosetta_experts,
+    ...     productseries=evolution_productseries)
+    >>> entry = removeSecurityProxy(entry)
+    >>> transaction.commit()
+    >>> entry is existing_entry
+    True
+    >>> print entry.content.read()
+    Even newer content
+
+Same goes for pofile entries.
+
+    >>> existing_entry = getFirstEvoEntryByPath(queue, 'es.po')
+    >>> existing_entry = removeSecurityProxy(existing_entry)
+    >>> print existing_entry.content.read()
+    Spanish translation
+
+    >>> entry = removeSecurityProxy(translationimportqueue.addOrUpdateEntry(
+    ...     "es.po", "New po content", is_published, rosetta_experts,
+    ...     productseries=evolution_productseries))
+    >>> transaction.commit()
+    >>> entry is existing_entry
+    True
+    >>> print entry.content.read()
+    New po content
 
 Now, attaching the same layout to a different template for the same product,
 we get again three more entries.
@@ -1130,21 +1180,15 @@ we get again three more entries.
     ...     tarfile_content, is_published, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_template)
-    3
+    (3, [])
 
 And the import queue gets three new entries too. This part of the test is
 important to prevent problems like bug #133611, in which case were not getting
 the extra three entries.
 
-    >>> print_queue_entries()
-    hoary evolution | None               | po/sr.po
-    firefox         | None               | foo/bar.pot
-    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
-    evolution       | evolution-2.2-test | po/pt_BR.po
-    firefox         | None               | foo/bar.po
-    evolution       | None               | po/sr.po
-    hoary evolution | None               | po/evolution-2.2.pot
-    warty evolution | None               | po/sr.po
+    >>> print_queue_entries(queue)
+    hoary ...
+    ...
     evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
     evolution       | evolution-2.2-test | fr.po
@@ -1152,6 +1196,46 @@ the extra three entries.
     evolution       | evolution-2.2      | foo.pot
     evolution       | evolution-2.2      | fr.po
 
+Not specifying the potemplate now is ambiguous and so no entry is added or
+updated.
+
+    >>> print queue.addOrUpdateEntry(
+    ...     "foo.pot", "Latest content", is_published, rosetta_experts,
+    ...     productseries=evolution_productseries)
+    None
+
+Ambiguity is also resolved when a file is uploaded to the product first and
+then to a specific template.
+
+    >>> existing_entry = queue.addOrUpdateEntry(
+    ...     "bar.pot", "Bar content", is_published, rosetta_experts,
+    ...     productseries=evolution_productseries)
+    >>> existing_entry = removeSecurityProxy(existing_entry)
+    >>> entry = queue.addOrUpdateEntry(
+    ...     "bar.pot", "Bar content", is_published, rosetta_experts,
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_template)
+
+These files are put into different entries.
+
+    >>> print_queue_entries(queue)
+    hoary ...
+    ...
+    evolution       | evolution-2.2      | fr.po
+    evolution       | None               | bar.pot
+    evolution       | evolution-2.2      | bar.pot
+
+When uploading to the prouct now, the best matching entry is updated.
+
+    >>> entry = queue.addOrUpdateEntry(
+    ...     "bar.pot", "New bar content", is_published, rosetta_experts,
+    ...     productseries=evolution_productseries)
+    >>> entry = removeSecurityProxy(entry)
+    >>> transaction.commit()
+    >>> entry is existing_entry
+    True
+    >>> print entry.content.read()
+    New bar content
 
 = Filename filters =
 
@@ -1183,18 +1267,17 @@ filter, so there seem to be only 2 files in the tarball.
     ...     tarfile_content, is_published, rosetta_experts,
     ...     productseries=netapplet_trunk,
     ...     filename_filter=swizzle_filename)
-    2
+    (2, [])
 
 To all intents and purposes, it's as if the files' paths inside the
 tarball were exactly as the filename filter returned them.
 
-    >>> print_queue_entries()
+    >>> print_queue_entries(queue)
     hoary evolution | ...
     ...
-    evolution       | evolution-2.2      | fr.po
+    evolution       | evolution-2.2      | bar.pot
     netapplet       | None               | new-directory/es.po
     netapplet       | None               | new-directory/fr.po
-
 
 
 = Invalid data =
@@ -1234,8 +1317,6 @@ raise errors about them.
 
     >>> entry.status = RosettaImportStatus.APPROVED
 
-    >>> import logging
-    >>> from canonical.launchpad.scripts.po_import import ImportProcess
     >>> ImportProcess(transaction, logging).run()
     Traceback (most recent call last):
     ...
@@ -1349,7 +1430,7 @@ Here we start out with an empty queue.
 
     >>> for entry in translationimportqueue:
     ...     translationimportqueue.remove(entry)
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
 
 cleanUpQueue() returns the number of entries it purges.  If there is
 nothing to purge, it returns zero.
@@ -1374,7 +1455,7 @@ purging.
     >>> stale = now - datetime.timedelta(4)
     >>> entry.date_status_changed = stale
     >>> flush_database_updates()
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
     evolution   | None        | po/nl.po
 
 The entry is deleted as part of the next cleanup.
@@ -1382,7 +1463,7 @@ The entry is deleted as part of the next cleanup.
     >>> translationimportqueue.cleanUpQueue()
     1
 
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
 
 
 === Imported Entries ===
@@ -1394,7 +1475,7 @@ imported successfully, ending up in the IMPORTED state.
     ...     u'po/nl.po', 'hoi', True, rosetta_experts,
     ...      productseries=evolution_productseries)
     >>> entry.status = RosettaImportStatus.IMPORTED
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
     evolution   | None        | po/nl.po
 
 This request, too, is deleted when left in this state for longer than a
@@ -1405,7 +1486,7 @@ few days.
     >>> translationimportqueue.cleanUpQueue()
     1
 
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
 
 
 === Deactivated Products ===
@@ -1422,14 +1503,14 @@ A user sets up Jokosher for translation, and uploads a template.
     >>> syncUpdate(template)
     >>> entry = create_product_request('jokosher', 'jokosher')
     >>> syncUpdate(entry)
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
     jokosher    | jokosher    | messages.pot
 
 The entry sits on the queue; there is no reason for anyone to purge it.
 
     >>> translationimportqueue.cleanUpQueue()
     0
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
     jokosher    | jokosher    | messages.pot
 
 An administrator finds that this registration of the Jokosher project
@@ -1443,5 +1524,5 @@ no longer usable, there is no point in keeping the entry on the queue.
 
     >>> translationimportqueue.cleanUpQueue()
     1
-    >>> print_queue_entries()
+    >>> print_queue_entries(translationimportqueue)
 

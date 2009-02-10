@@ -15,7 +15,7 @@ Mark is a qualified user.
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> download = browser.getLink('Download translations')
+    >>> download = browser.getLink('Download')
     >>> download_url = download.url
     >>> download.click()
     >>> print browser.url
@@ -34,16 +34,15 @@ reasonable level.
     >>> def can_download_translations(browser):
     ...     """Can browser download full package translations?
     ...
-    ...     Checks for the "Download translations" link on an Ubuntu
-    ...     package.  Also attempts direct access to the same package's
-    ...     download page and sees that the two have consistent access
-    ...     rules.
+    ...     Checks for the "Download" link on an Ubuntu package.
+    ...     Also attempts direct access to the same package's download
+    ...     page and sees that the two have consistent access rules.
     ...     """
     ...     browser.open(
     ...         'http://translations.launchpad.dev/'
     ...         'ubuntu/hoary/+source/mozilla/')
     ...     try:
-    ...         browser.getLink('Download translations').click()
+    ...         browser.getLink('Download').click()
     ...     except LinkNotFoundError:
     ...         see_link = False
     ...     else:
@@ -153,7 +152,7 @@ User "cprov" is neither a member of the translation group nor a Rosetta expert.
 
 == Making the request ==
 
-The "Download translations" link leads to a page that lets the user select an
+The "Download" link leads to a page that lets the user select an
 export format, and request the download.
 
     >>> browser.open(

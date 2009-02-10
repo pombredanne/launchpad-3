@@ -3,6 +3,262 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
+<metal:expandable_table_js define-macro="expandable-table-js">
+  <tal:comment replace="nothing">
+    Javascript needed for expanding/collapsing archive package list
+    row containing extra publication information via XHR.
+  </tal:comment>
+
+<script type="text/javascript">
+YUI().use('node', 'io-base', 'lazr.anim', function(Y) {
+
+
+/*
+ * Communicate the update has failed and allow the user to retry
+ * the operation.
+ */
+function informFailure(transaction_id, response, args) {
+    var text = Y.Node.create('<span>');
+    text.set('innerHTML', 'Failed to fetch information.');
+
+    var retry_link = Y.Node.create('<a>')
+    retry_link.set('id', 'retry-repository-size-update');
+    retry_link.set('href', '');
+    retry_link.set('innerHTML', 'Retry');
+    retry_link.on(
+        'click',
+        function (e) {
+            e.preventDefault();
+            placeholder = e.target.get('parentNode').get('parentNode');
+            row_id = placeholder.get('id').replace('xhr_placeholder', 'pub');
+            startUpdate(Y.get('#' + row_id));
+            }
+    );
+
+    var failure_message = Y.Node.create('<p>');
+    failure_message.set('id', 'failure-message');
+    failure_message.appendChild(text);
+    failure_message.appendChild(retry_link);
+
+    container = args.destination;
+    container.set('innerHTML', '');
+    container.appendChild(failure_message);
+
+    var anim = Y.lazr.anim.red_flash({
+        node: args.destination
+        });
+    anim.run();
+}
+
+/*
+ * Update the row with the XHR response.
+ */
+function doUpdate(transaction_id, response, args) {
+    container = args.destination;
+    container.set('innerHTML', response.responseText);
+    var anim = Y.lazr.anim.green_flash({
+        node: container
+    });
+    anim.run();
+}
+
+
+/*
+ * Dispatch a XHR for updating the given row.
+ */
+function startUpdate(row) {
+    var text = Y.Node.create('<span>');
+    text.set('innerHTML', 'Fetching publishing information ...');
+
+    var in_progress_message = Y.Node.create('<p>');
+    in_progress_message.set('id', 'in-progress-message');
+    in_progress_message.appendChild(text);
+
+    var pub_id = row.get('id').replace('pub', '');
+    container = Y.get('#xhr_placeholder' + pub_id);
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message);
+
+    var config = {
+        on: {
+            'success': doUpdate,
+            'failure': informFailure
+        },
+        arguments: {
+            'destination': container,
+        }
+    };
+    var uri = '+sourcepub/' + pub_id + '/+listing-archive-extra';
+    Y.io(uri, config);
+}
+
+
+/*
+ * Toggle the visibility of the expander targeted and the visual of
+ * the expander itself.
+ */
+function toggleExpandableRow(expander) {
+    var row_id = expander.get('id').replace('-expander', '');
+    row = Y.get('#' + row_id);
+    icon = expander.query('img');
+
+    row_display = row.getStyle('display');
+    if (row_display == 'none') {
+        row.setStyle('display', 'table-row');
+        icon.set('src', '/@@/treeExpanded')
+        container = Y.get('#xhr_placeholder' + row_id.replace('pub', ''))
+        if (trim(container.get('innerHTML')) == ''){
+            startUpdate(row);
+        }
+    }
+    else {
+        row.setStyle('display', 'none');
+        icon.set('src', '/@@/treeCollapsed')
+    }
+}
+
+function setupPackageListExpanders() {
+    var packages_list = Y.get('#packages_list');
+    var expanders = packages_list.queryAll('a.expander');
+    expanders.each(function(expander) {
+        expander.on("click", function(e) {
+            e.preventDefault();
+            var expander = e.currentTarget;
+            toggleExpandableRow(expander);
+        });
+    });
+}
+
+Y.on("domready", setupPackageListExpanders);
+});
+</script>
+
+<style type="text/css" media="screen, print">
+td p#failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
+
+td p#failure-message a#retry-repository-size-update {
+    padding-left: .5em;
+}
+
+td p#in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+</style>
+
+
+</metal:expandable_table_js>
+
+<metal:source_package_list define-macro="source-package-list">
+  <tal:comment replace="nothing">
+    Presents a table listing all the published source packages for an
+    archive.
+  </tal:comment>
+
+  <div style="padding-top: 1em;" tal:define="batch view/search_results">
+    <form name="package_search" action="" method="GET" style="clear:both">
+      <label for="name">Package name contains:</label>
+      <input id="field.name_filter" title="Package Name" size="20"
+              type="text" name="field.name_filter"
+              tal:attributes="value request/field.name_filter|nothing"/>
+      <tal:status_filter
+          replace="structure view/plain_status_filter_widget" /> in
+      <tal:series_filter
+          replace="structure view/plain_series_filter_widget" />
+      <input type="submit" value="Filter" />
+    </form>
+
+    <tal:navigation_top
+        replace="structure view/batchnav/@@+navigation-links-upper" />
+
+    <table class="listing" id="packages_list" tal:condition="batch">
+      <thead>
+        <tr class="archive_package_row">
+        <th colspan="2">Source</th>
+        <th tal:condition="context/owner/isTeam">Uploader</th>
+        <th>Published</th>
+        <th>Status</th>
+        <th>Series</th>
+        <th>Section</th>
+        <th>Build Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tal:block repeat="publishing batch"
+                   replace="structure publishing/@@+listing-archive-detailed">
+        </tal:block>
+      </tbody>
+    </table>
+
+    <tal:navigation_bottom
+        replace="structure view/batchnav/@@+navigation-links-lower" />
+
+    <div id="empty-result"
+            tal:define="name_filter request/field.name_filter|nothing"
+            tal:condition="not: batch">
+      No matching package for '<tal:name_filter replace="name_filter" />'.
+    </div>
+
+    <metal:js
+      use-macro="context/@@+macros/expandable-table-js" />
+
+  </div>
+
+</metal:source_package_list>
+
+<metal:package_copy_request_list define-macro="package-copy-request-list">
+  <tal:comment replace="nothing">
+    Presents a table listing all the package copy requests for a copy
+    archive.
+  </tal:comment>
+  <tal:block define="requests view/package_copy_requests">
+    <p tal:condition="not: requests">
+      There are currently no requests to copy packages into this archive.
+    </p>
+    <tal:request_list tal:condition="requests">
+      <table id="package-requests"
+        tal:attributes="summary string:Package copy requests for ${context/name}">
+        <thead>
+          <tr>
+            <th>Copied from</th>
+            <th>Series</th>
+            <th>Requested by</th>
+            <th>When Requested</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="request requests">
+            <td tal:define="archive request/source_archive">
+              <a tal:attributes="href archive/fmt:url"
+                 tal:content="archive/title" 
+                 tal:condition="archive/is_ppa" />
+              <tal:archive_title replace="archive/title" 
+                                 condition="not: archive/is_ppa" />
+            </td>
+            <td>
+              <tal:distroseries 
+                  replace="request/source_distroseries/displayname" />-<tal:src_pocket
+                  replace="request/source_pocket/name/fmt:lower" />
+              <tal:component condition="request/source_component">
+               (<tal:src_component_name
+                  replace="request/source_component/name" />)
+              </tal:component>
+            </td>
+            <td><a tal:attributes="href request/requester/fmt:url"
+                   tal:content="request/requester/displayname" /></td>
+            <td tal:content="request/date_created/fmt:approximatedate" />
+            <td tal:content="request/status/name/capitalize" />
+          </tr>
+        </tbody>
+      </table>
+    </tal:request_list>
+  </tal:block>
+</metal:package_copy_request_list>
+
 <metal:selectable_sources define-macro="selectable-sources">
 
   <tal:comment replace="nothing">
@@ -32,9 +288,9 @@
                define="widget nocall:view/widgets/selected_sources;
                        field_name widget/context/__name__;
                        error python:view.getFieldError(field_name);">
-    <table class="listing" style="margin-top: 1em;">
+    <table class="listing" style="margin-top: 1em;" id="packages_list">
       <thead>
-      <tr class="ppa_package_row">
+      <tr class="archive_package_row">
         <th colspan="2">Source</th>
         <th tal:condition="context/owner/isTeam">Uploader</th>
         <th>Published</th>
@@ -48,8 +304,12 @@
       <tal:terms tal:repeat="term widget/vocabulary">
         <tal:block
           define="pub term/value"
-          replace="structure pub/@@+listing-ppa-detailed-selectable" />
+          replace="structure pub/@@+listing-archive-detailed-selectable" />
       </tal:terms>
+
+      <metal:js
+        use-macro="context/@@+macros/expandable-table-js" />
+
       </tbody>
       <tfoot tal:condition="view/has_undisplayed_sources">
          <tr>
@@ -70,6 +330,7 @@
            type="hidden" value="1" />
     <div class="error message" tal:condition="error"
          tal:content="structure error">Error message</div>
+
   </tal:sources>
 
 </metal:selectable_sources>
@@ -82,23 +343,58 @@
     :archive: targeted IArchive.
   </tal:comment>
 
-  <div>
-    <ul id="package_counters">
-      <li id="source_counter">
-         <tal:source_count_text replace="archive/@@+index/source_count_text" />
-         (<tal:sources_size
-            replace="archive/sources_size/fmt:bytes" />)</li>
-      <li id="binary_counter">
-         <tal:binary_count_text replace="archive/@@+index/binary_count_text" />
-         (<tal:binaries_size
-            replace="archive/binaries_size/fmt:bytes" />)</li>
-      <li id="total_size">
-         Estimated archive size:
-         <tal:estimated_size
-           replace="archive/estimated_size/fmt:bytes" /></li>
-    </ul>
-  </div>
+  <ul>
+    <li id="source_counter">
+       <tal:source_count_text replace="archive/@@+index/source_count_text" />
+       (<tal:sources_size
+          replace="archive/sources_size/fmt:bytes" />)</li>
+    <li id="binary_counter">
+       <tal:binary_count_text replace="archive/@@+index/binary_count_text" />
+       (<tal:binaries_size
+          replace="archive/binaries_size/fmt:bytes" />)</li>
+    <li id="total_size">
+       Estimated archive size:
+       <tal:estimated_size
+         replace="archive/estimated_size/fmt:bytes" /></li>
+  </ul>
 
 </metal:package_counters>
+
+<metal:build_status_summary define-macro="build-status-summary">
+
+  <tal:comment replace="nothing">
+    Present the build pie chart for the context IArchiveRebuild.
+    :archive: targetted IArchive.
+  </tal:comment>
+
+  <table id="build-count-table"
+         summary="An overview of the build status for this archive."
+         tal:define="build_counters view/build_counters">
+    <thead>
+      <tr>
+        <th>Total builds:</th>
+        <td class="total" tal:content="view/build_counters/total">100</td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>Failed</th>
+        <td class="failed" tal:content="build_counters/failed">100</td>
+      </tr>
+      <tr>
+        <th>Pending</th>
+        <td class="pending" tal:content="build_counters/pending">100</td>
+      </tr>
+      <tr>
+        <th>Superseded</th>
+        <td class="superseded" tal:content="build_counters/superseded">100</td>
+      </tr>
+      <tr>
+        <th>Succeeded</th>
+        <td class="succeeded" tal:content="build_counters/succeeded">100</td>
+      </tr>
+    </tbody>
+  </table>
+</metal:build_status_summary>
 
 </tal:root>

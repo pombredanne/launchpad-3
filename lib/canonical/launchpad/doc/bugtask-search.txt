@@ -636,6 +636,59 @@ closed after a certain date.
     Closed a day ago
 
 
+== Searching for bug with attachments ==
+
+It's possible to search for bugs with an attachment of a certain type.
+
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
+    ...     IMessageSet)
+    >>> product = factory.makeProduct()
+    >>> patch_bug = factory.makeBug(
+    ...     product=product)
+    >>> filecontent = 'Some diff data'
+    >>> filealias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='patch.diff', size=len(filecontent),
+    ...     file=StringIO(filecontent), contentType='text/plain')
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     subject="title", content="added a patch.")
+    >>> attachmentset = getUtility(IBugAttachmentSet)
+    >>> attachment = attachmentset.create(
+    ...     bug=patch_bug, filealias=filealias, title='Patch',
+    ...     message=message, attach_type=BugAttachmentType.PATCH)
+    >>> patch_bug.attachments.count()
+    1
+
+We've added an attachment to our new bug with an attachment type
+PATCH. Searching for bugs with that attachment type we get one result.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, attachmenttype=BugAttachmentType.PATCH)
+    >>> product.searchTasks(search_params).count()
+    1
+
+    >>> filecontent = 'Some more diff data'
+    >>> filealias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='patch.diff', size=len(filecontent),
+    ...     file=StringIO(filecontent), contentType='text/plain')
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     subject="title", content="added another patch.")
+    >>> attachmentset = getUtility(IBugAttachmentSet)
+    >>> attachment = attachmentset.create(
+    ...     bug=patch_bug, filealias=filealias, title='Patch 2',
+    ...     message=message, attach_type=BugAttachmentType.PATCH)
+    >>> patch_bug.attachments.count()
+    2
+
+We've added another patch to the bug. Searching for bugs with patch
+attachments still returns a single result, since even though a new
+attachment was added, there is still only one bug with attachments.
+
+    >>> product.searchTasks(search_params).count()
+    1
+
+
 == Ordering search results ==
 
 The result returned by bugtask searches can come sorted by a specified order

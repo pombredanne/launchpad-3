@@ -24,6 +24,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -65,8 +66,8 @@ from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
-    rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+    mutator_for, rename_parameters_as, webservice_error)
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -321,6 +322,9 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+class IllegalTarget(Exception):
+    """Exception raised when trying to set an illegal bug task target."""
+    webservice_error(400) #Bad request.
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -341,8 +345,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone')
+    milestone = exported(Choice(
+        title=_('Milestone'), required=False, vocabulary='Milestone'))
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
@@ -370,8 +374,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
              readonly=True),
         exported_as='bug_target_name')
     bugwatch = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Remote Bug Details"), required=False,
+            schema=IBugWatch,
             vocabulary='BugWatch', description=_(
                 "Select the bug watch that "
                 "represents this task in the relevant bug tracker. If none "
@@ -446,10 +451,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                  "length of time between the creation date "
                                  "and now."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson))
-    target = Reference(
+        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+    target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
-        description=_("The software in which this bug should be fixed."))
+        readonly=True,
+        description=_("The software in which this bug should be fixed.")))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
@@ -527,6 +533,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @mutator_for(importance)
     @rename_parameters_as(new_importance='importance')
     @operation_parameters(new_importance=copy_field(importance))
     @call_with(user=REQUEST_USER)
@@ -557,6 +564,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         be a bug supervisor or the owner of the project.
         """
 
+    @mutator_for(status)
     @rename_parameters_as(new_status='status')
     @operation_parameters(
         new_status=copy_field(status))
@@ -576,6 +584,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @mutator_for(assignee)
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()
@@ -586,6 +595,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         object, the date_assigned is set on the task. If the assignee
         value is set to None, date_assigned is also set to None.
         """
+
+    @operation_parameters(
+        target=copy_field(target))
+    @export_write_operation()
+    def transitionToTarget(target):
+        """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():
         """Update the targetnamecache field in the database.
@@ -997,8 +1012,10 @@ class BugTaskSearchParams:
         Otherwise, return value as is, or None if it's a zero-length sequence.
         """
         if zope_isinstance(value, (list, tuple)):
-            if len(value) > 0:
+            if len(value) > 1:
                 return any(*value)
+            elif len(value) == 1:
+                return value[0]
             else:
                 return None
         else:
@@ -1033,7 +1050,8 @@ class BugTaskSearchParams:
         search_params.distribution = distribution
         if has_patch:
             # Import this here to avoid circular imports
-            from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
+            from canonical.launchpad.interfaces.bugattachment import (
+                BugAttachmentType)
             search_params.attachmenttype = BugAttachmentType.PATCH
             search_params.has_patch = has_patch
         search_params.has_cve = has_cve
@@ -1081,6 +1099,12 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
+        """
+
+    def getBugTasks(bug_ids):
+        """Return the bugs with the given IDs and all of its bugtasks.
+
+        :return: A dictionary mapping the bugs to their bugtasks.
         """
 
     def getBugTaskBadgeProperties(bugtasks):
@@ -1224,6 +1248,9 @@ class IBugTaskSet(Interface):
             'open_unassigned': The number of open unassigned bugs.
             'open_inprogress': The number of open bugs that are In Progress.
         """
+
+    def getOpenBugTasksPerProduct(user, products):
+        """Return open bugtask count for multiple products."""
 
 
 def valid_remote_bug_url(value):

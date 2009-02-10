@@ -26,6 +26,7 @@ __all__ = [
     'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
+    'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -81,6 +82,7 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -385,6 +387,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
@@ -697,6 +700,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     translation_groups = Attribute(
         "The set of TranslationGroup objects this person is a member of.")
 
+    translators = Attribute(
+        "The set of Translator objects this person is a member of.")
+
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -830,12 +836,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Set the given email address as this person's preferred one.
 
         This method must be used only for people, not teams.
-        """
-
-    def getBranch(product_name, branch_name):
-        """The branch associated to this person and product with this name.
-
-        The product_name may be None.
         """
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
@@ -1050,17 +1050,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def addLanguage(language):
         """Add a language to this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
-        If the given language is already present, and IntegrityError will be
-        raised. This will be fixed soon; here's the discussion on this topic:
-        https://launchpad.ubuntu.com/malone/bugs/1317.
+        If the given language is one of the user's preferred languages
+        already, nothing will happen.
         """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
         """
@@ -1234,6 +1233,15 @@ class IPersonViewRestricted(Interface):
     unmapped_participants = CollectionField(
         title=_("List of participants with no coordinates recorded."),
         value_type=Reference(schema=Interface))
+
+    def getMembersWithPreferredEmails(include_teams=False):
+        """Returns a result set of persons with precached addresses.
+
+        Persons or teams without preferred email addresses are not included.
+        """
+
+    def getMembersWithPreferredEmailsCount(include_teams=False):
+        """Returns the count of persons/teams with preferred emails."""
 
     def getDirectAdministrators():
         """Return this team's administrators.
@@ -1974,6 +1982,12 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class NoSuchPerson(NameLookupFailed):
+    """Raised when we try to look up an IPerson that doesn't exist."""
+
+    _message_prefix = "No such person"
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

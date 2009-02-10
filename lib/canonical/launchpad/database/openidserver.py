@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """OpenID related database classes."""
@@ -37,19 +37,39 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIDAuthorization(SQLBase):
     implements(IOpenIDAuthorization)
+
     _table = 'OpenIDAuthorization'
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+
+    @staticmethod
+    def _get_store():
+        """See `SQLBase`.
+
+        The authorization check should always use the master flavor,
+        principally because +rp-preauthorize will create them on GET requests.
+        """
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    account = ForeignKey(dbName='account', foreignKey='Account', notNull=True)
     client_id = StringCol()
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_expires = UtcDateTimeCol(notNull=True)
     trust_root = StringCol(notNull=True)
+
+    # IOpenIDAuthorization.person is deprecated
+    @property
+    def person(self):
+        return Store.of(self).find(Person, account=self.account).one()
+
+    @property
+    def personID(self):
+        return self.person.id
 
 
 class OpenIDAuthorizationSet:
@@ -58,11 +78,12 @@ class OpenIDAuthorizationSet:
     def isAuthorized(self, person, trust_root, client_id):
         """See IOpenIDAuthorizationSet."""
         return  OpenIDAuthorization.select("""
-            person = %s
+            account = %s
             AND trust_root = %s
             AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             AND (client_id IS NULL OR client_id = %s)
-            """ % sqlvalues(person.id, trust_root, client_id)).count() > 0
+            """ % sqlvalues(person.accountID, trust_root, client_id)
+            ).count() > 0
 
     def authorize(self, person, trust_root, expires, client_id=None):
         """See IOpenIDAuthorizationSet."""
@@ -72,7 +93,7 @@ class OpenIDAuthorizationSet:
         assert not person.isTeam(), 'Attempting to authorize a team.'
 
         existing = OpenIDAuthorization.selectOneBy(
-                personID=person.id,
+                accountID=person.accountID,
                 trust_root=trust_root,
                 client_id=client_id
                 )
@@ -80,8 +101,11 @@ class OpenIDAuthorizationSet:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
+            # Even though OpenIDAuthorizationSet always uses the master
+            # store, it's likely that the person can come from the slave.
+            # That's why we are using the ID to create the reference.
             OpenIDAuthorization(
-                    person=person, trust_root=trust_root,
+                    accountID=person.accountID, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
 
@@ -155,7 +179,7 @@ class OpenIDRPConfigSet:
 
     def getAll(self):
         """See `IOpenIDRPConfigSet`"""
-        return OpenIDRPConfig.select(orderBy=['displayname','trust_root'])
+        return OpenIDRPConfig.select(orderBy=['displayname', 'trust_root'])
 
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""

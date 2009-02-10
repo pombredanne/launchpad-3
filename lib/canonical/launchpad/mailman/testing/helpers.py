@@ -55,7 +55,7 @@ MAILMAN_PKGDIR = os.path.dirname(Mailman.__file__)
 MAILMAN_BINDIR = os.path.join(os.path.dirname(MAILMAN_PKGDIR), 'bin')
 
 SPACE = ' '
-MAILING_LIST_CHECK_INTERVAL = datetime.timedelta(seconds=5)
+MAILING_LIST_CHECK_INTERVAL = datetime.timedelta(seconds=10)
 SECONDS_TO_SNOOZE = 0.1
 
 

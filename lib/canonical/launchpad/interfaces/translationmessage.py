@@ -249,3 +249,14 @@ class ITranslationMessageSet(Interface):
 
     def getByID(id):
         """Return the TranslationMessage with the given ID or None."""
+
+    def selectDirect(where=None, order_by=None):
+        """Return sequence of `TranslationMessage`s matching arguments.
+
+        This is meant for maintenance use.  If you find yourself using
+        it anywhere except in a manually-run script, try something else.
+
+        :param where: An SQL WHERE clause describing which messages to
+            return.
+        :param order_by: An SQL ORDER BY clause.
+        """

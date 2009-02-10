@@ -11,9 +11,8 @@ __all__ = [
     'IBranchPullerApplication',
     'IBranchFileSystem',
     'IBranchFileSystemApplication',
+    'LAUNCHPAD_ANONYMOUS',
     'LAUNCHPAD_SERVICES',
-    'NOT_FOUND_FAULT_CODE',
-    'PERMISSION_DENIED_FAULT_CODE',
     'READ_ONLY',
     'WRITABLE',
     ]
@@ -23,13 +22,19 @@ from zope.interface import Interface
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.validators.name import valid_name
 
-# When this is provided as a login ID to getBranchInformation, the method
-# bypasses the normal security checks and returns the branch ID and the
-# READ_ONLY permission bit. This allows Launchpad services like the puller and
-# branch scanner to access private branches.
+# When LAUNCHPAD_SERVICES is provided as a login ID to XML-RPC methods, they
+# bypass the normal security checks and give read-only access to all branches.
+# This allows Launchpad services like the puller and branch scanner to access
+# private branches.
 LAUNCHPAD_SERVICES = '+launchpad-services'
 assert not valid_name(LAUNCHPAD_SERVICES), (
     "%r should *not* be a valid name." % (LAUNCHPAD_SERVICES,))
+
+# When LAUNCHPAD_ANONYMOUS is passed, the XML-RPC methods behave as if no user
+# was logged in.
+LAUNCHPAD_ANONYMOUS = '+launchpad-anonymous'
+assert not valid_name(LAUNCHPAD_ANONYMOUS), (
+    "%r should *not* be a valid name." % (LAUNCHPAD_ANONYMOUS,))
 
 # These are used as permissions for getBranchInformation.
 READ_ONLY = 'r'
@@ -131,18 +136,6 @@ class IBranchFileSystemApplication(ILaunchpadApplication):
     """Branch File System end point root."""
 
 
-# Values for the faultCode of Faults returned by methods of IBranchFileSystem.
-#
-# We borrow the numbers from HTTP for familiarity, there's nothing deep in it.
-#
-# Currently, Faults are only returned by createBranch().  If more methods get
-# converted to return Faults, they should use these values if appropriate or
-# define more codes here if not.
-
-PERMISSION_DENIED_FAULT_CODE = 403
-NOT_FOUND_FAULT_CODE = 404
-
-
 class IBranchFileSystem(Interface):
     """An interface for dealing with hosted branches in Launchpad.
 
@@ -151,38 +144,6 @@ class IBranchFileSystem(Interface):
     The code hosting service uses this to register branches, to retrieve
     information about a user's branches, and to update their status.
     """
-
-    def getBranchInformation(loginID, personName, productName, branchName):
-        """Return the database ID and permissions for a branch.
-
-        :param loginID: The login ID for the person asking for the branch
-            information. This is used for branch privacy checks.
-        :param personName: The owner of the branch.
-        :param productName: The product that the branch belongs to. '+junk' is
-            allowed.
-        :param branchName: The name of the branch.
-
-        :returns: (branch_id, permissions), where 'permissions' is 'w' if the
-            user represented by 'loginID' can write to the branch, and 'r' if
-            they cannot. If the branch doesn't exist or is not visible to the
-            person asking, return ('', '').
-        """
-        # XXX: JonathanLange 2008-08-05 spec=package-branches: This
-        # method will need to change to support source package
-        # branches.
-
-    def getDefaultStackedOnBranch(login_id, product_name):
-        """Return the URL for the default stacked-on branch of a product.
-
-        :param login_id: The login ID for the person asking for the branch
-            information. This is used for branch privacy checks.
-        :param product_name: The name of a `Product`.
-        :return: An absolute path to a branch on Launchpad. If there is no
-            default stacked-on branch configured, return the empty string.
-        """
-        # XXX: JonathanLange 2008-08-05 spec=package-branches: This
-        # method will need to change to support source package
-        # branches.
 
     def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.
@@ -195,14 +156,8 @@ class IBranchFileSystem(Interface):
         :param branch_path: the path of the branch to be created. This should
             be a URL-escaped string representing an absolute path.
         :returns: the ID for the new branch or a Fault if the branch cannot be
-            created. The faultCode will be PERMISSION_DENIED_FAULT_CODE or
-            NOT_FOUND_FAULT_CODE and the faultString will be a description
-            suitable to display to the user. The Fault InvalidPath is returned
-            if the caller tries to create a branch at a non-absolute path.
+            created.
         """
-        # XXX: MichaelHudson 2008-08-05 spec=package-branches: This
-        # method will need to change to support source package
-        # branches.
 
     def requestMirror(loginID, branchID):
         """Mark a branch as needing to be mirrored.
@@ -221,6 +176,7 @@ class IBranchFileSystem(Interface):
 
         :raise `PathTranslationError`: if 'path' cannot be translated.
         :raise `InvalidPath`: if 'path' is known to be invalid.
+        :raise `PermissionDenied`: if the requester cannot see the branch.
 
         :returns: (transport_type, transport_parameters, path_in_transport)
             where 'transport_type' is one of BRANCH_TRANSPORT or

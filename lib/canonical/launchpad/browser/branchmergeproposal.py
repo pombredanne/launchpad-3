@@ -37,7 +37,6 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
@@ -59,11 +58,11 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, Navigation)
+    stepthrough, stepto, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.interface import copy_field
 
 
@@ -235,8 +234,7 @@ class UnmergedRevisionsMixin:
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return (config.codehosting.codebrowse_root +
-                self.context.source_branch.unique_name)
+        return self.context.source_branch.codebrowse_url()
 
 
 class BranchMergeProposalRevisionIdMixin:
@@ -296,6 +294,11 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
+    @stepto("+preview-diff")
+    def preview_diff(self):
+        """Step to the preview diff."""
+        return self.context.preview_diff
+
 
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
@@ -338,6 +341,15 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         return result
 
     @property
+    def review_diff(self):
+        """Return a (hopefully) intelligently encoded review diff."""
+        try:
+            diff = self.context.review_diff.diff.text.decode('utf-8')
+        except UnicodeDecodeError:
+            diff = self.context.review_diff.diff.text.decode('windows-1252')
+        return diff
+
+    @property
     def has_bug_or_spec(self):
         """Return whether or not the merge proposal has a linked bug or spec.
         """
@@ -348,7 +360,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
 class DecoratedCodeReviewVoteReference:
     """Provide a code review vote that knows if it is important or not."""
 
-    decorates(ICodeReviewVoteReference)
+    delegates(ICodeReviewVoteReference)
 
     status_text_map = {
         CodeReviewVote.DISAPPROVE: CodeReviewVote.DISAPPROVE.title,
@@ -641,6 +653,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
     field_names = ["merged_revno"]
+    for_input = True
 
     @property
     def initial_values(self):
@@ -664,7 +677,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
         """Update the whiteboard and go back to the source branch."""
         revno = data['merged_revno']
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.context.merged_revno = revno
+            self.context.markAsMerged(merged_revno=revno)
             self.request.response.addNotification(
                 'The proposal\'s merged revision has been updated.')
         else:

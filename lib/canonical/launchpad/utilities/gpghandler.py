@@ -9,14 +9,16 @@ __all__ = [
     'PymeUserId',
     ]
 
+import atexit
+import httplib
 import os
-import tempfile
+import re
 import shutil
+import socket
+import subprocess
+import tempfile
 import urllib
 import urllib2
-import re
-import subprocess
-import atexit
 from StringIO import StringIO
 
 import gpgme
@@ -27,9 +29,9 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces.gpg import GPGKeyAlgorithm
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError, GPGVerificationError, IGPGHandler, IPymeKey,
-    IPymeSignature, IPymeUserId, MoreThanOneGPGKeyFound,
-    SecretGPGKeyImportDetected)
+    GPGKeyNotFoundError, GPGUploadFailure, GPGVerificationError,
+    IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
+    MoreThanOneGPGKeyFound, SecretGPGKeyImportDetected)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
@@ -275,7 +277,12 @@ class GPGHandler:
         if 'GPG_AGENT_INFO' in os.environ:
             del os.environ['GPG_AGENT_INFO']
 
-        result = context.genkey(signing_only_param % {'name': name})
+        # Only 'utf-8' encoding is supported by gpgme.
+        # See more information at:
+        # http://pyme.sourceforge.net/doc/gpgme/Generating-Keys.html
+        result = context.genkey(
+            signing_only_param % {'name': name.encode('utf-8')}
+            )
 
         # Right, it might seem paranoid to have this many assertions,
         # but we have to take key generation very seriously.
@@ -402,6 +409,39 @@ class GPGHandler:
             # Import in the local key ring
             key = self.importPublicKey(pubkey)
         return key
+
+    def _submitKey(self, content):
+        """Submit an ASCII-armored public key export to the keyserver.
+
+        It issues a POST at /pks/add on the keyserver specified in the
+        configuration.
+        """
+        keyserver_http_url = '%s:%s' % (
+            config.gpghandler.host, config.gpghandler.port)
+
+        conn = httplib.HTTPConnection(keyserver_http_url)
+        params = urllib.urlencode({'keytext': content})
+        headers = {
+            "Content-type": "application/x-www-form-urlencoded",
+            "Accept": "text/plain",
+            }
+
+        try:
+            conn.request("POST", "/pks/add", params, headers)
+        except socket.error, err:
+            raise GPGUploadFailure(
+                'Could not reach keyserver at http://%s %s' % (
+                    keyserver_http_url, str(err)))
+
+        assert conn.getresponse().status == httplib.OK, (
+            'Keyserver POST failed')
+
+        conn.close()
+
+    def uploadPublicKey(self, fingerprint):
+        """See IGPGHandler"""
+        pub_key = self.retrieveKey(fingerprint)
+        self._submitKey(pub_key.export())
 
     def getURLForKeyInServer(self, fingerprint, action='index', public=False):
         """See IGPGHandler"""

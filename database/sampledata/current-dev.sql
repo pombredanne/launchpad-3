@@ -921,9 +921,9 @@ INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboar
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (5, 1, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866015', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447202', NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (7, 4, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866529', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447515', NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (8, 17, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.867154', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447851', NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 3, 3, NULL, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.867684', 4, 0, 3, 1, 0, '2008-09-23 17:29:03.448178', NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, 1, 1, NULL, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.868202', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.448488', NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 0, 0, NULL, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.868709', 1, 0, 0, 1, 0, '2008-09-23 17:29:03.448797', NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 3, 3, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.867684', 4, 0, 3, 1, 0, '2008-09-23 17:29:03.448178', NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, 1, 1, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868202', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.448488', NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 0, 0, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868709', 1, 0, 0, 1, 0, '2008-09-23 17:29:03.448797', NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (12, 17, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869209', 1, 0, 1, 0, 0, '2008-09-23 17:29:03.449157', NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key) VALUES (13, 17, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869732', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.449471', NULL);
 
@@ -1398,12 +1398,12 @@ INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) 
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (28, 13, 38, NULL, NULL, true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (29, 14, 39, NULL, NULL, true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (30, 15, 40, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -1536,7 +1536,7 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386', NULL, false, NULL);
-
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (8, 1, 'gnome-bugs', 'T''other Gnome GBugGTracker', 'This is the Gnome Bugzilla celebrity bug tracker.', 'http://bugzilla.gnome.org/', 16, NULL, '2008-10-08 13:31:00', NULL, false, true);
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
@@ -9184,7 +9184,7 @@ ALTER TABLE temporaryblobstorage ENABLE TRIGGER ALL;
 
 ALTER TABLE translationgroup DISABLE TRIGGER ALL;
 
-INSERT INTO translationgroup (id, name, title, summary, datecreated, owner) VALUES (1, 'testing-translation-team', 'Just a testing team', 'This team is to test the translation restrictions', '2005-07-12 14:30:24.162667', 13);
+INSERT INTO translationgroup (id, name, title, summary, datecreated, owner, translation_guide_url) VALUES (1, 'testing-translation-team', 'Just a testing team', 'This team is to test the translation restrictions', '2005-07-12 14:30:24.162667', 13, NULL);
 
 
 ALTER TABLE translationgroup ENABLE TRIGGER ALL;
@@ -10133,7 +10133,7 @@ ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;
 
 ALTER TABLE translator DISABLE TRIGGER ALL;
 
-INSERT INTO translator (id, translationgroup, language, translator, datecreated) VALUES (1, 1, 387, 53, '2005-07-13 13:14:19.748396');
+INSERT INTO translator (id, translationgroup, language, translator, datecreated, style_guide_url) VALUES (1, 1, 387, 53, '2005-07-13 13:14:19.748396', NULL);
 
 
 ALTER TABLE translator ENABLE TRIGGER ALL;

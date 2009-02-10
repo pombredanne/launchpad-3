@@ -219,7 +219,7 @@ class LoginOrRegister:
             return
 
         # XXX matsubara 2006-05-08 bug=43675: This class should inherit from
-        # GeneralFormView, that way we could take advantage of Zope's widget
+        # LaunchpadFormView, that way we could take advantage of Zope's widget
         # validation, instead of checking manually for password validity.
         if not valid_password(password):
             self.login_error = _(
@@ -229,7 +229,20 @@ class LoginOrRegister:
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if principal is not None and principal.validate(password):
+        if (principal is not None
+            and principal.person.account_status == AccountStatus.DEACTIVATED):
+            self.login_error = _(
+                'The email address belongs to a deactivated account. '
+                'Use the "Forgotten your password" link to reactivate it.')
+        elif (principal is not None
+            and principal.person.account_status == AccountStatus.SUSPENDED):
+            email_link = (
+                'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
+            self.login_error = _(
+                'The email address belongs to a suspended account. '
+                'Contact a <a href="%s">Launchpad admin</a> '
+                'about this issue.' % email_link)
+        elif principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
@@ -254,11 +267,6 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
-        elif (principal is not None
-            and principal.person.account_status == AccountStatus.DEACTIVATED):
-            self.login_error = _(
-                'The email address belongs to a deactivated account. '
-                'Use the "Forgotten your password" link to reactivate it.')
         else:
             self.login_error = "The email address and password do not match."
 

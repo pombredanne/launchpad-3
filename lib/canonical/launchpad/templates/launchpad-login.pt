@@ -109,7 +109,7 @@
             <!-- 4b. just tried to log in and failed: -->
             <div tal:condition="view/login_error">
               <h1>Your login was unsuccessful</h1>
-              <p class="error message" tal:content="view/login_error" />
+              <p class="error message" tal:content="structure view/login_error" />
             </div>
             <!-- 4. might want to log in: -->
             <p>
@@ -162,6 +162,7 @@
               <!-- Preserve extra query parameters as hidden fields. -->
               <tal:replacement tal:replace="structure view/preserve_query" />
             </form>
+            <p><strong>Note:</strong> You must enable cookies in your browser to log into or register for Launchpad.</p>
             <!-- 5a. didn't try to register last time: -->
             <h1 tal:condition="not: view/registration_error">
               Not registered yet? 
@@ -177,12 +178,12 @@
               Creating your Launchpad account is easy. Here's what to do:</p>
               
               <ol>
+                 <li>Make sure cookies are enabled in your browser.</li>
                  <li>Enter your e-mail address.</li>
-                 <li>Launchpad will e-mail you asking you to confirm your address.</li>
-                 <li>Follow the confirmation URL in the e-mail and you're done!</li>
+                 <li>Follow the URL in the confirmation e-mail that Launchpad sends and you're done!</li>
              </ol>
              
-              
+
 
             <form name="join" method="POST">
               <input type="hidden" name="redirection_url"

@@ -41,7 +41,7 @@
         classes="ProductSeriesFacets ProductSeriesOverviewMenu
                  ProductSeriesBugsMenu
                  ProductSeriesSpecificationsMenu
-                 ProductSeriesTranslationMenu"
+                 ProductSeriesTranslationsMenu"
         />
 
 
@@ -261,18 +261,14 @@
         template="../templates/productseries-review.pt"
         />
 
-    <browser:generalform
+    <browser:page
         name="+addpackage"
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.PackagingAddView"
-        schema="canonical.launchpad.interfaces.IPackaging"
-        label="Add distribution packaging record"
-        fields="distroseries sourcepackagename packaging"
-        keyword_arguments="distroseries sourcepackagename packaging"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt" >
-    </browser:generalform>
+    </browser:page>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"

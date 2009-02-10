@@ -47,7 +47,8 @@
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
                         updateTargetNameCache transitionToImportance
-                        transitionToStatus transitionToAssignee" />
+                        transitionToStatus transitionToAssignee
+                        transitionToTarget" />
 
         <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
         The permission checking for milestone and importance is further
@@ -377,27 +378,21 @@
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
 
-    <browser:generalform
+    <browser:page
       name="+linkcve"
       for="canonical.launchpad.interfaces.IBugTask"
-      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveLinkView"
-      fields="sequence"
-      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-cve.pt">
-    </browser:generalform>
+    </browser:page>
 
-    <browser:generalform
+    <browser:page
       name="+unlinkcve"
       for="canonical.launchpad.interfaces.IBugTask"
-      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveUnlinkView"
-      fields="sequence"
-      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-removecve.pt">
-    </browser:generalform>
+    </browser:page>
 
     <browser:page
       name="+addsubscriber"

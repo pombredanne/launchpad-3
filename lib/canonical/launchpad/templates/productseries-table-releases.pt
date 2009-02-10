@@ -30,7 +30,7 @@
       <td tal:condition="release/required:launchpad.Edit">
         <a tal:attributes="href release/fmt:url/+delete"
            title="Delete this release">
-          <img src="/@@/remove" />
+          <img src="/@@/trash-icon" />
         </a>
       </td>
     </tr>

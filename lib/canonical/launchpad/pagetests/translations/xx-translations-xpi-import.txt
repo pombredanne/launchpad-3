@@ -11,7 +11,7 @@ Lets start with Firefox product inside trunk revision.
 Since we still don't have any POTemplates assigned, we must use the general
 translations upload link.
 
-  >>> browser.getLink('Upload translations').click()
+  >>> browser.getLink('Upload').click()
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
 
@@ -29,11 +29,8 @@ Now, lets upload this file.
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag.renderContents()
-  Thank you for your upload. The file content will be reviewed soon by an
-  admin and then imported into Launchpad. You can track its status from the
-  <a href="http://translations.launchpad.dev/firefox/trunk/+imports">Translation
-  Import Queue</a>
+  ...     print extract_text(tag.renderContents())
+  Thank you for your upload.  It will be automatically reviewed...
 
 Lets check the import queue to edit this entry and set the name.
 

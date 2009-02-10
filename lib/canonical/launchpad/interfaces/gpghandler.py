@@ -5,6 +5,7 @@ from zope.interface import Interface, Attribute
 
 __all__ = [
     'GPGKeyNotFoundError',
+    'GPGUploadFailure',
     'GPGVerificationError',
     'IGPGHandler',
     'IPymeSignature',
@@ -28,6 +29,13 @@ class GPGKeyNotFoundError(Exception):
 
 class SecretGPGKeyImportDetected(Exception):
     """An attempt to import a secret GPG key."""
+
+
+class GPGUploadFailure(Exception):
+    """Raised when a key upload failed.
+
+    Typically when a keyserver is not reachable.
+    """
 
 
 class GPGVerificationError(Exception):
@@ -84,7 +92,7 @@ class IGPGHandler(Interface):
         :param signature: The signature as string (or None if content is
             clearsigned)
 
-        :raise: GPGVerificationError if the signature cannot be verified.
+        :raise GPGVerificationError: if the signature cannot be verified.
         :return: a `PymeSignature` object.
         """
 
@@ -121,9 +129,10 @@ class IGPGHandler(Interface):
         Currently only passwordless, signo-only 1024-bit RSA keys are
         generated.
 
-        :param name: string to be included in the key paramenters, 'comment'
-            and 'email' will be empty.
-        :raise: AssertionError if the key generation is not exaclty what
+        :param name: unicode to be included in the key paramenters, 'comment'
+            and 'email' will be empty. It's content will be encoded to
+            'utf-8' internally.
+        :raise AssertionError: if the key generation is not exaclty what
             we expect.
 
         :return: a `PymeKey` object for the just-generated secret key.
@@ -171,9 +180,21 @@ class IGPGHandler(Interface):
 
         :param fingerprint: The key fingerprint, which must be an hexadecimal
             string.
-        :raise: GPGKeyNotFoundError, if the key is not found neither in the
+        :raise GPGKeyNotFoundError: if the key is not found neither in the
             local keyring nor in the key server.
         :return: a `PymeKey`object containing the key information.
+        """
+
+    def uploadPublicKey(fingerprint):
+        """Upload the specified public key to a keyserver.
+
+        Use `retrieveKey` to get the public key content and upload an
+        ASCII-armored export chunk.
+
+        :param fingerprint: The key fingerprint, which must be an hexadecimal
+            string.
+        :raise GPGUploadFailure: if the keyserver could not be reaches.
+        :raise AssertionError: if the POST request doesn't succeed.
         """
 
     def checkTrustDb():
