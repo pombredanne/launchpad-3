@@ -50,6 +50,11 @@ class FakeRequest:
         self.principal = None
         self.interaction = None
         self.traversed_objects = []
+        # NOTE: There shouldn't be a dependency here on LP code, but
+        # some of the tests are using this FakeRequest to create
+        # a launchpad.webapp.BatchNavigator object.
+        self.query_string_params = {}
+        self.method = 'GET'
 
     def getTraversalStack(self):
         """See `IPublicationRequest`.
