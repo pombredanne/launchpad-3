@@ -681,7 +681,7 @@ product series branch.';
 COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
 series, as set by the user.  If this is not set, then import_branch is
 considered to be the product series branch';
-COMMENT ON COLUMN ProdcutSeries.translatoins_sync IS 'If and how to obtain
+COMMENT ON COLUMN ProductSeries.translations_sync IS 'If and how to obtain
 translation information from the branch. See the corresponding Enum type for
 possible values.';
 
