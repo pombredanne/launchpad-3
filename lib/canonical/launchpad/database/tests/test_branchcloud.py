@@ -44,11 +44,10 @@ class TestBranchCloud(TestCaseWithFactory):
             date_generator = None
         else:
             start_date = last_commit_date - delta * (revision_count - 1)
-            # XXX: JonathanLange 2009-02-10: The output of getProductsWithInfo
-            # doesn't include timezone information -- not sure why. To make
-            # the tests a little clearer, this method expects last_commit_date
-            # to be a naive datetime that can be compared directly with the
-            # output of getProductsWithInfo.
+            # The output of getProductsWithInfo doesn't include timezone
+            # information -- not sure why. To make the tests a little clearer,
+            # this method expects last_commit_date to be a naive datetime that
+            # can be compared directly with the output of getProductsWithInfo.
             start_date = start_date.replace(tzinfo=pytz.UTC)
             date_generator = time_counter(start_date, delta)
         branch = self.factory.makeProductBranch(

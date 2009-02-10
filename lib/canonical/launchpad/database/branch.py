@@ -1805,4 +1805,7 @@ class BranchCloud:
         result = result.order_by(Desc(Count(Branch.id)))
         if num_products:
             result.config(limit=num_products)
+        # XXX: JonathanLange 2009-02-10: The revision date in the result set
+        # isn't timezone-aware. Not sure why this is. Doesn't matter too much
+        # for the purposes of cloud calculation though.
         return result
