@@ -1428,6 +1428,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
 
+.stale-diff { color: #f60; }
+.conflicts-diff { color: red; }
+
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;

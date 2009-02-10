@@ -477,9 +477,9 @@ first.
 
 The last commit column shows the revision number, and part of the
 revision log for the last commit that Launchpad knows about.  The
-revision number is linked to code browse if the branch is not private.
-The revision author is shown in the column after the last commit to
-allow the user to sort on the revision author column.
+revision number is linked to codebrowse.  The revision author is
+shown in the column after the last commit to allow the user to sort on
+the revision author column.
 
     >>> browser.open('http://code.launchpad.dev/firefox/+branches')
     >>> for commit in find_tags_by_class(browser.contents, 'lastCommit'):
