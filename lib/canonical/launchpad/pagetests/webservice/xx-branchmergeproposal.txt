@@ -71,6 +71,9 @@ The comments on a branch merge proposal are exposed through the API.
     vote: u'Approve'
     vote_tag: u'code'
 
+    >>> comment_1 = webservice.named_get(
+    ...     merge_proposal['self_link'], 'getComment', '1')
+    >>> pprint_entry(comment_1)
 
 == Updating the preview diff ==
 
