@@ -267,7 +267,7 @@ class MailingList(SQLBase):
                 # than as a response to a user action.
                 removeSecurityProxy(email).status = (
                     EmailAddressStatus.VALIDATED)
-            assert email.person == self.team, (
+            assert email.personID == self.teamID, (
                 "Email already associated with another team.")
 
     def _setAndNotifyDateActivated(self):

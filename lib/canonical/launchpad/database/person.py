@@ -286,25 +286,37 @@ class Person(
     password = property(_get_password, _set_password)
 
     def _get_account_status(self):
-        if self.account is not None:
-            return removeSecurityProxy(self.account).status
+        account = IStore(Account).find(
+            Account, Account.id == self.accountID).one()
+        if account is not None:
+            return account.status
         else:
             return AccountStatus.NOACCOUNT
 
     def _set_account_status(self, value):
-        assert self.account is not None, 'No account for this Person'
-        removeSecurityProxy(self.account).status = value
+        assert self.accountID is not None, 'No account for this Person'
+        account = IMasterStore(Account).get(
+            Account, Account.id == self.accountID).one()
+        account.status = value
 
+    # Deprecated - this value has moved to the Account table.
+    # We provide this shim for backwards compatibility.
     account_status = property(_get_account_status, _set_account_status)
 
     def _get_account_status_comment(self):
-        if self.account is not None:
-            return removeSecurityProxy(self.account).status_comment
+        account = IStore(Account).get(
+            Account, Account.id == self.accountID).one()
+        if account is not None:
+            return account.status_comment
 
     def _set_account_status_comment(self, value):
-        assert self.account is not None, 'No account for this Person'
-        removeSecurityProxy(self.account).status_comment = value
+        assert self.accountID is not None, 'No account for this Person'
+        account = IMasterStore(Account).get(
+            Account, Account.id == self.accountID).one()
+        account.status_comment = value
 
+    # Deprecated - this value has moved to the Account table.
+    # We provide this shim for backwards compatibility.
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
 
@@ -2150,12 +2162,19 @@ class Person(
         assert email.personID == self.id, 'Wrong person! %r, %r' % (
             email.personID, self.id)
 
+        # We need the preferred email address. This method is called
+        # recursively, however, and the email address may have just been
+        # created. So we have to explicitly pull it from the master store
+        # until we rewrite this 'icky mess.
+        preferred_email = IMasterStore(EmailAddress).find(
+            EmailAddress, EmailAddress.personID ==self.id).one()
+        
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
-        if self.preferredemail == email:
+        if preferred_email == email:
             return
 
-        if self.preferredemail is None:
+        if preferred_email is None:
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
@@ -2575,8 +2594,12 @@ class PersonSet:
         if not displayname:
             displayname = name.capitalize()
 
+        if account is None:
+            account_id = None
+        else:
+            account_id = account.id
         person = Person(
-            name=name, displayname=displayname, accountID=account.id,
+            name=name, displayname=displayname, accountID=account_id,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
         return person

@@ -150,7 +150,7 @@ class RevisionAuthor(SQLBase):
             return False
         # Only accept an email address that is validated.
         if lp_email.status != EmailAddressStatus.NEW:
-            self.person = lp_email.person
+            self.personID = lp_email.personID
             return True
         else:
             return False
