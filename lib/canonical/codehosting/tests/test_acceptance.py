@@ -41,7 +41,7 @@ class SSHServerLayer(ZopelessAppServerLayer):
         if cls._tac_handler is None:
             cls._tac_handler = CodeHostingTac(
                 config.codehosting.hosted_branches_root,
-                config.supermirror.branchesdest)
+                config.codehosting.mirrored_branches_root)
         return cls._tac_handler
 
     @classmethod

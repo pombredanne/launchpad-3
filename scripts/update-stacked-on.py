@@ -43,7 +43,7 @@ def get_server(read_only):
     if read_only:
         hosted_transport = get_readonly_transport(hosted_transport)
     mirrored_transport = get_chrooted_transport(
-        config.supermirror.branchesdest)
+        config.codehosting.mirrored_branches_root)
     if read_only:
         mirrored_transport = get_readonly_transport(mirrored_transport)
     hosted_server = LaunchpadInternalServer(

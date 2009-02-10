@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007, 2009 Canonical Ltd.  All rights reserved.
 
 """Bazaar plugin to run the smart server on Launchpad.
 
@@ -45,7 +45,7 @@ class cmd_launchpad_server(Command):
                type=unicode),
         Option('mirror-directory',
                help='serve branches from this directory. Defaults to '
-                    'config.supermirror.branchesdest.'),
+                    'config.codehosting.mirrored_branches_root.'),
         Option('branchfs-endpoint',
                help='the url of the internal XML-RPC server. Defaults to '
                     'config.codehosting.branchfs_endpoint.',
@@ -91,7 +91,7 @@ class cmd_launchpad_server(Command):
         if upload_directory is None:
             upload_directory = config.codehosting.hosted_branches_root
         if mirror_directory is None:
-            mirror_directory = config.supermirror.branchesdest
+            mirror_directory = config.codehosting.mirrored_branches_root
         if branchfs_endpoint_url is None:
             branchfs_endpoint_url = config.codehosting.branchfs_endpoint
 

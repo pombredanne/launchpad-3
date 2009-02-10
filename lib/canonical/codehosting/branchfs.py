@@ -150,7 +150,7 @@ def get_puller_server():
     hosted_transport = get_chrooted_transport(
         config.codehosting.hosted_branches_root)
     mirrored_transport = get_chrooted_transport(
-        config.supermirror.branchesdest)
+        config.codehosting.mirrored_branches_root)
     hosted_server = LaunchpadInternalServer(
         'lp-hosted:///', branchfs_endpoint,
         get_readonly_transport(hosted_transport))

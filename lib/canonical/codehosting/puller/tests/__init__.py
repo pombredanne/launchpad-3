@@ -124,7 +124,8 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
     def getMirroredPath(self, branch):
         """Return the path of 'branch' in the supermirror area."""
         return os.path.join(
-            config.supermirror.branchesdest, branch_id_to_path(branch.id))
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(branch.id))
 
     def makeCleanDirectory(self, path):
         """Guarantee an empty branch upload area."""
