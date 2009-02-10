@@ -682,7 +682,7 @@ COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
 series, as set by the user.  If this is not set, then import_branch is
 considered to be the product series branch';
 COMMENT ON COLUMN ProductSeries.translations_autoimport_level IS 'At what
-level import of translations from a branch in codehosting will happen:
+level the import of translations from a branch in codehosting will happen:
 None, POT files only, POT and PO files. See also the corresponding Enum.';
 
 -- ProductSeriesCodeImport
