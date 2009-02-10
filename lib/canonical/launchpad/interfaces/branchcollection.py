@@ -7,13 +7,20 @@ __all__ = [
     'IBranchCollection',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 
 
 class IBranchCollection(Interface):
+    """A collection of branches."""
+
     # XXX: Write tests to guarantee that adapted objects are being secured via
     # this interface.
-    pass
+
+    count = Attribute("The number of branches in this collection.")
+
+    def getBranches():
+        """Return a result sest of all branches in this collection."""
+
 
 
 # XXX: filters for

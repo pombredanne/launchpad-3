@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
-    GenericBranchCollection, PersonBranchCollection, ProductBranchCollection)
+    GenericBranchCollection)
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import (
@@ -26,6 +26,10 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.store = getUtility(IStoreSelector).get(
             MAIN_STORE, DEFAULT_FLAVOR)
+
+    def test_provides_branchcollection(self):
+        self.assertProvides(
+            GenericBranchCollection(self.store), IBranchCollection)
 
     def test_name(self):
         subset = GenericBranchCollection(self.store, name="foo")
@@ -57,25 +61,6 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         subset = GenericBranchCollection(self.store)
         num_all_branches = self.store.find(Branch).count()
         self.assertEqual(num_all_branches, subset.count)
-
-
-class TestAdapter(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_product(self):
-        product = self.factory.makeProduct()
-        subset = IBranchCollection(product)
-        self.assertIsInstance(subset, ProductBranchCollection)
-        self.assertEqual(product.name, subset.name)
-
-    def test_person(self):
-        # The default IBranchCollection for a person is all of the branches
-        # owned by that person.
-        person = self.factory.makePerson()
-        subset = IBranchCollection(person)
-        self.assertIsInstance(subset, PersonBranchCollection)
-        self.assertEqual(person.name, subset.name)
 
 
 def test_suite():
