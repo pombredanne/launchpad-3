@@ -771,6 +771,8 @@ class Branch(SQLBase):
                 BranchSubscription, BranchSubscription.branch == self)
             subscriptions.remove()
             # Delete any linked jobs.
+            # Using a sub-select here as joins in delete statements is not
+            # valid standard sql.
             jobs = store.find(
                 Job,
                 Job.id.is_in(Select([BranchJob.jobID],

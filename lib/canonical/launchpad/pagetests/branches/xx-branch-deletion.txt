@@ -29,9 +29,6 @@ delete the branch.
     lp://dev/~name12/firefox/to-delete
     ...
     Delete branch
-    The following items must be deleted:
-    Subscription of Sample Person to ~name.../firefox/to-delete (This is a
-    subscription to this branch.)
     Branch deletion is permanent.
     or Cancel
 
