@@ -294,9 +294,9 @@ class IBranchMergeProposal(Interface):
 
 
     @operation_parameters(
-        status=List(
-            title=_("A CodeReviewComment ID."),
-            value_type=Int()))
+        id=Int(
+            title=_("A CodeReviewComment ID.")))
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""

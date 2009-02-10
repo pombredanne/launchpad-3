@@ -100,6 +100,10 @@ class ICodeReviewComment(Interface):
         """
 
 
+IBranchMergeProposal['getComment'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].value_type.schema = \
+    ICodeReviewComment
+
 class ICodeReviewCommentDeletion(Interface):
     """This interface provides deletion of CodeReviewComments.
 
