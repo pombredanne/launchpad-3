@@ -5,6 +5,8 @@
 
 from zope.component import getUtility
 
+from canonical.database.sqlbase import sqlvalues
+
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
@@ -64,16 +66,29 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 archive.id = bpph.archive AND
                 bpph.binarypackagerelease = bpr.id AND
                 bpph.dateremoved < (
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s') AND
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s) AND
                 lfa.expires IS NULL AND
                 bpr.id NOT IN (
                     SELECT bpph2.binarypackagerelease
-                    FROM BinaryPackagePublishingHistory AS bpph2
-                    WHERE dateremoved IS NULL OR
+                    FROM BinaryPackagePublishingHistory AS bpph2,
+                         archive as a2,
+                         person
+                    WHERE 
+                      a2.id = bpph2.archive AND
+                      person.id = a2.owner AND
+                      (
+                      person.name IN %s
+                      OR
+                      a2.private IS TRUE
+                      OR
+                      dateremoved IS NULL
+                      OR
                       dateremoved > (
-                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s')
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
+                      )
                 );
-        """ % (archive.id, stay_of_execution, stay_of_execution))
+        """ % sqlvalues(
+            archive.id, stay_of_execution, self.blacklist, stay_of_execution))
 
     def main(self):
         self.logger.info('Starting the PPA binary expiration')
@@ -89,14 +104,14 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 continue
             if archive.owner.name in self.blacklist:
                 self.logger.info(
-                    "Skipping blackisted PPA for '%s'" % archive.owner.name)
+                    "Skipping blacklisted PPA for '%s'" % archive.owner.name)
                 continue
             self.expirePPA(archive)
             if self.options.dryrun:
                 self.txn.abort()
             else:
                 self.txn.commit()
-            self.logger.info("Expired %s" % archive.owner.name)
+            self.logger.info("Processed %s" % archive.owner.name)
 
         self.logger.info('Finished PPA binary expiration')
 

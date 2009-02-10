@@ -52,9 +52,9 @@ class TestPPABinaryExpiry(unittest.TestCase):
         sabdfl = getUtility(IPersonSet).getByName('sabdfl')
         self.ppa2 = sabdfl.archive
 
-    def getScript(self):
+    def getScript(self, test_args=None):
         """Return a PPABinaryExpirer instance."""
-        script = PPABinaryExpirer("test expirer")
+        script = PPABinaryExpirer("test expirer", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn
         return script
@@ -140,12 +140,8 @@ class TestPPABinaryExpiry(unittest.TestCase):
         self.runScript()
         self.assertNotExpired(pub)
 
-    def testNoExpirationWithDateOverThresholdAndOtherPubOverThreshold(self):
-        """Test expiring works.
-        
-        Test expiring works if dateremoved old enough and other publication
-        is over date threshold.
-        """
+    def _setUpExpirablePublications(self):
+        """Helper to set up two publications that are both expirable."""
         pkg5 = self.stp.getPubSource(
             sourcename="pkg5", architecturehintlist="i386", archive=self.ppa)
         [pub] = self.stp.getPubBinaries(
@@ -154,9 +150,44 @@ class TestPPABinaryExpiry(unittest.TestCase):
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
         other_binary.secure_record.dateremoved = self.over_threshold_date
+        return pub
 
+    def testNoExpirationWithDateOverThresholdAndOtherPubOverThreshold(self):
+        """Test expiring works.
+        
+        Test expiring works if dateremoved old enough and other publication
+        is over date threshold.
+        """
+        pub = self._setUpExpirablePublications()
         self.runScript()
         self.assertExpired(pub)
+
+    def testBlacklistingWorks(self):
+        """Test that blacklisted PPAs are not expired."""
+        pub = self._setUpExpirablePublications()
+        script = self.getScript()
+        script.blacklist = ["cprov",]
+        script.main()
+        self.assertNotExpired(pub)
+
+    def testPrivatePPAsNotExpired(self):
+        """Test that private PPAs are not expired."""
+        self.ppa.private = True
+        self.ppa.buildd_secret = "foo"
+        pub = self._setUpExpirablePublications()
+        self.runScript()
+        self.assertNotExpired(pub)
+
+    def testDryRun(self):
+        """Test that when dryrun is specified, nothing is expired."""
+        pub = self._setUpExpirablePublications()
+        # We have to commit here otherwise when the script aborts it
+        # will remove the test publications we just created.
+        self.layer.txn.commit()
+        script = self.getScript(['--dry-run'])
+        script.main()
+        self.assertNotExpired(pub)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
