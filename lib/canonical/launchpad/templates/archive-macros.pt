@@ -37,22 +37,10 @@ function informFailure(transaction_id, response, args) {
 
 
 /*
- * Update the row with the XHR response, a link to hide the
- * expanded section.
+ * Update the row with the XHR response.
  */
 function doUpdate(transaction_id, response, args) {
     args.container.set('innerHTML', response.responseText);
-
-    function hide_handler(e) {
-       e.preventDefault();
-       var expander = Y.get(
-           '#' + args.container.get('id').replace('container', 'expander'));
-       toggleExpandableRow(expander);
-    };
-
-    var hide_message = Y.soyuz.makeHideNode(
-        'Hide package details.', hide_handler);
-    args.container.appendChild(hide_message);
 
     var anim = Y.lazr.anim.green_flash({
         node: args.container
