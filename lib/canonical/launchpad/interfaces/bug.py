@@ -403,6 +403,12 @@ class IBug(ICanBeMentored):
         tracker, owned by the person given as the owner.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @operation_parameters(target=copy_field(IBugTask['target']))
+    @export_factory_operation(IBugTask, [])
+    def addTask(owner, target):
+        """Create a new bug task on this bug."""
+
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 

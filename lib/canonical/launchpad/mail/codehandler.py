@@ -16,7 +16,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
-    UserNotBranchReviewer)
+    ICreateMergeProposalJobSource, UserNotBranchReviewer)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
@@ -223,10 +223,10 @@ class CodeHandler:
         """Process an email for the code domain.
 
         Emails may be converted to CodeReviewComments, and / or
-        BranchMergeProposals.
+        deferred to jobs to create BranchMergeProposals.
         """
         if email_addr.startswith('merge@'):
-            self.processMergeProposal(mail)
+            job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
             return True
         else:
             return self.processComment(mail, email_addr, file_alias)
@@ -360,7 +360,14 @@ class CodeHandler:
         CodeReviewComment.
         """
         submitter = getUtility(ILaunchBag).user
-        comment_text, md = self.findMergeDirectiveAndComment(message)
+        try:
+            comment_text, md = self.findMergeDirectiveAndComment(message)
+        except MissingMergeDirective:
+            body = get_error_message('missingmergedirective.txt')
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
         source, target = self._acquireBranchesForProposal(md, submitter)
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
@@ -387,6 +394,6 @@ class CodeHandler:
                 source_branch=source.bzr_identity,
                 target_branch=target.bzr_identity)
             simple_sendmail('merge@code.launchpad.net',
-                str([message.get('from')]),
+                [message.get('from')],
                 'Error Creating Merge Proposal', body)
 

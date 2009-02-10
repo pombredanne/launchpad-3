@@ -172,14 +172,15 @@ class IArchivePublic(IHasOwner):
 
     is_copy = Attribute("True if this archive is a copy archive.")
 
+    is_main = Bool(
+        title=_("True if archive is a main archive type"), required=False)
+
     title = exported(
         Text(title=_("Archive Title."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
-        'The total number of sources in the context archive.')
-    number_of_sources_published = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
         'The number of binaries published in the context archive.')
@@ -661,7 +662,7 @@ class IArchiveView(Interface):
         """Return a dictionary containing a summary of the build statuses.
 
         Only information for sources belonging to the current archive will
-        be returned. See 
+        be returned. See
         `IPublishingSet`.getBuildStatusSummariesForSourceIdsAndArchive() for
         details.
 
