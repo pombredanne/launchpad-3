@@ -189,7 +189,8 @@ class AddReviewerEmailCommand(CodeReviewEmailCommand):
             review_tags = None
 
         context.merge_proposal.nominateReviewer(
-            reviewer, context.user, review_tags, self.notify_event_listeners)
+            reviewer, context.user, review_tags,
+            _notify_listeners=context.notify_event_listeners)
 
 
 class CodeEmailCommands(EmailCommandCollection):
