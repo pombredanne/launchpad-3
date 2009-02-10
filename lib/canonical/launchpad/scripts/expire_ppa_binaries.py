@@ -5,57 +5,98 @@
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+# PPAs that we never want to expire.
+BLACKLISTED_PPAS = """
+adobe-isv
+chelsea-team
+dennis-team
+elvis-team
+fluendo-isv
+natick-team
+netbook-remix-team
+netbook-team
+oem-solutions-group
+payson
+transyl
+ubuntu-mobile
+wheelbarrow
+""".split()
 
 
 class PPABinaryExpirer(LaunchpadCronScript):
     """Helper class for expiring old PPA binaries.
     
     Any PPA binary older than 30 days that is superseded or deleted
-    will be marked for immediate expiry.  It's done with pure SQL rather
-    than Python for speed reasons.
+    will be marked for immediate expiry.
     """
+    blacklist = BLACKLISTED_PPAS
 
-    def main(self):
-        self.logger.info('Starting the PPA binary expiration')
+    def add_my_options(self):
+        """Add script command line options."""
+        self.parser.add_option(
+            "-n", "--dry-run", action="store_true",
+            dest="dryrun", metavar="DRY_RUN", default=False,
+            help="If set, no transactions are committed")
+
+    def expirePPA(self, archive):
+        """Expire the librarian binaries for `archive`."""
 
         stay_of_execution = '30 days'
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         store.execute("""
-            UPDATE libraryfilealias
+            UPDATE libraryfilealias AS lfa
             SET expires=now()
             FROM
-                libraryfilealias lfa,
                 binarypackagefile bpf,
                 binarypackagerelease bpr,
                 binarypackagepublishinghistory bpph,
                 archive
             WHERE
+                archive.id = %s AND
                 lfa.id = bpf.libraryfile AND
                 bpr.id = bpf.binarypackagerelease AND
-                bpph.binarypackagerelease = bpr.id AND
-                bpph.dateremoved < (now() - interval '%s') AND
                 archive.id = bpph.archive AND
-                archive.purpose = %s AND
-                NOT EXISTS (
-                    SELECT TRUE FROM binarypackagepublishinghistory as bpph2,
-                                     binarypackagerelease as bpr2
-                    WHERE
-                        bpph2.binarypackagerelease = bpph.binarypackagerelease
-                        AND
-                        (now() - bpph2.dateremoved < interval '%s'
-                         OR
-                         dateremoved IS NULL
-                        )
+                bpph.binarypackagerelease = bpr.id AND
+                bpph.dateremoved < (
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s') AND
+                lfa.expires IS NULL AND
+                bpr.id NOT IN (
+                    SELECT bpph2.binarypackagerelease
+                    FROM BinaryPackagePublishingHistory AS bpph2
+                    WHERE dateremoved IS NULL OR
+                      dateremoved > (
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s')
                 );
-        """ % (stay_of_execution, ArchivePurpose.PPA.value,
-               stay_of_execution))
+        """ % (archive.id, stay_of_execution, stay_of_execution))
 
-        self.txn.commit()
+    def main(self):
+        self.logger.info('Starting the PPA binary expiration')
+
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        archives = getUtility(IArchiveSet).getArchivesForDistribution(
+            ubuntu, purposes=ArchivePurpose.PPA)
+
+        for archive in archives:
+            if archive.private:
+                self.logger.info(
+                    "Skipping private PPA for '%s'" % archive.owner.name)
+                continue
+            if archive.owner.name in self.blacklist:
+                self.logger.info(
+                    "Skipping blackisted PPA for '%s'" % archive.owner.name)
+                continue
+            self.expirePPA(archive)
+            if self.options.dryrun:
+                self.txn.abort()
+            else:
+                self.txn.commit()
+            self.logger.info("Expired %s" % archive.owner.name)
+
         self.logger.info('Finished PPA binary expiration')
 
