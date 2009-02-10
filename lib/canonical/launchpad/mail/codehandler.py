@@ -234,8 +234,7 @@ class CodeHandler:
 
     def processCommands(self, context, email_body_text):
         """Process the commadns in the email_body_text against the context."""
-        commands = CodeEmailCommands.getCommands(
-            get_main_body(email_body_text))
+        commands = CodeEmailCommands.getCommands(email_body_text)
 
         processing_errors = []
 
@@ -269,7 +268,8 @@ class CodeHandler:
         user = getUtility(ILaunchBag).user
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
         try:
-            processed_count = self.processCommands(context, mail)
+            email_body_text = get_main_body(mail)
+            processed_count = self.processCommands(context, email_body_text)
 
             # Make sure that the email is in fact signed.
             if processed_count > 0:
