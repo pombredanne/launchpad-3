@@ -543,5 +543,4 @@ class ProductSeriesSet:
         return store.find(
             ProductSeries,
             Or(In(ProductSeries.user_branch, branch_ids),
-               In(ProductSeries.import_branch, branch_ids)),
-            ProductSeries.status != DistroSeriesStatus.OBSOLETE)
+               In(ProductSeries.import_branch, branch_ids)))

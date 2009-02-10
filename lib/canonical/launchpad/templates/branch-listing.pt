@@ -85,7 +85,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
              tal:content="branch/bzr_identity">
                Name
           </a>
-          <tal:associated-series repeat="series branch/associated_product_series"
+          <tal:associated-series repeat="series branch/active_series"
                                  condition="context/view/show_series_links">
             <tal:first-series condition="repeat/series/start">
             <br/><strong style="margin-left: 2.5em;">Series:</strong>
