@@ -26,7 +26,7 @@ from zope.interface import classProvides, implements
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
-from storm.expr import And, Count, Join, LeftJoin, Max, Or
+from storm.expr import And, Count, Desc, Join, LeftJoin, Max, Or
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -874,6 +874,9 @@ class BranchSet:
 
     def __iter__(self):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2009-02-10 spec=package-branches: Prejoining
+        # product is probably not the best idea, given that there'll be a lot
+        # of package branches.
         return iter(Branch.select(prejoins=['owner', 'product']))
 
     def count(self):
@@ -1782,13 +1785,15 @@ class RevisionMailJob(BranchDiffJob):
 class BranchCloud:
     """See `IBranchCloud`."""
 
-    def getProductsWithInfo(self, num_products=None):
+    def getProductsWithInfo(self, num_products=None, store_flavor=None):
         """See `IBranchCloud`."""
         # Circular imports are fun.
         from canonical.launchpad.database.product import Product
         # It doesn't matter if this query is even a whole day out of date, so
-        # use the slave store.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        # use the slave store by default.
+        if store_flavor is None:
+            store_flavor = SLAVE_FLAVOR
+        store = getUtility(IStoreSelector).get(MAIN_STORE, store_flavor)
         # Get all products, the count of all hosted & mirrored branches and
         # the last revision date.
         result = store.find(
@@ -1797,7 +1802,7 @@ class BranchCloud:
             Or(Branch.branch_type == BranchType.HOSTED,
                Branch.branch_type == BranchType.MIRRORED),
             Branch.last_scanned_id == Revision.revision_id).group_by(Product)
-        result = result.order_by(Count(Branch.id))
+        result = result.order_by(Desc(Count(Branch.id)))
         if num_products:
             result.config(limit=num_products)
         return result
