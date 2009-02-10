@@ -84,15 +84,18 @@ class BatchNavigator:
         """
         # We grab the request variables directly from the requests
         # query_string_parameters so that they will be recognized
-        # even during post operations. For backwards
-        # compatibility (as in the past a work-around has been to include
-        # the url batch params in hidden fields within posted forms), if
-        # there is no 'start' param in the query string params, default to
-        # the old behaviour of using the request (which automatically gets
-        # them from the request.form dict):
-        if request.query_string_params.has_key(self.start_variable_name):
-            batch_params_source = request.query_string_params
-        else:
+        # even during post operations. 
+        batch_params_source = request.query_string_params
+
+        # For backwards compatibility (as in the past a work-around has been
+        # to include the url batch params in hidden fields within posted
+        # forms), if the request is a POST request, and either the 'start'
+        # or 'batch' params are included then revert to the default behaviour
+        # of using the request (which automatically gets the params from the
+        # request.form dict).
+        if request.method == 'POST' and (
+            request.form.has_key(self.start_variable_name) or
+            request.form.has_key(self.batch_variable_name)):
             batch_params_source = request
 
         # In this code we ignore invalid request variables since it

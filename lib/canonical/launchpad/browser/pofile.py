@@ -542,8 +542,11 @@ class POFileTranslateView(BaseTranslationView):
         old_show_option = self.request.form.get('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
-        if show_option_changed and 'start' in self.request:
-            del self.request.form['start']
+        if show_option_changed:
+            if 'start' in self.request:
+                del self.request.form['start']
+            if 'start' in self.request.query_string_params:
+                del self.request.query_string_params['start']
 
     def _handleShowAll(self):
         """Get `POTMsgSet`s when filtering for "all" (but possibly searching).
