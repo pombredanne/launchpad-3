@@ -22,6 +22,7 @@ from itertools import count
 from StringIO import StringIO
 
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -885,6 +886,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
         registrant = self.makePerson()
+        # Have to commit to make the registrant's email address visible
+        # via other Stores.
+        transaction.commit()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
