@@ -112,7 +112,12 @@ class ProductReleaseVersionField(ContentNameField):
         else:
             productseries = self.context.productseries
         releaseset = getUtility(IProductReleaseSet)
-        return releaseset.getBySeriesAndVersion(productseries, version)
+        release = releaseset.getBySeriesAndVersion(productseries, version)
+        if release == self.context:
+            # A ProductRelease may edit itself; do not report that another
+            # ProductRelease exists with the same version.
+            return None
+        return release
 
 
 class IProductReleaseFileEditRestricted(Interface):

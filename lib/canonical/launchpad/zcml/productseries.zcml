@@ -202,29 +202,14 @@
         template="../templates/productseries-edit.pt"
       />
 
-    <browser:addform
+    <browser:page
         name="+addrelease"
         for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductRelease"
-        label="Register a new release"
-        fields="productseries version codename summary description owner
-                changelog"
         class="canonical.launchpad.browser.ProductReleaseAddView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-add.pt"
-        >
-        <browser:widget
-            field="productseries"
-            class="canonical.widgets.ContextWidget" />
-        <browser:widget
-            field="summary"
-            class="zope.app.form.browser.TextAreaWidget"
-            height="5" />
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
+    />
 
     <browser:page
       name="+addmilestone"

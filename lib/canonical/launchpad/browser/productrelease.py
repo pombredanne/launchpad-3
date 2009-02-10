@@ -17,14 +17,11 @@ import mimetypes
 
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
-from canonical.launchpad.interfaces.productseries import IProductSeriesSet
+    IProductRelease, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
@@ -71,24 +68,27 @@ class ProductReleaseContextMenu(ContextMenu):
         return Link('+rdf', text, icon='download')
 
 
-class ProductReleaseAddView(AddView):
+class ProductReleaseAddView(LaunchpadFormView):
+    """View to add a release to a `ProductSeries`."""
+    schema = IProductRelease
+    field_names = [
+        'version', 'codename', 'summary', 'description', 'changelog']
+    custom_widget('summary', TextAreaWidget, width=62, height=5)
 
-    __used_for__ = IProductRelease
+    @property
+    def label(self):
+        """The form label."""
+        return 'Regiter a new %s release' % self.context.name
 
-    _nextURL = '.'
-
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        user = getUtility(ILaunchBag).user
-        product_series_set = getUtility(IProductSeriesSet)
-        product_series = product_series_set[data['productseries']]
+    @action('Add', name='add')
+    def CreateRelease(self, action, data):
+        user = self.user
+        product_series = self.context
         newrelease = product_series.addRelease(
             data['version'], user, codename=data['codename'],
             summary=data['summary'], description=data['description'],
             changelog=data['changelog'])
-        self._nextURL = canonical_url(newrelease)
+        self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
