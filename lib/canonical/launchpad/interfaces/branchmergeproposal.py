@@ -32,7 +32,8 @@ from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of)
+    exported, operation_parameters, operation_returns_collection_of,
+    operation_returns_entry)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -301,7 +302,7 @@ class IBranchMergeProposal(Interface):
     @operation_parameters(
         id=Int(
             title=_("A CodeReviewComment ID.")))
-    @operation_returns_collection_of(Interface) # ICodeReviewComment
+    @operation_returns_entry(Interface) # ICodeReviewComment
     @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""

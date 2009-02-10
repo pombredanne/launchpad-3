@@ -112,8 +112,7 @@ class ICodeReviewComment(Interface):
 
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].value_type.schema = \
-    ICodeReviewComment
+    'lazr.webservice.exported')['return_type'].schema = ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 
 

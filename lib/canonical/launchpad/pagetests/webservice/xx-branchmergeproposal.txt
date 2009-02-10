@@ -71,9 +71,17 @@ The comments on a branch merge proposal are exposed through the API.
     vote: u'Approve'
     vote_tag: u'code'
 
-    >>> comment_1 = webservice.named_get(
-    ...     merge_proposal['self_link'], 'getComment', '1')
-    >>> pprint_entry(comment_1)
+    >>> comment_2 = webservice.named_get(
+    ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
+    >>> pprint_entry(comment_2)
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
+    id: 2
+    message_body: u'This is mediocre work.'
+    resource_type_link: u'http://.../#code_review_comment'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/2'
+    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    vote: u'Abstain'
+    vote_tag: None
 
 == Updating the preview diff ==
 
