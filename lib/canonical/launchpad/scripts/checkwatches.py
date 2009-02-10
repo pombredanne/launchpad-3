@@ -204,7 +204,7 @@ class BugWatchUpdater(object):
             bug_tracker = getUtility(IBugTrackerSet).getByName(
                 bug_tracker_name)
 
-            if not bug_tracker.enabled:
+            if not bug_tracker.active:
                 self.log.debug(
                     "Updates are disabled for bug tracker at %s" %
                     bug_tracker.baseurl)

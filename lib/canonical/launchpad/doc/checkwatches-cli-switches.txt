@@ -37,7 +37,7 @@ If a bug tracker is disabled checkwatches won't try to update it.
     >>> login('foo.bar@canonical.com')
     >>> bug_tracker = LaunchpadObjectFactory().makeBugTracker(
     ...     'http://example.com')
-    >>> bug_tracker.enabled = False
+    >>> bug_tracker.active = False
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
