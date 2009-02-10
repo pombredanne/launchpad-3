@@ -521,8 +521,8 @@ class BasicLaunchpadRequest:
         query_string = self.get('QUERY_STRING', '')
 
         # Just in case QUERY_STRING is in the environment explicitely as
-        # None (Note to reviewer: is it only in tests that this could be
-        # possible?)
+        # None (Some tests seem to do this, but not sure if it can ever
+        # happen outside of tests.)
         if query_string is None:
             query_string = ''
 
