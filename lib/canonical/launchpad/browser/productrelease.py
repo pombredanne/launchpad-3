@@ -78,10 +78,10 @@ class ProductReleaseAddView(LaunchpadFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Regiter a new %s release' % self.context.name
+        return 'Register a new %s release' % self.context.name
 
     @action('Add', name='add')
-    def CreateRelease(self, action, data):
+    def createRelease(self, action, data):
         user = self.user
         product_series = self.context
         newrelease = product_series.addRelease(
