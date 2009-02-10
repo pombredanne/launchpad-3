@@ -227,8 +227,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         person = removeSecurityProxy(person)
         email = removeSecurityProxy(email)
 
-        email.status = email_address_status
-
         if (time_zone is not None or latitude is not None or
             longitude is not None):
             person.setLocation(latitude, longitude, time_zone, person)
@@ -236,10 +234,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
+            person.validateAndEnsurePreferredEmail(email)
             from canonical.launchpad.database.account import Account
             account = IMasterStore(Account).find(
                 Account, id=person.accountID).one()
             account.status = AccountStatus.ACTIVE
+
+        email.status = email_address_status
         
         syncUpdate(email)
         return person

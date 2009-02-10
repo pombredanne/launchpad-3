@@ -249,8 +249,7 @@ class GetPersonTestCase(unittest.TestCase):
         # email address when verify_users=True.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             'foo@example.com', PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        email = getUtility(IEmailAddressSet).new('foo@preferred.com',
-                                                 person.id)
+        email = getUtility(IEmailAddressSet).new('foo@preferred.com', person)
         person.setPreferredEmail(email)
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 

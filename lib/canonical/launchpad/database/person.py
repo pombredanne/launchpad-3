@@ -2167,7 +2167,9 @@ class Person(
         # created. So we have to explicitly pull it from the master store
         # until we rewrite this 'icky mess.
         preferred_email = IMasterStore(EmailAddress).find(
-            EmailAddress, EmailAddress.personID ==self.id).one()
+            EmailAddress,
+            EmailAddress.personID ==self.id,
+            EmailAddress.status == EmailAddressStatus.PREFERRED).one()
         
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
@@ -2182,7 +2184,7 @@ class Person(
         else:
             email.status = EmailAddressStatus.VALIDATED
             # Automated processes need access to set the account().
-            removeSecurityProxy(email).account = email.person.account
+            removeSecurityProxy(email).accountID = self.accountID
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2782,7 +2784,6 @@ class PersonSet:
         # that the Person or EmailAddress was created. This is not
         # optimal for production as it requires two database lookups,
         # but is required by much of the test suite.
-        from canonical.launchpad.database.emailaddress import EmailAddress
         email_address = IStore(EmailAddress).find(
             EmailAddress, EmailAddress.email == email).one()
         if email_address is None:

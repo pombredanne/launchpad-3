@@ -296,7 +296,7 @@ class RevisionSet:
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(email)
         for author in RevisionAuthor.selectBy(email=naked_email.email):
-            author.person = email.person
+            author.personID = email.personID
 
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""
