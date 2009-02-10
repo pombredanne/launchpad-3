@@ -714,8 +714,8 @@ class Branch(SQLBase):
             prefix = config.launchpad.bzr_imports_root_url
             return urlappend(prefix, '%08x' % self.id)
         elif self.branch_type == BranchType.HOSTED:
-            # This is a push branch, hosted on the supermirror
-            # (pushed there by users via SFTP).
+            # This is a push branch, hosted on Launchpad (pushed there by
+            # users via sftp or bzr+ssh).
             return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
@@ -1032,9 +1032,9 @@ class BranchSet:
 
         # Not all code paths that lead to branch creation go via a
         # schema-validated form (e.g. the register_branch XML-RPC call or
-        # pushing a new branch to the supermirror), so we validate the branch
-        # name here to give a nicer error message than 'ERROR: new row for
-        # relation "branch" violates check constraint "valid_name"...'.
+        # pushing a new branch to codehosting), so we validate the branch name
+        # here to give a nicer error message than 'ERROR: new row for relation
+        # "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
 
         # Make sure that the new branch has a unique name if not a junk

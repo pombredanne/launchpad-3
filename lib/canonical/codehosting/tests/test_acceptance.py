@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Acceptance tests for Supermirror SFTP server's bzr support."""
+"""Acceptance tests for the codehosting server."""
 
 __metaclass__ = type
 
