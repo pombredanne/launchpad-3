@@ -675,14 +675,6 @@ names if possible.
     >>> print branch.bzr_identity
     lp://dev/landscape/experimental
 
-If the series becomes obsolete, the branch no longer uses the short form.
-
-    >>> from canonical.launchpad.interfaces.distroseries import (
-    ...     DistroSeriesStatus)
-    >>> series.status = DistroSeriesStatus.OBSOLETE
-    >>> print branch.bzr_identity
-    lp://dev/~landscape-developers/landscape/trunk
-
 Junk branches associated with a series do not get the short form of
 bzr_identity.
 
