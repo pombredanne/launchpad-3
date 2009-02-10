@@ -25,7 +25,7 @@ from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.interfaces import IBranch, IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -419,6 +419,11 @@ class IBranchMergeProposal(Interface):
         user-entered data like the whiteboard.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A person for which the reviewer status is in question."),
+            schema=IPerson))
+    @export_read_operation()
     def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
