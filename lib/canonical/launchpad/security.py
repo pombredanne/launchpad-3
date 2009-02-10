@@ -14,8 +14,9 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiveauthtoken import (
-    IArchiveAuthToken, IArchiveAuthTokenSet)
+from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriber)
 from canonical.launchpad.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -95,7 +96,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, ITranslationImportQueueEntry)
-from canonical.launchpad.interfaces.translator import ITranslator
+from canonical.launchpad.interfaces.translator import (
+    ITranslator, IEditTranslator)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1155,14 +1157,26 @@ class EditPOFileDetails(EditByOwnersOrAdmins):
                 user.inTeam(rosetta_experts))
 
 
-class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
+class AdminTranslator(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
     usedfor = ITranslator
 
     def checkAuthenticated(self, user):
         """Allow the owner of a translation group to edit the translator
         of any language in the group."""
         return (user.inTeam(self.obj.translationgroup.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslator(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IEditTranslator
+
+    def checkAuthenticated(self, user):
+        """Allow the translator and the group owner to edit parts of
+        the translator entry."""
+        return (user.inTeam(self.obj.translator) or
+                user.inTeam(self.obj.translationgroup.owner) or
                 OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
 
 
@@ -1806,7 +1820,7 @@ class ViewArchive(AuthorizationBase):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
 
-class AppendArchive(ViewArchive):
+class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
 
     Restrict the group that can already view the PPAs to users with valid
@@ -1825,19 +1839,16 @@ class AppendArchive(ViewArchive):
         # This should be sharing code with the encapsulated method
         # IArchive.canUpload().  That would mean it would also work for
         # main archives in addition to not repeating the same code here.
-        can_view = ViewArchive.checkAuthenticated(self, user)
+        auth_view = ViewArchive(self.obj)
+        can_view = auth_view.checkAuthenticated(user)
         if can_view and user.inTeam(self.obj.owner):
             return True
 
         return False
 
-    def checkUnauthenticated(self):
-        """Unauthenticated users cannot append PPAs."""
-        return False
-
 
 class ViewArchiveAuthToken(AuthorizationBase):
-    """Restrict editing of archive tokens.
+    """Restrict viewing of archive tokens.
     
     The user just needs to be mentioned in the token, have append privilege
     to the archive or be an admin.
@@ -1860,6 +1871,38 @@ class EditArchiveAuthToken(AuthorizationBase):
     """
     permission = "launchpad.Edit"
     usedfor = IArchiveAuthToken
+
+    def checkAuthenticated(self, user):
+        auth_append = AppendArchive(self.obj.archive)
+        if auth_append.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class ViewArchiveSubscriber(AuthorizationBase):
+    """Restrict viewing of archive subscribers.
+
+    The user should be the subscriber, have append privilege to the
+    archive or be an admin.
+    """
+    permission = "launchpad.View"
+    usedfor = IArchiveSubscriber
+
+    def checkAuthenticated(self, user):
+        if user.inTeam(self.obj.subscriber):
+            return True
+        auth_edit = EditArchiveSubscriber(self.obj)
+        return auth_edit.checkAuthenticated(user)
+
+
+class EditArchiveSubscriber(AuthorizationBase):
+    """Restrict editing of archive subscribers.
+
+    The user should have append privilege to the archive or be an admin.
+    """
+    permission = "launchpad.Edit"
+    usedfor = IArchiveSubscriber
 
     def checkAuthenticated(self, user):
         auth_append = AppendArchive(self.obj.archive)

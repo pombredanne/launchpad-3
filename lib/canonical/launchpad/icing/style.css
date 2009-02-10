@@ -45,6 +45,7 @@
 .clearfix {display: block;}
 /* End hiding from MSIE for Mac */
 .visualClear {display: block; clear: both;} /* XXX Remove this */
+a {outline: none;}
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
@@ -1260,7 +1261,7 @@ beside the mugshot. */
 #home-page h2 {
   width: 100%;
   text-align: center;
-  text-decoration: underline;
+  margin-left: -0.8em;
 }
 #home-page img {
   vertical-align: middle;
@@ -1306,7 +1307,8 @@ beside the mugshot. */
 }
 
 #package_counters {
-    clear: left;
+    clear: both;
+    float: left;
 }
 
 div#build-status-summary {
@@ -1335,6 +1337,25 @@ div#signing-key p {
 
 div#signing-key a {
     font-weight: bold;
+}
+
+div.archive #description {
+    width: 50em;
+}
+div.archive #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
+table#package-requests {
+    width: 60em;
+    margin: 1em 0;
+}
+table#package-requests td{
+    padding: 0.5em;
+}
+h1.disabled {
+    color: grey;
 }
 
 /* --- Code --- */
@@ -1393,6 +1414,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusMERGE_FAILED      {color: red;}
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
+
+.stale-diff { color: #f60; }
+.conflicts-diff { color: red; }
 
 .branch-no-dev-focus {
   background: #FFF59C;

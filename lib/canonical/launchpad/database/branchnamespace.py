@@ -15,7 +15,9 @@ from storm.locals import And
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.database import Branch
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
@@ -28,6 +30,7 @@ from canonical.launchpad.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, NoSuchProduct)
 from canonical.launchpad.interfaces.sourcepackagename import (
@@ -155,6 +158,8 @@ class PackageNamespace(_BaseNamespace):
     implements(IBranchNamespace)
 
     def __init__(self, person, sourcepackage):
+        if not config.codehosting.package_branches_enabled:
+            raise Unauthorized("Package branches are disabled.")
         self.owner = person
         self.sourcepackage = sourcepackage
 
@@ -246,22 +251,32 @@ class BranchNamespaceSet:
 
     def traverse(self, segments):
         """See `IBranchNamespaceSet`."""
-        person_name = segments.next()
+        traversed_segments = []
+        def get_next_segment():
+            try:
+                result = segments.next()
+            except StopIteration:
+                raise InvalidNamespace('/'.join(traversed_segments))
+            if result is None:
+                raise AssertionError("None segment passed to traverse()")
+            traversed_segments.append(result)
+            return result
+        person_name = get_next_segment()
         person = self._findPerson(person_name)
-        pillar_name = segments.next()
+        pillar_name = get_next_segment()
         pillar = self._findPillar(pillar_name)
         if pillar is None or IProduct.providedBy(pillar):
             namespace = self.get(person, product=pillar)
         else:
-            distroseries_name = segments.next()
+            distroseries_name = get_next_segment()
             distroseries = self._findDistroSeries(pillar, distroseries_name)
-            sourcepackagename_name = segments.next()
+            sourcepackagename_name = get_next_segment()
             sourcepackagename = self._findSourcePackageName(
                 sourcepackagename_name)
             namespace = self.get(
                 person, distroseries=distroseries,
                 sourcepackagename=sourcepackagename)
-        branch_name = segments.next()
+        branch_name = get_next_segment()
         return self._findOrRaise(
             NoSuchBranch, branch_name, namespace.getByName)
 
@@ -280,10 +295,20 @@ class BranchNamespaceSet:
             NoSuchPerson, person_name, getUtility(IPersonSet).getByName)
 
     def _findPillar(self, pillar_name):
+        """Find and return the pillar with the given name.
+
+        If the given name is '+junk' or None, return None.
+
+        :raise NoSuchProduct if there's no pillar with the given name or it is
+            a project.
+        """
         if pillar_name == '+junk':
             return None
-        return self._findOrRaise(
+        pillar = self._findOrRaise(
             NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
+        if IProject.providedBy(pillar):
+            raise NoSuchProduct(pillar_name)
+        return pillar
 
     def _findProduct(self, product_name):
         if product_name == '+junk':

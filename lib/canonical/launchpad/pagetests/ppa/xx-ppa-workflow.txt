@@ -110,6 +110,7 @@ Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Hoohay for PPA.
 
 ... and an empty 'whiteboard' section that when filled, includes
@@ -137,12 +138,30 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Howdy, cowboys !
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'whiteboard'))
     PPA whiteboard:
     Not here, John Wayne !
+
+Empty 'description' or 'whiteboard' cause the corresponding sections to
+not be rendered.
+
+    >>> sample_browser.getLink("Change details").click()
+    >>> sample_browser.getControl(name="field.description").value = ('')
+    >>> sample_browser.getControl(name="field.whiteboard").value = ('')
+    >>> sample_browser.getControl("Save").click()
+
+    >>> sample_browser.url
+    'http://launchpad.dev/~name12/+archive/ppa'
+
+    >>> print find_tag_by_id(sample_browser.contents, 'description')
+    None
+
+    >>> print find_tag_by_id(sample_browser.contents, 'whiteboard')
+    None
 
 
 == Activating Personal Package Archives for Teams ==
@@ -181,6 +200,7 @@ Let's proceed with the required permissions:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Hoohay for Team PPA.
 
 Any team administrator can 'edit' description & whiteboard contents,
@@ -199,6 +219,7 @@ exactly the same as for a user-PPA, see above:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Yay, I can change it.
 
 Cancelling the 'Edit' form will redirect the user to the PPA overview
@@ -214,6 +235,7 @@ page and discard the changes.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Description
     Yay, I can change it.
 
 
@@ -239,6 +261,7 @@ name of other users or teams:
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'description'))
+    Description
     Go for it, you lazy !
 
     >>> find_tag_by_id(admin_browser.contents, 'whiteboard') is None
@@ -423,6 +446,7 @@ Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
+    Description
     PPA rocks!
 
 Activate the second browser:
@@ -438,4 +462,5 @@ And the description matches the first submission's:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
+    Description
     PPA rocks!

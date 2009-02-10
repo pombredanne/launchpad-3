@@ -6,9 +6,10 @@ __all__ = [
     'PackageDiffSet',
     ]
 
+import gzip
 import os
 import shutil
-from subprocess import Popen
+import subprocess
 import tempfile
 
 from sqlobject import ForeignKey
@@ -21,22 +22,20 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
-from canonical.librarian.utils import copy_and_close
-
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.packagediff import (
     IPackageDiff, IPackageDiffSet, PackageDiffStatus)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.librarian.utils import copy_and_close
 
 
 def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
     """Perform a (deb)diff on two packages.
 
     A debdiff will be invoked on the files associated with the
-    two packages to be diff'ed. The resulting output will be
-    written to 'out_filename'.
+    two packages to be diff'ed. The resulting output will be a tuple
+    containing the process return code and the STDERR output.
 
     :param tmp_dir: The temporary directory with the package files.
     :type tmp_dir: ``str``
@@ -61,28 +60,14 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
     out_file = None
     try:
         out_file = open(full_path, 'w')
-
-        # Create a child process for debdiff.
-        child = Popen(args, stdout=out_file, cwd=tmp_dir)
-        # Wait for debdiff to complete.
-        returncode = child.wait()
-
-        assert returncode == 0, 'Internal error: failed to run debdiff.'
+        process = subprocess.Popen(
+            args, stdout=out_file, stderr=subprocess.PIPE, cwd=tmp_dir)
+        stdout, stderr = process.communicate()
     finally:
         if out_file is not None:
             out_file.close()
 
-    # At this point the debdiff run has concluded and we have a diff
-    # file that needs to be compressed.
-    args = ['gzip', out_filename]
-
-    # Create a child process for gzip.
-    child = Popen(args, cwd=tmp_dir)
-    # Wait for gzip to complete.
-    returncode = child.wait()
-    assert returncode == 0, 'Internal error: failed to run gzip.'
-
-    return os.path.getsize(full_path + '.gz')
+    return process.returncode, stderr
 
 
 def download_file(destination_path, libraryfile):
@@ -192,26 +177,38 @@ class PackageDiff(SQLBase):
                 self.to_source.version)
 
             # Perform the actual diff operation.
-            compressed_bytes = perform_deb_diff(
+            return_code, stderr = perform_deb_diff(
                 tmp_dir, result_filename, downloaded['from'],
                 downloaded['to'])
 
-            # The diff file is ready and gzip'ed.
-            result_filename += '.gz'
-            result_path = os.path.join(tmp_dir, result_filename)
+            # `debdiff` failed, mark the package diff request accordingly
+            # and return.
+            if return_code != 0:
+                self.status = PackageDiffStatus.FAILED
+                return
 
-            # Upload the diff result file to the librarian.
-            result_file = None
+            # Compress the generated diff.
+            out_file = open(os.path.join(tmp_dir, result_filename))
+            gzip_result_filename = result_filename + '.gz'
+            gzip_file_path = os.path.join(tmp_dir, gzip_result_filename)
+            gzip_file = gzip.GzipFile(gzip_file_path, mode='wb')
+            copy_and_close(out_file, gzip_file)
+
+            # Calculate the compressed size.
+            gzip_size = os.path.getsize(gzip_file_path)
+
+            # Upload the compressed diff to librarian and update
+            # the package diff request.
+            gzip_file = open(gzip_file_path)
             try:
-                result_file = open(result_path)
-                self.diff_content = getUtility(ILibraryFileAliasSet).create(
-                    result_filename, compressed_bytes, result_file,
+                librarian_set = getUtility(ILibraryFileAliasSet)
+                self.diff_content = librarian_set.create(
+                    gzip_result_filename, gzip_size, gzip_file,
                     'application/gzipped-patch', restricted=self.private)
             finally:
-                if result_file is not None:
-                    result_file.close()
+                gzip_file.close()
 
-            # Last but not least set the "date fulfilled" time stamp.
+            # Last but not least, mark the diff as COMPLETED.
             self.date_fulfilled = UTC_NOW
             self.status = PackageDiffStatus.COMPLETED
         finally:

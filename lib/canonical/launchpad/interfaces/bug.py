@@ -200,6 +200,9 @@ class IBug(ICanBeMentored):
             value_type=Reference(schema=IBugTask),
             readonly=True),
         exported_as='bug_tasks')
+    default_bugtask = Reference(
+        title=_("The first bug task to have been filed."),
+        schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
@@ -399,6 +402,12 @@ class IBug(ICanBeMentored):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
         """
+
+    @call_with(owner=REQUEST_USER)
+    @operation_parameters(target=copy_field(IBugTask['target']))
+    @export_factory_operation(IBugTask, [])
+    def addTask(owner, target):
+        """Create a new bug task on this bug."""
 
     def hasBranch(branch):
         """Is this branch linked to this bug?"""

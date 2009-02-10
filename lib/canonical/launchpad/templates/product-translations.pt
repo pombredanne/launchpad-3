@@ -6,9 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
+  <!-- metal:use-macro="context/@@main_template/master" -->
 
   <body>
     <metal:portlets fill-slot="portlets">
@@ -52,6 +53,24 @@
             For <tal:product replace="context/displayname" />,
             Launchpad currently recommends translating
             &#8220;<span tal:replace="target/displayname">main</span>&#8221;.
+          </p>
+          <p id="translation-permissions">
+            <tal:product replace="context/displayname">This
+            project</tal:product> is translated
+            <tal:hasgroup condition="context/translationgroup">by
+              <a tal:attributes="href context/translationgroup/fmt:url"
+                 tal:content="context/translationgroup/title">translators</a>
+            </tal:hasgroup>
+            with <a href="https://help.launchpad.net/Translations/YourProject#Choosing%20a%20permissions%20policy"
+              tal:content="context/translationpermission/title">certain</a>
+            permissions.
+            <tal:permissions condition="context/required:launchpad.Edit">
+              You can modify permissions on the
+              <a
+                tal:define="link context/menu:navigation/translators"
+                tal:attributes="href link/url"
+              >Settings</a> page.
+            </tal:permissions>
           </p>
           <div tal:replace="structure target/@@+potlist" />
           <div tal:replace="structure context/@@+portlet-translatables" />

@@ -24,6 +24,7 @@ __all__ = [
 
 import sha
 import sets
+from email.Encoders import encode_base64
 from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
@@ -141,20 +142,23 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
+        encode_base64(attachment)
         self.attachments.append(attachment)
 
     def makeMessage(self):
-        # It's the caller's responsibility to encode the address fields to
-        # ASCII strings.
-        # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
-        # so we can provide a Unicode string and get the right encoding.
-        for address in [self.from_addr] + list(self.to_addrs):
+        # It's the caller's responsibility to either encode the address fields
+        # to ASCII strings or pass in Unicode strings.
+        from_addr = Header(self.from_addr).encode()
+        to_addrs = [Header(address).encode()
+            for address in list(self.to_addrs)]
+
+        for address in [from_addr] + to_addrs:
             if not isinstance(address, str) or not is_ascii_only(address):
                 raise AssertionError(
                     'Expected an ASCII str object, got: %r' % address)
 
         do_paranoid_email_content_validation(
-            from_addr=self.from_addr, to_addrs=self.to_addrs,
+            from_addr=from_addr, to_addrs=to_addrs,
             subject=self.subject, body=self.body)
         if len(self.attachments) == 0:
             msg = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
@@ -175,8 +179,8 @@ class MailController(object):
                 header_body_values = [header_body_values]
             for header_body_value in header_body_values:
                 msg[header] = header_body_value
-        msg['To'] = ','.join(self.to_addrs)
-        msg['From'] = self.from_addr
+        msg['To'] = ','.join(to_addrs)
+        msg['From'] = from_addr
         msg['Subject'] = self.subject
         return msg
 
@@ -199,7 +203,7 @@ def simple_sendmail_from_person(
         from_addr, to_addrs, subject, body, headers=headers)
 
 
-def sendmail(message, to_addrs=None):
+def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message
 
     If you just need to send dumb ASCII or Unicode, simple_sendmail
@@ -216,6 +220,9 @@ def sendmail(message, to_addrs=None):
 
     Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
+
+    :param bulk: By default, a Precedence: bulk header is added to the
+        message. Pass False to disable this.
 
     Returns the Message-Id
     """
@@ -258,10 +265,11 @@ def sendmail(message, to_addrs=None):
     if 'return-path' not in message:
         message['Return-Path'] = config.canonical.bounce_address
 
-    # Add Precedence header to prevent automatic reply programs
-    # (e.g. vacation) from trying to respond to our messages.
-    del message['Precedence']
-    message['Precedence'] = 'bulk'
+    if bulk:
+        # Add Precedence header to prevent automatic reply programs
+        # (e.g. vacation) from trying to respond to our messages.
+        del message['Precedence']
+        message['Precedence'] = 'bulk'
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
