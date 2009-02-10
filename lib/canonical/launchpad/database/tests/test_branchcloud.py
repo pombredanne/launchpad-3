@@ -88,7 +88,7 @@ class TestBranchCloud(TestCaseWithFactory):
         self.assertEqual([], list(products_with_info))
 
     def test_remote_branches_not_counted(self):
-        # getProductsWithInfo doesn't consider imported branches to contribute
+        # getProductsWithInfo doesn't consider remote branches to contribute
         # to the count of branches on a product.
         branch = self.makeBranch(branch_type=BranchType.REMOTE)
         products_with_info = self.getProductsWithInfo()
@@ -153,10 +153,13 @@ class TestBranchCloud(TestCaseWithFactory):
         product2 = self.factory.makeProduct()
         for i in range(5):
             self.makeBranch(product=product2)
+        product3 = self.factory.makeProduct()
+        for i in range(7):
+            self.makeBranch(product=product3)
         self.assertEqual(
-            [product2],
+            [product3, product2],
             [product for product, count, last_commit
-             in self.getProductsWithInfo(num_products=1)])
+             in self.getProductsWithInfo(num_products=2)])
 
 
 def test_suite():
