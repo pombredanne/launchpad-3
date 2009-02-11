@@ -140,7 +140,7 @@ class Branch(SQLBase):
 
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
-        default=BranchLifecycleStatus.NEW)
+        default=BranchLifecycleStatus.DEVELOPMENT)
 
     last_mirrored = UtcDateTimeCol(default=None)
     last_mirrored_id = StringCol(default=None)
@@ -1022,7 +1022,8 @@ class BranchSet:
             return PRIVATE_BRANCH
 
     def new(self, branch_type, name, registrant, owner, product=None,
-            url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            url=None, title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, date_created=None,
             branch_format=None, repository_format=None, control_format=None,
             distroseries=None, sourcepackagename=None,

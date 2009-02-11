@@ -507,7 +507,6 @@ class BzrSync:
             context=self.db_branch.product,
             visible_by_user=LAUNCHPAD_SERVICES,
             lifecycle_statuses=(
-                BranchLifecycleStatus.NEW,
                 BranchLifecycleStatus.DEVELOPMENT,
                 BranchLifecycleStatus.EXPERIMENTAL,
                 BranchLifecycleStatus.MATURE,

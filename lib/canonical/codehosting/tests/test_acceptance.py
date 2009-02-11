@@ -315,7 +315,8 @@ class AcceptanceTests(SSHTestCase):
         return database.Branch(
             registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
-            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            url=url, title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
