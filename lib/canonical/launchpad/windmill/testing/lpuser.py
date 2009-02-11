@@ -8,6 +8,7 @@ __all__ = []
 
 class LaunchpadUser:
     """Object representing well-known user on Launchpad."""
+
     def __init__(self, display_name, email, password):
         self.display_name = display_name
         self.email = email
