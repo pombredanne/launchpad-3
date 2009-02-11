@@ -3,7 +3,7 @@ specific Storm tools.
 
     >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.interfaces import (
-    ...     IMasterStore, ISlaveStore, IStore)
+    ...     IMasterDBObject, IMasterStore, ISlaveStore, IStore)
     >>> from canonical.launchpad.database import (
     ...     Account, AccountPassword, Person)
 
@@ -64,4 +64,46 @@ this is less generally useful.
     True
     >>> IMasterStore(janitor) is ISlaveStore(Person)
     False
+
+
+If we need the master copy of an object, we can adapt it to IMasterDBObject
+
+    >>> auth_slave = ISlaveStore(Account)
+    >>> t = transaction.begin()
+    >>> account = auth_slave.get(Account, 1)
+    >>> account.displayname = 'Cannot change'
+    >>> transaction.commit()
+    Traceback (most recent call last):
+    ...
+    InternalError: transaction is read-only
+
+    >>> t = transaction.begin()
+    >>> account = auth_slave.get(Account, 1)
+    >>> IMasterDBObject(account).displayname = 'Can change'
+    >>> transaction.commit()
+
+
+If the adapted object was security proxied, the master copy is
+similarly wrapped.
+
+    >>> from canonical.launchpad.interfaces.account import IAccountSet
+    >>> t = transaction.begin()
+    >>> account = getUtility(IAccountSet).getByEmail('no-priv@canonical.com')
+    >>> account.displayname
+    u'No Privileges Person'
+    >>> account.status_comment
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+    >>> transaction.abort()
+
+    >>> t = transaction.begin()
+    >>> account = getUtility(IAccountSet).getByEmail('no-priv@canonical.com')
+    >>> IMasterDBObject(account).displayname
+    u'No Privileges Person'
+    >>> account.status_comment
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+    >>> transaction.abort()
 

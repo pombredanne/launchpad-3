@@ -28,6 +28,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.interfaces import ISQLBase
 
+
 __all__ = [
     'alreadyInstalledMsg',
     'begin',
@@ -154,16 +155,7 @@ class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
 
 
 class SQLBase(storm.sqlobject.SQLObjectBase):
-    """Base class to use instead of SQLObject/SQLOS.
-
-    Annoying hack to allow us to use SQLOS features in Zope, and plain
-    SQLObject outside of Zope.  ("Zope" in this case means the Zope 3 Component
-    Architecture, i.e. the basic suite of services should be accessible via
-    zope.component.getService)
-
-    By default, this will act just like SQLOS.  Use a
-    ZopelessTransactionManager object to disable all the tricksy
-    per-thread connection stuff that SQLOS does.
+    """Base class emulating SQLObject for legacy database classes.
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
@@ -186,6 +178,10 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # are passed in. We need to refetch these objects from the correct
         # master Store if necessary so the foreign key references can be
         # constructed.
+        # We probably want to remove this code - there are enough
+        # other places developers have to be aware of the replication
+        # set boundaries. Why should Person(..., account=an_account)
+        # work but some_person.account = an_account fail?
         for key, argument in kwargs.items():
             argument = removeSecurityProxy(argument)
             if not isinstance(argument, Storm):
@@ -214,15 +210,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # This matches the repr() output for the sqlos.SQLOS class.
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
-
-    @property
-    def master(self):
-        """Return this object as retrieved from the master store."""
-        from canonical.launchpad.interfaces import IMasterStore
-        master_store = IMasterStore(self)
-        if Store.of(self) is master_store:
-            return self
-        return master_store.find(self.__class__, id=self.id).one()
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "

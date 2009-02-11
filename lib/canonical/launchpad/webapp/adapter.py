@@ -19,6 +19,7 @@ from psycopg2.extensions import (
 from storm.database import register_scheme
 from storm.databases.postgres import Postgres, PostgresTimeoutTracer
 from storm.exceptions import TimeoutError
+from storm.store import Store
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
@@ -27,11 +28,13 @@ from zope.component import getUtility
 from zope.interface import (
     classImplements, classProvides, directlyProvides,
     implementer, implements, Interface)
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.lazr.utils import safe_hasattr
-from canonical.launchpad.interfaces import IMasterStore, ISlaveStore, IStore
+from canonical.launchpad.interfaces import (
+    IMasterDBObject, IMasterStore, ISlaveStore, IStore)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR, MAIN_STORE,
     MASTER_FLAVOR, SLAVE_FLAVOR)
@@ -469,7 +472,7 @@ _auth_store_tables = frozenset([
 
 def get_store(storm_class, flavor=DEFAULT_FLAVOR):
     """Return a flavored Store for the given database class."""
-    table = getattr(storm_class, '__storm_table__', None)
+    table = getattr(removeSecurityProxy(storm_class), '__storm_table__', None)
     if table in _auth_store_tables:
         return getUtility(IStoreSelector).get(AUTH_STORE, flavor)
     elif table is not None:
@@ -486,6 +489,21 @@ def get_master_store(storm_class):
 def get_slave_store(storm_class):
     """Return the master Store for the given database class."""
     return get_store(storm_class, SLAVE_FLAVOR)
+
+
+def get_object_from_master_store(obj):
+    """Return a copy of the given object retrieved from its master Store.
+
+    Returns the object if it already comes from the relevant master Store.
+    """
+    obj = removeSecurityProxy(obj)
+    master_store = IMasterStore(obj)
+    if master_store is not Store.of(obj):
+        obj = master_store.get(obj.__class__, obj.id)
+        if obj is None:
+            return None
+    directlyProvides(obj, IMasterDBObject)
+    return obj
 
 
 def get_store_name(store):

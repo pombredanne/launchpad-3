@@ -519,6 +519,19 @@
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         permission="zope.Public"
         />
+    <adapter
+        provides="canonical.launchpad.interfaces.IMasterDBObject"
+        for="canonical.launchpad.interfaces.IDBObject"
+        factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
+        permission="zope.Public"
+        />
+    <class class="storm.store.Store">
+        <implements interface="canonical.launchpad.interfaces.IStore" />
+        <allow attributes="get" />
+    </class>
+    <class class="canonical.database.sqlbase.SQLBase">
+        <implements interface="canonical.launchpad.interfaces.IDBObject" />
+    </class>
 
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />

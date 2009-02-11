@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'IMasterStore', 'ISlaveStore', 'IStore',
+    'IDBObject', 'IMasterDBObject', 'IMasterStore', 'ISlaveStore', 'IStore',
     ]
 
 
@@ -16,14 +16,23 @@ from zope.interface.interfaces import IInterface
 
 
 class IStore(Interface):
-    """Marker interface implemented by storm.store.Store."""
-classImplements(Store, IStore)
+    """A storm.store.Store."""
+    def get(cls, key):
+        """See storm.store.Store."""
 
 
 class IMasterStore(IStore):
-    """Marker interface for writeable Stores."""
+    """A writeable Storm Stores."""
 
 
 class ISlaveStore(IStore):
-    """Marker interface for read-only Stores."""
+    """A read-only Storm Store."""
+
+
+class IDBObject(Interface):
+    """A Storm database object."""
+
+
+class IMasterDBObject(IDBObject):
+    """A Storm database object associated with its master Store."""
 

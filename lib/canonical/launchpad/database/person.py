@@ -69,7 +69,7 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterDBObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
@@ -1804,7 +1804,8 @@ class Person(
         account.status_comment = comment
         account.password = password
         if preferred_email is not None:
-            self.validateAndEnsurePreferredEmail(preferred_email)
+            self.validateAndEnsurePreferredEmail(
+                IMasterDBObject(preferred_email))
         # sync so validpersoncache updates.
         account.sync()
 
@@ -2148,6 +2149,7 @@ class Person(
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
+        email = IMasterDBObject(email)
         assert not self.is_team, "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
