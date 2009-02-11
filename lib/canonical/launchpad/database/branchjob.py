@@ -1,6 +1,7 @@
 # Copyright 2004-2005, 2009 Canonical Ltd.  All rights reserved.
 __all__ = [
     'RevisionMailJob',
+    'BranchJob',
 ]
 
 from bzrlib.revisionspec import RevisionSpec
