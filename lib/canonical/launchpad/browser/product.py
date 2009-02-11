@@ -1778,15 +1778,11 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
-        # XXX: thumper 2008-04-22
-        # When bug 181157 is fixed, only get branches for non-obsolete
-        # series.
-
         # We want to show each series branch only once, always show the
         # development focus branch, no matter what's it lifecycle status, and
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
-        sorted_series = self.sorted_series_list
+        sorted_series = self.sorted_active_series_list
         def show_branch(branch):
             if self.selected_lifecycle_status is None:
                 return True

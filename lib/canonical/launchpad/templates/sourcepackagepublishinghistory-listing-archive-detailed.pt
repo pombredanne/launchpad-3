@@ -5,23 +5,29 @@
   omit-tag="">
 
   <tr class="archive_package_row">
-    <td style="white-space: nowrap"><input type="checkbox"
-           tal:condition="view/allow_selection"
-           tal:attributes="value context/id;
-                           id string:field.selected_sources.${context/id}"
-           name="field.selected_sources" /><a class="expander"
-           tal:attributes="id string:pub${context/id}-expander;
-                           href string:+sourcepub/${context/id}/+listing-archive-extra"
-           ><img src="/@@/treeCollapsed" alt="Show files" title="Show files"
-                 tal:attributes="id string:pub${context/id}-arrow" /></a>
-         <tal:source_name content="context/sourcepackagerelease/title"
-         >foo - 1.0</tal:source_name>
+    <td style="white-space: nowrap">
+      <input
+        name="field.selected_sources" type="checkbox"
+        tal:condition="view/allow_selection"
+        tal:attributes="value context/id;
+                        id string:field.selected_sources.${context/id}"/>
+      <a class="expander"
+         tal:attributes="id string:pub${context/id}-expander;
+                         href string:+sourcepub/${context/id}/+listing-archive-extra">
+        <img src="/@@/treeCollapsed" alt="Show details" title="Show details"
+             tal:attributes="id string:pub${context/id}-arrow" />
+        <img src="/@@/package-source" />
+        <tal:source_name replace="context/sourcepackagerelease/title">
+          foo - 1.0
+        </tal:source_name>
+      </a>
     </td>
     <td>
       <tal:view_changesfile
         define="changesfile context/sourcepackagerelease/upload_changesfile">
         <a tal:condition="changesfile"
-          tal:attributes="href string:+files/${changesfile/filename}"
+           tal:attributes="href string:+files/${changesfile/filename};
+                           title changesfile/filename"
           >(changesfile)</a>
       </tal:view_changesfile>
     </td>
@@ -58,7 +64,8 @@
   </tr>
   <tr tal:attributes="id string:pub${context/id}" style="display: none">
     <td colspan="7">
-      <div tal:attributes="id string:xhr_placeholder${context/id}" />
+      <div class="package-details"
+           tal:attributes="id string:pub${context/id}-container" />
     </td>
   </tr>
 
