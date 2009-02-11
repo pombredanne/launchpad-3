@@ -120,7 +120,15 @@
 
   <div id="review-diff" tal:condition="context/review_diff">
   <h2>Review Diff</h2>
-  <pre tal:content="view/review_diff" />
+  <div class="boardComment attachment">
+    <div class="boardCommentDetails filename"
+         tal:define="attachment context/review_diff/diff/diff_text">
+      <a tal:attributes="href attachment/getURL">review.diff</a>
+    </div>
+    <div class="boardCommentBody attachmentBody">
+      <pre tal:content="view/review_diff" />
+    </div>
+  </div>
   </div>
   <div class="back-link">
     &laquo; Back to <tal:link replace="structure context/source_branch/fmt:bzr-link"/>
