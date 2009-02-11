@@ -10,6 +10,7 @@ from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import DocTestSuite
+from canonical.database.constants import UTC_NOW
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
@@ -518,6 +519,7 @@ class TestCodeHandler(TestCaseWithFactory):
         local_source = removeSecurityProxy(bmp.source_branch).getBzrBranch()
         self.assertEqual(
             source.branch.last_revision(), local_source.last_revision())
+        self.assertIsNot(None, bmp.source_branch.next_mirror_time)
 
     def test_processMergeDirectiveWithBundleExistingBranch(self):
         self.useBzrBranches()
@@ -526,6 +528,7 @@ class TestCodeHandler(TestCaseWithFactory):
         tree.commit('rev1')
         lp_source, lp_source_tree = self.create_branch_and_tree(
             'lpsource', branch.product)
+        self.assertIs(lp_source.next_mirror_time, None)
         lp_source_tree.pull(tree.branch)
         lp_source_tree.commit('rev2', rev_id='rev2')
         source = lp_source_tree.bzrdir.sprout('source').open_workingtree()
@@ -540,6 +543,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             source.last_revision(), local_source.last_revision())
         self.assertEqual(lp_source, bmp.source_branch)
+        self.assertIsNot(None, lp_source.next_mirror_time)
 
 
 class TestVoteEmailCommand(TestCase):

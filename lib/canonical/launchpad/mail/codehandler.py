@@ -380,6 +380,7 @@ class CodeHandler:
             bzr_branch = bzrdir.open_branch()
         md.install_revisions(bzr_branch.repository)
         bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
+        mp_source.requestMirror()
         return mp_source
 
     def findMergeDirectiveAndComment(self, message):
