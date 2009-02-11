@@ -1363,6 +1363,19 @@ h1.disabled {
 table#packages_list {
     margin-top: 1em;
 }
+p.update-failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
+
+p.update-in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+
+a.update-retry {
+    padding-left: 1em;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}

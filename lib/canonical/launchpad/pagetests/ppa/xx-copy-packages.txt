@@ -182,9 +182,9 @@ The page section id is built using "pub$ID" notation.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Built Packages
+    Built packages
       pmount pmount shortdesc
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 James is absolutely sure that's the package he wants, he selects it.
@@ -269,7 +269,7 @@ context.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 The package was copied from the primary archive and not from a PPA.
@@ -764,7 +764,7 @@ sources to ensure the binaries are really there.
     >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       pmount
     ...
 
@@ -775,7 +775,7 @@ sources to ensure the binaries are really there.
     >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       mozilla-firefox
       ff from iceweasel
     ...

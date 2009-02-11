@@ -326,9 +326,9 @@ Each data row is expandable to contain some sections containing:
     Changelog
     Builds
       i386
-    Built Packages
+    Built packages
       mozilla-firefox ff from iceweasel
-    Download files from Librarian
+    Package files
       firefox-0.9.2.orig.tar.gz (9.5 MiB)
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
@@ -578,15 +578,14 @@ help wiki are presented in the PPA index page.
     ...     anon_browser.contents, 'signing-key')
 
     >>> print extract_text(signing_key_section)
-    This repository is signed with
-    ABCDEF0123456789ABCDDCBA0000111112345678 OpenPGP key.
+    This repository is signed with 1024D/12345678 OpenPGP key.
     Follow these instructions for installing packages from this PPA.
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
 
     >>> print anon_browser.getLink(
-    ...     'ABCDEF0123456789ABCDDCBA0000111112345678').url
+    ...     '1024D/12345678').url
     http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&op=index
 
 Another link in this section point users to the expanded instructions
