@@ -70,7 +70,8 @@
     private team prefix into a name field.  It is here since it is shared in
     multiple templates.
   </tal:comment>
-  <tal:script define="private_prefix view/private_prefix">
+  <tal:script define="private_prefix view/private_prefix|nothing"
+              condition="private_prefix">
   <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', function(Y) {
