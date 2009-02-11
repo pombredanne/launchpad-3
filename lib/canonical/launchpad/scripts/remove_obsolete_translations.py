@@ -4,194 +4,77 @@ __metaclass__ = type
 
 __all__ = ['RemoveObsoleteTranslations']
 
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
 import time
 
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.database.sqlbase import quote
+
+from canonical.launchpad.interfaces import DistroSeriesStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
+
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-# Define SQL queries here to avoid cluttering up the code.
-
-# POTemplate
-CollectObsoletePOTemplatesSQL = """
-    DROP TABLE IF EXISTS obsolete_potemplate;
-    CREATE TEMP TABLE obsolete_potemplate
-    AS SELECT potemplate.id AS id
-    FROM potemplate
-        JOIN distroseries ON potemplate.distroseries = distroseries.id
-    WHERE distroseries.distribution = 1
-          AND distroseries.releasestatus = 6;
-    CREATE UNIQUE INDEX obsolete_potemplate_idx ON obsolete_potemplate (id);
-    ANALYZE obsolete_potemplate"""
-DeleteObsoletePOTemplatesSQL = """
-    DELETE FROM potemplate
-    WHERE id IN (
-        SELECT id
-        FROM obsolete_potemplate
-        LIMIT %d OFFSET %d
-        )"""
-
-# POFile
-CollectObsoletePOFilesSQL = """
-    DROP TABLE IF EXISTS obsolete_pofile;
-    CREATE TEMP TABLE obsolete_pofile
-    AS SELECT pofile.id AS id
-    FROM pofile
-        JOIN obsolete_potemplate ON pofile.potemplate = obsolete_potemplate.id;
-    CREATE UNIQUE INDEX obsolete_pofile_idx ON obsolete_pofile (id);
-    ANALYZE obsolete_pofile"""
-DeleteObsoletePOFilesSQL = """
-    DELETE FROM pofile
-    WHERE id IN (
-        SELECT id
-        FROM obsolete_pofile
-        LIMIT %d OFFSET %d
-        )"""
-
-# TranslationMessage
-CollectObsoleteTranslationMessagesSQL = """
-    DROP TABLE IF EXISTS obsolete_translationmessage;
-    CREATE TEMP TABLE obsolete_translationmessage
-    AS SELECT translationmessage.id AS id
-    FROM translationmessage
-        JOIN obsolete_pofile ON translationmessage.pofile = obsolete_pofile.id;
-    CREATE UNIQUE INDEX obsolete_translationmessage_idx ON obsolete_translationmessage (id);
-    ANALYZE obsolete_translationmessage"""
-DeleteObsoleteTranslationMessagesSQL = """
-    DELETE FROM translationmessage
-    WHERE id IN (
-        SELECT id
-        FROM obsolete_translationmessage
-        LIMIT %d OFFSET %d
-        )"""
-
-# TranslationTemplateItems
-CollectObsoleteTranslationTemplateItemsSQL = """
-    DROP TABLE IF EXISTS obsolete_tti;
-    CREATE TEMP TABLE obsolete_tti
-    AS SELECT TranslationTemplateItem.id AS id
-    FROM TranslationTemplateItem
-        WHERE potemplate IN (
-          SELECT id FROM obsolete_potemplate);
-    CREATE UNIQUE INDEX obsolete_tti_idx ON obsolete_tti (id);
-    ANALYZE obsolete_tti"""
-DeleteObsoleteTranslationTemplateItemsSQL = """
-    DELETE FROM translationtemplateitem
-    WHERE id IN (
-        SELECT id
-        FROM obsolete_tti
-        LIMIT %d OFFSET %d
-        )"""
-
-# POTMsgSet
-CollectObsoletePOTMsgSetsSQL = """
-    DROP TABLE IF EXISTS obsolete_potmsgset;
-    CREATE TEMP TABLE obsolete_potmsgset
-    AS SELECT POTMsgSet.id AS id
-    FROM POTMsgSet
-        WHERE potemplate IN (
-          SELECT id FROM obsolete_potemplate);
-    CREATE UNIQUE INDEX obsolete_potmsgset_idx ON obsolete_potmsgset (id);
-    ANALYZE obsolete_potmsgset"""
-DeleteObsoletePOTMsgSetsSQL = """
-    DELETE FROM potmsgset
-    WHERE id IN (
-        SELECT id
-        FROM obsolete_potmsgset
-        LIMIT %d OFFSET %d
-        )"""
-
-# POFileTranslator
-CollectObsoletePOFileTranslatorsSQL = """
-    DROP TABLE IF EXISTS obsolete_pofiletranslator;
-    CREATE TEMP TABLE obsolete_pofiletranslator
-    AS SELECT POFileTranslator.id AS id
-    FROM POFileTranslator
-        WHERE pofile IN (
-          SELECT id FROM obsolete_pofile);
-    CREATE UNIQUE INDEX obsolete_pofiletranslator_idx ON obsolete_pofiletranslator (id);
-    ANALYZE obsolete_pofiletranslator"""
-DeleteObsoletePOFileTranslatorsSQL = """
-    DELETE FROM pofiletranslator
-    WHERE id IN (
-        SELECT id
-        FROM obsolete_pofiletranslator
-        LIMIT %d OFFSET %d
-        )"""
 
 collect_order = [
     'POTemplate',
     'POFile',
-    'POFileTranslator',
+    'TranslationImportQueueEntry',
     'POTMsgSet',
     'TranslationTemplateItem',
     'TranslationMessage',
-    ]
-
-remove_order = [
     'POFileTranslator',
-    'TranslationMessage',
-    'TranslationTemplateItem',
-    'POTMsgSet',
-    'POFile',
-    'POTemplate',
     ]
 
-# Query to count all rows in a table
-CountRowsSQL = """
-    SELECT count(*) FROM %s"""
+
+remove_order = collect_order[:]
+remove_order.reverse()
 
 
-RemovalTypes = {
-    'TranslationMessage' :
-        { 'table' : 'TranslationMessage',
-          'temporary_table' : 'obsolete_translationmessage',
-          'removal_sql' : DeleteObsoleteTranslationMessagesSQL,
-          'collection_sql' : CollectObsoleteTranslationMessagesSQL,
-          },
-    'TranslationTemplateItem' :
-        { 'table' : 'TranslationTemplateItem',
-          'temporary_table' : 'obsolete_tti',
-          'removal_sql' : DeleteObsoleteTranslationTemplateItemsSQL,
-          'collection_sql' : CollectObsoleteTranslationTemplateItemsSQL,
-          },
-    'POTMsgSet' :
-        { 'table' : 'POTMsgSet',
-          'temporary_table' : 'obsolete_potmsgset',
-          'removal_sql' : DeleteObsoletePOTMsgSetsSQL,
-          'collection_sql' : CollectObsoletePOTMsgSetsSQL,
-          },
-    'POFileTranslator' :
-        { 'table' : 'POFileTranslator',
-          'temporary_table' : 'obsolete_pofiletranslator',
-          'removal_sql' : DeleteObsoletePOFileTranslatorsSQL,
-          'collection_sql' : CollectObsoletePOFileTranslatorsSQL,
-          },
-    'POFile' :
-        { 'table' : 'POFile',
-          'temporary_table' : 'obsolete_pofile',
-          'removal_sql' : DeleteObsoletePOFilesSQL,
-          'collection_sql' : CollectObsoletePOFilesSQL,
-          },
-    'POTemplate' :
-        { 'table' : 'POTemplate',
-          'temporary_table' : 'obsolete_potemplate',
-          'removal_sql' : DeleteObsoletePOTemplatesSQL,
-          'collection_sql' : CollectObsoletePOTemplatesSQL,
-          },
-    }
+collection_query = """
+    DROP TABLE IF EXISTS %(temporary_table)s;
+    CREATE TEMP TABLE %(temporary_table)s
+        AS SELECT %(table)s.id AS id
+        FROM %(table)s
+        JOIN %(join_table)s ON %(table)s.%(join_column)s = %(join_table)s.id;
+    CREATE UNIQUE INDEX %(temporary_table)s_idx ON %(temporary_table)s (id);
+    ANALYZE %(temporary_table)s"""
 
-def commit_transaction(transaction, logger, throttle=0.0, dry_run=False):
+
+# POTemplate
+collect_obsolete_potemplates_query = """
+    DROP TABLE IF EXISTS %(temporary_table)s;
+    CREATE TEMP TABLE %(temporary_table)s
+    AS SELECT %(table)s.id AS id
+    FROM %(table)s
+        JOIN %(join_table)s ON %(table)s.%(join_column)s = %(join_table)s.id
+    WHERE distroseries.distribution = %(distribution)s
+          AND distroseries.releasestatus = %(releasestatus)s;
+    CREATE UNIQUE INDEX %(temporary_table)s_idx ON %(temporary_table)s (id);
+    ANALYZE %(temporary_table)s"""
+
+
+# Query to remove subset of entries based on a temporary table.
+deletion_query = """
+    DELETE FROM %(table)s
+    WHERE id IN (
+        SELECT id
+        FROM %(temporary_table)s
+        LIMIT %%d OFFSET %%d
+        )"""
+
+
+def commit_transaction(transaction, logger, dry_run=False):
     """Commit ongoing transaction, start a new one.
 
     Pauses process execution to give the database slave a chance
-    to keep up."""
+    to keep up.
+    """
     if transaction is None:
         return
 
@@ -199,21 +82,17 @@ def commit_transaction(transaction, logger, throttle=0.0, dry_run=False):
         transaction.commit()
         transaction.begin()
 
-    if throttle:
-        time.sleep(float(throttle))
-
 
 class DeletionLoopRunner(object):
+    """Generic loop tuner for removal of obsolete translations."""
     implements(ITunableLoop)
 
-    def __init__(self, type, transaction, logger, store, size,
+    def __init__(self, table_entry, transaction, logger, store,
                  throttle=0.0, dry_run=False):
         """Initialize the loop."""
-        self.type = None
-        entry = RemovalTypes[type]
-        self.table = type
-        self.removal_sql = entry['removal_sql']
-        self.obsolete_table = entry['temporary_table']
+        size = table_entry['total']
+        self.table = table_entry['table']
+        self.removal_sql = deletion_query % table_entry
 
         self._txn = transaction
         self._logger = logger
@@ -225,11 +104,12 @@ class DeletionLoopRunner(object):
         self._commit_count = 0
 
     def isDone(self):
-        """See ITunableLoop."""
+        """See `ITunableLoop`."""
         return self._iterations_done >= self._iteration_end
 
     def __call__(self, chunk_size):
-        """See ITunableLoop."""
+        """See `ITunableLoop`."""
+        chunk_size = int(chunk_size)
         query = self.removal_sql % (chunk_size, self._iterations_done)
         result = self._store.execute(query)
         self._logger.debug(
@@ -244,6 +124,7 @@ class DeletionLoopRunner(object):
 
     def getTotalCommits(self):
         return self._commit_count
+
 
 class RemoveObsoleteTranslations(LaunchpadScript):
 
@@ -261,6 +142,55 @@ class RemoveObsoleteTranslations(LaunchpadScript):
             default=5, help="Time in seconds to sleep between commits.")
 
     def main(self):
+        removal_traits = {
+            'TranslationMessage' :
+                { 'table' : 'TranslationMessage',
+                  'temporary_table' : 'obsolete_translationmessage',
+                  'join_table' : 'obsolete_pofile',
+                  'join_column' : 'pofile',
+                  },
+            'TranslationTemplateItem' :
+                { 'table' : 'TranslationTemplateItem',
+                  'temporary_table' : 'obsolete_tti',
+                  'join_table' : 'obsolete_potemplate',
+                  'join_column' : 'potemplate',
+                  },
+            'POTMsgSet' :
+                { 'table' : 'POTMsgSet',
+                  'temporary_table' : 'obsolete_potmsgset',
+                  'join_table' : 'obsolete_potemplate',
+                  'join_column' : 'potemplate',
+                  },
+            'POFileTranslator' :
+                { 'table' : 'POFileTranslator',
+                  'temporary_table' : 'obsolete_pofiletranslator',
+                  'join_table' : 'obsolete_pofile',
+                  'join_column' : 'pofile',
+                  },
+            'POFile' :
+                { 'table' : 'POFile',
+                  'temporary_table' : 'obsolete_pofile',
+                  'join_table' : 'obsolete_potemplate',
+                  'join_column' : 'potemplate',
+                  },
+            'TranslationImportQueueEntry' :
+                { 'table' : 'TranslationImportQueueEntry',
+                  'temporary_table' : 'obsolete_queueentries',
+                  'join_table' : 'obsolete_potemplate',
+                  'join_column' : 'potemplate',
+                  },
+            'POTemplate' :
+                { 'table' : 'POTemplate',
+                  'temporary_table' : 'obsolete_potemplate',
+                  'join_table' : 'distroseries',
+                  'join_column' : 'distroseries',
+                  'distribution' :
+                    quote(getUtility(ILaunchpadCelebrities).ubuntu),
+                  'releasestatus' : quote(DistroSeriesStatus.OBSOLETE),
+                  'collection_sql' : collect_obsolete_potemplates_query,
+                  },
+            }
+
         if self.options.dry_run:
             self.logger.info("Dry run.  Not making any changes.")
 
@@ -274,17 +204,21 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         self._store = store
 
         for table in collect_order:
-            collect = store.execute(RemovalTypes[table]['collection_sql'])
-            count = self._count_rows(RemovalTypes[table]['temporary_table'])
-            RemovalTypes[table]['total'] = count
+            entry = removal_traits[table]
+            if entry.has_key('collection_sql'):
+                collect = store.execute(entry['collection_sql'] % entry)
+            else:
+                collect = store.execute(collection_query % entry)
+            count = self._count_rows(entry['temporary_table'])
+            entry['total'] = count
         self._do_commit()
 
         for table in remove_order:
-            entry = RemovalTypes[table]
+            entry = removal_traits[table]
             self.logger.info(
                 "Removing %d %s rows." % (entry['total'], table))
             loop = DeletionLoopRunner(
-                table, self.txn, self.logger, store, entry['total'],
+                entry, self.txn, self.logger, store,
                 throttle=float(self.options.throttle),
                 dry_run=self.options.dry_run)
             LoopTuner(loop, self.options.loop_time).run(
@@ -298,20 +232,21 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         self.logger.info("Statistics:")
         for table in remove_order:
             self.logger.info("\t%-30s: %d removed" % (
-                    table, RemovalTypes[table]['total']))
+                    table, removal_traits[table]['total']))
 
     def _count_rows(self, tablename):
         """Helper to count all rows in a table."""
+        count_query = "SELECT count(*) FROM %s"
         result = self._store.execute(
-            CountRowsSQL % tablename).get_one()
+            count_query % tablename).get_one()
         return result[0]
 
     def _do_commit(self):
         """Commit ongoing transaction, start a new one.
 
         Pauses process execution to give the database slave a chance
-        to keep up."""
+        to keep up.
+        """
         commit_transaction(self.txn, self.logger,
-                           throttle=float(self.options.throttle),
                            dry_run=self.options.dry_run)
         self._commit_count += 1
