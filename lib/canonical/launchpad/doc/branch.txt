@@ -983,19 +983,8 @@ canonical/launchpad/database/tests/test_branch.py.
     >>> print branch.unique_name
     ~person/a/to-delete
 
-Since the branch has ddaa as an implicit subscriber, the branch is not
-deletable.
+Even though the branch has an implicit subscriber, the branch is deletable.
 
-    >>> branch.canBeDeleted()
-    False
-    >>> branch.destroySelf()
-    Traceback (most recent call last):
-      ...
-    CannotDeleteBranch: Cannot delete branch: ~person/a/to-delete
-
-The process can be rectified though by removing the offending links.
-
-    >>> branch.unsubscribe(person)
     >>> branch.canBeDeleted()
     True
     >>> branch.destroySelf()
@@ -1007,19 +996,9 @@ The requirements for deleting the branch can be discovered:
     >>> branch = branchset.new(
     ...     BranchType.MIRRORED, 'to-delete', person, person, product_a,
     ...     'http://example.com/branches/to-delete', 'A branch to delete')
-    >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the
 branch.
-
-    >>> [subscription] = list(branch.subscriptions)
-    >>> [subscription] == requirements.keys()
-    True
-    >>> action, reason = requirements[subscription]
-    >>> print action
-    delete
-    >>> print reason
-    This is a subscription to this branch.
 
 Deletion can be forced by supplying break_references=True.  This will delete
 items that have mandantory references to this branch, and alter items with
@@ -1066,7 +1045,6 @@ is listed as not "allowed":
     >>> for req in sorted(deletion_requirements):
     ...     print req
     BranchMergeProposal allowed: False
-    BranchSubscription allowed: False
 
 
 The "allowed: False" status is mirrored in the display.

@@ -113,5 +113,13 @@
       <th>Target branch:</th>
       <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
+    <tr tal:condition="context/preview_diff">
+      <th>Diff against target:</th>
+      <td>
+        <tal:diff replace="structure context/preview_diff/fmt:link"/>
+        <pre tal:condition="context/preview_diff/conflicts"
+             tal:content="context/preview_diff/conflicts"/>
+      </td>
+    </tr>
   </tbody>
 </table>

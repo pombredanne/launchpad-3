@@ -265,7 +265,7 @@ in Launchpad:
 
     >>> from canonical.launchpad.mail.sendmail import sendmail
     >>> from canonical.launchpad.mail.incoming import handleMail
-    >>> sendmail(moin_change)
+    >>> sendmail(moin_change, bulk=False)
     '...'
     >>> transaction.commit()
     >>> handleMail()

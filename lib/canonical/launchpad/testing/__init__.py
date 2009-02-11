@@ -391,6 +391,8 @@ class TestCaseWithFactory(TestCase):
 def capture_events(callable_obj, *args, **kwargs):
     """Capture the events emitted by a callable.
 
+    :param event_type: The type of event that notification is expected
+        for.
     :param callable_obj: The callable to call.
     :param *args: The arguments to pass to the callable.
     :param **kwargs: The keyword arguments to pass to the callable.

@@ -37,7 +37,6 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.components.branch import BranchMergeProposalDelta

@@ -452,14 +452,12 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assert_(branch_set.get(branch_id) is None,
                      "The branch has not been deleted.")
 
-    def test_subscriptionDisablesDeletion(self):
-        """A branch that has a subscription cannot be deleted."""
+    def test_subscriptionDoesntDisableDeletion(self):
+        """A branch that has a subscription can be deleted."""
         self.branch.subscribe(
             self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
-        self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch that has a subscription is not deletable.")
-        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
+        self.assertEqual(True, self.branch.canBeDeleted())
 
     def test_codeImportDisablesDeletion(self):
         """A branch that has an attached code import can't be deleted."""
@@ -563,6 +561,14 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a dependent target is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
+
+    def test_relatedBranchJobsDeleted(self):
+        # A branch with an associated branch job will delete those jobs.
+        branch = self.factory.makeAnyBranch()
+        BranchDiffJob.create(branch, 'from-spec', 'to-spec')
+        branch.destroySelf()
+        # Need to commit the transaction to fire off the constraint checks.
+        transaction.commit()
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -681,24 +687,6 @@ class TestBranchDeletionConsequences(TestCase):
         branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeReviewComment.get, comment_id)
-
-    def test_branchWithSubscriptionReqirements(self):
-        """Deletion requirements for a branch with subscription are right."""
-        branch = self.factory.makeAnyBranch()
-        subscription = branch.getSubscription(branch.owner)
-        self.assertTrue(subscription is not None)
-        self.assertEqual({subscription:
-            ('delete', _('This is a subscription to this branch.'))},
-                         branch.deletionRequirements())
-
-    def test_branchWithSubscriptionDeletion(self):
-        """break_links allows deleting a branch with subscription."""
-        subscription1 = self.factory.makeBranchSubscription()
-        subscription2 = self.factory.makeBranchSubscription()
-        subscription1_id = subscription1.id
-        subscription1.branch.destroySelf(break_references=True)
-        self.assertRaises(SQLObjectNotFound,
-            BranchSubscription.get, subscription1_id)
 
     def test_branchWithBugRequirements(self):
         """Deletion requirements for a branch with a bug are right."""
