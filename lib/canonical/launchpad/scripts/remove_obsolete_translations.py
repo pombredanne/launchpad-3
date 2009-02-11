@@ -137,6 +137,7 @@ class TranslationsStatusChecker:
         'potemplate_potmsgsets' : 'collectPOTemplatePOTMsgSetStats',
         'potemplate_pofiles' : 'collectPOTemplatePOFileStats',
         'pofile_pofiletranslators' : 'collectPOFileTranslatorStats',
+        'translationimportqueue_size' : 'getTranslationImportQueueSize',
         }
 
     def __init__(self, store, logger):
@@ -164,9 +165,12 @@ class TranslationsStatusChecker:
         new_stats = method()
         old_stats = getattr(self, attribute_name)
         if old_stats != new_stats:
+            if not isinstance(old_stats, int):
+                old_stats = len(old_stats)
+                new_stats = len(new_stats)
             self.logger.warn(
                 "Mismatch in %s (was %d long, now %d)." % (
-                    attribute_name, len(old_stats), len(new_stats)))
+                    attribute_name, old_stats, new_stats))
             self.problems += 1
 
     def checkObsoletePOTemplates(self):
@@ -260,6 +264,11 @@ class TranslationsStatusChecker:
             DistroSeriesStatus.OBSOLETE)
         result = self.store.execute(query)
         return result.get_all()
+
+    def getTranslationImportQueueSize(self):
+        query = """SELECT count(id) FROM TranslationImportQueueEntry"""
+        result = self.store.execute(query)
+        return int(result.get_one()[0])
 
 
 class RemoveObsoleteTranslations(LaunchpadScript):
