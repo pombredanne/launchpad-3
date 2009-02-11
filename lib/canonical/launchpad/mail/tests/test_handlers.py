@@ -10,7 +10,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
-from canonical.database.constants import UTC_NOW
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
@@ -41,6 +40,7 @@ from canonical.launchpad.testing import (
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
@@ -529,6 +529,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertIsNot(None, bmp.source_branch.next_mirror_time)
 
     def mirror(self, db_branch, bzr_branch):
+        # Ensure the directories containing the mirror branch exist.
         transport = get_transport(db_branch.warehouse_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
@@ -560,6 +561,49 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('rev2', mirror.last_revision())
         hosted = Branch.open(bmp.source_branch.getPullURL())
         self.assertEqual('rev3', hosted.last_revision())
+
+    def test_getNewBranchInfoNoURL(self):
+        """
+        If no URL is provided, target product is used, with 'merge' basename.
+
+        An alternative approach would be to determine the branch nick of
+        the source revision of the merge directive, using the provided bundle.
+        """
+        submitter = getUtility(ILaunchBag).user
+        product = self.factory.makeProduct()
+        code_handler = CodeHandler()
+        namespace, base = code_handler._getNewBranchInfo(
+            None, submitter, product)
+        namespace = removeSecurityProxy(namespace)
+        self.assertEqual(product, namespace.product)
+        self.assertEqual(submitter, namespace.owner)
+
+    def test_getNewBranchInfoRemoteURL(self):
+        """If a URL is provided, its base is used."""
+        submitter = getUtility(ILaunchBag).user
+        product = self.factory.makeProduct()
+        code_handler = CodeHandler()
+        namespace, base = code_handler._getNewBranchInfo(
+                'http://foo/bar', submitter, product)
+        self.assertEqual('bar', base)
+        namespace = removeSecurityProxy(namespace)
+        self.assertEqual(product, namespace.product)
+        self.assertEqual(submitter, namespace.owner)
+
+    def test_getNewBranchInfoLPURL(self):
+        """If an LP URL is provided, we attempt to reproduce it."""
+        submitter = getUtility(ILaunchBag).user
+        product = self.factory.makeProduct()
+        url_product = self.factory.makeProduct('uproduct')
+        url_person = self.factory.makePerson(name='uuser')
+        code_handler = CodeHandler()
+        namespace, base = code_handler._getNewBranchInfo(
+            config.codehosting.supermirror_root + '~uuser/uproduct/bar',
+            submitter, product)
+        self.assertEqual('bar', base)
+        namespace = removeSecurityProxy(namespace)
+        self.assertEqual(url_product, namespace.product)
+        self.assertEqual(url_person, namespace.owner)
 
 
 class TestVoteEmailCommand(TestCase):

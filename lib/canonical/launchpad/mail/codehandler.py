@@ -16,12 +16,13 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
     ICreateMergeProposalJobSource, UserNotBranchReviewer)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace)
+    get_branch_namespace, lookup_branch_namespace)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
@@ -37,6 +38,7 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.uri import URI
 
 
 class BadBranchMergeProposalAddress(Exception):
@@ -339,12 +341,23 @@ class CodeHandler:
                 md, mp_target, submitter)
         return mp_source, mp_target
 
-    def _getNewBranch(self, branch_type, url, product, submitter):
+    @staticmethod
+    def _getNewBranchInfo(url, submitter, target_product):
+        if url is not None:
+            uri = URI(url)
+            codehosting_host = URI(config.codehosting.supermirror_root).host
+            if uri.host == codehosting_host:
+                namespace_name, base = uri.path[1:].rsplit('/', 1)
+                return lookup_branch_namespace(namespace_name), base
         if url is None:
             basename = 'merge'
         else:
             basename = urlparse(url)[2].split('/')[-1]
-        namespace = get_branch_namespace(submitter, product)
+        return get_branch_namespace(submitter, target_product), basename
+
+    def _getNewBranch(self, branch_type, url, product, submitter):
+        namespace, basename = self._getNewBranchInfo(
+            url, submitter, product)
         if branch_type == BranchType.REMOTE:
             db_url = url
         else:
