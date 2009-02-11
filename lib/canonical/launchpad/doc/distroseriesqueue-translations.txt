@@ -277,6 +277,7 @@ Distribution archives (i.e. PPAs).
   >>> translation_import_queue.getAllEntries(target=ubuntu).count()
   0
 
+
 == Translations importer: publish_ROSETTA_TRANSLATIONS ==
 
 We create mock objects for SourcePackageRelease, PackageUpload and
@@ -290,6 +291,7 @@ different interpretations of "importer" in attachTranslationFiles.
   ...     ILaunchpadCelebrities,
   ...     IPackageUpload,
   ...     IPackageUploadCustom,
+  ...     IPerson,
   ...     ISourcePackageRelease,
   ...     PackagePublishingPocket,
   ...     PackageUploadCustomFormat,
@@ -302,6 +304,9 @@ different interpretations of "importer" in attachTranslationFiles.
   ...           self.packageupload = 1
   ...
   ...       def attachTranslationFiles(self, file, imported, importer):
+  ...           if (importer is not None and
+  ...               not IPerson.providedBy(importer)):
+  ...               print "`importer` not a person!"
   ...           print "Imported by: %s" % (getattr(importer, "name", "None"))
 
   >>> class MockPackageUpload:
@@ -326,7 +331,7 @@ different interpretations of "importer" in attachTranslationFiles.
   ...         self.customformat = (
   ...             PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
 
-For translations from auto-synced packages we consider importer to be
+For translations from auto-synced packages we consider the importer to be
 'katie' (archive@ubuntu.com).
 
   >>> katie = getUtility(ILaunchpadCelebrities).katie
