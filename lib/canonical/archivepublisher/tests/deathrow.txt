@@ -3,11 +3,9 @@
 We start by creating a pair of temporary directories to be used in
 this test.
 
-    >>> import os
-    >>> pool_path = '/tmp/pool'
-    >>> os.makedirs(pool_path)
-    >>> temp_path = '/tmp/temp'
-    >>> os.makedirs(temp_path)
+    >>> import tempfile
+    >>> pool_path = tempfile.mkdtemp('-pool')
+    >>> temp_path = tempfile.mkdtemp('-pool-tmp')
 
 We will work within the Ubuntu distribution context only.
 
@@ -60,21 +58,25 @@ Build a 'past' and a 'future' timestamps to be used as
     >>> future_date = datetime.datetime(
     ...     year=this_year + 2, month=1, day=1, tzinfo=UTC)
 
-Create source publications ready to be removed in different status.
+Create source publications in various statuses that are all ready to
+be removed.
 
     >>> deleted_source = test_publisher.getPubSource(
     ...     sourcename="deleted",
     ...     status=PackagePublishingStatus.DELETED,
+    ...     filecontent='X',
     ...     scheduleddeletiondate=past_date)
 
     >>> superseded_source = test_publisher.getPubSource(
     ...     sourcename="superseded",
     ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     filecontent='X',
     ...     scheduleddeletiondate=past_date)
 
     >>> obsolete_source = test_publisher.getPubSource(
     ...     sourcename="obsolete",
     ...     status=PackagePublishingStatus.OBSOLETE,
+    ...     filecontent='X',
     ...     scheduleddeletiondate=past_date)
 
 Create a chain of dependent source publications:
@@ -86,59 +88,68 @@ Create a chain of dependent source publications:
     >>> removed_source = test_publisher.getPubSource(
     ...     sourcename="stuck",
     ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     filecontent='A',
     ...     scheduleddeletiondate=past_date)
 
     >>> postponed_source = test_publisher.getPubSource(
     ...     sourcename="stuck", version="667",
     ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     filecontent='B',
     ...     scheduleddeletiondate=future_date)
 
     >>> published_source = test_publisher.getPubSource(
     ...     sourcename="stuck", version="668",
+    ...     filecontent='C',
     ...     status=PackagePublishingStatus.PUBLISHED)
 
 They all share a source file.
 
-    >>> shared_file = test_publisher.addMockFile('shared.tar.gz')
+    >>> shared_file = test_publisher.addMockFile(
+    ...     'shared.tar.gz', filecontent='Y')
     >>> discard = removed_source.sourcepackagerelease.addFile(shared_file)
     >>> discard = postponed_source.sourcepackagerelease.addFile(shared_file)
     >>> discard = published_source.sourcepackagerelease.addFile(shared_file)
 
-Create binary publications ready to be removed in different status.
+Create binary publications in various statuses that are all ready to
+be removed.
 
     >>> deleted_base_source = test_publisher.getPubSource(
-    ...     sourcename='ignored-one', architecturehintlist='i386')
+    ...     sourcename='deleted-ignored', architecturehintlist='i386')
     >>> [deleted_binary] = test_publisher.getPubBinaries(
     ...     binaryname="deleted-bin",
     ...     pub_source=deleted_base_source,
     ...     status=PackagePublishingStatus.DELETED,
+    ...     filecontent='Z',
     ...     scheduleddeletiondate = past_date)
 
     >>> superseded_base_source = test_publisher.getPubSource(
-    ...     sourcename='ignored-two', architecturehintlist='i386')
+    ...     sourcename='superseded-ignored', architecturehintlist='i386')
     >>> [superseded_binary] = test_publisher.getPubBinaries(
     ...     binaryname="superseded-bin",
     ...     pub_source=superseded_base_source,
     ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     filecontent='Z',
     ...     scheduleddeletiondate = past_date)
 
     >>> obsolete_base_source = test_publisher.getPubSource(
-    ...     sourcename='ignored-three', architecturehintlist='i386')
+    ...     sourcename='obsolete-ignored', architecturehintlist='i386')
     >>> [obsolete_binary] = test_publisher.getPubBinaries(
     ...     binaryname="obsolete-bin",
     ...     pub_source=obsolete_base_source,
     ...     status=PackagePublishingStatus.OBSOLETE,
+    ...     filecontent='Z',
     ...     scheduleddeletiondate = past_date)
 
 Dependent binary publications.
 
     >>> removed_base_source = test_publisher.getPubSource(
-    ...     sourcename='ignored-four', architecturehintlist='i386',
+    ...     sourcename='removed-ignored', architecturehintlist='i386',
     ...     pocket=PackagePublishingPocket.SECURITY)
     >>> [removed_binary] = test_publisher.getPubBinaries(
     ...     binaryname="stuck-bin",
     ...     pub_source=removed_base_source,
     ...     status=PackagePublishingStatus.SUPERSEDED,
+    ...     filecontent='Z',
     ...     scheduleddeletiondate = past_date)
 
     >>> [postponed_binary] =  removed_binary.copyTo(
@@ -157,92 +168,110 @@ can be reused later.
 
     >>> transaction.commit()
 
-Creating files on the temporary repository containing only one byte of
-data.
+Group the test publications according to their purpose:
 
-    >>> file_paths = (
-    ...     'd/deleted/deleted_666.dsc',
-    ...     'o/obsolete/obsolete_666.dsc',
-    ...     's/superseded/superseded_666.dsc',
-    ...     's/stuck/stuck_666.dsc',
-    ...     's/stuck/stuck_667.dsc',
-    ...     's/stuck/stuck_668.dsc',
-    ...     's/stuck/shared.tar.gz',
-    ...     'i/ignored-one/deleted-bin_666_i386.deb',
-    ...     'i/ignored-two/superseded-bin_666_i386.deb',
-    ...     'i/ignored-three/obsolete-bin_666_i386.deb',
-    ...     'i/ignored-four/stuck-bin_666_i386.deb',
-    ... )
+    >>> removed_records = (
+    ...     deleted_source,
+    ...     superseded_source,
+    ...     obsolete_source,
+    ...     deleted_binary,
+    ...     superseded_binary,
+    ...     obsolete_binary,
+    ...     )
 
-    >>> for path in file_paths:
-    ...     full_path = os.path.join(pool_path, 'main', path)
-    ...     dir_path = os.path.dirname(full_path)
-    ...     if not os.path.exists(dir_path):
-    ...         os.makedirs(dir_path)
-    ...     open(full_path, 'w').write('X')
+    >>> dependent_records = (
+    ...    removed_source,
+    ...    postponed_source,
+    ...    published_source,
+    ...    removed_binary,
+    ...    postponed_binary,
+    ...    published_binary,
+    ...    )
 
-Create a helper function to check if the files exist in the temporary
-repository.
+    >>> all_test_publications = removed_records + dependent_records
 
-    >>> def check_pool_files(file_paths):
-    ...     for path in file_paths:
-    ...         full_path = os.path.join(pool_path, 'main', path)
-    ...         if os.path.exists(full_path):
-    ...             print '%s: OK' % os.path.basename(path)
+Publish files on disk and build a list of all created file paths
+
+    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> quiet_disk_pool = DiskPool(pool_path, temp_path, QuietFakeLogger())
+
+    >>> unique_file_paths = set()
+
+    >>> for pub in all_test_publications:
+    ...     for pub_file in pub.files:
+    ...         for pub_file in pub.files:
+    ...             file_path = quiet_disk_pool.pathFor(
+    ...                 pub_file.componentname.encode('utf-8'),
+    ...                 pub_file.sourcepackagename.encode('utf8'),
+    ...                 pub_file.libraryfilealiasfilename.encode('utf-8')
+    ...              )
+    ...             unique_file_paths.add(file_path)
+    ...             pub_file.publish(quiet_disk_pool, QuietFakeLogger())
+
+    >>> all_test_file_paths = sorted(unique_file_paths)
+
+Create a helper function to check if the publication files exist in
+the temporary repository.
+
+    >>> import os
+    >>> def check_pool_files():
+    ...     for file_path in all_test_file_paths:
+    ...         if os.path.exists(file_path):
+    ...             print '%s: OK' % os.path.basename(file_path)
     ...         else:
-    ...             print '%s: REMOVED' % os.path.basename(path)
+    ...             print '%s: REMOVED' % os.path.basename(file_path)
 
-    >>> check_pool_files(file_paths)
+    >>> check_pool_files()
+    deleted-bin_666_i386.deb:    OK
     deleted_666.dsc:             OK
+    obsolete-bin_666_i386.deb:   OK
     obsolete_666.dsc:            OK
-    superseded_666.dsc:          OK
+    stuck-bin_666_i386.deb:      OK
+    shared.tar.gz:               OK
     stuck_666.dsc:               OK
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK
-    shared.tar.gz:               OK
-    deleted-bin_666_i386.deb:    OK
     superseded-bin_666_i386.deb: OK
-    obsolete-bin_666_i386.deb:   OK
-    stuck-bin_666_i386.deb:      OK
+    superseded_666.dsc:          OK
 
-Let's run DeathRow against the current 'removable' context.
+Run DeathRow against the current 'removable' context.
 
     >>> disk_pool = DiskPool(pool_path, temp_path, FakeLogger())
     >>> death_row = DeathRow(ubuntu.main_archive, disk_pool, FakeLogger())
     >>> death_row.reap()
     DEBUG 4 Sources
     DEBUG 3 Binaries
-    DEBUG Checking deleted_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
-    DEBUG Checking superseded_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
-    DEBUG Checking obsolete_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
-    DEBUG Checking stuck_666.dsc (5913c3ad52c14a62e6ae7eef51f9ef42)
-    DEBUG Checking shared.tar.gz (3e47b75000b0924b6c9ba5759a7cf15d)
+    DEBUG Checking deleted_666.dsc (02129bb861061d1a052c592e2dc6b383)
+    DEBUG Checking superseded_666.dsc (02129bb861061d1a052c592e2dc6b383)
+    DEBUG Checking obsolete_666.dsc (02129bb861061d1a052c592e2dc6b383)
+    DEBUG Checking stuck_666.dsc (7fc56270e7a70fa81a5935b72eacbe29)
+    DEBUG Checking shared.tar.gz (57cec4137b614c87cb4e24a3d003a3e0)
     DEBUG Cannot remove.
     DEBUG Batch ...
-    DEBUG Checking deleted-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
-    DEBUG Checking superseded-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
-    DEBUG Checking obsolete-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking deleted-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG Checking superseded-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG Checking obsolete-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Batch ...
     INFO Removing 7 files marked for reaping
     DEBUG Removing superseded/superseded_666.dsc from main
-    DEBUG Removing ignored-two/superseded-bin_666_i386.deb from main
+    DEBUG Removing superseded-ignored/superseded-bin_666_i386.deb from main
     DEBUG Removing stuck/stuck_666.dsc from main
     DEBUG Removing obsolete/obsolete_666.dsc from main
-    DEBUG Removing ignored-three/obsolete-bin_666_i386.deb from main
+    DEBUG Removing obsolete-ignored/obsolete-bin_666_i386.deb from main
     DEBUG Removing deleted/deleted_666.dsc from main
-    DEBUG Removing ignored-one/deleted-bin_666_i386.deb from main
+    DEBUG Removing deleted-ignored/deleted-bin_666_i386.deb from main
     INFO Total bytes freed: 7
     DEBUG Marking 7 condemned packages as removed.
 
-Few details to pay attention in the log output:
+A few details to pay attention to in the log output:
 
- * All files were checked despite of having the same content. In
-   normal circunstances it can be achieved by having the same tarball
+ * All files were checked despite having the same content. In
+   normal circunstances this can be achieved by having the same tarball
    used with different names for two distinct sourcepackages
    (openoffice and openoffice-l10n is an example);
 
  * The source file shared across publications ('shared.tar.gz') wasn't
-   removed as it is still related with 'live' or 'future-deletion'
+   removed as it is still related to a 'live' and a 'future-deletion'
    publications.
 
  * Dependent binaries are only possible via publication copies and are
@@ -257,20 +286,8 @@ Few details to pay attention in the log output:
 The removed publications were marked as 'removed' and their publishing
 status was preserved in the database.
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
-    >>> transaction_timestamp = get_transaction_timestamp()
-
-    >>> removed_records = (
-    ...     deleted_source,
-    ...     superseded_source,
-    ...     obsolete_source,
-    ...     deleted_binary,
-    ...     superseded_binary,
-    ...     obsolete_binary,
-    ...     )
-
     >>> def check_removed(pub):
-    ...     properly_removed = pub.dateremoved == transaction_timestamp
+    ...     properly_removed = pub.dateremoved is not None
     ...     print pub.displayname, pub.status.name, properly_removed
 
     >>> for pub in removed_records:
@@ -287,15 +304,6 @@ with 'scheduleddeletiondate' set to the past was removed, the one with
 future timestamp and the published one were kept. No binary
 publications was removed (see more below).
 
-    >>> dependent_records = (
-    ...    removed_source,
-    ...    postponed_source,
-    ...    published_source,
-    ...    removed_binary,
-    ...    postponed_binary,
-    ...    published_binary,
-    ...    )
-
     >>> for pub in dependent_records:
     ...     check_removed(pub)
     stuck 666 in hoary          SUPERSEDED True
@@ -305,25 +313,25 @@ publications was removed (see more below).
     stuck-bin 666 in hoary i386 SUPERSEDED False
     stuck-bin 666 in hoary i386 PUBLISHED  False
 
-Now let's check if the repository was also left in the expected status.
+The repository was also left in the expected state.
 
-    >>> check_pool_files(file_paths)
+    >>> check_pool_files()
+    deleted-bin_666_i386.deb:    REMOVED
     deleted_666.dsc:             REMOVED
+    obsolete-bin_666_i386.deb:   REMOVED
     obsolete_666.dsc:            REMOVED
-    superseded_666.dsc:          REMOVED
+    stuck-bin_666_i386.deb:      OK
+    shared.tar.gz:               OK
     stuck_666.dsc:               REMOVED
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK
-    shared.tar.gz:               OK
-    deleted-bin_666_i386.deb:    REMOVED
     superseded-bin_666_i386.deb: REMOVED
-    obsolete-bin_666_i386.deb:   REMOVED
-    stuck-bin_666_i386.deb:      OK
+    superseded_666.dsc:          REMOVED
 
-As mentioned above, binary publications are only removed attomically
-since 'live' publications implies in the same files anyways. In order
-to trigger the consideration of these specific publications we have to
-remove any 'live' publications.
+As mentioned above, binary publications are only removed atomically
+since they are related to only a single file (files can't be
+shared). In order to trigger the consideration of these specific
+publications we have to remove any 'live' publications.
 
     >>> published_binary.secure_record.status = (
     ...    PackagePublishingStatus.SUPERSEDED)
@@ -336,9 +344,9 @@ Now DeathRow considers 'stuck-bin' publications.
     >>> death_row.reap()
     DEBUG 0 Sources
     DEBUG 2 Binaries
-    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Cannot remove.
-    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
     DEBUG Batch ...
     INFO Removing 0 files marked for reaping
@@ -361,28 +369,18 @@ single pass.
     >>> death_row.reap()
     DEBUG 0 Sources
     DEBUG 3 Binaries
-    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
-    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
-    DEBUG Checking stuck-bin_666_i386.deb (008409e7feb1c24a6ccab9f6a62d24c5)
+    DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
     DEBUG Batch ...
     INFO Removing 1 files marked for reaping
-    DEBUG Removing ignored-four/stuck-bin_666_i386.deb from main
+    DEBUG Removing removed-ignored/stuck-bin_666_i386.deb from main
     INFO Total bytes freed: 1
     DEBUG Marking 3 condemned packages as removed.
 
 The file was removed from the repository.
-
-    >>> bin_paths = (
-    ...     'i/ignored-four/stuck-bin_666_i386.deb',
-    ... )
-
-    >>> check_pool_files(bin_paths)
-    stuck-bin_666_i386.deb: REMOVED
-
-And the related publishing records are marked as removed in the
-database.
 
     >>> dependent_binaries = (
     ...     published_binary,
@@ -390,36 +388,27 @@ database.
     ...     removed_binary,
     ... )
 
+    >>> check_pool_files()
+    deleted-bin_666_i386.deb:    REMOVED
+    deleted_666.dsc:             REMOVED
+    obsolete-bin_666_i386.deb:   REMOVED
+    obsolete_666.dsc:            REMOVED
+    stuck-bin_666_i386.deb:      REMOVED
+    shared.tar.gz:               OK
+    stuck_666.dsc:               REMOVED
+    stuck_667.dsc:               OK
+    stuck_668.dsc:               OK
+    superseded-bin_666_i386.deb: REMOVED
+    superseded_666.dsc:          REMOVED
+
+And the related publishing records are marked as removed in the
+database.
+
     >>> for pub in dependent_binaries:
     ...     check_removed(pub)
     stuck-bin 666 in hoary i386 SUPERSEDED True
     stuck-bin 666 in hoary i386 SUPERSEDED True
     stuck-bin 666 in hoary i386 SUPERSEDED True
-
-We will rollback the DB changes to the checkpoint previously set where
-we still having publications pending removals.
-
-    >>> transaction.abort()
-
-DeathRow copes fine with random exceptions that may happen while
-removing files from disk. For testing this we will monkey-patch a
-remover-function that raise TypeError for all removal attempts.
-
-    >>> def removeFileRaisingOtherException(cn, sn, fn):
-    ...    print "DEBUG (Not really!) removing %s %s/%s" % (cn, sn, fn)
-    ...    raise TypeError
-
-    >>> death_row._removeFile = removeFileRaisingOtherException
-
-    >>> death_row.reap()
-    DEBUG 4 Sources
-    DEBUG 3 Binaries
-    ...
-    INFO Total bytes freed: 0
-    DEBUG Marking 7 condemned packages as removed.
-
-Note that when a removal fails it doesn't consider the space as being
-freed.
 
 Remove temporary diretories used for tests.
 

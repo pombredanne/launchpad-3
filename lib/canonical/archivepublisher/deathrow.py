@@ -293,10 +293,6 @@ class DeathRow:
                 self.logger.debug(
                     "File for removing %s %s/%s is not in pool, skipping" %
                     (component_name, source_name, file_name))
-            except:
-                self.logger.error(
-                    "Removing file %s %s/%s generated exception, continuing" %
-                    (component_name, source_name, file_name), exc_info=True)
 
         self.logger.info("Total bytes freed: %s" % bytes)
 
