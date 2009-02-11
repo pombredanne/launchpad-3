@@ -242,7 +242,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         email.status = email_address_status
         
-        syncUpdate(email)
+        # Ensure all Stores can see the new user and updated ValidPersonCache
+        transaction.commit()
         return person
 
     def makePersonByName(self, first_name, set_preferred_email=True,
@@ -887,9 +888,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
         registrant = self.makePerson()
-        # Have to commit to make the registrant's email address visible
-        # via other Stores.
-        transaction.commit()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:

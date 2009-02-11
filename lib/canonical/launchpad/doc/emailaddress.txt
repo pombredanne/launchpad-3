@@ -8,8 +8,6 @@ email addresses must be unique.
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> person = factory.makePerson()
-    >>> import transaction
-    >>> transaction.commit()
 
 We can get an email address through IEmailAddressSet.getByEmail().
 
