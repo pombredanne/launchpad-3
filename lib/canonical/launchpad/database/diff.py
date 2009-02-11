@@ -80,6 +80,9 @@ class Diff(SQLBase):
 
     def _update(self, diff_content, diffstat, filename):
         """Update the diff content and diffstat."""
+        # XXX: Tim Penhey, 2009-02-12, bug 328271
+        # If the branch is private we should probably use the restricted
+        # librarian.
         if diff_content is None or len(diff_content) == 0:
             self.diff_text = None
             self.diff_lines_count = 0
