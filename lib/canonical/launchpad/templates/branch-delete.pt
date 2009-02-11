@@ -17,6 +17,15 @@
 <div metal:fill-slot="main">
 
   <h1>Delete branch</h1>
+
+  <tal:has-stacked-branches condition="view/stacked_branches_count">
+    This branch cannot be deleted as it has
+    <em><tal:count replace="view/stacked_branches_count"/></em>
+    branches sharing revisions.
+  </tal:has-stacked-branches>
+
+  <tal:has-no-stacked-branches condition="not: view/stacked_branches_count">
+
   <tal:deletelist condition="view/branch_deletion_actions/delete">
     The following items must be <em>deleted</em>:
     <ul>
@@ -66,6 +75,9 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
+
+  </tal:has-no-stacked-branches>
+
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
 </body>
 </html>

@@ -426,7 +426,8 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        if (len(self.deletionRequirements()) != 0):
+        if ((len(self.deletionRequirements()) != 0) or
+            self.getStackedBranches().count() > 0):
             # Can't delete if the branch is associated with anything.
             return False
         else:
