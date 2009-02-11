@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference, ReferenceChoice
+from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 
