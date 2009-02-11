@@ -303,7 +303,7 @@ class BranchMergeProposalNavigation(Navigation):
     def review(self, id):
         """Step to the CodeReviewVoteReference."""
         try:
-            id = int(id):
+            id = int(id)
         except ValueError:
             return None
         try:

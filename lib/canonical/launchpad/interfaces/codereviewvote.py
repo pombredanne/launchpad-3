@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, TextLine
+from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -29,6 +29,9 @@ class ICodeReviewVoteReference(Interface):
     branch merge proposal.
     """
     export_as_webservice_entry()
+
+    id = Int(
+        title=_("The ID of the vote reference"))
 
     branch_merge_proposal = exported(
         Reference(
