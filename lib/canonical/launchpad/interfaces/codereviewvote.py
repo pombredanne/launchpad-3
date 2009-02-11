@@ -40,9 +40,10 @@ class ICodeReviewVoteReference(Interface):
             title=_('Date Created'), required=True, readonly=True))
 
     registrant = exported(
-        Reference(
+        PublicPersonChoice(
             title=_("The person who originally registered this vote"),
-            required=True, schema=IPerson))
+            required=True,
+            vocabulary='ValidPersonOrTeam'))
 
     reviewer = exported(
         PublicPersonChoice(

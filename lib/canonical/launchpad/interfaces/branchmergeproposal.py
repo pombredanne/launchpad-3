@@ -307,6 +307,9 @@ class IBranchMergeProposal(Interface):
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
+    def getVote(id):
+        """Return the CodeReviewVoteReference with the specified ID."""
+
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
 
@@ -471,7 +474,7 @@ class IBranchMergeProposal(Interface):
 
     @operation_parameters(
         subject=Text(), content=Text(),
-        vote=Choice(vocabulary='CodeReviewVote'), review_type=Text(),
+        vote=Choice(vocabulary=), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
     @export_write_operation()
