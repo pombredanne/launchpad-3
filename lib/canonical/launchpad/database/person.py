@@ -36,7 +36,7 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.store import Store
+from storm.store import EmptyResultSet, Store
 from storm.expr import And, Join
 
 from canonical.config import config
@@ -249,7 +249,7 @@ class Person(
         if self.accountID is not None:
             auth_store = getUtility(IStoreSelector).get(
                 AUTH_STORE, MASTER_FLAVOR)
-            account = auth_store.find(Account, id=self.accountID).one()
+            account = auth_store.get(Account, self.accountID)
             if account.displayname != value:
                 account.displayname = value
         return value
@@ -268,7 +268,7 @@ class Person(
 
     # XXX StuartBishop 2008-05-13 bug=237280: The password,
     # account_status and account_status_comment properties should go. Note
-    # that they override # the current strict controls on Account, allowing
+    # that they override the current strict controls on Account, allowing
     # access via Person to use the less strinct controls on that interface.
     # Part of the process of removing these methods from Person will be
     # losening the permissions on Account or fixing the callsites.
@@ -286,8 +286,7 @@ class Person(
     password = property(_get_password, _set_password)
 
     def _get_account_status(self):
-        account = IStore(Account).find(
-            Account, Account.id == self.accountID).one()
+        account = IStore(Account).get(Account, self.accountID)
         if account is not None:
             return account.status
         else:
@@ -295,8 +294,7 @@ class Person(
 
     def _set_account_status(self, value):
         assert self.accountID is not None, 'No account for this Person'
-        account = IMasterStore(Account).get(
-            Account, Account.id == self.accountID).one()
+        account = IMasterStore(Account).get(Account, self.accountID)
         account.status = value
 
     # Deprecated - this value has moved to the Account table.
@@ -304,15 +302,13 @@ class Person(
     account_status = property(_get_account_status, _set_account_status)
 
     def _get_account_status_comment(self):
-        account = IStore(Account).get(
-            Account, Account.id == self.accountID).one()
+        account = IStore(Account).get(Account, self.accountID)
         if account is not None:
             return account.status_comment
 
     def _set_account_status_comment(self, value):
         assert self.accountID is not None, 'No account for this Person'
-        account = IMasterStore(Account).get(
-            Account, Account.id == self.accountID).one()
+        account = IMasterStore(Account).get(Account, self.accountID)
         account.status_comment = value
 
     # Deprecated - this value has moved to the Account table.
@@ -1803,8 +1799,7 @@ class Person(
         if self.is_team:
             raise AssertionError(
                 "Teams cannot be activated with this method.")
-        account = IMasterStore(Account).find(
-            Account, id=self.accountID).one()
+        account = IMasterStore(Account).get(Account, self.accountID)
         account.status = AccountStatus.ACTIVE
         account.status_comment = comment
         account.password = password
@@ -1912,8 +1907,9 @@ class Person(
             raise AssertionError(
                 "User %s cannot be reactivated without a "
                 "preferred email address." % self.name)
-        self.account.status = AccountStatus.ACTIVE
-        self.account.status_comment = comment
+        account = IMasterStore(Account).get(Account, self.accountID)
+        account.status = AccountStatus.ACTIVE
+        account.status_comment = comment
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
             # name, but we must ensure it does not conflict with a current
@@ -2654,7 +2650,7 @@ class PersonSet:
         """See `IPersonSet`."""
         if not text:
             # Return an empty result set.
-            return Person.select("1 = 2")
+            return EmptyResultSet()
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -2789,8 +2785,7 @@ class PersonSet:
         if email_address is None:
             return None
         else:
-            return IStore(Person).find(
-                Person, Person.id == email_address.personID).one()
+            return IStore(Person).get(Person, email_address.personID)
 
     def getPOFileContributors(self, pofile):
         """See `IPersonSet`."""

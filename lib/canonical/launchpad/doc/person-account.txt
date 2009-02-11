@@ -43,6 +43,8 @@ as arguments.
     >>> login('matsubara@async.com.br')
     >>> matsubara.activateAccount(
     ...     comment="test", password='ok', preferred_email=emailaddress)
+    >>> import transaction
+    >>> transaction.commit()
     >>> matsubara.is_valid_person
     True
     >>> matsubara.account_status
@@ -81,7 +83,7 @@ will cause this spec to be reassigned.
 
 
     >>> foobar_preferredemail = emailset.getByEmail('foo.bar@canonical.com')
-    >>> foobar = foobar_preferredemail.person
+    >>> foobar = personset.get(foobar_preferredemail.personID)
     >>> foobar.specifications().count() > 0
     True
 
@@ -130,7 +132,7 @@ will cause this spec to be reassigned.
     >>> foobar.is_valid_person
     True
 
-    >>> comment = ("I'm a silly person who doesn't want to be listed "
+    >>> comment = ("I'm a person who doesn't want to be listed "
     ...            "as a Launchpad user.")
 
 The deactivateAccount method is restricted to the user himself --not
@@ -160,7 +162,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
     <DBItem AccountStatus.DEACTIVATED...
 
     >>> foobar.account_status_comment
-    u"I'm a silly person who doesn't want to be listed as a Launchpad user."
+    u"I'm a person who doesn't want to be listed as a Launchpad user."
 
 ...to have no team memberships...
 
@@ -202,6 +204,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...and, finally, to not be considered a valid person in Launchpad.
 
+    >>> transaction.commit()
     >>> foobar.is_valid_person
     False
 
