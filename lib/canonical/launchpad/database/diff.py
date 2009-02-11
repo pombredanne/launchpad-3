@@ -49,7 +49,7 @@ class Diff(SQLBase):
                 self.diff_text.close()
 
     @classmethod
-    def fromTrees(klass, from_tree, to_tree):
+    def fromTrees(klass, from_tree, to_tree, filename=None):
         """Create a Diff from two Bazaar trees.
 
         :from_tree: The old tree in the diff.
@@ -60,10 +60,10 @@ class Diff(SQLBase):
                         new_label='')
         size = diff_content.tell()
         diff_content.seek(0)
-        return klass.fromFile(diff_content, size)
+        return klass.fromFile(diff_content, size, filename)
 
     @classmethod
-    def fromFile(klass, diff_content, size):
+    def fromFile(klass, diff_content, size, filename=None):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
@@ -72,12 +72,10 @@ class Diff(SQLBase):
         if size == 0:
             diff_text = None
         else:
-            filename = generate_uuid() + '.txt'
-            # Using text/plain instead of text/x-diff because some very
-            # popular browsers won't show text/x-diff by default, so best to
-            # be pragmatic here.
+            if filename is None:
+                filename = generate_uuid() + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
-                filename, size, diff_content, 'text/plain')
+                filename, size, diff_content, 'text/x-diff')
         return klass(diff_text=diff_text)
 
     def _update(self, diff_content, diffstat, filename):
@@ -88,7 +86,7 @@ class Diff(SQLBase):
         else:
             self.diff_text = getUtility(ILibraryFileAliasSet).create(
                 filename, len(diff_content), StringIO(diff_content),
-                'text/plain')
+                'text/x-diff')
             self.diff_lines_count = len(diff_content.strip().split('\n'))
         self.diffstat = diffstat
 

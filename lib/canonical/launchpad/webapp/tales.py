@@ -2432,6 +2432,33 @@ class FormattersAPI:
         else:
             return self._stringtoformat
 
+    def format_diff(self):
+        """Format the string as a diff in a table with line numbers."""
+        text = self._stringtoformat
+        result = ['<table class="diff">']
+
+        for row, line in enumerate(text.split('\n')):
+            result.append('<tr>')
+            result.append('<td class="line-no">%s</td>' % (row+1))
+            if (line.startswith('===') or
+                line.startswith('+++') or
+                line.startswith('---')):
+                css_class = 'diff-header text'
+            elif line.startswith('@@'):
+                css_class = 'diff-chunk text'
+            elif line.startswith('+'):
+                css_class = 'diff-added text'
+            elif line.startswith('-'):
+                css_class = 'diff-removed text'
+            else:
+                css_class = 'text'
+            result.append('<td class="%s">%s</td>' % (css_class, escape(line)))
+            result.append('</tr>')
+
+        result.append('</table>')
+        return ''.join(result)
+
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -2457,6 +2484,8 @@ class FormattersAPI:
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
+        elif name == 'diff':
+            return self.format_diff()
         else:
             raise TraversalError(name)
 

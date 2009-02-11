@@ -1445,6 +1445,22 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   background-color: #f6f6f6;
 }
 
+table.diff {
+   white-space: pre;
+   font: 120% monospace;
+   width: 100%;
+   background-color: white;
+}
+table.diff .text { width: 99% }
+table.diff .line-no {
+  text-align: right;
+  background-color: #f6f6f6;
+}
+table.diff .diff-chunk { background-color: #f6f6f6; }
+table.diff .diff-header { background-color: #f0f0f0; }
+table.diff .diff-added { background-color: #80ff80; }
+table.diff .diff-removed { background-color: #ffa0a0; }
+
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */
