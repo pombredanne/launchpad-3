@@ -117,6 +117,10 @@
       <th>Target branch:</th>
       <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
+    <tr>
+      <th>Email address:</th>
+      <td tal:content="context/address">mp-x@launchpad.net</td>
+    </tr>
     <tr tal:condition="context/preview_diff">
       <th>Diff against target:</th>
       <td>
