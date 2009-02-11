@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
-    BranchDiffJob, BranchJob, BranchJobType, BranchSet, BranchSubscription,
+    BranchDiffJob, BranchJob, BranchJobType, BranchSet,
     ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
     DeletionCallable, DeletionOperation, RevisionMailJob)
 from canonical.launchpad.database.branchmergeproposal import (
@@ -451,6 +451,11 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.branch.destroySelf()
         self.assert_(branch_set.get(branch_id) is None,
                      "The branch has not been deleted.")
+
+    def test_stackedBranchDisablesDeletion(self):
+        # A branch that is stacked upon cannot be deleted.
+        branch = self.factory.makeAnyBranch(stacked_on=self.branch)
+        self.assertFalse(self.branch.canBeDeleted())
 
     def test_subscriptionDoesntDisableDeletion(self):
         """A branch that has a subscription can be deleted."""
