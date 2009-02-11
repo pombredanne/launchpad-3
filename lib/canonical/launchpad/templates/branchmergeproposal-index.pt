@@ -119,10 +119,14 @@
   </div><!-- non-portlets-->
 
   <div id="review-diff" tal:condition="context/review_diff">
+  <h2>Review Diff</h2>
   <div class="boardComment attachment">
     <div class="boardCommentDetails filename"
          tal:define="attachment context/review_diff/diff/diff_text">
-      <a tal:attributes="href attachment/getURL">Review Diff</a>
+      <a tal:attributes="href attachment/getURL">
+        <img src="/@@/download"/>
+        Download diff
+      </a>
     </div>
     <div class="boardCommentBody attachmentBody">
       <tal:diff replace="structure view/review_diff/fmt:diff" />

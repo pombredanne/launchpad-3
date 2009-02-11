@@ -2440,9 +2440,10 @@ class FormattersAPI:
         for row, line in enumerate(text.split('\n')):
             result.append('<tr>')
             result.append('<td class="line-no">%s</td>' % (row+1))
-            if (line.startswith('===') or
-                line.startswith('+++') or
-                line.startswith('---')):
+            if line.startswith('==='):
+                css_class = 'diff-file text'
+            elif (line.startswith('+++') or
+                  line.startswith('---')):
                 css_class = 'diff-header text'
             elif line.startswith('@@'):
                 css_class = 'diff-chunk text'
