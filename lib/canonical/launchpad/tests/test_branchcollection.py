@@ -186,6 +186,11 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         self.assertEqual(
             set(self.all_branches.getBranches()), set(branches.getBranches()))
 
+    # XXX: Test subscribers
+
+    # XXX: Unclear what will happen with multiple user visiblity filters
+    # applied.
+
     # XXX: registered by person filter
 
     # XXX: subscribed by person filter
