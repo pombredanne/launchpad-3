@@ -429,7 +429,6 @@ class TestCodeHandler(TestCaseWithFactory):
         messages = pop_notifications()
         self.assertEqual(0, len(messages))
         # Only a job created.
-        Store.of(bmp).flush()
         runner = JobRunner.fromReady(MergeProposalCreatedJob)
         self.assertEqual(1, len(list(runner.jobs)))
         transaction.commit()
