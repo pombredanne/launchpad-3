@@ -41,9 +41,10 @@ document. To avoid this problem, Launchpad sends the original Accept
 header in the redirect URL itself, so it can look it up when the
 browser follows the redirect.
 
+  >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
   >>> print http("""GET /api/beta/people/+me HTTP/1.1
   ... Host: launchpad.dev
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=""")
+  ... Authorization: %s""" % sample_auth)
   HTTP/1.1 303 See Other
   ...
   Location: http://launchpad.dev/api/beta/~name12?ws.accept=application/json
