@@ -333,10 +333,6 @@ done
 mkdir -p /var/tmp/bazaar.launchpad.dev/static
 mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors
 
-# Create an empty rewritemap file so that Apache will start.
-mkdir -p /var/tmp/bazaar.launchpad.dev/config
-touch /var/tmp/bazaar.launchpad.dev/config/launchpad-lookup.txt
-
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable proxy module in Apache2"

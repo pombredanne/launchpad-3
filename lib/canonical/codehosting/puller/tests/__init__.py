@@ -118,12 +118,14 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""
         return os.path.join(
-            config.codehosting.branches_root, branch_id_to_path(branch.id))
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(branch.id))
 
     def getMirroredPath(self, branch):
         """Return the path of 'branch' in the supermirror area."""
         return os.path.join(
-            config.supermirror.branchesdest, branch_id_to_path(branch.id))
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(branch.id))
 
     def makeCleanDirectory(self, path):
         """Guarantee an empty branch upload area."""
