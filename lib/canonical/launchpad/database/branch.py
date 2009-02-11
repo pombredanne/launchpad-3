@@ -26,7 +26,7 @@ from zope.interface import classProvides, implements
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
-from storm.expr import And, Join, LeftJoin, Or, Select
+from storm.expr import And, Count, Desc, Join, LeftJoin, Max, Or, Select
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -91,7 +91,7 @@ from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
@@ -879,6 +879,9 @@ class BranchSet:
 
     def __iter__(self):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2009-02-10 spec=package-branches: Prejoining
+        # product is probably not the best idea, given that there'll be a lot
+        # of package branches.
         return iter(Branch.select(prejoins=['owner', 'product']))
 
     def count(self):
@@ -1301,33 +1304,6 @@ class BranchSet:
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''' % quote(BranchType.REMOTE))
-
-    def getActiveUserBranchSummaryForProducts(self, products):
-        """See `IBranchSet`."""
-        product_ids = [product.id for product in products]
-        if not product_ids:
-            return []
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        lifecycle_clause = self._lifecycleClause(
-            DEFAULT_BRANCH_STATUS_IN_LISTING)
-        cur = cursor()
-        cur.execute("""
-            SELECT
-                Branch.product, COUNT(Branch.id), MAX(Revision.revision_date)
-            FROM Branch
-            LEFT OUTER JOIN Revision
-            ON Branch.last_scanned_id = Revision.revision_id
-            WHERE Branch.product in %s
-            AND Branch.owner <> %d %s
-            GROUP BY Product
-            """ % (quote(product_ids), vcs_imports.id, lifecycle_clause))
-        result = {}
-        product_map = dict([(product.id, product) for product in products])
-        for product_id, branch_count, last_commit in cur.fetchall():
-            product = product_map[product_id]
-            result[product] = {'branch_count' : branch_count,
-                               'last_commit' : last_commit}
-        return result
 
     def getRecentlyChangedBranches(
         self, branch_count=None,
@@ -1809,3 +1785,32 @@ class RevisionMailJob(BranchDiffJob):
     def run(self):
         """See `IRevisionMailJob`."""
         self.getMailer().sendAll()
+
+
+class BranchCloud:
+    """See `IBranchCloud`."""
+
+    def getProductsWithInfo(self, num_products=None, store_flavor=None):
+        """See `IBranchCloud`."""
+        # Circular imports are fun.
+        from canonical.launchpad.database.product import Product
+        # It doesn't matter if this query is even a whole day out of date, so
+        # use the slave store by default.
+        if store_flavor is None:
+            store_flavor = SLAVE_FLAVOR
+        store = getUtility(IStoreSelector).get(MAIN_STORE, store_flavor)
+        # Get all products, the count of all hosted & mirrored branches and
+        # the last revision date.
+        result = store.find(
+            (Product, Count(Branch.id), Max(Revision.revision_date)),
+            Branch.product == Product.id,
+            Or(Branch.branch_type == BranchType.HOSTED,
+               Branch.branch_type == BranchType.MIRRORED),
+            Branch.last_scanned_id == Revision.revision_id).group_by(Product)
+        result = result.order_by(Desc(Count(Branch.id)))
+        if num_products:
+            result.config(limit=num_products)
+        # XXX: JonathanLange 2009-02-10: The revision date in the result set
+        # isn't timezone-aware. Not sure why this is. Doesn't matter too much
+        # for the purposes of cloud calculation though.
+        return result
