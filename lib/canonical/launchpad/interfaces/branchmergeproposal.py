@@ -471,7 +471,7 @@ class IBranchMergeProposal(Interface):
 
     @operation_parameters(
         subject=Text(), content=Text(),
-        vote=Choice(vocabulary=Interface), review_type=Text(),
+        vote=Choice(vocabulary='CodeReviewVote'), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
     @export_write_operation()
