@@ -714,11 +714,26 @@ class BranchDeletionView(LaunchpadFormView):
             reqs.append((item, action, reason, allowed))
         return reqs
 
+    @cachedproperty
+    def stacked_branches_count(self):
+        """Cache a count of the branches stacked on this."""
+        return self.context.getStackedBranches().count()
+
+    def stacked_branches_text(self):
+        """Cache a count of the branches stacked on this."""
+        if self.stacked_branches_count == 1:
+            return _('branch')
+        else:
+            return _('branches')
+
     def all_permitted(self):
         """Return True if all deletion requirements are permitted, else False.
 
         Uses display_deletion_requirements as its source data.
         """
+        # Not permitted if there are any branches stacked on this.
+        if self.stacked_branches_count > 0:
+            return False
         return len([item for item, action, reason, allowed in
             self.display_deletion_requirements if not allowed]) == 0
 
