@@ -57,7 +57,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
         # the main loop for the archive being considered.
         store.execute("""
             UPDATE libraryfilealias AS lfa
-            SET expires=now()
+            SET expires=CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             FROM
                 binarypackagefile bpf,
                 binarypackagerelease bpr,
