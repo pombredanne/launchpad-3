@@ -91,17 +91,15 @@ similarly wrapped.
     >>> account = getUtility(IAccountSet).getByEmail('no-priv@canonical.com')
     >>> account.displayname
     u'No Privileges Person'
-    >>> account.status_comment
+    >>> account.password
     Traceback (most recent call last):
     ...
     Unauthorized: ...
-    >>> transaction.abort()
 
-    >>> t = transaction.begin()
-    >>> account = getUtility(IAccountSet).getByEmail('no-priv@canonical.com')
-    >>> IMasterDBObject(account).displayname
+    >>> account = IMasterDBObject(account)
+    >>> account.displayname
     u'No Privileges Person'
-    >>> account.status_comment
+    >>> account.password
     Traceback (most recent call last):
     ...
     Unauthorized: ...

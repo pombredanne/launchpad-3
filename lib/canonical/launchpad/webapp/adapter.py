@@ -495,6 +495,11 @@ def get_object_from_master_store(obj):
     """Return a copy of the given object retrieved from its master Store.
 
     Returns the object if it already comes from the relevant master Store.
+
+    XXX: This adapter is broken! If obj is a security proxied object,
+    the return value is not proxied. I've had no success getting this
+    method to return an security proxied object that rejects access to
+    all attributes.
     """
     obj = removeSecurityProxy(obj)
     master_store = IMasterStore(obj)
