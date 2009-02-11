@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'InlineTextLineEditorWidget',
+    'TextLineEditorWidget',
     ]
 
 import cgi
@@ -17,7 +17,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 
 
-class InlineTextLineEditorWidget:
+class TextLineEditorWidget:
     """Wrapper for the lazr-js inlineedit/editor.js widget."""
 
     last_id = 0
