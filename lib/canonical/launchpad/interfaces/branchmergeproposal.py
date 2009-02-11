@@ -297,6 +297,13 @@ class IBranchMergeProposal(Interface):
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
 
+    address = exported(
+        TextLine(
+            title=_('The email address for this proposal.'),
+            readonly=True,
+            description=_('Any emails sent to this address will result'
+                          'in comments being added.')))
+
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
