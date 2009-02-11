@@ -867,3 +867,53 @@ error. Nothing was copied to Ubuntu-team PPA.
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
 
+== ArchiveSubscribersView ==
+
+The ArchiveSubscribersView presents all the subscribers for an archive, as
+well as allowing the addition of new subscribers.
+
+The view can be used to add a new subscriber:
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     form={
+    ...         'field.subscriber': 'spiv',
+    ...         'field.description': "spiv's my friend",
+    ...         'field.date_expires': '',
+    ...         'field.actions.add': 'Add'
+    ...         })
+
+The view redirects to itself when a new subscriber is added successfully:
+
+    >>> view.request.response.getStatus()
+    302
+
+The view includes a helper method has_subscriptions():
+
+    >>> view.has_subscriptions
+    True
+
+The view includes a subscribers property that returns all the current
+subscribers:
+
+    >>> [subscription.subscriber.displayname for subscription in view.subscriptions]
+    [u'Andrew Bennetts']
+
+The same subscriber cannot be added a second time:
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     form={
+    ...         'field.subscriber': 'spiv',
+    ...         'field.description': "spiv's still my friend",
+    ...         'field.date_expires': '',
+    ...         'field.actions.add': 'Add'
+    ...         })
+
+In this case, the view will not redirect, but will instead display a
+validation error:
+
+    >>> view.request.response.getStatus()
+    200
+    >>> view.errors
+    [u'Andrew Bennetts is already subscribed.']

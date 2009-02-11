@@ -1,0 +1,56 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+
+  <div metal:fill-slot="main" tal:define="archive_label view/archive_label">
+
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Manage subscribers for Blah PPA
+    </h1>
+    <p>Subscribers are people or teams who can install software
+       from your <tal:archive-label replace="archive_label" />.
+    </p>
+
+    <div class="subscribers">
+      <p tal:condition="not: view/has_subscriptions">
+        This <tal:archive-label replace="archive_label "/> does not yet
+        have any subscribers.
+      </p>
+
+      <tal:current-subscribers tal:condition="view/has_subscriptions">
+        <h2>Current subscribers</h2>
+        <table tal:attributes="summary string:Subscribers for this ${archive_label};">
+          <thead>
+            <tr class="archive_subscriber_row">
+              <th>Name</th>
+              <th>Expires</th>
+              <th>Comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="archive_subscriber_row"
+                tal:repeat="subscription view/subscriptions">
+              <td tal:content="structure subscription/subscriber/fmt:link" />
+              <td tal:content="subscription/date_expires" />
+              <td tal:content="subscription/description" />
+            </tr>
+          </tbody>
+        </table>
+      </tal:current-subscribers>
+    </div>
+
+    <h2>Add a new subscriber</h2>
+    <div metal:use-macro="context/@@launchpad_form/form" />
+
+  </div>
+</body>
+</html>

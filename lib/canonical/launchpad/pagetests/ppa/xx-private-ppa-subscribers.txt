@@ -1,0 +1,169 @@
+= Private PPA Subscribers =
+
+Overview: the owner or admin of a private PPA can add subscribers - people
+or teams - to the private archive. This will enable subscribers to obtain
+a custom sources.list entry and access the repository.
+
+The owner or admin of a private archive can also edit or cancel
+subscribers related to the archive.
+
+== Background: Celso gets his PPA ready for managing subscribers ==
+
+Celso is a software developer who plans to release some private software
+to clients in the future.
+
+=== Scenario 1: Managing subscribers for a public PPA ===
+
+A public PPA has no option for managing subscribers.
+
+When Celso visits his home page in Launchpad
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+
+And clicks on his PPA page
+
+    >>> cprov_browser.getLink("Personal Package Archive").click()
+
+Then there is no link for managing subscribers
+
+    >>> cprov_browser.getLink("Manage subscribers")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Similarly, when Celso types the actual URL for managing subscribers
+
+    >>> cprov_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscribers")
+
+Then he is redirected back to his PPA
+
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/ppa
+
+And a feedback message is displayed.
+
+    >>> get_feedback_messages(cprov_browser.contents)
+    [u'Only private archives can have subscribers.']
+
+=== Scenario 2: Managing subscribers for a private PPA ===
+
+Celso requests that his PPA with the name 'ppa'
+is made private by an admin. An administrator then modifies Celso's archive
+so that it is private.
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl("Save").click()
+
+When Celso visits his home page in Launchpad
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+
+And clicks on his PPA page
+
+    >>> cprov_browser.getLink("Personal Package Archive").click()
+
+Then there is now a link for managing subscribers
+
+    >>> subscribers_link = cprov_browser.getLink("Manage subscribers")
+    >>> print subscribers_link.url
+    http://launchpad.dev/~cprov/+archive/ppa/+subscribers
+
+== Story 1: Owner adding subscribers to a private archive ==
+
+ * As a software developer who owns a private PPA
+ * I want to add certain users or teams as subscribers of my archive
+ * So that they can get a sources.list entry to download my software.
+
+=== Scenario 1: Adding a particular user as a subscriber ===
+
+When Celso clicks on the "Manage subscribers".link
+
+    >>> subscribers_link.click()
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/ppa/+subscribers
+
+Then he sees the correct heading
+
+    >>> main_content = find_main_content(cprov_browser.contents)
+    >>> print extract_text(main_content.find('h1'))
+    Manage subscribers for Private PPA for Celso Providelo
+
+And there are no subscribers.
+
+    >>> print extract_text(first_tag_by_class(cprov_browser.contents,
+    ...     'subscribers'))
+    This PPA does not yet have any subscribers.
+
+When Celso fills in the form with 'spiv' as the subscriber
+and a blank subscription expiry
+and a description of "spiv's my friend"
+and clicks on the "Add subscriber" button
+
+    >>> cprov_browser.getControl(name='field.subscriber').value = 'spiv'
+    >>> cprov_browser.getControl(
+    ...     name='field.description').value = "spiv's my friend"
+    >>> cprov_browser.getControl(name="field.actions.add").click()
+
+Then Celso is redirected to the subscribers page (how to test for redirect?)
+And the new subscription is displayed,
+And a notification about the new subscriber is also displayed.
+
+Create a helper function to print subscriptions:
+    >>> def print_archive_subscriptions(contents):
+    ...     subscriptions = find_tags_by_class(contents,
+    ...                                        'archive_subscriber_row')
+    ...     for subscription in subscriptions:
+    ...         print extract_text(subscription).replace('\n', ' | ')
+
+    >>> print_archive_subscriptions(cprov_browser.contents)
+    Name | Expires | Comment
+    Andrew Bennetts | spiv's my friend
+
+    >>> get_feedback_messages(cprov_browser.contents)
+    [u'Andrew Bennetts has been added as a subscriber.']
+
+Can't add the same person/team twice...
+
+In addition, a notification is sent to spiv directing him to his
+own subscribers page where he can see a sources.list entries
+for all the private PPAs to which he has access.
+
+=== Scenario 2: Adding a team as a subscriber ===
+
+== Story 2: Owner editing subscribers to a private archive ==
+TBD
+== Story 3: Owner cancelling subscribers for an archive ==
+TBD
+
+== Story 4: Subscriber accessing their subscribers ==
+
+ * As a user of Celso's software,
+ * I want to find out my sources.list entry for Celso's private PPA
+ * So that I can download and update the software.
+
+=== Scenario 1: Accessing details for a new subscription ===
+
+After receiving an email notifying him of his subscription,
+Andrew Bennets (spiv) follows the link from the email and
+sees the required sources.list entry.
+
+=== Scenario 2: Accessing details for an expired subscription ===
+
+Some time later, when the subscription has expired, Andrew Bennets
+re-visits the link to display his sources.list entries for
+any private PPAs to which he has access.
+
+The page no-longer includes the sources.list entry for Celso's
+private PPA.
+
+=== Scenario 3: Accessing details for a cancelled subscription ===
+
+
