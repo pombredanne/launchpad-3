@@ -1271,22 +1271,6 @@ class BranchSet:
             raise faults.NoBranchForSeries(series)
         return branch, series
 
-    def getRewriteMap(self):
-        """See `IBranchSet`."""
-        # Avoid circular imports.
-        from canonical.launchpad.database import Person, Product
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        # Left-join Product so that we still publish +junk branches.
-        prejoin = store.using(
-            LeftJoin(Branch, Product, Branch.product == Product.id), Person)
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This pre-join
-        # isn't good enough to handle source package branches.
-        return (branch for (owner, product, branch) in prejoin.find(
-            (Person, Product, Branch),
-            Branch.branch_type != BranchType.REMOTE,
-            Branch.owner == Person.id,
-            Branch.private == False))
-
     def getBranchesToScan(self):
         """See `IBranchSet`"""
         # Return branches where the scanned and mirrored IDs don't match.
