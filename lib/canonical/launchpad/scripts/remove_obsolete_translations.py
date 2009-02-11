@@ -30,8 +30,7 @@ collect_order = [
     ]
 
 
-remove_order = collect_order[:]
-remove_order.reverse()
+remove_order = list(reversed(collect_order))
 
 
 collection_query = """
@@ -82,11 +81,11 @@ def commit_transaction(transaction, logger, dry_run=False):
 
 
 class DeletionLoopRunner(object):
-    """Generic loop tuner for removal of obsolete translations."""
+    """Generic loop tuner for removal of obsolete translations data."""
     implements(ITunableLoop)
 
     def __init__(self, table_entry, transaction, logger, store,
-                 throttle=0.0, dry_run=False):
+                 dry_run=False):
         """Initialize the loop."""
         size = table_entry['total']
         self.table = table_entry['table']
@@ -95,7 +94,6 @@ class DeletionLoopRunner(object):
         self._txn = transaction
         self._logger = logger
         self._store = store
-        self._throttle = throttle
         self._dry_run = dry_run
         self._iteration_end = size
         self._iterations_done = 0
@@ -125,6 +123,7 @@ class DeletionLoopRunner(object):
 
 
 class TranslationsStatusChecker:
+    """Check if translations data is consistent after removal."""
     check_methods = {
         'productseries_potemplates' : 'collectProductSeriesStats',
         'other_distroseries_potemplates' : 'collectOtherDistroSeriesStats',
@@ -345,10 +344,8 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         checker = TranslationsStatusChecker(store, self.logger)
         for table in collect_order:
             entry = removal_traits[table]
-            if entry.has_key('collection_sql'):
-                collect = store.execute(entry['collection_sql'] % entry)
-            else:
-                collect = store.execute(collection_query % entry)
+            collect_sql = entry.get('collection_sql', collection_query)
+            collect = store.execute(collect_sql % entry)
             count = self._count_rows(entry['temporary_table'])
             entry['total'] = count
         self._do_commit()
@@ -359,7 +356,6 @@ class RemoveObsoleteTranslations(LaunchpadScript):
                 "Removing %d %s rows." % (entry['total'], table))
             loop = DeletionLoopRunner(
                 entry, self.txn, self.logger, store,
-                throttle=float(self.options.throttle),
                 dry_run=self.options.dry_run)
             LoopTuner(loop, self.options.loop_time,
                       cooldown_time=float(self.options.throttle)).run()
