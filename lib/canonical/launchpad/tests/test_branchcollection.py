@@ -7,11 +7,14 @@ __metaclass__ = type
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
@@ -120,6 +123,68 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
         collection = all_branches.ownedBy(person).inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
+
+
+class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        remove_all_sample_data_branches()
+        store = getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR)
+        self.public_branch = self.factory.makeAnyBranch()
+        self.private_branch1 = self.factory.makeAnyBranch(private=True)
+        self.private_branch2 = self.factory.makeAnyBranch(private=True)
+        self.all_branches = GenericBranchCollection(store)
+
+    def test_all_branches(self):
+        # Without the visibleByUser filter, all branches are in the
+        # collection.
+        self.assertEqual(
+            set([self.public_branch, self.private_branch1,
+                 self.private_branch2]),
+            set(self.all_branches.getBranches()))
+
+    def test_anonymous_sees_only_public(self):
+        branches = self.all_branches.visibleByUser(None)
+        self.assertEqual([self.public_branch], list(branches.getBranches()))
+
+    def test_random_person_sees_only_public(self):
+        person = self.factory.makePerson()
+        branches = self.all_branches.visibleByUser(person)
+        self.assertEqual([self.public_branch], list(branches.getBranches()))
+
+    def test_owner_sees_own_branches(self):
+        owner = removeSecurityProxy(self.private_branch1).owner
+        branches = self.all_branches.visibleByUser(owner)
+        self.assertEqual(
+            set([self.public_branch, self.private_branch1]),
+            set(branches.getBranches()))
+
+    def test_launchpad_services_sees_all(self):
+        branches = self.all_branches.visibleByUser(LAUNCHPAD_SERVICES)
+        self.assertEqual(
+            set(self.all_branches.getBranches()), set(branches.getBranches()))
+
+    def test_admins_see_all(self):
+        admin = self.factory.makePerson()
+        admin_team = removeSecurityProxy(
+            getUtility(ILaunchpadCelebrities).admin)
+        admin_team.addMember(admin, admin_team.teamowner)
+        branches = self.all_branches.visibleByUser(admin)
+        self.assertEqual(
+            set(self.all_branches.getBranches()), set(branches.getBranches()))
+
+    def test_bazaar_experts_see_all(self):
+        bzr_experts = removeSecurityProxy(
+            getUtility(ILaunchpadCelebrities).bazaar_experts)
+        expert = self.factory.makePerson()
+        bzr_experts.addMember(expert, bzr_experts.teamowner)
+        branches = self.all_branches.visibleByUser(expert)
+        self.assertEqual(
+            set(self.all_branches.getBranches()), set(branches.getBranches()))
 
     # XXX: visible by user filter
 

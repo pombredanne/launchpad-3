@@ -7,12 +7,15 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And
+from storm.expr import And, Or
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 
 
 class GenericBranchCollection:
@@ -55,6 +58,24 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         # XXX: duplicate of inProduct code -- refactor
         expression = (Branch.owner == person)
+        if self._branch_filter_expr is not None:
+            expression = And(self._branch_filter_expr, expression)
+        return self.__class__(
+            self._store, expression, name=self.name,
+            displayname=self.displayname)
+
+    def visibleByUser(self, person):
+        """See `IBranchCollection`."""
+        if person is None:
+            expression = Or(Branch.private == False, Branch.owner == person)
+        elif person == LAUNCHPAD_SERVICES:
+            return self
+        elif person.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return self
+        elif person.inTeam(getUtility(ILaunchpadCelebrities).bazaar_experts):
+            return self
+        else:
+            expression = Or(Branch.private == False, Branch.owner == person)
         if self._branch_filter_expr is not None:
             expression = And(self._branch_filter_expr, expression)
         return self.__class__(

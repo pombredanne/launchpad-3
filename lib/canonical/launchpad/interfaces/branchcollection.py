@@ -19,6 +19,7 @@ class IBranchCollection(Interface):
     count = Attribute("The number of branches in this collection.")
 
     def getBranches():
+        # XXX: Fuck it, just make this __iter__.
         """Return a result sest of all branches in this collection."""
 
 
