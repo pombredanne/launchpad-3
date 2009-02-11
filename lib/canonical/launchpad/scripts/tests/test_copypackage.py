@@ -836,7 +836,7 @@ class TestCopyPackage(TestCase):
 
         self.assertRaisesWithContent(
             PackageLocationError,
-            "Could not find a PPA for slatibartfast",
+            "Could not find a PPA for slatibartfast named ppa",
             copy_helper.mainTask)
 
     def testCrossPartnerCopiesFails(self):
@@ -881,6 +881,44 @@ class TestCopyPackage(TestCase):
             SoyuzScriptError,
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
+
+    def testCopyFromPrivateToPublicPPAs(self):
+        """Check if copying private sources into public archives is denied.
+
+        Private source files can only be published in private archives,
+        because builders do not have access to the restricted librarian.
+
+        Builders only fetch the sources files from the repository itself
+        for private PPAs. If we copy a restricted file into a public PPA
+        builders will not be able to fetch it.
+        """
+        # Set up a private PPA.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        cprov.archive.buildd_secret = "secret"
+        cprov.archive.private = True
+
+        # Create a source and binary private publication.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.0', distroseries=hoary)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary)
+
+        # Run the copy package script storing the logged information.
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='cprov', include_binaries=True,
+            from_suite='hoary', to_suite='hoary')
+        copy_helper.logger = TestLogger()
+        copied = copy_helper.mainTask()
+
+        # Nothing was copied and an error message was printed explaining why.
+        self.assertEqual(len(copied), 0)
+        self.assertEqual(
+            copy_helper.logger.lines[-1],
+            'foo 1.0 in hoary '
+            '(Cannot copy private source into public archives.)')
 
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
@@ -958,6 +996,7 @@ class TestCopyPackage(TestCase):
         # Now we can invoke the unembargo script and check its results.
         test_args = [
             "--ppa", "cprov",
+            "--ppa-name", "ppa",
             "-s", "%s" % ppa_source.distroseries.name + "-security",
             "foo"
             ]

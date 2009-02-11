@@ -31,7 +31,8 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         email = self.factory.getUniqueEmailAddress()
         owner = self.factory.makePerson(email=email)
         product = self.factory.makeProduct(owner=owner)
-        branch = self.factory.makeBranch(product=product, **branch_args)
+        branch = self.factory.makeProductBranch(
+            product=product, **branch_args)
         login(email)
         product.development_focus.user_branch = branch
         return product, branch
@@ -65,7 +66,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         link = self.getBranchSummaryBrowseLinkForProduct(product)
         login(ANONYMOUS)
         self.assertEqual(
-            link.url, config.codehosting.codebrowse_root + branch.unique_name)
+            link.url, branch.codebrowse_url())
 
     def test_unbrowseable_branch_does_not_have_link(self):
         # If the product's development focus branch is not browseable, there
@@ -82,7 +83,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             private=True)
         url = canonical_url(product, rootsite='code')
-        self.factory.makeBranch(product=product)
+        self.factory.makeProductBranch(product=product)
         # This is just "assertNotRaises"
         self.getUserBrowser(canonical_url(product, rootsite='code'))
 

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<dl xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal">
+<tal:fields tal:repeat="obj context">
+ <dt tal:content="text obj/name">
+  The name of the field.
+ </dt>
+ <dd tal:content="structure obj/value">
+  The value of the field.
+ </dd>
+</tal:fields>
+</dl>

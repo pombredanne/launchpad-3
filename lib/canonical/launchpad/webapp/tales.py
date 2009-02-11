@@ -31,9 +31,12 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IHasIcon, IHasLogo,
-    IHasMugshot, IPerson, IPersonSet, IProduct, IProject, ISprint,
-    LicenseStatus, NotFoundError)
+    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
+    ISprint, LicenseStatus, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -105,6 +108,8 @@ class MenuAPI:
         if not self._has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
+        if menu is None:
+            menu = queryAdapter(self._context, INavigationMenu, facet)
         if menu is not None:
             menu.request = self._request
             links_map = dict(
@@ -112,7 +117,7 @@ class MenuAPI:
                 for link in menu.iterlinks(request_url=self._request_url()))
         else:
             # The object has the facet, but does not have a menu, this
-            # is propbably the overview menu with is the default facet.
+            # is probably the overview menu with is the default facet.
             links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
@@ -904,6 +909,31 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             url, image_html, cgi.escape(person.browsername))
 
 
+class TeamFormatterAPI(PersonFormatterAPI):
+    """Adapter for `ITeam` objects to a formatted string."""
+
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).url(view_name)
+
+    def api_url(self, context):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).api_url(context)
+
+    def link(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return '&lt;redacted&gt;'
+        return super(TeamFormatterAPI, self).link(view_name, rootsite)
+
+
 class CustomizableFormatter(ObjectFormatterAPI):
     """A ObjectFormatterAPI that is easy to customize.
 
@@ -1010,24 +1040,11 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink'}
-
-    def traverse(self, name, furtherPath):
-        """Special case traversal to support multiple link formats."""
-        for link_name, func in (('project-link', self.projectLink),
-                           ('title-link', self.titleLink),
-                           ('bzr-link', self.bzrLink)):
-            if name == link_name:
-                extra_path = '/'.join(reversed(furtherPath))
-                del furtherPath[:]
-                return func(extra_path)
-        return ObjectFormatterAPI.traverse(self, name, furtherPath)
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        url = canonical_url(branch)
-        url = self.url(view_name)
         if branch.title is not None:
             title = branch.title
         else:
@@ -1038,7 +1055,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             'name': branch.name,
             'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
-            'url': url,
+            'url': self.url(view_name),
             }
 
     def link(self, view_name):
@@ -1049,7 +1066,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             '&nbsp;%(unique_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
-        """A hyperlinked branch icon with the unique name."""
+        """A hyperlinked branch icon with the bazaar identity."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
@@ -1067,6 +1084,68 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '%(name)s</a>: %(title)s' % self._args(view_name))
+
+
+class PreviewDiffFormatterAPI(ObjectFormatterAPI):
+    """Formatter for preview diffs."""
+
+    def url(self, view_name=None):
+        """Use the url of the librarian file containing the diff.
+        """
+        librarian_alias = self._context.diff_text
+        if librarian_alias is None:
+            return None
+        else:
+            return librarian_alias.getURL()
+
+    def link(self, view_name):
+        """The link to the diff should show the line count.
+
+        Stale diffs will have a stale-diff css class.
+        Diffs with conflicts will have a conflict-diff css class.
+        Diffs with neither will have clean-diff css class.
+
+        The title of the diff will show the number of lines added or removed
+        if available.
+
+        :param view_name: If not None, the link will point to the page with
+            that name on this object.
+        """
+        title_words = []
+        if self._context.conflicts is not None:
+            style = 'conflicts-diff'
+            title_words.append(_('CONFLICTS'))
+        else:
+            style = 'clean-diff'
+        # Stale style overrides conflicts or clean.
+        if self._context.stale:
+            style = 'stale-diff'
+            title_words.append(_('Stale'))
+
+        if self._context.added_lines_count:
+            title_words.append(
+                _("%s added") % self._context.added_lines_count)
+
+        if self._context.removed_lines_count:
+            title_words.append(
+                _("%s removed") % self._context.removed_lines_count)
+
+        args = {
+            'line_count': _('%s lines') % self._context.diff_lines_count,
+            'style': style,
+            'title': ', '.join(title_words),
+            'url': self.url(view_name),
+            }
+        # Under normal circumstances, there will be an associated file,
+        # however if the diff is empty, then there is no alias to link to.
+        if args['url'] is None:
+            return (
+                '<span title="%(title)s" class="%(style)s">'
+                '%(line_count)s</span>' % args)
+        else:
+            return (
+                '<a href="%(url)s" title="%(title)s" class="%(style)s">'
+                '%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -1707,8 +1786,9 @@ class PageTemplateContextsAPI:
         underscores, and use this to look up a string, unicode or
         function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles, emit a
-        warning that this page has no title, and return the default page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit
+        a warning that this page has no title, and return the default page
+        title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
@@ -1947,10 +2027,6 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-
-            if not root_url.endswith('/'):
-                root_url += '/'
-
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         else:

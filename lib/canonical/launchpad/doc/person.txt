@@ -586,8 +586,8 @@ team will go to that address.
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
 
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
-    >>> contactEmailAddresses(ubuntu_team)
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> get_contact_email_addresses(ubuntu_team)
     set(['support@ubuntu.com'])
 
 On the other hand, if a team doesn't have a contact email address, all
@@ -602,7 +602,7 @@ direct member of that team.
     [u'david.allouche@canonical.com', u'foo.bar@canonical.com',
      u'robertc@robertcollins.net']
 
-    >>> sorted(contactEmailAddresses(vcs_imports))
+    >>> sorted(get_contact_email_addresses(vcs_imports))
     ['david.allouche@canonical.com', 'foo.bar@canonical.com',
      'robertc@robertcollins.net']
 
@@ -1007,6 +1007,7 @@ for a Person:
 
     >>> for pt in carlos.translation_history:
     ...     print pt.pofile.title
+    English (en) trans... of pkgconf-mozilla in Ubuntu Hoary package "mozilla"
     Spanish (es) translation of alsa-utils in alsa-utils trunk
     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
     Spanish (es) translation of evolution-2.2 in Evolution trunk

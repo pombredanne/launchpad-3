@@ -44,7 +44,7 @@ from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -306,7 +306,7 @@ def _send_bug_details_to_new_bug_subscribers(
 
     to_addrs = set()
     for new_sub in new_subs:
-        to_addrs.update(contactEmailAddresses(new_sub))
+        to_addrs.update(get_contact_email_addresses(new_sub))
 
     if not to_addrs:
         return
@@ -1134,7 +1134,7 @@ def notify_team_join(event):
         reviewer = membership.reviewed_by
         # Somebody added this person as a member, we better send a
         # notification to the person too.
-        member_addrs = contactEmailAddresses(person)
+        member_addrs = get_contact_email_addresses(person)
 
         subject = 'You have been added to %s' % team.name
         templatename = 'new-member-notification.txt'
@@ -1288,7 +1288,7 @@ class QuestionNotification:
         :return: A `INotificationRecipientSet` containing the recipients and
                  rationale.
         """
-        return self.question.getSubscribers()
+        return self.question.getRecipients()
 
     def initialize(self):
         """Initialization hook for subclasses.
@@ -1588,7 +1588,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
         recipients = NotificationRecipientSet()
         owner = self.question.owner
         if self.question.isSubscribed(owner):
-            original_recipients = self.question.getDirectSubscribers()
+            original_recipients = self.question.getDirectRecipients()
             rationale, header = original_recipients.getReason(owner)
             recipients.add(owner, rationale, header)
         return recipients
@@ -1761,7 +1761,7 @@ def notify_specification_subscription_created(specsub, event):
         {'blueprint_name' : spec.name,
          'blueprint_title' : spec.title,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 @block_implicit_flushes
@@ -1791,7 +1791,7 @@ def notify_specification_subscription_modified(specsub, event):
          'blueprint_title' : spec.title,
          'specsub_type' : specsub_type,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 
@@ -1924,7 +1924,7 @@ def send_direct_contact_email(
     # uses those anyway!?  The only alternative is to attach the footer as a
     # MIME attachment with a us-ascii charset, but that has it's own set of
     # problems (and user complaints).  Email sucks.
-    additions = [
+    additions = u'\n'.join([
         u'',
         u'-- ',
         u'This message was sent from Launchpad by the user',
@@ -1932,18 +1932,17 @@ def send_direct_contact_email(
         u'using %s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
-        ]
-    body += u'\n'.join(additions)
-    encoded_body = body.encode(charset)
+        ])
     # Craft and send one message per recipient.
     mailwrapper = MailWrapper(width=72)
     message = None
     for recipient_email, recipient in recipients_set.getRecipientPersons():
         recipient_name = str(encode(recipient.displayname))
         reason, rational_header = recipients_set.getReason(recipient_email)
-        reason = str(encode(reason))
-        formatted_body = mailwrapper.format(
-            encoded_body % reason, force_wrap=True)
+        reason = str(encode(reason)).replace('\n ', '\n')
+        formatted_body = mailwrapper.format(body, force_wrap=True)
+        formatted_body += additions % reason
+        formatted_body = formatted_body.encode(charset)
         message = MIMEText(formatted_body, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
         message['To'] = formataddr((recipient_name, recipient_email))

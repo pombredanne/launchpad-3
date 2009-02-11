@@ -27,6 +27,14 @@ capabilities of a certain resource it can request a WADL
 representation of that resource (see the xx-wadl.txt test) and find
 out.
 
+There is no XHTML representation available for the service root.
+
+  >>> print webservice.get('/', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
+
 Though web services in general support all HTTP methods, this
 particular resource supports only GET. Eventually it will also support
 HEAD and OPTIONS.

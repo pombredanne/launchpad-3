@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd
+# Copyright 2004-2009 Canonical Ltd
+# pylint: disable-msg=E0211,E0213
 
 """Person-related view classes."""
 
@@ -86,6 +87,7 @@ __all__ = [
     ]
 
 import copy
+import itertools
 import pytz
 import subprocess
 import urllib
@@ -127,6 +129,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
@@ -135,15 +138,17 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry,
     IEmailAddress, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
     IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet,
-    INewPerson, IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet,
-    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType,
+    INewPerson, IOAuthConsumerSet, IOpenLaunchBag, IPasswordEncryptor,
+    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet,
+    IPOFileTranslatorSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
+    ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
     MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
     PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+from canonical.launchpad.interfaces.branchnamespace import (
+    IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
@@ -259,58 +264,56 @@ class RestrictedMembershipsPersonView(LaunchpadView):
 
 
 class BranchTraversalMixin:
-    """Branch of this person or team for the specified product and
-    branch names.
+    """Logic for traversing to branches from `IPerson`s.
 
-    For example:
+    Branches can be reached from
+    code.launchpad.net/~person/+branch/other/path/info or from
+    code.launchpad.net/~person/other/path/info.
 
-    * '/~ddaa/bazaar/devel' points to the branch whose owner
-    name is 'ddaa', whose product name is 'bazaar', and whose branch name
-    is 'devel'.
-
-    * '/~sabdfl/+junk/junkcode' points to the branch whose
-    owner name is 'sabdfl', with no associated product, and whose branch
-    name is 'junkcode'.
-
-    * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
-
+    Most of the knowledge of how branch paths work is stored in
+    `IBranchNamespaceSet`. This class simply delegates to that.
     """
+
+    def _getSegments(self, pillar_name=None):
+        base = [self.context.name]
+        if pillar_name is not None:
+            base.append(pillar_name)
+        return itertools.chain(iter(base), iter(self.request.stepstogo))
 
     @stepto('+branch')
     def redirect_branch(self):
-        """Redirect to canonical_url, which is ~user/product/name."""
-        stepstogo = self.request.stepstogo
-        product_name = stepstogo.consume()
-        branch_name = stepstogo.consume()
-        if product_name is not None and branch_name is not None:
-            branch = self.context.getBranch(product_name, branch_name)
-            if branch:
-                return self.redirectSubTree(canonical_url(branch))
+        """Redirect to canonical_url."""
+        branch = getUtility(IBranchNamespaceSet).traverse(self._getSegments())
+        if branch:
+            return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
-    def traverse(self, product_name):
-        # XXX: JonathanLange 2008-12-10 spec=package-branches: This is a big
-        # thing that needs to be changed for package branches.
-        branch_name = self.request.stepstogo.consume()
-        if branch_name is not None:
-            branch = self.context.getBranch(product_name, branch_name)
-            if branch is not None and branch.product is not None:
-                # The launch bag contains "stuff of interest" related to where
-                # the user is traversing to.  When a user traverses over a
-                # product, the product gets added to the launch bag by the
-                # traversal machinery, however when traversing to a branch, we
-                # short circuit it somewhat by looking for a two part key (in
-                # addition to the user) to identify the branch, and as such
-                # the product isnt't being added to the bag by the internals.
-                getUtility(IOpenLaunchBag).add(branch.product)
+    def traverse(self, pillar_name):
+        try:
+            branch = getUtility(IBranchNamespaceSet).traverse(
+                self._getSegments(pillar_name))
+        except (NotFoundError, InvalidNamespace):
+            return super(BranchTraversalMixin, self).traverse(pillar_name)
 
-                if branch.product.name != product_name:
-                    # This branch was accessed through one of its product's
-                    # aliases, so we must redirect to its canonical URL.
-                    return self.redirectSubTree(canonical_url(branch))
-            return branch
-        else:
-            return super(BranchTraversalMixin, self).traverse(product_name)
+        # Normally, populating the launch bag is done by the traversal
+        # mechanism. However, here we short-circuit that mechanism by
+        # processing multiple segments at once. Thus, we populate the launch
+        # bag with information about the containers of a branch.
+        branch.addToLaunchBag(getUtility(IOpenLaunchBag))
+
+        if branch.product is not None:
+            if branch.product.name != pillar_name:
+                # This branch was accessed through one of its product's
+                # aliases, so we must redirect to its canonical URL.
+                return self.redirectSubTree(canonical_url(branch))
+
+        if branch.distribution is not None:
+            if branch.distribution.name != pillar_name:
+                # This branch was accessed through one of its product's
+                # aliases, so we must redirect to its canonical URL.
+                return self.redirectSubTree(canonical_url(branch))
+
+        return branch
 
 
 class PersonNavigation(BranchTraversalMixin, Navigation):
@@ -330,7 +333,19 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
-        return self.context.archive
+        if self.request.stepstogo:
+            # If the URL has a PPA name in it, use that.
+            ppa_name = self.request.stepstogo.consume()
+            return traverse_named_ppa(self.context.name, ppa_name)
+
+        # Otherwise try to get the default PPA and if it exists redirect
+        # to the new-style URL, if it doesn't, return None (to trigger a
+        # NotFound error).
+        default_ppa = self.context.archive
+        if default_ppa is None:
+            return None
+
+        return self.redirectSubTree(canonical_url(default_ppa))
 
     @stepthrough('+email')
     def traverse_email(self, email):
@@ -722,13 +737,24 @@ class PersonBranchCountMixin:
             self.user)
         return query.count()
 
+    @cachedproperty
+    def requested_review_count(self):
+        """Return the number of active reviews for the user."""
+        utility = getUtility(IBranchMergeProposalGetter)
+        query = utility.getProposalsForReviewer(
+            self.context, [
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user)
+        return query.count()
+
 
 class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     usedfor = IPerson
     facet = 'branches'
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'approved_merges']
+             'active_reviews', 'approved_merges', 'requested_reviews']
 
     def all_related(self):
         return Link(canonical_url(self.context, rootsite='code'),
@@ -745,10 +771,14 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'active proposal'
         else:
-            text = 'active reviews'
-        return Link('+activereviews', text)
+            text = 'active proposals'
+        if self.user == self.context:
+            summary = 'Proposals I have submitted'
+        else:
+            summary = 'Proposals %s has submitted' % self.context.displayname
+        return Link('+activereviews', text, summary=summary)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
@@ -764,6 +794,17 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
             enabled = self.user.inTeam(self.context)
         text = 'Register branch'
         return Link('+addbranch', text, icon='add', enabled=enabled)
+
+    def requested_reviews(self):
+        if self.requested_review_count == 1:
+            text = 'requested review'
+        else:
+            text = 'requested reviews'
+        if self.user == self.context:
+            summary = 'Proposals I am reviewing'
+        else:
+            summary = 'Proposals %s is reviewing' % self.context.displayname
+        return Link('+requestedreviews', text, summary=summary)
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -945,6 +986,8 @@ class CommonMenuLinks:
         archive = self.context.archive
         enable_link = (archive is not None and
                        check_permission('launchpad.View', archive))
+        if enable_link:
+            target = canonical_url(self.context.archive)
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
@@ -1037,7 +1080,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+editsshkeys'
         text = 'Update SSH keys'
         summary = (
-            'Used if %s stores code on the Supermirror' %
+            'Used if %s stores code on Launchpad' %
             self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
@@ -1045,7 +1088,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editpgpkeys(self):
         target = '+editpgpkeys'
         text = 'Update OpenPGP keys'
-        summary = 'Used for the Supermirror, and when maintaining packages'
+        summary = 'Used when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1087,7 +1130,7 @@ class PersonPPANavigationMenuMixin:
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
         if has_archive:
-            target = '+archive'
+            target = canonical_url(archive)
             enable_link = check_permission('launchpad.View', archive)
         elif user_can_edit_archive:
             summary = 'Activate Personal Package Archive'
@@ -3123,30 +3166,18 @@ class PersonEditSSHKeysView(LaunchpadView):
 
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
+
+    _pofiletranslator_cache = None
+
     @cachedproperty
     def batchnav(self):
-        batchnav = BatchNavigator(self.context.translation_history,
-                                  self.request)
-        # XXX: kiko 2006-03-17 bug=60320: Because of a template reference
-        # to pofile.potemplate.displayname, it would be ideal to also
-        # prejoin inside translation_history:
-        #   potemplate.productseries
-        #   potemplate.productseries.product
-        #   potemplate.distroseries
-        #   potemplate.distroseries.distribution
-        #   potemplate.sourcepackagename
-        # However, a list this long may be actually suggesting that
-        # displayname be cached in a table field; particularly given the
-        # fact that it won't be altered very often. At any rate, the
-        # code below works around this by caching all the templates in
-        # one shot. The list() ensures that we materialize the query
-        # before passing it on to avoid reissuing it. Note also that the
-        # fact that we iterate over currentBatch() here means that the
-        # translation_history query is issued again. Tough luck.
-        ids = set(record.pofile.potemplate.id
-                  for record in batchnav.currentBatch())
-        if ids:
-            cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
+        batchnav = BatchNavigator(
+            self.context.translation_history, self.request)
+
+        pofiletranslatorset = getUtility(IPOFileTranslatorSet)
+        batch = batchnav.currentBatch()
+        self._pofiletranslator_cache = (
+            pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
 
         return batchnav
 
@@ -3154,6 +3185,11 @@ class PersonTranslationView(LaunchpadView):
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    @cachedproperty
+    def translators(self):
+        """Return translators a person is a member of."""
+        return list(self.context.translators)
 
     @cachedproperty
     def person_filter_querystring(self):
@@ -4928,11 +4964,19 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
         When we add support for reviews commented on, we'll want to add
         support for showing the summary even if there are no branches.
         """
-        return self.total_branch_count
+        return self.total_branch_count or self.requested_review_count
 
 
-class PersonActiveReviewsView(BranchMergeProposalListingView):
-    """Branch merge proposals for the person that are needing review."""
+class PersonBMPListingView(BranchMergeProposalListingView):
+    """Base class for the proposal listings that defines the user."""
+
+    def getUserFromContext(self):
+        """Get the relevant user from the context."""
+        return self.context
+
+
+class PersonActiveReviewsView(PersonBMPListingView):
+    """Branch merge proposals that the person has submitted."""
 
     extra_columns = ['date_review_requested', 'vote_summary']
     _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
@@ -4947,7 +4991,29 @@ class PersonActiveReviewsView(BranchMergeProposalListingView):
         return "%s has no active code reviews." % self.context.displayname
 
 
-class PersonApprovedMergesView(BranchMergeProposalListingView):
+class PersonRequestedReviewsView(PersonBMPListingView):
+    """Branch merge proposals for the person that are needing review."""
+
+    extra_columns = ['date_review_requested', 'review',]
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
+                     BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Code reviews requested of %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no reviews pending." % self.context.displayname
+
+    def getVisibleProposalsForUser(self):
+        """Branch merge proposals that are visible by the logged in user."""
+        return getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
+            self.context, self._queue_status, self.user)
+
+
+class PersonApprovedMergesView(PersonBMPListingView):
     """Branch merge proposals that have been approved for the person."""
 
     extra_columns = ['date_reviewed']
@@ -5163,8 +5229,9 @@ class ContactViaWebNotificationRecipientSet:
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
-                'the "Contact this team" link on the ' '%s team page '
-                'to each\nmember directly' % person_or_team.displayname)
+                'the "Contact this team" link on the %s\n'
+                'team page to each member directly' %
+                person_or_team.displayname)
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         return (reason, header)
 

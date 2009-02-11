@@ -320,17 +320,20 @@ The owner of the list can see archive link.
     ...     find_tag_by_id(user_browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/bassists
 
-Anonymous users cannot see the link.
+Anonymous users cannot see the link, because they cannot even see the private
+membership team.
 
     >>> anon_browser.open('http://launchpad.dev/~bassists')
-    >>> print find_tag_by_id(anon_browser.contents, 'mailing-list-archive')
-    None
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...>, name: u'~bassists'
 
-Normal users who are not team members cannot see the link.
+The same is true for normal users who are not team members.
 
     >>> browser.open('http://launchpad.dev/~bassists')
-    >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
-    None
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...>, name: u'~bassists'
 
 Members who are not owners can see the link.
 
@@ -545,7 +548,7 @@ A mailing list expert purges the inactive list.
 
 Once purged, it's as if the mailing list never existed.
 
-    >>> print browser.getLink('Mailing list archive')
+    >>> print expert_browser.getLink('Mailing list archive')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

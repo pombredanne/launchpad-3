@@ -39,11 +39,11 @@ def get_server(read_only):
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
-        config.codehosting.branches_root)
+        config.codehosting.hosted_branches_root)
     if read_only:
         hosted_transport = get_readonly_transport(hosted_transport)
     mirrored_transport = get_chrooted_transport(
-        config.supermirror.branchesdest)
+        config.codehosting.mirrored_branches_root)
     if read_only:
         mirrored_transport = get_readonly_transport(mirrored_transport)
     hosted_server = LaunchpadInternalServer(

@@ -29,9 +29,10 @@ class BranchMergeProposalListingItem:
 
     delegates(IBranchMergeProposal, 'context')
 
-    def __init__(self, branch_merge_proposal, summary):
+    def __init__(self, branch_merge_proposal, summary, proposal_reviewer):
         self.context = branch_merge_proposal
         self.summary = summary
+        self.proposal_reviewer = proposal_reviewer
 
     @property
     def vote_summary(self):
@@ -53,6 +54,11 @@ class BranchMergeProposalListingItem:
 
         return ', '.join(votes)
 
+    @property
+    def reviewer_vote(self):
+        """A vote from the specified reviewer."""
+        return self.context.getUsersVoteReference(self.proposal_reviewer)
+
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
@@ -64,6 +70,10 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
+        # Add preview_diff to self.show_column dict if there are any diffs.
+        for proposal in self.proposals:
+            if proposal.preview_diff is not None:
+                self.show_column['preview_diff'] = True
 
     @cachedproperty
     def _proposals_for_current_batch(self):
@@ -79,9 +89,10 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     def _createItem(self, proposal):
         """Create the listing item for the proposal."""
         summary = self._vote_summaries[proposal]
-        return BranchMergeProposalListingItem(proposal, summary)
+        return BranchMergeProposalListingItem(proposal, summary,
+            proposal_reviewer=self.view.getUserFromContext())
 
-    @property
+    @cachedproperty
     def proposals(self):
         """Return a list of BranchListingItems."""
         proposals = self._proposals_for_current_batch
@@ -109,6 +120,10 @@ class BranchMergeProposalListingView(LaunchpadView):
     def proposals(self):
         """The batch navigator for the proposals."""
         return BranchMergeProposalListingBatchNavigator(self)
+
+    def getUserFromContext(self):
+        """Get the relevant user from the context."""
+        return None
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""

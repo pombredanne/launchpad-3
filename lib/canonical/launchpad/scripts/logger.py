@@ -16,6 +16,7 @@ __all__ = [
     'log',
     'logger',
     'logger_options',
+    'BufferLogger',
     'FakeLogger',
     'QuietFakeLogger',
     ]
@@ -75,6 +76,21 @@ class QuietFakeLogger(FakeLogger):
     """
     def message(self, prefix, *stuff, **kw):
         pass
+
+
+class BufferLogger(FakeLogger):
+    """A logger that logs to a StringIO object."""
+    def __init__(self):
+        self.buffer = StringIO()
+
+    def message(self, prefix, *stuff, **kw):
+        self.buffer.write('%s: %s\n' % (prefix, ' '.join(stuff)))
+
+        if 'exc_info' in kw:
+            exception = traceback.format_exception(*sys.exc_info())
+            for thing in exception:
+                for line in thing.splitlines():
+                    self.log(line)
 
 
 class LibrarianFormatter(logging.Formatter):

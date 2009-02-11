@@ -6,103 +6,11 @@ __metaclass__ = type
 
 
 from canonical.launchpad.components.branch import BranchDelta
-from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
-
-
-def email_branch_modified_notifications(branch, to_addresses,
-                                        from_address, contents,
-                                        recipients, subject=None,
-                                        headers=None):
-    """Send notification emails using the branch email template.
-
-    Emails are sent one at a time to the listed addresses.
-    """
-    branch_title = branch.title
-    if branch_title is None:
-        branch_title = ''
-    if subject is None:
-        subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
-    if headers is None:
-        headers = {}
-    headers['X-Launchpad-Branch'] = branch.unique_name
-    if branch.product is not None:
-        headers['X-Launchpad-Project'] = branch.product.name
-
-    template = get_email_template('branch-modified.txt')
-    for address in to_addresses:
-        params = {
-            'delta': contents,
-            'branch_title': branch_title,
-            'branch_url': canonical_url(branch),
-            'unsubscribe': '',
-            'reason': ('You are receiving this branch notification '
-                       'because you are subscribed to it.'),
-            }
-        subscription, rationale = recipients.getReason(address)
-        # The only time that the subscription will be empty is if the owner
-        # of the branch is being notified.
-        if subscription is None:
-            params['reason'] = (
-                "You are getting this email as you are the owner of "
-                "the branch and someone has edited the details.")
-        elif not subscription.person.isTeam():
-            # Give the users a link to unsubscribe.
-            params['unsubscribe'] = (
-                "\nTo unsubscribe from this branch go to "
-                "%s/+edit-subscription." % canonical_url(branch))
-        else:
-            # Don't give teams an option to unsubscribe.
-            pass
-        headers['X-Launchpad-Message-Rationale'] = rationale
-
-        body = template % params
-        simple_sendmail(from_address, address, subject, body, headers)
-
-
-def send_branch_revision_notifications(branch, from_address, message, diff,
-                                       subject, revno):
-    """Notify subscribers that a revision has been added (or removed)."""
-    diff_size = diff.count('\n') + 1
-
-    diff_size_to_email = dict(
-        [(item, set()) for item in BranchSubscriptionDiffSize.items])
-
-    recipients = branch.getNotificationRecipients()
-    interested_levels = (
-        BranchSubscriptionNotificationLevel.DIFFSONLY,
-        BranchSubscriptionNotificationLevel.FULL)
-    for email_address in recipients.getEmails():
-        subscription, ignored = recipients.getReason(email_address)
-        if subscription.notification_level in interested_levels:
-            diff_size_to_email[subscription.max_diff_lines].add(email_address)
-
-    headers = {'X-Launchpad-Branch-Revision-Number': str(revno)}
-
-    for max_diff in diff_size_to_email:
-        addresses = diff_size_to_email[max_diff]
-        if len(addresses) == 0:
-            continue
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = message
-            elif diff_size > max_diff.value:
-                diff_msg = (
-                    'The size of the diff (%d lines) is larger than your '
-                    'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-                contents = "%s\n%s" % (message, diff_msg)
-            else:
-                contents = "%s\n%s" % (message, diff)
-        else:
-            contents = "%s\n%s" % (message, diff)
-        email_branch_modified_notifications(
-            branch, addresses, from_address, contents, recipients, subject,
-            headers)
 
 
 def send_branch_modified_notifications(branch, event):
@@ -145,25 +53,43 @@ class RecipientReason:
     """Reason for sending mail to a recipient."""
 
     def __init__(self, subscriber, recipient, branch, mail_header,
-        reason_template, merge_proposal=None):
+                 reason_template, merge_proposal=None,
+                 max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
+                 branch_identity_cache=None):
         self.subscriber = subscriber
         self.recipient = recipient
         self.branch = branch
         self.mail_header = mail_header
         self.reason_template = reason_template
         self.merge_proposal = merge_proposal
+        self.max_diff_lines = max_diff_lines
+        if branch_identity_cache is None:
+            branch_identity_cache = {}
+        self.branch_identity_cache = branch_identity_cache
+
+    def _getBranchIdentity(self, branch):
+        """Get the branch identity out of the cache, or generate it."""
+        try:
+            return self.branch_identity_cache[branch]
+        except KeyError:
+            # Don't bother trying to remember the cache, as the cache only
+            # makes sense across multiple instances of this type of object.
+            return branch.bzr_identity
 
     @classmethod
     def forBranchSubscriber(
-        klass, subscription, recipient, rationale, merge_proposal=None):
+        klass, subscription, recipient, rationale, merge_proposal=None,
+        branch_identity_cache=None):
         """Construct RecipientReason for a branch subscriber."""
         return klass(
             subscription.person, recipient, subscription.branch, rationale,
             '%(entity_is)s subscribed to branch %(branch_name)s.',
-            merge_proposal)
+            merge_proposal, subscription.max_diff_lines,
+            branch_identity_cache=branch_identity_cache)
 
     @classmethod
-    def forReviewer(klass, vote_reference, recipient):
+    def forReviewer(klass, vote_reference, recipient,
+                    branch_identity_cache=None):
         """Construct RecipientReason for a reviewer.
 
         The reviewer will be the sole recipient.
@@ -177,9 +103,12 @@ class RecipientReason:
             reason_template = (
                 '%(entity_is)s reviewing %(merge_proposal)s.')
         return klass(vote_reference.reviewer, recipient, branch,
-                     'Reviewer', reason_template, merge_proposal)
+                     'Reviewer', reason_template, merge_proposal,
+                     branch_identity_cache=branch_identity_cache)
+
     @classmethod
-    def forBranchOwner(klass, branch, recipient):
+    def forBranchOwner(klass, branch, recipient,
+                       branch_identity_cache=None):
         """Construct RecipientReason for a branch owner.
 
         The owner will be the sole recipient.
@@ -188,7 +117,8 @@ class RecipientReason:
                      klass.makeRationale('Owner', branch.owner, recipient),
                      'You are getting this email as %(lc_entity_is)s the'
                      ' owner of the branch and someone has edited the'
-                     ' details.')
+                     ' details.',
+                     branch_identity_cache=branch_identity_cache)
 
     @staticmethod
     def makeRationale(rationale_base, subscriber, recipient):
@@ -200,13 +130,15 @@ class RecipientReason:
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
         template_values = {
-            'branch_name': self.branch.bzr_identity,
+            'branch_name': self._getBranchIdentity(self.branch),
             'entity_is': 'You are',
             'lc_entity_is': 'you are',
             }
         if self.merge_proposal is not None:
-            source = self.merge_proposal.source_branch.bzr_identity
-            target = self.merge_proposal.target_branch.bzr_identity
+            source = self._getBranchIdentity(
+                self.merge_proposal.source_branch)
+            target = self._getBranchIdentity(
+                self.merge_proposal.target_branch)
             template_values['merge_proposal'] = (
                 'the proposed merge of %s into %s' % (source, target))
         if self.recipient != self.subscriber:
@@ -224,22 +156,106 @@ class RecipientReason:
 class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
-    @staticmethod
-    def forBranchModified(branch, recipients, from_address, delta):
+    def __init__(self, subject, template_name, recipients, from_address,
+                 delta=None, contents=None, diff=None, message_id=None,
+                 revno=None):
+        BaseMailer.__init__(self, subject, template_name, recipients,
+                            from_address, delta, message_id)
+        self.contents = contents
+        self.diff = diff
+        self.revno = revno
+
+    @classmethod
+    def forBranchModified(klass, branch, recipients, from_address, delta):
         """Construct a BranchMailer for mail about a branch modification.
 
         :param branch: The branch that was modified.
         :param recipients: A dict of {Person: RecipientReason} for all people
             who should be notified.
-        :from_address: The email address this message should come from.
-        :delta: an IBranchDelta representing the modification.
+        :param from_address: The email address this message should come from.
+        :param delta: an IBranchDelta representing the modification.
+        :return: a BranchMailer.
         """
-        branch_title = branch.title
+        subject = klass._branchSubject(branch)
+        return klass(
+            subject, 'branch-modified.txt', recipients, from_address,
+            delta=delta)
+
+    @classmethod
+    def forRevision(klass, db_branch, revno, from_address, contents, diff,
+                    subject):
+        """Construct a BranchMailer for mail about branch revisions.
+
+        :param branch: The db_branch that was modified.
+        :param revno: The revno of the revision this message is about.
+        :param from_address: The email address this message should come from.
+        :param contents: The contents of the message.
+        :param subject: The subject of the message
+        :param diff: The diff of this revision versus its parent, as text.
+        :return: a BranchMailer.
+        """
+        recipients = db_branch.getNotificationRecipients()
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.DIFFSONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        recipient_dict = {}
+        for recipient in recipients:
+            subscription, rationale = recipients.getReason(recipient)
+            if subscription.notification_level in interested_levels:
+                subscriber_reason = RecipientReason.forBranchSubscriber(
+                    subscription, recipient, rationale)
+                recipient_dict[recipient] = subscriber_reason
+        subject = klass._branchSubject(db_branch, subject)
+        return klass(subject, 'branch-modified.txt', recipient_dict,
+            from_address, contents=contents, diff=diff, revno=revno)
+
+    @staticmethod
+    def _branchSubject(db_branch, subject=None):
+        """Determine a subject to use for this email.
+
+        :param db_branch: The db branch to use.
+        :param subject: Any subject supplied as a parameter.
+        """
+        if subject is not None:
+            return subject
+        branch_title = db_branch.title
         if branch_title is None:
             branch_title = ''
-        subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
-        return BranchMailer(subject, 'branch-modified.txt', recipients,
-                            from_address, delta=delta)
+        return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
+
+    def _diffText(self, max_diff):
+        """Determine the text to use for the diff.
+
+        If the diff's length exceeds the user preferences, a message
+        about this is returned.  Otherwise, the diff is returned.
+        """
+        if self.diff is None:
+            return self.contents or ''
+        diff_size = self.diff.count('\n') + 1
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                contents = self.contents
+            elif diff_size > max_diff.value:
+                diff_msg = (
+                    'The size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+                contents = "%s\n%s" % (self.contents, diff_msg)
+            else:
+                contents = "%s\n%s" % (self.contents, self.diff)
+        else:
+            contents = "%s\n%s" % (self.contents, self.diff)
+        return contents
+
+    def _getHeaders(self, email):
+        headers = BaseMailer._getHeaders(self, email)
+        reason, rationale = self._recipients.getReason(email)
+        headers['X-Launchpad-Branch'] = reason.branch.unique_name
+        if reason.branch.product is not None:
+            headers['X-Launchpad-Project'] = reason.branch.product.name
+        if self.revno is not None:
+            headers['X-Launchpad-Branch-Revision-Number'] = str(self.revno)
+        return headers
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
@@ -256,6 +272,8 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
+        params['diff'] = self._diffText(reason.max_diff_lines)
+        params.setdefault('delta', '')
         return params
 
     @staticmethod

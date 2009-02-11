@@ -9,13 +9,14 @@ import unittest
 
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
-from twisted.web.xmlrpc import Fault
 
 from canonical.codehosting.branchfsclient import (
     BranchFileSystemClient, NotInCache, trap_fault)
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 from canonical.launchpad.testing import FakeTime
+from canonical.launchpad.xmlrpc.tests.test_faults import (
+    TestFaultOne, TestFaultTwo)
 
 
 class TestBranchFileSystemClient(TestCase):
@@ -43,7 +44,7 @@ class TestBranchFileSystemClient(TestCase):
             _now=self.fake_time.now)
 
     def test_translatePath(self):
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         deferred = client.translatePath('/' + branch.unique_name)
         deferred.addCallback(
@@ -55,7 +56,7 @@ class TestBranchFileSystemClient(TestCase):
         # We cache results based on the part of the URL that the server
         # matched. _getMatchedPart returns that part, based on the path given
         # and the returned data.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         requested_path = '/%s/a/b' % branch.unique_name
         matched_part = client._getMatchedPart(
@@ -69,7 +70,7 @@ class TestBranchFileSystemClient(TestCase):
         # trailing path.
         #
         # This test is added to exercise a corner case.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         requested_path = '/%s' % branch.unique_name
         matched_part = client._getMatchedPart(
@@ -83,7 +84,7 @@ class TestBranchFileSystemClient(TestCase):
         # trailing path.
         #
         # This test is added to exercise a corner case.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         requested_path = '/%s/' % branch.unique_name
         matched_part = client._getMatchedPart(
@@ -94,7 +95,7 @@ class TestBranchFileSystemClient(TestCase):
     def test_path_translation_cache(self):
         # We can retrieve data that we've added to the cache. The data we
         # retrieve looks an awful lot like the data that the endpoint sends.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         fake_data = self.factory.getUniqueString()
         client._addToCache(
@@ -106,7 +107,7 @@ class TestBranchFileSystemClient(TestCase):
     def test_path_translation_cache_within_expiry_time(self):
         # If the client treats cached values as having a limited lifetime,
         # repeated requests within that lifetime are served from the cache.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         expiry_time = 2.0
         client = self.makeClient(expiry_time=expiry_time)
         fake_data = self.factory.getUniqueString()
@@ -121,7 +122,7 @@ class TestBranchFileSystemClient(TestCase):
         # If the client treats cached values as having a limited lifetime, a
         # request longer than that lifetime after the first is not served from
         # the cache.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         expiry_time = 2.0
         client = self.makeClient(expiry_time=expiry_time)
         fake_data = self.factory.getUniqueString()
@@ -135,7 +136,7 @@ class TestBranchFileSystemClient(TestCase):
         # We only get a value from the cache if the cached path is a parent of
         # the requested path. Simple string prefixing is not enough. Added to
         # trap bug 308077.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         fake_data = self.factory.getUniqueString()
         client._addToCache(
@@ -154,7 +155,7 @@ class TestBranchFileSystemClient(TestCase):
     def test_translatePath_retrieves_from_cache(self):
         # If the path already has a prefix in the cache, we use that prefix to
         # translate the path.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         # We'll store fake data in the cache to show that we get data from
         # the cache if it's present.
@@ -172,7 +173,7 @@ class TestBranchFileSystemClient(TestCase):
     def test_translatePath_adds_to_cache(self):
         # translatePath adds successful path translations to the cache, thus
         # allowing for future translations to be retrieved from the cache.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         deferred = client.translatePath('/' + branch.unique_name)
         deferred.addCallback(
@@ -183,7 +184,7 @@ class TestBranchFileSystemClient(TestCase):
     def test_translatePath_control_branch_cache_interaction(self):
         # We don't want the caching to make us mis-interpret paths in the
         # branch as paths into the control transport.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         client = self.makeClient()
         self.factory.enableDefaultStackingForProduct(branch.product)
         deferred = client.translatePath(
@@ -230,35 +231,35 @@ class TestTrapFault(TestCase):
     def test_raises_non_faults(self):
         # trap_fault re-raises any failures it gets that aren't faults.
         failure = self.makeFailure(RuntimeError, 'example failure')
-        self.assertRaisesFailure(failure, trap_fault, failure, 235)
+        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultOne)
 
     def test_raises_faults_with_wrong_code(self):
         # trap_fault re-raises any failures it gets that are faults but have
         # the wrong fault code.
-        failure = self.makeFailure(Fault, 123, 'example failure')
-        self.assertRaisesFailure(failure, trap_fault, failure, 235)
+        failure = self.makeFailure(TestFaultOne)
+        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultTwo)
 
     def test_raises_faults_if_no_codes_given(self):
         # If trap_fault is not given any fault codes, it re-raises the fault
         # failure.
-        failure = self.makeFailure(Fault, 123, 'example failure')
+        failure = self.makeFailure(TestFaultOne)
         self.assertRaisesFailure(failure, trap_fault, failure)
 
     def test_returns_fault_if_code_matches(self):
         # trap_fault returns the Fault inside the Failure if the fault code
         # matches what's given.
-        failure = self.makeFailure(Fault, 123, 'example failure')
-        fault = trap_fault(failure, 123)
-        self.assertEqual(123, fault.faultCode)
-        self.assertEqual('example failure', fault.faultString)
+        failure = self.makeFailure(TestFaultOne)
+        fault = trap_fault(failure, TestFaultOne)
+        self.assertEqual(TestFaultOne.error_code, fault.faultCode)
+        self.assertEqual(TestFaultOne.msg_template, fault.faultString)
 
     def test_returns_fault_if_code_matches_one_of_set(self):
         # trap_fault returns the Fault inside the Failure if the fault code
         # matches even one of the given fault codes.
-        failure = self.makeFailure(Fault, 123, 'example failure')
-        fault = trap_fault(failure, 235, 432, 123, 999)
-        self.assertEqual(123, fault.faultCode)
-        self.assertEqual('example failure', fault.faultString)
+        failure = self.makeFailure(TestFaultOne)
+        fault = trap_fault(failure, TestFaultOne, TestFaultTwo)
+        self.assertEqual(TestFaultOne.error_code, fault.faultCode)
+        self.assertEqual(TestFaultOne.msg_template, fault.faultString)
 
 
 def test_suite():

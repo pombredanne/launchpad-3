@@ -31,6 +31,7 @@ that person's canonical URL.
   HTTP/1.1 303 See Other
   ...
   Location: http://.../~salgado
+  ...
 
 Data is served encoded in UTF-8; a good client will automatically
 convert it into Unicode.
@@ -42,8 +43,8 @@ convert it into Unicode.
 == Content negotiation ==
 
 By varying the 'Accept' header, the client can request either a JSON
-representation of an entry, or a WADL description of the entry's
-capabilities.
+or XHTML representation of an entry, or a WADL description of the
+entry's capabilities.
 
   >>> def negotiated_type(accept_header):
   ...     return webservice.get('/~salgado',
@@ -51,6 +52,9 @@ capabilities.
 
   >>> negotiated_type('application/json')
   'application/json'
+
+  >>> negotiated_type('application/xhtml+xml')
+  'application/xhtml+xml'
 
   >>> negotiated_type('application/vd.sun.wadl+xml')
   'application/vd.sun.wadl+xml'
@@ -64,6 +68,9 @@ capabilities.
   >>> negotiated_type('application/json, application/vd.sun.wadl+xml')
   'application/json'
 
+  >>> negotiated_type('application/json, application/xhtml+xml')
+  'application/json'
+
   >>> negotiated_type('application/vd.sun.wadl+xml, text/html, '
   ...                 'application/json')
   'application/vd.sun.wadl+xml'
@@ -71,7 +78,7 @@ capabilities.
   >>> negotiated_type('application/json;q=0.5, application/vd.sun.wadl+xml')
   'application/vd.sun.wadl+xml'
 
-  >>> negotiated_type('application/json;q=0,'
+  >>> negotiated_type('application/json;q=0, application/xhtml+xml;q=0.05,'
   ...                 'application/vd.sun.wadl+xml;q=0.1')
   'application/vd.sun.wadl+xml'
 
@@ -131,6 +138,7 @@ Trying to invoke a nonexistent custom operation yields an error.
   ...
   No such operation: no_such_operation
 
+
 == Modification ==
 
 It's possible to modify an entry by sending to the server a document
@@ -158,6 +166,13 @@ display name is in uppercase.
   Content-Length: 0
   ...
 
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
+
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
   u'GUILHERME SALGADO'
@@ -169,7 +184,7 @@ use the web service to change the person's name to 'salgado2'.
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../~salgado2
-  <BLANKLINE>
+  ...
 
 At this point we can no longer manipulate the 'salgado' Person by
 sending HTTP requests to http://api.launchpad.dev/~salgado,
@@ -181,7 +196,7 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../~salgado
-  <BLANKLINE>
+  ...
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH. It's possible to fake a PATCH request with

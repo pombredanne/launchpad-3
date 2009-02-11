@@ -67,6 +67,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPillarNameSet, IProductReviewSearch, IRevisionSet,
     ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from canonical.launchpad.interfaces.productrelease import (
@@ -140,6 +141,10 @@ class ProductNavigation(
     @stepthrough('+announcement')
     def traverse_announcement(self, name):
         return self.context.getAnnouncement(name)
+
+    @stepthrough('+commercialsubscription')
+    def traverse_commercialsubscription(self, name):
+        return self.context.commercial_subscription
 
     def traverse(self, name):
         return self.context.getSeries(name)
@@ -296,10 +301,10 @@ class ProductNavigationMenu(NavigationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-      'details',
-      'announcements',
-      'downloads',
-      ]
+        'details',
+        'announcements',
+        'downloads',
+        ]
 
     def details(self):
         text = 'Details'
@@ -559,40 +564,41 @@ class ProductBountiesMenu(ApplicationMenu):
         return Link('+linkbounty', text, icon='edit')
 
 
-class ProductTranslationsMenu(ApplicationMenu):
+class ProductTranslationsMenu(NavigationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = [
+    links = (
+        'overview',
         'translators',
-        'imports',
         'translationdownload',
-        'help_translate',
-        ]
+        'imports',
+        )
 
     def imports(self):
-        text = 'See import queue'
+        text = 'Import queue'
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.Edit')
     def translators(self):
-        text = 'Change translators'
+        text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
-        text = 'Download translations'
+        text = 'Download'
         preferred_series = self.context.primary_translatable
         enabled = (self.context.official_rosetta and
             preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
+            text = 'Download "%s"' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
 
-    def help_translate(self):
-        text = 'Help translate'
+    def overview(self):
+        text = 'Overview'
         link = canonical_url(self.context, rootsite='translations')
         return Link(link, text, icon='translation')
 
@@ -655,6 +661,33 @@ class ProductSetContextMenu(ContextMenu):
 class SortSeriesMixin:
     """Provide access to helpers for series."""
 
+    def _sorted_filtered_list(self, filter=None):
+        """Return a sorted, filtered list of series.
+
+        The series list is sorted by version in reverse order.  It is also
+        filtered by calling `filter` on every series.  If the `filter`
+        function returns False, don't include the series.  With None (the
+        default, include everything).
+
+        The development focus is always first in the list.
+        """
+        series_list = []
+        for series in self.product.serieses:
+            if filter is None or filter(series):
+                series_list.append(series)
+        # In production data, there exist development focus series that are
+        # obsolete.  This may be caused by bad data, or it may be intended
+        # functionality.  In either case, ensure that the development focus
+        # branch is first in the list.
+        if self.product.development_focus in series_list:
+            series_list.remove(self.product.development_focus)
+        # Now sort the list by name with newer versions before older.
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.product.development_focus)
+        return series_list
+
+
     @property
     def sorted_series_list(self):
         """Return a sorted list of series.
@@ -662,13 +695,16 @@ class SortSeriesMixin:
         The series list is sorted by version in reverse order.
         The development focus is always first in the list.
         """
-        series_list = list(self.product.serieses)
-        series_list.remove(self.product.development_focus)
-        # Now sort the list by name with newer versions before older.
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        series_list.insert(0, self.product.development_focus)
-        return series_list
+        return self._sorted_filtered_list()
+
+    @property
+    def sorted_active_series_list(self):
+        """Like `sorted_series_list()` but filters out OBSOLETE series."""
+        # Callback for the filter which only allows series that have not been
+        # marked obsolete.
+        def check_active(series):
+            return series.status != DistroSeriesStatus.OBSOLETE
+        return self._sorted_filtered_list(check_active)
 
 
 class ProductWithSeries:
@@ -1619,11 +1655,6 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     def initialize(self):
         self.product = self.context
 
-    @property
-    def codebrowse_root(self):
-        """Return the link to codebrowse for this branch."""
-        return config.codehosting.codebrowse_root
-
 
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
@@ -1742,15 +1773,11 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
-        # XXX: thumper 2008-04-22
-        # When bug 181157 is fixed, only get branches for non-obsolete
-        # series.
-
         # We want to show each series branch only once, always show the
         # development focus branch, no matter what's it lifecycle status, and
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
-        sorted_series = self.sorted_series_list
+        sorted_series = self.sorted_active_series_list
         def show_branch(branch):
             if self.selected_lifecycle_status is None:
                 return True

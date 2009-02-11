@@ -279,7 +279,7 @@ def create_token_key_and_secret(table):
     given table.  The secret will have a length of 80.
     """
     key_length = 20
-    key = create_unique_token_for_table(key_length, table, "key")
+    key = create_unique_token_for_table(key_length, getattr(table, "key"))
     secret_length = 80
     secret = create_token(secret_length)
     return key, secret
