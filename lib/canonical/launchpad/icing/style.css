@@ -1470,8 +1470,8 @@ table.diff .line-no {
 table.diff .diff-chunk, table.diff .diff-file, table.diff .diff-header {
  font-weight: bold;
 }
-table.diff .diff-added { background-color: #80ff80; }
-table.diff .diff-removed { background-color: #ffa0a0; }
+table.diff .diff-added { background-color: #92ED92; }
+table.diff .diff-removed { background-color: #FF7F7F; }
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */
