@@ -134,6 +134,9 @@ class HTTPResource:
     JSON_TYPE = 'application/json'
     XHTML_TYPE = 'application/xhtml+xml'
 
+    # A preparsed template file for WADL representations of resources.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-resource.pt')
+
     # The representation value used when the client doesn't have
     # authorization to see the real value.
     REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
@@ -304,15 +307,14 @@ class HTTPResource:
             getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
-    def toWADL(self, template_name="wadl-resource.pt"):
+    def toWADL(self):
         """Represent this resource as a WADL application.
 
         The WADL document describes the capabilities of this resource.
         """
-        template = LazrPageTemplateFile('../templates/' + template_name)
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
@@ -615,6 +617,9 @@ class ReadWriteResource(HTTPResource):
 class EntryHTMLView:
     """An HTML view of an entry."""
 
+    # A preparsed template file for HTML representations of the resource.
+    HTML_TEMPLATE = LazrPageTemplateFile('../templates/html-resource.pt')
+
     def __init__(self, context, request):
         """Initialize with respect to a data object and request."""
         self.context = context
@@ -623,13 +628,12 @@ class EntryHTMLView:
 
     def __call__(self):
         """Send the entry data through an HTML template."""
-        template = LazrPageTemplateFile('../templates/html-resource.pt')
-        namespace = template.pt_getContext()
+        namespace = self.HTML_TEMPLATE.pt_getContext()
         names_and_values = self.resource.toDataForJSON().items()
         data = sorted([{'name' : name, 'value': value}
                        for name, value in names_and_values])
         namespace['context'] = data
-        return template.pt_render(namespace)
+        return self.HTML_TEMPLATE.pt_render(namespace)
 
 
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
@@ -1149,6 +1153,9 @@ class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
 
+    # A preparsed template file for WADL representations of the root.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-root.pt')
+
     inside = None
     path = ''
     rootsite = None
@@ -1258,13 +1265,12 @@ class ServiceRootResource(HTTPResource):
                     # We omit IScopedCollection because those are handled
                     # by the entry classes.
                     collection_classes.append(registration.factory)
-        template = LazrPageTemplateFile('../templates/wadl-root.pt')
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
         namespace['request'] = self.request
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def toDataForJSON(self):
         """Return a map of links to top-level collection resources.
