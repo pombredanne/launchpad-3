@@ -83,6 +83,20 @@ The comments on a branch merge proposal are exposed through the API.
     vote: u'Abstain'
     vote_tag: None
 
+
+== Performing a Review ==
+
+A review can be performed through the API.
+
+    >>> person = webservice.get('/~salgado').jsonBody()
+    >>> is_valid = webservice.named_get(
+    ...     merge_proposal['self_link'], 'isPersonValidReviewer',
+    ...     reviewer=person['self_link']).jsonBody()
+    >>> print is_valid
+    True
+
+
+
 == Updating the preview diff ==
 
 The merge proposal can now be updated with the diff that reflects what the
