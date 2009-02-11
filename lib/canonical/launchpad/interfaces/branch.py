@@ -674,8 +674,7 @@ class IBranch(IHasOwner):
 
     mirror_status_message = exported(
         Text(
-            title=_('The last message we got when mirroring this branch '
-                    'into supermirror.'),
+            title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
     private = Bool(
@@ -1182,8 +1181,8 @@ class IBranchSet(Interface):
     def getByUrl(url, default=None):
         """Find a branch by URL.
 
-        Either from the external specified in Branch.url, or from the
-        supermirror URL on http://bazaar.launchpad.net/.
+        Either from the external specified in Branch.url, or from the URL on
+        http://bazaar.launchpad.net/.
 
         Return the default value if no match was found.
         """
