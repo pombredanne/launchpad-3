@@ -117,7 +117,7 @@ Now the code review should be made.
     resource_type_link: u'http://api.launchpad.dev/beta/#code_review_comment'
     self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/comments/3'
     title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
-    vote: None
+    vote: u'Approve'
     vote_tag: u'code'
 
 
