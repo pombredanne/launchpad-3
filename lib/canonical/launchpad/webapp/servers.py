@@ -1198,8 +1198,9 @@ class WebServicePublication(LaunchpadBrowserPublication):
         value = super(WebServicePublication, self).callObject(
             request, object)
         if request.response.getStatus() / 100 == 3:
-            incoming_uri = URI(request.getApplicationURL())
-            if not incoming_uri.host.startswith('api.'):
+            vhost = URI(request.getApplicationURL()).host
+            api = allvhosts.configs['api']
+            if vhost != api.hostname and vhost not in api.althostnames:
                 # This request came in on a vhost other than the
                 # dedicated web service vhost. That means it was
                 # probably sent by a web browser. Because web
