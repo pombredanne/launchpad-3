@@ -110,6 +110,10 @@
       </tr>
     </tal:merged>
     <tr>
+      <th>Source branch:</th>
+      <td tal:content="structure context/source_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
+    </tr>
+    <tr>
       <th>Target branch:</th>
       <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
