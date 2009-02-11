@@ -20,7 +20,51 @@ from canonical.launchpad.webapp.publisher import canonical_url
 class TextLineEditorWidget:
     """Wrapper for the lazr-js inlineedit/editor.js widget."""
 
+    # Class variable used to generate a unique per-page id for the widget
+    # in case it's not provided.
     last_id = 0
+
+
+    # The HTML template used to render the widget.
+    # Replacements:
+    #   activation_script: the JS script to active the widget
+    #   attribute: the name of the being edited
+    #   context_url: the url to the current context
+    #   edit_url: the URL used to edit the value when JS is turned off
+    #   id: the widget unique id
+    #   title: the widget title
+    #   trigger: the trigger (button) HTML code
+    #   value: the current field value
+    WIDGET_TEMPLATE = dedent(u"""\
+        <h1 id="%(id)s"><span
+            class="yui-editable_text-text">%(value)s</span>
+            %(trigger)s
+        </h1>
+        %(activation_script)s
+        """)
+
+    # Template for the trigger button.
+    TRIGGER_TEMPLATE = dedent(u"""\
+        <a href="%(edit_url)s" class="yui-editable_text-trigger"
+        ><img src="/@@/edit" alt="[edit]" title="%(title)s" /></a>
+        """)
+
+    # Template for the activation script.
+    ACTIVATION_TEMPLATE = dedent(u"""\
+        <script>
+        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+            var widget = new Y.EditableText({
+                contentBox: '#%(id)s',
+            });
+            widget.editor.plug({
+                fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
+                  patch: '%(attribute)s',
+                  resource: '%(context_url)s'}});
+            widget.render();
+        });
+        </script>
+        """)
+
 
     def __init__(self, context, attribute, edit_url, id=None, title="Edit"):
         """Create a widget wrapper.
@@ -64,28 +108,6 @@ class TextLineEditorWidget:
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
         if canWrite(self.context, self.attribute):
-            params['trigger'] = dedent(u"""\
-                <a href="%(edit_url)s" class="yui-editable_text-trigger"
-                ><img src="/@@/edit" alt="[edit]" title="%(title)s" /></a>
-                """ % params)
-            params['activation_script'] = dedent(u"""\
-                <script>
-                YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
-                    var widget = new Y.EditableText({
-                        contentBox: '#%(id)s',
-                    });
-                    widget.editor.plug({
-                        fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                          patch: '%(attribute)s',
-                          resource: '%(context_url)s'}});
-                    widget.render();
-                });
-                </script>
-                """ % params)
-        return dedent(u"""\
-            <h1 id="%(id)s"><span
-                class="yui-editable_text-text">%(value)s</span>
-                %(trigger)s
-            </h1>
-            %(activation_script)s
-            """ % params)
+            params['trigger'] = self.TRIGGER_TEMPLATE % params
+            params['activation_script'] = self.ACTIVATION_TEMPLATE % params
+        return self.WIDGET_TEMPLATE % params 
