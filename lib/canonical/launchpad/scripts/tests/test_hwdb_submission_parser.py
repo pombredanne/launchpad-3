@@ -7,13 +7,7 @@ import logging
 import os
 from unittest import TestCase, TestLoader
 
-try:
-    import xml.elementtree.cElementTree as etree
-except ImportError:
-    try:
-        import cElementTree as etree
-    except ImportError:
-        import elementtree.ElementTree as etree
+import cElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
@@ -511,6 +505,45 @@ class TestHWDBSubmissionParser(TestCase):
                            'model': 'MD 4394'}],
                          'Invalid parsing result for <aliases>')
 
+    def testDmi(self):
+        """The content of the <dmi> node is at present not processed.
+
+        Instead, a log warning is issued.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Test of <dmi> parsing.'
+        node = etree.fromstring("""<dmi>
+        # dmidecode 2.9
+        SMBIOS 2.4 present.
+        73 structures occupying 2436 bytes.
+        Table at 0x000E0010.
+
+        Handle 0x0000, DMI type 0, 24 bytes
+        BIOS Information
+        </dmi>
+        """)
+        parser._parseDmi(node)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission contains unprocessed DMI data.')
+
+    def testLspci(self):
+        """The content of the <lspci> node is at present not processed.
+
+        Instead, a log warning is issued.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Test of <lspci> parsing.'
+        node = etree.fromstring("""<lspci>
+        00:00.0 Host bridge: Memory Controller Hub (rev 0c)
+        00:01.0 PCI bridge: PCI Express Root Port (rev 0c)
+        </lspci>
+        """)
+        parser._parseLspci(node)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission contains unprocessed lspci data.')
+
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
         test = self
@@ -530,10 +563,22 @@ class TestHWDBSubmissionParser(TestCase):
             test.assertEqual(node.tag, 'aliases')
             return 'parsed alias data'
 
+        def _parseDmi(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'dmi')
+            return 'parsed dmi data'
+
+        def _parseLspci(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'lspci')
+            return 'parsed lspci data'
+
         parser = SubmissionParser(self.log)
         parser._parseHAL = lambda node: _parseHAL(parser, node)
         parser._parseProcessors = lambda node: _parseProcessors(parser, node)
         parser._parseAliases = lambda node: _parseAliases(parser, node)
+        parser._parseDmi = lambda node: _parseDmi(parser, node)
+        parser._parseLspci = lambda node: _parseLspci(parser, node)
         parser._setHardwareSectionParsers()
 
         node = etree.fromstring("""
@@ -541,13 +586,18 @@ class TestHWDBSubmissionParser(TestCase):
                 <hal/>
                 <processors/>
                 <aliases/>
+                <dmi/>
+                <lspci/>
             </hardware>
             """)
         result = parser._parseHardware(node)
         self.assertEqual(result,
                          {'hal': 'parsed HAL data',
                           'processors': 'parsed processor data',
-                          'aliases': 'parsed alias data'},
+                          'aliases': 'parsed alias data',
+                          'dmi': 'parsed dmi data',
+                          'lspci': 'parsed lspci data',
+                          },
                          'Invalid parsing result for <hardware>')
 
     def testLsbRelease(self):
@@ -1275,15 +1325,39 @@ class TestHWDBSubmissionParser(TestCase):
             in a log string that matches (a)
         (c) result, which is supposed to contain an object representing
             the result of parsing a submission, is None.
+        (d) the log level is ERROR.
 
-        If all three criteria match, assertErrormessage does not raise any
+        If all four criteria match, assertErrormessage does not raise any
         exception.
         """
         expected_message = ('Parsing submission %s: %s'
                             % (submission_key, log_message))
-        last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
+                continue
+            candidate = r.getMessage()
+            if candidate == expected_message:
+                return
+        raise AssertionError('No log message found: %s' % expected_message)
+
+    def assertWarningMessage(self, submission_key, log_message):
+        """Search for message in the log entries for submission_key.
+
+        assertErrorMessage requires that
+        (a) a log message starts with "Parsing submisson <submission_key>:"
+        (b) the error message passed as the parameter message appears
+            in a log string that matches (a)
+        (c) result, which is supposed to contain an object representing
+            the result of parsing a submission, is None.
+        (d) the log level is WARNING.
+
+        If all four criteria match, assertWarningMessage does not raise any
+        exception.
+        """
+        expected_message = ('Parsing submission %s: %s'
+                            % (submission_key, log_message))
+        for r in self.handler.records:
+            if r.levelno != logging.WARNING:
                 continue
             candidate = r.getMessage()
             if candidate == expected_message:
