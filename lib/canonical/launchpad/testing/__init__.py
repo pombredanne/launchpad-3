@@ -312,7 +312,8 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
-    def create_branch_and_tree(self, tree_location='.', product=None):
+    def create_branch_and_tree(self, tree_location='.', product=None,
+                               hosted=False):
         """Create a database branch, bzr branch and bzr checkout.
 
         :return: a `Branch` and a workingtree.
@@ -323,10 +324,14 @@ class TestCaseWithFactory(TestCase):
             db_branch = self.factory.makeAnyBranch()
         else:
             db_branch = self.factory.makeProductBranch(product)
-        transport = get_transport(db_branch.warehouse_url)
+        if hosted:
+            branch_url = db_branch.getPullURL()
+        else:
+            branch_url = db_branch.warehouse_url
+        transport = get_transport(branch_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        bzr_branch = BzrDir.create_branch_convenience(branch_url)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
 
@@ -387,9 +392,15 @@ class TestCaseWithFactory(TestCase):
             FakeTransportServer)
         from bzrlib.transport import get_transport
         self.useTempBzrHome()
-        server = FakeTransportServer(get_transport('.'))
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        os.mkdir('lp-mirrored')
+        mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
+        mirror_server.setUp()
+        self.addCleanup(mirror_server.tearDown)
+        os.mkdir('lp-hosted')
+        hosted_server = FakeTransportServer(
+            get_transport('lp-hosted'), url_prefix='lp-hosted:///')
+        hosted_server.setUp()
+        self.addCleanup(hosted_server.tearDown)
 
 
 def capture_events(callable_obj, *args, **kwargs):

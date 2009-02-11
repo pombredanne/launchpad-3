@@ -6,11 +6,15 @@ from textwrap import dedent
 import transaction
 import unittest
 
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
+from bzrlib import errors as bzr_errors
+from bzrlib.transport import get_transport
+from canonical.database.constants import UTC_NOW
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import DocTestSuite
-from canonical.database.constants import UTC_NOW
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
@@ -516,10 +520,20 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
-        local_source = removeSecurityProxy(bmp.source_branch).getBzrBranch()
+        self.assertRaises(
+            bzr_errors.NotBranchError, Branch.open,
+            bmp.source_branch.warehouse_url)
+        local_source = Branch.open(bmp.source_branch.getPullURL())
         self.assertEqual(
             source.branch.last_revision(), local_source.last_revision())
         self.assertIsNot(None, bmp.source_branch.next_mirror_time)
+
+    def mirror(self, db_branch, bzr_branch):
+        transport = get_transport(db_branch.warehouse_url)
+        transport.clone('../..').ensure_base()
+        transport.clone('..').ensure_base()
+        lp_mirror = BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        lp_mirror.pull(bzr_branch)
 
     def test_processMergeDirectiveWithBundleExistingBranch(self):
         self.useBzrBranches()
@@ -527,10 +541,11 @@ class TestCodeHandler(TestCaseWithFactory):
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')
         lp_source, lp_source_tree = self.create_branch_and_tree(
-            'lpsource', branch.product)
+            'lpsource', branch.product, hosted=True)
         self.assertIs(lp_source.next_mirror_time, None)
         lp_source_tree.pull(tree.branch)
         lp_source_tree.commit('rev2', rev_id='rev2')
+        self.mirror(lp_source, lp_source_tree.branch)
         source = lp_source_tree.bzrdir.sprout('source').open_workingtree()
         source.commit('rev3', rev_id='rev3')
         source.branch.set_public_branch(lp_source.bzr_identity)
@@ -539,11 +554,12 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
-        local_source = removeSecurityProxy(bmp.source_branch).getBzrBranch()
-        self.assertEqual(
-            source.last_revision(), local_source.last_revision())
         self.assertEqual(lp_source, bmp.source_branch)
         self.assertIsNot(None, lp_source.next_mirror_time)
+        mirror = removeSecurityProxy(bmp.source_branch).getBzrBranch()
+        self.assertEqual('rev2', mirror.last_revision())
+        hosted = Branch.open(bmp.source_branch.getPullURL())
+        self.assertEqual('rev3', hosted.last_revision())
 
 
 class TestVoteEmailCommand(TestCase):

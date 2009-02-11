@@ -6,6 +6,7 @@ import operator
 import re
 import transaction
 
+from bzrlib.branch import Branch
 from bzrlib.errors import NotAMergeDirective, NotBranchError
 from bzrlib.merge_directive import MergeDirective
 from bzrlib.transport import get_transport
@@ -368,11 +369,11 @@ class CodeHandler:
                 submitter)
         assert mp_source.branch_type == BranchType.HOSTED
         try:
-            bzr_branch = removeSecurityProxy(mp_source).getBzrBranch()
+            bzr_branch = Branch.open(mp_source.getPullURL())
         except NotBranchError:
             bzr_target = removeSecurityProxy(target).getBzrBranch()
             transport = get_transport(
-                mp_source.warehouse_url,
+                mp_source.getPullURL(),
                 possible_transports=[bzr_target.bzrdir.root_transport])
             transport.clone('../..').ensure_base()
             transport.clone('..').ensure_base()
