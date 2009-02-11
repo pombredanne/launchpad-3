@@ -74,4 +74,4 @@ Even if you are an admin.
     >>> print extract_text(find_main_content(admin_browser.contents))
     Last modified ...
     Delete branch
-    This branch cannot be deleted as it has 1 branches sharing revisions.
+    This branch cannot be deleted as it has 1 branch sharing revisions.

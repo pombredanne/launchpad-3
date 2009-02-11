@@ -21,7 +21,8 @@
   <tal:has-stacked-branches condition="view/stacked_branches_count">
     This branch cannot be deleted as it has
     <em><tal:count replace="view/stacked_branches_count"/></em>
-    branches sharing revisions.
+    <tal:text replace="view/stacked_branches_text">branches</tal:text>
+    sharing revisions.
   </tal:has-stacked-branches>
 
   <tal:has-no-stacked-branches condition="not: view/stacked_branches_count">
