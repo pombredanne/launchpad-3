@@ -6,10 +6,14 @@ __all__ = ['RemoveObsoleteTranslations']
 
 import time
 
+from storm.store import Store
+
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote
+
+from canonical.launchpad.database import POTemplate, POFile
 
 from canonical.launchpad.interfaces import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -126,6 +130,138 @@ class DeletionLoopRunner(object):
         return self._commit_count
 
 
+class TranslationsStatusChecker:
+    check_methods = {
+        'productseries_potemplates' : 'collectProductSeriesStats',
+        'other_distroseries_potemplates' : 'collectOtherDistroSeriesStats',
+        'potemplate_potmsgsets' : 'collectPOTemplatePOTMsgSetStats',
+        'potemplate_pofiles' : 'collectPOTemplatePOFileStats',
+        'pofile_pofiletranslators' : 'collectPOFileTranslatorStats',
+        }
+
+    def __init__(self, store, logger):
+        self.store = store
+        self.logger = logger
+        self.problems = 0
+        for attribute in self.check_methods:
+            method = getattr(self, self.check_methods[attribute])
+            self.logger.debug("Collecting %s..." % attribute)
+            setattr(self, attribute, method())
+
+    def postCheck(self):
+        self.checkObsoletePOTemplates()
+
+        for attribute in self.check_methods:
+            self.genericCheck(attribute)
+
+        if self.problems > 0:
+            self.logger.info("%d problems found." % self.problems)
+        else:
+            self.logger.info("All checks passed.")
+
+    def genericCheck(self, attribute_name):
+        method = getattr(self, self.check_methods[attribute_name])
+        new_stats = method()
+        old_stats = getattr(self, attribute_name)
+        if old_stats != new_stats:
+            self.logger.warn(
+                "Mismatch in %s (was %d long, now %d)." % (
+                    attribute_name, len(old_stats), len(new_stats)))
+            self.problems += 1
+
+    def checkObsoletePOTemplates(self):
+        query = """SELECT COUNT(POTemplate.id) FROM POTemplate
+                   JOIN DistroSeries
+                     ON POTemplate.distroseries=DistroSeries.id
+                   WHERE DistroSeries.releasestatus=%s AND
+                         DistroSeries.distribution=%s""" % (
+            quote(DistroSeriesStatus.OBSOLETE),
+            quote(getUtility(ILaunchpadCelebrities).ubuntu))
+        result = self.store.execute(query)
+        count = result.get_one()
+        if int(count[0]) != 0:
+            self.logger.warn("\tObsolete POTemplates remaining: %s." % count)
+            self.problems += 1
+
+    def collectProductSeriesStats(self):
+        query = """SELECT ProductSeries.id, COUNT(POTemplate.id)
+                     FROM ProductSeries
+                     JOIN POTemplate
+                       ON POTemplate.productseries=ProductSeries.id
+                     GROUP BY ProductSeries.id
+                     ORDER BY ProductSeries.id"""
+        result = self.store.execute(query)
+        return result.get_all()
+
+    def collectOtherDistroSeriesStats(self):
+        query = """SELECT DistroSeries.id, COUNT(POTemplate.id)
+                     FROM DistroSeries
+                     JOIN POTemplate
+                       ON POTemplate.distroseries=DistroSeries.id
+                     WHERE DistroSeries.releasestatus != %s
+                     GROUP BY DistroSeries.id
+                     ORDER BY DistroSeries.id""" % quote(
+            DistroSeriesStatus.OBSOLETE)
+        result = self.store.execute(query)
+        return result.get_all()
+
+    def collectPOTemplatePOFileStats(self):
+        query = """SELECT POTemplate.id, COUNT(POFile.id)
+                     FROM POTemplate
+                     LEFT OUTER JOIN DistroSeries
+                       ON POTemplate.distroseries=DistroSeries.id
+                     LEFT OUTER JOIN ProductSeries
+                       ON POTemplate.productseries=ProductSeries.id
+                     JOIN POFile
+                       ON POFile.potemplate=POTemplate.id
+                     WHERE (distroseries IS NOT NULL AND
+                            DistroSeries.releasestatus != %s) OR
+                           productseries IS NOT NULL
+                     GROUP BY POTemplate.id
+                     ORDER BY POTemplate.id""" % quote(
+            DistroSeriesStatus.OBSOLETE)
+        result = self.store.execute(query)
+        return result.get_all()
+
+    def collectPOTemplatePOTMsgSetStats(self):
+        query = """SELECT POTemplate.id, COUNT(POTMsgSet.id)
+                     FROM POTemplate
+                     LEFT OUTER JOIN DistroSeries
+                       ON POTemplate.distroseries=DistroSeries.id
+                     LEFT OUTER JOIN ProductSeries
+                       ON POTemplate.productseries=ProductSeries.id
+                     JOIN POTMsgSet
+                       ON POTMsgSet.potemplate=POTemplate.id
+                     WHERE (distroseries IS NOT NULL AND
+                            DistroSeries.releasestatus != %s) OR
+                           productseries IS NOT NULL
+                     GROUP BY POTemplate.id
+                     ORDER BY POTemplate.id""" % quote(
+            DistroSeriesStatus.OBSOLETE)
+        result = self.store.execute(query)
+        return result.get_all()
+
+    def collectPOFileTranslatorStats(self):
+        query = """SELECT POFile.id, COUNT(POFileTranslator.id)
+                     FROM POFile
+                     JOIN POTemplate
+                       ON POFile.potemplate=POTemplate.id
+                     LEFT OUTER JOIN DistroSeries
+                       ON POTemplate.distroseries=DistroSeries.id
+                     LEFT OUTER JOIN ProductSeries
+                       ON POTemplate.productseries=ProductSeries.id
+                     JOIN POFileTranslator
+                       ON POFileTranslator.pofile=POFile.id
+                     WHERE (distroseries IS NOT NULL AND
+                            DistroSeries.releasestatus != %s) OR
+                           productseries IS NOT NULL
+                     GROUP BY POFile.id
+                     ORDER BY POFile.id""" % quote(
+            DistroSeriesStatus.OBSOLETE)
+        result = self.store.execute(query)
+        return result.get_all()
+
+
 class RemoveObsoleteTranslations(LaunchpadScript):
 
     def add_my_options(self):
@@ -203,6 +339,7 @@ class RemoveObsoleteTranslations(LaunchpadScript):
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self._store = store
 
+        checker = TranslationsStatusChecker(store, self.logger)
         for table in collect_order:
             entry = removal_traits[table]
             if entry.has_key('collection_sql'):
@@ -221,18 +358,21 @@ class RemoveObsoleteTranslations(LaunchpadScript):
                 entry, self.txn, self.logger, store,
                 throttle=float(self.options.throttle),
                 dry_run=self.options.dry_run)
-            LoopTuner(loop, self.options.loop_time).run(
-                sleep_between_commits=float(self.options.throttle))
+            LoopTuner(loop, self.options.loop_time,
+                      cooldown_time=float(self.options.throttle)).run()
             self._commit_count += loop.getTotalCommits()
-
-        if self.options.dry_run:
-            self.txn.abort()
 
         self.logger.info("Done with %d commits." % self._commit_count)
         self.logger.info("Statistics:")
         for table in remove_order:
             self.logger.info("\t%-30s: %d removed" % (
                     table, removal_traits[table]['total']))
+
+        self.logger.info("Checks:")
+        checker.postCheck()
+
+        if self.options.dry_run:
+            self.txn.abort()
 
     def _count_rows(self, tablename):
         """Helper to count all rows in a table."""
