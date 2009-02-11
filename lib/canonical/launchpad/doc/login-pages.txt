@@ -58,7 +58,9 @@ explains the problem.
     ...     email='bad-user@canonical.com',
     ...     name='bad-user',
     ...     password='invalid')
-    >>> bad_user.account.status = AccountStatus.SUSPENDED
+    >>> bad_user.account_status = AccountStatus.SUSPENDED
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> login(ANONYMOUS, request)
     >>> request = LaunchpadTestRequest(
