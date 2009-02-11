@@ -16,7 +16,6 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import (
     ICodeReviewComment)
-from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
