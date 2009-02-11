@@ -1575,9 +1575,10 @@ class Person(
             query, clauseTables=['TeamMembership'], orderBy=orderBy)
 
     def _getEmailsByStatus(self, status):
-        query = AND(EmailAddress.q.personID==self.id,
-                    EmailAddress.q.status==status)
-        return EmailAddress.select(query)
+        return Store.of(self).find(
+            EmailAddress,
+            EmailAddress.personID == self.id,
+            EmailAddress.status == status)
 
     @property
     def wiki_names(self):
