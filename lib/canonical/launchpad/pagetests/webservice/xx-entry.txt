@@ -83,6 +83,65 @@ entry's capabilities.
   'application/vd.sun.wadl+xml'
 
 
+== XHTML representations ==
+
+Every entry has an XHTML representation. The default representation is
+a simple definition list.
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
+
+But it's possible to define a custom HTML view for a particular object
+type. Here's a simple view that serves some hard-coded HTML.
+
+  >>> class DummyView:
+  ...
+  ...     def __init__(*args):
+  ...         pass
+  ...
+  ...     def __call__(*args):
+  ...         return "<html>foo</html>"
+
+Register the view as the WebServiceLayer view for an IPerson entry...
+
+  >>> from canonical.lazr.interfaces.rest import WebServiceLayer
+  >>> from canonical.launchpad.interfaces import IPerson
+  >>> from zope.interface.interfaces import IInterface
+  >>> view_name = "canonical.lazr.rest.resource.EntryResource"
+  >>> from zope.component import getGlobalSiteManager
+  >>> manager = getGlobalSiteManager()
+  >>> manager.registerAdapter(
+  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      provided=IInterface, name=view_name)
+
+...and the XHTML representation of an IPerson will be the result of
+calling a DummyView object.
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <html>foo</html>
+
+Before we continue, here's some cleanup code to remove the custom view
+we just defined.
+
+  >>> from zope.component import getGlobalSiteManager
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(
+  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      provided=IInterface, name=view_name)
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
+
+
 == Custom operations ==
 
 Some entries support custom operations through GET. The custom
@@ -168,13 +227,6 @@ representation of the object.
   Content-Type: application/json
   <BLANKLINE>
   {...}
-
-  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
-  HTTP/1.1 200 Ok
-  ...
-  <dl ...>
-  ...
-  </dl>
 
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
