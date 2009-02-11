@@ -72,8 +72,12 @@ class Diff(SQLBase):
         if size == 0:
             diff_text = None
         else:
+            filename = generate_uuid() + '.txt'
+            # Using text/plain instead of text/x-diff because some very
+            # popular browsers won't show text/x-diff by default, so best to
+            # be pragmatic here.
             diff_text = getUtility(ILibraryFileAliasSet).create(
-                'static.diff', size, diff_content, 'text/x-diff')
+                filename, size, diff_content, 'text/plain')
         return klass(diff_text=diff_text)
 
     def _update(self, diff_content, diffstat, filename):
