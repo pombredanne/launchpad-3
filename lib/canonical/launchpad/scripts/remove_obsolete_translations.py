@@ -4,16 +4,10 @@ __metaclass__ = type
 
 __all__ = ['RemoveObsoleteTranslations']
 
-import time
-
-from storm.store import Store
-
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote
-
-from canonical.launchpad.database import POTemplate, POFile
 
 from canonical.launchpad.interfaces import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
