@@ -454,8 +454,7 @@ class IBranchMergeProposal(Interface):
         reviewer=Reference(
             title=_("A reviewer."), schema=IPerson),
         review_type=Text())
-    @call_with(
-        registrant=REQUEST_USER)
+    @call_with(registrant=REQUEST_USER)
     @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
@@ -470,6 +469,12 @@ class IBranchMergeProposal(Interface):
         :return: A `CodeReviewVoteReference` or None.
         """
 
+    @operation_parameters(
+        subject=Text(), content=Text(),
+        vote=Choice(vocabulary=Interface), review_type=Text(),
+        parent=Reference(schema=Interface))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.

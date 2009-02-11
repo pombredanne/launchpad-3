@@ -104,6 +104,22 @@ A review can be requested of the salgado, since he's a valid reviewer.
     >>> print _unused
     HTTP/1.1 200 OK ...
 
+Now the code review should be made.
+
+    >>> comment = webservice.named_post(
+    ...     merge_proposal['self_link'], 'createComment',
+    ...     subject='Great work', content='This is great work',
+    ...     vote=CodeReviewVote.APPROVE.title, review_type='code').jsonBody()
+    >>> pprint_entry(comment)
+    branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
+    id: 3
+    message_body: u'This is great work'
+    resource_type_link: u'http://api.launchpad.dev/beta/#code_review_comment'
+    self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/comments/3'
+    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    vote: None
+    vote_tag: u'code'
+
 
 == Updating the preview diff ==
 
