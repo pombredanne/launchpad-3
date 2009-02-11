@@ -209,7 +209,7 @@ COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transiti
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
 COMMENT ON COLUMN BugTask.hotness IS 'The relevance of this bug task in relation to all other tasks on the target. This value is computed periodically using bug_affects_person and other bug values.';
-COMMENT ON COLUMN BugTask.hotness_bin IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessBin enumeration.';
+COMMENT ON COLUMN BugTask.hotness_rank IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessRank enumeration.';
 
 -- BugNotification
 
