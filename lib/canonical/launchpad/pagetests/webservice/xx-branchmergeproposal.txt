@@ -98,7 +98,7 @@ A review can be performed through the API.
 
 A review can be requested of the salgado, since he's a valid reviewer.
 
-    >>> _unused = webservice.named_get(
+    >>> _unused = webservice.named_post(
     ...     merge_proposal['self_link'], 'nominateReviewer',
     ...     reviewer=person['self_link'], review_type='code')
     >>> print _unused

@@ -31,9 +31,9 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of,
-    operation_returns_entry)
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -450,6 +450,13 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A reviewer."), schema=IPerson),
+        review_type=Text())
+    @call_with(
+        registrant=REQUEST_USER)
+    @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
 
