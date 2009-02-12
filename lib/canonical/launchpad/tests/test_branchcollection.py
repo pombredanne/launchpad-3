@@ -14,6 +14,9 @@ from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
@@ -185,6 +188,17 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         branches = self.all_branches.visibleByUser(expert)
         self.assertEqual(
             set(self.all_branches.getBranches()), set(branches.getBranches()))
+
+    def test_subscribers_can_see_branches(self):
+        subscriber = self.factory.makePerson()
+        removeSecurityProxy(self.private_branch1).subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
+        branches = self.all_branches.visibleByUser(subscriber)
+        self.assertEqual(
+            set([self.public_branch, self.private_branch1]),
+            set(branches.getBranches()))
 
     # XXX: Test subscribers
 
