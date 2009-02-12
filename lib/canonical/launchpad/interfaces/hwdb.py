@@ -268,10 +268,10 @@ class IHWSubmissionSet(Interface):
             this `IDistribution`.
         :param distroseries: Limit results to submissions made for
             this `IDistroSeries`.
-        Only one of :distribution: or :distroseries: may be supplied.
-
         :param architecture: Limit results to submissions made for
             a specific architecture.
+
+        Only one of :distribution: or :distroseries: may be supplied.
         """
 
 
@@ -672,11 +672,11 @@ class IHWDevice(Interface):
             `IDistribution`.
         :param distroseries: Limit results to submissions for this
             `IDistroSeries`.
-        Only one of :distribution: or :distroseries: may be supplied.
         :param architecture: Limit results to submissions for this
             architecture.
 
         Only submissions matching all given criteria are returned.
+        Only one of :distribution: or :distroseries: may be supplied.
         """
 
     drivers = exported(
