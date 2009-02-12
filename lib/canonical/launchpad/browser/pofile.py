@@ -403,7 +403,7 @@ class POFileTranslateView(BaseTranslationView):
     # BaseTranslationView API
     #
 
-    @property
+    @cachedproperty
     def translation_group(self):
         """Is there a translation group for this translation?"""
         translation_groups = self.context.potemplate.translationgroups
@@ -413,11 +413,22 @@ class POFileTranslateView(BaseTranslationView):
             group = None
         return group
 
-    @property
+    @cachedproperty
     def translation_team(self):
         group = self.translation_group
         team = group.query_translator(self.context.language)
         return team
+
+    @cachedproperty
+    def has_any_documentation(self):
+        """Return whether there is any documentation for this POFile."""
+        if (self.translation_group is not None and
+            self.translation_group.translation_guide_url is not None):
+            return True
+        if (self.translation_team is not None and
+            self.translation_team.style_guide_url is not None):
+            return True
+        return False
 
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
