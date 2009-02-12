@@ -26,7 +26,7 @@ from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classImplements, classProvides, directlyProvides,
+    classImplements, classProvides, alsoProvides,
     implementer, implements, Interface)
 from zope.security.proxy import removeSecurityProxy
 
@@ -451,9 +451,9 @@ class StoreSelector:
 
         # Attach our marker interfaces
         if flavor == MASTER_FLAVOR:
-            directlyProvides(store, IMasterStore)
+            alsoProvides(store, IMasterStore)
         else:
-            directlyProvides(store, ISlaveStore)
+            alsoProvides(store, ISlaveStore)
 
         return store
 
@@ -507,7 +507,7 @@ def get_object_from_master_store(obj):
         obj = master_store.get(obj.__class__, obj.id)
         if obj is None:
             return None
-    directlyProvides(obj, IMasterDBObject)
+    alsoProvides(obj, IMasterDBObject)
     return obj
 
 
