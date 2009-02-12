@@ -440,7 +440,7 @@ distribution...
     >>> print submissions['total_size']
     0
 
-...and for a specific processor architecture.
+...a for a specific processor architecture...
 
     >>> parameters = {
     ...     'ws.op': 'getSubmissions',
@@ -460,6 +460,39 @@ distribution...
     ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
     >>> print submissions['total_size']
     0
+
+...a for a specific distro series...
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/warty')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and the combination of a distro series and processor architecture.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'),
+    ...     architecture='i386').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'),
+    ...     architecture='powerpc').jsonBody()
+    >>> print submissions['total_size']
+    0
+
 
 === Submission Devices ===
 
