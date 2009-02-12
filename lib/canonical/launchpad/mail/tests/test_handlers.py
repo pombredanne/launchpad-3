@@ -509,6 +509,7 @@ class TestCodeHandler(TestCaseWithFactory):
             message['from'])
 
     def test_processMergeDirectiveWithBundle(self):
+        """When a bundle is provided, it can generate a new branch."""
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.branch.set_public_branch(branch.bzr_identity)
@@ -520,12 +521,14 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
+        # The hosted location should be populated, not the mirror.
         self.assertRaises(
             bzr_errors.NotBranchError, Branch.open,
             bmp.source_branch.warehouse_url)
         local_source = Branch.open(bmp.source_branch.getPullURL())
         self.assertEqual(
             source.branch.last_revision(), local_source.last_revision())
+        # A mirror should be scheduled.
         self.assertIsNot(None, bmp.source_branch.next_mirror_time)
 
     def mirror(self, db_branch, bzr_branch):
@@ -537,6 +540,7 @@ class TestCodeHandler(TestCaseWithFactory):
         lp_mirror.pull(bzr_branch)
 
     def test_processMergeDirectiveWithBundleExistingBranch(self):
+        """A bundle can update an existing branch."""
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree('target')
         tree.branch.set_public_branch(branch.bzr_identity)
@@ -564,10 +568,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_getNewBranchInfoNoURL(self):
         """
-        If no URL is provided, target product is used, with 'merge' basename.
-
-        An alternative approach would be to determine the branch nick of
-        the source revision of the merge directive, using the provided bundle.
+        If no URL, target namespace is used, with 'merge' basename.
         """
         submitter = getUtility(ILaunchBag).user
         product = self.factory.makeProduct()

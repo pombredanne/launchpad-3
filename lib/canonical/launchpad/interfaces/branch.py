@@ -508,7 +508,6 @@ class BranchURIField(URIField):
 
         # URIField has already established that we have a valid URI
         uri = URI(value)
-        supermirror_root = URI(config.codehosting.supermirror_root)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
@@ -858,8 +857,8 @@ class IBranch(IHasOwner):
         """A specific number of the latest revisions in that branch."""
 
     # These attributes actually have a value_type of IBranchMergeProposal,
-    # but uses Interface to prevent circular imports, and the value_type is set
-    # near IBranchMergeProposal.
+    # but uses Interface to prevent circular imports, and the value_type is
+    # set near IBranchMergeProposal.
     landing_targets = exported(
         CollectionField(
             title=_('Landing Targets'),
@@ -1176,6 +1175,18 @@ class IBranchSet(Interface):
         This returns only public, non-remote branches. The results *will*
         include branches that aren't explicitly private but are stacked-on
         private branches. The rewrite map generator filters these out itself.
+        """
+
+    def URIToUniqueName(uri):
+        """Return the unique name for the URL, if the URL is on codehosting.
+
+        This does not ensure that the unique name is valid.  It recognizes the
+        codehosting URLs of remote branches and mirrors, but not their
+        remote URLs.
+
+        :param uri: An instance of webapp.uri.URI
+        :return: The unique name if possible, None if the URI is not a valid
+            codehosting URI.
         """
 
     def getByUrl(url, default=None):

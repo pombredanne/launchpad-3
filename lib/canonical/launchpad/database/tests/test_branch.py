@@ -56,6 +56,7 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -1371,6 +1372,26 @@ class TestGetByUrl(TestCaseWithFactory):
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
+
+    def test_URIToUniqueName(self):
+        """Ensure URIToUniqueName works."""
+        branch_set = getUtility(IBranchSet)
+        uri = URI(config.codehosting.supermirror_root)
+        uri.path = '/~foo/bar/baz'
+        # Test valid schemes
+        uri.scheme = 'http'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        uri.scheme = 'sftp'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        uri.scheme = 'bzr+ssh'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        # Test invalid scheme
+        uri.scheme = 'ftp'
+        self.assertIs(None, branch_set.URIToUniqueName(uri))
+        # Test valid scheme, invalid domain
+        uri.scheme = 'sftp'
+        uri.host = 'example.com'
+        self.assertIs(None, branch_set.URIToUniqueName(uri))
 
 
 class TestGetByLPPath(TestCaseWithFactory):

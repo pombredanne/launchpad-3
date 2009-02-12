@@ -16,13 +16,12 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
     ICreateMergeProposalJobSource, UserNotBranchReviewer)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, lookup_branch_namespace)
+    lookup_branch_namespace, split_unique_name)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
@@ -315,6 +314,7 @@ class CodeHandler:
 
     @staticmethod
     def _getBranchByUrl(url):
+        """Return a branch according to its URL."""
         branches = getUtility(IBranchSet)
         return branches.getByUrl(url)
 
@@ -335,29 +335,51 @@ class CodeHandler:
             raise NonLaunchpadTarget()
         if md.bundle is None:
             mp_source = self._getSourceNoBundle(
-                md, mp_target.product, submitter)
+                md, mp_target, submitter)
         else:
             mp_source = self._getSourceWithBundle(
                 md, mp_target, submitter)
         return mp_source, mp_target
 
     @staticmethod
-    def _getNewBranchInfo(url, submitter, target_product):
+    def _getNewBranchInfo(url, submitter, target):
+        """Return the namespace and basename for a branch.
+
+        If an LP URL is provided, the namespace and basename will match the
+        LP URL.
+
+        Otherwise, the target is used to determine the namespace, and the base
+        depends on what was supplied.
+
+        If a URL is supplied, its base is used.
+
+        If no URL is supplied, 'merge' is used as the base.
+
+        :param url: The public URL of the source branch, if any.
+        :param target: The target branch.
+        """
         if url is not None:
-            uri = URI(url)
-            codehosting_host = URI(config.codehosting.supermirror_root).host
-            if uri.host == codehosting_host:
-                namespace_name, base = uri.path[1:].rsplit('/', 1)
+            branches = getUtility(IBranchSet)
+            unique_name = branches.URIToUniqueName(URI(url))
+            if unique_name is not None:
+                namespace_name, base = split_unique_name(unique_name)
                 return lookup_branch_namespace(namespace_name), base
         if url is None:
             basename = 'merge'
         else:
             basename = urlparse(url)[2].split('/')[-1]
-        return get_branch_namespace(submitter, target_product), basename
+        namespace = lookup_branch_namespace(split_unique_name(target)[0])
+        return namespace, basename
 
-    def _getNewBranch(self, branch_type, url, product, submitter):
-        namespace, basename = self._getNewBranchInfo(
-            url, submitter, product)
+    def _getNewBranch(self, branch_type, url, target, submitter):
+        """Return a new database branch.
+
+        :param branch_type: The type of branch to create.
+        :param url: The public location of the branch to create.
+        :param product: The product associated with the branch to create.
+        :param submitter: The person who requested the merge.
+        """
+        namespace, basename = self._getNewBranchInfo(url, target)
         if branch_type == BranchType.REMOTE:
             db_url = url
         else:
@@ -365,20 +387,22 @@ class CodeHandler:
         return namespace.createBranchWithPrefix(
             branch_type, basename, submitter, url=db_url)
 
-    def _getSourceNoBundle(self, md, product, submitter):
+    def _getSourceNoBundle(self, md, target, submitter):
+        """Get a source branch for a merge directive with no bundle."""
         mp_source = self._getBranchByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
-                BranchType.REMOTE, md.source_branch, product, submitter)
+                BranchType.REMOTE, md.source_branch, target, submitter)
         return mp_source
 
     def _getSourceWithBundle(self, md, target, submitter):
+        """Get a source branch for a merge directive with a bundle."""
         mp_source = None
         if md.source_branch is not None:
             mp_source = self._getBranchByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
-                BranchType.HOSTED, md.source_branch, target.product,
+                BranchType.HOSTED, md.source_branch, target,
                 submitter)
         assert mp_source.branch_type == BranchType.HOSTED
         try:

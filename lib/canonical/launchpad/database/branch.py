@@ -1081,17 +1081,25 @@ class BranchSet:
         notify(SQLObjectCreatedEvent(branch))
         return branch
 
+    @staticmethod
+    def URIToUniqueName(uri):
+        schemes = ('http', 'sftp', 'bzr+ssh')
+        codehosting_host = URI(config.codehosting.supermirror_root).host
+        if uri.scheme in schemes and uri.host == codehosting_host:
+            return uri.path.lstrip('/')
+        else:
+            return None
+
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        schemes = ('http', 'sftp', 'bzr+ssh')
         try:
             uri = URI(url)
         except InvalidURIError:
             return None
-        codehosting_host = URI(config.codehosting.supermirror_root).host
-        if uri.scheme in schemes and uri.host == codehosting_host:
-            branch = self.getByUniqueName(uri.path.lstrip('/'))
+        unique_name = self.URLToUniqueName(uri)
+        if unique_name is not None:
+            branch = self.getByUniqueName()
         elif uri.scheme == 'lp':
             branch = None
             allowed_hosts = set()
