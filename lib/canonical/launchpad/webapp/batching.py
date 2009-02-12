@@ -85,7 +85,10 @@ class BatchNavigator:
         # We grab the request variables directly from the requests
         # query_string_parameters so that they will be recognized
         # even during post operations.
-        batch_params_source = request.query_string_params
+        batch_params_source = {}
+        for key, val in request.query_string_params.items():
+            if key in (self.start_variable_name, self.batch_variable_name):
+                batch_params_source[key] = val[0]
 
         # For backwards compatibility (as in the past a work-around has been
         # to include the url batch params in hidden fields within posted
@@ -161,10 +164,18 @@ class BatchNavigator:
         If ``params`` is None, uses the current request.query_string_params.
         """
         if params is None:
-            params = self.request.query_string_params
-        return urllib.urlencode(
-            [(key, value) for (key, value) in sorted(params.items())
-             if key not in self.transient_parameters])
+            params_copy = self.request.query_string_params.copy()
+        else:
+            params_copy = params.copy()
+
+        # Remove the transient parameters from our copy:
+        for param in self.transient_parameters:
+            if param in params_copy:
+                del(params_copy[param])
+
+        # We need the doseq=True because some url params are for multi-value
+        # fields.
+        return urllib.urlencode(sorted(params_copy.items()), doseq=True)
 
     def generateBatchURL(self, batch):
         url = ""
