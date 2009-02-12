@@ -197,7 +197,8 @@ class BugTracker(SQLBase):
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/%(tracker)s/?func=add&"
                 "group_id=%(group_id)s&atid=%(at_id)s",
-            "http://sourceforge.net/search/?group_id=%(group_id)",
+            "%(base_url)s/search/?group_id=%(group_id)s&"
+                "type_of_search=artifact",
             ),
         BugTrackerType.TRAC: (
             "%(base_url)s/newticket",

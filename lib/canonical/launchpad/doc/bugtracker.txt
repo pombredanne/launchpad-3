@@ -372,7 +372,7 @@ For the RT tracker we specify a Queue in which to file a ticket.
     >>> links = example_rt.getBugFilingAndSearchLinks('42')
     >>> print_links(links)
     bug_filing_url: http://rt.example.com/Ticket/Create.html?Queue=42
-    search_url: http://.../Search/Simple.html?Query=Queue = '42'
+    search_url: http://.../Search/Build.html?Query=Queue = '42'
 
 SourceForge and its kin use a Group ID and an ATID to specify which
 product a bug should be filed against.
@@ -382,7 +382,7 @@ product a bug should be filed against.
     >>> links = example_sourceforge.getBugFilingAndSearchLinks(('123', '456'))
     >>> print_links(links)
     bug_filing_url: http://.../tracker/?func=add&group_id=123&atid=456
-    search_url: http://.../tracker/?func=search&group_id=123
+    search_url: http://.../search/?group_id=123&type...artifact
 
 The URL returned by the SourceForge celebrity points to the new version
 of the SourceForge bug tracker.
@@ -391,7 +391,7 @@ of the SourceForge bug tracker.
     >>> links = sourceforge.getBugFilingAndSearchLinks(('123', '456'))
     >>> print_links(links)
     bug_filing_url: http://.../tracker2/?func=add&group_id=123&atid=456
-    search_url: http://.../tracker2/?func=search&group_id=123
+    search_url: http://.../search/?group_id=123&type...artifact
 
 Savane uses a single group URL parameter to specify which product the
 bug should be filed against.
