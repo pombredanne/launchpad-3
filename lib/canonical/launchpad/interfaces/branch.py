@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BadBranchSearchContext',
     'bazaar_identity',
+    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
@@ -19,31 +20,32 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
+    'BranchMergeControlStatus',
     'BranchPersonSearchContext',
     'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
-    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
     'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'get_blacklisted_hostnames',
     'IBranch',
-    'IBranchSet',
+    'IBranchBatchNavigator',
+    'IBranchCloud',
     'IBranchDelta',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
-    'IBranchBatchNavigator',
     'IBranchJob',
     'IBranchListingFilter',
     'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
+    'IBranchSet',
+    'IRevisionMailJob',
+    'IRevisionMailJobSource',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
     'RepositoryFormat',
-    'IRevisionMailJob',
-    'IRevisionMailJobSource',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
@@ -78,7 +80,7 @@ from zope.schema import (
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from canonical.lazr.fields import ReferenceChoice
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported)
 
@@ -141,6 +143,44 @@ class BranchLifecycleStatus(DBEnumeratedType):
         """)
 
     ABANDONED = DBItem(80, "Abandoned")
+
+
+class BranchMergeControlStatus(DBEnumeratedType):
+    """Branch Merge Control Status
+
+    Does the branch want Launchpad to manage a merge queue, and if it does,
+    how does the branch owner handle removing items from the queue.
+    """
+
+    NO_QUEUE = DBItem(1, """
+        Does not use a merge queue
+
+        The branch does not use the merge queue managed by Launchpad.  Merges
+        are tracked and managed elsewhere.  Users will not be able to queue up
+        approved branch merge proposals.
+        """)
+
+    MANUAL = DBItem(2, """
+        Manual processing of the merge queue
+
+        One or more people are responsible for manually processing the queued
+        branch merge proposals.
+        """)
+
+    ROBOT = DBItem(3, """
+        A branch merge robot is used to process the merge queue
+
+        An external application, like PQM, is used to merge in the queued
+        approved proposed merges.
+        """)
+
+    ROBOT_RESTRICTED = DBItem(4, """
+        The branch merge robot used to process the queue is in restricted mode
+
+        When the robot is in restricted mode, normal queued branches are not
+        returned for merging, only those with "Queued for Restricted
+        merging" will be.
+        """)
 
 
 class BranchType(DBEnumeratedType):
@@ -634,8 +674,7 @@ class IBranch(IHasOwner):
 
     mirror_status_message = exported(
         Text(
-            title=_('The last message we got when mirroring this branch '
-                    'into supermirror.'),
+            title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
     private = Bool(
@@ -818,16 +857,33 @@ class IBranch(IHasOwner):
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
-    landing_targets = Attribute(
-        "The BranchMergeProposals where this branch is the source branch.")
-    landing_candidates = Attribute(
-        "The BranchMergeProposals where this branch is the target branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
-    dependent_branches = Attribute(
-        "The BranchMergeProposals where this branch is the dependent branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
+    # These attributes actually have a value_type of IBranchMergeProposal,
+    # but uses Interface to prevent circular imports, and the value_type is set
+    # near IBranchMergeProposal.
+    landing_targets = exported(
+        CollectionField(
+            title=_('Landing Targets'),
+            description=_(
+                'A collection of the merge proposals where this branch is '
+                'the source branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
+    landing_candidates = exported(
+        CollectionField(
+            title=_('Landing Candidates'),
+            description=_(
+                'A collection of the merge proposals where this branch is '
+                'the target branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
+    dependent_branches = exported(
+        CollectionField(
+            title=_('Dependent Branches'),
+            description=_(
+                'A collection of the merge proposals that are dependent '
+                'on this branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
 
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
@@ -866,6 +922,14 @@ class IBranch(IHasOwner):
         not yet succeeded. Failed branches are included.
         """
 
+    merge_queue = Attribute(
+        "The queue that contains the QUEUED proposals for this branch.")
+
+    merge_control_status = Choice(
+        title=_('Merge Control Status'), required=True,
+        vocabulary=BranchMergeControlStatus,
+        default=BranchMergeControlStatus.NO_QUEUE)
+
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
@@ -885,12 +949,18 @@ class IBranch(IHasOwner):
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
-    bzr_identity = Attribute(
-        "The shortest lp spec URL for this branch. "
-        "If the branch is associated with a product as the primary "
-        "development focus, then the result should be lp:product.  If "
-        "the branch is related to a series, then lp:product/series. "
-        "Otherwise the result is lp:~user/product/branch-name.")
+    bzr_identity = exported(
+        Text(
+            title=_('Bazaar Identity'),
+            readonly=True,
+            description=_(
+                'The bzr branch path as accessed by Launchpad. If the '
+                'branch is associated with a product as the primary '
+                'development focus, then the result should be lp:product.  '
+                'If the branch is related to a series, then '
+                'lp:product/series.  Otherwise the result is '
+                'lp:~user/product/branch-name.'
+                )))
 
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
@@ -1100,19 +1170,11 @@ class IBranchSet(Interface):
         Return None if no match was found.
         """
 
-    def getRewriteMap():
-        """Return the branches that can appear in the rewrite map.
-
-        This returns only public, non-remote branches. The results *will*
-        include branches that aren't explicitly private but are stacked-on
-        private branches. The rewrite map generator filters these out itself.
-        """
-
     def getByUrl(url, default=None):
         """Find a branch by URL.
 
-        Either from the external specified in Branch.url, or from the
-        supermirror URL on http://bazaar.launchpad.net/.
+        Either from the external specified in Branch.url, or from the URL on
+        http://bazaar.launchpad.net/.
 
         Return the default value if no match was found.
         """
@@ -1133,16 +1195,6 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
-
-    # XXX: This seems like a strangely motivated method. It gets passed many
-    # products and returns a list summaries for each of them. It's really an
-    # implementation detail, not an API.
-    def getActiveUserBranchSummaryForProducts(products):
-        """Return the branch count and last commit time for the products.
-
-        Only active branches are counted (i.e. not Merged or Abandoned),
-        and only non import branches are counted.
-        """
 
     def getRecentlyChangedBranches(
         branch_count=None,
@@ -1520,6 +1572,20 @@ class IRevisionMailJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IRevisionMailJobs."""
+
+
+class IBranchCloud(Interface):
+    """A utility to generate data for branch clouds.
+
+    A branch cloud is a tag cloud of products, sized and styled based on the
+    branches in those products.
+    """
+
+    def getProductsWithInfo(num_products=None):
+        """Get products with their branch activity information.
+
+        :return: a `ResultSet` of (product, num_branches, last_revision_date).
+        """
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):

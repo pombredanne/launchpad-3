@@ -43,9 +43,12 @@ class CodeReviewComment(SQLBase):
              'target': self.branch_merge_proposal.target_branch.displayname,
             })
 
-    def getMessage(self):
-        """See `ICodeReviewComment`."""
-        return self.message.text_contents
+    @property
+    def message_body(self):
+        """See `ICodeReviewComment'."""
+        for chunk in self.message:
+            if chunk.content:
+                return chunk.content
 
     def getAttachments(self):
         """See `ICodeReviewComment`."""

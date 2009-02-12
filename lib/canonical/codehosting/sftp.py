@@ -245,9 +245,9 @@ def _get_transport_for_dir(directory):
 def avatar_to_sftp_server(avatar):
     user_id = avatar.user_id
     hosted_transport = _get_transport_for_dir(
-        config.codehosting.branches_root)
+        config.codehosting.hosted_branches_root)
     mirror_transport = _get_transport_for_dir(
-        config.supermirror.branchesdest)
+        config.codehosting.mirrored_branches_root)
     server = LaunchpadServer(
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.setUp()

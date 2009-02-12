@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'Bug', 'BugBecameQuestionEvent', 'BugSet', 'get_bug_tags',
-    'get_bug_tags_open_count']
+    'Bug',
+    'BugBecameQuestionEvent',
+    'BugSet',
+    'get_bug_tags',
+    'get_bug_tags_open_count',
+    ]
 
 
 import mimetypes
@@ -27,17 +31,36 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
-from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
-    DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
-    IBugBranch, IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet,
-    ICveSet, IDistribution, IDistroSeries, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IPersonSet, IProduct, IProductSeries,
-    IQuestionTarget, ISourcePackage, IStructuralSubscriptionTarget,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces import IQuestionTarget
+from canonical.launchpad.interfaces.bug import (
+    IBug, IBugBecameQuestionEvent, IBugSet)
+from canonical.launchpad.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, IBugTask, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.bugnomination import (
+    NominationError, NominationSeriesObsoleteError)
+from canonical.launchpad.interfaces.bugnotification import (
+    IBugNotificationSet)
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.cve import ICveSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.message import (
+    IMessage, IndexedMessage)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+    BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -66,7 +89,7 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -667,6 +690,44 @@ class Bug(SQLBase):
             # they are created.
             Store.of(result).flush()
             return result
+
+    def addTask(self, owner, target):
+        """See `IBug`."""
+        product = None
+        product_series = None
+        distribution = None
+        distro_series = None
+        source_package_name = None
+
+        # Turn `target` into something more useful.
+        if IProduct.providedBy(target):
+            product = target
+        if IProductSeries.providedBy(target):
+            product_series = target
+        if IDistribution.providedBy(target):
+            distribution = target
+        if IDistroSeries.providedBy(target):
+            distro_series = target
+        if IDistributionSourcePackage.providedBy(target):
+            distribution = target.distribution
+            source_package_name = target.sourcepackagename
+        if ISourcePackage.providedBy(target):
+            if target.distroseries is not None:
+                distro_series = target.distroseries
+                source_package_name = target.sourcepackagename
+            elif target.distribution is not None:
+                distribution = target.distribution
+                source_package_name = target.sourcepackagename
+            else:
+                source_package_name = target.sourcepackagename
+
+        new_task = getUtility(IBugTaskSet).createTask(
+            self, owner=owner, product=product,
+            productseries=product_series, distribution=distribution,
+            distroseries=distro_series,
+            sourcepackagename=source_package_name)
+
+        return new_task
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
