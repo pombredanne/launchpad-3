@@ -2,6 +2,7 @@
 
 # Pick up the standard Mailman defaults
 # pylint: disable-msg=W0401
+# pylint: disable-msg=W0614
 from Mailman.Defaults import *
 
 # Use a name for the site list that is very unlikely to conflict with any
