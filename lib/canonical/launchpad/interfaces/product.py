@@ -605,14 +605,6 @@ class IProductSet(Interface):
         returned.
         """
 
-    def getProductsWithUserDevelopmentBranches():
-        """Return products that have a user branch for the development series.
-
-        Only active products are returned.
-
-        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
-        """
-
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', project='project_group',

@@ -31,7 +31,7 @@ branch format is checked:
   'Bazaar-NG Branch Reference Format 1\n'
 
 Now Bazaar knows that it has a branch reference.  The final request is
-to find the real branch location.  We return the supermirror URL for
+to find the real branch location.  We return Launchpad's HTTP URL for
 the branch:
 
   >>> anon_browser.open(branchurl + '/.bzr/branch/location')
