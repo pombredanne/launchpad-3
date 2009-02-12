@@ -1367,7 +1367,7 @@ class BranchLifecycleStatusFilter(EnumeratedType):
     use_template(BranchLifecycleStatus)
 
     sort_order = (
-        'CURRENT', 'ALL', 'DEVELOPMENT', 'EXPERIMENTAL', 'MATURE',
+        'CURRENT', 'ALL', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
         'MERGED', 'ABANDONED')
 
     CURRENT = Item("""

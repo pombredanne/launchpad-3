@@ -150,7 +150,7 @@ shown first.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (New) - view proposal details
+    ~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
     ~name12/gnome-terminal/klingon (Experimental) - view proposal details
       Merge proposed by No Privileges Person
@@ -411,7 +411,7 @@ Gone from the target branch.
     >>> nopriv_browser.getLink('~name12/gnome-terminal/main').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (New) - view proposal details
+    ~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
 
 If the user subsequently wants to set the merged revision number,

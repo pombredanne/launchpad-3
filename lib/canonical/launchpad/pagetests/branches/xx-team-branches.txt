@@ -9,8 +9,7 @@ overview page:
   ...     'http://launchpad.dev/gnome-terminal/+branches')
   >>> anon_browser.getLink('klingon').url
   'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
-        
+
 Ensure that a branch owned by a team can be viewed:
 
   >>> anon_browser.getLink('klingon').click()
-
