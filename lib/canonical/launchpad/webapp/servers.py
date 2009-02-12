@@ -8,6 +8,7 @@ __metaclass__ = type
 import cgi
 import pytz
 import threading
+import urllib
 import xmlrpclib
 from datetime import datetime
 
@@ -1227,6 +1228,41 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # encounter doomed transactions.  If it does, this will need to be
         # revisited.
         txn.commit()
+
+    def callObject(self, request, object):
+        """Help web browsers handle redirects correctly."""
+        value = super(WebServicePublication, self).callObject(
+            request, object)
+        if request.response.getStatus() / 100 == 3:
+            vhost = URI(request.getApplicationURL()).host
+            api = allvhosts.configs['api']
+            if vhost != api.hostname and vhost not in api.althostnames:
+                # This request came in on a vhost other than the
+                # dedicated web service vhost. That means it was
+                # probably sent by a web browser. Because web
+                # browsers, content negotiation, and redirects are a
+                # deadly combination, we're going to help the browser
+                # out a little.
+                #
+                # We're going to take the current request's "Accept"
+                # header and put it into the URL specified in the
+                # Location header. When the web browser makes its
+                # request, it will munge the original 'Accept' header,
+                # but because the URL it's accessing will include the
+                # old header in the "ws.accept" header, we'll still be
+                # able to serve the right document.
+                location = request.response.getHeader("Location", None)
+                if location is not None:
+                    accept = request.response.getHeader(
+                        "Accept", "application/json")
+                    qs_append = "ws.accept=" + urllib.quote(accept)
+                uri = URI(location)
+                if uri.query is None:
+                    uri.query = qs_append
+                else:
+                    uri.query += '&' + qs_append
+                request.response.setHeader("Location", str(uri))
+        return value
 
     def getPrincipal(self, request):
         """See `LaunchpadBrowserPublication`.
