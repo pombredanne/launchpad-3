@@ -20,6 +20,7 @@ from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
+import os.path
 
 import pytz
 from zope.component import getUtility
@@ -31,6 +32,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.processor import ProcessorFamilySet
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archive import (
@@ -64,6 +66,8 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.hwdb import (
+    HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.mailinglist import (
@@ -1105,6 +1109,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
 
+    def makeDistroArchSeries(self, distroseries=None,
+                             architecturetag='powerpc', processorfamily=None,
+                             official=True, owner=None,
+                             supports_virtualized=False):
+        """Create a new distroarchseries"""
+
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if processorfamily is None:
+            processorfamily = ProcessorFamilySet().getByName('powerpc')
+        if owner is None:
+            owner = self.makePerson()
+
+        return distroseries.newArch(
+            architecturetag, processorfamily, official, owner,
+            supports_virtualized)
+
     def _makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
@@ -1349,3 +1370,32 @@ class LaunchpadObjectFactory(ObjectFactory):
         file_alias = getUtility(ILibraryFileAliasSet).create(
             '*', len(message_string), StringIO(message_string), '*')
         return message, file_alias, source_branch, target_branch
+
+    def makeHWSubmission(self, date_created=None, submission_key=None,
+                         emailaddress=u'test@canonical.com',
+                         distroarchseries=None, private=False,
+                         contactable=False, system=None,
+                         submission_data=None):
+        """Create a new HWSubmission."""
+        if date_created is None:
+            date_created = datetime.now(pytz.UTC)
+        if submission_key is None:
+            submission_key = self.getUniqueString('submission-key')
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries()
+        if system is None:
+            system = self.getUniqueString('system-fingerprint')
+        if submission_data is None:
+            sample_data_path = os.path.join(
+                config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+                'tests', 'simple_valid_hwdb_submission.xml')
+            submission_data = open(sample_data_path).read()
+        filename = self.getUniqueString('submission-file')
+        filesize = len(submission_data)
+        raw_submission = StringIO(submission_data)
+        format = HWSubmissionFormat.VERSION_1
+        submission_set = getUtility(IHWSubmissionSet)
+
+        return submission_set.createSubmission(date_created, format, private, contactable,
+            submission_key, emailaddress, distroarchseries,
+            raw_submission, filename, filesize, system)

@@ -45,6 +45,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -253,7 +254,7 @@ class IHWSubmissionSet(Interface):
         """
 
     def search(user=None, device=None, driver=None, distribution=None,
-               architecture=None):
+               distroseries=None, architecture=None):
         """Return the submissions matiching the given parmeters.
 
         :param user: The `IPerson` running the query. Private submissions
@@ -265,6 +266,8 @@ class IHWSubmissionSet(Interface):
             that use this `IHWDriver`.
         :param distribution: Limit results to submissions made for
             this `IDistribution`.
+        :param distroseries: Limit results to submissions made for
+            this `IDistroSeries`.
         :param architecture: Limit results to submissions made for
             a specific architecture.
         """
@@ -642,6 +645,13 @@ class IHWDevice(Interface):
                 u'If specified, the result set is limited to sumbissions '
                 'made for the given distribution.',
             required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution series.',
+            required=False),
         architecture = TextLine(
             title=u'A processor architecture',
             description=
@@ -650,13 +660,16 @@ class IHWDevice(Interface):
             required=False))
     @operation_returns_collection_of(IHWSubmission)
     @export_read_operation()
-    def getSubmissions(driver=None, distribution=None, architecture=None):
+    def getSubmissions(driver=None, distribution=None,
+                       distroseries=None, architecture=None):
         """List all submissions which mention this device.
 
         :param driver: Limit results to devices that use the given
             `IHWDriver`.
         :param distribution: Limit results to submissions for this
             `IDistribution`.
+        :param distroseries: Limit results to submissions for this
+            `IDistroSeries`.
         :param architecture: Limit results to submissions for this
             architecture.
 
