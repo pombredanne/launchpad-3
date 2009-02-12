@@ -58,6 +58,10 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self.filterBy(Branch.owner == person)
 
+    def registeredBy(self, person):
+        """See `IBranchCollection`."""
+        return self.filterBy(Branch.registrant == person)
+
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
         if (person == LAUNCHPAD_SERVICES or
