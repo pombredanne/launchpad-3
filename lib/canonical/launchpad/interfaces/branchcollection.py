@@ -19,8 +19,26 @@ class IBranchCollection(Interface):
     count = Attribute("The number of branches in this collection.")
 
     def getBranches():
-        # XXX: Fuck it, just make this __iter__.
         """Return a result sest of all branches in this collection."""
+
+    def inProduct(product):
+        """Restrict the collection to branches in 'product'."""
+
+    def ownedBy(person):
+        """Restrict the collection to branches owned by 'person'."""
+
+    def registeredBy(person):
+        """Restrict the collection to branches registered by 'person'."""
+
+    def subscribedBy(person):
+        """Restrict the collection to branches subscribed to by 'person'."""
+
+    def visibleByUser(person):
+        """Restrict the collection to branches that person is allowed to see.
+        """
+
+    def withLifecycleStatus(*statuses):
+        """Restrict the collection to branches with the given statuses."""
 
 
 # XXX: revision support
