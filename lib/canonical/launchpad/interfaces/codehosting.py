@@ -57,7 +57,7 @@ class IBranchPuller(Interface):
     """
 
     def getBranchPullQueue(branch_type):
-        """Get the list of branches to be pulled by the supermirror.
+        """Get the list of branches to be mirrored.
 
         :param branch_type: One of 'HOSTED', 'MIRRORED', or 'IMPORTED'.
 

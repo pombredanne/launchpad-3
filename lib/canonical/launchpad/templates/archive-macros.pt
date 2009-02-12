@@ -3,6 +3,139 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
+<metal:expandable_table_js define-macro="expandable-table-js">
+  <tal:comment replace="nothing">
+    Javascript needed for expanding/collapsing archive package list
+    row containing extra publication information via XHR.
+  </tal:comment>
+
+<script type="text/javascript">
+YUI().use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
+
+
+/*
+ * Communicate the update has failed and allow the user to retry
+ * the operation.
+ */
+function informFailure(transaction_id, response, args) {
+    function retry_handler(e) {
+        e.preventDefault();
+        startUpdate(args.container);
+    };
+
+    var failure_message = Y.soyuz.makeFailureNode(
+        'Failed to fetch package details.', retry_handler);
+
+    args.container.set('innerHTML', '');
+    args.container.appendChild(failure_message);
+
+    var anim = Y.lazr.anim.red_flash({
+        node: args.container
+        });
+    anim.run();
+}
+
+
+/*
+ * Update the row with the XHR response.
+ */
+function doUpdate(transaction_id, response, args) {
+    args.container.set('innerHTML', response.responseText);
+
+    var anim = Y.lazr.anim.green_flash({
+        node: args.container
+    });
+    anim.run();
+}
+
+
+/*
+ * Dispatch a XHR for updating the given container.
+ */
+function startUpdate(container) {
+    in_progress_message = Y.soyuz.makeInProgressNode(
+        'Fetching package details ...')
+
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message);
+
+    var config = {
+        on: {
+            'success': doUpdate,
+            'failure': informFailure
+        },
+        arguments: {
+            'container': container,
+        }
+    };
+
+    var pub_id = container.get('id').replace(
+        '-container', '').replace('pub', '');
+    var uri = '+sourcepub/' + pub_id + '/+listing-archive-extra';
+    Y.io(uri, config);
+}
+
+
+/*
+ * Toggle the visibility of the expander targeted and the visual of
+ * the expander itself.
+ */
+function toggleExpandableRow(expander) {
+    var row = Y.get('#' + expander.get('id').replace('-expander', ''));
+    var icon = expander.query('img');
+
+    var row_display = row.getStyle('display');
+    if (row_display == 'none') {
+        row.setStyle('display', 'table-row');
+        icon.set('src', '/@@/treeExpanded');
+        var container = Y.get('#' + row.get('id') + '-container');
+        if (trim(container.get('innerHTML')) == ''){
+            startUpdate(container);
+        }
+    }
+    else {
+        row.setStyle('display', 'none');
+        icon.set('src', '/@@/treeCollapsed');
+    }
+}
+
+
+/*
+ * Setup expander handlers and pre-load 'treeExpanded', 'no' and
+ * 'spinner' images for better reponsiveness.
+ */
+function setupPackageListExpanders() {
+    var spinner = new Image();
+    spinner.src = '/@@/spinner';
+
+    var no = new Image();
+    no.src = '/@@/no';
+
+    var tree_expanded = new Image();
+    tree_expanded.src = '/@@/treeExpanded';
+
+    function expander_handler (e) {
+        e.preventDefault();
+        toggleExpandableRow(e.currentTarget);
+    };
+
+    Y.all('#packages_list a.expander').on("click", expander_handler);
+}
+
+Y.on('domready', setupPackageListExpanders);
+});
+</script>
+
+<style type="text/css" media="screen, print">
+div.package-details {
+    padding-left: 4em;
+    padding-bottom: 1em;
+}
+</style>
+
+
+</metal:expandable_table_js>
+
 <metal:source_package_list define-macro="source-package-list">
   <tal:comment replace="nothing">
     Presents a table listing all the published source packages for an
@@ -52,6 +185,9 @@
             tal:condition="not: batch">
       No matching package for '<tal:name_filter replace="name_filter" />'.
     </div>
+
+    <metal:js
+      use-macro="context/@@+macros/expandable-table-js" />
 
   </div>
 
@@ -136,7 +272,7 @@
                define="widget nocall:view/widgets/selected_sources;
                        field_name widget/context/__name__;
                        error python:view.getFieldError(field_name);">
-    <table class="listing" style="margin-top: 1em;">
+    <table class="listing" style="margin-top: 1em;" id="packages_list">
       <thead>
       <tr class="archive_package_row">
         <th colspan="2">Source</th>
@@ -154,6 +290,10 @@
           define="pub term/value"
           replace="structure pub/@@+listing-archive-detailed-selectable" />
       </tal:terms>
+
+      <metal:js
+        use-macro="context/@@+macros/expandable-table-js" />
+
       </tbody>
       <tfoot tal:condition="view/has_undisplayed_sources">
          <tr>
@@ -174,6 +314,7 @@
            type="hidden" value="1" />
     <div class="error message" tal:condition="error"
          tal:content="structure error">Error message</div>
+
   </tal:sources>
 
 </metal:selectable_sources>

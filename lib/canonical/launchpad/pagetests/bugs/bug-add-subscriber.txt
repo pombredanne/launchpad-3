@@ -34,6 +34,9 @@ currently subscribed to the bug:
     >>> from canonical.launchpad.ftests.bug import (
     ...     print_direct_subscribers, print_indirect_subscribers)
 
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/bugs/1/'
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
     Sample Person (Subscribed by Launchpad Janitor)
     Steve Alexander (Subscribed by Launchpad Janitor)
@@ -43,6 +46,8 @@ currently subscribed to the bug:
     Foo Bar
     Mark Shuttleworth
     Ubuntu Team
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
 
 Unlike the main bug page, here the 'Subscribers' portlet does not have
 any 'Subscribe' links.
@@ -68,6 +73,9 @@ He is notified that David Allouche has been subscribed.
 
 The subscribers portlet now contains the new subscriber's name.
 
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/bugs/1/'
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
     David Allouche (Subscribed by No Privileges Person)
     Sample Person (Subscribed by Launchpad Janitor)
@@ -92,6 +100,7 @@ David got a notification, saying that he was subscribed to the bug.
 
 He subscribes the Landscape developers team.
 
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.getControl("Person").value = 'landscape-developers'
     >>> user_browser.getControl("Add").click()
@@ -107,6 +116,9 @@ He is notified that Landscape developers team has been subscribed.
 
 The subscribers portlet displays the new subscribed team.
 
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/bugs/1/'
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
     David Allouche (Subscribed by No Privileges Person)
     Landscape Developers (Subscribed by No Privileges Person)
