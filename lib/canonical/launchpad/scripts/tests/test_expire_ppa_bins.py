@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.expire_ppa_binaries import PPABinaryExpirer
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
@@ -144,13 +144,15 @@ class TestPPABinaryExpiry(unittest.TestCase):
         self.runScript()
         self.assertNotExpired(pub)
 
-    def _setUpExpirablePublications(self):
+    def _setUpExpirablePublications(self, archive=None):
         """Helper to set up two publications that are both expirable."""
+        if archive is None:
+            archive = self.ppa
         pkg5 = self.stp.getPubSource(
-            sourcename="pkg5", architecturehintlist="i386", archive=self.ppa)
+            sourcename="pkg5", architecturehintlist="i386", archive=archive)
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg5, dateremoved=self.over_threshold_date,
-            archive=self.ppa)
+            archive=archive)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
         other_binary.secure_record.dateremoved = self.over_threshold_date
@@ -193,6 +195,13 @@ class TestPPABinaryExpiry(unittest.TestCase):
         script = self.getScript(['--dry-run'])
         self.layer.switchDbUser(self.dbuser)
         script.main()
+        self.assertNotExpired(pub)
+
+    def testDoesNotAffectNonPPA(self):
+        """Test that expiry does not happen for non-PPA publications."""
+        ubuntu_archive = getUtility(IDistributionSet)['ubuntu'].main_archive
+        pub = self._setUpExpirablePublications(ubuntu_archive)
+        self.runScript()
         self.assertNotExpired(pub)
 
 

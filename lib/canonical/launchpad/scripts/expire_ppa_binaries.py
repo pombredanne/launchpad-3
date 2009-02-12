@@ -61,6 +61,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
             SELECT lfa.id
             FROM
                 LibraryFileAlias AS lfa,
+                Archive,
                 BinaryPackageFile AS bpf,
                 BinaryPackageRelease AS bpr,
                 SecureBinaryPackagePublishingHistory AS bpph
@@ -70,6 +71,8 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 AND bpph.binarypackagerelease = bpr.id
                 AND bpph.dateremoved < (
                     CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
+                AND bpph.archive = archive.id
+                AND archive.purpose = %s
                 AND lfa.expires IS NULL
             EXCEPT
             SELECT bpf.libraryfile
@@ -87,11 +90,13 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 AND (
                     p.name IN %s
                     OR a.private IS TRUE
+                    OR a.purpose != %s
                     OR dateremoved > 
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
                     OR dateremoved IS NULL);
             """ % sqlvalues(
-                stay_of_execution, self.blacklist, stay_of_execution))
+                stay_of_execution, ArchivePurpose.PPA, self.blacklist,
+                ArchivePurpose.PPA, stay_of_execution))
 
         lfa_ids = results.get_all()
         return lfa_ids
