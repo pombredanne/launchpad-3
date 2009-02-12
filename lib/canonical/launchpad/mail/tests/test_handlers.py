@@ -526,6 +526,30 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(notification['to'],
             message['from'])
 
+    def test_processNonLaunchpadTarget(self):
+        """process sends an email if the target branch is unknown."""
+        directive = self.makeMergeDirective(
+            target_branch_url='http://www.example.com')
+        message = self.factory.makeSignedMessage(body='body',
+            subject='This is gonna fail', attachment_contents=''.join(
+                directive.to_lines()))
+
+
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        code_handler.processMergeProposal(message)
+        transaction.commit()
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(),
+            'The target branch %s is not know to Launchpad.' % (
+                target_branch.bzr_identity)
+            )
+        self.assertEqual(notification['to'],
+            message['from'])
 
 
 class TestVoteEmailCommand(TestCase):
