@@ -32,6 +32,12 @@ class GenericBranchCollection:
         self.name = name
         self.displayname = displayname
 
+    def filterBy(self, *expressions):
+        """Return a subset of this collection, filtered by 'expressions'."""
+        return self.__class__(
+            self._store, self._branch_filter_expressions + list(expressions),
+            name=self.name, displayname=self.displayname)
+
     @property
     def count(self):
         """See `IBranchCollection`."""
@@ -43,34 +49,20 @@ class GenericBranchCollection:
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
-        expression = (
-            self._branch_filter_expressions + [Branch.product == product])
-        return self.__class__(
-            self._store, expression, name=self.name,
-            displayname=self.displayname)
+        return self.filterBy(Branch.product == product)
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
         # XXX: duplicate of inProduct code -- refactor
-        expression = (
-            self._branch_filter_expressions + [Branch.owner == person])
-        return self.__class__(
-            self._store, expression, name=self.name,
-            displayname=self.displayname)
+        return self.filterBy(Branch.owner == person)
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
-        if person is None:
-            expression = [Or(Branch.private == False, Branch.owner == person)]
-        elif person == LAUNCHPAD_SERVICES:
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if person is not None and (
+            person == LAUNCHPAD_SERVICES or
+            person.inTeam(celebrities.admin) or
+            person.inTeam(celebrities.bazaar_experts)):
             return self
-        elif person.inTeam(getUtility(ILaunchpadCelebrities).admin):
-            return self
-        elif person.inTeam(getUtility(ILaunchpadCelebrities).bazaar_experts):
-            return self
-        else:
-            expression = [Or(Branch.private == False, Branch.owner == person)]
-        expression += self._branch_filter_expressions
-        return self.__class__(
-            self._store, expression, name=self.name,
-            displayname=self.displayname)
+        return self.filterBy(
+            Or(Branch.private == False, Branch.owner == person))
