@@ -477,8 +477,8 @@ class TestCodeHandler(TestCaseWithFactory):
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
             notification.get_payload(decode=True),
-            'The branch %s is already proposed for merging into %s.'
-            % (source_branch.bzr_identity, target_branch.bzr_identity))
+            'The branch %s is already proposed for merging into %s.\n\n'
+            % (source.bzr_identity, target.bzr_identity))
         self.assertEqual(notification['to'], message['from'])
 
     def test_processMissingMergeDirective(self):
@@ -504,7 +504,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processNonLaunchpadTarget(self):
         """process sends an email if the target branch is unknown."""
-        directive = self.makeMergeDirective(
+        directive = self.factory.makeMergeDirective(
             target_branch_url='http://www.example.com')
         message = self.factory.makeSignedMessage(body='body',
             subject='This is gonna fail', attachment_contents=''.join(
