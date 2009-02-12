@@ -208,7 +208,7 @@ class TestDiffFormatter(TestCase):
             FormattersAPI(' ').format_diff())
 
     def test_cssClasses(self):
-        # Different parts of the diff
+        # Different parts of the diff have different css classes.
         diff = dedent('''\
             === modified file 'tales.py'
             --- tales.py
