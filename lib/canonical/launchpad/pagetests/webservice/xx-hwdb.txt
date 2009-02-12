@@ -440,7 +440,7 @@ distribution...
     >>> print submissions['total_size']
     0
 
-...a for a specific processor architecture...
+...for a specific processor architecture...
 
     >>> parameters = {
     ...     'ws.op': 'getSubmissions',
@@ -461,7 +461,7 @@ distribution...
     >>> print submissions['total_size']
     0
 
-...a for a specific distro series...
+...for a specific distro series...
 
     >>> submissions = webservice.named_get(
     ...     '/+hwdb/+device/2', 'getSubmissions',
@@ -492,6 +492,18 @@ distribution...
     ...     architecture='powerpc').jsonBody()
     >>> print submissions['total_size']
     0
+
+But we can't supply both distribution and distroseries.
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distribution=webservice.getAbsoluteUrl('/ubuntu'),
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'))
+    HTTP/1.1 500 Internal Server Error
+    ...
+    Only one of `distribution` or `distroseries` can be present.
+    ...
+    <BLANKLINE>
 
 
 === Submission Devices ===

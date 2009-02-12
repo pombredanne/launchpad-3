@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
     IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
     IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
-    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet,
+    IllegalQuery)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -287,7 +288,7 @@ class HWSubmissionSet:
             # We need to select a specific distribution, distroseries,
             # and/or processor architecture.
             if distribution and distroseries:
-                raise AssertionError(
+                raise IllegalQuery(
                     'Only one of `distribution` or '
                     '`distroseries` can be present.')
             args.append(HWSubmission.distroarchseries == DistroArchSeries.id)

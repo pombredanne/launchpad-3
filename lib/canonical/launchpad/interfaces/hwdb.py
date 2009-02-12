@@ -58,7 +58,7 @@ from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+    operation_parameters, operation_returns_collection_of, webservice_error)
 
 
 def validate_new_submission_key(submission_key):
@@ -268,6 +268,8 @@ class IHWSubmissionSet(Interface):
             this `IDistribution`.
         :param distroseries: Limit results to submissions made for
             this `IDistroSeries`.
+        Only one of :distribution: or :distroseries: may be supplied.
+
         :param architecture: Limit results to submissions made for
             a specific architecture.
         """
@@ -670,6 +672,7 @@ class IHWDevice(Interface):
             `IDistribution`.
         :param distroseries: Limit results to submissions for this
             `IDistroSeries`.
+        Only one of :distribution: or :distroseries: may be supplied.
         :param architecture: Limit results to submissions for this
             architecture.
 
@@ -976,3 +979,7 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         :param bus: A `HWBus` value.
         :return: A list of strings with vendor IDs fr this bus,
         """
+
+class IllegalQuery(Exception):
+    """Exception raised when trying to run an illegal submissions query."""
+    webservice_error(400) #Bad request.
