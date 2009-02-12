@@ -38,8 +38,6 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
     'IBranchSet',
-    'IRevisionMailJob',
-    'IRevisionMailJobSource',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
