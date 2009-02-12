@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.expire_ppa_binaries import PPABinaryExpirer
@@ -19,7 +20,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
     """Test the expire-ppa-binaries.py script."""
 
     layer = LaunchpadZopelessLayer
-    dbuser = "librariangc"
+    dbuser = config.binaryfile_expire.dbuser
 
     # We need to test several cases are handled properly:
     #  - publications with no "dateremoved" are not expired
@@ -38,6 +39,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
     def setUp(self):
         """Set up some test publications."""
         # Configure the test publisher.
+        self.layer.switchDbUser("launchpad")
         self.stp = SoyuzTestPublisher()
         self.stp.prepareBreezyAutotest()
 
@@ -62,6 +64,8 @@ class TestPPABinaryExpiry(unittest.TestCase):
     def runScript(self):
         """Run the expiry script and return."""
         script = self.getScript()
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
         script.main()
 
     def assertExpired(self, publication):
@@ -167,6 +171,8 @@ class TestPPABinaryExpiry(unittest.TestCase):
         pub = self._setUpExpirablePublications()
         script = self.getScript()
         script.blacklist = ["cprov",]
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
         script.main()
         self.assertNotExpired(pub)
 
@@ -185,6 +191,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
         # will remove the test publications we just created.
         self.layer.txn.commit()
         script = self.getScript(['--dry-run'])
+        self.layer.switchDbUser(self.dbuser)
         script.main()
         self.assertNotExpired(pub)
 
