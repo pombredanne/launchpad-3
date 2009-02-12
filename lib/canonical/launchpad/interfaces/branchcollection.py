@@ -56,8 +56,6 @@ class IBranchCollection(Interface):
 
 # XXX: adapters / easy access methods for common views / concepts
 # - source package
-# - registered by person
-# - subscribed by person
 # - project
 # - global set (i.e. IBranchSet)
 
