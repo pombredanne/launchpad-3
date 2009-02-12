@@ -54,8 +54,7 @@ status is returned.
 ...         print output
 
 >>> login('test@canonical.com')
->>> from canonical.launchpad.testing import factory
->>> factory.LaunchpadObjectFactory().makeBugAttachment(1)
+>>> factory.makeBugAttachment(1)
 <BugAttachment at ...>
 >>> logout()
 
@@ -104,7 +103,6 @@ status is returned.
 
 >>> check("/codeofconduct")
 >>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+sign", auth=True)
 >>> check("/codeofconduct/1.0/+download")
 
 >>> check("/projectgroups", auth=True)
@@ -134,7 +132,6 @@ status is returned.
 >>> check("/firefox/1.0/1.0.0")
 >>> check("/firefox/1.0/1.0.0/+edit", auth=True)
 >>> check("/firefox/1.0/1.0.0/+adddownloadfile", auth=True)
->>> check("/firefox/1.0/1.0.0/+review", auth=True)
 >>> check("/firefox/1.0/1.0.0/+rdf")
 >>> check("/firefox/+rdf")
 >>> check("/firefox/1.0/+rdf")
@@ -290,18 +287,30 @@ Viewing a bug comment.
 >>> check("/firefox/+bug/1/comments/1", auth=True)
 >>> check_not_found("/firefox/+bug/1/comments/42")
 
-Bug attachments in the context of a bug task.
+Bug attachments in the context of a bugtask are all redirected to be
+at +attachment/<id>. The old attachments/<id> form is deprecated.
 
 >>> check_not_found("/firefox/+bug/1/attachments")
->>> check_redirect("/firefox/+bug/1/attachments/1")
->>> check("/firefox/+bug/1/attachments/1", auth=True)
+>>> check_not_found("/firefox/+bug/1/+attachment")
+>>> check_redirect("/firefox/+bug/1/attachments/1", status=301)
+>>> check("/firefox/+bug/1/+attachment/1", auth=True)
 
-Bug attachments in the context of a bug. Required by the web-services
-API, and will soon become the home for attachments in the web UI.
+Bug attachments in the context of a bug are all redirected to be at
++attachment/<id>. The old attachments/<id> form is deprecated.
 
->>> check_redirect("/bugs/1/attachments/1")
->>> check("/bugs/1/attachments/1", auth=True)
+>>> check_not_found("/bugs/2/attachments")
+>>> check_not_found("/bugs/2/+attachment")
+>>> check_redirect("/bugs/1/attachments/1", status=301)
+>>> check("/bugs/1/+attachment/1", auth=True)
+
+If a requested bug attachment is not associated with the bug already
+traversed we will get a 404. For paths using the old attachments/<id>
+form, a 404 will be issued immediately; no redirect will be sent.
+
+>>> check_not_found("/firefox/+bug/2/attachments/1")
+>>> check_not_found("/firefox/+bug/2/+attachment/1")
 >>> check_not_found("/bugs/2/attachments/1")
+>>> check_not_found("/bugs/2/+attachment/1")
 
 Viewing a bug in the context of an upstream where the bug has not yet
 been reported.
@@ -498,6 +507,7 @@ Check redirects of Unicode URLs works
 Icing resources.
 
 >>> from canonical.launchpad.versioninfo import revno
+>>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
 >>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,

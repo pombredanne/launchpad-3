@@ -4,7 +4,6 @@
 
 import os
 import unittest
-import shutil
 
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib import errors as bzr_errors
@@ -19,12 +18,10 @@ from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.config import config
-from canonical.codehosting.branchfsclient import BlockingProxy
+from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import (
     FatLocalTransport, TransportSFTPServer, FileIsADirectory)
-from canonical.codehosting.sshserver import LaunchpadAvatar
-from canonical.codehosting.tests.helpers import FakeLaunchpad
+from canonical.codehosting.sshserver.auth import LaunchpadAvatar
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLayer
 
@@ -72,23 +69,61 @@ class TestFatLocalTransport(TestCaseInTempDir):
         self.assertEqual(
             urlutils.escape(os.path.abspath(filename)), realpath)
 
+    def test_clone_with_no_offset(self):
+        # FatLocalTransport.clone with no arguments returns a new instance of
+        # FatLocalTransport with the same base URL.
+        transport = self.transport.clone()
+        self.assertIsNot(self.transport, transport)
+        self.assertEqual(self.transport.base, transport.base)
+        self.assertIsInstance(transport, FatLocalTransport)
+
+    def test_clone_with_relative_offset(self):
+        # FatLocalTransport.clone with an offset path returns a new instance
+        # of FatLocalTransport with a base URL equal to the offset path
+        # relative to the old base.
+        transport = self.transport.clone("foo")
+        self.assertIsNot(self.transport, transport)
+        self.assertEqual(
+            urlutils.join(self.transport.base, "foo").rstrip('/'),
+            transport.base.rstrip('/'))
+        self.assertIsInstance(transport, FatLocalTransport)
+
+    def test_clone_with_absolute_offset(self):
+        transport = self.transport.clone("/")
+        self.assertIsNot(self.transport, transport)
+        self.assertEqual('file:///', transport.base)
+        self.assertIsInstance(transport, FatLocalTransport)
+
 
 class TestSFTPAdapter(TrialTestCase):
 
     layer = TwistedLayer
 
+    def setUp(self):
+        TrialTestCase.setUp(self)
+        frontend = InMemoryFrontend()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.branchfs_endpoint = XMLRPCWrapper(
+            frontend.getFilesystemEndpoint())
+
     def makeLaunchpadAvatar(self):
-        fake_launchpad = FakeLaunchpad()
-        user_dict = fake_launchpad.getUser(1)
-        branchfs_proxy = BlockingProxy(fake_launchpad)
-        return LaunchpadAvatar(user_dict, branchfs_proxy)
+        user = self.factory.makePerson()
+        user_dict = dict(id=user.id, name=user.name)
+        return LaunchpadAvatar(user_dict, self.branchfs_endpoint)
 
     def test_canAdaptToSFTPServer(self):
-        server = ISFTPServer(self.makeLaunchpadAvatar())
+        avatar = self.makeLaunchpadAvatar()
+        # The adapter logs the SFTPStarted event, which gets the id of the
+        # transport attribute of 'avatar'. Here we set transport to an
+        # arbitrary object that can have its id taken.
+        avatar.transport = object()
+        server = ISFTPServer(avatar)
         self.assertIsInstance(server, TransportSFTPServer)
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString()
         deferred = server.makeDirectory(
-            '~testuser/firefox/baz/.bzr', {'permissions': 0777})
-        self.addCleanup(shutil.rmtree, config.codehosting.branches_root)
+            '~%s/%s/%s' % (avatar.username, product.name, branch_name),
+            {'permissions': 0777})
         return deferred
 
 

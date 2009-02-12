@@ -74,6 +74,8 @@ Branches that are private are accessible by the owner and subscribers.
 The owners of the branch always have visiblity of their own branches.
 
     >>> branch.private = True
+    >>> from canonical.launchpad.webapp.authorization import clear_cache
+    >>> clear_cache() # clear authorization cache for check_permission
     >>> access.checkUnauthenticated()
     False
     >>> branch.owner == no_priv_person

@@ -103,7 +103,7 @@ and also the main area:
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     ...
 
-Buildd Administrators are allowed to see the build in the portlet:
+Buildd Administrators are not allowed to see the build in the portlet:
 
     >>> name12_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> name12_browser.open("http://launchpad.dev/+builds/frog")
@@ -111,7 +111,7 @@ Buildd Administrators are allowed to see the build in the portlet:
     ...     find_tag_by_id(name12_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status Building i386 build of ... RELEASE [cprov]
+    Status Building private build
     ...
 
 and also the main area:
@@ -119,7 +119,7 @@ and also the main area:
     >>> print extract_text(find_main_content(name12_browser.contents))
     The frog builder
     Current status
-    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    The frog builder is deactivated.
     ...
 
 cprov is also allowed to see his own build in the portlet:
@@ -146,7 +146,8 @@ IBuild is also wrapped in a Zope security proxy to prevent unauthorised
 access.  This prevents direct access to the build URL by unauthorised
 users:
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     Traceback (most recent call last):
     ...
@@ -154,10 +155,11 @@ users:
 
 But it is fine for authorised users:
 
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    >>> cprov_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/+build/...
+    http://launchpad.dev/~cprov/+archive/ppa/+build/...
 
 
 == Builder history page ==
@@ -187,7 +189,7 @@ what it shows a non-privileged user:
     ...
     i386 build of foobar 1.0 in ubuntu warty RELEASE
     ...
-    i386 build of at 0.00 in ubuntu warty RELEASE
+    i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
     ...
     5 of 14 results
     ...
@@ -292,7 +294,7 @@ An admin user can see builds even if they are private:
     bob    AUTO    Disabled
     Generated at ...
 
-Launchpad Buildd admins can also see private builds.
+Launchpad Buildd admins cannot see private builds.
 
     >>> name12_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(name12_browser.contents))
@@ -300,7 +302,7 @@ Launchpad Buildd admins can also see private builds.
     Register a new build machine
     PPA build machines
     386      0 builds waiting in queue
-    frog   AUTO    Building i386 build of iceweasel ...[cprov]
+    frog   AUTO    Building private build
     Official distribution build machines
     386      1 builds waiting in queue
     bob    AUTO    Disabled
@@ -345,7 +347,7 @@ users:
     >>> from zope.security.interfaces import Unauthorized
     >>> try:
     ...     anon_browser.open(
-    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...         random_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
@@ -356,7 +358,7 @@ users:
     >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> try:
     ...     browser.open(
-    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...         random_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
@@ -408,13 +410,13 @@ Any other logged-in user will also see the build:
 Accessing the build page will now also work:
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     >>> print anon_browser.title
     i386 build of iceweasel...
 
     >>> browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     >>> print browser.title
     i386 build of iceweasel...

@@ -6,11 +6,10 @@ approval, for any of several reasons.  See `message-hold.txt` for details.
 When a message is held for approval, Mailman will send the message text to
 Launchpad to be eventually displayed in Launchpad's u/i.
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import (
-    ...     new_person, new_team)
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> login('foo.bar@canonical.com')
     >>> team_one, list_one = new_team('team-one', True)
-    >>> anne = new_person('Anne')
+    >>> anne = factory.makePersonByName('Anne')
 
     # We don't care about the email notifications sent when the mailing
     # list was created, and we don't want the notification to confuse
@@ -33,7 +32,6 @@ approve or reject.
     ... I have a question about this team.
     ... """)
 
-    >>> from canonical.launchpad.ftests import login
     >>> mailinglist_api.holdMessage('team-one', message_anne.as_string())
     True
 
@@ -113,7 +111,7 @@ Anne's message is on-topic so the list administrator approves it.
 However, Bart also sends a message to the team, but this one is off-topic so
 the list administrator rejects it.
 
-    >>> bart = new_person('Bart')
+    >>> bart = factory.makePersonByName('Bart')
     >>> message_bart = message_from_string("""\
     ... From: bart.person@example.com
     ... To: team-one@lists.launchpad.dev
@@ -134,7 +132,7 @@ the list administrator rejects it.
 
 Cris sends spam to the mailing list, which is simply discarded.
 
-    >>> cris = new_person('Cris')
+    >>> cris = factory.makePersonByName('Cris')
     >>> message_cris = message_from_string("""\
     ... From: cris.person@example.com
     ... To: team-one@lists.launchpad.dev

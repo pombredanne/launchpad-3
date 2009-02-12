@@ -16,6 +16,7 @@ messaging settings -- stub 2004-10-21
 __all__ = [
     'format_address',
     'get_msgid',
+    'MailController',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
@@ -23,10 +24,12 @@ __all__ = [
 
 import sha
 import sets
+from email.Encoders import encode_base64
 from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
 from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
 from email import Charset
 from smtplib import SMTP
 
@@ -106,37 +109,83 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers=None):
 
     Returns the `Message-Id`.
     """
-    if headers is None:
-        headers = {}
-    if zisinstance(to_addrs, basestring):
-        to_addrs = [to_addrs]
-
-    # It's the caller's responsibility to encode the address fields to
-    # ASCII strings.
-    # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
-    # so we can provide a Unicode string and get the right encoding.
-    for address in [from_addr] + list(to_addrs):
-        if not isinstance(address, str) or not is_ascii_only(address):
-            raise AssertionError(
-                'Expected an ASCII str object, got: %r' % address)
+    ctrl = MailController(from_addr, to_addrs, subject, body, headers)
+    return ctrl.send()
 
 
-    do_paranoid_email_content_validation(
-        from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
+class MailController(object):
+    """Message generation interface closer to peoples' mental model."""
 
-    msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
-    # The header_body_values may be a list or tuple of values, so we will add
-    # a header once for each value provided for that header. (X-Launchpad-Bug,
-    # for example, may often be set more than once for a bugmail.)
-    for header, header_body_values in headers.items():
-        if not zisinstance(header_body_values, (list, tuple)):
-            header_body_values = [header_body_values]
-        for header_body_value in header_body_values:
-            msg[header] = header_body_value
-    msg['To'] = ','.join(to_addrs)
-    msg['From'] = from_addr
-    msg['Subject'] = subject
-    return sendmail(msg)
+    def __init__(self, from_addr, to_addrs, subject, body, headers=None):
+        self.from_addr = from_addr
+        if zisinstance(to_addrs, basestring):
+            to_addrs = [to_addrs]
+        self.to_addrs = to_addrs
+        self.subject = subject
+        self.body = body
+        if headers is None:
+            headers = {}
+        self.headers = headers
+        self.attachments = []
+
+    def addAttachment(self, content, content_type='application/octet-stream',
+                      inline=False, filename=None):
+        attachment = Message()
+        attachment.set_payload(content)
+        attachment['Content-type'] = content_type
+        if inline:
+            disposition = 'inline'
+        else:
+            disposition = 'attachment'
+        disposition_kwargs = {}
+        if filename is not None:
+            disposition_kwargs['filename'] = filename
+        attachment.add_header(
+            'Content-Disposition', disposition, **disposition_kwargs)
+        encode_base64(attachment)
+        self.attachments.append(attachment)
+
+    def makeMessage(self):
+        # It's the caller's responsibility to either encode the address fields
+        # to ASCII strings or pass in Unicode strings.
+        from_addr = Header(self.from_addr).encode()
+        to_addrs = [Header(address).encode()
+            for address in list(self.to_addrs)]
+
+        for address in [from_addr] + to_addrs:
+            if not isinstance(address, str) or not is_ascii_only(address):
+                raise AssertionError(
+                    'Expected an ASCII str object, got: %r' % address)
+
+        do_paranoid_email_content_validation(
+            from_addr=from_addr, to_addrs=to_addrs,
+            subject=self.subject, body=self.body)
+        if len(self.attachments) == 0:
+            msg = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
+        else:
+            msg = MIMEMultipart()
+            body_part = Message()
+            body_part.set_payload(self.body)
+            msg.attach(body_part)
+            for attachment in self.attachments:
+                msg.attach(attachment)
+
+        # The header_body_values may be a list or tuple of values, so we will
+        # add a header once for each value provided for that header.
+        # (X-Launchpad-Bug, for example, may often be set more than once for a
+        # bugmail.)
+        for header, header_body_values in self.headers.items():
+            if not zisinstance(header_body_values, (list, tuple)):
+                header_body_values = [header_body_values]
+            for header_body_value in header_body_values:
+                msg[header] = header_body_value
+        msg['To'] = ','.join(to_addrs)
+        msg['From'] = from_addr
+        msg['Subject'] = self.subject
+        return msg
+
+    def send(self):
+        return sendmail(self.makeMessage())
 
 
 def simple_sendmail_from_person(
@@ -154,7 +203,7 @@ def simple_sendmail_from_person(
         from_addr, to_addrs, subject, body, headers=headers)
 
 
-def sendmail(message, to_addrs=None):
+def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message
 
     If you just need to send dumb ASCII or Unicode, simple_sendmail
@@ -171,6 +220,9 @@ def sendmail(message, to_addrs=None):
 
     Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
+
+    :param bulk: By default, a Precedence: bulk header is added to the
+        message. Pass False to disable this.
 
     Returns the Message-Id
     """
@@ -213,10 +265,11 @@ def sendmail(message, to_addrs=None):
     if 'return-path' not in message:
         message['Return-Path'] = config.canonical.bounce_address
 
-    # Add Precedence header to prevent automatic reply programs
-    # (e.g. vacation) from trying to respond to our messages.
-    del message['Precedence']
-    message['Precedence'] = 'bulk'
+    if bulk:
+        # Add Precedence header to prevent automatic reply programs
+        # (e.g. vacation) from trying to respond to our messages.
+        del message['Precedence']
+        message['Precedence'] = 'bulk'
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']

@@ -228,12 +228,54 @@ the service offers. It also describes the JSON representations those
 resources serve, and any custom methods invokable on those
 resources. It's a big document.
 
+Because it is so big, it is cached.  Because it only changes when the
+Launchpad software changes, it is cached to a file.  Right now, our
+webservice will return a special test file:
+canonical/launchpad/apidoc/wadl-testrunner.xml.  It was loaded on module
+import using the canonical.config.config.instance_name, so a development
+instance will use the file canonical/launchpad/apidoc/wadl-development.xml.
+
+    >>> test_wadl = webservice.get(
+    ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    >>> print test_wadl
+    <?xml version="1.0"?>
+    <wadl:application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xmlns="http://research.sun.com/wadl/2006/10"
+                      xmlns:wadl="http://research.sun.com/wadl/2006/10"
+                      xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
+    <BLANKLINE>
+      <!--This file is for testing purposes only.  See
+          canonical/launcpad/pagetests/webservice/xx-wadl.txt -->
+    <BLANKLINE>
+    </wadl:application>
+    <BLANKLINE>
+
+Let's use the real contents, though.  To do this, we need to do what
+utilities/create-lp-wadl.py does: clear out the cache on the class.
+
+    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> WebServiceApplication.cached_wadl = None
+
     >>> wadl = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    >>> wadl = wadl.decode('UTF-8')
+
+    >>> len(wadl) > len(test_wadl)
+    True
+
+The new output is cached on the class now.  After verifying, we'll reinstate
+the testing version so other tests have a clean slate.
+
+    >>> WebServiceApplication.cached_wadl == wadl
+    True
+    >>> WebServiceApplication.cached_wadl = test_wadl
+
+We can examine the real wadl now.
 
     # We need to replace the nbsp entity, because the validator
     # doesn't support embedded definition.
-    >>> wadl_schema.validate(wadl.replace('&nbsp;', '&#160;'))
+    >>> wadl_schema.validate(
+    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
     True
     >>> wadl_schema.error_log
     ''
@@ -306,15 +348,15 @@ The JSON representation contains a link for each collection resource
 exposed at the top level. The WADL representation has a <param> tag
 for every link in the JSON representation.
 
-
     >>> def name_attrib(tag):
     ...     return tag.attrib['name']
 
     >>> params = sorted([param for param in service_root_repr], key=name_attrib)
-    >>> (bug_set_param, distro_set_param, me_param, person_set_param,
-    ...  pillar_param, project_group_set_param, project_set_param,
-    ...  resource_type_param) = params
 
+    >>> (bug_set_param, cve_set_param, distro_set_param, hwdb_param,
+    ...  me_param, person_set_param, pillar_param,
+    ...  project_group_set_param, project_set_param,
+    ...  resource_type_param) = params
     >>> person_set_param.tag
     '...param'
     >>> person_set_param.attrib['name']
@@ -530,7 +572,7 @@ First let's look at the different collection resource types defined in the
 WADL file, and their representations.
 
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    ['bugs', 'distributions', 'people', 'project_groups', 'projects']
+    ['bugs', 'cves', 'distributions', 'people', 'project_groups', 'projects']
 
 
 There's one <resource_type> tag for every top-level collection on the
@@ -632,6 +674,44 @@ The 'find' custom operation returns a collection of people.
     'http://.../#person-page'
 
 
+==== Parameter data types ====
+
+Operation parameters are always transfered between client and server
+as strings. But a parameter may have a logical data type which
+indicates how to treat the string. Data types are specified using the
+primitive types from the XML Schema standard.
+
+Here's a parameter of type 'date'.
+
+    >>> project_series_resource_type = single_list_value([
+    ...     type for type in entry_resource_types
+    ...     if type.attrib['id'] == 'project_series'])
+
+    >>> new_milestone = single_list_value([
+    ...     method for method in project_series_resource_type.findall(
+    ...         wadl_tag('method'))
+    ...     if method.attrib['id'] == 'project_series-newMilestone'])
+
+    >>> new_milestone_request = new_milestone.find(wadl_tag('request'))
+    >>> new_milestone_repr = new_milestone_request.getchildren()[0]
+
+    >>> date_targeted = single_list_value(
+    ...     [param for param in new_milestone_repr
+    ...      if param.attrib.get('name') == 'date_targeted'])
+    >>> date_targeted.attrib['type']
+    'xsd:date'
+
+If no data type is provided, the WADL standard says to default to
+"xsd:string". This is the case for the vast majority of parameters.
+
+    >>> description = single_list_value(
+    ...     [param for param in new_milestone_repr
+    ...           if param.attrib.get('name') == 'description'])
+
+    >>> 'type' in description.attrib
+    False
+
+
 == An entry resource type ==
 
 Now let's look at how the service root WADL describes entry
@@ -639,8 +719,8 @@ resources.
 
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    ['archive', 'archive_permission', 'branch', 'bug', 'bug_attachment',
-     'bug_subscription', ...]
+    ['archive', 'archive_permission', 'branch', 'branch_merge_proposal',
+     'bug', 'bug_attachment', 'bug_subscription', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -702,16 +782,39 @@ the parameter's value.
 So to get the bug link out of a JSON data structure you need to
 look up the element called "bug_link".
 
+Just as with operation parameters, a representation parameter may have
+an optional data type. As with operation parameters, the default is
+"xsd:string".
+
+    >>> date_closed = single_list_value(
+    ...     [param for param in full_params
+    ...      if param.attrib['name'] == 'date_closed'])
+    >>> date_closed.attrib['type']
+    'xsd:dateTime'
+
+    >>> title = single_list_value([param for param in full_params
+    ...                            if param.attrib['name'] == 'title'])
+    >>> 'type' in title.attrib
+    False
+
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> doc = full_params[2][0]
+    >>> doc = date_closed[0]
     >>> doc.tag
     '...doc'
     >>> print "\n".join([node.text for node in doc])
     Date Closed
     The date on which this task was marked either Fix Committed or Fix
     Released.
+
+Every entry resource has the 'http_etag' parameter, which includes the
+current value used in the 'ETag' HTTP header for the entry.
+
+    >>> [etag] = [param for param in full_params
+    ...           if param.attrib['name'] == 'http_etag']
+    >>> etag.attrib['path']
+    "$['http_etag']"
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
@@ -769,6 +872,12 @@ define a second representation for use with PATCH requests.
     >>> 'related_tasks_collection_link' in diff_rep_names
     False
 
+Fields that have server-side mutators are considered read-write
+fields, and show up in the PATCH representation.
+
+    >>> 'status' in diff_rep_names
+    True
+
 Most <param> tags don't tell the client much beyond where to find a
 certain parameter, but some of our parameters take values from a
 proscribed vocabulary. These parameters correspond to Choice fields
@@ -804,7 +913,8 @@ is kept in the <resource_type> tag.
     >>> methods = sorted(
     ...     entry_type.findall(wadl_tag('method')), key=sort_by_id)
     >>> (get, patch, put, transitionToAssignee,
-    ...     transitionToImportance, transitionToStatus) = methods
+    ...     transitionToImportance, transitionToStatus,
+    ...     transitionToTarget) = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
@@ -822,23 +932,29 @@ XML id. Here that's not a problem; we have one custom POST method
      ('POST', 'bug_task-transitionToAssignee'),
      ('POST', 'bug_task-transitionToImportance'),
      ('POST', 'bug_task-transitionToStatus'),
+     ('POST', 'bug_task-transitionToTarget'),
      ('PUT', 'bug_task-put')]
 
 
 === Standard entry operations ===
 
 The standard GET operation defines a 'response' tag, which tells the
-client that they can use content negotiation to get two different
+client that they can use content negotiation to get three different
 representations of a bug task: the JSON one described above as
-"BugTask-full", and a WADL document--the sort of document shown in the
-very first section of this test.
+"BugTask-full", an XHTML snippet, and a WADL document--the sort of
+document shown in the very first section of this test.
 
     >>> response = get.find(wadl_tag('response'))
     >>> response.tag
     '...response'
-    >>> full, wadl = list(response)
+    >>> full, html, wadl = list(response)
     >>> full.attrib['href']
     'http://.../#bug_task-full'
+
+    >>> html.attrib['id']
+    'bug_task-xhtml'
+    >>> html.attrib['mediaType']
+    'application/xhtml+xml'
 
     >>> wadl.attrib['id']
     'bug_task-wadl'

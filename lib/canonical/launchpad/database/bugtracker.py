@@ -8,22 +8,27 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
+from datetime import datetime, timedelta
 from itertools import chain
+from pytz import timezone
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
 # to change or go away.
-from urllib import splittype
+from urllib import splittype, quote
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
+    BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
+
+from storm.expr import Or
+from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, sqlvalues)
+    SQLBase, flush_database_updates)
 
 from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
@@ -33,9 +38,11 @@ from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
-    IBugTrackerSet, NotFoundError)
+    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name
@@ -151,6 +158,7 @@ class BugTracker(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     contactdetails = StringCol(notNull=False)
+    has_lp_plugin = BoolCol(notNull=False, default=False)
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')
     products = SQLMultipleJoin(
@@ -158,13 +166,112 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
+    _filing_url_patterns = {
+        BugTrackerType.BUGZILLA: (
+            "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"),
+        BugTrackerType.MANTIS: "%(base_url)s/bug_report_advanced_page.php",
+        BugTrackerType.PHPPROJECT: "%(base_url)s/report.php",
+        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=item",
+        BugTrackerType.RT: (
+            "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"),
+        BugTrackerType.SAVANE: (
+            "%(base_url)s/bugs/?func=additem&group=%(remote_product)s"),
+        BugTrackerType.SOURCEFORGE: (
+            "%(base_url)s/%(tracker)s/?func=add&"
+                "group_id=%(group_id)s&atid=%(at_id)s"),
+        BugTrackerType.TRAC: "%(base_url)s/newticket",
+        }
+
+    _search_url_patterns = {
+        BugTrackerType.BUGZILLA: (
+            "%(base_url)s/query.cgi?product=%(remote_product)s"),
+        BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
+        BugTrackerType.PHPPROJECT: "%(base_url)s/search.php",
+        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
+        BugTrackerType.RT: (
+            "%(base_url)s/Search/Build.html?Query=Queue = "
+                "'%(remote_product)s'"),
+        BugTrackerType.SAVANE: (
+            "%(base_url)s/bugs/?func=search&group=%(remote_product)s"),
+        BugTrackerType.SOURCEFORGE: (
+            "%(base_url)s/search/?group_id=%(group_id)s&"
+                "type_of_search=artifact"),
+        BugTrackerType.TRAC: "%(base_url)s/search?ticket=on",
+        }
+
     @property
     def latestwatches(self):
-        """See IBugTracker"""
+        """See `IBugTracker`."""
         return self.watches[:10]
 
+    @property
+    def multi_product(self):
+        """Return True if this BugTracker tracks multiple projects."""
+        if self.bugtrackertype not in SINGLE_PRODUCT_BUGTRACKERTYPES:
+            return True
+        else:
+            return False
+
+    def getBugFilingAndSearchLinks(self, remote_product):
+        """See `IBugTracker`."""
+        bugtracker_urls = {'bug_filing_url': None, 'bug_search_url': None}
+
+        if remote_product is None and self.multi_product:
+            # Don't try to return anything if remote_product is required
+            # for this BugTrackerType and one hasn't been passed.
+            return bugtracker_urls
+
+        if remote_product is None:
+            # Turn the remote product into an empty string so that
+            # quote() doesn't blow up later on.
+            remote_product = ''
+
+        bug_filing_pattern = self._filing_url_patterns.get(
+            self.bugtrackertype, None)
+        bug_search_pattern = self._search_url_patterns.get(
+            self.bugtrackertype, None)
+
+        # Make sure that we don't put > 1 '/' in returned URLs.
+        base_url = self.baseurl.rstrip('/')
+
+        if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
+            # SourceForge bug trackers use a group ID and an ATID to
+            # file a bug, rather than a product name. remote_product
+            # should be a tuple for SOURCEFORGE bug trackers.
+            group_id, at_id = remote_product
+
+            # If this bug tracker is the SourceForge celebrity the link
+            # is to the new bug tracker rather than the old one.
+            sf_celeb = getUtility(ILaunchpadCelebrities).sourceforge_tracker
+            if self == sf_celeb:
+                tracker = 'tracker2'
+            else:
+                tracker = 'tracker'
+
+            url_components = {
+                'base_url': base_url,
+                'tracker': quote(tracker),
+                'group_id': quote(group_id),
+                'at_id': quote(at_id),
+                }
+
+        else:
+            url_components = {
+                'base_url': base_url,
+                'remote_product': quote(remote_product),
+                }
+
+        if bug_filing_pattern is not None:
+            bugtracker_urls['bug_filing_url'] = (
+                bug_filing_pattern % url_components)
+        if bug_search_pattern is not None:
+            bugtracker_urls['bug_search_url'] = (
+                bug_search_pattern % url_components)
+
+        return bugtracker_urls
+
     def getBugsWatching(self, remotebug):
-        """See IBugTracker"""
+        """See `IBugTracker`."""
         # We special-case email address bug trackers. Since we don't
         # record a remote bug id for them we can never know which bugs
         # are already watching a remote bug.
@@ -178,13 +285,36 @@ class BugTracker(SQLBase):
                                     orderBy=['datecreated']))
 
     def getBugWatchesNeedingUpdate(self, hours_since_last_check):
-        """See IBugTracker."""
-        query = (
-            """bugtracker = %s AND
-               (lastchecked < (now() at time zone 'UTC' - interval '%s hours')
-                OR lastchecked IS NULL)""" % sqlvalues(
-                    self.id, hours_since_last_check))
-        return BugWatch.select(query, orderBy=["remotebug", "id"])
+        """See `IBugTracker`.
+
+        :return: The UNION of the bug watches that need checking and
+            those with unpushed comments.
+        """
+        lastchecked_cutoff = (
+            datetime.now(timezone('UTC')) -
+            timedelta(hours=hours_since_last_check))
+
+        lastchecked_clause = Or(
+            BugWatch.lastchecked < lastchecked_cutoff,
+            BugWatch.lastchecked == None)
+
+        store = Store.of(self)
+
+        bug_watches_needing_checking = store.find(
+            BugWatch,
+            BugWatch.bugtracker == self,
+            lastchecked_clause)
+
+        bug_watches_with_unpushed_comments = store.find(
+            BugWatch,
+            BugWatch.bugtracker == self,
+            BugMessage.bugwatch == BugWatch.id,
+            BugMessage.remote_comment_id == None)
+
+        results = bug_watches_needing_checking.union(
+            bug_watches_with_unpushed_comments.config(distinct=True))
+
+        return results
 
     # Join to return a list of BugTrackerAliases relating to this
     # BugTracker.

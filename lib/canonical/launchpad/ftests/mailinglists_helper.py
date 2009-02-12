@@ -9,7 +9,6 @@ __all__ = [
     'get_alternative_email',
     'mailman',
     'new_list_for_team',
-    'new_person',
     'new_team',
     'print_actions',
     'print_info',
@@ -27,10 +26,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
-    IMailingListSet, IMessageApprovalSet, IPersonSet,
-    MailingListAutoSubscribePolicy, MailingListStatus,
-    PersonCreationRationale, PostedMessageStatus, TeamSubscriptionPolicy)
+    ILaunchpadCelebrities, IMailingListSet, IMessageApprovalSet, IPersonSet,
+    MailingListStatus, PostedMessageStatus, TeamSubscriptionPolicy)
 
 
 def fault_catcher(func):
@@ -209,44 +206,6 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/'):
     browser.open(rooturl + '~%s' % team_name)
     browser.getLink('Configure mailing list').click()
     browser.getControl('Apply for Mailing List').click()
-
-
-def new_person(first_name, set_preferred_email=True,
-               use_default_autosubscribe_policy=False):
-    """Create a new person with the given first name.
-
-    The person will be given two email addresses, with the 'long form'
-    (e.g. anne.person@example.com) as the preferred address.  Return
-    the new person object.
-
-    The person will also have their mailing list auto-subscription
-    policy set to 'NEVER' unless 'use_default_autosubscribe_policy' is
-    set to True. (This requires the Launchpad.Edit permission).  This
-    is useful for testing, where we often want precise control over
-    when a person gets subscribed to a mailing list.
-    """
-    variable_name = first_name.lower()
-    full_name = first_name + ' Person'
-    # E.g. firstname.person@example.com will be an alternative address.
-    preferred_address = variable_name + '.person@example.com'
-    # E.g. aperson@example.org will be the preferred address.
-    alternative_address = variable_name[0] + 'person@example.org'
-    person, email = getUtility(IPersonSet).createPersonAndEmail(
-        preferred_address,
-        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-        name=variable_name, displayname=full_name)
-    if set_preferred_email:
-        person.setPreferredEmail(email)
-
-    if not use_default_autosubscribe_policy:
-        # Shut off list auto-subscription so that we have direct control
-        # over subscriptions in the doctests.
-        person.mailing_list_auto_subscribe_policy = \
-            MailingListAutoSubscribePolicy.NEVER
-    getUtility(IEmailAddressSet).new(alternative_address, person,
-                                     EmailAddressStatus.VALIDATED,
-                                     person.account)
-    return person
 
 
 def get_alternative_email(person):

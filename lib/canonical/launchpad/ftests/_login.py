@@ -7,7 +7,8 @@ from zope.component import getUtility
 from zope.security.management import endInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
-
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 __all__ = [
     'login',
@@ -32,7 +33,7 @@ def login(email, participation=None):
     as the email, you'll be logged in as the anonymous user.
 
     You can optionally pass in a participation to be used.  If no
-    participation is given, a MockParticipation is used.
+    participation is given, a LaunchpadTestRequest is used.
 
     If the participation provides IPublicationRequest, it must implement
     setPrincipal(), otherwise it must allow setting its principal attribute.
@@ -50,6 +51,14 @@ def login(email, participation=None):
         assert principal is not None, "Invalid login"
     else:
         principal = authutil.unauthenticatedPrincipal()
+
+    if participation is None:
+        # we use the main site as the host name.  This is a guess, to make
+        # canonical_url produce a real-looking host name rather than
+        # 127.0.0.1.
+        participation = LaunchpadTestRequest(
+            environ={'HTTP_HOST': allvhosts.configs['mainsite'].hostname,
+                     'SERVER_URL': allvhosts.configs['mainsite'].rooturl})
 
     setupInteraction(principal, login=email, participation=participation)
 
@@ -72,4 +81,3 @@ def logout():
     global _logged_in
     _logged_in = False
     endInteraction()
-

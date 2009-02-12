@@ -41,4 +41,13 @@
     factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
     />
 
+  <!-- Adapt a person to an IDirectEmailAuthorization for throttling of direct
+       person-to-person emails. -->
+  <adapter
+    for="canonical.launchpad.interfaces.person.IPerson"
+    provides="canonical.launchpad.interfaces.message.IDirectEmailAuthorization"
+    factory="canonical.launchpad.database.message.DirectEmailAuthorization"
+    />
+       
+
 </configure>

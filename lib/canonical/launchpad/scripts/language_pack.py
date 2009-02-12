@@ -208,12 +208,14 @@ def export_language_pack(distribution_name, series_name, logger,
     distribution = getUtility(IDistributionSet)[distribution_name]
     distroseries = distribution.getSeries(series_name)
 
+    full_export_requested_flag_needs_reset = False
     if distroseries.language_pack_full_export_requested:
         # We were instructed that this export must be a full one.
         update = False
         logger.info('Got a request to do a full language pack export.')
-        # Also, unset that flag so next export will proceed normally.
-        distroseries.language_pack_full_export_requested = False
+        # Also, unset that flag so next export will proceed normally,
+        # but do it afterwards so we don't lock any tables.
+        full_export_requested_flag_needs_reset = True
     elif distroseries.language_pack_base is None:
         # There is no full export language pack being used, we cannot produce
         # an update.
@@ -279,6 +281,9 @@ def export_language_pack(distribution_name, series_name, logger,
             return None
 
         logger.debug('Upload complete, file alias: %d' % file_alias)
+
+        if full_export_requested_flag_needs_reset:
+            distroseries.language_pack_full_export_requested = False
 
         # Let's register this new language pack.
         language_pack_set = getUtility(ILanguagePackSet)

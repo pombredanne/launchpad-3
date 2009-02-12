@@ -1,6 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
-"""View classes related to IDistroSeries."""
+"""View classes related to `IDistroSeries`."""
 
 __metaclass__ = type
 
@@ -12,6 +12,7 @@ __all__ = [
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
     'DistroSeriesLanguagePackAdminView',
+    'DistroSeriesPackageSearchView',
     'DistroSeriesNavigation',
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesView',
@@ -31,6 +32,7 @@ from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
@@ -40,12 +42,11 @@ from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, NotFoundError)
+    ILaunchBag, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, Link, enabled_with_permission)
@@ -83,11 +84,8 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroserieslang = distroserieslangset.getDummy(
                 self.context, lang)
 
-        if (self.context.hide_all_translations and
-            not check_permission('launchpad.Admin', distroserieslang)):
-            raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators '
-                'may view translations for this distribution series.')
+        if not check_permission('launchpad.Admin', distroserieslang):
+            self.context.checkTranslationsViewable()
 
         return distroserieslang
 
@@ -289,17 +287,17 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
             'Request a full language pack export')
 
 
+class DistroSeriesPackageSearchView(PackageSearchViewBase):
+    """Customised PackageSearchView for DistroSeries"""
+
+    def contextSpecificSearch(self):
+        """See `AbstractPackageSearchView`."""
+        return self.context.searchPackages(self.text)
+
+
 class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def initialize(self):
-        self.text = self.request.form.get('text')
-        self.matches = 0
-        self._results = None
-
-        self.searchrequested = False
-        if self.text:
-            self.searchrequested = True
-
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
@@ -325,15 +323,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
         return unused_language_packs
 
-    def searchresults(self):
-        """Try to find the packages in this distro series that match
-        the given text, then present those as a list.
-        """
-        if self._results is None:
-            self._results = self.context.searchPackages(self.text)
-        self.matches = len(self._results)
-        return self._results
-
     def requestDistroLangs(self):
         """Produce a set of DistroSeriesLanguage and
         DummyDistroSeriesLanguage objects for the languages the user
@@ -352,6 +341,36 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    def checkTranslationsViewable(self):
+        """Check that these translations are visible to the current user.
+
+        Launchpad admins, Translations admins, and users with admin
+        rights on the `DistroSeries` are always allowed.  For others
+        this delegates to `IDistroSeries.checkTranslationsViewable`,
+        which raises `TranslationUnavailable` if the translations are
+        set to be hidden.
+
+        :return: Returns normally if this series' translations are
+            viewable to the current user.
+        :raise TranslationUnavailable: if this series' translations are
+            hidden and the user is not one of the limited caste that is
+            allowed to access them.
+        """
+        if check_permission('launchpad.Admin', self.context):
+            # Anyone with admin rights on this series passes.  This
+            # includes Launchpad admins.
+            return
+
+        user = self.user
+        experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if user is not None and user.inTeam(experts):
+            # Translations admins also pass.
+            return
+
+        # Everyone else passes only if translations are viewable to the
+        # public.
+        self.context.checkTranslationsViewable()
 
     def distroserieslanguages(self):
         """Produces a list containing a DistroSeriesLanguage object for

@@ -15,31 +15,22 @@
     <div tal:attributes="style display_style; id id;"
          tal:define="expand view/is_long_message|nothing">
       <div class="boardCommentDetails">
-        <tal:show-expander condition="show_expander"
-                           define="show_link view/is_long_message|nothing">
-          <tal:no-link condition="not: show_link">
-            <img tal:attributes="src expander_link" />
-          </tal:no-link>
-          <tal:link condition="show_link">
-            <a href="#" tal:attributes="href comment/fmt:url;
-                                        onclick string:return switchDisplay('${expanded_id}','${contracted_id}')">
-            <img tal:attributes="src expander_link" /></a>
-          </tal:link>
-        </tal:show-expander>
-        <tal:voted tal:condition="comment/vote">
-          <strong tal:content="comment/vote/title"
-                  tal:condition="comment/vote"
-                  /><tal:colon condition="not: comment/vote_tag"
-                  >:</tal:colon>
-          <tal:has-tag condition="comment/vote_tag">
-            &mdash;
-            <strong tal:content="comment/vote_tag"
-                    tal:condition="comment/vote_tag" />:
-          </tal:has-tag>
-        </tal:voted>
-        <tal:subject replace="comment/message/subject" />
+        <div tal:condition="comment/vote" style="float:right">
+          <tal:vote-tags condition="comment/vote_tag"
+                         replace="comment/vote_tag"/>
+          <span tal:attributes="class string:vote${comment/vote/name}"
+                tal:content="comment/vote/title">
+            Approve
+          </span>
+        </div>
+
+        <tal:author replace="structure comment/message/owner/fmt:link:mainsite"/>
+        <tal:has-comment condition="message">wrote</tal:has-comment>
+        <tal:just-vote condition="not: message">voted</tal:just-vote>
+        <tal:date replace="comment/message/datecreated/fmt:displaydate" />
+
       </div>
-      <div class="boardCommentBody">
+      <div class="boardCommentBody codereviewcomment" tal:condition="message">
         <tal:message replace="structure message/fmt:nice_pre" />
         <tal:short-message-view condition="view/message_summary|nothing">
           <tal:long-message condition="view/is_long_message">
@@ -48,6 +39,15 @@
             tal:content="expander_text">full message</a>)
           </tal:long-message>
         </tal:short-message-view>
+        <tal:good-attachments repeat="attachment view/display_attachments">
+          <div class="boardComment attachment" tal:define="body_text python:str(attachment.read())">
+            <div class="boardCommentDetails filename"><a tal:content="attachment/filename" tal:attributes="href attachment/getURL"/></div>
+            <div class="boardCommentBody attachmentBody" tal:content="structure body_text/fmt:nice_pre"/>
+          </div>
+        </tal:good-attachments>
+        <tal:other-attachments repeat="attachment view/other_attachments">
+          <tal:comment replace="structure string:<!-- '${attachment/filename}' '${attachment/mimetype}' -->"/>
+        </tal:other-attachments>
       </div>
     </div>
   </metal:macro>

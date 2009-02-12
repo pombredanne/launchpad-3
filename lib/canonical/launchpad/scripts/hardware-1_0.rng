@@ -169,6 +169,22 @@
                     </zeroOrMore>
                 </element>
             </optional>
+            <optional>
+              <element name="dmi">
+                <attribute name="options">
+                  <text/>
+                </attribute>
+                <text/>
+              </element>
+            </optional>
+            <optional>
+              <element name="lspci">
+                <attribute name="options">
+                  <text/>
+                </attribute>
+                <text/>
+              </element>
+            </optional>
         </interleave>
     </define>
 
@@ -427,7 +443,7 @@
                 <attribute name="type">
                     <value>int</value>
                 </attribute>
-                <data type="int">
+                <data type="long">
                     <except>
                         <value/>
                     </except>

@@ -65,12 +65,12 @@ else
 fi
 
 # Are there patches to the schema or changes to current.sql?
-database_changes=$(echo $files | sed '/patch-\|current/!d')
+database_changes=$(echo $files | sed '/database.*\(patch-\|current\)/!d')
 
 echo "= Launchpad lint ="
 echo ""
 echo "Checking for conflicts. and issues in doctests and templates."
-echo "Running xmllint, pyflakes, and pylint."
+echo "Running jslint, xmllint, pyflakes, and pylint."
 
 echo "$rules"
 
@@ -104,7 +104,9 @@ group_lines_by_file() {
 
 sample_dir="database/sampledata"
 current_sql="${sample_dir}/current.sql"
+current_dev_sql="${sample_dir}/current-dev.sql"
 lintdata_sql="${sample_dir}/lintdata.sql"
+lintdata_dev_sql="${sample_dir}/lintdata-dev.sql"
 
 if [ -n "${database_changes}" ]; then
     make -C database/schema lintdata > /dev/null
@@ -112,28 +114,46 @@ if [ -n "${database_changes}" ]; then
     if [ -z "$sql_diff" ]; then
         rm $lintdata_sql
     fi
+    sql_dev_diff=$(diff -q "${current_dev_sql}" "${lintdata_dev_sql}")
+    if [ -z "$sql_dev_diff" ]; then
+        rm $lintdata_dev_sql
+    fi
 else
     sql_diff=""
+    sql_dev_diff=""
 fi
 
 karma_bombs=`sed '/INTO karma /!d; /2000-/d; /2001-/d' $current_sql`
 
-if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
+echo_sampledata_changes () {
+    echo "    $2 differs from $1."
+    echo "    Patches to the schema, or manual edits to $1"
+    echo "    do not match the dump of the $3 database."
+    echo "    If $2 is correct, copy it to"
+    echo "    $1."
+    echo "    Otherwise update $1 and run:"
+    echo "        make schema"
+    echo "        make newsampledata"
+    echo "        cd ${sample_dir}"
+    echo "        cp $4 $1"
+    echo "    Run make schema again to update the test/dev database."
+}
+    
+if [ -n "$sql_diff" -o -n "$sql_dev_diff" -o -n "$karma_bombs" ]; then
     echo ""
     echo ""
     echo "== Schema =="
     echo ""
+fi
+
+# 
+if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo "$current_sql"
 fi
 if [ -n "$sql_diff" ]; then
-    echo "    $lintdata_sql differs from current.sql."
-    echo "    Patches to the schema, or manual edits to current.sql do not"
-    echo "    match the dump of the launchpad_ftest_template database."
-    echo "    If $lintdata_sql is correct, copy it to current.sql."
-    echo "    Otherwise update current.sql and run:"
-    echo "        make schema; make newsampledata"
-    echo "        cd ${sample_dir}; cp newsamplesdata.sql current.sql"
-    echo "    Run make schema again to update the test database."
+    echo_sampledata_changes \
+        "$current_sql" "$lintdata_sql" "launchpad_ftest_template"\
+       	"newsampledata.sql"
 fi
 if [ -n "$karma_bombs" ]; then
     echo "    Karma time bombs were added to sampledata."
@@ -141,6 +161,13 @@ if [ -n "$karma_bombs" ]; then
     echo "        them or remove rows if they are unneeded."
 fi
 
+if [ -n "$sql_dev_diff" ]; then
+    echo ""
+    echo "$current_sql"
+    echo_sampledata_changes \
+        "$current_dev_sql" "$lintdata_dev_sql" "launchpad_dev_template"\
+       	"newsampledata-dev.sql"
+fi
 
 conflicts=""
 for file in $files; do
@@ -203,6 +230,18 @@ if [ ! -z "$doctestfiles" ]; then
         echo ""
         echo "== Pyflakes Doctest notices =="
         group_lines_by_file "$pyflakes_doctest_notices"
+    fi
+fi
+
+
+jsfiles=`echo "$files" | grep -E 'js$'`
+if [ ! -z "$jsfiles" ]; then
+    jslint_notices=`$utilitiesdir/../sourcecode/lazr-js/tools/jslint.py 2>&1`
+    if [ ! -z "$jslint_notices" ]; then
+        echo ""
+        echo ""
+        echo "== JSLint notices =="
+        echo "$jslint_notices"
     fi
 fi
 

@@ -5,88 +5,89 @@ representations of people and teams are supposed to have nearly the
 same keys.  I say nearly because some attributes are only made available
 for teams (as they're defined in the ITeam interface).
 
+    >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> salgado = webservice.get("/~salgado").jsonBody()
-    >>> for key, value in sorted(salgado.items()):
-    ...     print "%s: %s" % (key, value)
-    admins_collection_link: http://.../~salgado/admins
-    confirmed_email_addresses_collection_link: http://.../~salgado/confirmed_email_addresses
-    date_created: 2005-06-06T08:59:51.596025+00:00
-    deactivated_members_collection_link: http://.../~salgado/deactivated_members
-    display_name: Guilherme Salgado
-    expired_members_collection_link: http://.../~salgado/expired_members
+    >>> pprint_entry(salgado)
+    admins_collection_link: u'http://.../~salgado/admins'
+    archive_link: None
+    confirmed_email_addresses_collection_link: u'http://.../~salgado/confirmed_email_addresses'
+    date_created: u'2005-06-06T08:59:51.596025+00:00'
+    deactivated_members_collection_link: u'http://.../~salgado/deactivated_members'
+    display_name: u'Guilherme Salgado'
+    expired_members_collection_link: u'http://.../~salgado/expired_members'
     hide_email_addresses: False
     homepage_content: None
-    invited_members_collection_link: http://.../~salgado/invited_members
-    irc_nicknames_collection_link: http://.../~salgado/irc_nicknames
+    invited_members_collection_link: u'http://.../~salgado/invited_members'
+    irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
     is_team: False
     is_valid: True
-    jabber_ids_collection_link: http://.../~salgado/jabber_ids
+    jabber_ids_collection_link: u'http://.../~salgado/jabber_ids'
     karma: 0
-    languages_collection_link: http://.../~salgado/languages
+    languages_collection_link: u'http://.../~salgado/languages'
     latitude: None
     longitude: None
-    mailing_list_auto_subscribe_policy: Ask me when I join a team
-    members_collection_link: http://.../~salgado/members
-    members_details_collection_link: http://.../~salgado/members_details
-    memberships_details_collection_link: http://.../~salgado/memberships_details
-    mugshot_link: http://.../~salgado/mugshot
-    name: salgado
-    open_membership_invitations_collection_link: http://.../~salgado/open_membership_invitations
-    participants_collection_link: http://.../~salgado/participants
-    preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
-    proposed_members_collection_link: http://.../~salgado/proposed_members
-    resource_type_link: http://.../#person
-    self_link: http://.../~salgado
-    sub_teams_collection_link: http://.../~salgado/sub_teams
-    super_teams_collection_link: http://.../~salgado/super_teams
+    mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
+    members_collection_link: u'http://.../~salgado/members'
+    members_details_collection_link: u'http://.../~salgado/members_details'
+    memberships_details_collection_link: u'http://.../~salgado/memberships_details'
+    mugshot_link: u'http://.../~salgado/mugshot'
+    name: u'salgado'
+    open_membership_invitations_collection_link: u'http://.../~salgado/open_membership_invitations'
+    participants_collection_link: u'http://.../~salgado/participants'
+    preferred_email_address_link: u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
+    proposed_members_collection_link: u'http://.../~salgado/proposed_members'
+    resource_type_link: u'http://.../#person'
+    self_link: u'http://.../~salgado'
+    sub_teams_collection_link: u'http://.../~salgado/sub_teams'
+    super_teams_collection_link: u'http://.../~salgado/super_teams'
     team_owner_link: None
     time_zone: None
-    visibility: Public
-    wiki_names_collection_link: http://.../~salgado/wiki_names
+    visibility: u'Public'
+    wiki_names_collection_link: u'http://.../~salgado/wiki_names'
 
     >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
-    >>> for key, value in sorted(ubuntu_team.items()):
-    ...     print "%s: %s" % (key, value)
-    admins_collection_link: http://.../~ubuntu-team/admins
-    confirmed_email_addresses_collection_link: http://.../~ubuntu-team/confirmed_email_addresses
-    date_created: 2005-06-06T08:59:51.605760+00:00
-    deactivated_members_collection_link: http://.../~ubuntu-team/deactivated_members
+    >>> pprint_entry(ubuntu_team)
+    admins_collection_link: u'http://.../~ubuntu-team/admins'
+    archive_link: None
+    confirmed_email_addresses_collection_link: u'http://.../~ubuntu-team/confirmed_email_addresses'
+    date_created: u'2005-06-06T08:59:51.605760+00:00'
+    deactivated_members_collection_link: u'http://.../~ubuntu-team/deactivated_members'
     default_membership_period: None
     default_renewal_period: None
-    display_name: Ubuntu Team
-    expired_members_collection_link: http://.../~ubuntu-team/expired_members
+    display_name: u'Ubuntu Team'
+    expired_members_collection_link: u'http://.../~ubuntu-team/expired_members'
     hide_email_addresses: False
     homepage_content: None
-    invited_members_collection_link: http://.../~ubuntu-team/invited_members
-    irc_nicknames_collection_link: http://.../~ubuntu-team/irc_nicknames
+    invited_members_collection_link: u'http://.../~ubuntu-team/invited_members'
+    irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
     is_team: True
     is_valid: True
-    jabber_ids_collection_link: http://.../~ubuntu-team/jabber_ids
+    jabber_ids_collection_link: u'http://.../~ubuntu-team/jabber_ids'
     karma: 0
-    languages_collection_link: http://.../~ubuntu-team/languages
+    languages_collection_link: u'http://.../~ubuntu-team/languages'
     latitude: None
     longitude: None
-    mailing_list_auto_subscribe_policy: Ask me when I join a team
-    members_collection_link: http://.../~ubuntu-team/members
-    members_details_collection_link: http://.../~ubuntu-team/members_details
-    memberships_details_collection_link: http://.../~ubuntu-team/memberships_details
-    mugshot_link: http://.../~ubuntu-team/mugshot
-    name: ubuntu-team
-    open_membership_invitations_collection_link: http://.../~ubuntu-team/open_membership_invitations
-    participants_collection_link: http://.../~ubuntu-team/participants
-    preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
-    proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
-    renewal_policy: invite them to apply for renewal
-    resource_type_link: http://.../#team
-    self_link: http://.../~ubuntu-team
-    sub_teams_collection_link: http://.../~ubuntu-team/sub_teams
-    subscription_policy: Moderated Team
-    super_teams_collection_link: http://.../~ubuntu-team/super_teams
-    team_description: This Team is responsible for the Ubuntu Distribution
-    team_owner_link: http://.../~sabdfl
+    mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
+    members_collection_link: u'http://.../~ubuntu-team/members'
+    members_details_collection_link: u'http://.../~ubuntu-team/members_details'
+    memberships_details_collection_link: u'http://.../~ubuntu-team/memberships_details'
+    mugshot_link: u'http://.../~ubuntu-team/mugshot'
+    name: u'ubuntu-team'
+    open_membership_invitations_collection_link: u'http://.../~ubuntu-team/open_membership_invitations'
+    participants_collection_link: u'http://.../~ubuntu-team/participants'
+    preferred_email_address_link: u'http://.../~ubuntu-team/+email/support@ubuntu.com'
+    proposed_members_collection_link: u'http://.../~ubuntu-team/proposed_members'
+    renewal_policy: u'invite them to apply for renewal'
+    resource_type_link: u'http://.../#team'
+    self_link: u'http://.../~ubuntu-team'
+    sub_teams_collection_link: u'http://.../~ubuntu-team/sub_teams'
+    subscription_policy: u'Moderated Team'
+    super_teams_collection_link: u'http://.../~ubuntu-team/super_teams'
+    team_description: u'This Team is responsible for the Ubuntu Distribution'
+    team_owner_link: u'http://.../~sabdfl'
     time_zone: None
-    visibility: Public
-    wiki_names_collection_link: http://.../~ubuntu-team/wiki_names
+    visibility: u'Public'
+    wiki_names_collection_link: u'http://.../~ubuntu-team/wiki_names'
 
     >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
     [u'default_membership_period', u'default_renewal_period',
@@ -121,15 +122,11 @@ representations too.
 
     >>> email = webservice.get(
     ...     sample_person['preferred_email_address_link']).jsonBody()
-    >>> sorted(email)
-    [u'email', u'person_link', u'resource_type_link', u'self_link']
-    >>> for key, value in sorted(email.items()):
-    ...     print "%s: %s" % (key, value)
-    email: test@canonical.com
-    person_link: http://.../~name12
-    resource_type_link:
-      http://.../#email_address
-    self_link: http://.../~name12/+email/test@canonical.com
+    >>> pprint_entry(email)
+    email: u'test@canonical.com'
+    person_link: u'http://.../~name12'
+    resource_type_link: u'http://.../#email_address'
+    self_link: u'http://.../~name12/+email/test@canonical.com'
 
 One can only traverse to the email addresses of the person already
 traversed to, obviously.
@@ -176,7 +173,7 @@ Team memberships also have data fields.
     >>> salgado_landscape = sorted(webservice.get(
     ...     salgado_memberships).jsonBody()['entries'])[1]
     >>> sorted(salgado_landscape)
-    [u'date_expires', u'date_joined',
+    [u'date_expires', u'date_joined', u'http_etag',
      u'last_change_comment', u'last_changed_by_link', u'member_link',
      u'resource_type_link', u'self_link', u'status', u'team_link']
 
@@ -205,6 +202,49 @@ memberships in the team.
     ...     "/~landscape-developers/members_details").jsonBody())
     http://.../~landscape-developers/+member/name12
     http://.../~landscape-developers/+member/salgado
+
+You can also change a TeamMembership through its custom operations.
+
+To change its expiration date, use setExpirationDate(date).
+
+    >>> print salgado_landscape['date_expires']
+    None
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> someday = datetime(2058, 8, 1, tzinfo=pytz.UTC)
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setExpirationDate', {},
+    ...     date=str(someday))
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['date_expires']
+    2058-08-01...
+
+To change its status, use setStatus(status).
+
+    >>> print salgado_landscape['status']
+    Approved
+
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Deactivated')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['status']
+    Deactivated
+
+    # Now revert the change to salgado's membership to not break other tests
+    # further down.
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Approved')
+    HTTP/1.1 200 Ok
+    ...
 
 
 === Members ===
@@ -307,17 +347,13 @@ Wiki names are first-class objects with their own URLs and
 representations too.
 
     >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
-    >>> sorted(wiki_name)
-    [u'person_link', u'resource_type_link', u'self_link', u'url',
-     u'wiki', u'wikiname']
-    >>> for key, value in sorted(wiki_name.items()):
-    ...     print "%s: %s" % (key, value)
-    person_link: http://.../~salgado
-    resource_type_link: http://.../#wiki_name
-    self_link: http://.../~salgado/+wikiname/2
-    url: https://wiki.ubuntu.com/GuilhermeSalgado
-    wiki: https://wiki.ubuntu.com/
-    wikiname: GuilhermeSalgado
+    >>> pprint_entry(wiki_name)
+    person_link: u'http://.../~salgado'
+    resource_type_link: u'http://.../#wiki_name'
+    self_link: u'http://.../~salgado/+wikiname/2'
+    url: u'https://wiki.ubuntu.com/GuilhermeSalgado'
+    wiki: u'https://wiki.ubuntu.com/'
+    wikiname: u'GuilhermeSalgado'
 
 One can only traverse to the WikiNames of the person already traversed
 to, obviously.
@@ -368,14 +404,11 @@ representations too.
 
     >>> jabber_id = sorted(
     ...     webservice.get(jabber_ids_link).jsonBody()['entries'])[0]
-    >>> sorted(jabber_id)
-    [u'jabberid', u'person_link', u'resource_type_link', u'self_link']
-    >>> for key, value in sorted(jabber_id.items()):
-    ...     print "%s: %s" % (key, value)
-    jabberid: markshuttleworth@jabber.org
-    person_link: http://.../~sabdfl
-    resource_type_link: http://.../#jabber_id
-    self_link: http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
+    >>> pprint_entry(jabber_id)
+    jabberid: u'markshuttleworth@jabber.org'
+    person_link: u'http://.../~sabdfl'
+    resource_type_link: u'http://.../#jabber_id'
+    self_link: u'http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org'
 
 One can only traverse to the Jabber IDs of the person already traversed
 to, obviously.
@@ -400,16 +433,12 @@ IRC IDs are first-class objects with their own URLs and representations
 too.
 
     >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
-    >>> sorted(irc_id)
-    [u'network', u'nickname', u'person_link', u'resource_type_link',
-     u'self_link']
-    >>> for key, value in sorted(irc_id.items()):
-    ...     print "%s: %s" % (key, value)
-    network: irc.freenode.net
-    nickname: mark
-    person_link: http://.../~sabdfl
-    resource_type_link: http://.../#irc_id
-    self_link: http://.../~sabdfl/+ircnick/1
+    >>> pprint_entry(irc_id)
+    network: u'irc.freenode.net'
+    nickname: u'mark'
+    person_link: u'http://.../~sabdfl'
+    resource_type_link: u'http://.../#irc_id'
+    self_link: u'http://.../~sabdfl/+ircnick/1'
 
 One can only traverse to the IRC IDs of the person already traversed
 to, obviously.
@@ -417,6 +446,18 @@ to, obviously.
     >>> print webservice.get("/~salgado/+ircnick/1")
     HTTP/1.1 404 Not Found
     ...
+
+=== PPAs ===
+
+We can get to the person's PPA via the archive property:
+
+    >>> sabdfl_archive_link = sabdfl['archive_link']
+    >>> print sabdfl_archive_link
+    http://.../~sabdfl/+archive/ppa
+
+    >>> sabdfl_archive = webservice.get(sabdfl_archive_link).jsonBody()
+    >>> print sabdfl_archive['description']
+    packages to help the humanity (you know, ubuntu)
 
 
 == Custom operations ==

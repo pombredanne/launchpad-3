@@ -7,11 +7,11 @@
 # Note that http/ftp proxies are needed by the product 
 # release finder
 
-# Only run this script on forster
+# Only run this script on loganberry
 THISHOST=`uname -n`
-if [ "forster" != "$THISHOST" ]
+if [ "loganberry" != "$THISHOST" ]
 then
-        echo "This script must be run on forster."
+        echo "This script must be run on loganberry."
         exit 1
 fi
 

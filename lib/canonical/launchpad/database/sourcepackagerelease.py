@@ -28,13 +28,15 @@ from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus, active_publishing_status)
 from canonical.launchpad.interfaces.sourcepackage import (
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -55,7 +57,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 def _filter_ubuntu_translation_file(filename):
     """Filter for translation filenames in tarball.
-    
+
     Grooms filenames of translation files in tarball, returning None or
     empty string for files that should be ignored.
 
@@ -67,9 +69,9 @@ def _filter_ubuntu_translation_file(filename):
 
     filename = filename[len(source_prefix):]
 
-    if filename.startswith('debian/'):
-        # Skip filenames in debian/*.  They're from debconf translations,
-        # which Ubuntu doesn't use.
+    if filename.startswith('debian/po/'):
+        # Skip filenames in debian/po/*.  They're from debconf
+        # translations, which are treated separately in Ubuntu.
         return None
 
     return filename
@@ -139,8 +141,8 @@ class SourcePackageRelease(SQLBase):
         return Build.select("""
             sourcepackagerelease = %s AND
             archive.id = build.archive AND
-            archive.purpose != %s
-            """ % sqlvalues(self.id, ArchivePurpose.PPA),
+            archive.purpose IN %s
+            """ % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES),
             orderBy=['-datecreated', 'id'],
             clauseTables=['Archive'])
 
@@ -223,8 +225,8 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
-            # Only process main archives to skip PPA publishings.
-            if publishing.archive.purpose == ArchivePurpose.PPA:
+            # Only process main archives and skip PPA/copy archives.
+            if publishing.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
                 continue
             sp = SourcePackage(self.sourcepackagename,
                                publishing.distroseries)
@@ -265,28 +267,11 @@ class SourcePackageRelease(SQLBase):
         """See `ISourcePacakgeRelease`."""
         archives = set()
         publishings = self.publishings.prejoin(['archive'])
-        live_states = (PackagePublishingStatus.PENDING,
-                       PackagePublishingStatus.PUBLISHED)
         for pub in publishings:
-            if pub.status in live_states:
+            if pub.status in active_publishing_status:
                 archives.add(pub.archive)
 
         return sorted(archives, key=operator.attrgetter('id'))
-
-    @cachedproperty
-    def _cached_published_archives(self):
-        """Return a cached list of published archives.
-
-        This is intended for the security adapter as it calls
-        published_archives a lot which makes private PPA index pages
-        unrenderable in the timeout allowed if they have more than a
-        handful of packages.
-
-        XXX Julian 2008-09-10
-        This code should be removed when security adapter caching is done.
-        See bug 268612.
-        """
-        return self.published_archives
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
@@ -304,10 +289,9 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-
     def _getPackageSize(self):
         """Get the size total (in KB) of files comprising this package.
-        
+
         Please note: empty packages (i.e. ones with no files or with
         files that are all empty) have a size of zero.
         """
@@ -320,7 +304,7 @@ class SourcePackageRelease(SQLBase):
                     SourcePackageReleaseFile.sourcepackagerelease =
                     SourcePackageRelease.id
                 JOIN LibraryFileAlias ON
-                    SourcePackageReleaseFile.libraryfile = 
+                    SourcePackageReleaseFile.libraryfile =
                     LibraryFileAlias.id
                 JOIN LibraryFileContent ON
                     LibraryFileAlias.content = LibraryFileContent.id
@@ -356,7 +340,7 @@ class SourcePackageRelease(SQLBase):
 
         # Always include the primary archive when looking for
         # past build times (just in case that none can be found
-        # in a PPA).
+        # in a PPA or copy archive).
         archives = [archive.id]
         if archive.purpose != ArchivePurpose.PRIMARY:
             archives.append(distroarchseries.main_archive.id)
@@ -466,7 +450,7 @@ class SourcePackageRelease(SQLBase):
         parent_architectures = []
         archtag = distroarchseries.architecturetag
 
-        if archive.purpose != ArchivePurpose.PPA:
+        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             # XXX cprov 20070720: this code belongs to IDistroSeries content
             # class as 'parent_series' property. Other parts of the system
             # can benefit of this, like SP.packagings, for instance.
@@ -497,8 +481,7 @@ class SourcePackageRelease(SQLBase):
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
         # and so on
-        if archive.purpose in (ArchivePurpose.PARTNER,
-                               ArchivePurpose.PRIMARY):
+        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             parent_archives = set()
             archive_set = getUtility(IArchiveSet)
             for series in parent_series:

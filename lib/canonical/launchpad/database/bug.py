@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'Bug', 'BugBecameQuestionEvent', 'BugSet', 'get_bug_tags',
-    'get_bug_tags_open_count']
+    'Bug',
+    'BugBecameQuestionEvent',
+    'BugSet',
+    'get_bug_tags',
+    'get_bug_tags_open_count',
+    ]
 
 
 import mimetypes
@@ -24,20 +28,39 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
+from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
-from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
-    DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
-    IBugBranch, IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet,
-    ICveSet, IDistribution, IDistroSeries, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IPersonSet, IProduct, IProductSeries,
-    IQuestionTarget, ISourcePackage, IStructuralSubscriptionTarget,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces import IQuestionTarget
+from canonical.launchpad.interfaces.bug import (
+    IBug, IBugBecameQuestionEvent, IBugSet)
+from canonical.launchpad.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, IBugTask, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.bugnomination import (
+    NominationError, NominationSeriesObsoleteError)
+from canonical.launchpad.interfaces.bugnotification import (
+    IBugNotificationSet)
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.cve import ICveSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.message import (
+    IMessage, IndexedMessage)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+    BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -59,14 +82,14 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -246,10 +269,16 @@ class Bug(SQLBase):
         result = result.prejoin(
             ["assignee", "product", "sourcepackagename",
              "owner", "bugwatch"])
-        # Do not use the defaul orderBy as the prejoins cause ambiguities
+        # Do not use the default orderBy as the prejoins cause ambiguities
         # across the tables.
         result = result.orderBy("id")
         return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def default_bugtask(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            BugTask, bug=self).order_by(BugTask.id).first()
 
     @property
     def is_complete(self):
@@ -393,10 +422,23 @@ class Bug(SQLBase):
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        return BugSubscription.select("""
-            Person.id = BugSubscription.person AND
-            BugSubscription.bug = %d""" % self.id,
-            orderBy="displayname", clauseTables=["Person"])
+        # Cache valid persons so that <person>.is_valid_person can
+        # return from the cache. This operation was previously done at
+        # the same time as retrieving the bug subscriptions (as a left
+        # join). However, this ran slowly (far from optimal query
+        # plan), so we're doing it as two queries now.
+        valid_persons = Store.of(self).find(
+            ValidPersonCache,
+            ValidPersonCache.id == BugSubscription.personID,
+            BugSubscription.bug == self)
+        # Suck in all the records so that they're actually cached.
+        list(valid_persons)
+        # Do the main query.
+        return Store.of(self).find(
+            BugSubscription,
+            BugSubscription.personID == Person.id,
+            BugSubscription.bug == self).order_by(
+            Func('person_sort_key', Person.displayname, Person.name))
 
     def getDirectSubscribers(self, recipients=None):
         """See `IBug`.
@@ -614,14 +656,16 @@ class Bug(SQLBase):
             notification.syncUpdate()
 
     def newMessage(self, owner=None, subject=None,
-                   content=None, parent=None, bugwatch=None):
+                   content=None, parent=None, bugwatch=None,
+                   remote_comment_id=None):
         """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
         MessageChunk(message=msg, content=content, sequence=1)
 
-        bugmsg = self.linkMessage(msg, bugwatch)
+        bugmsg = self.linkMessage(
+            msg, bugwatch, remote_comment_id=remote_comment_id)
         if not bugmsg:
             return
 
@@ -646,6 +690,44 @@ class Bug(SQLBase):
             # they are created.
             Store.of(result).flush()
             return result
+
+    def addTask(self, owner, target):
+        """See `IBug`."""
+        product = None
+        product_series = None
+        distribution = None
+        distro_series = None
+        source_package_name = None
+
+        # Turn `target` into something more useful.
+        if IProduct.providedBy(target):
+            product = target
+        if IProductSeries.providedBy(target):
+            product_series = target
+        if IDistribution.providedBy(target):
+            distribution = target
+        if IDistroSeries.providedBy(target):
+            distro_series = target
+        if IDistributionSourcePackage.providedBy(target):
+            distribution = target.distribution
+            source_package_name = target.sourcepackagename
+        if ISourcePackage.providedBy(target):
+            if target.distroseries is not None:
+                distro_series = target.distroseries
+                source_package_name = target.sourcepackagename
+            elif target.distribution is not None:
+                distribution = target.distribution
+                source_package_name = target.sourcepackagename
+            else:
+                source_package_name = target.sourcepackagename
+
+        new_task = getUtility(IBugTaskSet).createTask(
+            self, owner=owner, product=product,
+            productseries=product_series, distribution=distribution,
+            distroseries=distro_series,
+            sourcepackagename=source_package_name)
+
+        return new_task
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
@@ -723,6 +805,13 @@ class Bug(SQLBase):
             bugcve = BugCve(bug=self, cve=cve)
             notify(SQLObjectCreatedEvent(bugcve, user=user))
             return bugcve
+
+    # XXX intellectronica 2008-11-06 Bug #294858:
+    # See canonical.launchpad.interfaces.bug
+    def linkCVEAndReturnNothing(self, cve, user):
+        """See `IBug`."""
+        self.linkCVE(cve, user)
+        return None
 
     def unlinkCVE(self, cve, user=None):
         """See `IBug`."""

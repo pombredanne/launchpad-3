@@ -38,6 +38,7 @@ def confirm_no_clock_skew(con):
             local_now - db_now,
             ))
 
+
 def delete_expired_blobs(con):
     """Remove expired TemporaryBlobStorage entries and their corresponding
        LibraryFileAlias entries.
@@ -219,6 +220,7 @@ def delete_unreferenced_aliases(con):
     references = [
         tuple(ref[:2])
         for ref in listReferences(cur, 'libraryfilealias', 'id')
+        if ref[0] != 'libraryfiledownloadcount'
         ]
     assert len(references) > 10, 'Database introspection returned nonsense'
     log.info("Found %d columns referencing LibraryFileAlias", len(references))
@@ -319,6 +321,49 @@ def delete_unreferenced_content(con):
         # and the file is unreachable anyway so nothing will attempt to
         # access it between now and the next garbage collection run.
         con.commit()
+
+
+def flag_expired_files(connection):
+    """Flag files past their expiry date as 'deleted' in the database.
+
+    Actual removal from disk is not performed here - that is deferred to
+    delete_unwanted_files().
+    """
+    cur = connection.cursor()
+
+    # First get the list of all LibraryFileContent.
+    cur.execute("SELECT id FROM LibraryFileContent WHERE deleted IS FALSE")
+    all_ids = set(row[0] for row in cur.fetchall())
+
+    # Now the list of unexpired content. May contain some ids not in the
+    # all_ids set if uploads are currently in progress.
+    cur.execute("""
+        SELECT DISTINCT content
+        FROM LibraryFileAlias
+        WHERE expires IS NULL
+            OR expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        """)
+    unexpired_ids = set(row[0] for row in cur.fetchall())
+
+    # Destroy our all_ids set to create the set of expired ids.
+    # We do it this way, as we are dealing with large sets and need to
+    # be careful of RAM usage on the production server.
+    all_ids -= unexpired_ids
+    expired_ids = all_ids
+    del all_ids
+    del unexpired_ids
+
+    for commit_counter, content_id in enumerate(expired_ids):
+        log.debug("%d is expired." % content_id)
+        cur = connection.cursor()
+        cur.execute("""
+            UPDATE LibraryFileContent SET deleted=TRUE
+            WHERE id = %d
+            """ % content_id)
+        if commit_counter % 100 == 0:
+            connection.commit()
+    connection.commit()
+    log.info("Flagged %d expired files for removal." % len(expired_ids))
 
 
 def delete_unwanted_files(con):

@@ -382,6 +382,10 @@ def setup(con, configuration=DEFAULT_CONFIG):
         # Any remaining - characters are spurious
         query = query.replace('-','')
 
+        # Remove unpartnered bracket on the left and right
+        query = re.sub(r"(?ux) ^ ( [^(]* ) \)", r"(\1)", query)
+        query = re.sub(r"(?ux) \( ( [^)]* ) $", r"(\1)", query)
+
         # Remove spurious brackets
         query = re.sub(r"(?u)\(([^\&\|]*?)\)", r" \1 ", query)
         ## plpy.debug('5 query is %s' % repr(query))
@@ -428,7 +432,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         ## plpy.debug('11 query is %s' % repr(query))
 
         # An &,| or ! followed by another boolean.
-        query = re.sub(r"(?u)\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
+        query = re.sub(r"(?ux) \s* ( [\&\|\!] ) [\s\&\|]+", r"\1", query)
         ## plpy.debug('12 query is %s' % repr(query))
 
         # Leading & or |
@@ -697,8 +701,8 @@ def main():
         log.info("Executing generated SQL using slonik")
         if replication.helpers.execute_slonik("""
             execute script (
-                set id=@lpmain_set_id,
-                event node=@master_id,
+                set id=@lpmain_set,
+                event node=@master_node,
                 filename='%s');
             """ % slonik_sql.name, sync=0):
             return 0

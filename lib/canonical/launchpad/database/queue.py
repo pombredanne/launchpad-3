@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -11,17 +11,18 @@ __all__ = [
     'PackageUploadSet',
     ]
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
 import os
 import shutil
 import StringIO
 import tempfile
 
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+
 from zope.component import getUtility
 from zope.interface import implements
-from sqlobject import (
-    ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
+
+from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
@@ -29,25 +30,28 @@ from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
-from canonical.encoding import (
-    guess as guess_encoding, ascii_smash)
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory,
+    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory,
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
-    IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
-    IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    PackageUploadCustomFormat, pocketsuffix, NonBuildableSourceUploadError,
-    QueueBuildAcceptError, QueueInconsistentStateError,
-    QueueStateWriteProtectedError,QueueSourceAcceptError,
-    SourcePackageFileType)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.package import (
+    PackageUploadStatus, PackageUploadCustomFormat)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from canonical.launchpad.interfaces.queue import (
+    IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
+    IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
+    NonBuildableSourceUploadError, QueueBuildAcceptError,
+    QueueInconsistentStateError, QueueSourceAcceptError,
+    QueueStateWriteProtectedError)
+from canonical.launchpad.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from canonical.launchpad.scripts.processaccepted import (
@@ -55,6 +59,7 @@ from canonical.launchpad.scripts.processaccepted import (
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -244,7 +249,7 @@ class PackageUpload(SQLBase):
         :raise NonBuildableSourceUploadError: when the uploaded source
             doesn't result in any builds in its targeted distroseries.
         """
-        if len(builds) == 0:
+        if len(builds) == 0 and self.isPPA():
             raise NonBuildableSourceUploadError(
                 "Cannot build any of the architectures requested: %s" %
                 sourcepackagerelease.architecturehintlist)
@@ -320,13 +325,8 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.builds
 
-    def _is_auto_sync_upload(self, changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
+    def isAutoSyncUpload(self, changed_by_email):
+        """See `IPackageUpload`."""
         katie = getUtility(ILaunchpadCelebrities).katie
         changed_by = self._emailToPerson(changed_by_email)
         return (not self.signing_key
@@ -473,7 +473,7 @@ class PackageUpload(SQLBase):
 
     def isPPA(self):
         """See `IPackageUpload`."""
-        return self.archive.purpose == ArchivePurpose.PPA
+        return self.archive.is_ppa
 
     def _stripPgpSignature(self, changes_lines):
         """Strip any PGP signature from the supplied changes lines."""
@@ -615,6 +615,7 @@ class PackageUpload(SQLBase):
             template = get_email_template('ppa-upload-rejection.txt')
             SUMMARY = summary_text
             CHANGESFILE = guess_encoding("".join(changes_lines))
+            USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
@@ -626,6 +627,7 @@ class PackageUpload(SQLBase):
             SIGNER = ''
             MAINTAINER = ''
             SPR_URL = ''
+            USERS_ADDRESS = config.launchpad.users_address,
 
         default_recipient = "%s <%s>" % (
             config.uploader.default_recipient_name,
@@ -803,7 +805,7 @@ class PackageUpload(SQLBase):
         do_sendmail(AcceptedMessage)
 
         # Don't send announcements for Debian auto sync uploads.
-        if self._is_auto_sync_upload(changed_by_email=changes['changed-by']):
+        if self.isAutoSyncUpload(changed_by_email=changes['changed-by']):
             return
 
         if announce_list:
@@ -985,8 +987,7 @@ class PackageUpload(SQLBase):
 
         # Include the 'X-Launchpad-PPA' header for PPA upload notfications
         # containing the PPA owner name.
-        if (self.archive.purpose == ArchivePurpose.PPA and
-            self.archive.owner):
+        if (self.archive.is_ppa and self.archive.owner is not None):
             extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
 
         # Include a 'X-Launchpad-Component' header with the component and
@@ -1287,6 +1288,25 @@ class PackageUploadSource(SQLBase):
             break
         return ancestry
 
+    def _conflictWith(self, upload_source):
+        """Whether a given PackageUploadSource conflicts with the context.
+
+        :param upload_source: a `PackageUploadSource` to be checked
+            against this context for source 'name' and 'version' conflict.
+        :return: True if the checked `PackageUploadSource` contains a
+            `SourcePackageRelease` with the same name and version.
+             Otherwise, False is returned.
+        """
+        conflict_release = upload_source.sourcepackagerelease
+        proposed_name = self.sourcepackagerelease.name
+        proposed_version = self.sourcepackagerelease.version
+
+        if (conflict_release.name == proposed_name and
+            conflict_release.version == proposed_version):
+            return True
+
+        return False
+
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
@@ -1298,15 +1318,25 @@ class PackageUploadSource(SQLBase):
                 version=self.sourcepackagerelease.version,
                 archive=self.packageupload.archive,
                 exact_match=True)
-            if uploads.count() > 0:
+            # Isolate conflicting PackageUploadSources.
+            conflict_candidates = [
+                upload.sources[0] for upload in uploads
+                if len(list(upload.sources)) > 0]
+            # Isolate only conflicting SourcePackageRelease.
+            conflicts = [
+                upload_source for upload_source in conflict_candidates
+                if self._conflictWith(upload_source)]
+            # If there are any conflicting SourcePackageRelease the
+            # upload cannot be accepted.
+            if len(conflicts) > 0:
                 raise QueueInconsistentStateError(
                     "The source %s is already accepted in %s/%s and you "
                     "cannot upload the same version within the same "
                     "distribution. You have to modify the source version "
                     "and re-upload." % (
-                    self.sourcepackagerelease.title,
-                    distroseries.distribution.name,
-                    distroseries.name))
+                        self.sourcepackagerelease.title,
+                        distroseries.distribution.name,
+                        distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
@@ -1490,10 +1520,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX: dsilvers 2005-11-15: We should be able to get a
-        # sourcepackagerelease directly.
-        sourcepackagerelease = (
-            self.packageupload.builds[0].build.sourcepackagerelease)
+        sourcepackagerelease = self.packageupload.sourcepackagerelease
 
         # Ignore translation coming from PPA.
         if self.packageupload.isPPA():
@@ -1514,10 +1541,18 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
+        # Set the importer to `katie` only for actual Debian auto-syncs.
+        importer = sourcepackagerelease.creator
+        importer_email = importer.preferredemail
+        katie = getUtility(ILaunchpadCelebrities).katie
+        if (importer == katie and
+            not self.packageupload.isAutoSyncUpload(importer_email.email)):
+            importer = None
+
         # Attach the translation tarball. It's always published.
         try:
             sourcepackagerelease.attachTranslationFiles(
-                self.libraryfilealias, True)
+                self.libraryfilealias, True, importer=importer)
         except DownloadFailed:
             if logger is not None:
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %

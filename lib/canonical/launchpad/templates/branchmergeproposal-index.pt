@@ -18,63 +18,24 @@
   }
 </style>
 
-<metal:heading fill-slot="before_nav_menu"
-               tal:content="structure context/source_branch/@@+heading"/>
-
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
 
-  <tal:proposal-heading tal:replace="structure context/@@+heading-links"/>
-
-  <div id="actions" class="actions aside"
-       tal:condition="context/required:launchpad.Edit">
-    <tal:action define="link context_menu/set_work_in_progress"
-                condition="link/enabled"
-                content="structure link/render">
-      Set WIP
-    </tal:action>
-    <tal:action define="link context_menu/review"
-                condition="link/enabled"
-                content="structure link/render">
-      Review
-    </tal:action>
-    <tal:action define="link context_menu/merge"
-                condition="link/enabled"
-                content="structure link/render">
-      Mark as merged
-    </tal:action>
-    <tal:action define="link context_menu/enqueue"
-                condition="link/enabled"
-                content="structure link/render">
-      Enqueue
-    </tal:action>
-    <tal:action define="link context_menu/dequeue"
-                condition="link/enabled"
-                content="structure link/render">
-      Dequeue
-    </tal:action>
-    <tal:action define="link context_menu/resubmit"
-                condition="link/enabled"
-                content="structure link/render">
-      Resubmit
-    </tal:action>
-
-  </div>
+  <h1>Proposal to merge branch
+    <a tal:define="link context_menu/delete"
+       tal:condition="link/enabled"
+       tal:attributes="href link/url"
+       ><img src="/@@/trash-icon" tal:attributes="title link/text; alt link/text" />
+    </a>
+</h1>
 
   <div class="aside">
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
 
-  <p id="proposal-merged" tal:condition="context/merged_revno">
-    The proposed merge was performed at revision
-    <tal:revno replace="context/merged_revno" />
+  <div id="nonportlets">
 
-    <a tal:define="link context_menu/update_merge_revno"
-       tal:condition="link/enabled"
-       tal:attributes="href link/url"
-       ><img src="/@@/edit" tal:attributes="title link/text; alt link/text" />
-    </a>
-  </p>
+  <tal:summary replace="structure context/@@+pagelet-summary" />
 
   <tal:superseded-proposal condition="context/supersedes">
     <p id="superseded-proposal">
@@ -92,21 +53,17 @@
         <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
     </p>
   </tal:superseded-by>
-  <div>
 
+  <tal:commit-message condition="context/commit_message">
     <h2>Proposed commit message
     </h2>
 
-  </div>
-  <div id="commit-message">
-    <p tal:content="structure context/commit_message/fmt:text-to-html">
-      Commit message
-    </p>
-    <p tal:condition="not: context/commit_message">
-      No commit message specified.
-    </p>
-  </div>
-
+    <div id="commit-message">
+      <p tal:content="structure context/commit_message/fmt:text-to-html">
+        Commit message
+      </p>
+    </div>
+  </tal:commit-message>
 
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
@@ -116,13 +73,7 @@
     </div>
   </tal:whiteboard>
 
-  <tal:votes replace="structure context/@@+votes-with-links"/>
-
-  <div tal:define="link context/menu:context/request_review"
-       tal:condition="link/enabled"
-       tal:content="structure link/render">
-       Request review
-  </div>
+  <tal:votes replace="structure context/@@+votes"/>
 
   <tal:comments repeat="row view/comments" >
     <div tal:content="structure row/comment/@@+fragment-summary"
@@ -151,19 +102,38 @@
 
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">
-  <h2>Unmerged revisions</h2>
 
     <tal:history-available condition="context/source_branch/revision_count"
                            define="branch context/source_branch;
                                    revisions view/unlanded_revisions">
+      <h2>Unmerged revisions</h2>
       <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
     </tal:history-available>
 
     <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+      <h2>Unmerged revisions</h2>
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
   </div>
-</div>
 
+  </div><!-- non-portlets-->
+
+  <div id="review-diff" tal:condition="context/review_diff">
+  <h2>Review Diff</h2>
+  <div class="boardComment attachment">
+    <div class="boardCommentDetails filename"
+         tal:define="attachment context/review_diff/diff/diff_text">
+      <a tal:attributes="href attachment/getURL">
+        <img src="/@@/download"/>
+        Download diff
+      </a>
+    </div>
+    <div class="boardCommentBody attachmentBody">
+      <tal:diff replace="structure view/review_diff/fmt:diff" />
+    </div>
+  </div>
+  </div>
+
+</div>
 </body>
 </html>

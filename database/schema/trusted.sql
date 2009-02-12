@@ -342,165 +342,6 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
     'Trigger maintaining the PillarName table';
 
 
--- XXX StuartBishop 20080605 bug=237576: The stored procedures
--- maintaining the ValidPersonOrTeamCache materialized view can go
--- once we have made a new baseline. They only still exist to stop the
--- dev database build procedure from breaking.
-CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
-LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
-    # This trigger function could be simplified by simply issuing
-    # one DELETE followed by one INSERT statement. However, we want to minimize
-    # expensive writes so we use this more complex logic.
-    PREF = 4 # Constant indicating preferred email address
-
-    if not SD.has_key("delete_plan"):
-        param_types = ["int4"]
-
-        SD["delete_plan"] = plpy.prepare("""
-            DELETE FROM ValidPersonOrTeamCache WHERE id = $1
-            """, param_types)
-
-        SD["maybe_insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id)
-            SELECT Person.id
-            FROM Person
-                LEFT OUTER JOIN EmailAddress
-                    ON Person.id = EmailAddress.person AND status = %(PREF)d
-                LEFT OUTER JOIN ValidPersonOrTeamCache
-                    ON Person.id = ValidPersonOrTeamCache.id
-            WHERE Person.id = $1
-                AND ValidPersonOrTeamCache.id IS NULL
-                AND merged IS NULL
-                AND (teamowner IS NOT NULL OR EmailAddress.id IS NOT NULL)
-            """ % vars(), param_types)
-
-    new = TD["new"]
-    old = TD["old"]
-
-    # We should always have new, as this is not a DELETE trigger
-    assert new is not None, 'New is None'
-
-    person_id = new["id"]
-    query_params = [person_id] # All the same
-
-    # Short circuit if this is a new person (not team), as it cannot
-    # be valid until a status == 4 EmailAddress entry has been created
-    # (unless it is a team, in which case it is valid on creation)
-    if old is None:
-        if new["teamowner"] is not None:
-            plpy.execute(SD["maybe_insert_plan"], query_params)
-        return
-
-    # Short circuit if there are no relevant changes
-    if (new["teamowner"] == old["teamowner"]
-        and new["merged"] == old["merged"]):
-        return
-
-    # This function is only dealing with updates to the Person table.
-    # This means we do not have to worry about EmailAddress changes here
-
-    if (new["merged"] is not None or new["teamowner"] is None):
-        plpy.execute(SD["delete_plan"], query_params)
-    else:
-        plpy.execute(SD["maybe_insert_plan"], query_params)
-$$;
-
-COMMENT ON FUNCTION mv_validpersonorteamcache_person() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the Person table';
-
-
-CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_emailaddress()
-RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
-    # This trigger function keeps the ValidPersonOrTeamCache materialized
-    # view in sync when updates are made to the EmailAddress table.
-    # Note that if the corresponding person is a team, changes to this table
-    # have no effect.
-    PREF = 4 # Constant indicating preferred email address
-
-    if not SD.has_key("delete_plan"):
-        param_types = ["int4"]
-
-        SD["is_team"] = plpy.prepare("""
-            SELECT teamowner IS NOT NULL AS is_team FROM Person WHERE id = $1
-            """, param_types)
-
-        SD["delete_plan"] = plpy.prepare("""
-            DELETE FROM ValidPersonOrTeamCache WHERE id = $1
-            """, param_types)
-
-        SD["insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id) VALUES ($1)
-            """, param_types)
-
-        SD["maybe_insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id)
-            SELECT Person.id
-            FROM Person
-                JOIN EmailAddress ON Person.id = EmailAddress.person
-                LEFT OUTER JOIN ValidPersonOrTeamCache
-                    ON Person.id = ValidPersonOrTeamCache.id
-            WHERE Person.id = $1
-                AND ValidPersonOrTeamCache.id IS NULL
-                AND status = %(PREF)d
-                AND merged IS NULL
-                -- AND password IS NOT NULL
-            """ % vars(), param_types)
-
-    def is_team(person_id):
-        """Return true if person_id corresponds to a team"""
-        if person_id is None:
-            return False
-        return plpy.execute(SD["is_team"], [person_id], 1)[0]["is_team"]
-
-    class NoneDict:
-        def __getitem__(self, key):
-            return None
-
-    old = TD["old"] or NoneDict()
-    new = TD["new"] or NoneDict()
-
-    #plpy.info("old.id     == %s" % old["id"])
-    #plpy.info("old.person == %s" % old["person"])
-    #plpy.info("old.status == %s" % old["status"])
-    #plpy.info("new.id     == %s" % new["id"])
-    #plpy.info("new.person == %s" % new["person"])
-    #plpy.info("new.status == %s" % new["status"])
-
-    # Short circuit if neither person nor status has changed
-    if old["person"] == new["person"] and old["status"] == new["status"]:
-        return
-
-    # Short circuit if we are not mucking around with preferred email
-    # addresses
-    if old["status"] != PREF and new["status"] != PREF:
-        return
-
-    # Note that we have a constraint ensuring that there is only one
-    # status == PREF email address per person at any point in time.
-    # This simplifies our logic, as we know that if old.status == PREF,
-    # old.person does not have any other preferred email addresses.
-    # Also if new.status == PREF, we know new.person previously did not
-    # have a preferred email address.
-
-    if old["person"] != new["person"]:
-        if old["status"] == PREF and not is_team(old["person"]):
-            # old.person is no longer valid, unless they are a team
-            plpy.execute(SD["delete_plan"], [old["person"]])
-        if new["status"] == PREF and not is_team(new["person"]):
-            # new["person"] is now valid, or unchanged if they are a team
-            plpy.execute(SD["insert_plan"], [new["person"]])
-
-    elif old["status"] == PREF and not is_team(old["person"]):
-        # No longer valid, or unchanged if they are a team
-        plpy.execute(SD["delete_plan"], [old["person"]])
-
-    elif new["status"] == PREF and not is_team(new["person"]):
-        # May now be valid, or unchanged if they are a team.
-        plpy.execute(SD["maybe_insert_plan"], [new["person"]])
-$$;
-
-COMMENT ON FUNCTION mv_validpersonorteamcache_emailaddress() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the EmailAddress table';
-
-
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
 RETURNS TRIGGER
 VOLATILE SECURITY DEFINER AS $$
@@ -979,3 +820,25 @@ $$;
 
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
+
+
+CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag() IS
+'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+

@@ -2,22 +2,32 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, TextLine, Datetime, Field
+from zope.schema import Bool, Choice, Datetime, Field, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import TranslationFileFormat
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+
+from canonical.launchpad.interfaces.translationcommonformat import (
+    TranslationImportExportBaseException)
 
 __metaclass__ = type
 
 __all__ = [
+    'TranslationImportQueueConflictError',
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
     'IHasTranslationImports',
     'RosettaImportStatus',
+    'TranslationFileType',
     ]
+
+class TranslationImportQueueConflictError(
+                                    TranslationImportExportBaseException):
+    """A new entry cannot be inserted into the queue because it
+    conflicts with existing entries."""
 
 
 class RosettaImportStatus(DBEnumeratedType):
@@ -151,6 +161,11 @@ class ITranslationImportQueueEntry(Interface):
         " notes a .pot file, it should be used as the place where this entry"
         " will be imported, if it's a .po file, it indicates the template"
         " associated with tha translation."),
+        required=False)
+
+    error_output = Text(
+        title=_("Error output"),
+        description=_("Output from most recent import attempt."),
         required=False)
 
     def getGuessedPOFile():
@@ -300,22 +315,46 @@ class ITranslationImportQueue(Interface):
     def remove(entry):
         """Remove the given :entry: from the queue."""
 
+class TranslationFileType(EnumeratedType):
+    """The different types of translation files that can be imported.
+
+    .
+    """
+
+    UNSPEC = Item("""
+        <Please specify>
+
+        Not yet specified.
+        """)
+
+    POT = Item("""
+        Translation Template (POT)
+
+        A translation template file.
+        """)
+
+    PO = Item("""
+        Translation Data (PO)
+
+        A translation data file.
+        """)
+
 
 class IEditTranslationImportQueueEntry(Interface):
     """Set of widgets needed to moderate an entry on the imports queue."""
 
-    name = TextLine(
-        title=_("Template name"),
-        description=_("The name of this PO template, for example "
-            "'evolution-2.2'. Each translation template has a "
-            "unique name in its package."),
-        required=True)
+    file_type = Choice(
+        title=_("File Type"),
+        description=_(
+            "The type of the file being imported imported."),
+        required=True,
+        vocabulary = TranslationFileType)
 
-    translation_domain = TextLine(
-        title=_("Translation domain"),
-        description=_("The translation domain for a translation template. "
-            "Used with PO file format when generating MO files for inclusion "
-            "in language pack or MO tarball exports."),
+    path = TextLine(
+        title=_("Path"),
+        description=_(
+            "The path to this file inside the source tree. If it's empty, we"
+            " use the one from the queue entry."),
         required=True)
 
     sourcepackagename = Choice(
@@ -325,23 +364,49 @@ class IEditTranslationImportQueueEntry(Interface):
         required=True,
         vocabulary="SourcePackageName")
 
+    name = TextLine(
+        title=_("Name"),
+        description=_("For POT only: "
+            "The name of this PO template, for example "
+            "'evolution-2.2'. Each translation template has a "
+            "unique name in its package."),
+        required=False)
+
+    translation_domain = TextLine(
+        title=_("Translation domain"),
+        description=_("For POT only: "
+            "The translation domain for a translation template. "
+            "Used with PO file format when generating MO files for inclusion "
+            "in language pack or MO tarball exports."),
+        required=False)
+
+    potemplate = Choice(
+        title=_("Template"),
+        description=_("For PO only: "
+            "The template that this translation is based on. "
+            "The template has to be uploaded first."),
+        required=False,
+        vocabulary="TranslationTemplate")
+
+    potemplate_name = TextLine(
+        title=_("Template name"),
+        description=_("For PO only: "
+                      "Enter the template name if it does not appear "
+                      "in the list above."),
+        required=False)
+
     language = Choice(
         title=_("Language"),
-        required=False,
+        required=True,
+        description=_("For PO only: "
+                      "The language this PO file translates to."),
         vocabulary="Language")
 
     variant = TextLine(
         title=_("Variant"),
-        description=_(
+        description=_("For PO only: "
             "Language variant, usually used to note the script used to"
             " write the translations (like 'Latn' for Latin)"),
-        required=False)
-
-    path = TextLine(
-        title=_("Path"),
-        description=_(
-            "The path to this file inside the source tree. If it's empty, we"
-            " use the one from the queue entry."),
         required=False)
 
 

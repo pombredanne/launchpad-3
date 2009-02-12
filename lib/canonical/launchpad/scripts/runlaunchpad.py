@@ -37,21 +37,21 @@ class Service(object):
 
 class TacFile(Service):
 
-    def __init__(self, name, tac_filename, configuration, pre_launch=None):
+    def __init__(self, name, tac_filename, section_name, pre_launch=None):
         """Create a TacFile object.
 
         :param name: A short name for the service. Used to name the pid file.
         :param tac_filename: The location of the TAC file, relative to this
             script.
-        :param configuration: A config object with launch, logfile and spew
-            attributes.
+        :param section_name: The config section name that provides the
+            launch, logfile and spew options.
         :param pre_launch: A callable that is called before the launch process.
         """
         # No point calling super's __init__.
         # pylint: disable-msg=W0231
         self.name = name
         self.tac_filename = tac_filename
-        self.config = configuration
+        self.section_name = section_name
         if pre_launch is None:
             self.pre_launch = lambda: None
         else:
@@ -59,7 +59,8 @@ class TacFile(Service):
 
     @property
     def should_launch(self):
-        return self.config is not None and self.config.launch
+        return (self.section_name is not None
+                and config[self.section_name].launch)
 
     @property
     def logfile(self):
@@ -67,7 +68,7 @@ class TacFile(Service):
 
         Default to the value of the configuration key logfile.
         """
-        return self.config.logfile
+        return config[self.section_name].logfile
 
     def launch(self):
         # Don't run the server if it wasn't asked for.
@@ -77,7 +78,7 @@ class TacFile(Service):
         self.pre_launch()
 
         pidfile = pidfile_path(self.name)
-        logfile = self.config.logfile
+        logfile = config[self.section_name].logfile
         tacfile = make_abspath(self.tac_filename)
 
         args = [
@@ -91,7 +92,7 @@ class TacFile(Service):
             "--logfile", logfile,
             ]
 
-        if self.config.spew:
+        if config[self.section_name].spew:
             args.append("--spew")
 
         # Note that startup tracebacks and evil programmers using 'print' will
@@ -131,7 +132,7 @@ class CodebrowseService(Service):
 
     def launch(self):
         process = subprocess.Popen(
-            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
+            ['make', 'run_codebrowse'],
             stdin=subprocess.PIPE)
         process.stdin.close()
         stop_at_exit(process)
@@ -169,11 +170,11 @@ def prepare_for_librarian():
 
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
-                         config.librarian_server, prepare_for_librarian),
+                         'librarian_server', prepare_for_librarian),
     'buildsequencer': TacFile('buildsequencer',
                               'daemons/buildd-sequencer.tac',
-                              config.buildsequencer),
-    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
+                              'buildsequencer'),
+    'sftp': TacFile('sftp', 'daemons/sftp.tac', 'codehosting'),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),

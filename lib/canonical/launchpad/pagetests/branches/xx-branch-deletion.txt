@@ -29,9 +29,6 @@ delete the branch.
     lp://dev/~name12/firefox/to-delete
     ...
     Delete branch
-    The following items must be deleted:
-    Subscription of Sample Person to ~name.../firefox/to-delete (This is a
-    subscription to this branch.)
     Branch deletion is permanent.
     or Cancel
 
@@ -61,3 +58,20 @@ the deleted branch's owner.
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Branch ~name12/+junk/to-delete deleted...
+
+Branches that are stacked upon cannot be deleted.
+
+    >>> login('admin@canonical.com')
+    >>> stacked_upon = factory.makeAnyBranch()
+    >>> stacked = factory.makeAnyBranch(stacked_on=stacked_upon)
+    >>> branch_location = canonical_url(stacked_upon)
+    >>> logout()
+
+Even if you are an admin.
+
+    >>> admin_browser.open(branch_location)
+    >>> admin_browser.getLink('Delete branch').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Last modified ...
+    Delete branch
+    This branch cannot be deleted as it has 1 branch sharing revisions.

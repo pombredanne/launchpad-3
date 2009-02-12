@@ -7,6 +7,8 @@ __metaclass__ = type
 import unittest
 from datetime import timedelta
 from zope.session.interfaces import ISessionDataContainer, ISessionData
+from zope.publisher.browser import TestRequest
+from zope.security.management import newInteraction, endInteraction
 
 from canonical.launchpad.webapp.pgsession import (
         PGSessionDataContainer, PGSessionData
@@ -30,8 +32,12 @@ class TestPgSession(unittest.TestCase):
     def setUp(self):
         self.sdc = PGSessionDataContainer()
         LaunchpadLayer.resetSessionDb()
+        self.request = TestRequest()
+        newInteraction(self.request)
 
     def tearDown(self):
+        endInteraction()
+        del self.request
         del self.sdc
 
     def test_sdc_basics(self):
@@ -191,6 +197,10 @@ class TestPgSession(unittest.TestCase):
         result = store.execute("SELECT COUNT(*) FROM SessionData")
         self.assertEqual(result.get_one()[0], 0)
 
+        # The session cookie is also not yet set in the response.
+        self.assertEqual(self.request.response.getCookie('launchpad_tests'),
+                         None)
+
         # Now try storing some data in the session, which will result
         # in it being stored in the database.
         pkgdata['key'] = 'value'
@@ -199,9 +209,14 @@ class TestPgSession(unittest.TestCase):
         client_ids = [row[0] for row in result]
         self.assertEquals(client_ids, [client_id])
 
+        # The session cookie also is now set, via the same "trigger".
+        self.assertNotEqual(
+            self.request.response.getCookie('launchpad_tests'), None)
+
+        # also see the page test xx-no-anonymous-session-cookies for tests of
+        # the cookie behavior.
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestPgSession))
     return suite
-

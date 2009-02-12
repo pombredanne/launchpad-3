@@ -34,17 +34,14 @@ give karma for it.
 Karma is added for registering a branch.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> fooix = factory.makeProduct(name='fooix')
     >>> eric = factory.makePerson(name='eric', password='test')
-    >>> branch = factory.makeBranch(owner=eric, product=fooix)
+    >>> branch = factory.makeProductBranch(owner=eric, product=fooix)
     Karma added: action=branchcreated, product=fooix, person=eric
 
 However, no karma is added for junk branches.
 
-    >>> junk_branch = factory.makeBranch(
-    ...     owner=eric, product=None)
+    >>> junk_branch = factory.makePersonalBranch(owner=eric)
 
 
 == Linking bugs and branches ==

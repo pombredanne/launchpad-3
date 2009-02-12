@@ -14,9 +14,13 @@ from canonical.archiveuploader.tests.test_uploadprocessor import (
 from canonical.config import config
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError)
+from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces.bug import (
+    CreateBugParams, IBugSet)
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
@@ -30,6 +34,7 @@ from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
 from canonical.launchpad.scripts.packagecopier import (
     PackageCopier, UnembargoSecurityPackage)
+from canonical.launchpad.testing import TestCase
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 
@@ -95,9 +100,10 @@ class TestCopyPackageScript(unittest.TestCase):
         self.assertEqual(num_bin_pub + 4, num_bin_pub_after)
 
 
-class TestCopyPackage(unittest.TestCase):
+class TestCopyPackage(TestCase):
     """Test the CopyPackageHelper class."""
     layer = LaunchpadZopelessLayer
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Anotate pending publishing records provided in the sampledata.
@@ -111,6 +117,9 @@ class TestCopyPackage(unittest.TestCase):
         pending_binaries = SecureBinaryPackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.binaries_pending_ids = [pub.id for pub in pending_binaries]
+
+        # Run test cases in the production context.
+        self.layer.switchDbUser(self.dbuser)
 
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_distribution='ubuntu', from_suite='warty',
@@ -435,6 +444,125 @@ class TestCopyPackage(unittest.TestCase):
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
         self.assertEqual(len(copied_source.getBuilds()), 0)
 
+    def _setupArchitectureGrowingScenario(self, architecturehintlist="all"):
+        """Prepare distroseries with different sets of architectures.
+
+        Ubuntu/warty has i386 and hppa, but only i386 is supported.
+        Ubuntu/hoary has i386 and hppa and both are supported.
+
+        Also create source and binary(ies) publication set called 'boing'
+        according to the given 'architecturehintlist'.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        # Ubuntu/warty only supports i386.
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+        active_warty_architectures = [
+            arch.architecturetag for arch in warty.architectures
+            if arch.getChroot()]
+        self.assertEqual(
+            active_warty_architectures, ['i386'])
+
+        # Setup ubuntu/hoary supporting i386 and hppa architetures.
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
+        active_hoary_architectures = [
+            arch.architecturetag for arch in hoary.architectures]
+        self.assertEqual(
+            sorted(active_hoary_architectures), ['hppa', 'i386'])
+
+        # We will create an architecture-specific source and its binaries
+        # for i386 in ubuntu/warty. They will be copied over.
+        ppa_source = test_publisher.getPubSource(
+            sourcename='boing', version='1.0', distroseries=warty,
+            architecturehintlist=architecturehintlist,
+            status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def testCopyArchitectureIndependentBinaries(self):
+        """Architecture independent binaries are propagated in the detination.
+
+        In the case when the destination distroseries supports more
+        architectures than the source (distroseries), `copy-package`
+        correctly identifies it and propagates architecture independent
+        binaries to the new architectures.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        self._setupArchitectureGrowingScenario()
+
+        # In terms of supported architectures, both warty & hoary supports
+        # i386 and hppa. We will create hoary/amd64 so we can verify if
+        # architecture independent binaries copied from warty will also
+        # end up in the new architecture.
+        amd64_family = ProcessorFamily.selectOneBy(name='amd64')
+        hoary = ubuntu.getSeries('hoary')
+        hoary_amd64 = hoary.newArch('amd64', amd64_family, True, hoary.owner)
+
+        # Copy the source and binaries from warty to hoary.
+        copy_helper = self.getCopier(
+            sourcename='boing', include_binaries=True,
+            from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 4)
+
+        # The source and the only existing binary were correctly copied.
+        # No build was created, but the architecture independent binary
+        # was propagated to the new architecture (hoary/amd64).
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary)
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+
+        self.assertEqual(len(copied_source.getBuilds()), 0)
+
+        architectures_with_binaries = [
+            binary.distroarchseries.architecturetag
+            for binary in copied_source.getPublishedBinaries()]
+        self.assertEqual(
+            architectures_with_binaries, ['amd64', 'hppa', 'i386'])
+
+    def testCopyCreatesMissingBuilds(self):
+        """Copying source and binaries also create missing builds.
+
+        When source and binaries are copied to a distroseries which supports
+        more architectures than the one where they were built, copy-package
+        should create builds for the new architectures.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        self._setupArchitectureGrowingScenario(architecturehintlist="any")
+
+        copy_helper = self.getCopier(
+            sourcename='boing', include_binaries=True,
+            from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        # Copy the source and the i386 binary from warty to hoary.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
+
+        # The source and the only existing binary were correctly copied.
+        hoary = ubuntu.getSeries('hoary')
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary)
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+
+        [copied_binary] = copied_source.getPublishedBinaries()
+        self.assertEqual(
+            copied_binary.displayname, 'foo-bin 1.0 in hoary i386')
+
+        # A new build was created in the hoary context for the *extra*
+        # architecture (hppa).
+        [new_build] = copied_source.getBuilds()
+        self.assertEqual(
+            new_build.title,
+            'hppa build of boing 1.0 in ubuntu hoary RELEASE')
+
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.
 
@@ -635,23 +763,6 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
 
-    def assertRaisesWithContent(self, exception, exception_content,
-                                func, *args):
-        """Check if the given exception is raised with given content.
-
-        If the exception isn't raised or the exception_content doesn't
-        match what was raised an AssertionError is raised.
-        """
-        exception_name = str(exception).split('.')[-1]
-
-        try:
-            func(*args)
-        except exception, err:
-            self.assertEqual(str(err), exception_content)
-        else:
-            raise AssertionError(
-                "'%s' was not raised" % exception_name)
-
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found.
 
@@ -725,7 +836,7 @@ class TestCopyPackage(unittest.TestCase):
 
         self.assertRaisesWithContent(
             PackageLocationError,
-            "Could not find a PPA for slatibartfast",
+            "Could not find a PPA for slatibartfast named ppa",
             copy_helper.mainTask)
 
     def testCrossPartnerCopiesFails(self):
@@ -770,6 +881,44 @@ class TestCopyPackage(unittest.TestCase):
             SoyuzScriptError,
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
+
+    def testCopyFromPrivateToPublicPPAs(self):
+        """Check if copying private sources into public archives is denied.
+
+        Private source files can only be published in private archives,
+        because builders do not have access to the restricted librarian.
+
+        Builders only fetch the sources files from the repository itself
+        for private PPAs. If we copy a restricted file into a public PPA
+        builders will not be able to fetch it.
+        """
+        # Set up a private PPA.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        cprov.archive.buildd_secret = "secret"
+        cprov.archive.private = True
+
+        # Create a source and binary private publication.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.0', distroseries=hoary)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary)
+
+        # Run the copy package script storing the logged information.
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='cprov', include_binaries=True,
+            from_suite='hoary', to_suite='hoary')
+        copy_helper.logger = TestLogger()
+        copied = copy_helper.mainTask()
+
+        # Nothing was copied and an error message was printed explaining why.
+        self.assertEqual(len(copied), 0)
+        self.assertEqual(
+            copy_helper.logger.lines[-1],
+            'foo 1.0 in hoary '
+            '(Cannot copy private source into public archives.)')
 
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
@@ -847,14 +996,14 @@ class TestCopyPackage(unittest.TestCase):
         # Now we can invoke the unembargo script and check its results.
         test_args = [
             "--ppa", "cprov",
-            "-s", "%s" % ppa_source.distroseries.name,
+            "--ppa-name", "ppa",
+            "-s", "%s" % ppa_source.distroseries.name + "-security",
             "foo"
             ]
 
         script = UnembargoSecurityPackage(
             name='unembargo', test_args=test_args)
         script.logger = QuietFakeLogger()
-        script.setupLocation()
 
         copied = script.mainTask()
 
@@ -894,6 +1043,169 @@ class TestCopyPackage(unittest.TestCase):
                 self.assertFalse(changesfile.restricted)
                 buildlog = package.build.buildlog
                 self.assertFalse(buildlog.restricted)
+            # Check that the pocket is -security as specified in the
+            # script parameters.
+            self.assertEqual(
+                published.pocket.title, "Security",
+                "Expected Security pocket, got %s" % published.pocket.title)
+
+    def testUnembargoSuite(self):
+        """Test that passing different suites works as expected."""
+        test_args = [
+            "--ppa", "cprov",
+            "-s", "warty-backports",
+            "foo"
+            ]
+
+        script = UnembargoSecurityPackage(
+            name='unembargo', test_args=test_args)
+        self.assertTrue(script.setUpCopierOptions())
+        self.assertEqual(
+            script.options.to_suite, "warty-backports",
+            "Got %s, expected warty-backports")
+
+        # Change the suite to one with the release pocket, it should
+        # copy nothing as you're not allowed to unembargo into the
+        # release pocket.
+        test_args[3] = "hoary"
+        script = UnembargoSecurityPackage(
+            name='unembargo', test_args=test_args)
+        script.logger = QuietFakeLogger()
+        self.assertFalse(script.setUpCopierOptions())
+
+    def testCopyClosesBugs(self):
+        """Copying packages closes bugs.
+
+        Package copies to primary archive automatically closes
+        bugs referenced bugs when target to release, updates
+        and security pockets.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        cprov = getUtility(IPersonSet).getByName("cprov")
+
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+        test_publisher.addFakeChroots(warty)
+
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.addFakeChroots(hoary)
+
+        def create_source(version, archive, pocket):
+            source = test_publisher.getPubSource(
+                sourcename='buggy-source', version=version,
+                distroseries=warty, archive=archive, pocket=pocket,
+                status=PackagePublishingStatus.PUBLISHED)
+            binaries = test_publisher.getPubBinaries(
+                pub_source=source, distroseries=warty, archive=archive,
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
+            return source
+
+        def create_bug(summary):
+            buggy_in_ubuntu = ubuntu.getSourcePackage('buggy-source')
+            bug_params = CreateBugParams(cprov, summary, "booo")
+            bug = buggy_in_ubuntu.createBug(bug_params)
+            [bug_task] = bug.bugtasks
+            self.assertEqual(bug_task.status, BugTaskStatus.NEW)
+            return bug.id
+
+        def create_upload(pub_source, changesfilecontent):
+            pub_source.sourcepackagerelease.changelog_entry = "Boing!"
+            queue_item = warty.createQueueEntry(
+                archive=pub_source.archive,
+                changesfilename='foo_source.changes',
+                pocket=pub_source.pocket,
+                changesfilecontent=changesfilecontent)
+            queue_item.addSource(pub_source.sourcepackagerelease)
+            queue_item.setDone()
+            self.layer.txn.commit()
+
+        def publish_copies(copies):
+            for pub in copies:
+                pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+
+        changes_template = (
+            "Format: 1.7\n"
+            "Launchpad-bugs-fixed: %s\n")
+
+        # Copies to -updates close bugs when they exist.
+        proposed_source = create_source(
+            '666', warty.main_archive, PackagePublishingPocket.PROPOSED)
+        updates_bug_id = create_bug('bug in -proposed')
+        closing_bug_changesfile = changes_template % updates_bug_id
+        create_upload(proposed_source, closing_bug_changesfile)
+
+        copy_helper = self.getCopier(
+            sourcename='buggy-source', include_binaries=True,
+            from_suite='warty-proposed', to_suite='warty-updates')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 3)
+
+        updates_bug = getUtility(IBugSet).get(updates_bug_id)
+        [updates_bug_task] = updates_bug.bugtasks
+        self.assertEqual(updates_bug_task.status, BugTaskStatus.FIXRELEASED)
+
+        publish_copies(copied)
+
+        # Copies to the development distroseries close bugs.
+        dev_source = create_source(
+            '667', warty.main_archive, PackagePublishingPocket.UPDATES)
+        dev_bug_id = create_bug('bug in development')
+        closing_bug_changesfile = changes_template % dev_bug_id
+        create_upload(dev_source, closing_bug_changesfile)
+
+        copy_helper = self.getCopier(
+            sourcename='buggy-source', include_binaries=True,
+            from_suite='warty-updates', to_suite='hoary')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 3)
+
+        dev_bug = getUtility(IBugSet).get(dev_bug_id)
+        [dev_bug_task] = dev_bug.bugtasks
+        self.assertEqual(dev_bug_task.status, BugTaskStatus.FIXRELEASED)
+
+        publish_copies(copied)
+
+        # Copies to -proposed do not close bugs
+        ppa_source = create_source(
+            '668', cprov.archive, PackagePublishingPocket.RELEASE)
+        ppa_bug_id = create_bug('bug in PPA')
+        closing_bug_changesfile = changes_template % ppa_bug_id
+        create_upload(ppa_source, closing_bug_changesfile)
+
+        copy_helper = self.getCopier(
+            sourcename='buggy-source', include_binaries=True,
+            from_ppa='cprov', from_suite='warty', to_suite='warty-proposed')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 3)
+
+        ppa_bug = getUtility(IBugSet).get(ppa_bug_id)
+        [ppa_bug_task] = ppa_bug.bugtasks
+        self.assertEqual(ppa_bug_task.status, BugTaskStatus.NEW)
+
+        publish_copies(copied)
+
+        # Copies to PPA do not close bugs.
+        release_source = create_source(
+            '669', warty.main_archive, PackagePublishingPocket.RELEASE)
+        proposed_bug_id = create_bug('bug in PPA')
+        closing_bug_changesfile = changes_template % proposed_bug_id
+        create_upload(release_source, closing_bug_changesfile)
+
+        copy_helper = self.getCopier(
+            sourcename='buggy-source', include_binaries=True,
+            to_ppa='cprov', from_suite='warty', to_suite='warty')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 3)
+
+        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
+        [proposed_bug_task] = proposed_bug.bugtasks
+        self.assertEqual(proposed_bug_task.status, BugTaskStatus.NEW)
+
+        publish_copies(copied)
 
 
 def test_suite():

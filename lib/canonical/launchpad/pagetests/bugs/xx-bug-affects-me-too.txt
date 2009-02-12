@@ -5,8 +5,6 @@ this on.
 
    >>> login(ANONYMOUS)
    >>> from canonical.launchpad.webapp import canonical_url
-   >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-   >>> factory = LaunchpadObjectFactory()
    >>> test_bug = factory.makeBug()
    >>> test_bug_url = canonical_url(test_bug)
    >>> logout()

@@ -13,8 +13,7 @@ import transaction
 
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.ftests import (
-    login, login_person, logout, ANONYMOUS, syncUpdate)
+from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
@@ -26,8 +25,7 @@ from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.validators import LaunchpadValidationError
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.testing import DatabaseFunctionalLayer
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -35,7 +33,7 @@ from zope.security.proxy import removeSecurityProxy
 
 class TestBranchSet(TestCase):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -85,45 +83,18 @@ class TestBranchSet(TestCase):
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
         self.assertEqual(original_branches[1:], latest_branches)
 
-    def test_getHostedBranchesForPerson(self):
-        """The hosted branches for a person are all of the branches without
-        urls that are owned by that person, or a team that the person is in.
-        """
-        branch_owner = getUtility(IPersonSet).get(12)
-        login_person(branch_owner)
-        try:
-            branch_set = getUtility(IBranchSet)
-            branches = sorted(
-                branch.unique_name for branch in
-                branch_set.getHostedBranchesForPerson(branch_owner))
-            expected = [
-                u'~landscape-developers/landscape/trunk',
-                u'~name12/gnome-terminal/mirrored',
-                u'~name12/gnome-terminal/pushed',
-                u'~name12/gnome-terminal/scanned',
-                u'~name12/landscape/feature-x',
-                ]
-            self.assertEqual(expected, branches)
-        finally:
-            logout()
 
+class TestBranchSetNew(TestCaseWithFactory):
+    """Tests for BranchSet.new()."""
 
-class TestBranchSetNewNameValidation(TestCase):
-    """Test of the validation of the branch name done by BranchSet.new()."""
-
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
+        TestCaseWithFactory.setUp(self)
         # This person should be considered to be wholly arbitrary.
-        self.person = getUtility(IPersonSet).getByName('name12')
+        self.person = self.factory.makePerson()
         assert self.person is not None, "Sample Person not found."
         self.branch_set = getUtility(IBranchSet)
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
 
     def makeNewBranchWithName(self, name):
         """Attempt to create a new branch with name 'name'.
@@ -134,7 +105,7 @@ class TestBranchSetNewNameValidation(TestCase):
         return self.branch_set.new(
             BranchType.HOSTED, name, self.person, self.person, None, None)
 
-    def testPermittedFirstCharacter(self):
+    def test_permitted_first_character(self):
         # The first character of a branch name must be a letter or a number.
         for c in [chr(i) for i in range(128)]:
             if c.isalnum():
@@ -143,7 +114,7 @@ class TestBranchSetNewNameValidation(TestCase):
                 self.assertRaises(
                     LaunchpadValidationError, self.makeNewBranchWithName, c)
 
-    def testPermittedSubsequentCharacter(self):
+    def test_permitted_subsequent_character(self):
         # After the first character, letters, numbers and certain punctuation
         # is permitted.
         for c in [chr(i) for i in range(128)]:
@@ -153,6 +124,18 @@ class TestBranchSetNewNameValidation(TestCase):
                 self.assertRaises(
                     LaunchpadValidationError,
                     self.makeNewBranchWithName, 'a' + c)
+
+    def test_source_package_branch(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        owner = self.factory.makePerson()
+        new_branch = self.branch_set.new(
+            BranchType.HOSTED, name=self.factory.getUniqueString(),
+            registrant=owner, owner=owner, product=None, url=None,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(distroseries, new_branch.distroseries)
+        self.assertEqual(sourcepackagename, new_branch.sourcepackagename)
+        self.assertIs(None, new_branch.product)
 
 
 class TestMirroringForHostedBranches(TestCaseWithFactory):
@@ -188,12 +171,12 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """Return a datetime representing 'now' in UTC."""
         return datetime.now(pytz.timezone('UTC'))
 
-    def makeBranch(self):
-        return self.factory.makeBranch(self.branch_type)
+    def makeAnyBranch(self):
+        return self.factory.makeAnyBranch(branch_type=self.branch_type)
 
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.next_mirror_time)
 
@@ -204,7 +187,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """
         # We run these in separate transactions so as to have the times set to
         # different values. This is closer to what happens in production.
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.startMirroring()
         transaction.commit()
         branch.requestMirror()
@@ -217,7 +200,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def test_startMirroringRemovesFromPullQueue(self):
         # Starting a mirror removes the branch from the pull queue.
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         self.assertEqual(
             set([branch]),
@@ -228,7 +211,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -237,7 +220,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring branches resets their mirror request times."""
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         transaction.commit()
         branch.startMirroring()
@@ -252,7 +235,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         # mirroring during the upgrade will have their next_mirror_time set
         # properly eventually. This test can be removed after the 2.1.9
         # release.
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         # Set next_mirror_time to NOW, putting the branch in the pull queue.
         branch.requestMirror()
         next_mirror_time = branch.next_mirror_time
@@ -277,7 +260,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """If a branch fails to mirror then update failures but don't mirror
         again until asked.
         """
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorFailed('No particular reason')
@@ -292,7 +275,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
     def test_pastNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the past are mirrored."""
         transaction.begin()
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         branch_id = branch.id
         transaction.commit()
@@ -304,7 +287,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
     def test_futureNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the future are not mirrored."""
         transaction.begin()
-        branch = removeSecurityProxy(self.makeBranch())
+        branch = removeSecurityProxy(self.makeAnyBranch())
         tomorrow = self.getNow() + timedelta(1)
         branch.next_mirror_time = tomorrow
         branch.syncUpdate()
@@ -316,7 +299,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         """Pull queue has the oldest mirror request times first."""
         branches = []
         for i in range(3):
-            branch = removeSecurityProxy(self.makeBranch())
+            branch = removeSecurityProxy(self.makeAnyBranch())
             branch.next_mirror_time = self.getNow() - timedelta(hours=i+1)
             branch.sync()
             branches.append(branch)
@@ -331,7 +314,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
 
     def test_mirrorFailureResetsMirrorRequest(self):
         """If a branch fails to mirror then mirror again later."""
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorFailed('No particular reason')
@@ -341,7 +324,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
     def test_mirrorFailureBacksOffExponentially(self):
         """If a branch repeatedly fails to mirror then back off exponentially.
         """
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         num_failures = 3
         for i in range(num_failures):
             branch.requestMirror()
@@ -356,7 +339,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """If a branch's mirror failures exceed the maximum, disable
         mirroring.
         """
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         for i in range(MAXIMUM_MIRROR_FAILURES):
             branch.requestMirror()
             branch.startMirroring()
@@ -368,7 +351,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """Mirroring 'mirrored' branches sets their mirror request time to six
         hours in the future.
         """
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         branch.requestMirror()
         transaction.commit()
         branch.startMirroring()
@@ -384,7 +367,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         # value. This test confirms that branches which were in the middle of
         # mirroring during the upgrade will have their next_mirror_time set
         # properly eventually.
-        branch = self.makeBranch()
+        branch = self.makeAnyBranch()
         # Set next_mirror_time to NOW, putting the branch in the pull queue.
         branch.requestMirror()
         next_mirror_time = branch.next_mirror_time
@@ -415,7 +398,7 @@ class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
 class BranchVisibilityPolicyTestCase(TestCase):
     """Base class for tests to make testing of branch visibility easier."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Setup some sample people and teams.
@@ -478,7 +461,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
 
     def assertBranchRule(self, registrant, owner, expected_rule):
         """Check the getBranchVisibilityRuleForBranch results for a branch."""
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeProductBranch(
             registrant=registrant, owner=owner, product=self.product)
         rule = self.product.getBranchVisibilityRuleForBranch(branch)
         self.assertEqual(rule, expected_rule,
@@ -1042,100 +1025,6 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         """One user can't create +junk branches owned by another."""
         self.assertPolicyCheckRaises(
             BranchCreatorNotOwner, self.albert, self.doug)
-
-
-class TestBranchSetGetBranches(TestCase):
-    """Make sure that the branch set gets the correct branches."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
-
-    def test_get_branch(self):
-        factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch()
-        self.assertEqual(
-            branch,
-            BranchSet().getBranch(branch.owner, branch.product, branch.name))
-
-    def test_get_junk_branch(self):
-        factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch(product=None)
-        self.assertTrue(branch.product is None)
-        self.assertEqual(
-            branch,
-            BranchSet().getBranch(branch.owner, None, branch.name))
-
-
-class TestBranchSetIsBranchNameAvailable(TestCase):
-    """Make sure that isBranchNameAvailable enforces uniqueness."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
-
-    def test_different_owners_same_product_same_name_ok(self):
-        factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
-        bob = factory.makePerson(name="bob")
-        mary = factory.makePerson(name="mary")
-        b1 = factory.makeBranch(
-            owner=bob, product=product, name="sample-branch")
-        self.assertTrue(
-            BranchSet().isBranchNameAvailable(
-                owner=mary, product=product, branch_name="sample-branch"))
-
-    def test_different_owners_junk_same_name_ok(self):
-        factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
-        name = "sample-branch"
-        bob = factory.makePerson(name="bob")
-        mary = factory.makePerson(name="mary")
-        b1 = factory.makeBranch(owner=bob, product=None, name=name)
-        self.assertTrue(b1.product is None)
-        self.assertEqual(name, b1.name)
-
-        self.assertTrue(
-            BranchSet().isBranchNameAvailable(
-                owner=mary, product=None, branch_name=name))
-
-    def test_same_owner_junk_same_name_not_available(self):
-        factory = LaunchpadObjectFactory()
-        owner = factory.makePerson()
-        name = "sample-branch"
-        b1 = factory.makeBranch(owner=owner, product=None, name=name)
-        self.assertTrue(b1.product is None)
-        self.assertEqual(name, b1.name)
-
-        self.assertFalse(
-            BranchSet().isBranchNameAvailable(
-                owner=owner, product=None, branch_name=name))
-
-    def test_same_owner_same_project_same_name_not_available(self):
-        factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
-        owner = factory.makePerson()
-        name = "sample-branch"
-        b1 = factory.makeBranch(owner=owner, product=product, name=name)
-        self.assertEqual(product, b1.product)
-        self.assertEqual(name, b1.name)
-        self.assertEqual(owner, b1.owner)
-
-        self.assertFalse(
-            BranchSet().isBranchNameAvailable(
-                owner=owner, product=product, branch_name=name))
 
 
 def test_suite():

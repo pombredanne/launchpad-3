@@ -15,7 +15,7 @@ from textwrap import dedent
 # pylint: disable-msg=W0403
 import _pythonpath
 import canonical.config
-from canonical.lazr.config import ImplicitTypeSchema
+from lazr.config import ImplicitTypeSchema
 
 
 _schema_dir = os.path.abspath(os.path.dirname(canonical.config.__file__))
@@ -58,7 +58,7 @@ class Configuration:
 
         Print the final state of configuration after all the conf files
         are loaded.
-        
+
         :param verbose: If True, each key has a comment stating where it
             was defined.
         :param section_name: Only print the named section.

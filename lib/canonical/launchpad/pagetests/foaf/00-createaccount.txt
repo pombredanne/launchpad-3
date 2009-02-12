@@ -68,7 +68,6 @@ Go to the link sent by email.
     ...
     Location: http://localhost/token/.../+newaccount
     ...
-    <BLANKLINE>
 
 
     >>> path = '%s/+newaccount' % base_path
@@ -162,7 +161,6 @@ Go to the link sent by email.
     ...
     Location: http://localhost/token/.../+newaccount
     ...
-    <BLANKLINE>
 
 
     >>> path = '%s/+newaccount' % base_path

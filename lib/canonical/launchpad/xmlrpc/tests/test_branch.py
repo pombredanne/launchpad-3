@@ -41,11 +41,12 @@ class TestExpandURL(TestCaseWithFactory):
         trunk_series = removeSecurityProxy(self.product).development_focus
         # BranchType is only signficiant insofar as it is not a REMOTE branch.
         trunk_series.user_branch = (
-            self.factory.makeBranch(BranchType.HOSTED, product=self.product))
+            self.factory.makeProductBranch(
+                branch_type=BranchType.HOSTED, product=self.product))
 
     def makePrivateBranch(self, **kwargs):
         """Create an arbitrary private branch using `makeBranch`."""
-        branch = self.factory.makeBranch(**kwargs)
+        branch = self.factory.makeAnyBranch(**kwargs)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.private = True
         return branch
@@ -90,8 +91,8 @@ class TestExpandURL(TestCaseWithFactory):
         trunk = self.product.development_focus.user_branch
         self.assertResolves(self.product.name, trunk.unique_name)
         trunk_series = removeSecurityProxy(self.product).development_focus
-        trunk_series.user_branch = self.factory.makeBranch(
-            BranchType.HOSTED, product=self.product)
+        trunk_series.user_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.HOSTED, product=self.product)
         self.assertResolves(
             self.product.name, trunk_series.user_branch.unique_name)
 
@@ -132,7 +133,8 @@ class TestExpandURL(TestCaseWithFactory):
         # lp:product/series expands to the branch associated with the product
         # series 'series' on 'product'.
         series = self.factory.makeSeries(
-            product=self.product, user_branch=self.factory.makeBranch())
+            product=self.product,
+            user_branch=self.factory.makeProductBranch(product=self.product))
         self.assertResolves(
             '%s/%s' % (self.product.name, series.name),
             series.user_branch.unique_name)
@@ -169,7 +171,7 @@ class TestExpandURL(TestCaseWithFactory):
     def test_branch(self):
         # The unique name of a branch resolves to the unique name of the
         # branch.
-        arbitrary_branch = self.factory.makeBranch()
+        arbitrary_branch = self.factory.makeAnyBranch()
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
         trunk = self.product.development_focus.user_branch
@@ -178,12 +180,12 @@ class TestExpandURL(TestCaseWithFactory):
     def test_mirroredBranch(self):
         # The unique name of a mirrored branch resolves to the unique name of
         # the branch.
-        arbitrary_branch = self.factory.makeBranch(
+        arbitrary_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED)
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
 
-    def test_noSuchBranch(self):
+    def test_noSuchBranch_product(self):
         # Resolve paths to branches even if there is no branch of that name.
         # We do this so that users can push new branches to lp: URLs.
         owner = self.factory.makePerson()
@@ -191,12 +193,21 @@ class TestExpandURL(TestCaseWithFactory):
             owner.name, self.product.name)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
-    def test_noSuchJunkBranch(self):
+    def test_noSuchBranch_personal(self):
         # Resolve paths to junk branches.
         # This test added to make sure we don't raise a fault when looking for
         # the '+junk' project, which doesn't actually exist.
         owner = self.factory.makePerson()
         nonexistent_branch = '~%s/+junk/doesntexist' % owner.name
+        self.assertResolves(nonexistent_branch, nonexistent_branch)
+
+    def test_noSuchBranch_package(self):
+        # Resolve paths to package branches even if there's no branch of that
+        # name, so that we can push new branches using lp: URLs.
+        owner = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        nonexistent_branch = '~%s/%s/doesntexist' % (
+            owner.name, sourcepackage.path)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
     def test_resolveBranchWithNoSuchProduct(self):
@@ -222,7 +233,7 @@ class TestExpandURL(TestCaseWithFactory):
         # then attach these segments to the resolved url.
         # We do this so that users can do operations like 'bzr cat
         # lp:path/to/branch/README.txt'.
-        arbitrary_branch = self.factory.makeBranch()
+        arbitrary_branch = self.factory.makeAnyBranch()
         longer_path = os.path.join(arbitrary_branch.unique_name, 'qux')
         self.assertResolves(longer_path, longer_path)
 
@@ -232,8 +243,8 @@ class TestExpandURL(TestCaseWithFactory):
         # branch corresponding to the start of the URL.
         # This means the users will probably get a normal Bazaar 'no such
         # branch' error when they try a command like 'bzr cat
-        # lp:path/to/branch/README.txt', which probably is the least surprising
-        # thing that we can do.
+        # lp:path/to/branch/README.txt', which probably is the least
+        # surprising thing that we can do.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch_name = self.factory.getUniqueString()
@@ -253,7 +264,7 @@ class TestExpandURL(TestCaseWithFactory):
             'foo/bar/baz', faults.InvalidBranchIdentifier('foo/bar/baz'))
         self.assertFault(
             'foo/bar/baz/qux',
-            faults.InvalidBranchIdentifier('foo/bar/baz'))
+            faults.InvalidBranchIdentifier('foo/bar/baz/qux'))
 
         # Should be invalid even if the branch exists.
         trunk = self.product.development_focus.user_branch
@@ -273,7 +284,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertResolves(self.product.name + '//', trunk.unique_name)
 
         # Trailing slashes on lp:~owner/product/branch//
-        arbitrary_branch = self.factory.makeBranch()
+        arbitrary_branch = self.factory.makeAnyBranch()
         self.assertResolves(
             arbitrary_branch.unique_name + '/', arbitrary_branch.unique_name)
         self.assertResolves(
@@ -337,13 +348,13 @@ class TestExpandURL(TestCaseWithFactory):
     def test_remoteBranch(self):
         # For remote branches, return results that link to the actual remote
         # branch URL.
-        branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         result = self.api.resolve_lp_path(branch.unique_name)
         self.assertEqual([branch.url], result['urls'])
 
     def test_remoteBranchNoURL(self):
         # Raise a Fault for remote branches with no URL.
-        branch = self.factory.makeBranch(
+        branch = self.factory.makeAnyBranch(
             branch_type=BranchType.REMOTE, url=None)
         self.assertFault(
             branch.unique_name,

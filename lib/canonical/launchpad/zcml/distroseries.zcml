@@ -152,6 +152,22 @@
     template="../templates/bugtarget-bugs.pt"
     />
 
+  <browser:page
+     for="canonical.launchpad.interfaces.IDistroSeries"
+     name="+macros"
+     permission="zope.Public"
+     template="../templates/packagesearch-macros.pt"
+     />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="zope.Public"
+    name="+search"
+    facet="overview"
+    class="canonical.launchpad.browser.DistroSeriesPackageSearchView"
+    template="../templates/distroseries-search.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.DistroSeriesView"
@@ -172,11 +188,6 @@
       name="+builds"
       facet="overview"
       template="../templates/distroseries-builds.pt"
-      />
-    <browser:page
-      name="+search"
-      facet="overview"
-      template="../templates/distroseries-search.pt"
       />
     <browser:page
       name="+builds-list"
@@ -330,22 +341,14 @@
     template="../templates/milestone-add.pt"
     />
 
-  <browser:addform
+  <browser:page
     name="+addport"
     for="canonical.launchpad.interfaces.IDistroSeries"
-    schema="canonical.launchpad.interfaces.IDistroArchSeries"
-    fields="architecturetag processorfamily official owner supports_virtualized"
-    arguments="architecturetag processorfamily official owner"
-    keyword_arguments="supports_virtualized"
     class="canonical.launchpad.browser.DistroArchSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"
     template="../templates/distroseries-addport.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"

@@ -9,14 +9,10 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Create a port</h1>
-    </metal:heading>
-
+<body>
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info" class="exception">
       <strong>Adding a port has big consequences for the archive and all its mirrors.
@@ -34,4 +30,3 @@
     
 </body>
 </html>
-

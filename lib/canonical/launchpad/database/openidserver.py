@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """OpenID related database classes."""
@@ -20,7 +20,8 @@ import re
 
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
-from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
+from sqlobject import (
+    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
 from storm.expr import Or
 from zope.component import getUtility
 from zope.interface import implements, classProvides
@@ -36,19 +37,39 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIDAuthorization(SQLBase):
     implements(IOpenIDAuthorization)
+
     _table = 'OpenIDAuthorization'
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+
+    @staticmethod
+    def _get_store():
+        """See `SQLBase`.
+
+        The authorization check should always use the master flavor,
+        principally because +rp-preauthorize will create them on GET requests.
+        """
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    account = ForeignKey(dbName='account', foreignKey='Account', notNull=True)
     client_id = StringCol()
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_expires = UtcDateTimeCol(notNull=True)
     trust_root = StringCol(notNull=True)
+
+    # IOpenIDAuthorization.person is deprecated
+    @property
+    def person(self):
+        return Store.of(self).find(Person, account=self.account).one()
+
+    @property
+    def personID(self):
+        return self.person.id
 
 
 class OpenIDAuthorizationSet:
@@ -57,11 +78,12 @@ class OpenIDAuthorizationSet:
     def isAuthorized(self, person, trust_root, client_id):
         """See IOpenIDAuthorizationSet."""
         return  OpenIDAuthorization.select("""
-            person = %s
+            account = %s
             AND trust_root = %s
             AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             AND (client_id IS NULL OR client_id = %s)
-            """ % sqlvalues(person.id, trust_root, client_id)).count() > 0
+            """ % sqlvalues(person.accountID, trust_root, client_id)
+            ).count() > 0
 
     def authorize(self, person, trust_root, expires, client_id=None):
         """See IOpenIDAuthorizationSet."""
@@ -71,7 +93,7 @@ class OpenIDAuthorizationSet:
         assert not person.isTeam(), 'Attempting to authorize a team.'
 
         existing = OpenIDAuthorization.selectOneBy(
-                personID=person.id,
+                accountID=person.accountID,
                 trust_root=trust_root,
                 client_id=client_id
                 )
@@ -79,8 +101,11 @@ class OpenIDAuthorizationSet:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
+            # Even though OpenIDAuthorizationSet always uses the master
+            # store, it's likely that the person can come from the slave.
+            # That's why we are using the ID to create the reference.
             OpenIDAuthorization(
-                    person=person, trust_root=trust_root,
+                    accountID=person.accountID, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
 
@@ -99,6 +124,8 @@ class OpenIDRPConfig(SQLBase):
         dbName='creation_rationale', notNull=True,
         schema=PersonCreationRationale,
         default=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
+    can_query_any_team = BoolCol(
+        dbName='can_query_any_team', notNull=True, default=False)
 
     def allowed_sreg(self):
         value = self._allowed_sreg
@@ -128,8 +155,9 @@ class OpenIDRPConfigSet:
 
     def new(self, trust_root, displayname, description, logo=None,
             allowed_sreg=None,
-            creation_rationale=PersonCreationRationale
-                               .OWNER_CREATED_UNKNOWN_TRUSTROOT):
+            creation_rationale=
+                PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT,
+            can_query_any_team=False):
         """See `IOpenIDRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
@@ -139,7 +167,8 @@ class OpenIDRPConfigSet:
         return OpenIDRPConfig(
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,
-            _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale)
+            _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale,
+            can_query_any_team=can_query_any_team)
 
     def get(self, id):
         """See `IOpenIDRPConfigSet`"""
@@ -150,7 +179,7 @@ class OpenIDRPConfigSet:
 
     def getAll(self):
         """See `IOpenIDRPConfigSet`"""
-        return OpenIDRPConfig.select()
+        return OpenIDRPConfig.select(orderBy=['displayname', 'trust_root'])
 
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""
@@ -233,14 +262,22 @@ class OpenIDRPSummarySet:
     """A set of OpenID RP Summaries."""
     implements(IOpenIDRPSummarySet)
 
-    def getByIdentifier(self, identifier):
-        """See `IOpenIDRPSummarySet`.
-
-        :raise AssertionError: If the identifier is used by more than
-            one account.
-        """
-        return OpenIDRPSummary.selectBy(
-            openid_identifier=identifier, orderBy='id')
+    def getByIdentifier(self, identifier, only_unknown_trust_roots=False):
+        """See `IOpenIDRPSummarySet`."""
+        # XXX: flacoste 2008-11-17 bug=274774: Normalize the trust_root
+        # in OpenIDRPSummary.
+        if only_unknown_trust_roots:
+            result = OpenIDRPSummary.select("""
+            CASE
+                WHEN OpenIDRPSummary.trust_root LIKE '%%/'
+                THEN OpenIDRPSummary.trust_root
+                ELSE OpenIDRPSummary.trust_root || '/'
+            END NOT IN (SELECT trust_root FROM OpenIdRPConfig)
+            AND openid_identifier = %s
+                """ % sqlvalues(identifier))
+        else:
+            result = OpenIDRPSummary.selectBy(openid_identifier=identifier)
+        return result.orderBy('id')
 
     def _assert_identifier_is_not_reused(self, account, identifier):
         """Assert no other account in the summaries has the identifier."""

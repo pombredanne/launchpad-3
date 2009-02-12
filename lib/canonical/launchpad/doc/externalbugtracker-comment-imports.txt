@@ -264,19 +264,24 @@ message and the bug to which the watch belongs.
     True
 
 The list of imported messages can be retrieved using
-getImportedBugMessages().
+getImportedBugMessages(). Messages that are linked to the bug watch but
+don't have a remote_comment_id are comments waiting to be pushed to the
+remote tracker and will not be returned by getImportedBugMessages()
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> factory = LaunchpadObjectFactory()
     >>> bug_watch2 = factory.makeBugWatch('42')
     >>> bug_watch2.bug.newMessage(
     ...     owner=bug_watch2.bug.owner, subject='None',
-    ...     content='Imported comment', bugwatch=bug_watch2)
+    ...     content='Imported comment', bugwatch=bug_watch2,
+    ...     remote_comment_id='test')
     <Message at ...>
     >>> bug_watch2.bug.newMessage(
     ...     owner=bug_watch2.bug.owner, subject='None',
     ...     content='Native comment')
+    <Message at ...>
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Pushable comment', bugwatch=bug_watch2)
     <Message at ...>
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)

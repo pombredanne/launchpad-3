@@ -21,17 +21,17 @@ create and populate some teams to demonstrate.
     # and change their mailing list auto-subscription settings.
     >>> login('foo.bar@canonical.com')
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import (
-    ...     new_team, new_person)
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
+
     >>> team_one, list_one = new_team('team-one', with_list=True)
-    >>> anne = new_person('Anne')
-    >>> bart = new_person('Bart')
-    >>> cris = new_person('Cris')
-    >>> dirk = new_person('Dirk')
-    >>> elle = new_person('Elle')
-    >>> fred = new_person('Fred')
-    >>> gwen = new_person('Gwen')
-    >>> hank = new_person('Hank')
+    >>> anne = factory.makePersonByName('Anne')
+    >>> bart = factory.makePersonByName('Bart')
+    >>> cris = factory.makePersonByName('Cris')
+    >>> dirk = factory.makePersonByName('Dirk')
+    >>> elle = factory.makePersonByName('Elle')
+    >>> fred = factory.makePersonByName('Fred')
+    >>> gwen = factory.makePersonByName('Gwen')
+    >>> hank = factory.makePersonByName('Hank')
     >>> people = [anne, bart, cris, dirk, elle, fred, gwen, hank]
 
     >>> for person in people:

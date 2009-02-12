@@ -666,9 +666,10 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
-        self.makeCleanDirectory(config.codehosting.branches_root)
-        self.makeCleanDirectory(config.supermirror.branchesdest)
-        branch_id = self.factory.makeBranch(BranchType.HOSTED).id
+        self.makeCleanDirectory(config.codehosting.hosted_branches_root)
+        self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
+        branch_id = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED).id
         self.layer.txn.commit()
         self.db_branch = getUtility(IBranchSet).get(branch_id)
         self.bzr_tree = self.make_branch_and_tree('src-branch')
@@ -728,6 +729,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         def check_authserver_called(ignored):
             self.assertEqual(
                 [('startMirroring', self.db_branch.id),
+                 ('setStackedOn', 77, ''),
                  ('mirrorComplete', self.db_branch.id, revision_id)],
                 self.client.calls)
             return ignored
@@ -987,11 +989,17 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
                 script_text=lower_timeout_script)
             deferred = puller_master.mirror()
             def check_mirror_failed(ignored):
-                self.assertEqual(len(self.client.calls), 2)
-                start_mirroring_call, mirror_failed_call = self.client.calls
+                self.assertEqual(len(self.client.calls), 3)
+                start_mirroring_call = self.client.calls[0]
+                set_stacked_on_call = self.client.calls[1]
+                mirror_failed_call = self.client.calls[2]
+                self.client.calls
                 self.assertEqual(
                     start_mirroring_call,
                     ('startMirroring', self.db_branch.id))
+                self.assertEqual(
+                    set_stacked_on_call,
+                    ('setStackedOn', self.db_branch.id, ''))
                 self.assertEqual(
                     mirror_failed_call[:2],
                     ('mirrorFailed', self.db_branch.id))

@@ -172,6 +172,11 @@ class AlsoAffectsStep(LaunchpadFormView):
         self.actions = actions
         return super(AlsoAffectsStep, self).render()
 
+    @property
+    def cancel_url(self):
+        """Return the URL for the current context, i.e. bug."""
+        return canonical_url(self.context)
+
 
 class ChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
@@ -183,16 +188,6 @@ class ChooseProductStep(AlsoAffectsStep):
     _field_names = ['product']
     label = u"Record as affecting another project"
     step_name = "choose_product"
-
-    def _getUpstream(self, distro_package):
-        """Return the upstream if there is a packaging link."""
-        for distroseries in distro_package.distribution.serieses:
-            source_package = distroseries.getSourcePackage(
-                distro_package.sourcepackagename)
-            if source_package.direct_packaging is not None:
-                return source_package.direct_packaging.productseries.product
-        else:
-            return None
 
     def initialize(self):
         super(ChooseProductStep, self).initialize()
@@ -211,7 +206,7 @@ class ChooseProductStep(AlsoAffectsStep):
         for it yet, we teleport the user straight to the next step.
         """
         bugtask = self.context
-        upstream = self._getUpstream(bugtask.target)
+        upstream = bugtask.target.upstream_product
         if upstream is not None:
             if not upstream.active:
                 # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only
@@ -313,6 +308,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
 
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
 
+    initial_focus_widget = 'bug_url'
     step_name = 'specify_remote_bug_url'
     target_field_names = ()
 
@@ -332,7 +328,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             for field_name in self.field_names
             if field_name in self.target_field_names]
         self.bugwatch_widgets = [self.widgets['bug_url']]
-        self.compulsory_widgets = [self.widgets['visited_steps']]
 
     def getTarget(self, data=None):
         """Return the fix target.
@@ -590,6 +585,8 @@ class IAddBugTaskWithUpstreamLinkForm(IAddBugTaskForm):
     check is left to the view, in part so that better error messages
     can be provided.
     """
+    # link_upstream_how must have required=False, since
+    # ProductBugTaskCreationStep doesn't always display a form input for it.
     link_upstream_how = Choice(
         title=_('How'), required=False,
         vocabulary=LinkUpstreamHowOptions,
@@ -615,8 +612,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how',
-                  LaunchpadRadioWidget, _displayItemForMissingValue=False)
+    custom_widget('link_upstream_how', LaunchpadRadioWidget,
+                  _displayItemForMissingValue=False)
     custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
     custom_widget('upstream_email_address_done',
                   StrippedTextWidget, displayWidth=42)
@@ -696,13 +693,14 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         except MissingInputError:
             current_value = LinkUpstreamHowOptions.LINK_UPSTREAM
         items = widget.renderItems(current_value)
-        # XXX: GavinPanella 2008-02-13 bug=201793: EMAIL_UPSTREAM will
-        # be uncommented in a later branch.
-        return {
-            LinkUpstreamHowOptions.LINK_UPSTREAM.name      : items[1],
-            #LinkUpstreamHowOptions.EMAIL_UPSTREAM.name     : items[2],
-            LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE.name: items[2],
-            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name  : items[3]}
+
+        # The items list is returned in the same order as the
+        # widget.vocabulary enumerator. It is important that
+        # link_upstream_how has _displayItemForMissingValue=False
+        # so that renderItems() doesn't return an extra radio button which
+        # prevents it from matching widget.vocabulary's ordering.
+        return dict((entry.token, items[i])
+                    for i, entry in enumerate(widget.vocabulary))
 
     def main_action(self, data):
         link_upstream_how = data.get('link_upstream_how')

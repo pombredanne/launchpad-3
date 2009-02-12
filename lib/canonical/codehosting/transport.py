@@ -10,6 +10,7 @@ bzrlib.transport classes.
 
 __metaclass__ = type
 __all__ = [
+    'AsyncVirtualServer',
     'AsyncVirtualTransport',
     'get_chrooted_transport',
     'get_readonly_transport',
@@ -23,10 +24,11 @@ from bzrlib.errors import (
     BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
 from bzrlib import urlutils
 from bzrlib.transport import (
-    chroot, get_transport, Server, Transport)
+    chroot, get_transport, register_transport, Server, Transport,
+    unregister_transport)
 
 from twisted.internet import defer
-from canonical.twistedsupport import gatherResults
+from canonical.twistedsupport import extract_result, gatherResults
 
 
 class TranslationError(BzrError):
@@ -56,6 +58,8 @@ def get_chrooted_transport(url):
 
 def get_readonly_transport(transport):
     """Wrap `transport` in a readonly transport."""
+    if transport.base.startswith('readonly+'):
+        return transport
     return get_transport('readonly+' + transport.base)
 
 
@@ -108,7 +112,7 @@ class AsyncVirtualTransport(Transport):
         This method is called as an errback by `_call`. Use it to translate
         errors from the server into something that users of the transport
         might expect. This could include translating vfs-specific errors into
-        bzrlib errors (e.g. "couldn't translate" into `NoSuchFile`) or
+        bzrlib errors (e.g. "couldn\'t translate" into `NoSuchFile`) or
         translating underlying paths into virtual paths.
 
         :param failure: A `twisted.python.failure.Failure`.
@@ -216,7 +220,7 @@ class AsyncVirtualTransport(Transport):
 
         def check_transports_and_rename(
             ((to_transport, to_path), (from_transport, from_path))):
-            if to_transport is not from_transport:
+            if to_transport.base != from_transport.base:
                 raise TransportNotPossible(
                     'cannot move between underlying transports')
             return getattr(from_transport, 'rename')(from_path, to_path)
@@ -240,17 +244,6 @@ class SynchronousAdapter(Transport):
     def __init__(self, async_transport):
         self._async_transport = async_transport
 
-    def _extractResult(self, deferred):
-        failures = []
-        successes = []
-        deferred.addCallbacks(successes.append, failures.append)
-        if len(failures) == 1:
-            failures[0].raiseException()
-        elif len(successes) == 1:
-            return successes[0]
-        else:
-            raise AssertionError("%r has not fired yet." % (deferred,))
-
     @property
     def base(self):
         return self._async_transport.base
@@ -273,90 +266,151 @@ class SynchronousAdapter(Transport):
 
     def append_file(self, relpath, f, mode=None):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.append_file(relpath, f, mode))
 
     def delete(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.delete(relpath))
+        return extract_result(self._async_transport.delete(relpath))
 
     def delete_tree(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.delete_tree(relpath))
+        return extract_result(self._async_transport.delete_tree(relpath))
 
     def get(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.get(relpath))
+        return extract_result(self._async_transport.get(relpath))
 
     def get_bytes(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.get_bytes(relpath))
+        return extract_result(self._async_transport.get_bytes(relpath))
 
     def has(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.has(relpath))
+        return extract_result(self._async_transport.has(relpath))
 
     def iter_files_recursive(self):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.iter_files_recursive())
 
     def listable(self):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.listable())
+        return extract_result(self._async_transport.listable())
 
     def list_dir(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.list_dir(relpath))
+        return extract_result(self._async_transport.list_dir(relpath))
 
     def lock_read(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.lock_read(relpath))
+        return extract_result(self._async_transport.lock_read(relpath))
 
     def lock_write(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.lock_write(relpath))
+        return extract_result(self._async_transport.lock_write(relpath))
 
     def mkdir(self, relpath, mode=None):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.mkdir(relpath, mode))
+        return extract_result(self._async_transport.mkdir(relpath, mode))
 
     def open_write_stream(self, relpath, mode=None):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.open_write_stream(relpath, mode))
 
     def put_file(self, relpath, f, mode=None):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.put_file(relpath, f, mode))
 
     def local_realPath(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.local_realPath(relpath))
 
     def readv(self, relpath, offsets, adjust_for_latency=False,
               upper_limit=None):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.readv(
                 relpath, offsets, adjust_for_latency, upper_limit))
 
     def rename(self, rel_from, rel_to):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.rename(rel_from, rel_to))
 
     def rmdir(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.rmdir(relpath))
+        return extract_result(self._async_transport.rmdir(relpath))
 
     def stat(self, relpath):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(self._async_transport.stat(relpath))
+        return extract_result(self._async_transport.stat(relpath))
 
     def writeChunk(self, relpath, offset, data):
         """See `bzrlib.transport.Transport`."""
-        return self._extractResult(
+        return extract_result(
             self._async_transport.writeChunk(relpath, offset, data))
+
+
+class AsyncVirtualServer(Server):
+    """Bazaar `Server` for translating paths asynchronously.
+
+    :ivar asyncTransportFactory: A callable that takes a Server and a URL and
+        returns an `AsyncVirtualTransport` instance. Subclasses should set
+        this callable if they need to hook into any filesystem operations.
+    """
+
+    asyncTransportFactory = AsyncVirtualTransport
+
+    def __init__(self, scheme):
+        """Construct an `AsyncVirtualServer`.
+
+        :param scheme: The URL scheme to use.
+        """
+        # bzrlib's Server class does not have a constructor, so we cannot
+        # safely upcall it.
+        # pylint: disable-msg=W0231
+        self._scheme = scheme
+        self._is_set_up = False
+
+    def _transportFactory(self, url):
+        """Create a transport for this server pointing at `url`.
+
+        This constructs a regular Bazaar `Transport` from the "asynchronous
+        transport" factory specified in the `asyncTransportFactory` instance
+        variable.
+        """
+        assert url.startswith(self.get_url())
+        return SynchronousAdapter(self.asyncTransportFactory(self, url))
+
+    def translateVirtualPath(self, virtual_url_fragment):
+        """Translate 'virtual_url_fragment' into a transport and sub-fragment.
+
+        :param virtual_url_fragment: A virtual URL fragment to be translated.
+
+        :raise NoSuchFile: If `virtual_path` is maps to a path that could
+            not be found.
+        :raise PermissionDenied: if the path is forbidden.
+
+        :return: (transport, path_on_transport)
+        """
+        raise NotImplementedError(self.translateVirtualPath)
+
+    def get_url(self):
+        """Return the URL of this server."""
+        return self._scheme
+
+    def setUp(self):
+        """See Server.setUp."""
+        register_transport(self.get_url(), self._transportFactory)
+        self._is_set_up = True
+
+    def tearDown(self):
+        """See Server.tearDown."""
+        if not self._is_set_up:
+            return
+        self._is_set_up = False
+        unregister_transport(self.get_url(), self._transportFactory)

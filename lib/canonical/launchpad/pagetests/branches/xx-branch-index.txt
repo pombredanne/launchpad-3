@@ -5,26 +5,46 @@ Imports used later in the document:
     >>> import pytz
     >>> from datetime import datetime
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     BranchType, BranchFormat, RepositoryFormat, IBranchSet, IPersonSet)
 
-
-Modifying test data for this test case.
+Modifying/creating test data for this test case.
 
     >>> login('foo.bar@canonical.com')
-    >>> factory = LaunchpadObjectFactory()
     >>> branch = getUtility(IBranchSet).getByUniqueName(
     ...     '~name12/+junk/junk.dev')
     >>> factory.makeRevisionsForBranch(branch, count=5)
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> anonymous_product = factory.makeProduct(
+    ...     name='anonymous-product', owner=sample_person)
+    >>> anonymous_branch = factory.makeProductBranch(
+    ...     name='anonymous-branch', product=anonymous_product,
+    ...     owner=sample_person)
+    >>> anonymous_product.setAliases(['alias-for-product'])
     >>> logout()
+
+
+== Reaching to branches ==
+
+On the Code site, registered branches are reached by
+/<owner>/<product>/<branch-name>, where <product> can be either a product's
+name or any of its aliases.  In case an alias is used, the user is redirected
+to the branch's canonical URL -- the one which uses the product name.
+
+    >>> anon_browser.open('http://code.launchpad.dev/~name12/anonymous-product'
+    ...                   '/anonymous-branch')
+    >>> anon_browser.url
+    'http://code.launchpad.dev/~name12/anonymous-product/anonymous-branch'
+    >>> anon_browser.open('http://code.launchpad.dev/~name12/alias-for-product'
+    ...                   '/anonymous-branch')
+    >>> anon_browser.url
+    'http://code.launchpad.dev/~name12/anonymous-product/anonymous-branch'
+
 
 == Recent Revisions ==
 
-On the Code site, registered branches are reached by
-/<owner>/<product>/<branch-name>.
+We display the recent revisions of a branch if it has been scanned.
 
     >>> user_browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> assert find_tag_by_id(user_browser.contents, 'merge-summary') is None
@@ -33,8 +53,7 @@ On the Code site, registered branches are reached by
 
 === Heading ===
 
-We display the recent revisions of a branch if it has been scanned. There's a
-"Recent revisions" heading:
+There's a "Recent revisions" heading:
 
     >>> print revisions.h2.renderContents()
     Recent revisions
@@ -139,7 +158,7 @@ helpful message.
     This branch has not been mirrored yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/firefox/main/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/firefox/main/+merges
 
 We don't want to use the word 'mirrored' for hosted or imported branches,
 because those branches are only mirrored internally.
@@ -150,7 +169,7 @@ because those branches are only mirrored internally.
     This branch has not been pushed to yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/gnome-terminal/pushed/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/pushed/+merges
 
     >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
@@ -158,7 +177,7 @@ because those branches are only mirrored internally.
     This branch has not been imported yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~vcs-imports/evolution/main/+merges
+    Merge Proposals: http://code.launchpad.dev/~vcs-imports/evolution/main/+merges
 
 If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
@@ -170,7 +189,7 @@ available for download as soon as they are published.
     This branch has not been scanned yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/gnome-terminal/mirrored/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/mirrored/+merges
     Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/mirrored/files
 
 If a branch has been mirrored and scanned, and has no revisions, then it is
@@ -182,7 +201,7 @@ empty.
     This branch is empty.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges
     Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned/files
 
 == Branch Details ==
@@ -359,7 +378,7 @@ Public branches use the lp spec bzr lookup name.
 == Branch formats ==
 
     >>> login('no-priv@canonical.com')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeAnyBranch(
     ...     branch_format=BranchFormat.BZR_BRANCH_5,
     ...     repository_format=RepositoryFormat.BZR_KNITPACK_1)
     >>> url = canonical_url(branch)
@@ -381,10 +400,11 @@ The data that we specified is shown on the web page.
 Say we have one branch stacked on another:
 
     >>> login('no-priv@canonical.com')
-    >>> stacked_on_branch = factory.makeBranch()
-    >>> stacked_branch = factory.makeBranch(stacked_on=stacked_on_branch)
+    >>> stacked_on_branch = factory.makeAnyBranch()
+    >>> stacked_branch = factory.makeAnyBranch(
+    ...     stacked_on=stacked_on_branch)
     >>> url = canonical_url(stacked_branch)
-    >>> stacked_on_name = stacked_on_branch.unique_name
+    >>> stacked_on_name = stacked_on_branch.bzr_identity
     >>> stacked_on_url = canonical_url(stacked_on_branch)
     >>> logout()
 

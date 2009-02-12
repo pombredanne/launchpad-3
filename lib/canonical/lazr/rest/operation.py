@@ -20,7 +20,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,
     IResourcePOSTOperation)
-from canonical.lazr.interfaces.fields import ICollectionField
+from canonical.lazr.interfaces.fields import ICollectionField, IReference
 from canonical.lazr.rest.resource import (
     BatchingResourceMixin, CollectionResource, ResourceJSONEncoder)
 
@@ -117,6 +117,11 @@ class ResourceOperation(BatchingResourceMixin):
             # Ordinary Python data structures generally are not
             # batched.
             return False
+
+        if IReference.providedBy(self.return_type):
+            # Single references can't be iterable.
+            return False
+
         try:
             iterator = iter(result)
             # Objects that have iterators but aren't ordinary data structures

@@ -19,11 +19,12 @@ import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -47,6 +48,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -63,7 +65,9 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces.branch import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
@@ -72,6 +76,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
 from canonical.launchpad.interfaces.questioncollection import (
@@ -119,7 +124,7 @@ def get_license_status(license_approved, license_reviewed, licenses):
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
 
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product, licenses):
         self.product = product
@@ -146,7 +151,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
-              StructuralSubscriptionTargetMixin):
+              HasAliasMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
@@ -218,6 +223,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    remote_product = Unicode(
+        name='remote_product', allow_none=True, default=None)
+
+    @property
+    def upstream_bugtracker_links(self):
+        """Return the upstream bugtracker links for this project.
+
+        :return: A dict of the bug filing URL and the search URL as
+            returned by `BugTracker.getBugFilingAndSearchLinks()`. If
+            self.bugtracker is None, return None.
+        """
+        if not self.bugtracker:
+            return None
+        else:
+            return self.bugtracker.getBugFilingAndSearchLinks(
+                self.remote_product)
 
     @property
     def official_anything(self):
@@ -278,14 +299,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        return self.development_focus.series_branch
+        default_branch = self.development_focus.series_branch
+        if default_branch is None:
+            return None
+        elif default_branch.last_mirrored is None:
+            return None
+        else:
+            return default_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
-                                  subscription_months, whiteboard=None):
+                                  subscription_months, whiteboard=None,
+                                  current_datetime=None):
         """See `IProduct`."""
 
         def add_months(start, num_months):
@@ -297,7 +325,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             including leap years, where th 28th-31st maps to the 28th or
             29th.
             """
-            years, new_month = divmod(start.month + num_months, 12)
+            # The months are 1-indexed but the divmod calculation will only
+            # work if it is 0-indexed.  Subtract 1 from the months and then
+            # add it back to the new_month later.
+            years, new_month = divmod(start.month - 1 + num_months, 12)
+            new_month += 1
             new_year = start.year + years
             # If the day is not valid for the new month, make it the last day
             # of that month, e.g. 20080131 + 1 month = 20080229.
@@ -308,9 +340,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      day=new_day)
             return new_date
 
-        now = datetime.datetime.now(pytz.timezone('UTC'))
+        if current_datetime is None:
+            current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
+
         if self.commercial_subscription is None:
-            date_starts = now
+            date_starts = current_datetime
             date_expires = add_months(date_starts, subscription_months)
             subscription = CommercialSubscription(
                 product=self,
@@ -322,15 +356,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 whiteboard=whiteboard)
             self._commercial_subscription_cached = subscription
         else:
-            if (now <= self.commercial_subscription.date_expires):
+            if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.
                 self.commercial_subscription.date_expires = (
                     add_months(self.commercial_subscription.date_expires,
                                subscription_months))
             else:
-                self.commercial_subscription.date_starts = now
+                # Start the new subscription now and extend for the new
+                # period.
+                self.commercial_subscription.date_starts = current_datetime
                 self.commercial_subscription.date_expires = (
-                    add_months(date_starts, subscription_months))
+                    add_months(current_datetime, subscription_months))
             self.commercial_subscription.sales_system_id = voucher
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
@@ -915,6 +951,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
+    def getMergeProposals(self, status=None):
+        """See `IProduct`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status)
+
+
     def userCanEdit(self, user):
         """See `IProduct`."""
         if user is None:
@@ -933,14 +981,14 @@ class ProductSet:
         self.title = "Projects in Launchpad"
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        item = Product.selectOneBy(name=name, active=True)
-        if item is None:
+        """See `IProductSet`."""
+        product = self.getByName(name=name, ignore_inactive=True)
+        if product is None:
             raise NotFoundError(name)
-        return item
+        return product
 
     def __iter__(self):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         return iter(self.all_active)
 
     @property
@@ -961,22 +1009,19 @@ class ProductSet:
         return results.prejoin(["owner"])
 
     def get(self, productid):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         try:
             return Product.get(productid)
         except SQLObjectNotFound:
             raise NotFoundError("Product with ID %s does not exist" %
                                 str(productid))
 
-    def getByName(self, name, default=None, ignore_inactive=False):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        if ignore_inactive:
-            product = Product.selectOneBy(name=name, active=True)
-        else:
-            product = Product.selectOneBy(name=name)
-        if product is None:
-            return default
-        return product
+    def getByName(self, name, ignore_inactive=False):
+        """See `IProductSet`."""
+        pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
+        if not IProduct.providedBy(pillar):
+            return None
+        return pillar
 
     def getProductsWithBranches(self, num_products=None):
         """See `IProductSet`."""
@@ -990,16 +1035,6 @@ class ProductSet:
         if num_products is not None:
             results = results.limit(num_products)
         return results
-
-    def getProductsWithUserDevelopmentBranches(self):
-        """See `IProductSet`."""
-        return Product.select('''
-            Product.active and
-            Product.development_focus = ProductSeries.id and
-            ProductSeries.user_branch = Branch.id and
-            Branch.branch_type in %s
-            ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
-            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

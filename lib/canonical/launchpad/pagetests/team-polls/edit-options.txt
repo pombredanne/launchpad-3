@@ -57,7 +57,7 @@ been opened yet, he should be able to edit its options.
     'OptionX'
     >>> browser.getControl('Name').value = 'option-z'
     >>> browser.getControl('Title').value = 'Option Z'
-    >>> browser.getControl('Change').click()
+    >>> browser.getControl('Save').click()
 
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/not-yet-opened'

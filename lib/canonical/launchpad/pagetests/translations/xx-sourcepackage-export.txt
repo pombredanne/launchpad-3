@@ -15,7 +15,7 @@ Mark is a qualified user.
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> download = browser.getLink('Download translations')
+    >>> download = browser.getLink('Download')
     >>> download_url = download.url
     >>> download.click()
     >>> print browser.url
@@ -34,16 +34,15 @@ reasonable level.
     >>> def can_download_translations(browser):
     ...     """Can browser download full package translations?
     ...
-    ...     Checks for the "Download translations" link on an Ubuntu
-    ...     package.  Also attempts direct access to the same package's
-    ...     download page and sees that the two have consistent access
-    ...     rules.
+    ...     Checks for the "Download" link on an Ubuntu package.
+    ...     Also attempts direct access to the same package's download
+    ...     page and sees that the two have consistent access rules.
     ...     """
     ...     browser.open(
     ...         'http://translations.launchpad.dev/'
     ...         'ubuntu/hoary/+source/mozilla/')
     ...     try:
-    ...         browser.getLink('Download translations').click()
+    ...         browser.getLink('Download').click()
     ...     except LinkNotFoundError:
     ...         see_link = False
     ...     else:
@@ -87,13 +86,11 @@ admin or expert, but he is one of the owners of a translation group.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    ...     IDistributionSet, ILaunchpadCelebrities, IPersonSet)
 
     >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
     >>> login('foo.bar@canonical.com')
     >>> personset = getUtility(IPersonSet)
-    >>> factory = LaunchpadObjectFactory()
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     >>> carlos = personset.getByName('carlos')
@@ -135,10 +132,27 @@ translations.
     >>> can_download_translations(gussie_browser)
     True
 
+User "cprov" is neither a member of the translation group nor a Rosetta expert.
+
+    >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
+    >>> login('foo.bar@canonical.com')
+    >>> cprov = personset.getByName('cprov')
+    >>> cprov.inTeam(group.owner)
+    False
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+    >>> cprov.inTeam(rosetta_experts)
+    False
+    >>> logout()
+
+"cprov" is able to download translations as an Ubuntu uploader.
+
+    >>> ubuntu_member_browser = setupBrowser(auth='Basic cprov@ubuntu.com:cprov')
+    >>> can_download_translations(ubuntu_member_browser)
+    True
 
 == Making the request ==
 
-The "Download translations" link leads to a page that lets the user select an
+The "Download" link leads to a page that lets the user select an
 export format, and request the download.
 
     >>> browser.open(

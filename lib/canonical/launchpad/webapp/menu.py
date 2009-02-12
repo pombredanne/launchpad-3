@@ -28,7 +28,7 @@ from zope.component import getMultiAdapter
 from zope.security.proxy import (
     isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
@@ -137,7 +137,7 @@ Link = LinkData
 class MenuLink:
     """Adapter from ILinkData to ILink."""
     implements(ILink)
-    decorates(ILinkData, context='_linkdata')
+    delegates(ILinkData, context='_linkdata')
 
     # These attributes are set by the menus infrastructure.
     name = None
@@ -267,7 +267,7 @@ class MenuBase(UserAttributeCache):
             # self.links.
             raise AssertionError(
                 "Links in 'enable_only' not found in 'links': %s" %
-                (', '.join([name for name in unknown_links])))
+                ', '.join(sorted(unknown_links)))
 
         for idx, linkname in enumerate(self.links):
             link = self._get_link(linkname)
@@ -356,6 +356,7 @@ class NavigationMenu(MenuBase):
     _baseclassname = 'NavigationMenu'
 
     title = None
+    disabled = False
 
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.

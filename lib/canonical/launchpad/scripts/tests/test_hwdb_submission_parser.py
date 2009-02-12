@@ -7,13 +7,7 @@ import logging
 import os
 from unittest import TestCase, TestLoader
 
-try:
-    import xml.elementtree.cElementTree as etree
-except ImportError:
-    try:
-        import cElementTree as etree
-    except ImportError:
-        import elementtree.ElementTree as etree
+import cElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
@@ -22,6 +16,69 @@ from canonical.config import config
 from canonical.launchpad.scripts.hwdbsubmissions import (SubmissionParser,
     ROOT_UDI)
 from canonical.testing import BaseLayer
+
+
+class SubmissionParserTestParseSoftware(SubmissionParser):
+    """A Variant used to test SubmissionParser._parseSoftware.
+
+    This class can be used to test the regular case of
+    submission data.
+    """
+    def __init__(self, test, logger=None):
+        super(SubmissionParserTestParseSoftware, self).__init__(logger)
+        self.test = test
+
+    def _parseLSBRelease(self, node):
+        self.test.assertEqual(node.tag, 'lsbrelease')
+        return 'parsed lsb release'
+
+    def _parsePackages(self, node):
+        self.test.assertEqual(node.tag, 'packages')
+        return 'parsed packages'
+
+    def _parseXOrg(self, node):
+        self.test.assertEqual(node.tag, 'xorg')
+        return 'parsed xorg'
+
+
+class SubmissionParserTestParseSoftwareNoXorgNode(SubmissionParser):
+    """A Variant used to test SubmissionParser._parseSoftware.
+
+    This class is intended to test submission data that does not contain
+    a <xorg> node.
+    """
+    def __init__(self, test, logger=None):
+        super(SubmissionParserTestParseSoftwareNoXorgNode, self).__init__(
+            logger)
+        self.test = test
+
+    def _parseLSBRelease(self, node):
+        self.test.assertEqual(node.tag, 'lsbrelease')
+        return 'parsed lsb release'
+
+    def _parsePackages(self, node):
+        self.test.assertEqual(node.tag, 'packages')
+        return 'parsed packages'
+
+
+class SubmissionParserTestParseSoftwareNoPackagesNode(SubmissionParser):
+    """A Variant used to test SubmissionParser._parseSoftware.
+
+    This class is intended to test submission data that does not contain
+    a <packages> node.
+    """
+    def __init__(self, test, logger=None):
+        super(SubmissionParserTestParseSoftwareNoPackagesNode, self).__init__(
+            logger)
+        self.test = test
+
+    def _parseLSBRelease(self, node):
+        self.test.assertEqual(node.tag, 'lsbrelease')
+        return 'parsed lsb release'
+
+    def _parseXOrg(self, node):
+        self.test.assertEqual(node.tag, 'xorg')
+        return 'parsed xorg'
 
 
 class TestHWDBSubmissionParser(TestCase):
@@ -448,6 +505,45 @@ class TestHWDBSubmissionParser(TestCase):
                            'model': 'MD 4394'}],
                          'Invalid parsing result for <aliases>')
 
+    def testDmi(self):
+        """The content of the <dmi> node is at present not processed.
+
+        Instead, a log warning is issued.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Test of <dmi> parsing.'
+        node = etree.fromstring("""<dmi>
+        # dmidecode 2.9
+        SMBIOS 2.4 present.
+        73 structures occupying 2436 bytes.
+        Table at 0x000E0010.
+
+        Handle 0x0000, DMI type 0, 24 bytes
+        BIOS Information
+        </dmi>
+        """)
+        parser._parseDmi(node)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission contains unprocessed DMI data.')
+
+    def testLspci(self):
+        """The content of the <lspci> node is at present not processed.
+
+        Instead, a log warning is issued.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Test of <lspci> parsing.'
+        node = etree.fromstring("""<lspci>
+        00:00.0 Host bridge: Memory Controller Hub (rev 0c)
+        00:01.0 PCI bridge: PCI Express Root Port (rev 0c)
+        </lspci>
+        """)
+        parser._parseLspci(node)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission contains unprocessed lspci data.')
+
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
         test = self
@@ -467,10 +563,22 @@ class TestHWDBSubmissionParser(TestCase):
             test.assertEqual(node.tag, 'aliases')
             return 'parsed alias data'
 
+        def _parseDmi(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'dmi')
+            return 'parsed dmi data'
+
+        def _parseLspci(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'lspci')
+            return 'parsed lspci data'
+
         parser = SubmissionParser(self.log)
         parser._parseHAL = lambda node: _parseHAL(parser, node)
         parser._parseProcessors = lambda node: _parseProcessors(parser, node)
         parser._parseAliases = lambda node: _parseAliases(parser, node)
+        parser._parseDmi = lambda node: _parseDmi(parser, node)
+        parser._parseLspci = lambda node: _parseLspci(parser, node)
         parser._setHardwareSectionParsers()
 
         node = etree.fromstring("""
@@ -478,13 +586,18 @@ class TestHWDBSubmissionParser(TestCase):
                 <hal/>
                 <processors/>
                 <aliases/>
+                <dmi/>
+                <lspci/>
             </hardware>
             """)
         result = parser._parseHardware(node)
         self.assertEqual(result,
                          {'hal': 'parsed HAL data',
                           'processors': 'parsed processor data',
-                          'aliases': 'parsed alias data'},
+                          'aliases': 'parsed alias data',
+                          'dmi': 'parsed dmi data',
+                          'lspci': 'parsed lspci data',
+                          },
                          'Invalid parsing result for <hardware>')
 
     def testLsbRelease(self):
@@ -618,32 +731,12 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         self.assertRaises(ValueError, SubmissionParser()._parseXOrg, node)
 
-    def testSoftwareSection(self):
-        """Test SubissionParser._parseSoftware
+    def test_parseSoftware(self):
+        """Test SubmissionParser._parseSoftware
 
         Ensure that all sub-parsers are properly called.
         """
-        test = self
-        def _parseLSBRelease(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'lsbrelease')
-            return 'parsed lsb release'
-
-        def _parsePackages(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'packages')
-            return 'parsed packages'
-
-        def _parseXOrg(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'xorg')
-            return 'parsed xorg'
-
-        parser = SubmissionParser()
-        parser._parseLSBRelease = lambda node: _parseLSBRelease(parser, node)
-        parser._parsePackages = lambda node: _parsePackages(parser, node)
-        parser._parseXOrg = lambda node: _parseXOrg(parser, node)
-        parser._setSoftwareSectionParsers()
+        parser = SubmissionParserTestParseSoftware(self)
 
         node = etree.fromstring("""
             <software>
@@ -657,7 +750,58 @@ class TestHWDBSubmissionParser(TestCase):
                          {'lsbrelease': 'parsed lsb release',
                           'packages': 'parsed packages',
                           'xorg': 'parsed xorg'},
-                         'Invalid parsing result for <softwar>')
+                         'Invalid parsing result for <software>')
+
+    def test_parseSoftware_without_xorg_node(self):
+        """Test SubmissionParser._parseSoftware
+
+        Ensure that _parseSoftware creates an entry in its
+        result for <xorg> even if the submitted data does not
+        contains this node.
+        """
+        parser = SubmissionParserTestParseSoftwareNoXorgNode(self)
+
+        node = etree.fromstring("""
+            <software>
+                <lsbrelease/>
+                <packages/>
+            </software>
+            """)
+        result = parser._parseSoftware(node)
+        self.assertEqual(
+            result,
+            {
+                'lsbrelease': 'parsed lsb release',
+                'packages': 'parsed packages',
+                'xorg': {},
+            },
+            'Invalid parsing result for <software> without <xorg> sub-node')
+
+    def test_parseSoftware_without_packages_node(self):
+        """Test SubmissionParser._parseSoftware
+
+        Ensure that _parseSoftware creates an entry in its
+        result for <packages> even if the submitted data does not
+        contains this node.
+        """
+        parser = SubmissionParserTestParseSoftwareNoPackagesNode(self)
+
+        node = etree.fromstring("""
+            <software>
+                <lsbrelease/>
+                <xorg/>
+            </software>
+            """)
+        result = parser._parseSoftware(node)
+        self.assertEqual(
+            result,
+            {
+                'lsbrelease': 'parsed lsb release',
+                'packages': {},
+                'xorg': 'parsed xorg',
+            },
+            'Invalid parsing result for <software> without <packages> '
+            'sub-node')
 
     def testMultipleChoiceQuestion(self):
         """The <questions> node is converted into a Python dictionary."""
@@ -1181,15 +1325,39 @@ class TestHWDBSubmissionParser(TestCase):
             in a log string that matches (a)
         (c) result, which is supposed to contain an object representing
             the result of parsing a submission, is None.
+        (d) the log level is ERROR.
 
-        If all three criteria match, assertErrormessage does not raise any
+        If all four criteria match, assertErrormessage does not raise any
         exception.
         """
         expected_message = ('Parsing submission %s: %s'
                             % (submission_key, log_message))
-        last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
+                continue
+            candidate = r.getMessage()
+            if candidate == expected_message:
+                return
+        raise AssertionError('No log message found: %s' % expected_message)
+
+    def assertWarningMessage(self, submission_key, log_message):
+        """Search for message in the log entries for submission_key.
+
+        assertErrorMessage requires that
+        (a) a log message starts with "Parsing submisson <submission_key>:"
+        (b) the error message passed as the parameter message appears
+            in a log string that matches (a)
+        (c) result, which is supposed to contain an object representing
+            the result of parsing a submission, is None.
+        (d) the log level is WARNING.
+
+        If all four criteria match, assertWarningMessage does not raise any
+        exception.
+        """
+        expected_message = ('Parsing submission %s: %s'
+                            % (submission_key, log_message))
+        for r in self.handler.records:
+            if r.levelno != logging.WARNING:
                 continue
             candidate = r.getMessage()
             if candidate == expected_message:

@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.schema import Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -33,8 +33,13 @@ from canonical.lazr.fields import Reference
 class IOpenIDAuthorization(Interface):
     id = Int(title=u'ID', required=True)
 
+    # person and personID are deprecated, as the OpenIDAuthorization
+    # database table now references Account rather than Person.
     personID = Int(title=u'Person', required=True, readonly=True)
     person = Attribute('The IPerson this is for')
+
+    accountID = Int(title=u'Account', required=True, readonly=True)
+    account = Attribute('The IAccount this is for')
 
     client_id = TextLine(title=u'Client ID', required=False)
 
@@ -140,6 +145,12 @@ class IOpenIDRPConfig(Interface):
         description=_('The creation rationale to use for user accounts '
                       'created while logging in to this Relying Party'),
         vocabulary=PersonCreationRationale)
+    can_query_any_team = Bool(
+        title=_('Query Any Team'),
+        description=_(
+            'Teammembership of any team can be requested, including '
+            'private teams.'),
+        required=True, readonly=False)
 
 
 class IOpenIDRPConfigSet(Interface):
@@ -185,10 +196,12 @@ class IOpenIDRPSummary(Interface):
 class IOpenIDRPSummarySet(Interface):
     """A set of OpenID RP Summaries."""
 
-    def getByIdentifier(identifier):
+    def getByIdentifier(identifier, only_unknown_trust_roots=False):
         """Get all the IOpenIDRPSummary objects for an OpenID identifier.
 
         :param identifier: A string used as an OpenID identifier.
+        :param only_unknown_trust_roots: if True, only records for trust roots
+            which there is no IOpenIDRPConfig entry will be returned.
         :return: An iterator of IOpenIDRPSummary objects.
         """
 

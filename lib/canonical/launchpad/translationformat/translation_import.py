@@ -387,8 +387,7 @@ class FileImporter(object):
         Perform check if a PO file is available and if the message has any
         translations that can be stored. If an exception is caught, an error
         is added to the list in self.errors but the translations are stored
-        anyway (ignoring further errors) unless the exception was
-        TranslationConflict.
+        anyway, marked as having an error.
 
         :param message: The message who's translations will be stored.
         :param potmsgset: The POTMsgSet that this message belongs to.
@@ -501,6 +500,9 @@ class FileImporter(object):
         :param potmsgset: The current messageset for this message id.
         :param errormsg: The errormessage returned by updateTranslation.
         """
+# XXX: henninge 2008-11-05: The error should contain an ID of some sort
+#  to provide an explicit identification in tests. Until then error messages
+#  must not be rephrased without changing the test as well.
         self.errors.append({
             'potmsgset': potmsgset,
             'pofile': self.pofile,
@@ -518,7 +520,7 @@ class FileImporter(object):
         :param message: The current message from the translation file.
         :param potmsgset: The current messageset for this message id.
         """
-        self.addUpdateError(message, potmsgset,
+        self._addUpdateError(message, potmsgset,
             "This message was updated by someone else after you"
             " got the translation file. This translation is now"
             " stored as a suggestion, if you want to set it as"
@@ -596,7 +598,6 @@ class POTFileImporter(FileImporter):
 
         # Update translation_message's comments and flags.
         if translation_message is not None:
-            translation_message.flags_comment = flags_comment
             translation_message.comment = message.comment
             if self.translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
@@ -715,17 +716,11 @@ class POFileImporter(FileImporter):
             message.flags.remove('fuzzy')
             message._translations = None
 
-        if len(message.flags) > 0:
-            flags_comment = u", "+u", ".join(message.flags)
-        else:
-            flags_comment = u""
-
         translation_message = self.storeTranslationsInDatabase(
             message, potmsgset)
 
         # Update translation_message's comments and flags.
         if translation_message is not None:
-            translation_message.flags_comment = flags_comment
             translation_message.comment = message.comment
             if self.translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (

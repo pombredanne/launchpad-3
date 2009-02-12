@@ -6,8 +6,7 @@ First, we need some imports.
 
     >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
-    >>> from canonical.database.sqlbase import (
-    ...     flush_database_caches, flush_database_updates)
+    >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.database import (
     ...     TranslationMessage, DummyTranslationMessage)
     >>> from canonical.launchpad.interfaces import (
@@ -342,7 +341,7 @@ Now, we are going to check the alternative language submission.
 #    >>> pofile_view.second_lang_code
 #    'fr'
 
-= POFileUploadView = 
+= POFileUploadView =
 
 Let's check that the upload form sets the right fields.
 

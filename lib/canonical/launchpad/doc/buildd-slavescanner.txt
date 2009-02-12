@@ -481,8 +481,7 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://localhost:58000/.../buildlog_ubuntu-hoary-i386.mozilla-=
-    firefox_0.9_BUILDING.txt.gz
+    * Build Log: http://launchpad.dev/.../buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
     ...
     Upload log:
     INFO    creating lockfile
@@ -813,6 +812,23 @@ The 'candidate' is constant until we dispatch it.
     >>> new_candidate.id == old_candidate.id
     True
 
+Now let's disable the archive of the associated build record and see
+whether the candidate will still be found.
+
+    >>> old_candidate.build.archive.enabled = False
+    >>> new_candidate = a_builder.findBuildCandidate()
+    >>> new_candidate is None
+    True
+
+The build candidate was not found because builds associated with disabled
+archives are ignored. Now let's re-enable that archive and the build
+candidate will be found again.
+
+    >>> old_candidate.build.archive.enabled = True
+    >>> new_candidate = a_builder.findBuildCandidate()
+    >>> new_candidate.id == old_candidate.id
+    True
+
 In order to make the current candidate be considered 'superseded' we
 need to tweak the status of the current publication directly, as a
 permissive database user.
@@ -1034,31 +1050,48 @@ Let's try it again.
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
+    >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
+    >>> candidate.destroySelf()
+
 But this time We will create a valid publication on partner hoary/i386.
 
-    >>> create_binary_publication_for(
-    ...    partner_archive, hoary, PackagePublishingStatus.PUBLISHED)
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+    >>> pub_source = test_publisher.getPubSource(
+    ...    archive=partner_archive, distroseries=hoary,
+    ...    status=PackagePublishingStatus.PUBLISHED,
+    ...    component='partner')
+    >>> pub_binaries = test_publisher.getPubBinaries(
+    ...     archive=partner_archive, pub_source=pub_source,
+    ...     distroseries=hoary, status=PackagePublishingStatus.PUBLISHED)
+    >>> partner_build = pub_binaries[0].binarypackagerelease.build
+    >>> partner_candidate = partner_build.buildqueue_record
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
 Now when we dispatch the partner build, since it has one published
 binary in hoary/i386, the partner archive gets included in the builder
 sources_list.
 
-    >>> a_builder.dispatchBuildCandidate(candidate)
+    >>> a_builder.dispatchBuildCandidate(partner_candidate)
     ensurepresent called, url=...
-    ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+    ensurepresent called, url=http://localhost:58000/.../foo_666.dsc
     OkSlave BUILDING
     Archives:
-     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu-partner hoary main
+     deb http://ftpmaster.internal/ubuntu hoary
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu-partner hoary partner
     Suite: hoary
     Archive Purpose: PARTNER
     Archive Private: False
 
-    >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
-    >>> candidate.destroySelf()
+    >>> partner_candidate.destroySelf()
 
 Similarly, PPA builds pass the 'archives' arguments:
 
@@ -1092,7 +1125,7 @@ dispatching.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
     Archive Private: False
@@ -1117,11 +1150,7 @@ password for the archive):
     >>> login(ANONYMOUS)
 
 Dispatch the build again. Celso's archive sources.list entry now has the
-buildd:secret@ part in the URL.  Also note that because it's a private
-PPA, it's missing the dependency on the updates pocket.  This is mainly
-to accommodate the security build private PPA which must not depend
-on the updates pocket.  This will be replaced in the future by a
-proper solution that allows configurable pocket dependencies.
+buildd:secret@ part in the URL.
 
 Also note that when ensurepresent() is called, it receives a URL that
 points to the private archive rather than the librarian for the private
@@ -1136,13 +1165,17 @@ that the mangling tools will run over the built packages.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://private-ppa.launchpad.dev/cprov/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
+        url=http://private-ppa.launchpad.dev/cprov/ppa/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
     URL authorisation with buildd/secret
     OkSlave BUILDING
     Archives:
-     deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu hoary main
-     deb http://ftpmaster.internal/ubuntu hoary main universe
-     deb http://ftpmaster.internal/ubuntu hoary-security main universe
+     deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+     deb http://ftpmaster.internal/ubuntu hoary
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates
+         main restricted universe multiverse
     Suite: hoary
     Archive Purpose: PRIMARY
     Archive Private: True
@@ -1200,7 +1233,6 @@ Mark's PPA:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
 
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
     >>> unused_dep = cprov_archive.addArchiveDependency(
     ...      sabdfl_archive, PackagePublishingPocket.RELEASE,
     ...      getUtility(IComponentSet)['main'])
@@ -1230,7 +1262,7 @@ published in hoary/i386, which is not the case.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
     Archive Private: False
@@ -1258,8 +1290,8 @@ We will create the required publication in Mark's PPA and try again.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
-     deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
+     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+     deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
     Archive Private: False

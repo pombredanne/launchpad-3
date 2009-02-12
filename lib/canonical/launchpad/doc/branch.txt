@@ -78,8 +78,7 @@ registered as an utility.
 
 The 'get' method on the branch set fetches branches by ID.
 
-    >>> factory = LaunchpadObjectFactory()
-    >>> branch = factory.makeBranch(name='foobar')
+    >>> branch = factory.makeAnyBranch(name='foobar')
     >>> print branchset.get(branch.id).name
     foobar
 
@@ -146,7 +145,7 @@ whereas the owner is.
 A Branch may or may not be associated to a product, may have no title,
 no summary, and, depending on the branch type, no URL.
 
-Most branches with no URL are hosted on the supermirror (it is also
+Most branches with no URL are hosted on Launchpad (it is also
 possible for a remote branch to have no URL, but this is rare).
 
     >>> junkowner = factory.makePerson(name='junkowner')
@@ -175,7 +174,7 @@ team, however.
     ...     url=None)
     Traceback (most recent call last):
       ...
-    BranchCreationNoTeamOwnedJunkBranches: Cannot create team-owned junk ...
+    BranchCreationNoTeamOwnedJunkBranches: ...
 
 The ~vcs-imports celebrity team is exempt from this restriction to
 allow the creation of code import branches without an associated
@@ -212,10 +211,10 @@ queries the global state of the system, we just test the difference
 creating a branch makes to avoid gratuitous fragility in the test.
 
     >>> before_count = branchset.count()
-    >>> new_branch = factory.makeBranch()
+    >>> new_branch = factory.makeAnyBranch()
     >>> branchset.count() - before_count
     1
-    >>> new_branch = factory.makeBranch(private=True)
+    >>> new_branch = factory.makeAnyBranch(private=True)
     >>> branchset.count() - before_count
     1
 
@@ -240,7 +239,7 @@ user to click through.
 
 Changed branches are branches that are owned by real people or groups (as
 opposed to vcs-imports), and have recently had new revisions detected by
-the branch scanner, either through the branch being pushed to the supermirror
+the branch scanner, either through the branch being pushed to Launchpad
 or the branch puller script mirroring a remote branch.
 
 Imported branches are those branches owned by vcs-imports, and are "imported"
@@ -248,7 +247,7 @@ from other VCS hosted code bases.  Again recently imported branches are
 identified by new revisions detected by the branch scanner.
 
 Branches that have been recently registered have either been created by a user
-using the web UI, or by pushing a new branch directly to the supermirror.
+using the web UI, or by pushing a new branch directly to Launchpad.
 
 In order to determine changes in the branches the last_scanned
 timestamp is used.  This is set by the branch scanner when it has
@@ -268,7 +267,7 @@ existing branches.
 Now we create a few branches that we pretend were updated in a
 definite order.
 
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> from canonical.launchpad.testing import time_counter
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
@@ -278,7 +277,7 @@ definite order.
 
     >>> def make_new_scanned_branch(name, owner=user, branch_type=None):
     ...     """Create """
-    ...     new_branch = factory.makeBranch(
+    ...     new_branch = factory.makeProductBranch(
     ...         branch_type=branch_type, owner=owner, product=product,
     ...         name=name, date_created=time_generator.next())
     ...     new_branch.last_scanned = new_branch.date_created
@@ -311,23 +310,23 @@ definite order.
 It is possible to find a branch by URL. Either using the pull URL:
 
     >>> new_url = factory.getUniqueURL()
-    >>> new_mirrored_branch = factory.makeBranch(
+    >>> new_mirrored_branch = factory.makeAnyBranch(
     ...     branch_type=BranchType.MIRRORED, url=new_url)
     >>> branchset.getByUrl(new_url) == new_mirrored_branch
     True
 
-Or using the Supermirror URL of the same branch:
+Or using the URL of the mirror of the branch on Launchpad:
 
-    >>> new_branch_supermirror = (
+    >>> new_branch_mirrored = (
     ...     u'http://bazaar.launchpad.dev/' +
     ...     new_mirrored_branch.unique_name)
-    >>> branchset.getByUrl(new_branch_supermirror) == new_mirrored_branch
+    >>> branchset.getByUrl(new_branch_mirrored) == new_mirrored_branch
     True
-    >>> new_junk_branch = factory.makeBranch(product=None)
-    >>> junkcode_supermirror = (
+    >>> new_junk_branch = factory.makePersonalBranch()
+    >>> junkcode_mirrored = (
     ...     u'http://bazaar.launchpad.dev/' +
     ...     new_junk_branch.unique_name)
-    >>> branchset.getByUrl(junkcode_supermirror) == new_junk_branch
+    >>> branchset.getByUrl(junkcode_mirrored) == new_junk_branch
     True
 
 The provided URL must not have any trailing slash:
@@ -346,39 +345,16 @@ returned.
     123
 
 
-== Branches and products ==
-
-Branch not associated to a product are called "junk" branch and treated for
-navigation purposes as if they were associated to a magic product named
-"+junk".
-
-    >>> factory.makeBranch(product=None).product_name
-    '+junk'
-    >>> factory.makeBranch(product=product).product_name
-    u'product'
-
-
 == Branch names ==
-
-Branches have a unique name, that is based on the names of the owner, product
-and branch.
-
-    >>> new_branch = factory.makeBranch(
-    ...     owner=user, product=product, name='name')
-    >>> new_branch.unique_name
-    u'~user/product/name'
-    >>> junk_branch = factory.makeBranch(
-    ...     owner=user, product=None, name='name')
-    >>> junk_branch.unique_name
-    u'~user/+junk/name'
 
 Branches have a display name that is the Branch.title if it's provided, and the
 unique_name otherwise.
 
-    >>> titled_branch = factory.makeBranch(title=factory.getUniqueString())
+    >>> titled_branch = factory.makeAnyBranch(
+    ...     title=factory.getUniqueString())
     >>> titled_branch.displayname == titled_branch.title
     True
-    >>> untitled_branch = factory.makeBranch(title=None)
+    >>> untitled_branch = factory.makeAnyBranch(title=None)
     >>> untitled_branch.displayname == untitled_branch.unique_name
     True
 
@@ -391,7 +367,7 @@ so that the branch owner can be informed of merge proposals or code review
 messages relating to their branches.
 
     >>> owner = factory.makePerson()
-    >>> branch = factory.makeBranch(owner=owner)
+    >>> branch = factory.makeAnyBranch(owner=owner)
     >>> subscriptions = list(branch.subscriptions)
     >>> print len(subscriptions)
     1
@@ -412,7 +388,7 @@ BranchSubscriptionNotificationLevel.
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel, IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')
     >>> subscription = branch.subscribe(
     ...     subscriber,
@@ -461,7 +437,7 @@ The settings for a subscription can be changed by re-subscribing.
 We can get the subscribers for a branch based on their level of
 subscription.
 
-    >>> branch2 = factory.makeBranch(
+    >>> branch2 = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed2')
 
     >>> def print_names(persons):
@@ -498,7 +474,7 @@ Let's get a branch with some revisions in it.
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByName('name12')
-    >>> junk = sample_person.getBranch('+junk', 'junk.dev')
+    >>> junk = branchset.getByUniqueName('~name12/+junk/junk.dev')
     >>> print junk.unique_name
     ~name12/+junk/junk.dev
 
@@ -651,15 +627,6 @@ For a public branch without revisions, the link is disabled.
     >>> print branch.code_is_browseable
     False
 
-Private branches are not browseable at all.
-
-    >>> branch = branchset.getByUniqueName(
-    ...     '~landscape-developers/landscape/trunk')
-    >>> print branch.private
-    True
-    >>> print branch.code_is_browseable
-    False
-
 
 == Branch push and branch URLs ==
 
@@ -668,6 +635,8 @@ pull or branch from.  These methods don't check any visibility constraints
 for the person passed into the methods, that job is left to the views.
 The branch location is shown using the lp: Bazaar lookup names.
 
+    >>> branch = branchset.getByUniqueName(
+    ...     '~landscape-developers/landscape/trunk')
     >>> print branch.unique_name
     ~landscape-developers/landscape/trunk
     >>> branch.private
@@ -777,27 +746,6 @@ scanned ID is.
     False
 
 
-== Getting the branch count and last commit for products ==
-
-    >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> products = [
-    ...     productset.getByName('evolution'),
-    ...     productset.getByName('firefox'),
-    ...     productset.getByName('gnome-terminal'),
-    ...     ]
-
-    >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
-    >>> for product in products:
-    ...     print "%s %s %s" % (
-    ...         product.name,
-    ...         summary[product]['branch_count'],
-    ...         summary[product]['last_commit'])
-    evolution      1 None
-    firefox        5 2005-03-09 15:50:00
-    gnome-terminal 7 None
-
-
 == Getting all branches for a person ==
 
 Batching of the branch pages relies (ideally) on a quick simple query
@@ -824,19 +772,19 @@ finally name).
     >>> person = factory.makePerson(name="person")
     >>> product_a = factory.makeProduct(name='a')
     >>> product_b = factory.makeProduct(name='b')
-    >>> branch_for_a_called_b = factory.makeBranch(
+    >>> branch_for_a_called_b = factory.makeProductBranch(
     ...     owner=person, product=product_a, name='b')
-    >>> mature_branch_for_b_called_a = factory.makeBranch(
+    >>> mature_branch_for_b_called_a = factory.makeProductBranch(
     ...     owner=person, product=product_b, name='a',
     ...     lifecycle_status=BranchLifecycleStatus.MATURE)
-    >>> branch_for_b_called_b = factory.makeBranch(
+    >>> branch_for_b_called_b = factory.makeProductBranch(
     ...     owner=person, product=product_b, name='b')
-    >>> branch_for_b_called_c = factory.makeBranch(
+    >>> branch_for_b_called_c = factory.makeProductBranch(
     ...     owner=person, product=product_b, name='c')
-    >>> junk_branch = factory.makeBranch(
-    ...     owner=person, product=None, name='junk')
+    >>> junk_branch = factory.makePersonalBranch(
+    ...     owner=person, name='junk')
     >>> other = factory.makePerson(name='other')
-    >>> other_branch_for_b_called_a = factory.makeBranch(
+    >>> other_branch_for_b_called_a = factory.makeProductBranch(
     ...     owner=other, product=product_b, name='a',
     ...     lifecycle_status=BranchLifecycleStatus.MATURE)
     >>> subscription = other_branch_for_b_called_a.subscribe(
@@ -914,6 +862,8 @@ In order to have batched branch listings the database needs to do as much
 of the work as possible.  This way there are optimal database queries for
 extra display information.
 
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
     >>> gnome_terminal = productset.getByName('gnome-terminal')
     >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -1035,19 +985,8 @@ canonical/launchpad/database/tests/test_branch.py.
     >>> print branch.unique_name
     ~person/a/to-delete
 
-Since the branch has ddaa as an implicit subscriber, the branch is not
-deletable.
+Even though the branch has an implicit subscriber, the branch is deletable.
 
-    >>> branch.canBeDeleted()
-    False
-    >>> branch.destroySelf()
-    Traceback (most recent call last):
-      ...
-    CannotDeleteBranch: Cannot delete branch: ~person/a/to-delete
-
-The process can be rectified though by removing the offending links.
-
-    >>> branch.unsubscribe(person)
     >>> branch.canBeDeleted()
     True
     >>> branch.destroySelf()
@@ -1059,19 +998,9 @@ The requirements for deleting the branch can be discovered:
     >>> branch = branchset.new(
     ...     BranchType.MIRRORED, 'to-delete', person, person, product_a,
     ...     'http://example.com/branches/to-delete', 'A branch to delete')
-    >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the
 branch.
-
-    >>> [subscription] = list(branch.subscriptions)
-    >>> [subscription] == requirements.keys()
-    True
-    >>> action, reason = requirements[subscription]
-    >>> print action
-    delete
-    >>> print reason
-    This is a subscription to this branch.
 
 Deletion can be forced by supplying break_references=True.  This will delete
 items that have mandantory references to this branch, and alter items with
@@ -1118,7 +1047,6 @@ is listed as not "allowed":
     >>> for req in sorted(deletion_requirements):
     ...     print req
     BranchMergeProposal allowed: False
-    BranchSubscription allowed: False
 
 
 The "allowed: False" status is mirrored in the display.
@@ -1152,6 +1080,7 @@ The current references to the branch table are shown here.
     ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
     ...     print name
     branch.stacked_on
+    branchjob.branch
     branchmergeproposal.dependent_branch
     branchmergeproposal.source_branch
     branchmergeproposal.target_branch
@@ -1161,6 +1090,7 @@ The current references to the branch table are shown here.
     codeimport.branch
     productseries.import_branch
     productseries.user_branch
+    seriessourcepackagebranch.branch
     specificationbranch.branch
 
 (Unfortunately, references can form a graph-- note that codereviewcomments

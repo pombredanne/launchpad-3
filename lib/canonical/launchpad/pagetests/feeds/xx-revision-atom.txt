@@ -10,11 +10,9 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 == Create some specific branches to use for this test ==
 
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.testing import (
-    ...     LaunchpadObjectFactory, time_counter)
+    >>> from canonical.launchpad.testing import time_counter
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> factory = LaunchpadObjectFactory()
     >>> # Since the feed only shows revisions from the last 30 days, we
     >>> # need recent revisions.
     >>> initial_revision_date = datetime.now(pytz.UTC) - timedelta(days=10)
@@ -29,9 +27,9 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     name='fooix', displayname="Fooix", project=fubar)
     >>> fooey = factory.makeProduct(
     ...     name='fooey', displayname="Fooey", project=fubar)
-    >>> fooix_branch = factory.makeBranch(
+    >>> fooix_branch = factory.makeProductBranch(
     ...     name='feature-x', product=fooix, owner=mike)
-    >>> fooey_branch = factory.makeBranch(
+    >>> fooey_branch = factory.makeProductBranch(
     ...     name='feature-x', product=fooey, owner=mike)
 
     >>> def makeRevision(author, rev_id, log_body):

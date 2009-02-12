@@ -225,11 +225,29 @@ If the person has no time_zone specified, we use UTC.
 
 For branches, fmt:link links to the branch page.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/main')
-    >>> test_tales("branch/fmt:link", branch=branch)
-    u'<a href=".../~name12/gnome-terminal/main" title="GNOME Terminal Mainline"><img src="/@@/branch"...>&nbsp;~name12/gnome-terminal/main</a>'
+    >>> from canonical.launchpad.testing import login_person
+    >>> eric = factory.makePerson(name='eric')
+    >>> fooix = factory.makeProduct(name='fooix')
+    >>> branch = factory.makeProductBranch(
+    ...     owner=eric, product=fooix, name='bar', title='The branch title')
+    >>> print test_tales("branch/fmt:link", branch=branch)
+    <a href=".../~eric/fooix/bar"
+       title="The branch title"><img src="/@@/branch"
+       alt=""/>&nbsp;~eric/fooix/bar</a>
+
+The bzr-link formatter uses the bzr identity.
+
+    >>> print test_tales("branch/fmt:bzr-link", branch=branch)
+    <a href="http://code.launchpad.dev/~eric/fooix/bar"
+    title="The branch title"><img src="/@@/branch"
+    alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
+
+    >>> login_person(fooix.owner, LaunchpadTestRequest())
+    >>> fooix.development_focus.user_branch = branch
+    >>> print test_tales("branch/fmt:bzr-link", branch=branch)
+    <a href=".../~eric/fooix/bar"
+       title="The branch title"><img src="/@@/branch"
+       alt=""/>&nbsp;lp://dev/fooix</a>
 
 
 === Bugs ===
@@ -270,10 +288,10 @@ title might be interpreted by the browser.
 Branch subscriptions show the person and branch name.  For users
 without adequate permissions, a link is not generated.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
-    >>> subscription = factory.makeBranchSubscription('My Branch',
-    ...     'My Person')
+    >>> branch = factory.makeAnyBranch(title='My Branch')
+    >>> person = factory.makePerson(displayname='My Person')
+    >>> subscription = factory.makeBranchSubscription(
+    ...     branch=branch, person=person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'Subscription of My Person to My Branch'
 
@@ -288,12 +306,14 @@ Merge proposals also have a link formatter, which displays branch titles:
 
 === Merge proposals ===
 
-    >>> login('foo.bar@canonical.com')
-    >>> proposal = factory.makeBranchMergeProposal()
-    >>> proposal.source_branch.title = 'baz'
-    >>> proposal.target_branch.title = 'qux'
+    >>> login('admin@canonical.com')
+    >>> source = factory.makeProductBranch(
+    ...     product=fooix, owner=eric, name="fix")
+    >>> target = factory.makeProductBranch(product=fooix)
+    >>> fooix.development_focus.user_branch = target
+    >>> proposal = source.addLandingTarget(eric, target)
     >>> test_tales("proposal/fmt:link", proposal=proposal)
-    u'<a href="...">Proposed merge of baz into qux</a>'
+    u'<a href="...">[Merge] lp://dev/~eric/fooix/fix into lp://dev/fooix</a>'
 
 
 === Code review comments ===
@@ -308,7 +328,7 @@ Merge proposals also have a link formatter, which displays branch titles:
 === Bug branches ===
 
     >>> login('test@canonical.com')
-    >>> branch = factory.makeBranch()
+    >>> branch = factory.makeAnyBranch()
     >>> bug = factory.makeBug()
     >>> bugbranch = bug.addBranch(branch, branch.owner)
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
@@ -345,7 +365,7 @@ to support the branch deletion code.
 === Blueprint branches ===
 
     >>> specification = factory.makeSpecification()
-    >>> branch = factory.makeBranch()
+    >>> branch = factory.makeAnyBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
@@ -381,7 +401,10 @@ to support the branch deletion code.
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
-    u'http://launchpad.dev/bugs/bugtrackers/email'
+    u'/bugs/bugtrackers/email'
+
+(The url is relative if possible, and our test request claims to be from
+launchpad.dev, so the url is relative.)
 
 As are 'link', 'external-link', 'external-title-link' and 'aliases',
 which help when hiding email addresses from users who are not logged
@@ -441,9 +464,9 @@ in.
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
-    u'http://launchpad.dev/bugs/12/+watch/13'
+    u'/bugs/12/+watch/13'
     >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
-    u'http://launchpad.dev/bugs/12/+watch/14'
+    u'/bugs/12/+watch/14'
 
 As are 'external-link' and 'external-link-short', which help when
 hiding email addresses from users who are not logged in:
@@ -653,6 +676,7 @@ personal information may be in the content, and it will be shown to
 unauthenticated users, the email address can be hidden. The address
 is replaced with the message '<email address hidden>'.
 
+    >>> logout() # Pretend we're unauthenticated.
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
@@ -712,6 +736,12 @@ is replaced with the message '<email address hidden>'.
     ...     "...........................................................not")
     >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
     'medicalwei@sara:~$ ...'
+
+However, if the user is authenticated, the email address is not obfuscated.
+
+    >>> login('no-priv@canonical.com')
+    >>> test_tales('foo/fmt:obfuscate-email', foo='user@site.net')
+    'user@site.net'
 
 
 == Linkification of email addresses ==
@@ -787,7 +817,7 @@ Test the 'fmt:url' namespace for canonical urls.
 
     >>> object_having_url = ObjectThatHasUrl()
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    u'http://launchpad.dev/bonobo/saki'
+    u'/bonobo/saki'
 
 Now, we need to test that it gets the correct application URL from the
 request.

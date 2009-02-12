@@ -13,11 +13,13 @@ __all__ = [
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
+    'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
     'BranchNavigationMenu',
     'BranchInProductView',
+    'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
@@ -27,29 +29,30 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice, Text, TextLine
+from zope.schema import Choice, Text
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.lazr.enum import EnumeratedType, Item
-from canonical.lazr.interface import use_template
+from canonical.lazr.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
+    BranchExists,
     BranchType,
     BranchVisibilityRule,
     CodeImportJobState,
@@ -69,13 +72,18 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     UICreatableBranchType,
     )
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
+from canonical.launchpad.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, IPrimaryContext)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
@@ -86,8 +94,31 @@ def quote(text):
     return cgi.escape(text, quote=True)
 
 
+class BranchURL:
+    """Branch URL creation rules."""
+
+    implements(ICanonicalUrlData)
+
+    rootsite = 'code'
+
+    def __init__(self, branch):
+        self.branch = branch
+
+    @property
+    def inside(self):
+        return self.branch.owner
+
+    @property
+    def path(self):
+        return '%s/%s' % (self.branch.container.name, self.branch.name)
+
+
 class BranchPrimaryContext:
     """The primary context is the product if there is one."""
+
+    # XXX: JonathanLange 2008-12-08 spec=package-branches: Not sure what
+    # should happen to this class, given that IBranchContainer does something
+    # fairly similar.
 
     implements(IPrimaryContext)
 
@@ -188,10 +219,12 @@ class BranchNavigationMenu(NavigationMenu):
             self.branch = context
         elif IBranchMergeProposal.providedBy(context):
             self.branch = context.source_branch
+            self.disabled = True
         elif IBranchSubscription.providedBy(context):
             self.branch = context.branch
         elif ICodeReviewComment.providedBy(context):
             self.branch = context.branch_merge_proposal.source_branch
+            self.disabled = True
         else:
             raise AssertionError(
                 'Bad context type for branch navigation menu.')
@@ -202,15 +235,13 @@ class BranchNavigationMenu(NavigationMenu):
 
     def merges(self):
         url = canonical_url(self.branch, view_name="+merges")
-        return Link(url, 'Merging')
+        return Link(url, 'Merge Proposals')
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Source Code'
         enabled = self.branch.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.branch.unique_name
-               + '/files')
+        url = self.branch.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
 
 
@@ -219,11 +250,10 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
-             'browse_revisions',
+    links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates', 'merge_queue',
-             'link_bug', 'link_blueprint', 'edit_import'
+             'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
     def whiteboard(self):
@@ -236,26 +266,20 @@ class BranchContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def reviewer(self):
+        text = 'Set branch reviewer'
+        return Link('+reviewer', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def delete_branch(self):
         text = 'Delete branch'
         return Link('+delete', text)
-
-    def browse_code(self):
-        """Return a link to the branch's file listing on codebrowse."""
-        text = 'Browse code'
-        enabled = self.context.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.context.unique_name
-               + '/files')
-        return Link(url, text, icon='info', enabled=enabled)
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'All revisions'
         enabled = self.context.code_is_browseable
-        url = (config.codehosting.codebrowse_root
-               + self.context.unique_name
-               + '/changes')
+        url = self.context.codebrowse_url('changes')
         return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -361,7 +385,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return config.codehosting.codebrowse_root + self.context.unique_name
+        return self.context.codebrowse_url()
 
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
@@ -500,7 +524,7 @@ class BranchView(LaunchpadView, FeedsMixin):
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.
     """
-    decorates(IBranchMergeProposal)
+    delegates(IBranchMergeProposal)
 
     def __init__(self, context):
         self.context = context
@@ -519,24 +543,36 @@ class BranchInProductView(BranchView):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def validate_branch_name(self, owner, product, branch_name):
-        if not getUtility(IBranchSet).isBranchNameAvailable(
-            owner, product, branch_name):
-            # There is a branch that has the branch_name specified already.
-            if owner == self.user:
-                prefix = "You already have"
-            else:
-                prefix = "%s already has" % cgi.escape(owner.displayname)
+    def _setBranchExists(self, existing_branch):
+        # XXX: JonathanLange 2008-12-04 spec=package-branches: Assumes that
+        # branches have products, which is now wrong.
+        owner = existing_branch.owner
+        product = existing_branch.product
+        branch_name = existing_branch.name
+        if owner == self.user:
+            prefix = "You already have"
+        else:
+            prefix = "%s already has" % cgi.escape(owner.displayname)
 
-            if product is None:
-                message = (
-                    "%s a junk branch called <em>%s</em>."
-                    % (prefix, branch_name))
-            else:
-                message = (
-                    "%s a branch for <em>%s</em> called "
-                    "<em>%s</em>." % (prefix, product.name, branch_name))
-            self.setFieldError('name', structured(message))
+        if product is None:
+            message = (
+                "%s a junk branch called <em>%s</em>."
+                % (prefix, branch_name))
+        else:
+            message = (
+                "%s a branch for <em>%s</em> called "
+                "<em>%s</em>." % (prefix, product.name, branch_name))
+        self.setFieldError('name', structured(message))
+
+    def validate_branch_name(self, owner, product, branch_name):
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Don't look
+        # before you leap. Instead try to create the branch and then populate
+        # the error field.
+        namespace = get_branch_namespace(owner, product=product)
+        existing_branch = namespace.getByName(branch_name)
+        if existing_branch is not None:
+            # There is a branch that has the branch_name specified already.
+            self._setBranchExists(existing_branch)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -678,11 +714,26 @@ class BranchDeletionView(LaunchpadFormView):
             reqs.append((item, action, reason, allowed))
         return reqs
 
+    @cachedproperty
+    def stacked_branches_count(self):
+        """Cache a count of the branches stacked on this."""
+        return self.context.getStackedBranches().count()
+
+    def stacked_branches_text(self):
+        """Cache a count of the branches stacked on this."""
+        if self.stacked_branches_count == 1:
+            return _('branch')
+        else:
+            return _('branches')
+
     def all_permitted(self):
         """Return True if all deletion requirements are permitted, else False.
 
         Uses display_deletion_requirements as its source data.
         """
+        # Not permitted if there are any branches stacked on this.
+        if self.stacked_branches_count > 0:
+            return False
         return len([item for item, action, reason, allowed in
             self.display_deletion_requirements if not allowed]) == 0
 
@@ -832,6 +883,49 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             pass
 
 
+class BranchReviewerEditSchema(Interface):
+    """The schema to edit the branch reviewer."""
+
+    reviewer = copy_field(IBranch['reviewer'], required=True)
+
+
+class BranchReviewerEditView(LaunchpadEditFormView):
+    """The view to set the review team."""
+
+    schema = BranchReviewerEditSchema
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {BranchReviewerEditSchema: self.context}
+
+    @property
+    def initial_values(self):
+        return {'reviewer': self.context.code_reviewer}
+
+    @action('Save', name='save')
+    def save_action(self, action, data):
+        """Save the values."""
+        reviewer = data['reviewer']
+        if reviewer == self.context.code_reviewer:
+            # No change, so don't update last modified.
+            return
+
+        if reviewer == self.context.owner:
+            # Clear the reviewer if set to the same as the owner.
+            self.context.reviewer = None
+        else:
+            self.context.reviewer = reviewer
+
+        self.context.date_last_modified = UTC_NOW
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
@@ -864,7 +958,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 registrant=self.user,
                 owner=data['owner'],
-                author=None, # Until BranchSet.new modified to remove it.
                 product=data['product'],
                 url=data.get('url'),
                 title=data['title'],
@@ -875,6 +968,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(data['product'])
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch)
         else:
             self.next_url = canonical_url(self.branch)
 
@@ -890,9 +985,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     def validate(self, data):
         owner = data['owner']
-        if 'name' in data:
-            self.validate_branch_name(
-                owner, data.get('product'), data['name'])
 
         if not self.user.inTeam(owner):
             self.setFieldError(
@@ -965,7 +1057,7 @@ class ProductBranchAddView(BranchAddView):
 
 class DecoratedSubscription:
     """Adds the editable attribute to a `BranchSubscription`."""
-    decorates(IBranchSubscription, 'subscription')
+    delegates(IBranchSubscription, 'subscription')
 
     def __init__(self, subscription, editable):
         self.subscription = subscription
@@ -1050,20 +1142,20 @@ class RegisterProposalStatus(EnumeratedType):
 
 class RegisterProposalSchema(Interface):
     """The schema to define the form for registering a new merge proposal."""
-    use_template(IBranchMergeProposal,
-                 include=['target_branch'])
+    target_branch = Choice(
+        title=_('Target Branch'),
+        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
+        description=_(
+            "The branch that the source branch will be merged into."))
 
     comment = Text(
         title=_('Initial Comment'), required=False,
         description=_('Describe your change.'))
 
-    review_candidate = PublicPersonChoice(
-        title=_('Reviewer'), required=False,
-        description=_('A person or team who you want to review this.'),
-        vocabulary='ValidPersonOrTeam')
+    reviewer = copy_field(
+        ICodeReviewVoteReference['reviewer'], required=False)
 
-    review_type = TextLine(
-        title=_('Review Type'), required=False)
+    review_type = copy_field(ICodeReviewVoteReference['review_type'])
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
@@ -1072,6 +1164,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
+    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     @property
     def initial_values(self):
@@ -1082,7 +1175,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         dev_focus_branch = self.context.product.development_focus.user_branch
         if dev_focus_branch is not None:
             reviewer = dev_focus_branch.code_reviewer
-        return {'review_candidate': reviewer}
+        return {'reviewer': reviewer}
 
     @property
     def cancel_url(self):
@@ -1102,19 +1195,19 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         source_branch = self.context
         target_branch = data['target_branch']
 
+        review_requests = []
+        reviewer = data.get('reviewer')
+        if reviewer is not None:
+            review_requests.append((reviewer, data.get('review_type')))
+
         try:
             # Always default to needs review until we have the wonder of AJAX
             # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                needs_review=True)
-            reviewer = data.get('review_candidate')
-            if reviewer is not None:
-                proposal.nominateReviewer(
-                    reviewer, self.user, data.get('review_type'))
-            initial_comment = data.get('comment')
-            if initial_comment is not None:
-                proposal.createComment(self.user, None, initial_comment)
+                needs_review=True, initial_comment=data.get('comment'),
+                review_requests=review_requests)
+
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))

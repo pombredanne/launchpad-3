@@ -13,18 +13,11 @@ person:
 
     >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
 
-Normally, we run the development system (launchpad.dev) with no beta
-redirection host. For the purposes of this test, however, we will set it to
-beta.launchpad.dev:
-
-    >>> from canonical.config import config
-    >>> config.launchpad.beta_testers_redirection_host = "beta.launchpad.dev"
-
-XXX 20070131 jamesh:
-zope.testbrowser does not handle redirects to remote sites, so we
-disable the redirection handling at the mechanize layer.  We then need
-to check the HTTPError directly.
-      http://www.zope.org/Collectors/Zope3-dev/755
+# XXX jamesh 2007-01-31:
+# zope.testbrowser does not handle redirects to remote sites, so we
+# disable the redirection handling at the mechanize layer.  We then need
+# to check the HTTPError directly.
+# See http://www.zope.org/Collectors/Zope3-dev/755
 
     >>> user_browser.mech_browser.set_handle_redirect(False)
     >>> beta_browser.mech_browser.set_handle_redirect(False)
@@ -38,6 +31,26 @@ to check the HTTPError directly.
     ...         if location is not None:
     ...             print 'Location:', location
 
+The redirection is controlled by the beta_testers_redirection_host
+config item.  If it is set to None, no redirection occurs:
+
+    >>> from canonical.config import config
+
+    >>> print config.launchpad.beta_testers_redirection_host
+    None
+    >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
+    >>> print beta_browser.url
+    http://launchpad.dev/ubuntu
+
+Normally, we run the development system (launchpad.dev) with no beta
+redirection host. For the purposes of this test, however, we will set it to
+beta.launchpad.dev:
+
+    >>> beta_data = """
+    ...     [launchpad]
+    ...     beta_testers_redirection_host = beta.launchpad.dev
+    ...     """
+    >>> config.push('beta_data', beta_data)
 
 If a normal user goes to a page on the site, it will load as normal:
 
@@ -50,22 +63,6 @@ In contrast, members of the beta testers get redirected:
     >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
     HTTP Error 303: See Other
     Location: http://beta.launchpad.dev/ubuntu
-
-The redirection is controlled by the beta_testers_redirection_host
-config item.  If it is set to None, no redirection occurs:
-
-    >>> print config.launchpad.beta_testers_redirection_host
-    beta.launchpad.dev
-    >>> config.launchpad.beta_testers_redirection_host = None
-
-    >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
-    >>> print beta_browser.url
-    http://launchpad.dev/ubuntu
-
-Set the redirection host back for the rest of the tests:
-
-    >>> config.launchpad.beta_testers_redirection_host = 'beta.launchpad.dev'
-
 
 The redirection also works for URLs below the root, and with query
 parameters:
@@ -185,3 +182,8 @@ The Ubuntu product page then redirects to the beta site:
     >>> check(browser.open, 'http://launchpad.dev/ubuntu')
     HTTP Error 303: See Other
     Location: http://beta.launchpad.dev/ubuntu
+
+Restore the config to state it was in at the start of the test.
+
+    >>> config_data = config.pop('beta_data')
+

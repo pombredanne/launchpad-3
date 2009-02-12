@@ -5,6 +5,8 @@ __metaclass__ = type
 import unittest
 from textwrap import dedent
 
+from canonical.launchpad.translationformat.xpi_properties_exporter import (
+    XpiPropertiesSubExporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     PropertyFile)
 from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
@@ -216,6 +218,76 @@ ucci\u00F3n
         parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
+
+
+class MockFile:
+    """`TranslationFileData` boiled down to its essence for this test."""
+    def __init__(self, path='test.properties', messages=None):
+        if messages is None:
+            messages = []
+        self.path = path
+        self.messages = messages
+
+
+class MockMessage:
+    """`TranslationMessageData` boiled down to its essence for this test."""
+    def __init__(self, msgid, translation, comment=None):
+        self.msgid_singular = msgid
+        self.translations = [translation]
+        self.comment = comment
+
+
+class PropertyFileExportTest(unittest.TestCase):
+    """Test XPI `XpiPropertiesSubExporter`."""
+
+    def setUp(self):
+        self.exporter = XpiPropertiesSubExporter()
+
+    def test_properties_export(self):
+        # Test plain export of an XPI properties file.
+        file = MockFile(messages=[
+            MockMessage('foo', 'bar'),
+            MockMessage('id', 'translation', comment='comment'),
+            ])
+
+        expected = dedent("""
+            foo=bar
+
+            /* comment */
+            id=translation
+            """).strip()
+        self.assertEqual(self.exporter.export(file), expected)
+
+    def test_escape(self):
+        # Test escaping in properties files.
+        file = MockFile(messages=[
+            MockMessage("f'oo", 'b"ar', comment="Escaped quotes"),
+            MockMessage("f\\oo", "b\\ar", comment="Escaped backslashes"),
+            ])
+
+        expected = dedent("""
+            /* Escaped quotes */
+            f\\'oo=b\\"ar
+
+            /* Escaped backslashes */
+            f\\\\oo=b\\\\ar
+            """).strip()
+    
+        self.assertEqual(self.exporter.export(file).strip(), expected)
+
+    def test_escape_comment(self):
+        # Test escaping of comments in properties files.  Not fancy like
+        # actual translation content escaping; just making sure an
+        # ill-chosen comment does not produce wildly invalid output.
+        file = MockFile(messages=[
+            MockMessage("foo", "bar", comment="/*//*/**/ */")])
+
+        expected = dedent("""
+            /* /*X//*X/**X/ *X/ */
+            foo=bar
+            """).strip()
+
+        self.assertEqual(self.exporter.export(file).strip(), expected)
 
 
 def test_suite():

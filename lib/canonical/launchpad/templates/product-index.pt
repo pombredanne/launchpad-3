@@ -103,6 +103,14 @@
         <strong>Part of:</strong> <tal:link replace="structure context/project/fmt:link" />
       </p>
 
+      <p id="aliases" tal:condition="context/aliases">
+        <strong>Also known as:</strong>
+        <tal:aliases repeat="alias context/aliases">
+          <tal:alias replace="alias">something</tal:alias
+            ><tal:comma condition="not:repeat/alias/end">,</tal:comma>
+        </tal:aliases>
+      </p>
+
       <tal:launchpad_usage define="uses_launchpad view/uses_launchpad_for">
         <p id="uses">
           <tal:uses_launchpad condition="uses_launchpad">
@@ -165,10 +173,10 @@
           />
         </a>
         <a
-           tal:define="link context/menu:translations/help_translate"
+           tal:define="link context/menu:translations/overview"
            tal:condition="context/official_rosetta"
            tal:attributes="href link/url"
-        >
+         >
           <img
              tal:attributes="alt link/text"
              src="/+icing/but-sml-helptranslate.gif"
@@ -221,8 +229,10 @@
 
       <div class="portlet">
         <h2>Series and milestones</h2>
+        <p>A "release series" is major release that would typically have a number
+      of "point releases" associated with it.</p>
         <div class="project series"
-             tal:repeat="series view/sorted_series_list">
+             tal:repeat="series view/sorted_active_series_list">
 
           <div tal:define="is_focus series/is_development_focus"
                tal:attributes="

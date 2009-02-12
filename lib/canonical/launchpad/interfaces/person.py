@@ -11,22 +11,26 @@ __all__ = [
     'IHasStanding',
     'INewPerson',
     'INewPersonForm',
-    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'ImmutableVisibilityError',
+    'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
+    'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
+    'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
@@ -77,8 +81,14 @@ from canonical.launchpad.interfaces.teammembership import (
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.authorization import check_permission
+
+
+PRIVATE_TEAM_PREFIX = 'private-'
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -317,9 +327,17 @@ class PersonVisibility(DBEnumeratedType):
 
 
 class PersonNameField(BlacklistableContentNameField):
-    """A Person's name, which is unique."""
+    """A `Person` team name, which is unique and performs psuedo blacklisting.
 
+    If the team name is not unique, and the clash is with a private team,
+    return the blacklist message.  Also return the blacklist message if the
+    private prefix is used but the user is not privileged to create private
+    teams.
+    """
     errormessage = _("%s is already in use by another person or team.")
+
+    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
+                         "administrators.")
 
     @property
     def _content_iface(self):
@@ -329,6 +347,30 @@ class PersonNameField(BlacklistableContentNameField):
     def _getByName(self, name):
         """Return a Person by looking up his name."""
         return getUtility(IPersonSet).getByName(name, ignore_merged=False)
+
+    def _validate(self, input):
+        """See `UniqueField`."""
+        # If the name didn't change then we needn't worry about validating it.
+        if self.unchanged(input):
+            return
+
+        if not check_permission('launchpad.Commercial', self.context):
+            # Commercial admins can create private teams, with or without the
+            # private prefix.
+
+            if input.startswith(PRIVATE_TEAM_PREFIX):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
+
+            # If a non-privileged user attempts to use an existing name AND
+            # the existing project is private, then return the blacklist
+            # message rather than the message indicating the project exists.
+            existing_object = self._getByAttribute(input)
+            if (existing_object is not None and
+                existing_object.visibility != PersonVisibility.PUBLIC):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
+
+        # Perform the normal validation, including the real blacklist checks.
+        super(PersonNameField, self)._validate(input)
 
 
 class IPersonChangePassword(Interface):
@@ -383,6 +425,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
@@ -542,9 +585,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_openid_enabled = Bool(
-        title=_("This user can use Launchpad as an OpenID provider."),
-        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -553,11 +593,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    allwikis = exported(
-        CollectionField(title=_("All WikiNames of this Person."),
-                        readonly=True, required=False,
-                        value_type=Reference(schema=IWikiName)),
-        exported_as='wiki_names')
+    wiki_names = exported(
+        CollectionField(
+            title=_("All WikiNames of this Person, sorted alphabetically by "
+                    "URL."),
+            readonly=True, required=False,
+            value_type=Reference(schema=IWikiName)))
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
                         readonly=True, required=False,
@@ -697,6 +738,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     translation_groups = Attribute(
         "The set of TranslationGroup objects this person is a member of.")
 
+    translators = Attribute(
+        "The set of Translator objects this person is a member of.")
+
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -711,8 +755,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    archive = Attribute(
-        "The Archive owned by this person, his PPA.")
+    archive = exported(
+        Reference(title=_("Personal Package Archive"),
+                  description=_("The Archive owned by this person, his PPA."),
+                  schema=Interface)) # Really IArchive, see archive.py
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -828,12 +874,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Set the given email address as this person's preferred one.
 
         This method must be used only for people, not teams.
-        """
-
-    def getBranch(product_name, branch_name):
-        """The branch associated to this person and product with this name.
-
-        The product_name may be None.
         """
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
@@ -1048,17 +1088,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def addLanguage(language):
         """Add a language to this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
-        If the given language is already present, and IntegrityError will be
-        raised. This will be fixed soon; here's the discussion on this topic:
-        https://launchpad.ubuntu.com/malone/bugs/1317.
+        If the given language is one of the user's preferred languages
+        already, nothing will happen.
         """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
         """
@@ -1232,6 +1271,15 @@ class IPersonViewRestricted(Interface):
     unmapped_participants = CollectionField(
         title=_("List of participants with no coordinates recorded."),
         value_type=Reference(schema=Interface))
+
+    def getMembersWithPreferredEmails(include_teams=False):
+        """Returns a result set of persons with precached addresses.
+
+        Persons or teams without preferred email addresses are not included.
+        """
+
+    def getMembersWithPreferredEmailsCount(include_teams=False):
+        """Returns the count of persons/teams with preferred emails."""
 
     def getDirectAdministrators():
         """Return this team's administrators.
@@ -1961,6 +2009,10 @@ class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
 
 
+class ImmutableVisibilityError(Exception):
+    """A change in team membership visibility is not allowed."""
+
+
 class InvalidName(Exception):
     """The name given for a person is not valid."""
 
@@ -1968,6 +2020,12 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class NoSuchPerson(NameLookupFailed):
+    """Raised when we try to look up an IPerson that doesn't exist."""
+
+    _message_prefix = "No such person"
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

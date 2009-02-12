@@ -18,13 +18,15 @@ __all__ = [
 
 import re
 
-from zope.schema import  Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
+from canonical.config import config
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title, URIField)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -42,7 +44,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
     rename_parameters_as, REQUEST_USER)
@@ -73,9 +75,9 @@ class ImportStatus(DBEnumeratedType):
 
         The test import has failed. We will do further tests, and plan to
         complete this import eventually, but it may take a long time. For more
-        details, you can ask on the launchpad-users@canonical.com mailing list
+        details, you can ask on the %s mailing list
         or on IRC in the #launchpad channel on irc.freenode.net.
-        """)
+        """ % config.launchpad.users_address)
 
     AUTOTESTED = DBItem(4, """
         Test Successful
@@ -357,12 +359,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         readonly=True,
         description=_("The Bazaar branch for this series."))
 
-    user_branch = Choice(
-        title=_('Branch'),
-        vocabulary='BranchRestrictedOnProduct',
-        required=False,
-        description=_("The Bazaar branch for this series.  Leave blank "
-                      "if this series is not maintained in Bazaar."))
+    user_branch = exported(
+        ReferenceChoice(
+            title=_('Branch'),
+            vocabulary='BranchRestrictedOnProduct',
+            schema=IBranch,
+            required=False,
+            description=_("The Bazaar branch for this series.  Leave blank "
+                          "if this series is not maintained in Bazaar.")),
+        exported_as='branch')
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -426,7 +431,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             " Only MAIN branches are imported."))
     svnrepository = URIField(title=_("Branch"), required=False,
         description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
+            "The URL of a Subversion trunk, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
         allowed_schemes=["http", "https", "svn", "svn+ssh"],
         allow_userinfo=False, # Only anonymous access is supported.

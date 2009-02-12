@@ -7,9 +7,16 @@ distribution.
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/6/+distrotask'
 
-On this page we can add distribution task. We start by adding an Ubuntu
-task. Since Ubuntu uses Launchpad as its bug tracker, the task gets added
-and we return to the newly created task's page.
+On this page we can add distribution task. Just in case we change our
+mind, there is a cancel link that points back to the bug page:
+
+    >>> cancel_link = browser.getLink('Cancel')
+    >>> cancel_link.url
+    'http://bugs.launchpad.dev/firefox/+bug/6'
+
+We start by adding an Ubuntu task. Since Ubuntu uses Launchpad as its
+bug tracker, the task gets added and we return to the newly created
+task's page.
 
     >>> browser.getControl('Distribution').value = ['ubuntu']
     >>> browser.getControl('Continue').click()

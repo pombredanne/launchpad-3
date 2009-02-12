@@ -9,7 +9,7 @@ Pillars are currently Product, Project and Distribution.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, TextLine
+from zope.schema import Bool, Int, List, TextLine
 
 from canonical.launchpad import _
 from canonical.lazr.fields import CollectionField, Reference
@@ -18,7 +18,7 @@ from canonical.lazr.rest.declarations import (
     operation_parameters, operation_returns_collection_of)
 
 
-__all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
+__all__ = ['IHasAliases', 'IPillar', 'IPillarName', 'IPillarNameSet']
 
 
 class IPillar(Interface):
@@ -31,6 +31,30 @@ class IPillar(Interface):
     active = exported(
         Bool(title=_('Active'),
              description=_("Whether or not this item is active.")))
+
+
+class IHasAliases(Interface):
+
+    aliases = List(
+        title=_('Aliases'), required=False, readonly=True,
+        description=_(
+            "The names (as strings) which are aliases to this pillar."))
+
+    # Instead of a method for setting aliases we could make the 'aliases'
+    # attribute writable, but we decided to go with a method because this
+    # operation may trigger several inserts/deletes in the database and a
+    # method helps clarifying it may be an expensive operation.
+    def setAliases(names):
+        """Set the given names as this pillar's aliases.
+
+        For each of the given names, check that it's not already in use by
+        another pillar and then make sure it exists as an alias for this
+        pillar.  If the given names don't include any of this pillar's
+        existing aliases, these are deleted.
+
+        :param names: A sequence of names (as strings) that should be aliases
+            to this pillar.
+        """
 
 
 class IPillarName(Interface):
@@ -59,17 +83,17 @@ class IPillarNameSet(Interface):
     export_as_webservice_entry('pillars')
 
     def __contains__(name):
-        """Return True if the given name is an active Pillar."""
+        """True if the given name is an active Pillar or an alias to one."""
 
     def __getitem__(name):
-        """Get an active pillar by its name.
+        """Get an active pillar by its name or any of its aliases.
 
         If there's no pillar with the given name or there is one but it's
         inactive, raise NotFoundError.
         """
 
     def getByName(name, ignore_inactive=False):
-        """Return the pillar with the given name.
+        """Return the pillar whose name or alias matches the given name.
 
         If ignore_inactive is True, then only active pillars are considered.
 
@@ -109,4 +133,3 @@ class IPillarNameSet(Interface):
             value_type=Reference(schema=IPillar)),
         exported_as="featured_pillars"
         )
-

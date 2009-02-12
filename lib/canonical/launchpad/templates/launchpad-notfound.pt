@@ -24,9 +24,9 @@
           Otherwise, complain to the maintainers of the page that linked here.
         </p>
         <p>
-          If this is blocking your work, let us know on the
-          <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
-          >launchpad-users mailing list</a> (requires subscription).
+          If this is blocking your work, let us know by sending an message to
+          <a href="mailto:feedback@launchpad.net"
+             >feedback@launchpad.net</a>.
           Include the error <abbr>ID</abbr>
           <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
           in your message.

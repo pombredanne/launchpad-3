@@ -390,10 +390,14 @@ class Builder(SQLBase):
             return 'Idle'
 
         msg = 'Building %s' % currentjob.build.title
-        if currentjob.build.archive.purpose != ArchivePurpose.PPA:
+        if currentjob.build.archive.is_ppa:
+            return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
+        if currentjob.build.archive.is_copy:
+            return ('%s [%s/%s]' %
+                    (msg, currentjob.build.archive.owner.name,
+                     currentjob.build.archive.name))
+        else:
             return msg
-
-        return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""
@@ -522,6 +526,7 @@ class Builder(SQLBase):
             buildqueue.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
+            archive.enabled = TRUE AND
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL

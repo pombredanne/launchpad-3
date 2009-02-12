@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -15,7 +15,7 @@ from zope.security.checker import CheckerPublic
 from zope.security.proxy import removeSecurityProxy
 from zope.security.simplepolicies import ParanoidSecurityPolicy
 from zope.security.management import (
-    system_user, checkPermission as zcheckPermission)
+    system_user, checkPermission as zcheckPermission, getInteraction)
 from zope.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
@@ -164,7 +164,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
 
-        # XXX Steve Alexander 2005-01-12: 
+        # XXX Steve Alexander 2005-01-12:
         # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
             if steveIsFixingThis:
@@ -212,3 +212,14 @@ def check_permission(permission_name, context):
 
     # Now call Zope's checkPermission.
     return zcheckPermission(permission_name, context)
+
+
+def clear_cache():
+    """clear current interaction's IApplicationRequests' authorization caches.
+    """
+    for p in getInteraction().participations:
+        if IApplicationRequest.providedBy(p):
+            # LaunchpadBrowserRequest provides a ``clearSecurityPolicyCache``
+            # method, but it is not in an interface, and not implemented by
+            # all classes that implement IApplicationRequest.
+            del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]

@@ -6,29 +6,31 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
->
+><!-- context/@@main_template/master
+      view/macro:page/onecolumn
+ -->
 
   <body>
-
-    <metal:portlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-details" />
-      <div tal:replace="structure context/@@+portlet-preflangs" />
-    </metal:portlets>
-
-    <metal:heading fill-slot="pageheading">
+    <div metal:fill-slot="main">
       <h1>
         Translation templates for
         <tal:title replace="context/title">
           evolution in Ubuntu Feisty
         </tal:title>
       </h1>
-    </metal:heading>
 
-    <div metal:fill-slot="main">
+      <ul class="helplinks">
+        <li>
+          <a href="https://help.launchpad.net/Translations"
+             id="link-to-translations-help"
+             >Help for translations
+          </a>
+        </li>
+      </ul>
+
       <div tal:replace="structure context/@@+potlist" />
     </div>
-
   </body>
 </html>

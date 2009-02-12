@@ -1,5 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+# XXX: Gavin Panella 2008-11-21 bug=300725: This module need
+# refactoring and/or splitting into a package or packages.
+
 """Event handlers that send email notifications."""
 
 __metaclass__ = type
@@ -8,10 +11,11 @@ import datetime
 from difflib import unified_diff
 import operator
 
+from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formatdate
+from email.Utils import formataddr, formatdate, make_msgid
 
 import re
 import rfc822
@@ -29,6 +33,8 @@ from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
@@ -38,7 +44,7 @@ from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -188,49 +194,102 @@ def format_rfc2822_date(date):
     return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0,)))
 
 
-def construct_bug_notification(bug, from_address, address, body, subject,
-        email_date, rationale_header=None, references=None, msgid=None):
-    """Constructs a MIMEText message based on a bug and a set of headers."""
-    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    msg['From'] = from_address
-    msg['To'] = address
-    msg['Reply-To'] = get_bugmail_replyto_address(bug)
-    if references is not None:
-        msg['References'] = ' '.join(references)
-    msg['Sender'] = config.canonical.bounce_address
-    msg['Date'] = format_rfc2822_date(email_date)
-    if msgid is not None:
-        msg['Message-Id'] = msgid
+class BugNotificationBuilder:
+    """Constructs a MIMEText message for a bug notification.
 
-    subject_prefix = "[Bug %d]" % bug.id
+    Takes a bug and a set of headers and returns a new MIMEText
+    object. Common and expensive to calculate headers are cached
+    up-front.
+    """
 
-    if subject is None:
-        msg['Subject'] = subject_prefix
-    elif subject_prefix in subject:
-        msg['Subject'] = subject
-    else:
-        msg['Subject'] = "%s %s" % (subject_prefix, subject)
+    def __init__(self, bug):
+        self.bug = bug
 
-    # Add X-Launchpad-Bug headers.
-    for bugtask in bug.bugtasks:
-        msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+        # Pre-calculate common headers.
+        self.common_headers = [
+            ('Reply-To', get_bugmail_replyto_address(bug)),
+            ('Sender', config.canonical.bounce_address),
+            ]
 
-    # If the bug has tags we add an X-Launchpad-Bug-Tags header.
-    if bug.tags:
-        tag_string = ' '.join(bug.tags)
-        msg.add_header('X-Launchpad-Bug-Tags', tag_string)
+        # X-Launchpad-Bug
+        self.common_headers.extend(
+            ('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+            for bugtask in bug.bugtasks)
 
-    # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
-    # headers. These are simple yes/no values denoting privacy and
-    # security for the bug.
-    msg.add_header('X-Launchpad-Bug-Private',
-                   (bug.private and 'yes' or 'no'))
-    msg.add_header('X-Launchpad-Bug-Security-Vulnerability',
-                   (bug.security_related and 'yes' or 'no'))
+        # X-Launchpad-Bug-Tags
+        if len(bug.tags) > 0:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Tags', ' '.join(bug.tags)))
 
-    if rationale_header is not None:
-        msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
-    return msg
+        # Add the X-Launchpad-Bug-Private header. This is a simple
+        # yes/no value denoting privacy for the bug.
+        if bug.private:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Private', 'yes'))
+        else:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Private', 'no'))
+
+        # Add the X-Launchpad-Bug-Security-Vulnerability header to
+        # denote security for this bug. This follows the same form as
+        # the -Bug-Private header.
+        if bug.security_related:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Security-Vulnerability', 'yes'))
+        else:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Security-Vulnerability', 'no'))
+
+        # Add the -Bug-Commenters header, a space-separated list of
+        # distinct IDs of people who have commented on the bug. The
+        # list is sorted to aid testing.
+        commenters = set(message.owner.name for message in bug.messages)
+        self.common_headers.append(
+            ('X-Launchpad-Bug-Commenters', ' '.join(sorted(commenters))))
+
+    def build(self, from_address, to_address, body, subject, email_date,
+              rationale=None, references=None, message_id=None):
+        """Construct the notification.
+
+        :param from_address: The From address of the notification.
+        :param to_address: The To address for the notification.
+        :param body: The body text of the notification.
+        :type body: unicode
+        :param subject: The Subject of the notification.
+        :param email_date: The Date for the notification.
+        :param rationale: The rationale for why the recipient is
+            receiving this notification.
+        :param references: A value for the References header.
+        :param message_id: A value for the Message-ID header.
+
+        :return: An `email.MIMEText.MIMEText` object.
+        """
+        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+        message['Date'] = format_rfc2822_date(email_date)
+        message['From'] = from_address
+        message['To'] = to_address
+
+        # Add the common headers.
+        for header in self.common_headers:
+            message.add_header(*header)
+
+        if references is not None:
+            message['References'] = ' '.join(references)
+        if message_id is not None:
+            message['Message-Id'] = message_id
+
+        subject_prefix = "[Bug %d]" % self.bug.id
+        if subject is None:
+            message['Subject'] = subject_prefix
+        elif subject_prefix in subject:
+            message['Subject'] = subject
+        else:
+            message['Subject'] = "%s %s" % (subject_prefix, subject)
+
+        if rationale is not None:
+            message.add_header('X-Launchpad-Message-Rationale', rationale)
+
+        return message
 
 
 def _send_bug_details_to_new_bug_subscribers(
@@ -247,7 +306,7 @@ def _send_bug_details_to_new_bug_subscribers(
 
     to_addrs = set()
     for new_sub in new_subs:
-        to_addrs.update(contactEmailAddresses(new_sub))
+        to_addrs.update(get_contact_email_addresses(new_sub))
 
     if not to_addrs:
         return
@@ -266,14 +325,15 @@ def _send_bug_details_to_new_bug_subscribers(
     references = [bug.initial_message.rfc822msgid]
     recipients = bug.getBugNotificationRecipients()
 
+    bug_notification_builder = BugNotificationBuilder(bug)
     for to_addr in sorted(to_addrs):
-        reason, rationale_header = recipients.getReason(to_addr)
+        reason, rationale = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(
             bug, new_recipients=True, subscribed_by=subscribed_by,
             reason=reason)
-        msg = construct_bug_notification(
-            bug, from_addr, to_addr, contents, subject, email_date,
-            rationale_header=rationale_header, references=references)
+        msg = bug_notification_builder.build(
+            from_addr, to_addr, contents, subject, email_date,
+            rationale=rationale, references=references)
         sendmail(msg)
 
 
@@ -1074,7 +1134,7 @@ def notify_team_join(event):
         reviewer = membership.reviewed_by
         # Somebody added this person as a member, we better send a
         # notification to the person too.
-        member_addrs = contactEmailAddresses(person)
+        member_addrs = get_contact_email_addresses(person)
 
         subject = 'You have been added to %s' % team.name
         templatename = 'new-member-notification.txt'
@@ -1228,7 +1288,7 @@ class QuestionNotification:
         :return: A `INotificationRecipientSet` containing the recipients and
                  rationale.
         """
-        return self.question.getSubscribers()
+        return self.question.getRecipients()
 
     def initialize(self):
         """Initialization hook for subclasses.
@@ -1528,7 +1588,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
         recipients = NotificationRecipientSet()
         owner = self.question.owner
         if self.question.isSubscribed(owner):
-            original_recipients = self.question.getDirectSubscribers()
+            original_recipients = self.question.getDirectRecipients()
             rationale, header = original_recipients.getReason(owner)
             recipients.add(owner, rationale, header)
         return recipients
@@ -1701,7 +1761,7 @@ def notify_specification_subscription_created(specsub, event):
         {'blueprint_name' : spec.name,
          'blueprint_title' : spec.title,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 @block_implicit_flushes
@@ -1731,7 +1791,7 @@ def notify_specification_subscription_modified(specsub, event):
          'blueprint_title' : spec.title,
          'specsub_type' : specsub_type,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 
@@ -1807,3 +1867,99 @@ def notify_message_held(message_approval, event):
         body = MailWrapper(72).format(
             template % replacements, force_wrap=True)
         simple_sendmail(from_address, address, subject, body)
+
+
+def encode(value):
+    """Encode string for transport in a mail header.
+
+    :param value: The raw email header value.
+    :type value: unicode
+    :return: The encoded header.
+    :rtype: `email.Header.Header`
+    """
+    try:
+        value.encode('us-ascii')
+        charset = 'us-ascii'
+    except UnicodeEncodeError:
+        charset = 'utf-8'
+    return Header(value.encode(charset), charset)
+
+
+def send_direct_contact_email(
+    sender_email, recipients_set, subject, body):
+    """Send a direct user-to-user email.
+
+    :param sender_email: The email address of the sender.
+    :type sender_email: string
+    :param recipients_set: The recipients.
+    :type recipients_set:' A ContactViaWebNotificationSet
+    :param subject: The Subject header.
+    :type subject: unicode
+    :param body: The message body.
+    :type body: unicode
+    :return: The sent message.
+    :rtype: `email.Message.Message`
+    """
+    # Craft the email message.  Start by checking whether the subject and
+    # message bodies are ASCII or not.
+    subject_header = encode(subject)
+    try:
+        body.encode('us-ascii')
+        charset = 'us-ascii'
+    except UnicodeEncodeError:
+        charset = 'utf-8'
+    # Get the sender's real name, encoded as per RFC 2047.
+    person_set = getUtility(IPersonSet)
+    sender = person_set.getByEmail(sender_email)
+    assert sender is not None, 'No person for sender %s' % sender_email
+    sender_name = str(encode(sender.displayname))
+    # Do a single authorization/quota check for the sender.  We consume one
+    # quota credit per contact, not per recipient.
+    authorization = IDirectEmailAuthorization(sender)
+    if not authorization.is_allowed:
+        raise QuotaReachedError(sender.displayname, authorization)
+    # Add the footer as a unicode string, then encode the body if necessary.
+    # This is not entirely optimal if the body has non-ascii characters in it,
+    # since the footer may get garbled in a non-MIME aware mail reader.  Who
+    # uses those anyway!?  The only alternative is to attach the footer as a
+    # MIME attachment with a us-ascii charset, but that has it's own set of
+    # problems (and user complaints).  Email sucks.
+    additions = u'\n'.join([
+        u'',
+        u'-- ',
+        u'This message was sent from Launchpad by the user',
+        u'%s (%s)' % (sender_name , canonical_url(sender)),
+        u'using %s.',
+        u'For more information see',
+        u'https://help.launchpad.net/YourAccount/ContactingPeople',
+        ])
+    # Craft and send one message per recipient.
+    mailwrapper = MailWrapper(width=72)
+    message = None
+    for recipient_email, recipient in recipients_set.getRecipientPersons():
+        recipient_name = str(encode(recipient.displayname))
+        reason, rational_header = recipients_set.getReason(recipient_email)
+        reason = str(encode(reason)).replace('\n ', '\n')
+        formatted_body = mailwrapper.format(body, force_wrap=True)
+        formatted_body += additions % reason
+        formatted_body = formatted_body.encode(charset)
+        message = MIMEText(formatted_body, _charset=charset)
+        message['From'] = formataddr((sender_name, sender_email))
+        message['To'] = formataddr((recipient_name, recipient_email))
+        message['Subject'] = subject_header
+        message['Message-ID'] = make_msgid('launchpad')
+        message['X-Launchpad-Message-Rationale'] = rational_header
+        # Send the message.
+        sendmail(message)
+    # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
+    # the sender contacted the team.  This is not perfect though because we're
+    # really recording the fact that the person contacted the last member of
+    # the team.  There's little we can do better though because the team has
+    # no contact address, and so there isn't actually an address to record as
+    # the team's recipient.  It currently doesn't matter though because we
+    # don't actually do anything with the recipient information yet.  All we
+    # care about is the sender, for quota purposes.  We definitely want to
+    # record the contact outside the above loop though, because if there are
+    # 10 members of the team with no contact address, one message should not
+    # consume the sender's entire quota.
+    authorization.record(message)

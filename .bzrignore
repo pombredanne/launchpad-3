@@ -9,6 +9,8 @@ configs/+config-overrides.zcml
 sourcecode/*
 ./botmaster
 ./tags
+database/replication/lpslon_*.log
+database/replication/preamble.sk
 database/schema/diagrams/*.ps
 database/schema/diagrams/*.dot
 thread*.request
@@ -26,6 +28,13 @@ opensource/launchpadlib/build
 opensource/launchpadlib/dist
 opensource/launchpadlib/*.egg*
 database/sampledata/newsampledata.sql
+database/sampledata/newsampledata-dev.sql
 database/sampledata/lintdata.sql
+database/sampledata/lintdata-dev.sql
 lib/canonical/launchpad/apidoc/index.html
 xxx-report.*
+lib/canonical/launchpad/apidoc/wadl-development.xml
+lib/canonical/launchpad/apidoc/wadl-test-playground.xml
+lib/canonical/launchpad/icing/build/*
+trace.log
+test-appserver-layer-trace.log

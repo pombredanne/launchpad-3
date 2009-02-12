@@ -27,13 +27,12 @@ class TestingServer(LaunchpadInternalServer):
     def __init__(self):
         """Initialize the server.
 
-        We register ourselves with the scheme lp-testing=${id(self)}:///
-        using the `FakeLaunchpad` authserver client and backed onto a
-        LocalTransport.
+        We register ourselves with the scheme lp-testing=${id(self)}:/// using
+        an in-memory XML-RPC client and backed onto a LocalTransport.
         """
         frontend = InMemoryFrontend()
         branchfs = frontend.getFilesystemEndpoint()
-        branch = frontend.getLaunchpadObjectFactory().makeBranch()
+        branch = frontend.getLaunchpadObjectFactory().makeAnyBranch()
         self._branch_path = branch.unique_name
         # XXX: JonathanLange bug=276972 2008-10-07: This should back on to a
         # MemoryTransport, but a bug in Bazaar's implementation makes it

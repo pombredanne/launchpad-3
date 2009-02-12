@@ -21,16 +21,18 @@ from bzrlib.urlutils import escape, local_path_to_url
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
-    AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
-    LaunchpadServer)
-from canonical.codehosting.branchfsclient import BlockingProxy
+    AsyncLaunchpadTransport, branch_id_to_path, LaunchpadInternalServer,
+    LaunchpadServer, BranchTransportDispatch, TransportDispatch,
+    UnknownTransportType)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.transport import AsyncVirtualTransport
 from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.codehosting import (
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
+from canonical.launchpad.testing import TestCase
 from canonical.testing import TwistedLayer
 
 
@@ -39,6 +41,141 @@ def branch_to_path(branch, add_slash=True):
     if add_slash:
         path += '/'
     return path
+
+
+class TestBranchTransportDispatch(TestCase):
+
+    def setUp(self):
+        super(TestBranchTransportDispatch, self).setUp()
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        self.base_transport = get_transport(memory_server.get_url())
+        self.factory = BranchTransportDispatch(self.base_transport)
+
+    def test_writable_false_ignored(self):
+        transport, path = self.factory.makeTransport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=False), ''))
+        transport.mkdir('.bzr')
+        self.assertEqual(['.bzr'], transport.list_dir('.'))
+
+    def test_writable_implies_writable(self):
+        transport, path = self.factory.makeTransport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=True), ''))
+        transport.mkdir('.bzr')
+        self.assertEqual(['.bzr'], transport.list_dir('.'))
+
+    def test_gets_id_directory(self):
+        transport, path = self.factory.makeTransport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=True), ''))
+        transport.mkdir('.bzr')
+        self.assertEqual(
+            ['.bzr'], self.base_transport.list_dir('00/00/00/05'))
+
+    def test_returns_trailing_path(self):
+        transport, path = self.factory.makeTransport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=True), '.bzr/foo'))
+        self.assertEqual('.bzr/foo', path)
+
+    def test_makeTransport_control(self):
+        # makeTransport raises UnknownTransportType for the control transport.
+        self.assertRaises(
+            UnknownTransportType, self.factory.makeTransport,
+            (CONTROL_TRANSPORT, {}, ''))
+
+
+class TestTransportDispatch(TestCase):
+    """Tests for the transport factory."""
+
+    def setUp(self):
+        super(TestTransportDispatch, self).setUp()
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        base_transport = get_transport(memory_server.get_url())
+        base_transport.mkdir('hosted')
+        base_transport.mkdir('mirrored')
+        self.hosted_transport = base_transport.clone('hosted')
+        self.mirrored_transport = base_transport.clone('mirrored')
+        self.factory = TransportDispatch(
+            self.hosted_transport, self.mirrored_transport)
+
+    def test_control_conf_read_only(self):
+        transport = self.factory._makeControlTransport(
+            default_stack_on='/~foo/bar/baz')
+        self.assertRaises(
+            errors.TransportNotPossible,
+            transport.put_bytes, '.bzr/control.conf', 'data')
+
+    def test_control_conf_with_stacking(self):
+        transport = self.factory._makeControlTransport(
+            default_stack_on='/~foo/bar/baz')
+        control_conf = transport.get_bytes('.bzr/control.conf')
+        self.assertEqual('default_stack_on = /~foo/bar/baz\n', control_conf)
+
+    def test_control_conf_with_no_stacking(self):
+        transport = self.factory._makeControlTransport(
+            default_stack_on='')
+        self.assertEqual([], transport.list_dir('.'))
+
+    def test_writable_false_implies_readonly(self):
+        transport = self.factory._makeBranchTransport(id=5, writable=False)
+        self.assertRaises(
+            errors.TransportNotPossible, transport.put_bytes,
+            '.bzr/README', 'data')
+
+    def test_writable_implies_writable(self):
+        transport = self.factory._makeBranchTransport(id=5, writable=True)
+        transport.mkdir('.bzr')
+        self.assertEqual(['.bzr'], transport.list_dir('.'))
+
+    def test_gets_id_directory(self):
+        transport = self.factory._makeBranchTransport(id=5, writable=True)
+        transport.mkdir('.bzr')
+        self.assertEqual(
+            ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
+
+    def test_read_only_returns_mirrored(self):
+        self.mirrored_transport.mkdir_multi(
+            ['00', '00/00', '00/00/00', '00/00/00/05', '00/00/00/05/.bzr'])
+        self.mirrored_transport.put_bytes('00/00/00/05/.bzr/README', "Hello")
+        transport = self.factory._makeBranchTransport(id=5, writable=False)
+        data = transport.get_bytes(".bzr/README")
+        self.assertEqual("Hello", data)
+
+    def test_makeTransport_control(self):
+        # makeTransport returns a control transport for the tuple.
+        log = []
+        self.factory._transport_factories[CONTROL_TRANSPORT] = (
+            lambda default_stack_on, trailing_path:
+                log.append(default_stack_on))
+        transport, path = self.factory.makeTransport(
+            (CONTROL_TRANSPORT, {'default_stack_on': 'foo'}, 'bar/baz'))
+        self.assertEqual('bar/baz', path)
+        self.assertEqual(['foo'], log)
+
+    def test_makeTransport_branch(self):
+        # makeTransport returns a control transport for the tuple.
+        log = []
+        self.factory._transport_factories[BRANCH_TRANSPORT] = (
+            lambda id, writable, trailing_path: log.append((id, writable)))
+        transport, path = self.factory.makeTransport(
+            (BRANCH_TRANSPORT, {'id': 1, 'writable': True}, 'bar/baz'))
+        self.assertEqual('bar/baz', path)
+        self.assertEqual([(1, True)], log)
+
+
+class TestBranchIDToPath(unittest.TestCase):
+    """Tests for branch_id_to_path."""
+
+    def test_branch_id_to_path(self):
+        # branch_id_to_path converts an integer branch ID into a path of four
+        # segments, with each segment being a hexadecimal number.
+        self.assertEqual('00/00/00/00', branch_id_to_path(0))
+        self.assertEqual('00/00/00/01', branch_id_to_path(1))
+        arbitrary_large_id = 6731
+        assert "%x" % arbitrary_large_id == '1a4b', (
+            "The arbitrary large id is not what we expect (1a4b): %s"
+            % (arbitrary_large_id))
+        self.assertEqual('00/00/1a/4b', branch_id_to_path(6731))
 
 
 class MixinBaseLaunchpadServerTests:
@@ -74,112 +211,6 @@ class MixinBaseLaunchpadServerTests:
         self.assertFalse(
             self.server.get_url() in _get_protocol_handlers().keys())
 
-    def test_translationIsCached(self):
-        # We don't go to the authserver for every path translation.
-        #
-        # To test this, we translate a branch and then delete that branch on
-        # the authserver. If the cache is operating, the next attempt to
-        # translate that branch should succeed with the same value as the
-        # first attempt.
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-
-        branch = self.factory.makeBranch(owner=self.requester)
-
-        deferred = self.server.translateVirtualPath(
-            '%s/.bzr' % branch.unique_name)
-
-        def assert_path_starts_with(branch_info, expected_path):
-            transport, path = branch_info
-            self.assertStartsWith(path, expected_path)
-
-        def futz_with_branchfs_endpoint(ignored):
-            # Delete the branch on the fake filesystem endpoint, breaking
-            # encapsulation.
-            self.authserver._branch_set._delete(branch)
-            branch_info = self.authserver.getBranchInformation(
-                self.requester.id, branch.owner.name, branch.product.name,
-                branch.name)
-            # The branchfs endpoint says there is no such branch.
-            self.assertEqual(('', ''), branch_info)
-
-        deferred.addCallback(
-            assert_path_starts_with, branch_id_to_path(branch.id))
-        deferred.addCallback(futz_with_branchfs_endpoint)
-        deferred.addCallback(
-            lambda ignored: self.server.translateVirtualPath(
-                    '%s/.bzr' % branch.unique_name))
-        deferred.addCallback(
-            assert_path_starts_with, branch_id_to_path(branch.id))
-        return deferred
-
-    def test_translateControlPath(self):
-        branch = self.factory.makeBranch(owner=self.requester)
-        branch.product.development_focus.user_branch = branch
-        deferred = self.server.translateVirtualPath(
-            '~%s/%s/.bzr/control.conf'
-            % (branch.owner.name, branch.product.name))
-        def check_control_file((transport, path)):
-            self.assertEqual(
-                'default_stack_on = /%s\n' % branch.unique_name,
-                transport.get_bytes(path))
-        return deferred.addCallback(check_control_file)
-
-    def test_buildControlDirectory(self):
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-
-        branch = 'http://example.com/~user/product/branch'
-        transport = self.server._buildControlDirectory(branch)
-        self.assertEqual(
-            'default_stack_on = %s\n' % branch,
-            transport.get_bytes('.bzr/control.conf'))
-
-    def test_buildControlDirectory_no_branch(self):
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-
-        transport = self.server._buildControlDirectory('')
-        self.assertEqual([], transport.list_dir('.'))
-
-    def test_parseProductControlDirectory(self):
-        # _parseProductControlDirectory takes a path to a product control
-        # directory and returns the name of the product, followed by the path.
-        product, path = self.server._parseProductControlDirectory(
-            '~user/product/.bzr')
-        self.assertEqual('product', product)
-        self.assertEqual('.bzr', path)
-        product, path = self.server._parseProductControlDirectory(
-            '~user/product/.bzr/foo')
-        self.assertEqual('product', product)
-        self.assertEqual('.bzr/foo', path)
-
-    def test_parseProductControlDirectoryNotControlDir(self):
-        # If the directory isn't a control directory (doesn't have '.bzr'),
-        # raise an error.
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            '~user/product/branch')
-
-    def test_parseProductControlDirectoryTooShort(self):
-        # If there aren't enough path segments, raise an error.
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            '~user')
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            '~user/product')
-
-    def test_parseProductControlDirectoryInvalidUser(self):
-        # If the user directory is invalid, raise an InvalidControlDirectory.
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            'user/product/.bzr/foo')
-
 
 class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                           BzrTestCase):
@@ -190,85 +221,66 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
     def getLaunchpadServer(self, authserver, user_id):
         return LaunchpadServer(
-            BlockingProxy(authserver), user_id, MemoryTransport(),
+            XMLRPCWrapper(authserver), user_id, MemoryTransport(),
             MemoryTransport())
 
-    def test_base_path_translation_person_branch(self):
-        # Branches are stored on the filesystem by branch ID. This allows
-        # users to rename and re-assign branches without causing unnecessary
-        # disk churn. The ID is converted to four-byte hexadecimal and split
-        # into four path segments, to make sure that the directory tree
-        # doesn't get too wide and cause ext3 to have conniptions.
-        #
-        # However, branches are _accessed_ using their
-        # ~person/product/branch-name. The server knows how to map this unique
-        # name to the branch's path on the filesystem.
-
-        # We can map a branch owned by the user to its path.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester, product=None)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_team_branch(self):
-        # We can map a branch owned by a team that the user is in to its path.
-        team = self.factory.makeTeam(self.requester)
-        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_other_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        branch = self.factory.makeBranch(BranchType.HOSTED, product=None)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._mirror_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_extend_path_translation_on_mirror(self):
-        branch = self.factory.makeBranch(BranchType.HOSTED, product=None)
+    def test_translateControlPath(self):
+        branch = self.factory.makeProductBranch(owner=self.requester)
+        self.factory.enableDefaultStackingForProduct(branch.product, branch)
         deferred = self.server.translateVirtualPath(
-            '/%s/.bzr' % branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._mirror_transport,
-             '%s/.bzr' % branch_id_to_path(branch.id)))
-        return deferred
+            '~%s/%s/.bzr/control.conf'
+            % (branch.owner.name, branch.product.name))
+        def check_control_file((transport, path)):
+            self.assertEqual(
+                'default_stack_on = /%s\n' % branch.unique_name,
+                transport.get_bytes(path))
+        return deferred.addCallback(check_control_file)
 
-    def test_extend_path_translation_on_hosted(self):
-        # More than just the branch name needs to be translated: transports
-        # will ask for files beneath the branch. The server translates the
-        # unique name of the branch (i.e. the ~user/product/branch-name part)
-        # to the four-byte hexadecimal split ID described in
-        # test_base_path_translation and appends the remainder of the path.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+    def test_translate_branch_path_hosted(self):
+        # translateVirtualPath returns a writable transport like that returned
+        # by TransportDispatch.makeTransport for branches we can write to.
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        dispatch = self.server._transport_dispatch.makeTransport((
+            BRANCH_TRANSPORT, {'id': branch.id, 'writable': True},
+            '.bzr/README'))
+        expected_transport, expected_path = dispatch
+
         deferred = self.server.translateVirtualPath(
-            '/%s/.bzr' % branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport,
-             '%s/.bzr' % branch_id_to_path(branch.id)))
-        return deferred
+            '%s/.bzr/README' % (branch.unique_name,))
+        def check_branch_transport((transport, path)):
+            self.assertEqual(expected_path, path)
+            # Can't test for equality of transports, since URLs and object
+            # identity differ.
+            file_data = self.factory.getUniqueString()
+            transport.mkdir(os.path.dirname(path))
+            transport.put_bytes(path, file_data)
+            self.assertEqual(file_data, expected_transport.get_bytes(path))
+        return deferred.addCallback(check_branch_transport)
+
+    def test_translate_branch_path_mirrored(self):
+        # translateVirtualPath returns a read-only transport for branches we
+        # can't write to.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        deferred = self.server.translateVirtualPath(
+            '%s/.bzr/README' % (branch.unique_name,))
+        def check_branch_transport((transport, path)):
+            self.assertEqual('.bzr/README', path)
+            self.assertEqual(True, transport.is_readonly())
+        return deferred.addCallback(check_branch_transport)
+
+    def test_createBranch_error_translation(self):
+        # createBranch raises PermissionDenied if we try to create a branch
+        # for, say, a product that doesn't exist.
+        branch_url = '/~%s/no-such-product/new-branch' % (self.requester.name)
+        deferred = self.server.createBranch(branch_url)
+        deferred = self.assertFailure(deferred, errors.PermissionDenied)
+        def check_exception(exception):
+            self.assertEqual(branch_url, exception.path)
+            self.assertEqual(
+                ": Project 'no-such-product' does not exist.",
+                exception.extra)
+        return deferred.addCallback(check_exception)
 
     def test_get_url(self):
         # The URL of the server is 'lp-<number>:///', where <number> is the
@@ -290,53 +302,43 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
 
     def getLaunchpadServer(self, authserver, user_id):
         return LaunchpadInternalServer(
-            'lp-test:///', BlockingProxy(authserver), MemoryTransport())
+            'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
 
-    def test_base_path_translation_person_branch(self):
-        # Branches are stored on the filesystem by branch ID. This allows
-        # users to rename and re-assign branches without causing unnecessary
-        # disk churn. The ID is converted to four-byte hexadecimal and split
-        # into four path segments, to make sure that the directory tree
-        # doesn't get too wide and cause ext3 to have conniptions.
-        #
-        # However, branches are _accessed_ using their
-        # ~person/product/branch-name. The server knows how to map this unique
-        # name to the branch's path on the filesystem.
+    def test_translate_branch_path(self):
+        branch = self.factory.makeAnyBranch()
+        dispatch = self.server._transport_dispatch.makeTransport((
+            BRANCH_TRANSPORT, {'id': branch.id, 'writable': True},
+            '.bzr/README'))
+        expected_transport, expected_path = dispatch
 
-        branch = self.factory.makeBranch(owner=self.requester)
-        # We can map a branch owned by the user to its path.
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, branch_to_path(branch)))
-        return deferred
+        deferred = self.server.translateVirtualPath(
+            '%s/.bzr/README' % (branch.unique_name,))
+        def check_branch_transport((transport, path)):
+            self.assertEqual(expected_path, path)
+            # Can't test for equality of transports, since URLs and object
+            # identity differ.
+            file_data = self.factory.getUniqueString()
+            transport.mkdir(os.path.dirname(path))
+            transport.put_bytes(path, file_data)
+            self.assertEqual(file_data, expected_transport.get_bytes(path))
+        return deferred.addCallback(check_branch_transport)
 
-    def test_base_path_translation_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        branch = self.factory.makeBranch(owner=self.requester, product=None)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_team_branch(self):
-        # We can map a branch owned by a team that the user is in to its path.
-        team = self.factory.makeTeam(self.requester)
-        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, branch_to_path(branch)))
-        return deferred
+    def test_translate_control_dir_path(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        branch = self.factory.makeProductBranch()
+        branch.product.development_focus.user_branch = branch
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(
+            errors.NoSuchFile, transport.list_dir, "~%s/%s/.bzr/"
+            % (branch.owner.name, branch.product.name))
 
     def test_open_containing_raises_branch_not_found(self):
         # open_containing_from_transport raises NotBranchError if there's no
         # branch at that URL.
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
-        branch = self.factory.makeBranch(owner=self.requester)
+        branch = self.factory.makeAnyBranch(owner=self.requester)
         transport = get_transport(self.server.get_url())
         transport = transport.clone(branch.unique_name)
         self.assertRaises(
@@ -507,9 +509,9 @@ class LaunchpadTransportTests:
         # generated by Launchpad based on info in the database, rather than
         # being an actual file on disk.
         transport = self.getTransport()
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
-        branch.product.development_focus.user_branch = branch
+        branch = self.factory.makeProductBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        self.factory.enableDefaultStackingForProduct(branch.product, branch)
         return self.assertFiresFailure(
             errors.TransportNotPossible,
             transport.put_bytes,
@@ -531,8 +533,8 @@ class LaunchpadTransportTests:
         # Getting a file from a public branch URL gets the file as stored on
         # the base transport.
         transport = self.getTransport()
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         backing_transport = self._makeOnBackingTransport(branch)
         backing_transport.put_bytes('hello.txt', 'Hello World!')
         deferred = self._ensureDeferred(
@@ -542,8 +544,8 @@ class LaunchpadTransportTests:
     def test_get_mapped_file_escaped_url(self):
         # Getting a file from a public branch URL gets the file as stored on
         # the base transport, even when the URL is escaped.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         backing_transport = self._makeOnBackingTransport(branch)
         backing_transport.put_bytes('hello.txt', 'Hello World!')
         url = escape('%s/.bzr/hello.txt' % branch.unique_name)
@@ -554,8 +556,8 @@ class LaunchpadTransportTests:
     def test_readv_mapped_file(self):
         # Using readv on a public branch URL gets chunks of the file as stored
         # on the base transport.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         backing_transport = self._makeOnBackingTransport(branch)
         data = 'Hello World!'
         backing_transport.put_bytes('hello.txt', data)
@@ -572,8 +574,8 @@ class LaunchpadTransportTests:
         # Putting a file from a public branch URL stores the file in the
         # mapped URL on the base transport.
         transport = self.getTransport()
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         backing_transport = self._makeOnBackingTransport(branch)
         deferred = self._ensureDeferred(
             transport.put_bytes,
@@ -610,8 +612,8 @@ class LaunchpadTransportTests:
         # The public branch URL -> filesystem mapping uses the base URL to do
         # its mapping, thus ensuring that clones map correctly.
         transport = self.getTransport()
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         backing_transport = self._makeOnBackingTransport(branch)
         backing_transport.put_bytes('hello.txt', 'Hello World!')
         transport = transport.clone('~%s' % branch.owner.name)
@@ -647,8 +649,8 @@ class LaunchpadTransportTests:
     def test_rename(self):
         # We can use the transport to rename files where both the source and
         # target are virtual paths.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         backing_transport = self._makeOnBackingTransport(branch)
         backing_transport.put_bytes('hello.txt', 'Hello World!')
 
@@ -686,8 +688,8 @@ class LaunchpadTransportTests:
         # iter_files_recursive doesn't take a relative path but still needs to
         # do a path-based operation on the backing transport, so the
         # implementation can't just be a shim to the backing transport.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         backing_transport = self._makeOnBackingTransport(branch)
         backing_transport.put_bytes('hello.txt', 'Hello World!')
         transport = self.getTransport().clone(branch.unique_name)
@@ -717,19 +719,18 @@ class LaunchpadTransportTests:
         self.assertTrue(transport.has(orange))
 
     def test_createBranch_not_found_error(self):
-        # When createBranch raises an exception with faultCode
-        # NOT_FOUND_FAULT_CODE, the transport should translate this to a
-        # TransportNotPossible exception (see the comment in transport.py for
-        # why we translate to TransportNotPossible and not NoSuchFile).
+        # When createBranch raises faults.NotFound the transport should
+        # translate this to a PermissionDenied exception (see the comment in
+        # transport.py for why we translate to TransportNotPossible and not
+        # NoSuchFile).
         transport = self.getTransport()
         return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, "does not exist", transport.mkdir,
             '~%s/no-such-product/some-name' % self.requester.name)
 
     def test_createBranch_permission_denied_error(self):
-        # When createBranch raises an exception with faultCode
-        # PERMISSION_DENIED_FAULT_CODE, the transport should translate
-        # this to a PermissionDenied exception.
+        # When createBranch raises faults.PermissionDenied, the transport
+        # should translate this to a PermissionDenied exception.
         transport = self.getTransport()
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
@@ -804,7 +805,7 @@ class TestRequestMirror(TestCaseWithTransport):
     def get_server(self):
         if self._server is None:
             self._server = LaunchpadServer(
-                BlockingProxy(self.authserver), self.requester.id,
+                XMLRPCWrapper(self.authserver), self.requester.id,
                 self.backing_transport, self.mirror_transport)
             self._server.setUp()
             self.addCleanup(self._server.tearDown)
@@ -815,16 +816,16 @@ class TestRequestMirror(TestCaseWithTransport):
 
     def test_creating_branch_requests_mirror(self):
         # Creating a branch requests a mirror.
-        db_branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
         self.assertEqual(
             [(self.requester.id, db_branch.id)], self._request_mirror_log)
 
     def test_branch_unlock_requests_mirror(self):
         # Unlocking a branch requests a mirror.
-        db_branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
         self._request_mirror_log = []
         branch.lock_write()
@@ -853,33 +854,18 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         authserver = self._frontend.getFilesystemEndpoint()
         self.requester = self.factory.makePerson()
 
-        self.writable_branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester).unique_name
-        self.read_only_branch = self.factory.makeBranch(
-            BranchType.HOSTED).unique_name
+        self.writable_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester).unique_name
+        self.writable_file = '/%s/.bzr/hello.txt' % self.writable_branch
+        self.read_only_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED).unique_name
 
         self.lp_server = self._setUpLaunchpadServer(
             self.requester.id, authserver, backing_transport,
             mirror_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
-
-        self.writable_file = '/%s/.bzr/hello.txt' % self.writable_branch
-        self.file_on_both_transports = '/%s/.bzr/README' % (
-            self.read_only_branch,)
-        self.file_on_mirror_only = '/%s/.bzr/MIRROR-ONLY' % (
-            self.read_only_branch,)
-
-        d1 = self._makeFilesInBranches(
-            backing_transport,
-            [(self.writable_file, 'Hello World!'),
-             (self.file_on_both_transports, 'Hello World!')])
-
-        d2 = self._makeFilesInBranches(
-            mirror_transport,
-            [(self.file_on_both_transports, 'Goodbye World!'),
-             (self.file_on_mirror_only, 'ignored')])
-
-        return defer.gatherResults([d1, d2])
+        self.lp_transport.mkdir(os.path.dirname(self.writable_file))
+        self.lp_transport.put_bytes(self.writable_file, 'Hello World!')
 
     def _setUpMemoryServer(self):
         memory_server = MemoryServer()
@@ -890,33 +876,11 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     def _setUpLaunchpadServer(self, user_id, authserver, backing_transport,
                               mirror_transport):
         server = LaunchpadServer(
-            BlockingProxy(authserver), user_id, backing_transport,
+            XMLRPCWrapper(authserver), user_id, backing_transport,
             mirror_transport)
         server.setUp()
         self.addCleanup(server.tearDown)
         return server
-
-    def _makeFilesInBranches(self, transport, file_spec):
-        """Write a bunch of files inside branches on the LP codehost.
-
-        :param transport: Either a backing transport or a mirror transport
-            for a Launchpad server.
-        :param file_spec: A list of (filename, contents) tuples.
-            The path in the filename is translated as if it were a virtual
-            path.
-        """
-
-        def make_file(filename, contents):
-            deferred = self.lp_server.translateVirtualPath(filename)
-            def write_to_file(branch_info):
-                path_to_file = branch_info[1]
-                directory = os.path.dirname(path_to_file)
-                ensure_base(transport.clone(directory))
-                transport.put_bytes(path_to_file, contents)
-            return deferred.addCallback(write_to_file)
-        return defer.gatherResults(
-            [make_file(filename, contents)
-             for filename, contents in file_spec])
 
     def test_mkdir_readonly(self):
         # If we only have READ_ONLY access to a branch then we should not be
@@ -932,37 +896,6 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             errors.TransportNotPossible,
             self.lp_transport.rename, self.writable_file,
             '/%s/.bzr/goodbye.txt' % self.read_only_branch)
-
-    def test_readonly_refers_to_mirror(self):
-        # Read-only operations should get their data from the mirror, not the
-        # primary backing transport.
-        # XXX: JonathanLange 2007-06-21, Explain more of this.
-        self.assertEqual(
-            'Goodbye World!',
-            self.lp_transport.get_bytes(self.file_on_both_transports))
-
-    def test_iter_files_refers_to_mirror(self):
-        # iter_files_recursive() gets its data from the mirror if it cannot
-        # write to the branch.
-        read_only_branch_name = '/%s/' % self.read_only_branch
-        transport = self.lp_transport.clone(read_only_branch_name)
-        files = list(transport.iter_files_recursive())
-
-        mirror_only = self.file_on_mirror_only[len(read_only_branch_name):]
-        self.assertTrue(
-            mirror_only in files, '%r not in %r' % (mirror_only, files))
-
-    def test_listable_refers_to_mirror(self):
-        # listable() refers to the mirror transport for read-only branches.
-        read_only_branch_name = '/%s' % self.read_only_branch
-        transport = self.lp_transport.clone(read_only_branch_name)
-
-        # listable() returns the same value for both transports. To
-        # distinguish them, we'll monkey patch the mirror and backing
-        # transports.
-        self.lp_server._mirror_transport.listable = lambda: 'mirror'
-        self.lp_server._hosted_transport.listable = lambda: 'hosted'
-        self.assertEqual('mirror', transport.listable())
 
 
 def test_suite():

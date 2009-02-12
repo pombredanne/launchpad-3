@@ -29,15 +29,17 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
 AUTHDB_SEED = set([
-    ('public', 'account'),
-    ('public', 'openidassociations'),
-    ('public', 'oauthnonce'),
     ])
 
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
 LPMAIN_SEED = set([
+    # These tables are scheduled to move to the authdb seed.
+    ('public', 'account'),
+    ('public', 'openidassociations'),
+    ('public', 'oauthnonce'),
+
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
     ('public', 'fticache'),
@@ -108,7 +110,7 @@ def sync(timeout):
     return execute_slonik("", sync=timeout)
 
 
-def execute_slonik(script, sync=None, exit_on_fail=True):
+def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
     """Use the slonik command line tool to run a slonik script.
 
     :param script: The script as a string. Preamble should not be included.
@@ -119,20 +121,24 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
     :param exit_on_fail: If True, on failure of the slonik script
                          sys.exit is invoked using the slonik return code.
 
+    :param auto_preamble: If True, the generated preamble will be
+                          automatically included.
+
     :returns: True if the script completed successfully. False if
               exit_on_fail is False and the script failed for any reason.
     """
 
     # Add the preamble and optional sync to the script.
+    if auto_preamble:
+        script = preamble() + script
+
     if sync is not None:
-        script = preamble() + script + """
+        script = script + """
             sync (id = @master_node);
             wait for event (
                 origin = ALL, confirmed = ALL,
                 wait on = @master_node, timeout = %d);
             """ % sync
-    else:
-        script = preamble() + script
 
     # Copy the script to a NamedTemporaryFile rather than just pumping it
     # to slonik via stdin. This way it can be examined if slonik appears
@@ -143,6 +149,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
 
     # Run slonik
     log.debug("Executing slonik script %s" % script_on_disk.name)
+    #log.debug(script) # We need a log level < DEBUG :-(
     returncode = subprocess.call(['slonik', script_on_disk.name])
 
     if returncode != 0:
@@ -269,7 +276,7 @@ def calculate_replication_set(cur, seeds):
 
     # We can't easily convert the sequence name to (namespace, name) tuples,
     # so we might as well convert the tables to dot notation for consistancy.
-    tables = set(fqn(namespace, tablename) for namespace,tablename in tables)
+    tables = set(fqn(namespace, tablename) for namespace, tablename in tables)
 
     return tables, sequences
 

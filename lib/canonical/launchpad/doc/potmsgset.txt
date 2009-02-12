@@ -21,7 +21,7 @@ Verify interface.
 
 We also need some time and date functions to do translation updates.
 
-    >>> import datetime
+    >>> from datetime import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
 
@@ -213,7 +213,7 @@ To add a suggestion, we set the force_suggestion parameter.
 
     >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
     ...     carlos, {0: u'foo'}, is_imported=False, force_suggestion=True,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    ...     lock_timestamp=datetime.now(UTC))
 
 XXX CarlosPerelloMarin 20080423: Once we finish shared translations DB
 migration, we could remove this part of the test. We don't need to
@@ -275,7 +275,7 @@ To add an imported translation, we need to set is_imported parameter.
 
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u'foo %d', 1: u'foos %d'},
-    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_imported=True, lock_timestamp=datetime.now(UTC))
 
 The new translation is reflected in the POFile statistics.
 
@@ -304,20 +304,16 @@ A translation can be removed from the import by being set to an empty string.
     ...     u'have ')
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u''},
-    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_imported=True, lock_timestamp=datetime.now(UTC))
 
-Current translation is now empty and imported.
+Current translation is now unset, as is imported.
 
     >>> current = upstream_potmsgset.getCurrentTranslationMessage(catalan)
-    >>> current.is_imported
-    True
-    >>> current.translations
-    [None]
-
-An empty TranslationMessage has all the translations set to None.
-
-    >>> print current.all_msgstrs
-    [None, None, None, None, None, None]
+    >>> print current
+    None
+    >>> imported = upstream_potmsgset.getImportedTranslationMessage(catalan)
+    >>> print imported
+    None
 
 Given that we unset an imported translation, statistics remain unchanged.
 
@@ -330,13 +326,13 @@ To unset an imported plural translation, we can add an empty translation.
     ...     u'%d contact', u'%d contacts')
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u'', 1: u''},
-    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_imported=True, lock_timestamp=datetime.now(UTC))
 
 The statistics change to reflect that the message is not available
 in upstream anymore, so it's now noted as newly translated in Launchpad.
 
     >>> upstream_pofile.updateStatistics()
-    (0, 0, 1, 1)
+    (0, 0, 0, 2)
 
 === Activating an existing suggestion ===
 
@@ -364,7 +360,7 @@ A No Privileges user updates a translation.
 
     >>> new_message = potmsgset.updateTranslation(
     ...     pofile_es, no_priv, {0: u'test string'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
 
 This message is not made current or marked as imported.
 
@@ -400,7 +396,7 @@ new suggestion.
 
     >>> new_message = potmsgset.updateTranslation(
     ...     pofile_es, foobar, {0: u'test string'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
 
 We don't have any suggestion newer than the new active translation
 
@@ -426,8 +422,8 @@ Also, we should have Foo Bar as the reviewer of that translation.
 
 Let's focus on handling of messages with plural forms.
 
-We use a DummyPOMsgSet when we don't have a POMsgSet for a given POFile
-and POTMsgSet. First we'll get a DummyPOFile:
+An empty translation does not need to exist in the database.  If not,
+a DummyPOFile is used instead.
 
     >>> pt_BR_dummypofile = evolution_potemplate.getDummyPOFile('pt_BR')
 
@@ -507,14 +503,90 @@ gracefully accepted.
     2
     >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
     ...     {0: u'foo %d', 1: None}, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    ...     lock_timestamp=datetime.now(UTC))
     >>> message.is_complete
     False
     >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
     ...     {0: None}, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    ...     lock_timestamp=datetime.now(UTC))
     >>> message.is_complete
     False
+
+
+=== Extraneous forms ===
+
+It's not normally possible to input more plural forms for a translated
+message than the language has.  But that number is configurable, and can
+change (particularly when it is first defined).
+
+As an example, let's look at the Zapotec translation for PowerMonger.
+
+    >>> pm_translation = factory.makePOFile('zap')
+    >>> zap = pm_translation.language
+
+The number of plural forms in the Zapotec language is not configured,
+so for now, the system guesses that it has two.
+
+    >>> print zap.pluralforms
+    None
+    >>> print pm_translation.plural_forms
+    2
+
+    >>> pm_template = pm_translation.potemplate
+    >>> pm_potmsgset = factory.makePOTMsgSet(
+    ...     pm_template, singular='%d keyboard', plural='%d keyboards')
+
+The message we're looking at is translated to two plural forms.
+
+    >>> message_with_two_forms = pm_potmsgset.updateTranslation(
+    ...     pm_translation, pm_template.owner, ['%d fu', '%d fuitl'],
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+
+When an otherwise identical translation with three comes along, the
+third form is ignored because it falls outside the current 2 forms.
+The "new" translation message is the same one we already had.
+
+    >>> message_with_three_forms = pm_potmsgset.updateTranslation(
+    ...     pm_translation, pm_template.owner,
+    ...     ['%d fu', '%d fuitl', '%d fuitlx'], is_imported=False,
+    ...     lock_timestamp=datetime.now(UTC))
+    >>> message_with_three_forms == message_with_two_forms
+    True
+
+Based on the latest research, it is now decided that Zapotec has three
+plural forms.  This time, uploading a three-form translation produces a
+new translation message.
+
+    >>> zap.pluralforms = 3
+    >>> zap.pluralexpression = 'n % 3'
+
+    >>> message_with_three_forms = pm_potmsgset.updateTranslation(
+    ...     pm_translation, pm_template.owner,
+    ...     ['%d fu', '%d fuitl', '%d fuitlx'], is_imported=False,
+    ...     lock_timestamp=datetime.now(UTC))
+    >>> message_with_three_forms == message_with_two_forms
+    False
+
+Now it is discovered that the very controversial Zapotec really only has
+a single form.
+
+    >>> zap.pluralforms = 1
+
+When a new translation is submitted, again identical in the first form,
+no new message is created.  Instead, the closest existing match (the
+one with two forms) is updated.
+
+    >>> message_with_one_form = pm_potmsgset.updateTranslation(
+    ...     pm_translation, pm_template.owner, ['%d fu'],
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    WARNING:...Translation for POTMsgSet ... into 'zap' matches
+    2 existing translations.
+
+    >>> message_with_one_form == message_with_two_forms
+    True
+
+This avoids the creation of redundant translation messages where
+possible.
 
 
 == isTranslationNewerThan ==
@@ -522,7 +594,6 @@ gracefully accepted.
 This method tells us whether the active translation was reviewed after
 the given timestamp.
 
-    >>> from datetime import datetime
     >>> from pytz import UTC
     >>> translationmessage = TranslationMessage.get(2)
     >>> potmsgset = translationmessage.potmsgset
@@ -624,17 +695,9 @@ translations in Spanish:
 
     >>> suggestions = (
     ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
-    >>> print_suggestions(suggestions)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
-    "evolution":  caratas (Launchpad)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
-    "evolution":  tarjetas (Upstream)
 
     >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
     ...    spanish)
-    >>> print_suggestions(suggestions)
-    Spanish (es) translation of evolution-2.2 in Evolution trunk:
-    tarjetas (Launchpad & Upstream)
 
 We need to be logged in as an admin to do some special attribute
 changes:
@@ -751,11 +814,6 @@ active) as it's another context.
     >>> wiki_submissions = (
     ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
     ...         pofile.language))
-    >>> print_suggestions(wiki_submissions)
-    Spanish (es) translation of man in Ubuntu Hoary package "evolution":
-    blah, blah, blah (None)
-    Spanish (es) translation of man in Ubuntu Hoary package "evolution":
-    lalalala (None)
 
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
@@ -998,3 +1056,32 @@ If we change it back to zero, it's removed from the table:
     False
     >>> potmsgset.getSequence(potemplate)
     0
+
+
+== POTMsgSet.flags ==
+
+The gettext format can associate flags with a POTMsgSet, such as "this
+is a fuzzily matched message" or "this message follows C format-string
+rules."  These flags are set in a comment starting with a comma, and
+flags are separated by further commas.
+
+    >>> from canonical.launchpad.database.potmsgset import POTMsgSet
+    >>> flagged_potmsgset = POTMsgSet(flagscomment=", fuzzy, c-format")
+
+The flags property produces these as a neat list of flags.
+
+    >>> def print_flags(potmsgset):
+    ...     for flag in sorted(potmsgset.flags):
+    ...         print '"%s"' % flag
+    ...     print '.'
+
+    >>> print_flags(flagged_potmsgset)
+    "c-format"
+    "fuzzy"
+    .
+
+If the message has no flags, that list is empty.
+
+    >>> print_flags(POTMsgSet())
+    .
+

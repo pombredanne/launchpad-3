@@ -27,6 +27,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import LeftJoin
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
@@ -454,13 +455,33 @@ class Question(SQLBase, BugLinkTargetMixin):
                 store.flush()
                 return
 
-    def getSubscribers(self):
+    def getDirectSubscribers(self):
+        """See `IQuestion`.
+
+        This method is sorted so that it iterates like getDirectRecipients().
+        """
+        return sorted(
+            self.subscribers, key=operator.attrgetter('displayname'))
+
+    def getIndirectSubscribers(self):
+        """See `IQuestion`.
+
+        This method adds the assignee and is sorted so that it iterates like
+        getIndirectRecipients().
+        """
+        subscribers = set(
+            self.target.getAnswerContactsForLanguage(self.language))
+        if self.assignee:
+            subscribers.add(self.assignee)
+        return sorted(subscribers, key=operator.attrgetter('displayname'))
+
+    def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.getDirectSubscribers()
-        subscribers.update(self.getIndirectSubscribers())
+        subscribers = self.getDirectRecipients()
+        subscribers.update(self.getIndirectRecipients())
         return subscribers
 
-    def getDirectSubscribers(self):
+    def getDirectRecipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
@@ -468,7 +489,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         subscribers.add(self.subscribers, reason, 'Subscriber')
         return subscribers
 
-    def getIndirectSubscribers(self):
+    def getIndirectRecipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
@@ -1129,17 +1150,73 @@ class QuestionTargetMixin:
             clauseTables=['Question'], distinct=True))
 
     @property
+    def _store(self):
+        return Store.of(self)
+
+    @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=operator.attrgetter('displayname'))
+        return self.direct_answer_contacts
+
+    @property
+    def answer_contacts_with_languages(self):
+        """Answer contacts with their languages pre-filled.
+
+        Same as answer_contacts but with each of them having its languages
+        pre-filled so that we don't need to hit the DB again to get them.
+        """
+        return self.direct_answer_contacts_with_languages
+
+    def _getConditionsToQueryAnswerContacts(self):
+        """The SQL conditions to query this target's answer contacts."""
+        conditions = []
+        for key, value in self.getTargetTypes().items():
+            if value is None:
+                constraint = "AnswerContact.%s IS NULL" % key
+            else:
+                constraint = "AnswerContact.%s = %s" % (key, value.id)
+            conditions.append(constraint)
+        return " AND ".join(conditions)
 
     @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
-        return self.answer_contacts
+        from canonical.launchpad.database.person import Person
+        origin = [AnswerContact,
+                  LeftJoin(Person, AnswerContact.person == Person.id)]
+        conditions = self._getConditionsToQueryAnswerContacts()
+        results = self._store.using(*origin).find(Person, conditions)
+        return list(results.order_by(Person.displayname))
+
+    @property
+    def direct_answer_contacts_with_languages(self):
+        """Direct answer contacts with their languages pre-filled.
+
+        Same as direct_answer_contacts but with each of them having its
+        languages pre-filled so that we don't need to hit the DB again to get
+        them.
+        """
+        from canonical.launchpad.database.person import (
+            Person, PersonLanguage)
+        origin = [
+            AnswerContact,
+            LeftJoin(Person, AnswerContact.person == Person.id),
+            LeftJoin(PersonLanguage,
+                     AnswerContact.personID == PersonLanguage.personID),
+            LeftJoin(Language,
+                     PersonLanguage.language == Language.id)]
+        columns = [Person, Language]
+        conditions = self._getConditionsToQueryAnswerContacts()
+        results = self._store.using(*origin).find(tuple(columns), conditions)
+        D = {}
+        for person, language in results:
+            if person not in D:
+                D[person] = []
+            if language is not None:
+                D[person].append(language)
+        for person, languages in D.items():
+            person.setLanguagesCache(languages)
+        return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
     def addAnswerContact(self, person):
         """See `IQuestionTarget`."""
@@ -1148,7 +1225,7 @@ class QuestionTargetMixin:
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        assert person.languages.count() > 0, (
+        assert len(person.languages) > 0, (
             "An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
@@ -1158,12 +1235,13 @@ class QuestionTargetMixin:
 
     def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
         """Return the Persons or Teams who are AnswerContacts."""
-        answer_contacts = AnswerContact.select(
+        constraints.append("""Person.id = AnswerContact.person""")
+        clause_tables.append('AnswerContact')
+        # Avoid a circular import of Person, which imports the mixin.
+        from canonical.launchpad.database.person import Person
+        return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
-            distinct=True)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=operator.attrgetter('displayname'))
+            orderBy=['displayname'], distinct=True)
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
@@ -1232,7 +1310,7 @@ class QuestionTargetMixin:
     def getSupportedLanguages(self):
         """See `IQuestionTarget`."""
         languages = set()
-        for contact in self.answer_contacts:
+        for contact in self.answer_contacts_with_languages:
             languages |= set(contact.languages)
         languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(

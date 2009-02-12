@@ -9,9 +9,9 @@ import shutil
 from StringIO import StringIO
 
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib.urlutils import local_path_from_url
+from bzrlib import urlutils
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     BadUrl, BranchMirrorer, BranchPolicy, PullerWorker, PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import LoomTestMixin
@@ -35,6 +35,15 @@ class BlacklistPolicy(BranchPolicy):
         if url in self._unsafe_urls:
             raise BadUrl(url)
 
+    def transformFallbackLocation(self, branch, url):
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        This class is not used for testing our smarter stacking features so we
+        just do the simplest thing: return the URL that would be used anyway
+        and don't check it.
+        """
+        return urlutils.join(branch.base, url), False
+
 
 class AcceptAnythingPolicy(BlacklistPolicy):
     """Accept anything, to make testing easier."""
@@ -46,10 +55,12 @@ class AcceptAnythingPolicy(BlacklistPolicy):
 class WhitelistPolicy(BranchPolicy):
     """Branch policy that only allows certain URLs."""
 
-    def __init__(self, should_follow_references, allowed_urls=None):
+    def __init__(self, should_follow_references, allowed_urls=None,
+                 check=False):
         if allowed_urls is None:
             allowed_urls = []
         self.allowed_urls = set(url.rstrip('/') for url in allowed_urls)
+        self.check = check
 
     def shouldFollowReferences(self):
         return self._should_follow_references
@@ -57,6 +68,14 @@ class WhitelistPolicy(BranchPolicy):
     def checkOneURL(self, url):
         if url.rstrip('/') not in self.allowed_urls:
             raise BadUrl(url)
+
+    def transformFallbackLocation(self, branch, url):
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        Here we return the URL that would be used anyway and optionally check
+        it.
+        """
+        return urlutils.join(branch.base, url), self.check
 
 
 class PullerWorkerMixin:
@@ -78,7 +97,7 @@ class PullerWorkerMixin:
         if branch_type is None:
             if policy is None:
                 policy = AcceptAnythingPolicy()
-            opener = BranchMirrorer(policy)
+            opener = BranchMirrorer(policy, protocol)
         else:
             opener = None
         return PullerWorker(
@@ -99,12 +118,14 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""
         return os.path.join(
-            config.codehosting.branches_root, branch_id_to_path(branch.id))
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(branch.id))
 
     def getMirroredPath(self, branch):
         """Return the path of 'branch' in the supermirror area."""
         return os.path.join(
-            config.supermirror.branchesdest, branch_id_to_path(branch.id))
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(branch.id))
 
     def makeCleanDirectory(self, path):
         """Guarantee an empty branch upload area."""
@@ -112,7 +133,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
             shutil.rmtree(path)
         os.makedirs(path)
 
-    def pushToBranch(self, branch, tree=None, format=None):
+    def pushToBranch(self, branch, tree):
         """Push a Bazaar branch to a given Launchpad branch's hosted area.
 
         Use this to test mirroring a hosted branch.
@@ -120,13 +141,9 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         :param branch: A Launchpad Branch object.
         """
         hosted_path = self.getHostedPath(branch)
-        if tree is None:
-            tree = self.make_branch_and_tree(
-                self.factory.getUniqueString(), format=format)
-            tree.commit('rev1')
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d',
-             local_path_from_url(tree.branch.base), hosted_path],
+             urlutils.local_path_from_url(tree.branch.base), hosted_path],
             retcode=None)
         # We want to be sure that a new branch was indeed created.
         self.assertEqual("Created new branch.\n", err)

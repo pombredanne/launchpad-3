@@ -7,7 +7,8 @@ links to the top-level web service objects.
   >>> top_level_response = webservice.get("/")
   >>> top_level_links = top_level_response.jsonBody()
   >>> sorted(top_level_links.keys())
-  [u'bugs_collection_link', u'distributions_collection_link', u'me_link',
+  [u'bugs_collection_link', u'cves_collection_link',
+   u'distributions_collection_link', u'hwdb_link', u'me_link',
    u'people_collection_link', u'pillars_link',
    u'project_groups_collection_link',
    u'projects_collection_link',
@@ -25,6 +26,14 @@ JSON representations, and so on. If the client doesn't know the
 capabilities of a certain resource it can request a WADL
 representation of that resource (see the xx-wadl.txt test) and find
 out.
+
+There is no XHTML representation available for the service root.
+
+  >>> print webservice.get('/', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
 
 Though web services in general support all HTTP methods, this
 particular resource supports only GET. Eventually it will also support

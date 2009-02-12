@@ -19,7 +19,6 @@ from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
-from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
@@ -424,12 +423,18 @@ class TestActualImportMixin:
             self.source_details, self.foreign_store, self.bazaar_store,
             logging.getLogger())
 
+    def getBazaarWorkingTree(self, worker):
+        """Get the Bazaar tree 'worker' stored into its BazaarBranchStore."""
+        tree_dir = self.makeTemporaryDirectory()
+        return worker.bazaar_branch_store.pull(
+            worker.source_details.branch_id, tree_dir)
+
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
         # the branch.
         worker = self.makeImportWorker()
         worker.run()
-        bazaar_tree = worker.getBazaarWorkingTree()
+        bazaar_tree = self.getBazaarWorkingTree(worker)
         # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
         # are importing has two revisions. Looking at the test, it's not
         # obvious why we make this assumption, hence the XXX. The two
@@ -441,18 +446,26 @@ class TestActualImportMixin:
         # Do an import.
         worker = self.makeImportWorker()
         worker.run()
-        bazaar_tree = worker.getBazaarWorkingTree()
+        bazaar_tree = self.getBazaarWorkingTree(worker)
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
         # Change the remote branch.
-        foreign_tree = worker.getForeignTree()
+
+        tree_dir = self.makeTemporaryDirectory()
+        # This is pretty gross, but it works: the call to worker.run() will
+        # chdir() again to the worker's scratch directory, and in any case the
+        # tests subclass bzrlib's TestCaseInTempdir, so the directory will be
+        # restored at the end of the test.
+        os.chdir(tree_dir)
+        foreign_tree = worker.foreign_tree_store.fetch(
+            worker.source_details, tree_dir)
         self.commitInForeignTree(foreign_tree)
 
         # Run the same worker again.
         worker.run()
 
         # Check that the new revisions are in the Bazaar branch.
-        bazaar_tree = worker.getBazaarWorkingTree()
+        bazaar_tree = self.getBazaarWorkingTree(worker)
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
     def test_import_script(self):
@@ -462,7 +475,7 @@ class TestActualImportMixin:
         clean_up_default_stores_for_import(self.source_details)
 
         script_path = os.path.join(
-            get_rocketfuel_root(), 'scripts', 'code-import-worker.py')
+            config.root, 'scripts', 'code-import-worker.py')
         retcode = subprocess.call(
             [script_path, '-qqq'] + self.source_details.asArguments())
         self.assertEqual(retcode, 0)
@@ -538,32 +551,6 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
         svn_branch_url = svn_server.makeBranch(branch_name, files)
         return self.factory.makeCodeImportSourceDetails(
             rcstype='svn', svn_branch_url=svn_branch_url)
-
-    def test_bazaarBranchStored(self):
-        # The worker stores the Bazaar branch after it has imported the new
-        # revisions.
-        # XXX: JonathanLange 2008-02-22: This test ought to be VCS-neutral.
-        worker = self.makeImportWorker()
-        worker.run()
-
-        bazaar_tree = worker.bazaar_branch_store.pull(
-            self.source_details.branch_id, 'tmp-bazaar-tree')
-        self.assertEqual(
-            bazaar_tree.branch.last_revision(),
-            worker.getBazaarWorkingTree().last_revision())
-
-    def test_foreignTreeStored(self):
-        # The worker archives the foreign tree after it has imported the new
-        # revisions.
-        # XXX: JonathanLange 2008-02-22: This test ought to be VCS-neutral.
-        worker = self.makeImportWorker()
-        worker.run()
-
-        os.mkdir('tmp-foreign-tree')
-        foreign_tree = worker.foreign_tree_store.fetchFromArchive(
-            self.source_details, 'tmp-foreign-tree')
-        self.assertDirectoryTreesEqual(
-            foreign_tree.local_path, worker.getForeignTree().local_path)
 
 
 def test_suite():

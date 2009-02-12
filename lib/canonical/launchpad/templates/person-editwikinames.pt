@@ -10,18 +10,10 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Your wiki names</h1>
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
 
   <div metal:fill-slot="main">
 
+    <h1>Your wiki names</h1>
 
     <p tal:condition="view/error_message"
        tal:content="structure view/error_message/escapedtext"
@@ -30,7 +22,13 @@
     <form name="edit_wikiname" action="" method="POST">
     <table id="wikinames">
 
-      <tal:block condition="context/allwikis">
+      <tal:XXX condition="nothing">
+        # XXX: salgado, 2008-11-25 bug=296739: We should use
+        # context/wiki_names/is_empty here, but we can't do that because
+        # there's a bug preventing us from # updating our version of storm
+        # to trunk.
+      </tal:XXX>
+      <tal:block condition="context/wiki_names/any">
 
         <tr><td colspan="2"><h2>Wiki names</h2></td></tr>
 
@@ -39,7 +37,7 @@
           <td><label>Wiki name:</label></td>
         </tr>
 
-        <tr tal:repeat="wiki context/allwikis">
+        <tr tal:repeat="wiki context/wiki_names">
           <td>
             <input type="text" style="margin-bottom: 0.5em;"
                    tal:attributes="name string:wiki_${wiki/id};

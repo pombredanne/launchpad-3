@@ -1,14 +1,14 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
 
 import cgi
 import urllib
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from zope.component import getUtility
-from zope.session.interfaces import ISession
+from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -67,6 +67,10 @@ class UnauthorizedView(SystemErrorView):
                     break
                 target = urlappend(target, nextstep)
             target = urlappend(target, '+login' + query_string)
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it safe
+            # to use the ``addNoticeNotification`` method.
+            allowUnauthenticatedSession(self.request)
             self.request.response.addNoticeNotification(_(
                     'To continue, you must log in to Launchpad.'
                     ))
@@ -215,7 +219,7 @@ class LoginOrRegister:
             return
 
         # XXX matsubara 2006-05-08 bug=43675: This class should inherit from
-        # GeneralFormView, that way we could take advantage of Zope's widget
+        # LaunchpadFormView, that way we could take advantage of Zope's widget
         # validation, instead of checking manually for password validity.
         if not valid_password(password):
             self.login_error = _(
@@ -225,7 +229,20 @@ class LoginOrRegister:
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if principal is not None and principal.validate(password):
+        if (principal is not None
+            and principal.person.account_status == AccountStatus.DEACTIVATED):
+            self.login_error = _(
+                'The email address belongs to a deactivated account. '
+                'Use the "Forgotten your password" link to reactivate it.')
+        elif (principal is not None
+            and principal.person.account_status == AccountStatus.SUSPENDED):
+            email_link = (
+                'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
+            self.login_error = _(
+                'The email address belongs to a suspended account. '
+                'Contact a <a href="%s">Launchpad admin</a> '
+                'about this issue.' % email_link)
+        elif principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
@@ -250,11 +267,6 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
-        elif (principal is not None
-            and principal.person.account_status == AccountStatus.DEACTIVATED):
-            self.login_error = _(
-                'The email address belongs to a deactivated account. '
-                'Use the "Forgotten your password" link to reactivate it.')
         else:
             self.login_error = "The email address and password do not match."
 
@@ -371,6 +383,37 @@ def logInPerson(request, principal, email):
     notify(CookieAuthLoggedInEvent(request, email))
 
 
+def expireSessionCookie(request, client_id_manager=None,
+                        delta=timedelta(minutes=10)):
+    if client_id_manager is None:
+        client_id_manager = getUtility(IClientIdManager)
+    session_cookiename = client_id_manager.namespace
+    value = request.response.getCookie(session_cookiename)['value']
+    expiration = (datetime.utcnow() + delta).strftime(
+        '%a, %d %b %Y %H:%M:%S GMT')
+    request.response.setCookie(
+        session_cookiename, value, expires=expiration)
+
+
+def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
+    # As a rule, we do not want to send a cookie to an unauthenticated user,
+    # because it breaks cacheing; and we do not want to create a session for
+    # an unauthenticated user, because it unnecessarily consumes valuable
+    # database resources. We have an assertion to ensure this. However,
+    # sometimes we want to break the rules. To do this, first we set the
+    # session cookie; then we assert that we only want it to last for a given
+    # duration, so that, if the user does not log in, they can go back to
+    # getting cached pages. Only after an unauthenticated user's session
+    # cookie is set is it safe to write to it.
+    if not IUnauthenticatedPrincipal.providedBy(request.principal):
+        return
+    client_id_manager = getUtility(IClientIdManager)
+    if request.response.getCookie(client_id_manager.namespace) is None:
+        client_id_manager.setRequestId(
+            request, client_id_manager.getClientId(request))
+        expireSessionCookie(request, client_id_manager, duration)
+
+
 def logoutPerson(request):
     """Log the user out."""
     session = ISession(request)
@@ -382,23 +425,25 @@ def logoutPerson(request):
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.unauthenticatedPrincipal()
         request.setPrincipal(principal)
+        # We want to clear the session cookie so anonymous users can get
+        # cached pages again. We need to do this after setting the session
+        # values (e.g., ``authdata['personid'] = None``, above), because that
+        # code will itself try to set the cookie in the browser.  We need to
+        # provide a bit of time before the cookie clears (10 minutes at the
+        # moment) so that, if code wants to send a notification (such as "your
+        # account has been deactivated"), the session will still be available
+        # long enough to give the message to the now-unauthenticated user.
+        # The time period could probably be 5 or 10 seconds, if everyone were
+        # on NTP, but...they're not, so we use a pretty high fudge factor of
+        # ten minutes.
+        expireSessionCookie(request)
         notify(LoggedOutEvent(request))
 
 
 class CookieLogoutPage:
 
     def logout(self):
-        session = ISession(self.request)
-        authdata = session['launchpad.authenticateduser']
-        previous_login = authdata.get('personid')
-        if previous_login is not None:
-            authdata['personid'] = None
-            authdata['logintime'] = datetime.utcnow()
-            notify(LoggedOutEvent(self.request))
-        else:
-            # There is no cookie-based login currently.
-            # So, don't attempt to log out.  Just redirect
-            pass
+        logoutPerson(self.request)
         self.request.response.addNoticeNotification(
             _(u'You have been logged out')
             )

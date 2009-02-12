@@ -12,10 +12,11 @@ __all__ = [
 from zope.interface import implements
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 
+from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.lazr.interfaces.rest import WebServiceLayer
 
 
-class FakeResponse(object):
+class FakeResponse:
     """Simple response wrapper object."""
     def __init__(self):
         self.status = 599
@@ -35,16 +36,42 @@ class FakeResponse(object):
         """Return the response status code."""
         return self.status
 
-class FakeRequest(object):
+
+class FakeRequest:
     """Simple request object for testing purpose."""
     # IHTTPApplicationRequest makes us eligible for
     # get_current_browser_request()
     implements(IHTTPApplicationRequest, WebServiceLayer)
 
-    def __init__(self):
+    def __init__(self, traversed=None, stack=None):
+        self._traversed_names = traversed
+        self._stack = stack
         self.response = FakeResponse()
         self.principal = None
         self.interaction = None
+        self.traversed_objects = []
+
+    def getTraversalStack(self):
+        """See `IPublicationRequest`.
+
+        This method is called by traversal machinery.
+        """
+        return self._stack
+
+    def setTraversalStack(self, stack):
+        """See `IPublicationRequest`.
+
+        This method is called by traversal machinery.
+        """
+        self._stack = stack
+
+    @property
+    def stepstogo(self):
+        """See IBasicLaunchpadRequest.
+
+        This method is called by traversal machinery.
+        """
+        return StepsToGo(self)
 
     def getApplicationURL(self):
         return "http://api.example.org"
@@ -55,7 +82,22 @@ class FakeRequest(object):
 
 
 def pprint_entry(json_body):
-    """Pretty-print a webservice entry JSON representation."""
-    for key, value in sorted(json_body.items()):
-        print '%s: %r' % (key, value)
+    """Pretty-print a webservice entry JSON representation.
 
+    Omits the http_etag key, which is always present and never
+    interesting for a test.
+    """
+    for key, value in sorted(json_body.items()):
+        if key != 'http_etag':
+            print '%s: %r' % (key, value)
+
+
+def pprint_collection(json_body):
+    """Pretty-print a webservice collection JSON representation."""
+    for key, value in sorted(json_body.items()):
+        if key != 'entries':
+            print '%s: %r' % (key, value)
+    print '---'
+    for entry in json_body['entries']:
+        pprint_entry(entry)
+        print '---'

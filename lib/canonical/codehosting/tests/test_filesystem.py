@@ -10,25 +10,13 @@ import stat
 from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.transport import get_transport
+from bzrlib.transport.memory import MemoryTransport
 from bzrlib.urlutils import escape
 
-from canonical.codehosting import branch_id_to_path
-from canonical.codehosting.tests.servers import make_launchpad_server
+from canonical.codehosting.branchfs import LaunchpadServer
+from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 
-
-class TestBranchIDToPath(unittest.TestCase):
-    """Tests for branch_id_to_path."""
-
-    def test_branch_id_to_path(self):
-        # branch_id_to_path converts an integer branch ID into a path of four
-        # segments, with each segment being a hexadecimal number.
-        self.assertEqual('00/00/00/00', branch_id_to_path(0))
-        self.assertEqual('00/00/00/01', branch_id_to_path(1))
-        arbitrary_large_id = 6731
-        assert "%x" % arbitrary_large_id == '1a4b', (
-            "The arbitrary large id is not what we expect (1a4b): %s"
-            % (arbitrary_large_id))
-        self.assertEqual('00/00/1a/4b', branch_id_to_path(6731))
 
 
 class TestFilesystem(TestCaseWithTransport):
@@ -38,17 +26,22 @@ class TestFilesystem(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self.server = make_launchpad_server()
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        frontend = InMemoryFrontend()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        endpoint = XMLRPCWrapper(frontend.getFilesystemEndpoint())
+        self.requester = self.factory.makePerson()
+        self._server = LaunchpadServer(
+            endpoint, self.requester.id, MemoryTransport(), MemoryTransport())
+        self._server.setUp()
+        self.addCleanup(self._server.tearDown)
 
     def getTransport(self, relpath=None):
-        return self.server.getTransport(relpath)
+        return get_transport(self._server.get_url()).clone(relpath)
 
     def test_remove_branch_directory(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
-        transport = self.getTransport('~testuser/+junk')
+        transport = self.getTransport('~%s/+junk' % self.requester.name)
         transport.mkdir('foo')
         transport.mkdir('bar')
         self.failUnless(stat.S_ISDIR(transport.stat('foo').st_mode))
@@ -83,30 +76,41 @@ class TestFilesystem(TestCaseWithTransport):
         # TransportNotPossible or NoSuchFile
         transport = self.getTransport()
         self.assertRaises(
-            errors.PermissionDenied, transport.mkdir, '~testuser')
+            errors.PermissionDenied,
+            transport.mkdir, '~%s' % self.requester.name)
 
     def test_mkdir_not_team_member_error(self):
         # You can't make a branch under the directory of a team that you don't
         # belong to.
+        team = self.factory.makeTeam(self.factory.makePerson())
+        product = self.factory.makeProduct()
         transport = self.getTransport()
         self.assertRaises(
             errors.PermissionDenied,
-            transport.mkdir, '~not-my-team/firefox/new-branch')
+            transport.mkdir, '~%s/%s/new-branch' % (team.name, product.name))
 
     def test_make_team_branch_directory(self):
         # You can make a branch directory under a team directory that you are
         # a member of (so long as it's a real product).
+        team = self.factory.makeTeam(self.requester)
+        product = self.factory.makeProduct()
         transport = self.getTransport()
-        transport.mkdir('~testteam/firefox/shiny-new-thing')
+        transport.mkdir('~%s/%s/shiny-new-thing' % (team.name, product.name))
         self.assertTrue(
-            transport.has('~testteam/firefox/shiny-new-thing'))
+            transport.has(
+                '~%s/%s/shiny-new-thing' % (team.name, product.name)))
 
     def test_make_team_junk_branch_directory(self):
         # Teams do not have +junk products
+        # XXX: JonathanLange 2008-08-16: We don't need to test this here,
+        # since it's already tested at the XMLRPC server level. We should
+        # delete this test once we add tests for fault-to-bzr-error
+        # translation.
+        team = self.factory.makeTeam(self.requester)
         transport = self.getTransport()
         self.assertRaises(
             errors.PermissionDenied,
-            transport.mkdir, '~testteam/+junk/new-branch')
+            transport.mkdir, '~%s/+junk/new-branch' % team.name)
 
     def test_make_product_directory_for_nonexistent_product(self):
         # Making a branch directory for a non-existent product is not allowed.
@@ -114,36 +118,46 @@ class TestFilesystem(TestCaseWithTransport):
         transport = self.getTransport()
         self.assertRaises(
             errors.PermissionDenied,
-            transport.mkdir, '~testuser/no-such-product/new-branch')
+            transport.mkdir,
+            '~%s/no-such-product/new-branch' % self.requester.name)
 
     def test_make_branch_directory(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
+        product = self.factory.makeProduct()
         transport = self.getTransport()
-        transport.mkdir('~testuser/firefox/banana')
-        self.assertTrue(transport.has('~testuser/firefox/banana'))
+        branch_path = '~%s/%s/banana' % (self.requester.name, product.name)
+        transport.mkdir(branch_path)
+        self.assertTrue(transport.has(branch_path))
 
     def test_make_junk_branch(self):
         # Users can make branches beneath their '+junk' folder.
         transport = self.getTransport()
-        transport.mkdir('~testuser/+junk/banana')
-        # See comment in test_make_branch_directory.
-        self.assertTrue(transport.has('~testuser/+junk/banana'))
+        branch_path = '~%s/+junk/banana' % self.requester.name
+        transport.mkdir(branch_path)
+        self.assertTrue(transport.has(branch_path))
 
     def test_get_stacking_policy(self):
         # A stacking policy control file is served underneath product
         # directories for products that have a default stacked-on branch.
+        product = self.factory.makeProduct()
+        self.factory.enableDefaultStackingForProduct(product)
         transport = self.getTransport()
         control_file = transport.get_bytes(
-            '~testuser/evolution/.bzr/control.conf')
+            '~%s/%s/.bzr/control.conf'
+            % (self.requester.name, product.name))
         self.assertEqual(
-            'default_stack_on = /~vcs-imports/evolution/main',
+            'default_stack_on = /%s'
+            % product.default_stacked_on_branch.unique_name,
             control_file.strip())
 
     def test_can_open_product_control_dir(self):
         # The stacking policy lives in a bzrdir in the product directory.
         # Bazaar needs to be able to open this bzrdir.
-        transport = self.getTransport().clone('~testuser/evolution')
+        product = self.factory.makeProduct()
+        self.factory.enableDefaultStackingForProduct(product)
+        transport = self.getTransport().clone(
+            '~%s/%s' % (self.requester.name, product.name))
         found_bzrdir = BzrDir.open_from_transport(transport)
         # We really just want to test that the above line doesn't raise an
         # exception. However, we'll also check that we get the bzrdir that we
@@ -154,72 +168,90 @@ class TestFilesystem(TestCaseWithTransport):
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
         transport = self.getTransport()
-        transport.mkdir('~testuser/firefox/banana')
-        transport.mkdir('~testuser/firefox/banana/.bzr')
-        self.assertTrue(transport.has('~testuser/firefox/banana'))
-        self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
+        transport.mkdir(branch_path)
+        transport.mkdir('%s/.bzr' % branch_path)
+        self.assertTrue(transport.has(branch_path))
+        self.assertTrue(transport.has('%s/.bzr' % branch_path))
 
     def test_bzr_backup_directory_inside_branch(self):
         # Bazaar sometimes needs to create .bzr.backup directories directly
         # underneath the branch directory. Thus, we allow the creation of
         # .bzr.backup directories. The .bzr.backup directory is a deprecated
         # name. Now Bazaar uses 'backup.bzr'.
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
         transport = self.getTransport()
-        transport.mkdir('~testuser/firefox/banana')
-        transport.mkdir('~testuser/firefox/banana/.bzr.backup')
-        self.assertTrue(transport.has('~testuser/firefox/banana'))
-        self.assertTrue(
-            transport.has('~testuser/firefox/banana/.bzr.backup'))
+        transport.mkdir(branch_path)
+        transport.mkdir('%s/.bzr.backup' % branch_path)
+        self.assertTrue(transport.has(branch_path))
+        self.assertTrue(transport.has('%s/.bzr.backup' % branch_path))
 
     def test_backup_bzr_directory_inside_branch(self):
         # Bazaar sometimes needs to create backup.bzr directories directly
-        # underneath the branch directory. This is alternative name for the
-        # backup.bzr directory.
+        # underneath the branch directory.
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
         transport = self.getTransport()
-        transport.mkdir('~testuser/firefox/banana')
-        transport.mkdir('~testuser/firefox/banana/backup.bzr')
-        self.assertTrue(transport.has('~testuser/firefox/banana'))
-        self.assertTrue(
-            transport.has('~testuser/firefox/banana/backup.bzr'))
+        transport.mkdir(branch_path)
+        transport.mkdir('%s/backup.bzr' % branch_path)
+        self.assertTrue(transport.has(branch_path))
+        self.assertTrue(transport.has('%s/backup.bzr' % branch_path))
 
     def test_non_bzr_directory_inside_branch(self):
         # Users can only create Bazaar control directories (e.g. '.bzr')
         # inside a branch. Other directories are strictly forbidden.
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
         transport = self.getTransport()
-        transport.mkdir('~testuser/+junk/banana')
+        transport.mkdir(branch_path)
         self.assertRaises(
             errors.PermissionDenied,
-            transport.mkdir, '~testuser/+junk/banana/republic')
+            transport.mkdir, '%s/not-a-bzr-dir' % branch_path)
 
     def test_non_bzr_file_inside_branch(self):
         # Users can only create Bazaar control directories (e.g. '.bzr')
         # inside a branch. Files are not allowed.
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
         transport = self.getTransport()
-        transport.mkdir('~testuser/+junk/banana')
+        transport.mkdir(branch_path)
         self.assertRaises(
             errors.PermissionDenied,
-            transport.put_bytes, '~testuser/+junk/banana/README', 'Hello!')
+            transport.put_bytes, '%s/README' % branch_path, 'Hello!')
 
     def test_rename_to_non_bzr_directory_fails(self):
         # Users cannot create an allowed directory (e.g. '.bzr' or
-        # '.bzr.backup') and then rename it to something that's not allowed
+        # 'backup.bzr') and then rename it to something that's not allowed
         # (e.g. 'republic').
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
         transport = self.getTransport()
-        transport.mkdir('~testuser/firefox/banana')
-        transport.mkdir('~testuser/firefox/banana/.bzr')
+        transport.mkdir(branch_path)
+        transport.mkdir('%s/.bzr' % branch_path)
         self.assertRaises(
             errors.PermissionDenied,
-            transport.rename, '~testuser/firefox/banana/.bzr',
-            '~testuser/firefox/banana/republic')
+            transport.rename, '%s/.bzr' % branch_path,
+            '%s/not-a-branch-dir' % branch_path)
 
     def test_make_directory_without_prefix(self):
         # Because the user and product directories don't exist on the
         # filesystem, we can create a branch directory for a product even if
         # there are no existing branches for that product.
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
         transport = self.getTransport()
-        transport.mkdir('~testuser/thunderbird/banana')
-        self.assertTrue(transport.has('~testuser/thunderbird/banana'))
+        transport.mkdir(branch_path)
+        self.assertTrue(transport.has(branch_path))
 
     def _getBzrDirTransport(self):
         """Make a .bzr directory in a branch and return a transport for it.
@@ -228,10 +260,14 @@ class TestFilesystem(TestCaseWithTransport):
         a branch, which generally has fewer constraints and exercises
         different code paths.
         """
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        return transport.clone('branch/.bzr')
+        product = self.factory.makeProduct()
+        branch_path = '~%s/%s/%s' % (
+            self.requester.name, product.name, self.factory.getUniqueString())
+        transport = self.getTransport()
+        transport.mkdir(branch_path)
+        transport = transport.clone(branch_path)
+        transport.mkdir('.bzr')
+        return transport.clone('.bzr')
 
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it

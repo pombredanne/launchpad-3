@@ -58,15 +58,16 @@ from zope.formlib import form
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
     ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
     IPersonSet, IPillarNameSet, IProductReviewSearch, IRevisionSet,
     ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from canonical.launchpad.interfaces.productrelease import (
@@ -141,6 +142,10 @@ class ProductNavigation(
     def traverse_announcement(self, name):
         return self.context.getAnnouncement(name)
 
+    @stepthrough('+commercialsubscription')
+    def traverse_commercialsubscription(self, name):
+        return self.context.commercial_subscription
+
     def traverse(self, name):
         return self.context.getSeries(name)
 
@@ -150,7 +155,6 @@ class ProductSetNavigation(Navigation):
     usedfor = IProductSet
 
     def traverse(self, name):
-        # Raise a 404 on an invalid product name
         product = self.context.getByName(name)
         if product is None:
             raise NotFoundError(name)
@@ -297,10 +301,10 @@ class ProductNavigationMenu(NavigationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-      'details',
-      'announcements',
-      'downloads',
-      ]
+        'details',
+        'announcements',
+        'downloads',
+        ]
 
     def details(self):
         text = 'Details'
@@ -365,7 +369,7 @@ class ProductOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change maintainer'
-        return Link('+reassign', text, icon='edit')
+        return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -494,16 +498,16 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'pending proposal'
         else:
-            text = 'active reviews'
+            text = 'pending proposals'
         return Link('+activereviews', text)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
-            text = 'approved merge'
+            text = 'unmerged proposal'
         else:
-            text = 'approved merges'
+            text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
     @enabled_with_permission('launchpad.Admin')
@@ -560,40 +564,41 @@ class ProductBountiesMenu(ApplicationMenu):
         return Link('+linkbounty', text, icon='edit')
 
 
-class ProductTranslationsMenu(ApplicationMenu):
+class ProductTranslationsMenu(NavigationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = [
+    links = (
+        'overview',
         'translators',
-        'imports',
         'translationdownload',
-        'help_translate',
-        ]
+        'imports',
+        )
 
     def imports(self):
-        text = 'See import queue'
+        text = 'Import queue'
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.Edit')
     def translators(self):
-        text = 'Change translators'
+        text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
-        text = 'Download translations'
+        text = 'Download'
         preferred_series = self.context.primary_translatable
         enabled = (self.context.official_rosetta and
             preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
+            text = 'Download "%s"' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
 
-    def help_translate(self):
-        text = 'Help translate'
+    def overview(self):
+        text = 'Overview'
         link = canonical_url(self.context, rootsite='translations')
         return Link(link, text, icon='translation')
 
@@ -656,6 +661,33 @@ class ProductSetContextMenu(ContextMenu):
 class SortSeriesMixin:
     """Provide access to helpers for series."""
 
+    def _sorted_filtered_list(self, filter=None):
+        """Return a sorted, filtered list of series.
+
+        The series list is sorted by version in reverse order.  It is also
+        filtered by calling `filter` on every series.  If the `filter`
+        function returns False, don't include the series.  With None (the
+        default, include everything).
+
+        The development focus is always first in the list.
+        """
+        series_list = []
+        for series in self.product.serieses:
+            if filter is None or filter(series):
+                series_list.append(series)
+        # In production data, there exist development focus series that are
+        # obsolete.  This may be caused by bad data, or it may be intended
+        # functionality.  In either case, ensure that the development focus
+        # branch is first in the list.
+        if self.product.development_focus in series_list:
+            series_list.remove(self.product.development_focus)
+        # Now sort the list by name with newer versions before older.
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.product.development_focus)
+        return series_list
+
+
     @property
     def sorted_series_list(self):
         """Return a sorted list of series.
@@ -663,13 +695,16 @@ class SortSeriesMixin:
         The series list is sorted by version in reverse order.
         The development focus is always first in the list.
         """
-        series_list = list(self.product.serieses)
-        series_list.remove(self.product.development_focus)
-        # Now sort the list by name with newer versions before older.
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        series_list.insert(0, self.product.development_focus)
-        return series_list
+        return self._sorted_filtered_list()
+
+    @property
+    def sorted_active_series_list(self):
+        """Like `sorted_series_list()` but filters out OBSOLETE series."""
+        # Callback for the filter which only allows series that have not been
+        # marked obsolete.
+        def check_active(series):
+            return series.status != DistroSeriesStatus.OBSOLETE
+        return self._sorted_filtered_list(check_active)
 
 
 class ProductWithSeries:
@@ -680,11 +715,11 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     serieses = None
     development_focus = None
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
@@ -710,10 +745,10 @@ class SeriesWithReleases:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     releases = None
-    decorates(IProductSeries, 'series')
+    delegates(IProductSeries, 'series')
 
     def __init__(self, series):
         self.series = series
@@ -738,10 +773,10 @@ class ReleaseWithFiles:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid decorates taking them
+    # These need to be predeclared to avoid delegates taking them
     # over.
     files = None
-    decorates(IProductRelease, 'release')
+    delegates(IProductRelease, 'release')
 
     def __init__(self, release):
         self.release = release
@@ -1180,6 +1215,7 @@ class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
     label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
 
+
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
@@ -1193,7 +1229,18 @@ class ProductAdminView(ProductEditView):
         need the ability to change it.
         """
         super(ProductAdminView, self).setUpFields()
-        self.form_fields += self._createRegistrantField()
+        self.form_fields = (self._createAliasesField() + self.form_fields
+                            + self._createRegistrantField())
+
+    def _createAliasesField(self):
+        """Return a PillarAliases field for IProduct.aliases."""
+        return form.Fields(
+            PillarAliases(
+                __name__='aliases', title=_('Aliases'),
+                description=_('Other names (separated by space) under which '
+                              'this project is known.'),
+                required=False, readonly=False),
+            render_context=self.render_context)
 
     def _createRegistrantField(self):
         """Return a popup widget person selector for the registrant.
@@ -1213,8 +1260,8 @@ class ProductAdminView(ProductEditView):
                 vocabulary='ValidPersonOrTeam',
                 required=True,
                 readonly=False,
-                default=self.context.registrant
-                )
+                ),
+            render_context=self.render_context
             )
 
     def validate(self, data):
@@ -1359,39 +1406,14 @@ class ProductSetView(LaunchpadView):
     __used_for__ = IProductSet
 
     max_results_to_display = config.launchpad.default_batch_size
+    results = None
+    searchrequested = False
 
     def initialize(self):
         form = self.request.form_ng
-        self.soyuz = form.getOne('soyuz')
-        self.rosetta = form.getOne('rosetta')
-        self.malone = form.getOne('malone')
-        self.bazaar = form.getOne('bazaar')
         self.search_string = form.getOne('text')
-        self.results = None
-
-        self.searchrequested = False
-        if (self.search_string is not None or
-            self.bazaar is not None or
-            self.malone is not None or
-            self.rosetta is not None or
-            self.soyuz is not None):
+        if self.search_string is not None:
             self.searchrequested = True
-
-        if form.getOne('exact_name'):
-            # If exact_name is supplied, we try and locate this name in
-            # the ProductSet -- if we find it, bingo, redirect. This
-            # argument can be optionally supplied by callers.
-            try:
-                product = self.context[self.search_string]
-            except NotFoundError:
-                # No product found, perform a normal search instead.
-                pass
-            else:
-                url = canonical_url(product)
-                if form.getOne('malone'):
-                    url = url + "/+bugs"
-                self.request.response.redirect(url)
-                return
 
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
@@ -1436,10 +1458,14 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget(
         'licenses', CheckBoxMatrixWidget, column_count=4,
         orientation='vertical')
-    custom_widget('active', LaunchpadRadioWidget)
-    custom_widget('license_reviewed', LaunchpadRadioWidget)
-    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
-    custom_widget('has_zero_licenses', LaunchpadRadioWidget)
+    custom_widget('active', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('license_reviewed', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('has_zero_licenses', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
     custom_widget('subscription_expires_after', DateWidget)
@@ -1528,7 +1554,7 @@ class ProductAddView(ProductAddViewBase):
             self.form_fields = self.form_fields.omit('owner',
                                                      'license_reviewed')
 
-    @action(_('Add'), name='add')
+    @action(_('Publish this Project'), name='add')
     def add_action(self, action, data):
         if self.user is None:
             raise zope.security.interfaces.Unauthorized(
@@ -1629,11 +1655,6 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     def initialize(self):
         self.product = self.context
 
-    @property
-    def codebrowse_root(self):
-        """Return the link to codebrowse for this branch."""
-        return config.codehosting.codebrowse_root
-
 
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
@@ -1641,7 +1662,7 @@ class ProductBranchListingView(BranchListingView):
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    @property
+    @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
         return getUtility(IBranchSet).getBranchesForContext(
@@ -1724,10 +1745,10 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # text.  Only one part of the tuple will be set.
         committers = set()
         for (revision, author) in self._recent_revisions:
-            if author.person is None:
+            if author.personID is None:
                 committers.add((None, author.name))
             else:
-                committers.add((author.person.name, None))
+                committers.add((author.personID, None))
         return len(committers)
 
     @cachedproperty
@@ -1752,15 +1773,11 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
-        # XXX: thumper 2008-04-22
-        # When bug 181157 is fixed, only get branches for non-obsolete
-        # series.
-
         # We want to show each series branch only once, always show the
         # development focus branch, no matter what's it lifecycle status, and
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
-        sorted_series = self.sorted_series_list
+        sorted_series = self.sorted_active_series_list
         def show_branch(branch):
             if self.selected_lifecycle_status is None:
                 return True

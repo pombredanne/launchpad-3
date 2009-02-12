@@ -8,7 +8,7 @@ which does not qualify for free hosting, has an unexpired subscription.
     >>> from canonical.launchpad.interfaces import (
     ...     ICommercialSubscription, IProductSet)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS)
+    >>> login('no-priv@canonical.com')
 
 An open source project should not have a commercial subscription,
 indicated by 'None'.
@@ -35,17 +35,19 @@ attribute is correct.
 The expiration date can be extended by redeeming another voucher.  In
 real life this would be done nearer to the expiration date.  For
 testing consistency, let's force the start and expiry dates to a known
-date.
+date and use a known time as the current time.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
+    >>> now = datetime(2008, 1, 10, tzinfo=UTC)
     >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
     >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
     >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
     >>> old_date_expires = bzr.commercial_subscription.date_expires
     >>> old_date_starts = bzr.commercial_subscription.date_starts
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12, 'notes')
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    ...     'notes', current_datetime=now)
     >>> print bzr.commercial_subscription.sales_system_id
     foo456
 
@@ -67,7 +69,8 @@ Salesforce proxy).  Test for a 6 month subscription.
 
     >>> old_date_expires = bzr.commercial_subscription.date_expires
     >>> old_date_starts = bzr.commercial_subscription.date_starts
-    >>> bzr.redeemSubscriptionVoucher('foo457', owner, owner, 6, 'notes')
+    >>> bzr.redeemSubscriptionVoucher('foo457', owner, owner, 6,
+    ...     'notes', current_datetime=now)
     >>> print bzr.commercial_subscription.sales_system_id
     foo457
 
@@ -83,6 +86,84 @@ to Jul-15-2010.
     ...                old_date_expires)
     >>> expiry_diff == (datetime(2010,7,15) - datetime(2010,1,15))
     True
+
+Time calculations are sometimes prone to wrapping problems.  Let's
+ensure they wrap properly.
+
+End the subscription in November and add one month.
+
+    >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 1,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2009-12-15 ...
+
+End the subscription in November and add two months.
+
+    >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 2,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-01-15...
+
+End the subscription in November and add 11 months.
+
+    >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 11,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-10-15...
+
+Ensure wrapping to the start of the next month works when the
+expiration date would normally be an invalid day of the month.  A
+subscription that expires on the October 31 and is extended by four
+months will be calculated as the last day of February, not the
+nonexistent February 31.
+
+    >>> subscription.date_expires = datetime(2009,10,31,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 4,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-02-28...
+
+And when the new date is in a leap year, the last day of February is
+the 29th.
+
+    >>> subscription.date_expires = datetime(2011,10,31,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 4,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2012-02-29...
+
+Extending a subscription after it has expired sets the date started to
+the current date.
+
+    >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
+    >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
+    >>> now = datetime(2010, 1, 1, tzinfo=UTC)
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2011-01-01...
+    >>> print subscription.date_starts
+    2010-01-01...
+
+If the original subscription has not expired the start date is not affected.
+
+    >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
+    >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
+    >>> now = datetime(2009, 1, 1, tzinfo=UTC)
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    ...     'notes', current_datetime=now)
+    >>> print subscription.date_expires
+    2010-01-15...
+    >>> print subscription.date_starts
+    2008-01-15...
 
 The commercial_subscription_is_due attribute is true if the license
 does not qualify for free hosting and the commercial subscription
@@ -396,3 +477,55 @@ The license_info_is_empty parameter only accepts True, False, or None.
     Traceback (most recent call last):
     ...
     AssertionError...
+
+The use of 'forReview' is limited to users with launchpad.Commercial permission.
+
+Anonymous users cannot access 'forReview'.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.Commercial', product_set)
+    False
+    >>> gnome = product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+
+No Privileges Person cannot access 'forReview'.
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    False
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+
+The commercial-member, a member of the Commercial admins team, can
+access 'forReview'.
+
+    >>> login('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev
+
+An admin can access 'forReview'.
+
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.Commercial', product_set)
+    True
+    >>> gnome =  product_set.forReview(search_text='gnome')
+    >>> for product in gnome:
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev

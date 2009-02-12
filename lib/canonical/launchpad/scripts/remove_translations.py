@@ -14,6 +14,7 @@ from optparse import Option, OptionValueError
 
 from zope.component import getUtility
 
+from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import (
     IPersonSet, RosettaTranslationOrigin)
@@ -184,6 +185,10 @@ class RemoveTranslations(LaunchpadScript):
             '-r', '--reviewer', dest='reviewer', type='person',
             help="Reviewer match: delete only messages with this reviewer."),
         ExtendedOption(
+            '-x', '--reject-license', action='store_true',
+            dest='reject_license',
+            help="Match submitters who rejected the license agreement."),
+        ExtendedOption(
             '-i', '--id', action='append', dest='ids', type='int',
             help="ID of message to delete.  May be specified multiple "
                 "times."),
@@ -196,8 +201,7 @@ class RemoveTranslations(LaunchpadScript):
             help="Language match.  Deletes (default) or spares (with -L) "
                  "messages in this language."),
         ExtendedOption(
-            '-L', '--not-language', action='store_const', const=True,
-            dest='not_language', default=False,
+            '-L', '--not-language', action='store_true', dest='not_language',
             help="Invert language match: spare messages in given language."),
         ExtendedOption(
             '-C', '--is-current', dest='is_current', type='bool',
@@ -212,8 +216,11 @@ class RemoveTranslations(LaunchpadScript):
             '-o', '--origin', dest='origin', type='origin',
             help="Origin match: delete only messages with this origin code."),
         ExtendedOption(
-            '-f', '--force', action='store_const', const=True, dest='force',
+            '-f', '--force', action='store_true', dest='force',
             help="Override safety check on moderately unsafe action."),
+        ExtendedOption(
+            '-d', '--dry-run', action='store_true', dest='dry_run',
+            help="Go through the motions, but don't really delete.")
         ]
 
     def add_my_options(self):
@@ -235,11 +242,37 @@ class RemoveTranslations(LaunchpadScript):
             return (True, None)
 
         forced = self.options.force
+
         if is_nonempty_string(self.options.potemplate) and forced:
             return (
                 True,
                 "Safety override in effect.  Deleting translations for "
                 "template %s." % self.options.potemplate)
+
+        if self.options.reject_license:
+            if self.options.is_imported == False:
+                # "Remove non-is_imported messages submitted by users
+                # who rejected the license."
+                return (True, None)
+
+            rosettaweb_key = RosettaTranslationOrigin.ROSETTAWEB.value
+            if self.options.origin == rosettaweb_key:
+                # "Remove messages submitted directly in Launchpad by
+                # users who rejected the license."
+                return (True, None)
+
+            if forced:
+                return (
+                    True,
+                    "Safety override in effect.  Removing translations "
+                    "by users who rejected the license, regardless of "
+                    "origin.")
+
+            return (
+                False,
+                "To delete the translations by users who "
+                "rejected the translations license, specify at least "
+                "--origin=ROSETTAWEB or --is-imported=False.")
 
         return (
             False,
@@ -254,26 +287,41 @@ class RemoveTranslations(LaunchpadScript):
         if message is not None:
             self.logger.warn(message)
 
+        if self.options.dry_run:
+            self.logger.info("Dry run only.  Not really deleting.")
+
         remove_translations(logger=self.logger,
-            submitter=self.options.submitter, reviewer=self.options.reviewer,
-            ids=self.options.ids, potemplate=self.options.potemplate,
+            submitter=self.options.submitter,
+            reject_license=self.options.reject_license,
+            reviewer=self.options.reviewer,
+            ids=self.options.ids,
+            potemplate=self.options.potemplate,
             language_code=self.options.language,
             not_language=self.options.not_language,
             is_current=self.options.is_current,
             is_imported=self.options.is_imported,
-            msgid_singular=self.options.msgid, origin=self.options.origin)
-        self.txn.commit()
+            msgid_singular=self.options.msgid,
+            origin=self.options.origin)
+
+        if self.options.dry_run:
+            if self.txn is not None:
+                self.txn.abort()
+        else:
+            self.txn.commit()
 
 
-def remove_translations(logger=None, submitter=None, reviewer=None, ids=None,
-                        potemplate=None, language_code=None,
-                        not_language=False, is_current=None, is_imported=None,
+def remove_translations(logger=None, submitter=None, reviewer=None, 
+                        reject_license=False, ids=None, potemplate=None,
+                        language_code=None, not_language=False,
+                        is_current=None, is_imported=None,
                         msgid_singular=None, origin=None):
     """Remove specified translation messages.
 
     :param logger: Optional logger to write output to.
     :param submitter: Delete only messages submitted by this person.
     :param reviewer: Delete only messages reviewed by this person.
+    :param reject_license: Delete only messages submitted by persons who
+        have rejected the licensing agreement.
     :param ids: Delete only messages with these `TranslationMessage` ids.
     :param potemplate: Delete only messages in this template.
     :param language_code: Language code.  Depending on `not_language`,
@@ -296,6 +344,13 @@ def remove_translations(logger=None, submitter=None, reviewer=None, ids=None,
     if reviewer is not None:
         conditions.add(
             'TranslationMessage.reviewer = %s' % sqlvalues(reviewer))
+    if reject_license:
+        joins.add('TranslationRelicensingAgreement')
+        conditions.add(
+            'TranslationMessage.submitter = '
+            'TranslationRelicensingAgreement.person')
+        conditions.add(
+            'NOT TranslationRelicensingAgreement.allow_relicensing')
     if ids is not None:
         conditions.add('TranslationMessage.id IN %s' % sqlvalues(ids))
     if potemplate is not None:
@@ -334,23 +389,83 @@ def remove_translations(logger=None, submitter=None, reviewer=None, ids=None,
     else:
         using_clause = ''
 
-    deletion_query = """
-        DELETE FROM TranslationMessage
-        %s
-        WHERE
-            %s
-        """ % (using_clause, ' AND\n    '.join(conditions))
-
-    if logger is not None:
-        logger.debug("Executing SQL: %s" % deletion_query)
-
     cur = cursor()
-    cur.execute(deletion_query)
+    drop_tables(cur, 'temp_doomed_message')
+
+    joins.add('TranslationMessage')
+    from_text = ', '.join(joins)
+    where_text = ' AND\n    '.join(conditions)
+
+    # Keep track of messages we're going to delete.
+    # Don't bother indexing this.  We'd more likely end up optimizing
+    # away the operator's "oh-shit-ctrl-c" time than helping anyone.
+    query = """
+        CREATE TEMP TABLE temp_doomed_message AS
+        SELECT TranslationMessage.id, NULL::integer AS imported_message
+        FROM %s
+        WHERE %s
+        """ % (from_text, where_text)
+    cur.execute(query)
+
+    # Note which messages are masked by the messages we're going to
+    # delete.  We'll be making those the current ones.
+    query = """
+        UPDATE temp_doomed_message
+        SET imported_message = Imported.id
+        FROM TranslationMessage Doomed, TranslationMessage Imported
+        WHERE
+            Doomed.id = temp_doomed_message.id AND
+            -- Is alternative for the message we're about to delete.
+            Imported.potmsgset = Doomed.potmsgset AND
+            Imported.pofile = Doomed.pofile AND
+            -- Came from published source.
+            Imported.is_imported IS TRUE AND
+            -- Was masked by the message we're about to delete.
+            Doomed.is_current IS TRUE AND
+            Imported.id <> Doomed.id
+            """
+    cur.execute(query)
+
+    if logger is not None and logger.getEffectiveLevel() <= logging.DEBUG:
+        # Dump sample of doomed messages for debugging purposes.
+        cur.execute("""
+            SELECT *
+            FROM temp_doomed_message
+            ORDER BY id
+            LIMIT 20
+            """)
+        rows = cur.fetchall()
+        if cur.rowcount > 0:
+            logger.debug("Sample of messages to be deleted follows.")
+            logger.debug("%10s %10s" % ("[message]", "[unmasks]"))
+            for (doomed, unmasked) in rows:
+                if unmasked is None:
+                    unmasked = '--'
+                logger.debug("%10s %10s" % (doomed, unmasked))
+
+    cur.execute("""
+        DELETE FROM TranslationMessage
+        USING temp_doomed_message
+        WHERE TranslationMessage.id = temp_doomed_message.id
+        """)
+
     rows_deleted = cur.rowcount
     if logger is not None:
         if rows_deleted > 0:
             logger.info("Deleting %d message(s)." % rows_deleted)
         else:
             logger.warn("No rows match; not deleting anything.")
+
+    cur.execute("""
+        UPDATE TranslationMessage
+        SET is_current = TRUE
+        FROM temp_doomed_message
+        WHERE TranslationMessage.id = temp_doomed_message.imported_message
+        """)
+
+    if cur.rowcount > 0 and logger is not None:
+        logger.debug("Unmasking %d imported message(s)." % cur.rowcount)
+
+    drop_tables(cur, 'temp_doomed_message')
 
     return rows_deleted

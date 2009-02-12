@@ -18,14 +18,14 @@ import bzrlib
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branch import IBranchCloud, IBranchSet
 from canonical.launchpad.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from canonical.launchpad.interfaces.product import IProduct, IProductSet
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
@@ -89,7 +89,7 @@ class BazaarApplicationView(LaunchpadView):
 
 class ProductInfo:
 
-    decorates(IProduct, 'product')
+    delegates(IProduct, 'product')
 
     def __init__(
         self, product, num_branches, branch_size, elapsed, important):
@@ -148,63 +148,27 @@ class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
     def products(self, num_products=None):
-        # XXX: TimPenhey 2007-02-26
-        # sabdfl really wants a page that has all the products with code
-        # on it.  I feel that at some stage it will just look too cumbersome,
-        # and we'll want to optimise the view somehow, either by taking
-        # a random sample of the products with code, or some other method
-        # of reducing the full set of products.
-        # As far as query efficiency goes, constructing 1k products is
-        # sub-second, and the query to get the branch count and last commit
-        # time runs in approximately 50ms on a vacuumed branch table.
-        product_set = getUtility(IProductSet)
-        products = list(product_set.getProductsWithBranches(num_products))
-
-        # Any product that has a defined user branch for the development
-        # product series is shown in another colour.  Given the above
-        # query, all the products will be in the cache anyway.
-        user_branch_products = set(
-            product_set.getProductsWithUserDevelopmentBranches())
-
-        branch_set = getUtility(IBranchSet)
-        branch_summaries = branch_set.getActiveUserBranchSummaryForProducts(
-            products)
-        # Choose appropriate branch counts so we have an evenish distribution.
-        counts = sorted([
-            summary['branch_count'] for summary in branch_summaries.values()])
+        product_info = sorted(
+            list(getUtility(IBranchCloud).getProductsWithInfo(num_products)),
+            key=lambda data: data[0].name)
+        now = datetime.today()
+        counts = sorted(zip(*product_info)[1])
         # Lowest half are small.
         small_count = counts[len(counts)/2]
-
         # Top 20% are big.
         large_count = counts[-(len(counts)/5)]
-
-        items = []
-        now = datetime.today()
-        for product in products:
-            summary = branch_summaries.get(product)
-            if not summary:
-                # If the only branches for the product were import branches or
-                # merged or abandoned branches, then there will not be a
-                # summary returned for that product, and we are not interested
-                # in showing them in our cloud.
+        for product, num_branches, last_revision_date in product_info:
+            # Projects with no branches are not interesting.
+            if num_branches == 0:
                 continue
-            last_commit = summary['last_commit']
-            if last_commit is None:
-                elapsed = None
-            else:
-                elapsed = now - last_commit
-
-            num_branches = summary['branch_count']
-            if num_branches <= small_count:
-                branch_size = 'small'
-            elif num_branches > large_count:
+            if num_branches > large_count:
                 branch_size = 'large'
+            elif num_branches < small_count:
+                branch_size = 'small'
             else:
                 branch_size = 'medium'
-
-            important = product in user_branch_products
-
-            items.append(ProductInfo(
-                product, num_branches, branch_size, elapsed, important))
-
-        return items
+            elapsed = now - last_revision_date
+            # We want to highlight products that actually _use_ Launchpad.
+            important = product.official_codehosting
+            yield ProductInfo(
+                product, num_branches, branch_size, elapsed, important)

@@ -73,14 +73,14 @@ branch, they are shown an option.
     >>> sample_browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> print extract_text(get_summary(sample_browser))
     10 branches ... commits in the last month
-    0 active reviews, 0 approved merges
+    0 pending proposals, 0 unmerged proposals
 
 This text is not shown if the user cannot set the branch.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> print extract_text(get_summary(browser))
     10 branches ... commits in the last month
-    0 active reviews, 0 approved merges
+    0 pending proposals, 0 unmerged proposals
 
 If a development focus branch is set and browseable, the user is shown
 a link to browse the code and a simple command line to get the branch.
@@ -92,7 +92,7 @@ shown.
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
     3 branches ...
-    0 active reviews, 0 approved merges
+    0 pending proposals, 0 unmerged proposals
     You can get a copy of the development focus branch using the
     command:
        bzr branch lp://dev/evolution
@@ -143,9 +143,8 @@ Firstly lets associate release--0.9.1 with the 1.0 series.
     lp://dev/firefox/1.0
       Series: 1.0                   New ...
 
-Now if both of these branches are marked as Abandoned, then the first will
-stay as it is the development focus branch, but the 1.0 series branch will not
-be shown.
+If series branches are marked as Abandoned they will not show up on the
+default listings.
 
     >>> admin_browser.open(
     ...     'http://code.launchpad.dev/~name12/firefox/main/+edit')
@@ -232,7 +231,7 @@ branch, then they will not appear on the initial branch listing.
     >>> browser.open('http://code.launchpad.dev/iso-codes')
     >>> print extract_text(get_summary(browser))
     1 branch owned by 1 person, 0 commits in the last month
-    0 active reviews, 0 approved merges
+    0 pending proposals, 0 unmerged proposals
 
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print extract_text(message)

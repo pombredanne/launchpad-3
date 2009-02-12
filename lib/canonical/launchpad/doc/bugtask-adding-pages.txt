@@ -72,6 +72,11 @@ If we supply a valid product, it will move on to the next step.
     >>> add_task_view.step_name
     'specify_remote_bug_url' 
 
+The URL widget is focused, to make it easier to paste the URL directly.
+
+    >>> add_task_view.initial_focus_widget
+    'bug_url'
+
 If the validation fails, an error will be displayed.
 
     >>> form = {
@@ -168,7 +173,7 @@ package linked to an inactive upstream. -- Guilherme Salgado, 2007-09-18
     ...     ChooseProductStep)
     >>> view = ChooseProductStep(
     ...     ubuntu_firefox_task, LaunchpadTestRequest(method='GET', form={}))
-    >>> upstream = view._getUpstream(view.context.target)
+    >>> upstream = view.context.target.upstream_product
     >>> upstream.active
     True
 

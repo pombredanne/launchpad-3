@@ -9,8 +9,8 @@ __all__ = [
     'IArchiveDependency',
     ]
 
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, Object
-from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
@@ -42,3 +42,5 @@ class IArchiveDependency(Interface):
 
     component = Choice(
         title=_("Component"), required=True, vocabulary='Component')
+
+    title = Attribute("Archive dependency title.")

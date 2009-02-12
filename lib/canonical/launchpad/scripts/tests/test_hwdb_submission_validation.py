@@ -205,7 +205,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     # Moreover, many lines of the messages are more than 80 characters
     # long.
 
-    def assertErrorMessage(self, submission_key, result, message, test):
+    def assertErrorMessage(self, submission_key, result, messages, test):
         """Search for message in the log entries for submission_key.
 
         assertErrorMessage requires that
@@ -221,6 +221,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(
             result, None,
             'The test %s failed: The parsing result is not None.' % test)
+        if isinstance(messages, basestring):
+            messages = (messages, )
         last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
@@ -228,16 +230,19 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             candidate = r.getMessage()
             if candidate.startswith('Parsing submission %s:'
                                     % submission_key):
-                if re.search(
-                    '(:\d+: element .*?: )?Relax-NG validity error : %s$'
-                    % re.escape(message),
-                             candidate, re.MULTILINE):
-                    return
+                for message in messages:
+                    if re.search(
+                        '(:\d+: element .*?: )?Relax-NG validity error : %s$'
+                        % re.escape(message),
+                        candidate, re.MULTILINE):
+                        return
                 else:
                     last_log_messages.append(candidate)
+        expected_messages = ' or '.join(
+            repr(message) for message in messages)
         failmsg = [
             "No error log message for submission %s (testing %s) contained %s"
-                % (submission_key, test, message)]
+                % (submission_key, test, expected_messages)]
         if last_log_messages:
             failmsg.append('Log messages for the submission:')
             failmsg.extend(last_log_messages)
@@ -621,15 +626,16 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 'Expecting an element %s, got nothing' % tag,
                 'missing tag <%s> in <hardware>' % tag)
 
-        # The <aliases> tag may be omitted.
-        sample_data = self.replaceSampledata(
-            data=self.sample_data,
-            replace_text='',
-            from_text='<aliases>',
-            to_text='</aliases>')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertNotEqual(result, None,
-                            'submission without <aliases> rejected')
+        # The <aliases>, <dmi> and <lspci> tags may be omitted.
+        for tag in ('aliases', 'dmi', 'lspci'):
+            sample_data = self.replaceSampledata(
+                data=self.sample_data,
+                replace_text='',
+                from_text='<%s' % tag,
+                to_text='</%s>' % tag)
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(result, None,
+                                'submission without <%s> rejected' % tag)
 
         # Other subtags are not allowed in <hardware>.
         sample_data = self.insertSampledata(
@@ -958,7 +964,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                      ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
                      ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
                      ('long', 'integer', None, None),
-                     ('int', 'int', -2**31, 2**31-1))
+                     ('int', 'long', -2**63, 2**63-1))
         for property_type, relax_ng_type, min_value, max_value in type_info:
             self._testIntegerProperty(
                 property_type, relax_ng_type, min_value, max_value)
@@ -1249,16 +1255,27 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         property_template, needs_name_attribute = (
             self._setupContainerTag('property', 'foo', property_type))
         valid_content = ('0', '1')
-        invalid_content = (('', 'Error validating datatype %s'
-                                    % relax_ng_type),
-                           ('1.1', "Type %s doesn't allow "
-                                       "value '1.1'"
-                                       % relax_ng_type),
-                           ('nonsense', "Type %s doesn't allow "
-                                            "value 'nonsense'"
-                                            % relax_ng_type),
-                           ('<nonsense/>',
-                            'Datatype element value has child elements'))
+        invalid_content = (
+            (
+                '', (
+                    # libxml2 version 1.6.31 (Hardy) message:
+                    'Error validating datatype %s' % relax_ng_type,
+                    # libxml2 version 2.6.32 (Intrepid) message:
+                    "Type %s doesn't allow value ''" % relax_ng_type,
+                    )
+                ),
+            (
+                '1.1', "Type %s doesn't allow value '1.1'" % relax_ng_type
+                ),
+            (
+                'nonsense',
+                "Type %s doesn't allow value 'nonsense'" % relax_ng_type
+                ),
+            (
+                '<nonsense/>',
+                'Datatype element value has child elements'
+                )
+            )
         self.assertValidatesTextValue(value_type, needs_name_attribute,
                                       valid_content, invalid_content,
                                       property_template)
@@ -1279,7 +1296,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
             ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
             ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
-            ('int', 'int', -2**31, 2**31-1),
+            ('int', 'long', -2**63, 2**63-1),
             ('long', 'integer', None, None))
         for value_type, relax_ng_type, min_allowed, max_allowed in int_types:
             self._testIntegerValueTag(property_type, value_type,
@@ -1705,6 +1722,59 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element aliases in interleave',
             'invalid sub-tag of <alias>')
+
+    def testDmiTagAttributes(self):
+        """Validation of attributes of the <dmi> tag."""
+        # The only allowed attribute is options. It may not be omitted.
+        sample_data = self.sample_data.replace('<dmi options="">', '<dmi>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result, 'Extra element dmi in interleave',
+            'Missing required attribute options of <dmi> not detected')
+
+        # Other attributes are not allowed.
+        sample_data = self.sample_data.replace('<dmi options="">',
+                                               '<dmi options="" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result, 'Extra element dmi in interleave',
+            'Invalid attribute of <dmi> not detected')
+
+    def testDmiSubTags(self):
+        """The <dmi> tag may not have any sub-tags."""
+        sample_data = self.sample_data.replace(
+            '<dmi options="">', '<dmi options=""><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result, 'Extra element dmi in interleave',
+            'Invalid sub-tag of <dmi> not detected')
+
+    def testLspciTagAttributes(self):
+        """Validation of attributes of the <lspci> tag."""
+        # The only allowed attribute is options. It may not be omitted.
+        sample_data = self.sample_data.replace('<lspci options="">',
+                                               '<lspci>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result, 'Extra element lspci in interleave',
+            'Missing required attribute options of <lspci> not detected')
+
+        # Other attributes are not allowed.
+        sample_data = self.sample_data.replace('<lspci options="">',
+                                               '<lspci options="" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result, 'Extra element lspci in interleave',
+            'Invalid attribute of <lspci> not detected')
+
+    def testLspciSubTags(self):
+        """The <lspci> tag may not have any sub-tags."""
+        sample_data = self.sample_data.replace(
+            '<lspci options="">', '<lspci options=""><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result, 'Extra element lspci in interleave',
+            'Invalid sub-tag of <lspci> not detected')
 
     def testSoftwareTagAttributes(self):
         """Test the attribute validation of the <software> tag."""

@@ -125,8 +125,10 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import decorates, EnumeratedType, Item
+from canonical.lazr import EnumeratedType, Item
+from lazr.delegates import delegates
 from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.lazr.interfaces.rest import IJSONRequestCache
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -381,7 +383,17 @@ class BugTaskNavigation(Navigation):
     def traverse_attachments(self, name):
         """traverse to an attachment by id."""
         if name.isdigit():
-            return getUtility(IBugAttachmentSet)[name]
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context.bug:
+                return redirection(canonical_url(attachment), status=301)
+
+    @stepthrough('+attachment')
+    def traverse_attachment(self, name):
+        """traverse to an attachment by id."""
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context.bug:
+                return attachment
 
     @stepthrough('comments')
     def traverse_comments(self, name):
@@ -449,6 +461,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
+        IJSONRequestCache(self.request).objects['bug'] = bug
+
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
@@ -749,9 +763,36 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
-    def getBugCommentsForDisplay(self):
-        """Return all the bug comments together with their index."""
+    @cachedproperty
+    def visible_comments(self):
+        """All visible comments.
+
+        See `get_visible_comments` for the definition of a "visible"
+        comment.
+        """
         return get_visible_comments(self.comments)
+
+    @cachedproperty
+    def visible_comments_for_display(self):
+        """The list of visible comments to be rendered.
+
+        This considers truncating the comment list if there are tons
+        of comments, but also obeys any explicitly requested ways to
+        display comments (currently only "all" is recognised).
+        """
+        show_all = (self.request.form_ng.getOne('comments') == 'all')
+        max_comments = config.malone.comments_list_max_length
+        if show_all or len(self.visible_comments) <= max_comments:
+            return self.visible_comments
+        else:
+            truncate_to = config.malone.comments_list_truncate_to
+            return self.visible_comments[:truncate_to]
+
+    @property
+    def visible_comments_truncated_for_display(self):
+        """Wether the visible comment list truncated for display."""
+        return (len(self.visible_comments) >
+                len(self.visible_comments_for_display))
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -803,20 +844,6 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 "days if no further activity occurs.")
 
         return message % days_to_expiration
-
-    @property
-    def current_user_is_affected(self):
-        """Is the current user marked as affected by this bug?"""
-        return self.context.bug.isUserAffected(self.user)
-
-    @property
-    def affects_form_value(self):
-        """The value to use in the inline me too form."""
-        affected = self.context.bug.isUserAffected(self.user)
-        if affected is None or affected == False:
-            return 'YES'
-        else:
-            return 'NO'
 
 
 class BugTaskPortletView:
@@ -1544,7 +1571,7 @@ class BugTaskListingItem:
     to get on the fly for each bug task in the listing.  These items are
     prefetched by the view and decorate the bug task.
     """
-    decorates(IBugTask, 'bugtask')
+    delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
                  has_specification):
@@ -2713,6 +2740,20 @@ class BugTasksAndNominationsView(LaunchpadView):
         """Return True if the Also Affects links should be displayed."""
         # Hide the links when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
+
+    @property
+    def current_user_affected_status(self):
+        """Is the current user marked as affected by this bug?"""
+        return self.context.isUserAffected(self.user)
+
+    @property
+    def affects_form_value(self):
+        """The value to use in the inline me too form."""
+        affected = self.context.isUserAffected(self.user)
+        if affected is None or affected == False:
+            return 'YES'
+        else:
+            return 'NO'
 
 
 class BugTaskTableRowView(LaunchpadView):

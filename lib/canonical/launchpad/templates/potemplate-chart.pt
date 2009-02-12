@@ -81,11 +81,10 @@
           </tal:block>
         </td>
         <td>
-          <tal:comment condition="nothing">
-             <!-- XXX CarlosPerelloMarin 2007-02-12:
-                  This code is exactly the same
-                  as in distroserieslanguage-index.pt -->
-          </tal:comment>
+          <tal:XXX condition="nothing">
+            # XXX CarlosPerelloMarin 2007-02-12: This code is exactly the
+            # same as in distroserieslanguage-index.pt
+          </tal:XXX>
           <tal:block condition="pf/lasttranslator">
             <a tal:attributes="
                  href pf/lasttranslator/fmt:url"

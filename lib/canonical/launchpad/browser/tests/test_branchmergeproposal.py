@@ -10,6 +10,7 @@ import unittest
 
 from canonical.launchpad.browser.branch import RegisterBranchMergeProposalView
 from canonical.launchpad.browser.branchmergeproposal import (
+    BranchMergeProposalChangeStatusView,
     BranchMergeProposalMergedView, BranchMergeProposalVoteView)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
@@ -118,7 +119,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [review.reviewer for review in requested_reviews])
 
     def testCurrentReviewOrdering(self):
-        # Disapprove first, then Approve, lastly Abstain.
+        # Most recent first.
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
@@ -133,14 +134,11 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
 
         self.assertEqual(
-            [charles, albert, bob],
+            [charles, bob, albert],
             [review.reviewer for review in view.current_reviews])
 
     def testChangeOfVoteBringsToTop(self):
-        # If albert changes his abstention to an approve, it comes before
-        # other votes that occurred between the abstention and the approval.
-
-        # Disapprove first, then Approve, lastly Abstain.
+        # Changing the vote changes the vote date, so it comes to the top.
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
@@ -165,8 +163,8 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.target_branch = self.factory.makeBranch()
-        self.source_branch = self.factory.makeBranch(
+        self.target_branch = self.factory.makeProductBranch()
+        self.source_branch = self.factory.makeProductBranch(
             product=self.target_branch.product)
         self.user = self.factory.makePerson()
         login_person(self.user)
@@ -245,7 +243,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'review_candidate': reviewer})
+             'reviewer': reviewer})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer)
@@ -258,7 +256,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'review_candidate': reviewer,
+             'reviewer': reviewer,
              'review_type': 'god-like'})
 
         proposal = self._getSourceProposal()
@@ -272,13 +270,113 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'review_candidate': reviewer,
+             'reviewer': reviewer,
              'review_type': 'god-like',
              'comment': "This is the first comment."})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertOneComment(proposal, "This is the first comment.")
+
+
+class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
+    """Test the status vocabulary generated for then +edit-status view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+        self.proposal = self.factory.makeBranchMergeProposal(
+            registrant=self.user)
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalChangeStatusView(
+            self.proposal, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def assertStatusVocabTokens(self, tokens, user):
+        # Assert that the tokens specified are the only tokens in the
+        # generated vocabulary.
+        login_person(user)
+        vocabulary = self._createView()._createStatusVocabulary()
+        vocab_tokens = sorted([term.token for term in vocabulary])
+        self.assertEqual(
+            sorted(tokens), vocab_tokens)
+
+    def assertAllStatusesAvailable(self, user):
+        # All options should be available to the user.
+        self.assertStatusVocabTokens(
+            ['WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
+             'REJECTED', 'SUPERSEDED'], user)
+
+    def test_createStatusVocabulary_non_reviewer(self):
+        # Neither the source branch owner nor the registrant should be
+        # able to approve or reject their own code (assuming they don't have
+        # rights on the target branch).
+        status_options = [
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'SUPERSEDED']
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+
+    def test_createStatusVocabulary_reviewer(self):
+        # The registrant should not be able to approve or reject
+        # their own code (assuming they don't have rights on the target
+        # branch).
+        self.assertAllStatusesAvailable(self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_non_reviewer_approved(self):
+        # Once the branch has been approved, the source owner or the
+        # registrant can queue the branch.
+        self.proposal.approveBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = [
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED',
+            'SUPERSEDED']
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+
+    def test_createStatusVocabulary_reviewer_approved(self):
+        # The target branch owner's options are not changed by whether or not
+        # the proposal is currently approved.
+        self.proposal.approveBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_rejected(self):
+        # Options for rejected proposals are the same regardless of user.
+        self.proposal.rejectBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = ['REJECTED', 'SUPERSEDED']
+
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_queued(self):
+        # Queued proposals can either be marked as merged, or set back to code
+        # approved.
+        self.proposal.enqueue(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = ['CODE_APPROVED', 'MERGED']
+
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.target_branch.owner)
+
 
 
 def test_suite():

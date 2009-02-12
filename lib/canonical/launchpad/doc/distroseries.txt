@@ -161,18 +161,22 @@ the upload will have to wait for manual approval anyway:
 You can search through binary packages publishing in a distribution
 release by using the searchPackages method, which uses magical fti:
 
-    >>> len(warty.searchPackages("pmount"))
+    >>> warty.searchPackages("pmount").count()
     1
 
 This also works for small or weirdly named packages that don't work
 through fti, and even for substrings:
 
-    >>> len(warty.searchPackages("linux-2.6.12"))
+    >>> warty.searchPackages("linux-2.6.12").count()
     1
-    >>> len(warty.searchPackages("at"))
+    >>> warty.searchPackages("at").count()
     1
-    >>> len(warty.searchPackages("inux-2"))
-    1
+    >>> pkgs = warty.searchPackages('a')
+    >>> for dsbp in pkgs:
+    ...     print "%s: %s" % (dsbp.__class__.__name__, dsbp.name)
+    DistroSeriesBinaryPackage: foobar
+    DistroSeriesBinaryPackage: mozilla-firefox
+    DistroSeriesBinaryPackage: at
 
 
 == DistroSeriess have components and sections ==
@@ -328,6 +332,73 @@ the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
    4
+
+
+== Hiding translations ==
+
+The hide_all_translations flag, if set, hides a distroseries'
+translations in the user interface.  The check for visibility happens in
+checkTranslationsViewable.
+
+    >>> untranslatable_series = factory.makeDistroRelease()
+    >>> untranslatable_series.hide_all_translations = False
+
+When translations are visible, checkTranslationsViewable() completes
+normally.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     TranslationUnavailable)
+    >>> def get_visibility_notice(series):
+    ...     """Print the notice about series' translations being hidden."""
+    ...     try:
+    ...         series.checkTranslationsViewable()
+    ...     except TranslationUnavailable, e:
+    ...         return str(e)
+    ...     return None
+
+    >>> print get_visibility_notice(untranslatable_series)
+    None
+
+But when translations are hidden, it raises TranslationUnavailable.
+
+    >>> untranslatable_series.hide_all_translations = True
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series...
+
+Exactly what message is displayed depends on the series' status.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.EXPERIMENTAL
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not available yet.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.DEVELOPMENT
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not available yet.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.FROZEN
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.CURRENT
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.SUPPORTED
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.OBSOLETE
+    >>> print get_visibility_notice(untranslatable_series)
+    This release series is obsolete.  Its translations are no longer
+    available.
+
+    >>> untranslatable_series.status = DistroSeriesStatus.FUTURE
+    >>> print get_visibility_notice(untranslatable_series)
+    Translations for this release series are not available yet.
+
 
 == Translatable Packages and Packaging ==
 
@@ -769,13 +840,18 @@ the total number of current translations that matters.
 
 There are also some obsolete messages.
 
-    >>> msg = pofile_es_hoary.getCurrentTranslationMessage(
+    >>> potmsgset = pofile_es_hoary.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_hoary.language)
     >>> msg.translations
     [u'Obsolete (in Hoary)']
-    >>> msg = pofile_es_humpy.getCurrentTranslationMessage(
+
+    >>> potmsgset = pofile_es_humpy.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
-    >>> print msg.msgstr0
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_humpy.language)
+    >>> print msg
     None
 
 When we compare the full translations for hoary and humpy, we see the
@@ -878,13 +954,17 @@ were in Hoary, or were translated in Humpy but not at all in Hoary.
 
 Obsolete messages are not copied.
 
-    >>> msg = pofile_es_hoary.getCurrentTranslationMessage(
+    >>> potmsgset = pofile_es_hoary.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_hoary.language)
     >>> msg.translations
     [u'Obsolete (in Hoary)']
-    >>> msg = pofile_es_humpy.getCurrentTranslationMessage(
+    >>> potmsgset = pofile_es_humpy.potemplate.getPOTMsgSetByMsgIDText(
     ...     u"Obsolete message")
-    >>> print msg.msgstr0
+    >>> msg = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_humpy.language)
+    >>> print msg
     None
 
 Changes in Humpy supersede any translation changes that may be made in its
@@ -997,6 +1077,8 @@ sets the defer_translation_imports flag itself before copying.
     >>> print error_output
     INFO    creating lockfile
     INFO    Starting...
+    INFO    Populating blank distroseries ... with translations from 3.
+    ...
     INFO    Done...
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
@@ -1012,10 +1094,10 @@ flag to its previous value (off).
     True
 
 
-    >>> # Set the flag again to facilitate further testing.
+    # Set the flag again to facilitate further testing.
     >>> testing_series.defer_translation_imports = True
 
-Once the script finished, new distro series does have templates.
+Once the script has finished, the new distro series does have templates.
 
     >>> len(testing_series.getCurrentTranslationTemplates()) > 0
     True

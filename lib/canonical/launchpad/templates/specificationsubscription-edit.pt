@@ -1,10 +1,3 @@
-<tal:root
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-
-<tal:tag condition="view/update"/>
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -19,21 +12,20 @@
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/person/@@+portlet-details" />
-</metal:rightportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
-      <div>
-        <img alt="" src="/@@/blueprint" />
-        <a tal:attributes="href context/specification/fmt:url"
-           tal:content="context/specification/title" />
-      </div>
+  <div>
+    <img alt="" src="/@@/blueprint" />
+    <a tal:attributes="href context/specification/fmt:url"
+       tal:content="context/specification/title" />
+  </div>
 
-  <div metal:use-macro="context/@@launchpad_editform/editform" />
+  <div metal:use-macro="context/@@launchpad_form/form" />
 
 </div>
 </body>
 </html>
-</tal:root>

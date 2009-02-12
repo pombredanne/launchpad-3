@@ -118,6 +118,8 @@ class AbstractUploadPolicy:
 
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""
+        if self.archive.is_copy:
+            upload.reject("Uploads to copy archives are not allowed.")
         if upload.is_ppa:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
@@ -255,12 +257,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         new_size = current_size + upload_size
 
         if new_size > limit_size:
-            # XXX cprov 20071203: once the users get the the opportunity
-            # to remove packages via the UI and get habituated with the
-            # limiting policies, we should start to reject uploads over
-            # the size quota (hint: use upload.reject instead of warn).
-            # Warning users about a PPA exceeding the size limit.
-            upload.warn(
+            upload.reject(
                 "PPA exceeded its size limit (%.2f of %.2f MiB). "
                 "Ask a question in https://answers.launchpad.net/soyuz/ "
                 "if you need more space." % (

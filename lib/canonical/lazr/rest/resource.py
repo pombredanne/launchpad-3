@@ -10,6 +10,7 @@ __all__ = [
     'CollectionResource',
     'Entry',
     'EntryAdapterUtility',
+    'EntryHTMLView',
     'EntryResource',
     'HTTPResource',
     'JSONItem',
@@ -43,7 +44,7 @@ from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError, getFields, getFieldsInOrder
+from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
@@ -131,10 +132,21 @@ class HTTPResource:
     # Some interesting media types.
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
+    XHTML_TYPE = 'application/xhtml+xml'
+
+    # A preparsed template file for WADL representations of resources.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-resource.pt')
 
     # The representation value used when the client doesn't have
     # authorization to see the real value.
     REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
+
+    HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
+                                  "with a POST request.")
+
+    # All resources serve WADL and JSON representations. Only entry
+    # resources serve XHTML representations.
+    SUPPORTED_CONTENT_TYPES = [WADL_TYPE, JSON_TYPE]
 
     def __init__(self, context, request):
         self.context = context
@@ -143,6 +155,28 @@ class HTTPResource:
     def __call__(self):
         """See `IHTTPResource`."""
         pass
+
+    def getRequestMethod(self, request=None):
+        """Return the HTTP method of the provided (or current) request.
+
+        This is usually the actual HTTP method, but it might be
+        overridden by a value for X-HTTP-Method-Override.
+
+        :return: None if the valid for X-HTTP-Method-Override is invalid.
+        Otherwise, the HTTP method to use.
+        """
+        if request == None:
+            request = self.request
+        override = request.headers.get('X-HTTP-Method-Override')
+        if override is not None:
+            if request.method == 'POST':
+                return override
+            else:
+                # XHMO should not be used unless the underlying method
+                # is POST.
+                self.request.response.setStatus(400)
+                return None
+        return request.method
 
     def handleConditionalGET(self):
         """Handle a possible conditional GET request.
@@ -158,10 +192,7 @@ class HTTPResource:
         """
         incoming_etags = self._parseETags('If-None-Match')
 
-        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
-            media_type = self.WADL_TYPE
-        else:
-            media_type = self.JSON_TYPE
+        media_type = self.getPreferredSupportedContentType()
         existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
@@ -180,12 +211,28 @@ class HTTPResource:
         generated ETag, it sets the response code to 412
         ("Precondition Failed").
 
+        If the PUT or PATCH request is being tunneled through POST
+        with X-HTTP-Method-Override, the media type of the incoming
+        representation will be obtained from X-Content-Type-Override
+        instead of Content-Type, should X-C-T-O be provided.
+
         :return: The media type of the incoming representation. If
             this value is None, the incoming ETag didn't match the
             generated ETag and the incoming representation should be
             ignored.
         """
-        media_type = self.request.headers.get('Content-Type', self.JSON_TYPE)
+        media_type = self.request.headers.get('X-Content-Type-Override')
+        if media_type is not None:
+            if self.request.method != 'POST':
+                # X-C-T-O should not be used unless the underlying
+                # method is POST. Set response code 400 ("Bad
+                # Request").
+                self.request.response.setStatus(400)
+                return None
+        else:
+            media_type = self.request.headers.get(
+                'Content-Type', self.JSON_TYPE)
+
         incoming_etags = self._parseETags('If-Match')
         if len(incoming_etags) == 0:
             # This is not a conditional write.
@@ -260,39 +307,43 @@ class HTTPResource:
             getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
-    def toWADL(self, template_name="wadl-resource.pt"):
+    def toWADL(self):
         """Represent this resource as a WADL application.
 
         The WADL document describes the capabilities of this resource.
         """
-        template = LazrPageTemplateFile('../templates/' + template_name)
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
 
-        The web service supports WADL and JSON representations. The
-        default is JSON. This method determines whether the client
-        would rather have WADL or JSON.
+        The web service supports WADL, XHTML, and JSON
+        representations. If no supported media type is requested, JSON
+        is the default. This method determines whether the client
+        would rather have WADL, XHTML, or JSON.
         """
         content_types = self.getPreferredContentTypes()
-        try:
-            wadl_pos = content_types.index(self.WADL_TYPE)
-        except ValueError:
-            wadl_pos = float("infinity")
-        try:
-            json_pos = content_types.index(self.JSON_TYPE)
-        except ValueError:
-            json_pos = float("infinity")
-        if wadl_pos < json_pos:
-            return self.WADL_TYPE
-        return self.JSON_TYPE
+        preferences = []
+        winner = None
+        for media_type in self.SUPPORTED_CONTENT_TYPES:
+            try:
+                pos = content_types.index(media_type)
+                if winner is None or pos < winner[1]:
+                    winner = (media_type, pos)
+            except ValueError:
+                pass
+        if winner is None:
+            return self.JSON_TYPE
+        else:
+            return winner[0]
 
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
-        return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
+        accept_header = (self.request.form.pop('ws.accept', None)
+            or self.request.get('HTTP_ACCEPT'))
+        return self._parseAcceptStyleHeader(accept_header)
 
     def _parseETags(self, header_name):
         """Extract a list of ETags from a header and parse the list.
@@ -517,9 +568,12 @@ class ReadOnlyResource(HTTPResource):
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
         result = ""
-        if self.request.method == "GET":
+        method = self.getRequestMethod()
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
             result = self.do_GET()
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif method == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -536,18 +590,21 @@ class ReadWriteResource(HTTPResource):
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
         result = ""
-        if self.request.method == "GET":
+        method = self.getRequestMethod()
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
             result = self.do_GET()
-        elif self.request.method in ["PUT", "PATCH"]:
+        elif method in ["PUT", "PATCH"]:
             media_type = self.handleConditionalWrite()
             if media_type is not None:
                 stream = self.request.bodyStream
                 representation = stream.getCacheStream().read()
-                if self.request.method == "PUT":
+                if method == "PUT":
                     result = self.do_PUT(media_type, representation)
                 else:
                     result = self.do_PATCH(media_type, representation)
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif method == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -559,47 +616,87 @@ class ReadWriteResource(HTTPResource):
         return self.applyTransferEncoding(result)
 
 
+class EntryHTMLView:
+    """An HTML view of an entry."""
+
+    # A preparsed template file for HTML representations of the resource.
+    HTML_TEMPLATE = LazrPageTemplateFile('../templates/html-resource.pt')
+
+    def __init__(self, context, request):
+        """Initialize with respect to a data object and request."""
+        self.context = context
+        self.request = request
+        self.resource = EntryResource(context, request)
+
+    def __call__(self):
+        """Send the entry data through an HTML template."""
+        namespace = self.HTML_TEMPLATE.pt_getContext()
+        names_and_values = self.resource.toDataForJSON().items()
+        data = sorted([{'name' : name, 'value': value}
+                       for name, value in names_and_values])
+        namespace['context'] = data
+        return self.HTML_TEMPLATE.pt_render(namespace)
+
+
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
+
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.WADL_TYPE,
+                               HTTPResource.XHTML_TYPE,
+                               HTTPResource.JSON_TYPE]
 
     missing = object()
 
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
+        self.etags_by_media_type = {}
         self.entry = IEntry(context)
         self._unmarshalled_field_cache = {}
 
-    def getETag(self, media_type):
-        """Calculate an ETag for a representation of this resource.
+    def getETag(self, media_type, unmarshalled_field_values=None):
+        """Calculate the ETag for an entry.
 
-        We implement a simple (though not terribly efficient) ETag
-        algorithm that concatenates the current values of all the
-        fields that aren't read-only, and calculates a SHA1 hash of
-        the resulting string.
+        :arg unmarshalled_field_values: A dict mapping field names to
+        unmarshalled values, obtained during some other operation such
+        as the construction of a representation.
         """
-        etag = super(EntryResource, self).getETag(media_type)
+        # Try to find a cached value.
+        etag = self.etags_by_media_type.get(media_type)
         if etag is not None:
             return etag
 
-        if media_type != self.JSON_TYPE:
+        # Try to make the superclass handle it.
+        etag = super(EntryResource, self).getETag(media_type)
+        if etag is not None:
+            self.etags_by_media_type[media_type] = etag
+            return etag
+
+        # Calculate the ETag for a JSON or XHTML representation only.
+        if media_type not in (self.JSON_TYPE, self.XHTML_TYPE):
             return None
 
+        hash_object = sha.new()
         values = []
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
-                ignored, value = self._unmarshallField(name, field)
+                if (unmarshalled_field_values is not None
+                    and unmarshalled_field_values.get(name)):
+                    value = unmarshalled_field_values[name]
+                else:
+                    ignored, value = self._unmarshallField(name, field)
                 values.append(unicode(value))
-
-        hash_object = sha.new()
         hash_object.update("\0".join(values).encode("utf-8"))
 
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
         hash_object.update("\0" + str(versioninfo.revno))
-        return '"%s"' % hash_object.hexdigest()
+
+        etag = '"%s"' % hash_object.hexdigest()
+        self.etags_by_media_type[media_type] = etag
+        return etag
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -608,12 +705,24 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         the resource interface.
         """
         data = {}
-        data['self_link'] = canonical_url(self.context)
+        data['self_link'] = canonical_url(self.context, self.request)
         data['resource_type_link'] = self.type_url
-        for name, field in getFields(self.entry.schema).items():
+        unmarshalled_field_values = {}
+        for name, field in getFieldsInOrder(self.entry.schema):
             repr_name, repr_value = self._unmarshallField(name, field)
             data[repr_name] = repr_value
+            unmarshalled_field_values[name] =  repr_value
+
+        etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
+        data['http_etag'] = etag
         return data
+
+    def toXHTML(self):
+        """Represent this resource as an XHTML document."""
+        view = getMultiAdapter(
+            (self.context, self.request),
+            name="canonical.lazr.rest.resource.EntryResource")
+        return view()
 
     def processAsJSONHash(self, media_type, representation):
         """Process an incoming representation as a JSON hash.
@@ -665,6 +774,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 result = self.toWADL().encode("utf-8")
             elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
+            elif media_type == self.XHTML_TYPE:
+                result = self.toXHTML().encode("utf-8")
 
         self.request.response.setHeader('Content-Type', media_type)
         return result
@@ -715,7 +826,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         return "%s#%s" % (
             canonical_url(self.request.publication.getApplication(
-                    self.request)),
+                    self.request), self.request),
             adapter.singular_type)
 
     def isModifiableField(self, field, is_external_client):
@@ -785,7 +896,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         modified_read_only_attribute = ("%s: You tried to modify a "
                                         "read-only attribute.")
         if 'self_link' in changeset:
-            if changeset['self_link'] != canonical_url(self.context):
+            if changeset['self_link'] != canonical_url(self.context,
+                                                       self.request):
                 errors.append(modified_read_only_attribute % 'self_link')
             del changeset['self_link']
 
@@ -794,6 +906,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 errors.append(modified_read_only_attribute %
                               'resource_type_link')
             del changeset['resource_type_link']
+
+        if 'http_etag' in changeset:
+            if changeset['http_etag'] != self.getETag(self.JSON_TYPE):
+                errors.append(modified_read_only_attribute %
+                              'http_etag')
+            del changeset['http_etag']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
@@ -944,7 +1062,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.entry.context, providing=providedBy(self.entry.context))
 
         # Store the entry's current URL so we can see if it changes.
-        original_url = canonical_url(self.context)
+        original_url = canonical_url(self.context, self.request)
         # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.entry, name, value)
@@ -959,7 +1077,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
-        new_url = canonical_url(self.context)
+        new_url = canonical_url(self.context, self.request)
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
@@ -1037,6 +1155,9 @@ class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
 
+    # A preparsed template file for WADL representations of the root.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-root.pt')
+
     inside = None
     path = ''
     rootsite = None
@@ -1071,11 +1192,16 @@ class ServiceRootResource(HTTPResource):
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
-        if REQUEST.method == "GET":
-            return self.applyTransferEncoding(self.do_GET())
+        method = self.getRequestMethod(REQUEST)
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
+            result = self.do_GET()
         else:
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")
+            result = ""
+        return self.applyTransferEncoding(result)
 
     def do_GET(self):
         """Describe the capabilities of the web service in WADL."""
@@ -1141,13 +1267,12 @@ class ServiceRootResource(HTTPResource):
                     # We omit IScopedCollection because those are handled
                     # by the entry classes.
                     collection_classes.append(registration.factory)
-        template = LazrPageTemplateFile('../templates/wadl-root.pt')
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
         namespace['request'] = self.request
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def toDataForJSON(self):
         """Return a map of links to top-level collection resources.
@@ -1158,12 +1283,14 @@ class ServiceRootResource(HTTPResource):
         """
         type_url = "%s#%s" % (
             canonical_url(
-                self.request.publication.getApplication(self.request)),
+                self.request.publication.getApplication(self.request),
+                self.request),
             "service-root")
         data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
-            data_for_json[link_name] = canonical_url(publication)
+            data_for_json[link_name] = canonical_url(publication,
+                                                     self.request)
         return data_for_json
 
     def getTopLevelPublications(self):
@@ -1367,4 +1494,3 @@ class EntryAdapterUtility(RESTUtilityBase):
         """The URL to the description of the object's full representation."""
         return "%s#%s-full" % (
             self._service_root_url(), self.singular_type)
-

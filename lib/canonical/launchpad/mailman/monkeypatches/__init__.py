@@ -1,10 +1,10 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+"""Install Launchpad integration code into the Mailman module."""
 
 import os
+import shutil
 
-from canonical.lazr.config import as_host_port
-
-HERE = os.path.dirname(__file__)
+from lazr.config import as_host_port
 
 
 def monkey_patch(mailman_path, config):
@@ -135,3 +135,10 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
             print >> handler_file, 'from', module, 'import *'
         finally:
             handler_file.close()
+    # Install the launchpad site templates.
+    here = os.path.dirname(__file__)
+    launchpad_template_path = os.path.join(here, 'sitetemplates')
+    site_template_path = os.path.join(mailman_path, 'templates', 'site')
+    if os.path.isdir(site_template_path):
+        shutil.rmtree(site_template_path)
+    shutil.copytree(launchpad_template_path, site_template_path)

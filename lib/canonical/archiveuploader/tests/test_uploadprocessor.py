@@ -38,9 +38,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    ILibraryFileAliasSet, NonBuildableSourceUploadError,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    QueueInconsistentStateError)
+    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus, QueueInconsistentStateError)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -148,7 +147,7 @@ class TestUploadProcessorBase(unittest.TestCase):
                 excName = str(excClass)
             raise self.failureException, "%s not raised" % excName
 
-    def setupBreezy(self):
+    def setupBreezy(self, name="breezy"):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
@@ -156,11 +155,14 @@ class TestUploadProcessorBase(unittest.TestCase):
 
         Also sets 'changeslist' and 'nominatedarchindep' properly and
         creates a chroot for breezy-autotest/i386 distroarchseries.
+
+        :param name: supply the name of the distroseries if you don't want
+            it to be called "breezy"
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
         self.breezy = self.ubuntu.newSeries(
-            'breezy', 'Breezy Badger',
+            name, 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
         breezy_i386 = self.breezy.newArch(
@@ -999,20 +1001,25 @@ class TestUploadProcessor(TestUploadProcessorBase):
                 % queue_items.count())
 
     def testUploadResultingInNoBuilds(self):
-        """Source uploads resulting in no builds are rejected.
+        """Source uploads resulting in no builds.
 
-        If a new source upload results in no builds, it can't be accepted
-        from queue, so the archive-admin will be forced to rejected it.
+        Source uploads building only in unsupported architectures are
+        accepted in primary archives.
 
-        If a auto-accepted source upload results in no builds, like a known
-        ubuntu or a PPA upload, it will be rejected yet in upload time,
-        resulting in an upload rejection message.
+        If a new source upload results in no builds, it can be accepted
+        from queue.
 
-        It usually happens for sources targeted to architectures not
-        supported in ubuntu.
+        If a auto-accepted source upload results in no builds, like a
+        known ubuntu or a PPA upload, it will made its way to the
+        repository.
 
-        This way we don't create false expectations accepting sources that
-        won't be ever built.
+        This scenario usually happens for sources targeted to
+        architectures not yet supported in ubuntu, but for which we
+        have plans to support soon.
+
+        Once a chroot is available for the architecture being prepared,
+        a `queue-builder` run will be required to create the missing
+        builds.
         """
         self.setupBreezy()
 
@@ -1030,12 +1037,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # just-uploaded changesfile from librarian.
         self.layer.txn.commit()
 
-        error = self.assertRaisesAndReturnError(
-            NonBuildableSourceUploadError,
-            upload.queue_root.acceptFromQueue, 'announce@ubuntu.com')
-        self.assertEqual(
-            str(error),
-            "Cannot build any of the architectures requested: m68k")
+        upload.queue_root.acceptFromQueue('announce@ubuntu.com')
 
         # 'biscuit_1.0-2' building on i386 get accepted and published.
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
@@ -1043,23 +1045,18 @@ class TestUploadProcessor(TestUploadProcessorBase):
         biscuit_pub = packager.uploadSourceVersion('1.0-2')
         self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
 
-        # A auto-accepted version building only in hppa, which also doesn't
+        # A auto-accepted version building only in m68k, which also doesn't
         # exist in breezy gets rejected yet in upload time (meaning, the
         # uploader will receive a rejection email).
         packager.buildVersion('1.0-3', suite=self.breezy.name, arch="m68k")
         packager.buildSource()
         upload = packager.uploadSourceVersion('1.0-3', auto_accept=False)
 
-        error = self.assertRaisesAndReturnError(
-            NonBuildableSourceUploadError,
-            upload.storeObjectsInDatabase)
-        self.assertEqual(
-            str(error),
-            "Cannot build any of the architectures requested: m68k")
+        upload.storeObjectsInDatabase()
 
     def testPackageUploadPermissions(self):
         """Test package-specific upload permissions.
-        
+
         Someone who has upload permissions to a component, but also
         has permission to a specific package in a different component
         should be able to upload that package. (Bug #250618)

@@ -40,7 +40,7 @@ without, mapped members.
         name="kamion"
         logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
         url="/~kamion"
-        local_time="... BST"
+        local_time="..."
         lat="52.2"
         lng="0.3"/>
     </participants>

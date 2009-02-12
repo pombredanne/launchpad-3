@@ -16,8 +16,8 @@ from urlparse import urlparse, urlunparse
 
 import ZConfig
 
-from canonical.lazr.config import ImplicitTypeSchema
-from canonical.lazr.interfaces.config import ConfigErrors
+from lazr.config import ImplicitTypeSchema
+from lazr.config.interfaces import ConfigErrors
 
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
@@ -100,11 +100,11 @@ class CanonicalConfig:
         if self._config is not None:
             return
 
-        here = os.path.dirname(__file__)
+        here = os.path.abspath(os.path.dirname(__file__))
         schema_file = os.path.join(here, 'schema-lazr.conf')
-        config_dir = os.path.join(
+        config_dir = os.path.abspath(os.path.join(
             here, os.pardir, os.pardir, os.pardir,
-            'configs', self.instance_name)
+            'configs', self.instance_name))
         config_file = os.path.join(
             config_dir, '%s-lazr.conf' % self.process_name)
         if not os.path.isfile(config_file):

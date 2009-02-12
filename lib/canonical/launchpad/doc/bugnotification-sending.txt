@@ -1001,6 +1001,7 @@ makes it write out the emails it sends.
     From: Sample Person <test@canonical.com>
     To: test@canonical.com
     Reply-To: Bug 2 <2@bugs.launchpad.net>
+    ...
     References: foo@example.com-332342--1231
     ...
     X-Launchpad-Message-Rationale: Assignee
@@ -1018,6 +1019,7 @@ makes it write out the emails it sends.
     From: Sample Person <test@canonical.com>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
+    ...
     References: sdsdfsfd
     ...
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
@@ -1035,6 +1037,7 @@ makes it write out the emails it sends.
     From: Sample Person <test@canonical.com>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
+    ...
     References: sdsdfsfd
     ...
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
@@ -1223,6 +1226,37 @@ simple "yes":
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
     mark@hbd.com ['yes']
+
+
+== The X-Launchpad-Bug-Commenters header ==
+
+The X-Launchpad-Bug-Recipient-Commented header lists all user IDs of
+people who have ever commented on the bug. It's a space-separated
+list.
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
+    name12
+
+    >>> from canonical.launchpad.interfaces.bugmessage import IBugMessageSet
+    >>> getUtility(IBugMessageSet).createMessage(
+    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    <BugMessage ...>
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
+    name12 name16
+
+It only lists each user once, no matter how many comments they've
+made.
+
+    >>> getUtility(IBugMessageSet).createMessage(
+    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    <BugMessage ...>
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
+    name12 name16
 
 
 == Verbose bug notifications ==

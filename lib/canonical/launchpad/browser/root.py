@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -7,21 +7,29 @@ __all__ = [
     'LaunchpadSearchView',
     ]
 
+
 import re
+import sys
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
+from canonical.launchpad.interfaces import ILaunchpadStatisticSet
+from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
-from canonical.launchpad.interfaces.searchservice import ISearchService
+from canonical.launchpad.interfaces.searchservice import (
+    GoogleResponseError, ISearchService)
+from canonical.launchpad.interfaces.specification import ISpecificationSet
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
@@ -62,8 +70,38 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     @property
     def featured_projects_col_b(self):
-        """Return a list of featured projects."""
+        """The list of featured projects."""
         return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
+
+    @property
+    def branch_count(self):
+        """The total branch count in all of Launchpad."""
+        return getUtility(IBranchSet).count()
+
+    @property
+    def bug_count(self):
+        """The total bug count in all of Launchpad."""
+        return getUtility(ILaunchpadStatisticSet).value('bug_count')
+
+    @property
+    def project_count(self):
+        """The total project count in all of Launchpad."""
+        return getUtility(IProductSet).count_all()
+
+    @property
+    def translation_count(self):
+        """The total count of translatable strings in all of Launchpad """
+        return getUtility(ILaunchpadStatisticSet).value('pomsgid_count')
+
+    @property
+    def blueprint_count(self):
+        """The total blueprint count in all of Launchpad."""
+        return getUtility(ISpecificationSet).specification_count
+
+    @property
+    def answer_count(self):
+        """The total blueprint count in all of Launchpad."""
+        return getUtility(ILaunchpadStatisticSet).value('question_count')
 
 
 class LaunchpadSearchFormView(LaunchpadView):
@@ -144,6 +182,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         Set the state of the search_params and matches.
         """
         super(LaunchpadSearchView, self).__init__(context, request)
+        self.has_page_service = True
         self._bug = None
         self._question = None
         self._person_or_team = None
@@ -271,6 +310,15 @@ class LaunchpadSearchView(LaunchpadFormView):
                  self.person_or_team, self.has_shipit, self.pages)
         return self.containsMatchingKind(kinds)
 
+    @property
+    def url(self):
+        """Return the requested URL."""
+        if 'QUERY_STRING' in self.request:
+            query_string = self.request['QUERY_STRING']
+        else:
+            query_string = ''
+        return self.request.getURL() + '?' + query_string
+
     def containsMatchingKind(self, kinds):
         """Return True if one of the items in kinds is not None, or False."""
         for kind in kinds:
@@ -366,8 +414,15 @@ class LaunchpadSearchView(LaunchpadFormView):
         if query_terms in [None , '']:
             return None
         google_search = getUtility(ISearchService)
-        page_matches = google_search.search(terms=query_terms, start=start)
-        if page_matches.total == 0:
+        try:
+            page_matches = google_search.search(
+                terms=query_terms, start=start)
+        except GoogleResponseError:
+            error_utility = getUtility(IErrorReportingUtility)
+            error_utility.raising(sys.exc_info(), self.request)
+            self.has_page_service = False
+            return None
+        if len(page_matches) == 0:
             return None
         navigator = GoogleBatchNavigator(
             page_matches, self.request, start=start)

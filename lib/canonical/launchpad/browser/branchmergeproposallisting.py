@@ -21,40 +21,43 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 
 class BranchMergeProposalListingItem:
     """A branch merge proposal that knows summary values for comments."""
 
-    decorates(IBranchMergeProposal, 'context')
+    delegates(IBranchMergeProposal, 'context')
 
-    def __init__(self, branch_merge_proposal, comment_count,
-                 disapprove_count, approve_count, abstain_count):
+    def __init__(self, branch_merge_proposal, summary, proposal_reviewer):
         self.context = branch_merge_proposal
-        self.comment_count = comment_count
-        self.disapprove_count = disapprove_count
-        self.approve_count = approve_count
-        self.abstain_count = abstain_count
+        self.summary = summary
+        self.proposal_reviewer = proposal_reviewer
 
     @property
     def vote_summary(self):
         """A short summary of the votes."""
-        # If there are no comments, there can be no votes.
-        if self.comment_count == 0:
-            return "no votes (no comments)"
-
         votes = []
-        if self.disapprove_count:
-            votes.append("Disapprove: %s" % self.disapprove_count)
-        if self.approve_count:
-            votes.append("Approve: %s" % self.approve_count)
-        if self.abstain_count:
-            votes.append("Abstain: %s" % self.abstain_count)
-        if len(votes) == 0:
-            votes.append("no votes")
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+        for vote in CodeReviewVote.items:
+            vote_count = self.summary.get(vote, 0)
+            if vote_count > 0:
+                votes.append('<span class="vote%s">%s:&nbsp;%s</span>' % (
+                        vote.name, vote.title, vote_count))
 
-        return "%s (Comments: %s)" % (', '.join(votes), self.comment_count)
+        comment_count = self.summary['comment_count']
+        if comment_count > 0:
+            votes.append("Comments:&nbsp;%s" % comment_count)
+
+        if len(votes) == 0:
+            votes.append('<em>None</em>')
+
+        return ', '.join(votes)
+
+    @property
+    def reviewer_vote(self):
+        """A vote from the specified reviewer."""
+        return self.context.getUsersVoteReference(self.proposal_reviewer)
 
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
@@ -67,6 +70,10 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
+        # Add preview_diff to self.show_column dict if there are any diffs.
+        for proposal in self.proposals:
+            if proposal.preview_diff is not None:
+                self.show_column['preview_diff'] = True
 
     @cachedproperty
     def _proposals_for_current_batch(self):
@@ -82,14 +89,10 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     def _createItem(self, proposal):
         """Create the listing item for the proposal."""
         summary = self._vote_summaries[proposal]
-        return BranchMergeProposalListingItem(
-            proposal,
-            summary['comment_count'],
-            summary.get(CodeReviewVote.DISAPPROVE, 0),
-            summary.get(CodeReviewVote.APPROVE, 0),
-            summary.get(CodeReviewVote.ABSTAIN, 0))
+        return BranchMergeProposalListingItem(proposal, summary,
+            proposal_reviewer=self.view.getUserFromContext())
 
-    @property
+    @cachedproperty
     def proposals(self):
         """Return a list of BranchListingItems."""
         proposals = self._proposals_for_current_batch
@@ -117,6 +120,10 @@ class BranchMergeProposalListingView(LaunchpadView):
     def proposals(self):
         """The batch navigator for the proposals."""
         return BranchMergeProposalListingBatchNavigator(self)
+
+    def getUserFromContext(self):
+        """Get the relevant user from the context."""
+        return None
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""

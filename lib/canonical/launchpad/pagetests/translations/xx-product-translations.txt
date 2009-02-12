@@ -67,7 +67,9 @@ contact the product's registrant.
     >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(unprivileged.contents))
+    Overview / Import queue
     Translation setup needed
+    ...
     This project&rsquo;s license has not been specified.
     This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.
@@ -108,7 +110,9 @@ registrant, so the text reflects both possibilities.
 
     >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(anon_browser.contents))
+    Overview / Import queue
     Translation setup needed
+    ...
     This project&rsquo;s license has not been specified.
     This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.

@@ -17,16 +17,16 @@ __all__ = [
 from zope.event import notify
 from zope.component import getUtility
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from zope.app.form.browser import TextWidget
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, ContextMenu,
-    LaunchpadEditFormView, LaunchpadFormView, Link, Navigation, stepthrough)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
+    Navigation, stepthrough)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.poll import (
-    IPollSubset, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm, PollSecrecy)
+    IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
+    PollSecrecy)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -363,21 +363,30 @@ class PollEditView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class PollOptionEditView(SQLObjectEditView):
+class PollOptionEditView(LaunchpadEditFormView):
+    """Edit one of a poll's options."""
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context.poll))
+    schema = IPollOption
+    label = "Edit option details"
+    field_names = ["name", "title"]
+    custom_widget("title", TextWidget, width=30)
+
+    @action("Save", name="save")
+    def save_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context.poll)
 
 
-class PollOptionAddView(AddView):
-    """The view class to create a new option in a given poll."""
+class PollOptionAddView(LaunchpadFormView):
+    """Create a new option in a given poll."""
 
-    _nextURL = '.'
+    schema = IPollOption
+    label = "Create new poll option"
+    field_names = ["name", "title"]
+    custom_widget("title", TextWidget, width=30)
 
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
+    @action("Create", name="create")
+    def create_action(self, action, data):
         polloption = self.context.newOption(data['name'], data['title'])
-        self._nextURL = canonical_url(self.context)
+        self.next_url = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
