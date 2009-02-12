@@ -249,8 +249,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
     # XXX: subscribed by person filter
 
-    # XXX: lifecycle_status filter
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
