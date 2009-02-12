@@ -545,8 +545,8 @@ class TestCodeHandler(TestCaseWithFactory):
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
             notification.get_payload(),
-            'The target branch %s is not know to Launchpad.' % (
-                target_branch.bzr_identity)
+            'The target branch at %s is not know to Launchpad.' % (
+                'http://www.example.org')
             )
         self.assertEqual(notification['to'],
             message['from'])
