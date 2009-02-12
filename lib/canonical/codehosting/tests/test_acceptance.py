@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Acceptance tests for Supermirror SFTP server's bzr support."""
+"""Acceptance tests for the codehosting server."""
 
 __metaclass__ = type
 
@@ -40,8 +40,8 @@ class SSHServerLayer(ZopelessAppServerLayer):
     def getTacHandler(cls):
         if cls._tac_handler is None:
             cls._tac_handler = CodeHostingTac(
-                config.codehosting.branches_root,
-                config.supermirror.branchesdest)
+                config.codehosting.hosted_branches_root,
+                config.codehosting.mirrored_branches_root)
         return cls._tac_handler
 
     @classmethod
