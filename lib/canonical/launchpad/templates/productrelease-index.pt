@@ -86,7 +86,7 @@
 
       <h2>Download files for this release</h2>
 
-      <table class="listing">
+      <table id="downloads" class="listing">
         <thead>
           <tr>
             <th>Download</th>
