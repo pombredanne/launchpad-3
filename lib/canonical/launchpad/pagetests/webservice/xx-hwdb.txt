@@ -499,7 +499,7 @@ But we can't supply both distribution and distroseries.
     ...     '/+hwdb/+device/2', 'getSubmissions',
     ...     distribution=webservice.getAbsoluteUrl('/ubuntu'),
     ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'))
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 400 Bad Request
     ...
     Only one of `distribution` or `distroseries` can be present.
     ...
