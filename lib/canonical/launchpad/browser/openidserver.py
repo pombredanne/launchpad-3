@@ -653,8 +653,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
     @property
     def initial_values(self):
         values = super(LoginServiceLoginView, self).initial_values
-        if self.user:
-            values['email'] = self.user.preferredemail.email
+        if self.account:
+            values['email'] = self.account.preferredemail.email
         values['action'] = 'login'
         return values
 
