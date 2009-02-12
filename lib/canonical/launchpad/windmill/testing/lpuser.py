@@ -22,7 +22,7 @@ class LaunchpadUser:
             # User is probably logged in.
             # Check under which name they are logged in.
             result = client.commands.execJS(
-                code="""lookupNode({xpath: '//div[@id=\\'logincontrol\\']//a"}).text""")
+                code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
             if result['result'].strip() == self.display_name:
                 # We are logged as that user.
                 return
