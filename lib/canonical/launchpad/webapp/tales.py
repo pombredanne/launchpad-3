@@ -2434,7 +2434,10 @@ class FormattersAPI:
 
     def format_diff(self):
         """Format the string as a diff in a table with line numbers."""
-        text = self._stringtoformat
+        # Trim off trailing carriage returns.
+        text = self._stringtoformat.rstrip('\n')
+        if len(text) == 0:
+            return text
         result = ['<table class="diff">']
 
         for row, line in enumerate(text.split('\n')):
@@ -2451,6 +2454,11 @@ class FormattersAPI:
                 css_class = 'diff-added text'
             elif line.startswith('-'):
                 css_class = 'diff-removed text'
+            elif line.startswith('#'):
+                # This doesn't occur in normal unified diffs, but does
+                # appear in merge directives, which use text/x-diff or
+                # text/x-patch.
+                css_class = 'diff-comment text'
             else:
                 css_class = 'text'
             result.append('<td class="%s">%s</td>' % (css_class, escape(line)))
