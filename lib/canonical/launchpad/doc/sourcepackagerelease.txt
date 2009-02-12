@@ -261,7 +261,9 @@ Before the final upload, the queue should be empty.
    ...     target=spr_test.sourcepackage).count()
    0
 
-   >>> spr_test.attachTranslationFiles(file_alias, True)
+   >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+   >>> katie = getUtility(ILaunchpadCelebrities).katie
+   >>> spr_test.attachTranslationFiles(file_alias, True, katie)
 
 The commit is needed to see the new entries
 
@@ -271,9 +273,9 @@ And the queue should have a new entry.
 
    >>> for entry in translation_import_queue.getAllEntries(
    ...     target=spr_test.sourcepackage):
-   ...     print entry.path
-   something/en-US.xpi
-   po/es.po
+   ...     print entry.path, entry.importer.name
+   something/en-US.xpi  katie
+   po/es.po             katie
 
 Now, we need to do the final import. It's done as a two steps procedure.
 
@@ -354,7 +356,7 @@ Verify that empty packages have a size of zero.
     0.0
 
 
-== Acessing SourcePackageReleases ==
+== Accessing SourcePackageReleases ==
 
 SourcePackageReleases are accessible according to the archives where
 they are published.
