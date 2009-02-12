@@ -697,11 +697,11 @@ We'll link a product to an upstream bug tracker to demonstrate this.
     ...         print "%s: %s" % (key, links_dict[key])
 
 upstream_bugtracker_links is a dict of `bug_filing_url` and
-`search_url`.
+`bug_search_url`.
 
     >>> print_links(product.upstream_bugtracker_links)
     bug_filing_url: http://example.com/enter_bug.cgi?product=foo
-    search_url: http://example.com/query.cgi?product=foo
+    bug_search_url: http://example.com/query.cgi?product=foo
 
 If the product's `bugtracker` isn't specified its
 `upstream_bugtracker_links` property will be None.
@@ -711,14 +711,14 @@ If the product's `bugtracker` isn't specified its
     None
 
 Similarly, if the product's `remote_product` attribute is None and its
-bug tracker is one which requires an upstream product, the both the
+bug tracker is one which requires an upstream product, both the
 product's `upstream_bugtracker_links` will be None
 
     >>> product.bugtracker = bugtracker
     >>> product.remote_product = None
     >>> print_links(product.upstream_bugtracker_links)
     bug_filing_url: None
-    search_url: None
+    bug_search_url: None
 
 However, some remote bug trackers, notably Trac, only track one product
 at a time. They don't need a remote product in order to provide a bug
@@ -732,4 +732,4 @@ bug trackers will always be a usable URL.
 
     >>> print_links(product.upstream_bugtracker_links)
     bug_filing_url: http://trac.example.com/newticket
-    search_url: http://trac.example.com/search?ticket=on
+    bug_search_url: http://trac.example.com/search?ticket=on
