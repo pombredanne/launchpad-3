@@ -166,6 +166,8 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
+    # A dict of BugTrackerType: patterns mappings.
+    # `patterns` is a tuple of (filebug_form_pattern, search_pattern).
     _url_patterns = {
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s",
@@ -266,7 +268,6 @@ class BugTracker(SQLBase):
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
                 }
-
 
         bugtracker_urls = {
             'bug_filing_url': bug_filing_pattern % url_components,
