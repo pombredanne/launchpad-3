@@ -12,7 +12,6 @@
       <th>Version</th>
       <th>Codename</th>
       <th>Date Released</th>
-      <th></th>
     </tr>
   </thead>
   <tbody>
@@ -26,12 +25,6 @@
           tal:content="release/datereleased/fmt:approximatedate">
           2005-12-13
         </span>
-      </td>
-      <td tal:condition="release/required:launchpad.Edit">
-        <a tal:attributes="href release/fmt:url/+delete"
-           title="Delete this release">
-          <img src="/@@/trash-icon" />
-        </a>
       </td>
     </tr>
   </tbody>
