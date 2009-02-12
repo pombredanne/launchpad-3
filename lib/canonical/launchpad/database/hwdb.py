@@ -282,7 +282,10 @@ class HWSubmissionSet:
                         HWDeviceDriverLink.id)
             args.append(HWSubmissionDevice.submission == HWSubmission.id)
 
-        if distribution is not None or distroseries is not None or architecture is not None:
+        if (distribution is not None or distroseries is not None
+            or architecture is not None):
+            # We need to select a specific distribution, distroseries,
+            # and/or processor architecture.
             assert(not(distribution and distroseries),
                    'Only one of `distribution` or `distroseries` '
                    'can be present.')
