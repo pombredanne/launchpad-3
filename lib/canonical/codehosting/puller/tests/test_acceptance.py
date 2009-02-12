@@ -48,8 +48,8 @@ class TestBranchPuller(PullerBranchTestCase):
         PullerBranchTestCase.setUp(self)
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
-        self.makeCleanDirectory(config.codehosting.branches_root)
-        self.makeCleanDirectory(config.supermirror.branchesdest)
+        self.makeCleanDirectory(config.codehosting.hosted_branches_root)
+        self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
 
     def assertMirrored(self, db_branch, source_branch=None,
                        accessing_user=None):
@@ -153,8 +153,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # We use the configured directories because these tests run the puller
         # in a subprocess which would have no way of knowing which directories
         # to look in if we used freshly created temporary directories.
-        upload_directory = config.codehosting.branches_root
-        mirror_directory = config.supermirror.branchesdest
+        upload_directory = config.codehosting.hosted_branches_root
+        mirror_directory = config.codehosting.mirrored_branches_root
         branchfs_endpoint_url = config.codehosting.branchfs_endpoint
 
         upload_url = urlutils.local_path_to_url(upload_directory)
