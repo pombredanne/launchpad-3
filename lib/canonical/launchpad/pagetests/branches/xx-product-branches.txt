@@ -143,9 +143,8 @@ Firstly lets associate release--0.9.1 with the 1.0 series.
     lp://dev/firefox/1.0
       Series: 1.0                   New ...
 
-Now if both of these branches are marked as Abandoned, then the first will
-stay as it is the development focus branch, but the 1.0 series branch will not
-be shown.
+If series branches are marked as Abandoned they will not show up on the
+default listings.
 
     >>> admin_browser.open(
     ...     'http://code.launchpad.dev/~name12/firefox/main/+edit')

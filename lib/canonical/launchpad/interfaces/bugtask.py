@@ -378,8 +378,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
              readonly=True),
         exported_as='bug_target_name')
     bugwatch = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Remote Bug Details"), required=False,
+            schema=IBugWatch,
             vocabulary='BugWatch', description=_(
                 "Select the bug watch that "
                 "represents this task in the relevant bug tracker. If none "

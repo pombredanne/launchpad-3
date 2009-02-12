@@ -10,6 +10,7 @@ __all__ = [
     'CollectionResource',
     'Entry',
     'EntryAdapterUtility',
+    'EntryHTMLView',
     'EntryResource',
     'HTTPResource',
     'JSONItem',
@@ -131,6 +132,10 @@ class HTTPResource:
     # Some interesting media types.
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
+    XHTML_TYPE = 'application/xhtml+xml'
+
+    # A preparsed template file for WADL representations of resources.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-resource.pt')
 
     # The representation value used when the client doesn't have
     # authorization to see the real value.
@@ -138,6 +143,10 @@ class HTTPResource:
 
     HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
                                   "with a POST request.")
+
+    # All resources serve WADL and JSON representations. Only entry
+    # resources serve XHTML representations.
+    SUPPORTED_CONTENT_TYPES = [WADL_TYPE, JSON_TYPE]
 
     def __init__(self, context, request):
         self.context = context
@@ -183,10 +192,7 @@ class HTTPResource:
         """
         incoming_etags = self._parseETags('If-None-Match')
 
-        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
-            media_type = self.WADL_TYPE
-        else:
-            media_type = self.JSON_TYPE
+        media_type = self.getPreferredSupportedContentType()
         existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
@@ -301,39 +307,43 @@ class HTTPResource:
             getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
-    def toWADL(self, template_name="wadl-resource.pt"):
+    def toWADL(self):
         """Represent this resource as a WADL application.
 
         The WADL document describes the capabilities of this resource.
         """
-        template = LazrPageTemplateFile('../templates/' + template_name)
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
 
-        The web service supports WADL and JSON representations. The
-        default is JSON. This method determines whether the client
-        would rather have WADL or JSON.
+        The web service supports WADL, XHTML, and JSON
+        representations. If no supported media type is requested, JSON
+        is the default. This method determines whether the client
+        would rather have WADL, XHTML, or JSON.
         """
         content_types = self.getPreferredContentTypes()
-        try:
-            wadl_pos = content_types.index(self.WADL_TYPE)
-        except ValueError:
-            wadl_pos = float("infinity")
-        try:
-            json_pos = content_types.index(self.JSON_TYPE)
-        except ValueError:
-            json_pos = float("infinity")
-        if wadl_pos < json_pos:
-            return self.WADL_TYPE
-        return self.JSON_TYPE
+        preferences = []
+        winner = None
+        for media_type in self.SUPPORTED_CONTENT_TYPES:
+            try:
+                pos = content_types.index(media_type)
+                if winner is None or pos < winner[1]:
+                    winner = (media_type, pos)
+            except ValueError:
+                pass
+        if winner is None:
+            return self.JSON_TYPE
+        else:
+            return winner[0]
 
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
-        return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
+        accept_header = (self.request.form.pop('ws.accept', None)
+            or self.request.get('HTTP_ACCEPT'))
+        return self._parseAcceptStyleHeader(accept_header)
 
     def _parseETags(self, header_name):
         """Extract a list of ETags from a header and parse the list.
@@ -606,9 +616,35 @@ class ReadWriteResource(HTTPResource):
         return self.applyTransferEncoding(result)
 
 
+class EntryHTMLView:
+    """An HTML view of an entry."""
+
+    # A preparsed template file for HTML representations of the resource.
+    HTML_TEMPLATE = LazrPageTemplateFile('../templates/html-resource.pt')
+
+    def __init__(self, context, request):
+        """Initialize with respect to a data object and request."""
+        self.context = context
+        self.request = request
+        self.resource = EntryResource(context, request)
+
+    def __call__(self):
+        """Send the entry data through an HTML template."""
+        namespace = self.HTML_TEMPLATE.pt_getContext()
+        names_and_values = self.resource.toDataForJSON().items()
+        data = sorted([{'name' : name, 'value': value}
+                       for name, value in names_and_values])
+        namespace['context'] = data
+        return self.HTML_TEMPLATE.pt_render(namespace)
+
+
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
+
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.WADL_TYPE,
+                               HTTPResource.XHTML_TYPE,
+                               HTTPResource.JSON_TYPE]
 
     missing = object()
 
@@ -637,8 +673,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.etags_by_media_type[media_type] = etag
             return etag
 
-        # Calculate the ETag for a JSON representation only.
-        if media_type != self.JSON_TYPE:
+        # Calculate the ETag for a JSON or XHTML representation only.
+        if media_type not in (self.JSON_TYPE, self.XHTML_TYPE):
             return None
 
         hash_object = sha.new()
@@ -680,6 +716,13 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
         data['http_etag'] = etag
         return data
+
+    def toXHTML(self):
+        """Represent this resource as an XHTML document."""
+        view = getMultiAdapter(
+            (self.context, self.request),
+            name="canonical.lazr.rest.resource.EntryResource")
+        return view()
 
     def processAsJSONHash(self, media_type, representation):
         """Process an incoming representation as a JSON hash.
@@ -731,6 +774,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 result = self.toWADL().encode("utf-8")
             elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
+            elif media_type == self.XHTML_TYPE:
+                result = self.toXHTML().encode("utf-8")
 
         self.request.response.setHeader('Content-Type', media_type)
         return result
@@ -1110,6 +1155,9 @@ class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
 
+    # A preparsed template file for WADL representations of the root.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-root.pt')
+
     inside = None
     path = ''
     rootsite = None
@@ -1219,13 +1267,12 @@ class ServiceRootResource(HTTPResource):
                     # We omit IScopedCollection because those are handled
                     # by the entry classes.
                     collection_classes.append(registration.factory)
-        template = LazrPageTemplateFile('../templates/wadl-root.pt')
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
         namespace['request'] = self.request
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def toDataForJSON(self):
         """Return a map of links to top-level collection resources.

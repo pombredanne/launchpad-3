@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'POExportView',
-    'POFileAppMenus',
     'POFileFacets',
     'POFileFilteredView',
     'POFileNavigation',
@@ -112,13 +111,6 @@ class POFileMenuMixin:
     def download(self):
         text = 'Download'
         return Link('+export', text, icon='download')
-
-
-class POFileAppMenus(ApplicationMenu, POFileMenuMixin):
-    """Application menus for `IPOFile` objects."""
-    usedfor = IPOFile
-    facet = 'translations'
-    links = ['description', 'translate', 'upload', 'download']
 
 
 class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
@@ -590,6 +582,12 @@ class POFileTranslateView(BaseTranslationView):
 
 
 class POExportView(BaseExportView):
+
+    def modifyFormat(self, format):
+        pochanged = self.request.form.get("pochanged")
+        if format == 'PO' and pochanged == 'POCHANGED':
+            return 'POCHANGED'
+        return format
 
     def processForm(self):
         return (None, [self.context])

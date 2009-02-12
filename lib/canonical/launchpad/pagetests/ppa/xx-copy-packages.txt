@@ -48,6 +48,9 @@ PPA in order to be able to copy packages.
     >>> jblack_browser = setupBrowser(
     ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
 
+    >>> jblack_extra_browser = setupBrowser(
+    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+
     >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> jblack_browser.getLink('Copy packages').click()
 
@@ -164,10 +167,10 @@ helper function will do this job in this test.
 The page section id is built using "pub$ID" notation.
 
     >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
       Published on 2007-07-09
       Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
@@ -179,9 +182,9 @@ The page section id is built using "pub$ID" notation.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Built Packages
+    Built packages
       pmount pmount shortdesc
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 James is absolutely sure that's the package he wants, he selects it.
@@ -252,10 +255,10 @@ were not copied and instead a build was already created in his PPA
 context.
 
     >>> pmount_pub_id = getPPAPubIDsFor('jblack', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
       Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
@@ -266,7 +269,7 @@ context.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 The package was copied from the primary archive and not from a PPA.
@@ -755,24 +758,24 @@ James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
 
     >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       pmount
     ...
 
     >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', 'iceweasel')[0]
-    >>> iceweasel_details_id = "pub%s" % iceweasel_pub_id
-    >>> iceweasel_details = find_tag_by_id(
-    ...     jblack_browser.contents, iceweasel_details_id)
-    >>> print extract_text(iceweasel_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % iceweasel_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       mozilla-firefox
       ff from iceweasel
     ...
