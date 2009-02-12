@@ -337,6 +337,12 @@
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </securedutility>
 
+  <securedutility
+      class="canonical.launchpad.database.branch.BranchCloud"
+      provides="canonical.launchpad.interfaces.branch.IBranchCloud" >
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchCloud" />
+  </securedutility>
+
   <subscriber
       for="canonical.launchpad.interfaces.IBranch
            canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"

@@ -1080,7 +1080,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+editsshkeys'
         text = 'Update SSH keys'
         summary = (
-            'Used if %s stores code on the Supermirror' %
+            'Used if %s stores code on Launchpad' %
             self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
@@ -1088,7 +1088,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editpgpkeys(self):
         target = '+editpgpkeys'
         text = 'Update OpenPGP keys'
-        summary = 'Used for the Supermirror, and when maintaining packages'
+        summary = 'Used when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

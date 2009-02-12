@@ -446,6 +446,11 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assert_(branch_set.get(branch_id) is None,
                      "The branch has not been deleted.")
 
+    def test_stackedBranchDisablesDeletion(self):
+        # A branch that is stacked upon cannot be deleted.
+        branch = self.factory.makeAnyBranch(stacked_on=self.branch)
+        self.assertFalse(self.branch.canBeDeleted())
+
     def test_subscriptionDoesntDisableDeletion(self):
         """A branch that has a subscription can be deleted."""
         self.branch.subscribe(
