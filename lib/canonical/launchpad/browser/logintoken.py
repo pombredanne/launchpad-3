@@ -715,9 +715,9 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     def setNextUrl(self):
         if self.context.redirection_url:
             self.next_url = self.context.redirection_url
-        elif self.user is not None:
+        elif self.account is not None and self.account.person is not None:
             # User is logged in, redirect to his home page.
-            self.next_url = canonical_url(self.user)
+            self.next_url = canonical_url(self.account.person)
         elif self.created_person is not None:
             # User is not logged in, redirect to the created person's home
             # page.

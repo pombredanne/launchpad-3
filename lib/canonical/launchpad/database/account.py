@@ -10,6 +10,8 @@ import random
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.store import Store
+
 from sqlobject import ForeignKey, StringCol
 from sqlobject.sqlbuilder import OR
 
@@ -18,8 +20,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces.account import (
-        AccountCreationRationale, AccountStatus,
-        IAccount, IAccountSet)
+    AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -35,22 +37,35 @@ class Account(SQLBase):
     displayname = StringCol(dbName='displayname', notNull=True)
 
     creation_rationale = EnumCol(
-            dbName='creation_rationale', schema=AccountCreationRationale,
-            notNull=True)
+        dbName='creation_rationale', schema=AccountCreationRationale,
+        notNull=True)
     status = EnumCol(
-            enum=AccountStatus, default=AccountStatus.NOACCOUNT,
-            notNull=True)
+        enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
 
     openid_identifier = StringCol(
-            dbName='openid_identifier', notNull=True, default=DEFAULT)
+        dbName='openid_identifier', notNull=True, default=DEFAULT)
 
     # XXX sinzui 2008-09-04 bug=264783:
     # Remove this attribute, in the DB, drop openid_identifier, then
     # rename new_openid_identifier => openid_identifier.
     new_openid_identifier = StringCol(
-            dbName='old_openid_identifier', notNull=False, default=DEFAULT)
+        dbName='old_openid_identifier', notNull=False, default=DEFAULT)
+
+    @property
+    def person(self):
+        """See `IAccount`."""
+        from canonical.launchpad.database.person import Person
+        return Store.of(self).find(Person, account=self).one()
+
+    @property
+    def preferredemail(self):
+        """See `IAccount`."""
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        return Store.of(self).find(
+            EmailAddress, account=self,
+            status=EmailAddressStatus.PREFERRED).one()
 
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
@@ -163,6 +178,6 @@ class AccountPassword(SQLBase):
     AccountPassword table only needs to be known by this module.
     """
     account = ForeignKey(
-            dbName='account', foreignKey='Account', alternateID=True)
+        dbName='account', foreignKey='Account', alternateID=True)
     password = StringCol(dbName='password', notNull=True)
 

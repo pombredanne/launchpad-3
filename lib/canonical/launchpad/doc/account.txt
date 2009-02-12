@@ -79,12 +79,17 @@ The account implements the IAccount interface.
     >>> verifyObject(IAccount, account)
     True
 
-An account has a displayname.
+An account has a displayname, the Person associated with it and a preferred
+email address.
 
     >>> print account.displayname
     No Privileges Person
+    >>> print account.person.name
+    no-priv
+    >>> print account.preferredemail.email
+    no-priv@canonical.com
 
-An account has an encrypted password.
+It also has an encrypted password.
 
     >>> account.password
     u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'

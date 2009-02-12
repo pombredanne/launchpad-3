@@ -20,6 +20,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
+from zope.security import management
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.extensions import pape
@@ -47,7 +48,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, UnexpectedFormData)
+    ILaunchpadPrincipal, IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
     logInPerson, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
@@ -94,12 +95,55 @@ class OpenIDMixin:
         self.openid_server = Server(store_factory(), self.server_url)
 
     @property
+    def user(self):
+        # This is to ensure subclasses don't use self.user, as that will
+        # attempt to adapt the principal into an IPerson, which will fail when
+        # the account has no Person associated with.
+        raise AssertionError(
+            'Cannot use self.user here; use self.account instead')
+
+    @property
+    def account(self):
+        """The account of the logged in user or None if not authenticated."""
+        interaction = management.queryInteraction()
+        if interaction is None:
+            return None
+        principals = [
+            participation.principal
+            for participation in list(interaction.participations)
+            if participation.principal is not None
+            ]
+        if not principals:
+            return None
+        elif len(principals) > 1:
+            raise ValueError('Too many principals')
+        else:
+            principal = principals[0]
+            # XXX: salgado, 2009-02-12: Right now we know that the principal
+            # is either an ILaunchpadPrincipal or the unauthenticated
+            # principal, so we either return principal.person.account or None
+            # here.  However, once I complete the work I'm doing, there will
+            # be a third kind of principal (IOpenIDPrincipal) which has no
+            # Person associated with, so we'll have to replace this code with
+            # what's commented below it.
+            if ILaunchpadPrincipal.providedBy(principal):
+                return principal.person.account
+            else:
+                return None
+            # if IOpenIDPrincipal.providedBy(principal):
+            #     return principal.account
+            # elif ILaunchpadPrincipal.providedBy(principal):
+            #     return principal.person.account
+            # else:
+            #     return None
+
+    @property
     def user_identity_url(self):
-        return OpenIDPersistentIdentity(self.user.account).openid_identity_url
+        return OpenIDPersistentIdentity(self.account).openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
-        assert self.user is not None, "user should be logged in by now."
+        assert self.account is not None, "user should be logged in by now."
         return (self.openid_request.idSelect() or
                 self.openid_request.identity == self.user_identity_url)
 
@@ -216,16 +260,21 @@ class OpenIDMixin:
         Shipping information is taken from the last shipped Shipit
         request.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in to calculate sreg items')
         # Collect registration values
         values = {}
-        values['nickname'] = self.user.name
-        values['fullname'] = self.user.displayname
-        values['email'] = self.user.preferredemail.email
-        if self.user.time_zone is not None:
-            values['timezone'] = self.user.time_zone
-        shipment = self.user.lastShippedRequest()
+        values['fullname'] = self.account.displayname
+        values['email'] = self.account.preferredemail.email
+        # XXX: salgado, 2009-02-12: When I complete this work there will be
+        # accounts without an associated Person, so all the values below will
+        # be available only if there's a Person associated with this user's
+        # account.
+        person = self.account.person
+        values['nickname'] = person.name
+        if person.time_zone is not None:
+            values['timezone'] = person.time_zone
+        shipment = person.lastShippedRequest()
         if shipment is not None:
             values['x_address1'] = shipment.addressline1
             values['x_city'] = shipment.city
@@ -250,8 +299,12 @@ class OpenIDMixin:
         the OpenID request, annotate the response with the list of
         teams the user is actually a member of.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in to calculate team membership')
+        # XXX: salgado, 2009-02-12: Will change this to return False when
+        # self.account.person is None; that will be possible when I complete
+        # this work.
+        person = self.account.person
         args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
         team_names = args.get('query_membership')
         if not team_names:
@@ -268,7 +321,7 @@ class OpenIDMixin:
                 and (self.rpconfig is None
                     or not self.rpconfig.can_query_any_team)):
                 continue
-            if self.user.inTeam(team):
+            if person.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
         openid_response.fields.setArg(
@@ -293,7 +346,7 @@ class OpenIDMixin:
         user most have logged in not more than that number of seconds ago,
         Otherwise, they'll have to enter their password again.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in to query for max_auth_age check')
         pape_request = pape.Request.fromOpenIDRequest(self.openid_request)
 
@@ -329,7 +382,7 @@ class OpenIDMixin:
         then additional user information is included with the
         response.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in for positive OpenID response')
         assert self.openid_request is not None, (
             'No OpenID request to respond to.')
@@ -362,8 +415,7 @@ class OpenIDMixin:
         #response.addExtension(pape_response)
 
         rp_summary_set = getUtility(IOpenIDRPSummarySet)
-        rp_summary_set.record(
-            self.user.account, self.openid_request.trust_root)
+        rp_summary_set.record(self.account, self.openid_request.trust_root)
 
         return response
 
@@ -425,7 +477,7 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
             if not self.canHandleIdentity():
                 return self.invalid_identity_template()
 
-            if self.user is None:
+            if self.account is None:
                 return self.showLoginPage()
             if not self.isIdentityOwner():
                 openid_response = self.createFailedResponse()
@@ -490,14 +542,14 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         """Check if the identity is authorized for the trust_root"""
         # Can't be authorized if we are not logged in, or logged in as a
         # user other than the identity owner.
-        if self.user is None or not self.isIdentityOwner():
+        if self.account is None or not self.isIdentityOwner():
             return False
 
         client_id = getUtility(IClientIdManager).getClientId(self.request)
         auth_set = getUtility(IOpenIDAuthorizationSet)
 
         return auth_set.isAuthorized(
-                self.user, self.openid_request.trust_root, client_id)
+                self.account, self.openid_request.trust_root, client_id)
 
 
 class LoginServiceBaseView(OpenIDMixin, LaunchpadFormView):
@@ -566,7 +618,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
     def auth_action(self, action, data):
         # If the user is not logged in (e.g. if they used the back
         # button in their browser, send them to the login page).
-        if self.user is None:
+        if self.account is None:
             return LoginServiceLoginView(
                 self.context, self.request, self.nonce)()
         self.trashRequest()
@@ -772,7 +824,7 @@ class PreAuthorizeRPView(LaunchpadView):
             expires = (datetime.now(pytz.timezone('UTC'))
                        + timedelta(hours=self.PRE_AUTHORIZATION_VALIDITY))
             getUtility(IOpenIDAuthorizationSet).authorize(
-                self.user, trust_root, expires, client_id)
+                self.account, trust_root, expires, client_id)
             # Need to commit the transaction because this will always be
             # processing GET requests.
             import transaction
