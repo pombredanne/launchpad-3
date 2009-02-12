@@ -1358,6 +1358,19 @@ h1.disabled {
     color: grey;
 }
 
+p.update-failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
+
+p.update-in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+
+a.update-retry {
+    padding-left: 1em;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
@@ -1414,6 +1427,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusMERGE_FAILED      {color: red;}
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
+
+.stale-diff { color: #f60; }
+.conflicts-diff { color: red; }
 
 .branch-no-dev-focus {
   background: #FFF59C;

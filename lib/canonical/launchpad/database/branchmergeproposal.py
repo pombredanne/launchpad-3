@@ -619,6 +619,7 @@ class BranchMergeProposal(SQLBase):
         self.preview_diff.update(
             diff_content, diff_stat, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
+        return self.preview_diff
 
 
 class BranchMergeProposalGetter:
