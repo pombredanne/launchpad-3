@@ -22,7 +22,7 @@ __all__ = [
     ]
 
 
-import urllib
+import datetime, urllib
 
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import IInputWidget
@@ -1479,19 +1479,32 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
         """Return whether this archive has any subscribers."""
         return self.subscriptions.count() > 0
 
-    def validate_subscription(self, action, data):
-        """Ensure the subscriber isn't already subscribed."""
+    def validate_new_subscription(self, action, data):
+        """Ensure the subscriber isn't already subscribed.
+
+        Also ensures that the expiry date is in the future.
+        """
         form.getWidgetsData(self.widgets, 'field', data)
 
         subscriber_set = getUtility(IArchiveSubscriberSet)
         current_subscription = subscriber_set.getBySubscriber(
             data['subscriber'])
 
-        if current_subscription:
+        if current_subscription.count() > 0:
             self.setFieldError('subscriber',
                 "%s is already subscribed." % data['subscriber'].displayname)
 
-    @action(u"Add Subscriber", name="add", validator="validate_subscription")
+        date_expires = data['date_expires']
+        if date_expires:
+            # date_expires includes tzinfo, and is only comparable with
+            # other datetime objects that include tzinfo.
+            now = datetime.datetime.now().replace(tzinfo=date_expires.tzinfo)
+            if date_expires < now:
+                self.setFieldError('date_expires',
+                    "The expiry date must be in the future.")
+
+    @action(u"Add Subscriber", name="add",
+            validator="validate_new_subscription")
     def create_subscription(self, action, data):
         """Create a subscription for the supplied user."""
         self.context.newSubscription(
@@ -1505,7 +1518,4 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
         self.request.response.addNotification(structured(notification))
 
         # Just ensure a redirect happens (back to ourselves).
-        # Strange? Even though I'm setting the next_url here, and the
-        # LPFormView seems to call redirect, hitting refresh still tries
-        # to repost???
         self.next_url = str(self.request.URL)

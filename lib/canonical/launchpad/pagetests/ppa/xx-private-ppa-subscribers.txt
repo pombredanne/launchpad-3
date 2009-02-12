@@ -112,7 +112,7 @@ and clicks on the "Add subscriber" button
     ...     name='field.description').value = "spiv's my friend"
     >>> cprov_browser.getControl(name="field.actions.add").click()
 
-Then Celso is redirected to the subscribers page (how to test for redirect?)
+Then Celso is redirected to the subscribers page
 And the new subscription is displayed,
 And a notification about the new subscriber is also displayed.
 
@@ -129,8 +129,6 @@ Create a helper function to print subscriptions:
 
     >>> get_feedback_messages(cprov_browser.contents)
     [u'Andrew Bennetts has been added as a subscriber.']
-
-Can't add the same person/team twice...
 
 In addition, a notification is sent to spiv directing him to his
 own subscribers page where he can see a sources.list entries

@@ -872,10 +872,19 @@ error. Nothing was copied to Ubuntu-team PPA.
 The ArchiveSubscribersView presents all the subscribers for an archive, as
 well as allowing the addition of new subscribers.
 
+Initially the view does not display any subscribers, as can be seen
+using the has_subscriptions property:
+
+    >>> view = create_initialized_view(cprov.archive, name="+subscribers")
+    >>> view.has_subscriptions
+    False
+
 The view can be used to add a new subscriber:
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+subscribers", method="POST",
+    ...     server_url=
+    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscribers",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's my friend",
@@ -883,21 +892,24 @@ The view can be used to add a new subscriber:
     ...         'field.actions.add': 'Add'
     ...         })
 
-The view redirects to itself when a new subscriber is added successfully:
+The view redirects to itself when a new subscriber has been added
+successfully:
 
     >>> view.request.response.getStatus()
     302
-
-The view includes a helper method has_subscriptions():
-
+    >>> print view.request.response.getHeader('location')
+    https://launchpad.dev/~cprov/+archive/ppa/+subscribers
     >>> view.has_subscriptions
     True
 
 The view includes a subscribers property that returns all the current
 subscribers:
 
-    >>> [subscription.subscriber.displayname for subscription in view.subscriptions]
+    >>> [subscription.subscriber.displayname 
+    ...     for subscription in view.subscriptions]
     [u'Andrew Bennetts']
+
+    >>> transaction.commit()
 
 The same subscriber cannot be added a second time:
 
@@ -910,10 +922,43 @@ The same subscriber cannot be added a second time:
     ...         'field.actions.add': 'Add'
     ...         })
 
-In this case, the view will not redirect, but will instead display a
-validation error:
+In this case the view will include validation errors:
 
-    >>> view.request.response.getStatus()
-    200
     >>> view.errors
     [u'Andrew Bennetts is already subscribed.']
+
+A second subscriber can be added, this time a team, but the date_expires
+must be in the future:
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     server_url=
+    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscribers",
+    ...     form={
+    ...         'field.subscriber': 'launchpad',
+    ...         'field.description': "The launchpad team can use it.",
+    ...         'field.date_expires': '1980-12-10',
+    ...         'field.actions.add': 'Add'
+    ...         })
+    >>> view.errors
+    [u'The expiry date must be in the future.']
+
+So we try again with an expiry date in the future:
+
+    >>> import datetime
+    >>> future_date = datetime.date.today() + datetime.timedelta(30)
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     server_url=
+    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscribers",
+    ...     form={
+    ...         'field.subscriber': 'launchpad',
+    ...         'field.description': "The launchpad team can use it.",
+    ...         'field.date_expires': str(future_date),
+    ...         'field.actions.add': 'Add'
+    ...         })
+    >>> view.errors
+    []
+    >>> [subscription.subscriber.displayname
+    ...     for subscription in view.subscriptions]
+    [u'Andrew Bennetts', u'Launchpad Developers']
