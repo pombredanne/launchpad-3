@@ -53,8 +53,9 @@ class RecipientReason:
     """Reason for sending mail to a recipient."""
 
     def __init__(self, subscriber, recipient, branch, mail_header,
-        reason_template, merge_proposal=None,
-        max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF):
+                 reason_template, merge_proposal=None,
+                 max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
+                 branch_identity_cache=None):
         self.subscriber = subscriber
         self.recipient = recipient
         self.branch = branch
@@ -62,18 +63,33 @@ class RecipientReason:
         self.reason_template = reason_template
         self.merge_proposal = merge_proposal
         self.max_diff_lines = max_diff_lines
+        if branch_identity_cache is None:
+            branch_identity_cache = {}
+        self.branch_identity_cache = branch_identity_cache
+
+    def _getBranchIdentity(self, branch):
+        """Get the branch identity out of the cache, or generate it."""
+        try:
+            return self.branch_identity_cache[branch]
+        except KeyError:
+            # Don't bother trying to remember the cache, as the cache only
+            # makes sense across multiple instances of this type of object.
+            return branch.bzr_identity
 
     @classmethod
     def forBranchSubscriber(
-        klass, subscription, recipient, rationale, merge_proposal=None):
+        klass, subscription, recipient, rationale, merge_proposal=None,
+        branch_identity_cache=None):
         """Construct RecipientReason for a branch subscriber."""
         return klass(
             subscription.person, recipient, subscription.branch, rationale,
             '%(entity_is)s subscribed to branch %(branch_name)s.',
-            merge_proposal, subscription.max_diff_lines)
+            merge_proposal, subscription.max_diff_lines,
+            branch_identity_cache=branch_identity_cache)
 
     @classmethod
-    def forReviewer(klass, vote_reference, recipient):
+    def forReviewer(klass, vote_reference, recipient,
+                    branch_identity_cache=None):
         """Construct RecipientReason for a reviewer.
 
         The reviewer will be the sole recipient.
@@ -87,9 +103,12 @@ class RecipientReason:
             reason_template = (
                 '%(entity_is)s reviewing %(merge_proposal)s.')
         return klass(vote_reference.reviewer, recipient, branch,
-                     'Reviewer', reason_template, merge_proposal)
+                     'Reviewer', reason_template, merge_proposal,
+                     branch_identity_cache=branch_identity_cache)
+
     @classmethod
-    def forBranchOwner(klass, branch, recipient):
+    def forBranchOwner(klass, branch, recipient,
+                       branch_identity_cache=None):
         """Construct RecipientReason for a branch owner.
 
         The owner will be the sole recipient.
@@ -98,7 +117,8 @@ class RecipientReason:
                      klass.makeRationale('Owner', branch.owner, recipient),
                      'You are getting this email as %(lc_entity_is)s the'
                      ' owner of the branch and someone has edited the'
-                     ' details.')
+                     ' details.',
+                     branch_identity_cache=branch_identity_cache)
 
     @staticmethod
     def makeRationale(rationale_base, subscriber, recipient):
@@ -110,13 +130,15 @@ class RecipientReason:
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
         template_values = {
-            'branch_name': self.branch.bzr_identity,
+            'branch_name': self._getBranchIdentity(self.branch),
             'entity_is': 'You are',
             'lc_entity_is': 'you are',
             }
         if self.merge_proposal is not None:
-            source = self.merge_proposal.source_branch.bzr_identity
-            target = self.merge_proposal.target_branch.bzr_identity
+            source = self._getBranchIdentity(
+                self.merge_proposal.source_branch)
+            target = self._getBranchIdentity(
+                self.merge_proposal.target_branch)
             template_values['merge_proposal'] = (
                 'the proposed merge of %s into %s' % (source, target))
         if self.recipient != self.subscriber:

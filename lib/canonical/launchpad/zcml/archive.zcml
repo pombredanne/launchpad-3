@@ -91,10 +91,23 @@
       facet="overview"
       name="+index"
       />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.View">
     <browser:page
       template="../templates/archive-ppa-row.pt"
       facet="overview"
       name="+ppa-row"
+      />
+    <browser:page
+      name="+portlet-privacy"
+      template="../templates/archive-portlet-privacy.pt"
+      />
+    <browser:page
+      template="../templates/archive-repository-size.pt"
+      name="+repository-size"
       />
   </browser:pages>
 
@@ -110,10 +123,6 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      />
-    <browser:page
-      name="+portlet-privacy"
-      template="../templates/archive-portlet-privacy.pt"
       />
   </browser:pages>
 

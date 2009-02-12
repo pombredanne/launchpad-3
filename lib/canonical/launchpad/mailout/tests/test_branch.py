@@ -6,6 +6,7 @@ from unittest import TestLoader
 
 from canonical.testing import DatabaseFunctionalLayer
 
+from canonical.launchpad.database import Branch
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -93,6 +94,27 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual(
             'Your team Qux is subscribed to branch %s.'
             % bmp.source_branch.bzr_identity, reason.getReason())
+
+    def test_usesBranchIdentityCache(self):
+        """Ensure that the cache is used for branches if provided."""
+        branch = self.factory.makeAnyBranch()
+        subscription = branch.getSubscription(branch.owner)
+        branch_cache = {branch: 'lp://fake'}
+        def blowup(self):
+            raise AssertionError('boom')
+        patched = Branch.bzr_identity
+        Branch.bzr_identity = property(blowup)
+        def cleanup():
+            Branch.bzr_identity = patched
+        self.addCleanup(cleanup)
+        self.assertRaises(AssertionError, getattr, branch, 'bzr_identity')
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscription.person, '',
+            branch_identity_cache=branch_cache)
+        self.assertEqual(
+            'You are subscribed to branch lp://fake.',
+            reason.getReason())
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

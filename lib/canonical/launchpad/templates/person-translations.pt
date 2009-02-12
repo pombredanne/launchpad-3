@@ -57,9 +57,9 @@
               <div tal:content="translationmessage/potmsgset/singular_text" />
               <div
                 tal:condition="python:not(view.should_display_message(translationmessage))">
-                <strong>To prevent privacy issues, this translation is not
-                available to anonymous users, if you want to see it,
-                please, <a href="+login">log in</a> first.</strong></div>
+                <strong>For privacy reasons this translation is not visible to
+                 anonymous visitors.  To see it,
+                <a href="+login">log in</a> first.</strong></div>
               <div
                 tal:condition="python:view.should_display_message(translationmessage)">
                 <tal:block
@@ -94,9 +94,9 @@
       <table class="listing">
         <thead>
           <tr>
-            <th>Translation Group</th>
+            <th>Translation group</th>
             <th>Language</th>
-            <th>Documentation URL</th>
+            <th>Translation guidelines</th>
           </tr>
         </thead>
         <tbody>
