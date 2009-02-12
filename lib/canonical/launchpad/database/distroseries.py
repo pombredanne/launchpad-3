@@ -18,14 +18,12 @@ from sqlobject import (
     SQLObjectNotFound, SQLRelatedJoin)
 
 from storm.locals import SQL, Join
-from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -1671,9 +1669,19 @@ class DistroSeriesSet:
 
     def translatables(self):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.select(
-            "POTemplate.distroseries=DistroSeries.id",
-            clauseTables=['POTemplate'], distinct=True)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        # Join POTemplate distinctly to only get entries with available
+        # translations.
+        result_set = store.using((DistroSeries, POTemplate)).find(
+            DistroSeries,
+            DistroSeries.hide_all_translations == False,
+            DistroSeries.id == POTemplate.distroseriesID
+            ).config(distinct=True)
+        # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
+        # because ResultSet reports a wrong count() when using DISTINCT. Also
+        # ResultSet does not implement __len__(), which would make it more
+        # like a sequence.
+        return list(result_set)
 
     def findByName(self, name):
         """See `IDistroSeriesSet`."""

@@ -639,3 +639,30 @@ are returned.
     >>> for submission in hw_submission_set.search(driver=ehci_driver):
     ...     print submission.submission_key
     sample-submission
+
+If a distroseries is specified, only submissions for that distroseries
+are returned.
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+
+    >>> warty = ubuntu['warty']
+    >>> warty_arch_series = factory.makeDistroArchSeries(distroseries=warty)
+    >>> submission = factory.makeHWSubmission(distroarchseries=warty_arch_series)
+    >>> for submission in hw_submission_set.search(distroseries=warty):
+    ...     print submission.distroarchseries.distroseries.name
+    warty
+
+It is also possible to search for a distroseries and architecture.
+
+    >>> from canonical.launchpad.interfaces import IProcessorFamilySet
+    >>> amd64 = getUtility(IProcessorFamilySet).getByName('amd64')
+    >>> warty_amd64 = factory.makeDistroArchSeries(
+    ...     distroseries=warty, architecturetag='amd64',
+    ...     processorfamily=amd64)
+    >>> submission = factory.makeHWSubmission(distroarchseries=warty_amd64)
+    >>> for submission in hw_submission_set.search(distroseries=warty, architecture='amd64'):
+    ...     print '%s %s ' % (
+    ...         submission.distroarchseries.distroseries.name,
+    ...         submission.distroarchseries.architecturetag)
+    warty amd64

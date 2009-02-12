@@ -33,6 +33,39 @@ that person's canonical URL.
   Location: http://.../~salgado
   ...
 
+The redirect has an extra twist when the resource was requested from a
+web browser as opposed to a web service client. When a web browser
+follows a redirect, it does not re-send the Accept header from the
+original request. This can lead to Launchpad serving the wrong
+document. To avoid this problem, Launchpad sends the original Accept
+header in the redirect URL itself, so it can look it up when the
+browser follows the redirect.
+
+  >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
+  >>> print http("""GET /api/beta/people/+me HTTP/1.1
+  ... Host: launchpad.dev
+  ... Authorization: %s""" % sample_auth)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://launchpad.dev/api/beta/~name12?ws.accept=application/json
+  ...
+
+Upon getting this response, Firefox (for example) makes a request to
+http://launchpad.dev/api/beta/~name12?ws.accept=application/json,
+sending an Accept header that asks for an HTML representation. Because
+of the ws.accept query parameter, Launchpad knows that a JSON
+representation is "really" what's desired.
+
+  >>> print http("""GET /api/beta/~name12?ws.accept=application/json HTTP/1.1
+  ... Host: launchpad.dev
+  ... Accept: application/xhtml+xml
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=""")
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
+
+
 Data is served encoded in UTF-8; a good client will automatically
 convert it into Unicode.
 
@@ -46,9 +79,8 @@ By varying the 'Accept' header, the client can request either a JSON
 or XHTML representation of an entry, or a WADL description of the
 entry's capabilities.
 
-  >>> def negotiated_type(accept_header):
-  ...     return webservice.get('/~salgado',
-  ...                           accept_header).getHeader('Content-Type')
+  >>> def negotiated_type(accept_header, uri='/~salgado'):
+  ...     return webservice.get(uri, accept_header).getHeader('Content-Type')
 
   >>> negotiated_type('application/json')
   'application/json'
@@ -81,6 +113,23 @@ entry's capabilities.
   >>> negotiated_type('application/json;q=0, application/xhtml+xml;q=0.05,'
   ...                 'application/vd.sun.wadl+xml;q=0.1')
   'application/vd.sun.wadl+xml'
+
+  >>> def qs_negotiated_type(query_string, header):
+  ...     uri = '/~salgado?ws.accept=' + query_string
+  ...     return negotiated_type(header, uri)
+
+The client can also set the 'ws.accept' query string variable, which
+will take precedence over any value set for the Accept header.
+
+  >>> qs_negotiated_type('application/json', None)
+  'application/json'
+
+  >>> qs_negotiated_type('application/json', 'application/xhtml+xml')
+  'application/json'
+
+  >>> negotiated_type('application/json;q=0, application/xhtml+xml;q=0.5,'
+  ...                 'application/json;q=0.5, application/xhtml+xml;q=0,')
+  'application/xhtml+xml'
 
 
 == XHTML representations ==
