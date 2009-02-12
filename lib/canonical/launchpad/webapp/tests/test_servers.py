@@ -9,9 +9,9 @@ from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
 from canonical.launchpad.webapp.servers import (
-    ApplicationServerSettingRequestFactory, BugsBrowserRequest,
-    BugsPublication, LaunchpadBrowserRequest,
-    VHostWebServiceRequestPublicationFactory,
+    AnswersBrowserRequest, ApplicationServerSettingRequestFactory,
+    BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
+    TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
     WEBSERVICE_PATH_OVERRIDE, WebServiceClientRequest, WebServicePublication,
     WebServiceTestRequest)
@@ -289,6 +289,50 @@ class TestWebServiceRequest(unittest.TestCase):
         # the Same Origin web browser policy.
         request = WebServiceTestRequest(environ=env)
         self.assertEqual(request.getApplicationURL(), server_url)
+
+    def test_response_should_vary_based_on_content_type(self):
+        request = WebServiceClientRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, Authorization, Accept')
+
+
+class TestBasicLaunchpadRequest(unittest.TestCase):
+    """Tests for the base request class"""
+
+    def test_baserequest_response_should_vary(self):
+        """Test that our base response has a proper vary header."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'), 'Cookie, Authorization')
+
+    def test_baserequest_response_should_vary_after_retry(self):
+        """Test that our base response has a proper vary header."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        retried_request = request.retry()
+        self.assertEquals(
+            retried_request.response.getHeader('Vary'),
+            'Cookie, Authorization')
+
+
+class TestAnswersBrowserRequest(unittest.TestCase):
+    """Tests for the Answers request class."""
+
+    def test_response_should_vary_based_on_language(self):
+        request = AnswersBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, Authorization, Accept-Language')
+
+
+class TestTranslationsBrowserRequest(unittest.TestCase):
+    """Tests for the Translations request class."""
+
+    def test_response_should_vary_based_on_language(self):
+        request = TranslationsBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, Authorization, Accept-Language')
 
 
 class TestLaunchpadBrowserRequest(unittest.TestCase):

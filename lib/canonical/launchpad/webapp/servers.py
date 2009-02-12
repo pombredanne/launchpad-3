@@ -8,6 +8,7 @@ __metaclass__ = type
 import cgi
 import pytz
 import threading
+import urllib
 import xmlrpclib
 from datetime import datetime
 
@@ -500,6 +501,9 @@ class BasicLaunchpadRequest:
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
+        # Our response always vary based on authentication.
+        self.response.setHeader('Vary', 'Cookie, Authorization')
+
     @property
     def stepstogo(self):
         return StepsToGo(self)
@@ -507,7 +511,7 @@ class BasicLaunchpadRequest:
     def retry(self):
         """See IPublisherRequest."""
         new_request = super(BasicLaunchpadRequest, self).retry()
-        # propagate the list of keys we have set in the WSGI environment
+        # Propagate the list of keys we have set in the WSGI environment.
         new_request._wsgi_keys = self._wsgi_keys
         return new_request
 
@@ -993,6 +997,13 @@ class TranslationsPublication(LaunchpadBrowserPublication):
 class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.TranslationsLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(TranslationsBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Some of the responses from translations vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 # ---- bugs
 
 class BugsPublication(LaunchpadBrowserPublication):
@@ -1008,6 +1019,14 @@ class AnswersPublication(LaunchpadBrowserPublication):
 
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.AnswersLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(AnswersBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Many of the responses from Answers vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 
 # ---- shipit
 
@@ -1210,6 +1229,41 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # revisited.
         txn.commit()
 
+    def callObject(self, request, object):
+        """Help web browsers handle redirects correctly."""
+        value = super(WebServicePublication, self).callObject(
+            request, object)
+        if request.response.getStatus() / 100 == 3:
+            vhost = URI(request.getApplicationURL()).host
+            api = allvhosts.configs['api']
+            if vhost != api.hostname and vhost not in api.althostnames:
+                # This request came in on a vhost other than the
+                # dedicated web service vhost. That means it was
+                # probably sent by a web browser. Because web
+                # browsers, content negotiation, and redirects are a
+                # deadly combination, we're going to help the browser
+                # out a little.
+                #
+                # We're going to take the current request's "Accept"
+                # header and put it into the URL specified in the
+                # Location header. When the web browser makes its
+                # request, it will munge the original 'Accept' header,
+                # but because the URL it's accessing will include the
+                # old header in the "ws.accept" header, we'll still be
+                # able to serve the right document.
+                location = request.response.getHeader("Location", None)
+                if location is not None:
+                    accept = request.response.getHeader(
+                        "Accept", "application/json")
+                    qs_append = "ws.accept=" + urllib.quote(accept)
+                uri = URI(location)
+                if uri.query is None:
+                    uri.query = qs_append
+                else:
+                    uri.query += '&' + qs_append
+                request.response.setHeader("Location", str(uri))
+        return value
+
     def getPrincipal(self, request):
         """See `LaunchpadBrowserPublication`.
 
@@ -1322,6 +1376,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
     implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(WebServiceClientRequest, self).__init__(
+            body_instream, environ, response)
+        # Web service requests use content negotiation.
+        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
 
 
 def website_request_to_web_service_request(website_request):
