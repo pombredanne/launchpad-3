@@ -41,6 +41,13 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IPerson"
+    for="canonical.launchpad.interfaces.IAccount"
+    factory="canonical.launchpad.database.person.person_from_account"
+    permission="zope.Public"
+    />
+
   <class class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>

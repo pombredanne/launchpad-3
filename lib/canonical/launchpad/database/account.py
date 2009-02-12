@@ -54,12 +54,6 @@ class Account(SQLBase):
         dbName='old_openid_identifier', notNull=False, default=DEFAULT)
 
     @property
-    def person(self):
-        """See `IAccount`."""
-        from canonical.launchpad.database.person import Person
-        return Store.of(self).find(Person, account=self).one()
-
-    @property
     def preferredemail(self):
         """See `IAccount`."""
         from canonical.launchpad.database.emailaddress import EmailAddress

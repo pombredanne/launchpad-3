@@ -270,7 +270,7 @@ class OpenIDMixin:
         # accounts without an associated Person, so all the values below will
         # be available only if there's a Person associated with this user's
         # account.
-        person = self.account.person
+        person = IPerson(self.account)
         values['nickname'] = person.name
         if person.time_zone is not None:
             values['timezone'] = person.time_zone
@@ -304,7 +304,7 @@ class OpenIDMixin:
         # XXX: salgado, 2009-02-12: Will change this to return False when
         # self.account.person is None; that will be possible when I complete
         # this work.
-        person = self.account.person
+        person = IPerson(self.account)
         args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
         team_names = args.get('query_membership')
         if not team_names:

@@ -189,11 +189,6 @@ class IAccountPublic(Interface):
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
-    # We should use schema=IPerson here, but we can't because that would cause
-    # circular dependencies.
-    person = Reference(
-        title=_('Person'), required=True, readonly=True, schema=Interface)
-
     # We should use schema=IEmailAddress here, but we can't because that would
     # cause circular dependencies.
     preferredemail = Reference(

@@ -79,13 +79,10 @@ The account implements the IAccount interface.
     >>> verifyObject(IAccount, account)
     True
 
-An account has a displayname, the Person associated with it and a preferred
-email address.
+An account has a displayname, and a preferred email address.
 
     >>> print account.displayname
     No Privileges Person
-    >>> print account.person.name
-    no-priv
     >>> print account.preferredemail.email
     no-priv@canonical.com
 
@@ -193,8 +190,6 @@ rationale and displayname are required.
     >>> passwordless_account.displayname
     u'Passwordless'
     >>> print passwordless_account.password
-    None
-    >>> print passwordless_account.person
     None
     >>> print passwordless_account.preferredemail
     None
