@@ -108,7 +108,8 @@ class StaticDiff(SQLBase):
     diff = ForeignKey(foreignKey='Diff', notNull=True)
 
     @classmethod
-    def acquire(klass, from_revision_id, to_revision_id, repository):
+    def acquire(klass, from_revision_id, to_revision_id, repository,
+                filename=None):
         """See `IStaticDiffSource`."""
         existing_diff = klass.selectOneBy(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id)
@@ -116,19 +117,20 @@ class StaticDiff(SQLBase):
             return existing_diff
         from_tree = repository.revision_tree(from_revision_id)
         to_tree = repository.revision_tree(to_revision_id)
-        diff = Diff.fromTrees(from_tree, to_tree)
+        diff = Diff.fromTrees(from_tree, to_tree, filename)
         return klass(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
 
     @classmethod
-    def acquireFromText(klass, from_revision_id, to_revision_id, text):
+    def acquireFromText(klass, from_revision_id, to_revision_id, text,
+                        filename=None):
         """See `IStaticDiffSource`."""
         existing_diff = klass.selectOneBy(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id)
         if existing_diff is not None:
             return existing_diff
-        diff = Diff.fromFile(StringIO(text), len(text))
+        diff = Diff.fromFile(StringIO(text), len(text), filename)
         return klass(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
