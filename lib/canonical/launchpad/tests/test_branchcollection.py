@@ -128,6 +128,14 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = all_branches.ownedBy(person).inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_in_source_package(self):
+        branch = self.factory.makePackageBranch()
+        branch2 = self.factory.makePackageBranch()
+        branch3 = self.factory.makeAnyBranch()
+        all_branches = GenericBranchCollection(self.store)
+        collection = all_branches.inSourcePackage(branch.sourcepackage)
+        self.assertEqual([branch], list(collection.getBranches()))
+
     def test_withLifecycleStatus(self):
         branch1 = self.factory.makeAnyBranch(
             lifecycle_status=BranchLifecycleStatus.DEVELOPMENT)

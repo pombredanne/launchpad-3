@@ -50,6 +50,12 @@ class GenericBranchCollection:
         return self._store.find(
             Branch, *(self._branch_filter_expressions)).config(distinct=True)
 
+    def inSourcePackage(self, source_package):
+        """See `IBranchCollection`."""
+        return self.filterBy(
+            Branch.distroseries == source_package.distroseries,
+            Branch.sourcepackagename == source_package.sourcepackagename)
+
     def inProduct(self, product):
         """See `IBranchCollection`."""
         return self.filterBy(Branch.product == product)
