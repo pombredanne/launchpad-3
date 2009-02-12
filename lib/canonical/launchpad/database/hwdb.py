@@ -286,9 +286,10 @@ class HWSubmissionSet:
             or architecture is not None):
             # We need to select a specific distribution, distroseries,
             # and/or processor architecture.
-            assert(not(distribution and distroseries),
-                   'Only one of `distribution` or `distroseries` '
-                   'can be present.')
+            if distribution and distroseries:
+                raise AssertionError(
+                    'Only one of `distribution` or '
+                    '`distroseries` can be present.')
             args.append(HWSubmission.distroarchseries == DistroArchSeries.id)
             if architecture is not None:
                 args.append(DistroArchSeries.architecturetag == architecture)
