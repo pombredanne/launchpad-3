@@ -537,6 +537,12 @@ class POFileTranslateView(BaseTranslationView):
         if show_option_changed:
             if 'start' in self.request:
                 del self.request.form['start']
+
+            # Note: the BatchNavigator has now been updated so that it
+            # gets the parameters out of the request.query_string_params
+            # dict by default. Therefore, if the type of translations
+            # we are showing has changed, we need remove the 'start' option
+            # from request.query_string_params as well.
             if 'start' in self.request.query_string_params:
                 del self.request.query_string_params['start']
 

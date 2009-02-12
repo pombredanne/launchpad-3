@@ -457,6 +457,7 @@ class ILaunchpadBrowserApplicationRequest(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
 
+
 # XXX SteveAlexander 2005-09-14: These need making into a launchpad version
 #     rather than the zope versions for the publisher simplification work.
 # class IEndRequestEvent(Interface):

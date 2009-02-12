@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-import cgi, urllib
+import urllib
 
 from zope.interface import implements
 
@@ -94,8 +94,8 @@ class BatchNavigator:
         # of using the request (which automatically gets the params from the
         # request.form dict).
         if request.method == 'POST' and (
-            request.form.has_key(self.start_variable_name) or
-            request.form.has_key(self.batch_variable_name)):
+            self.start_variable_name in request.form or
+            self.batch_variable_name in request.form):
             batch_params_source = request
 
         # In this code we ignore invalid request variables since it
@@ -154,10 +154,16 @@ class BatchNavigator:
         self._singular_heading = singular
         self._plural_heading = plural
 
-    def cleanQueryString(self, query_string_params):
-        """Removes start and batch params from a query string."""
+    def getCleanQueryString(self, params=None):
+        """Removes start and batch params if present and returns a query
+        string.
+
+        If ``params`` is None, uses the current request.query_string_params.
+        """
+        if params is None:
+            params = self.request.query_string_params
         return urllib.urlencode(
-            [(key, value) for (key, value) in query_string_params.items()
+            [(key, value) for (key, value) in sorted(params.items())
              if key not in self.transient_parameters])
 
     def generateBatchURL(self, batch):
@@ -165,7 +171,7 @@ class BatchNavigator:
         if not batch:
             return url
 
-        qs = self.cleanQueryString(self.request.query_string_params)
+        qs = self.getCleanQueryString()
         if qs:
             qs += "&"
 
@@ -174,8 +180,8 @@ class BatchNavigator:
         base_url = str(self.request.URL)
         url = "%s?%s%s=%d" % (base_url, qs, self.start_variable_name, start)
         if size != self.default_size:
-            # The default batch size should only be part of the URL if it's
-            # different from the default value.
+            # The current batch size should only be part of the URL if it's
+            # different from the default batch size.
             url = "%s&%s=%d" % (url, self.batch_variable_name, size)
         return url
 
