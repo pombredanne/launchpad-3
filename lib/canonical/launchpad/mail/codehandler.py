@@ -368,7 +368,18 @@ class CodeHandler:
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
             return
-        source, target = self._acquireBranchesForProposal(md, submitter)
+
+        #import pdb; pdb.set_trace()
+        try:
+            source, target = self._acquireBranchesForProposal(md, submitter)
+        except NonLaunchpadTarget:
+            body = get_error_message('nonlaunchpadtarget.txt',
+                target_branch=md.target_branch)
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
+
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
             review_diff = diff_source.acquireFromText(
