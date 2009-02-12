@@ -154,6 +154,17 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = all_branches.registeredBy(registrant)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_subscribedBy(self):
+        branch = self.factory.makeAnyBranch()
+        subscriber = self.factory.makePerson()
+        branch.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
+        all_branches = GenericBranchCollection(self.store)
+        collection = all_branches.subscribedBy(subscriber)
+        self.assertEqual([branch], list(collection.getBranches()))
+
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
@@ -254,8 +265,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
     # XXX: Unclear what will happen with multiple user visiblity filters
     # applied.
-
-    # XXX: subscribed by person filter
 
 
 def test_suite():
