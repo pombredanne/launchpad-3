@@ -211,6 +211,7 @@ COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitio
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
 COMMENT ON COLUMN BugTask.hotness_rank IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessRank enumeration.';
 
+
 -- BugNotification
 
 COMMENT ON TABLE BugNotification IS 'The text representation of changes to a bug, which are used to send email notifications to bug changes.';
