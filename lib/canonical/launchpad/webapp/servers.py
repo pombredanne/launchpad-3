@@ -483,8 +483,7 @@ def get_query_string_params(request):
     if query_string is None:
         query_string = ''
 
-    return  dict(
-        cgi.parse_qsl(query_string, keep_blank_values=True))
+    return cgi.parse_qs(query_string, keep_blank_values=True)
 
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
@@ -757,7 +756,7 @@ class LaunchpadTestRequest(TestRequest):
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
     ...     QUERY_STRING='a=1&b=2&c=3')
-    >>> request.query_string_params == {'a': '1', 'b': '2', 'c': '3'}
+    >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
 
     It also provides the  hooks for popup calendar iframes:

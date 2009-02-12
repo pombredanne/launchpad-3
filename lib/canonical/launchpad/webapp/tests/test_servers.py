@@ -343,8 +343,8 @@ class TestLaunchpadBrowserRequest(unittest.TestCase):
         request = LaunchpadBrowserRequest('', {
             'QUERY_STRING': "a=1&b=2&c=3"})
         self.assertEqual(
-            request.query_string_params, 
-            {'a':'1', 'b': '2', 'c': '3'},
+            request.query_string_params,
+            {'a': ['1'], 'b': ['2'], 'c': ['3']},
             "The query_string_params dict is populated from the "
             "QUERY_STRING during GET requests.")
 
@@ -357,7 +357,7 @@ class TestLaunchpadBrowserRequest(unittest.TestCase):
         self.assertEqual(request.method, 'POST')
         self.assertEqual(
             request.query_string_params, 
-            {'a':'1', 'b': '2', 'c': '3'},
+            {'a':['1'], 'b': ['2'], 'c': ['3']},
             "The query_string_params dict is populated from the "
             "QUERY_STRING during POST requests.")
 
@@ -372,6 +372,16 @@ class TestLaunchpadBrowserRequest(unittest.TestCase):
         request = LaunchpadBrowserRequest('', {})
         self.assertEqual(request.query_string_params, {})
 
+    def test_query_string_params_multi_value(self):
+        """The query_string_params dict can include multiple values
+        for a parameter."""
+        request = LaunchpadBrowserRequest('', {
+            'QUERY_STRING': "a=1&a=2&b=3"})
+        self.assertEqual(
+            request.query_string_params,
+            {'a': ['1', '2'], 'b': ['3']},
+            "The query_string_params dict correctly interprets multiple "
+            "values for the same key in a query string.")
 
 def test_suite():
     suite = unittest.TestSuite()
