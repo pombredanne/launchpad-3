@@ -166,6 +166,15 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set([self.public_branch, self.private_branch1]),
             set(branches.getBranches()))
 
+    def test_owner_member_sees_own_branches(self):
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(team_owner)
+        private_branch = self.factory.makeAnyBranch(owner=team, private=True)
+        branches = self.all_branches.visibleByUser(team_owner)
+        self.assertEqual(
+            set([self.public_branch, private_branch]),
+            set(branches.getBranches()))
+
     def test_launchpad_services_sees_all(self):
         branches = self.all_branches.visibleByUser(LAUNCHPAD_SERVICES)
         self.assertEqual(
@@ -198,6 +207,22 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         branches = self.all_branches.visibleByUser(subscriber)
         self.assertEqual(
             set([self.public_branch, self.private_branch1]),
+            set(branches.getBranches()))
+
+    def test_subscribed_team_members_can_see_branches(self):
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(team_owner)
+        private_branch = self.factory.makeAnyBranch(private=True)
+        # Subscribe the team.
+        removeSecurityProxy(private_branch).subscribe(
+            team, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
+        # Members of the team can see the private branch that the team is
+        # subscribed to.
+        branches = self.all_branches.visibleByUser(team_owner)
+        self.assertEqual(
+            set([self.public_branch, private_branch]),
             set(branches.getBranches()))
 
     # XXX: Test subscribers

@@ -13,6 +13,7 @@ from zope.interface import implements
 
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
     user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
@@ -64,6 +65,9 @@ class GenericBranchCollection:
             user_has_special_branch_access(person)):
             return self
         return self.filterBy(
-            Or(Branch.private == False, Branch.owner == person,
+            Or(Branch.private == False,
+               And(Branch.owner == TeamParticipation.teamID,
+                   TeamParticipation.person == person),
                And(BranchSubscription.branch == Branch.id,
-                   BranchSubscription.person == person)))
+                   BranchSubscription.person == TeamParticipation.teamID,
+                   TeamParticipation.person == person)))
