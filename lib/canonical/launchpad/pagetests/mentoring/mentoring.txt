@@ -625,11 +625,13 @@ bug:
 
     >>> from canonical.launchpad.ftests.bug import print_direct_subscribers
 
+    >>> browser.open('http://launchpad.dev/bugs/10/+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(browser.contents)
     Foo Bar (Subscribed by Launchpad Janitor)
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
+  >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10')
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> browser.getControl(name='field.subscription_request').value = True
   >>> browser.getControl('Offer Mentoring').click()
@@ -638,6 +640,7 @@ Now we offer mentoring, and along the way we request to be subscribed:
 
 And now 'One Membership' is a subscriber:
 
+    >>> browser.open('http://launchpad.dev/bugs/10/+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(browser.contents)
     Foo Bar (Subscribed by Launchpad Janitor)
     One Membership (Subscribed themselves)

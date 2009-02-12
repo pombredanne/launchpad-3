@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
     IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
     IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
-    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet,
+    IllegalQuery)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -265,7 +266,7 @@ class HWSubmissionSet:
         return result_set
 
     def search(self, user=None, device=None, driver=None, distribution=None,
-               architecture=None):
+               distroseries=None, architecture=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
@@ -282,7 +283,14 @@ class HWSubmissionSet:
                         HWDeviceDriverLink.id)
             args.append(HWSubmissionDevice.submission == HWSubmission.id)
 
-        if distribution is not None or architecture is not None:
+        if (distribution is not None or distroseries is not None
+            or architecture is not None):
+            # We need to select a specific distribution, distroseries,
+            # and/or processor architecture.
+            if distribution and distroseries:
+                raise IllegalQuery(
+                    'Only one of `distribution` or '
+                    '`distroseries` can be present.')
             args.append(HWSubmission.distroarchseries == DistroArchSeries.id)
             if architecture is not None:
                 args.append(DistroArchSeries.architecturetag == architecture)
@@ -290,6 +298,9 @@ class HWSubmissionSet:
                 args.append(DistroArchSeries.distroseries == DistroSeries.id)
                 args.append(DistroSeries.distribution == Distribution.id)
                 args.append(Distribution.id == distribution.id)
+            if distroseries is not None:
+                args.append(DistroArchSeries.distroseries == distroseries.id)
+
         result_set = store.find(
             HWSubmission,
             self._userHasAccessStormClause(user),
@@ -538,11 +549,11 @@ class HWDevice(SQLBase):
         SQLBase._create(self, id, **kw)
 
     def getSubmissions(self, driver=None, distribution=None,
-                       architecture=None):
+                       distroseries=None, architecture=None):
         """See `IHWDevice.`"""
         return HWSubmissionSet().search(
-            device=self, distribution=distribution, driver=driver,
-            architecture=architecture)
+            device=self, driver=driver, distribution=distribution,
+            distroseries=distroseries, architecture=architecture)
 
     @property
     def drivers(self):

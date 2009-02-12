@@ -115,6 +115,15 @@ code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 a[onclick], .collapsible legend a               {color: #063;}
 a[onclick]:active, .collapsible legend a:active {color: #093;}
 
+/* Help links */
+a.help {
+  border-bottom: 1px dotted #03a;
+  cursor: help;}
+}
+a.help:hover, a.help:hover {
+  text-decoration: none;
+}
+
 h1, h2, h3, h4, h5, h6 {
   background: none;
   clear: left;
@@ -1358,6 +1367,19 @@ h1.disabled {
     color: grey;
 }
 
+p.update-failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
+
+p.update-in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+
+a.update-retry {
+    padding-left: 1em;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
@@ -1441,9 +1463,28 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   float: right;
 }
 .codereviewcomment {font: 120% monospace;}
-.codereviewcomment .attachment {
+.codereviewcomment .attachment, #review-diff .attachment {
   background-color: #f6f6f6;
 }
+#proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
+table.diff {
+   white-space: pre-wrap;
+   font: 120% monospace;
+   width: 100%;
+   background-color: white;
+}
+table.diff .text { width: 99%; padding-left: 0.5em; }
+table.diff .line-no {
+  text-align: right;
+  background-color: #f6f6f6;
+  color: #999;
+  border-right: solid 4px white;
+}
+table.diff .diff-chunk, table.diff .diff-file, table.diff .diff-header {
+ font-weight: bold;
+}
+table.diff .diff-added { background-color: #92ED92; }
+table.diff .diff-removed { background-color: #FF7F7F; }
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */
