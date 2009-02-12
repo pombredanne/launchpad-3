@@ -1,7 +1,7 @@
 # Copyright 2004, 2009 Canonical Ltd.  All rights reserved.
 """tales.py doctests."""
 
-import transaction
+from textwrap import dedent
 import unittest
 
 from storm.store import Store
@@ -9,8 +9,11 @@ from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
 
 from canonical.launchpad.ftests import test_tales
-from canonical.launchpad.testing import login, TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.testing import login, TestCase, TestCaseWithFactory
+from canonical.launchpad.testing.pages import find_tags_by_class
+from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 def test_requestapi():
@@ -186,6 +189,54 @@ def test_break_long_words():
       >>> print break_long_words('<tag>1234567890123456</tag>')
       <tag>1234567890123456</tag>
     """
+
+
+class TestDiffFormatter(TestCase):
+    """Test the string formtter fmt:diff."""
+    layer = DatabaseFunctionalLayer
+
+    def test_emptyString(self):
+        # An empty string gives an empty string.
+        self.assertEqual(
+            '', FormattersAPI('').format_diff())
+
+    def test_almostEmptyString(self):
+        # White space doesn't count as empty, and is formtted.
+        self.assertEqual(
+            '<table class="diff"><tr><td class="line-no">1</td>'
+            '<td class="text"> </td></tr></table>',
+            FormattersAPI(' ').format_diff())
+
+    def test_cssClasses(self):
+        # Different parts of the diff have different css classes.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        html = FormattersAPI(diff).format_diff()
+        line_numbers = find_tags_by_class(html, 'line-no')
+        self.assertEqual(
+            ['1','2','3','4','5','6','7','8','9'],
+            [tag.renderContents() for tag in line_numbers])
+        text = find_tags_by_class(html, 'text')
+        self.assertEqual(
+            ['diff-file text',
+             'diff-header text',
+             'diff-header text',
+             'diff-chunk text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-comment text',
+             'diff-comment text'],
+            [str(tag['class']) for tag in text])
 
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):

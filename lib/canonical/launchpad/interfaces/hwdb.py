@@ -36,6 +36,7 @@ __all__ = [
     'IHWVendorIDSet',
     'IHWVendorName',
     'IHWVendorNameSet',
+    'IllegalQuery',
     ]
 
 from zope.component import getUtility
