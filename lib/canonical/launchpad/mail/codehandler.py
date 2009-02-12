@@ -225,18 +225,18 @@ class CodeHandler:
         Emails may be converted to CodeReviewComments, and / or
         BranchMergeProposals.
         """
-        try:
-            if email_addr.startswith('merge@'):
-                self.processMergeProposal(mail)
-                return True
-            else:
+        if email_addr.startswith('merge@'):
+            self.processMergeProposal(mail)
+            return True
+        else:
+            try:
                 return self.processComment(mail, email_addr, file_alias)
-        except AssertionError:
-            body = get_error_message('messagemissingsubject.txt')
-            simple_sendmail('merge@code.launchpad.net',
-                [mail.get('from')],
-                'Error Creating Merge Proposal', body)
-            return
+            except AssertionError:
+                body = get_error_message('messagemissingsubject.txt')
+                simple_sendmail('merge@code.launchpad.net',
+                    [mail.get('from')],
+                    'Error Creating Merge Proposal', body)
+                return
 
     def processComment(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
