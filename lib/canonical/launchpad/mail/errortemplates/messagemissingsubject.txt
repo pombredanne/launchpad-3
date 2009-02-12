@@ -1,0 +1,3 @@
+Your message did not contain a subject.  Launchpad requires all emails to
+contain subject lines.  Please re-send your email including the subject line.
+
