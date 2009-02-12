@@ -208,7 +208,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://.../people?ws.op=find&text=s&ws.start=5&ws.size=5'
+  u'http://.../people?text=s&ws.op=find&ws.start=5&ws.size=5'
   >>> sorted(p['name'] for p in s_people['entries'])
   [u'keybuk', u'salgado', u'sigurd-ubuntu', u'sjoerd', u'stevea']
 
