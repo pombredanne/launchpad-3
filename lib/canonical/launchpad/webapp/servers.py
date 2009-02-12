@@ -477,7 +477,7 @@ def get_query_string_params(request):
     """
     query_string = request.get('QUERY_STRING', '')
 
-    # Just in case QUERY_STRING is in the environment explicitely as
+    # Just in case QUERY_STRING is in the environment explicitly as
     # None (Some tests seem to do this, but not sure if it can ever
     # happen outside of tests.)
     if query_string is None:
