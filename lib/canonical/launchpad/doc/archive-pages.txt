@@ -872,19 +872,29 @@ error. Nothing was copied to Ubuntu-team PPA.
 The ArchiveSubscribersView presents all the subscribers for an archive, as
 well as allowing the addition of new subscribers.
 
+First, ensure that the archives we'll be using are private:
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.buildd_secret = 'boing'
+    >>> cprov.archive.private = True
+    >>> sabdfl.archive.buildd_secret = 'boing'
+    >>> sabdfl.archive.private = True
+    >>> logout()
+
 Initially the view does not display any subscribers, as can be seen
 using the has_subscriptions property:
 
-    >>> view = create_initialized_view(cprov.archive, name="+subscribers")
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(cprov.archive, name="+subscriptions")
     >>> view.has_subscriptions
     False
 
 The view can be used to add a new subscriber:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     cprov.archive, name="+subscriptions", method="POST",
     ...     server_url=
-    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscribers",
+    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's my friend",
@@ -898,23 +908,23 @@ successfully:
     >>> view.request.response.getStatus()
     302
     >>> print view.request.response.getHeader('location')
-    https://launchpad.dev/~cprov/+archive/ppa/+subscribers
+    https://launchpad.dev/~cprov/+archive/ppa/+subscriptions
     >>> view.has_subscriptions
     True
 
 The view includes a subscribers property that returns all the current
 subscribers:
 
-    >>> [subscription.subscriber.displayname 
-    ...     for subscription in view.subscriptions]
-    [u'Andrew Bennetts']
+    >>> for subscription in view.subscriptions:
+    ...     print subscription.subscriber.displayname
+    Andrew Bennetts
 
     >>> transaction.commit()
 
 The same subscriber cannot be added a second time:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     cprov.archive, name="+subscriptions", method="POST",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's still my friend",
@@ -924,33 +934,52 @@ The same subscriber cannot be added a second time:
 
 In this case the view will include validation errors:
 
-    >>> view.errors
-    [u'Andrew Bennetts is already subscribed.']
+    >>> for error in view.errors:
+    ...     print error
+    Andrew Bennetts is already subscribed.
 
-A second subscriber can be added, this time a team, but the date_expires
-must be in the future:
+But the same person can be a subscriber of other archives:
 
+    >>> login('mark@hbd.com')
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     sabdfl.archive, name="+subscriptions", method="POST",
+    ...     form={
+    ...         'field.subscriber': 'spiv',
+    ...         'field.description': "spiv's still my friend",
+    ...         'field.date_expires': '',
+    ...         'field.actions.add': 'Add'
+    ...         })
+
+    >>> for subscription in view.subscriptions:
+    ...     print subscription.subscriber.displayname
+    Andrew Bennetts
+
+A second subscriber can be added, this time a we'll add a team as a
+subscriber, but the date_expires must be in the future:
+
+    >>> transaction.commit()
+    >>> view = create_initialized_view(
+    ...     sabdfl.archive, name="+subscriptions", method="POST",
     ...     server_url=
-    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscribers",
+    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
     ...         'field.subscriber': 'launchpad',
     ...         'field.description': "The launchpad team can use it.",
     ...         'field.date_expires': '1980-12-10',
     ...         'field.actions.add': 'Add'
     ...         })
-    >>> view.errors
-    [u'The expiry date must be in the future.']
+    >>> for error in view.errors:
+    ...     print error
+    The expiry date must be in the future.
 
 So we try again with an expiry date in the future:
 
     >>> import datetime
     >>> future_date = datetime.date.today() + datetime.timedelta(30)
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscribers", method="POST",
+    ...     sabdfl.archive, name="+subscriptions", method="POST",
     ...     server_url=
-    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscribers",
+    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
     ...         'field.subscriber': 'launchpad',
     ...         'field.description': "The launchpad team can use it.",
@@ -959,6 +988,7 @@ So we try again with an expiry date in the future:
     ...         })
     >>> view.errors
     []
-    >>> [subscription.subscriber.displayname
-    ...     for subscription in view.subscriptions]
-    [u'Andrew Bennetts', u'Launchpad Developers']
+    >>> for subscription in view.subscriptions:
+    ...     print subscription.subscriber.displayname
+    Andrew Bennetts
+    Launchpad Developers

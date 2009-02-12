@@ -182,7 +182,7 @@
     permission="launchpad.Append"
     class="canonical.launchpad.browser.ArchiveSubscribersView">
     <browser:page
-      name="+subscribers"
+      name="+subscriptions"
       facet="overview"
       template="../templates/archive-subscribers.pt"
       />

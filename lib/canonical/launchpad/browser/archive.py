@@ -304,10 +304,10 @@ class ArchiveContextMenu(ContextMenu):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Append')
     def manage_subscribers(self):
-        text = 'Manage subscribers'
-        link = Link('+subscribers', text, icon='edit')
+        text = 'Manage subscriptions'
+        link = Link('+subscriptions', text, icon='edit')
 
         # This link should only be available for private archives:
         if not self.context.private:
@@ -1482,6 +1482,8 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
+        # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
+        # in storm.
         return self.subscriptions.count() > 0
 
     def validate_new_subscription(self, action, data):
@@ -1493,8 +1495,10 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
         subscriber_set = getUtility(IArchiveSubscriberSet)
         current_subscription = subscriber_set.getBySubscriber(
-            data['subscriber'])
+            data['subscriber'], archive=self.context)
 
+        # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
+        # in storm.
         if current_subscription.count() > 0:
             self.setFieldError('subscriber',
                 "%s is already subscribed." % data['subscriber'].displayname)
