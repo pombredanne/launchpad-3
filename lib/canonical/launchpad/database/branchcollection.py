@@ -7,7 +7,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, Or
+from storm.expr import Or
 
 from zope.component import getUtility
 from zope.interface import implements
