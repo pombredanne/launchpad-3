@@ -248,6 +248,15 @@ class POTMsgSetBatchNavigator(BatchNavigator):
             del request.form['start']
         if 'batch' in request.form:
             del request.form['batch']
+        # Note: the BatchNavigator has now been updated so that it
+        # gets the parameters out of the request.query_string_params
+        # dict by default. Therefore, we'll remove the 'start' option
+        # from request.query_string_params as well.
+        if 'start' in request.query_string_params:
+            del request.query_string_params['start']
+        if 'batch' in request.query_string_params:
+            del request.query_string_params['batch']
+
         # 'path' will be like: 'POTURL/LANGCODE/POTSEQUENCE/+translate' and
         # we are interested on the POTSEQUENCE.
         self.start_path, pot_sequence, self.page = path.rsplit('/', 2)
