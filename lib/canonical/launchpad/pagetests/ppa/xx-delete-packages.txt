@@ -370,7 +370,7 @@ overview page.
     foo - 1.0                    Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
-presence of 'Built Packages' and the binary filename in the 'Files'
+presence of 'Built packages' and the binary filename in the 'Files'
 section indicates to the user that it is still published.
 
     >>> expander_url = user_browser.getLink(
@@ -381,9 +381,9 @@ section indicates to the user that it is still published.
     Changelog
     Builds
       i386
-    Built Packages
+    Built packages
       foo-bin Foo app is great
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 
@@ -407,9 +407,9 @@ available for deletion because it contains a PUBLISHED binary.
     Changelog
     Builds
       i386
-    Built Packages
+    Built packages
       foo-bin Foo app is great
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 
@@ -460,7 +460,7 @@ source and binaries are marked as DELETED and the corresponding
 
 After the deletion, any user accessing No-privileges' PPA page can see
 a row representing 'foo' and it is marked as 'superseded'. In its
-corresponding expandable area, he can see that the 'Built Packages'
+corresponding expandable area, he can see that the 'Built packages'
 section is omitted, however the source and binary files can be
 downloaded from librarian.
 
@@ -486,7 +486,7 @@ opposed to being truncated after the fisrt 20 characters.
     Changelog
     Builds
       i386
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 
@@ -528,7 +528,7 @@ links at the end of the section.
     Changelog
     Builds
       i386
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 
