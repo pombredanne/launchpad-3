@@ -382,8 +382,15 @@ class CodeHandler:
         source, target = self._acquireBranchesForProposal(md, submitter)
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
+            # XXX: Tim Penhey, 2009-02-12, bug 328271
+            # If the branch is private we should probably use the restricted
+            # librarian.
+            # Using the .txt suffix to allow users to view the file in
+            # firefox without firefox trying to get them to download it.
+            filename = '%s.diff.txt' % source.name
             review_diff = diff_source.acquireFromText(
-                md.base_revision_id, md.revision_id, md.patch)
+                md.base_revision_id, md.revision_id, md.patch,
+                filename=filename)
             transaction.commit()
         else:
             review_diff = None
