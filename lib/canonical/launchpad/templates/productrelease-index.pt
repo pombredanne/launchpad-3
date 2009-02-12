@@ -73,7 +73,7 @@
         project release notes.
     </div>
 
-    <tal:has_edit condition="has_edit">
+    <tal:has_edit condition="has_edit">
       <p tal:condition="not: context/description">
         <em>This release does not have a description. You may want to edit it
         and give it a description, including new features and other
