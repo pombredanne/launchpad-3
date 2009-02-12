@@ -400,7 +400,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         url = urls['http_base_url'] or urls['ftp_base_url']
         assert url is not None, (
             "A mirror must provide either an HTTP or FTP URL (or both).")
-
         dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
         name = sanitize_name('%s-%s' % (host, content.name.lower()))
 

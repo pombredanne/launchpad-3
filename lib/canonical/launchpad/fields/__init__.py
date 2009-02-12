@@ -626,12 +626,6 @@ class URIField(TextLine):
                 else:
                     uri = uri.ensureNoSlash()
             input = unicode(uri)
-            if self.trailing_slash == False and input[-1] == '/':
-                # ensureNoSlash() doesn't trim the slash if the path
-                # is empty (eg. http://example.com/). A False value
-                # for trailing_slash is a promise to remove a trailing
-                # slash in all circumstances.
-                input = input[:-1]
         return input
 
     def _validate(self, value):

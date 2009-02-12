@@ -147,10 +147,16 @@ Similarly, we can require that the URI path does not end in a slash:
 URIs with an authority but a blank path get canonicalised to a path of
 "/", which is not affected by the without_slash setting.
 
+  >>> with_slash.normalize(u'http://launchpad.net/')
+  u'http://launchpad.net/'
+  >>> with_slash.normalize(u'http://launchpad.net')
+  u'http://launchpad.net/'
+
   >>> without_slash.normalize(u'http://launchpad.net/')
   u'http://launchpad.net/'
   >>> without_slash.normalize(u'http://launchpad.net')
   u'http://launchpad.net/'
+
 
 == Whitespace ==
 

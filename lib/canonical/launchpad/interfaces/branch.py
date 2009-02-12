@@ -495,7 +495,24 @@ def get_blacklisted_hostnames():
 
 class BranchURIField(URIField):
 
+    #XXX leonardr 2009-02-12 [bug=328588]:
+    # This code should be removed once the underlying database restriction
+    # is removed.
     trailing_slash = False
+
+    # XXX leonardr 2009-02-12 [bug=328588]:
+    # This code should be removed once the underlying database restriction
+    # is removed.
+    def normalize(self, input):
+        """Be extra-strict about trailing slashes."""
+        input = super(BranchURIField, self).normalize(input)
+        if self.trailing_slash == False and input[-1] == '/':
+            # ensureNoSlash() doesn't trim the slash if the path
+            # is empty (eg. http://example.com/). Due to the database
+            # restriction on branch URIs, we need to remove a trailing
+            # slash in all circumstances.
+            input = input[:-1]
+        return input
 
     def _validate(self, value):
         # import here to avoid circular import
