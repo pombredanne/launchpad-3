@@ -73,7 +73,7 @@ class OpenIDAuthorizationSet:
             AND trust_root = %s
             AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             AND (client_id IS NULL OR client_id = %s)
-            """ % sqlvalues(account.id, trust_root, client_id)
+            """ % sqlvalues(account, trust_root, client_id)
             ).count() > 0
 
     def authorize(self, account, trust_root, expires, client_id=None):
@@ -273,7 +273,7 @@ class OpenIDRPSummarySet:
         summaries = OpenIDRPSummary.select("""
             account != %s
             AND openid_identifier = %s
-            """ % sqlvalues(account.id, identifier))
+            """ % sqlvalues(account, identifier))
         if summaries.count() > 0:
             raise AssertionError(
                 'More than 1 account has the OpenID identifier of %s.' %

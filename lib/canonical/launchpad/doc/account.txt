@@ -194,6 +194,10 @@ rationale and displayname are required.
     u'Passwordless'
     >>> print passwordless_account.password
     None
+    >>> print passwordless_account.person
+    None
+    >>> print passwordless_account.preferredemail
+    None
 
 The new() method accepts the optional parameters of password and
 password_is_encrypted. If password_is_encrypted is False, the default,
