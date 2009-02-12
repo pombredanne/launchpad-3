@@ -6,6 +6,7 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from itertools import chain
 import os
 import sets
 
@@ -104,8 +105,9 @@ class DbSchema(dict):
         cur.execute("SELECT usename FROM pg_user")
         self.users = [r[0] for r in cur.fetchall()]
 
-        # Combined list
-        self.principals = self.groups + self.users
+    @property
+    def principals(self):
+        return chain(self.groups, self.users)
 
 
 class CursorWrapper(object):
@@ -153,19 +155,21 @@ def main(options):
         else:
             cur.execute("CREATE GROUP %s" % quote_identifier(group))
             schema.groups.append(group)
-            schema.principals.append(group)
 
     # Create all required groups and users.
     for section_name in config.sections():
         if section_name.lower() == 'public':
             continue
 
+        assert not section_name.endswith('_ro'), (
+            '_ro namespace is reserved (%s)' % repr(section_name))
+
         type_ = config.get(section_name, 'type')
         assert type_ in ['user', 'group'], 'Unknown type %s' % type_
 
         role_options = [
             'NOCREATEDB', 'NOCREATEROLE', 'NOCREATEUSER', 'INHERIT']
-        if type == 'user':
+        if type_ == 'user':
             role_options.append('LOGIN')
         else:
             role_options.append('NOLOGIN')
@@ -191,7 +195,14 @@ def main(options):
                     "CREATE ROLE %s WITH %s"
                     % (quote_identifier(username), ' '.join(role_options)))
                 schema.groups.append(username)
-                schema.principals.append(username)
+
+        # Set default read-only mode for our roles.
+        cur.execute(
+            'ALTER ROLE %s SET default_transaction_read_only TO FALSE'
+            % quote_identifier(section_name))
+        cur.execute(
+            'ALTER ROLE %s SET default_transaction_read_only TO TRUE'
+            % quote_identifier('%s_ro' % section_name))
 
     # Add users to groups
     for user in config.sections():
