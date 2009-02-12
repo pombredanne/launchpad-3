@@ -468,6 +468,24 @@ class NotFoundRequestPublicationFactory:
         return (ProtocolErrorRequest, ProtocolErrorPublicationFactory(404))
 
 
+def get_query_string_params(request):
+    """Return a dict of the query string params for a request.
+
+    Defined here so that it can be used in both BasicLaunchpadRequest and
+    the LaunchpadTestRequest (which doesn't inherit from
+    BasicLaunchpadRequest).
+    """
+    query_string = request.get('QUERY_STRING', '')
+
+    # Just in case QUERY_STRING is in the environment explicitely as
+    # None (Some tests seem to do this, but not sure if it can ever
+    # happen outside of tests.)
+    if query_string is None:
+        query_string = ''
+
+    return  dict(
+        cgi.parse_qsl(query_string, keep_blank_values=True))
+
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
 
@@ -518,16 +536,7 @@ class BasicLaunchpadRequest:
     @cachedproperty
     def query_string_params(self):
         """See ILaunchpadBrowserApplicationRequest."""
-        query_string = self.get('QUERY_STRING', '')
-
-        # Just in case QUERY_STRING is in the environment explicitely as
-        # None (Some tests seem to do this, but not sure if it can ever
-        # happen outside of tests.)
-        if query_string is None:
-            query_string = ''
-
-        return  dict(
-            cgi.parse_qsl(query_string, keep_blank_values=True))
+        return get_query_string_params(self)
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
@@ -814,9 +823,7 @@ class LaunchpadTestRequest(TestRequest):
     @property
     def query_string_params(self):
         """See ILaunchpadBrowserApplicationRequest."""
-        # Just ensure that we return exactly what the LaunchpadBrowserRequest
-        # class returns:
-        return LaunchpadBrowserRequest.query_string_params.fn(self)
+        return get_query_string_params(self)
 
     def setPrincipal(self, principal):
         """See `IPublicationRequest`."""

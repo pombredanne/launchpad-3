@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-import cgi, urllib
+import urllib
 
 from zope.interface import implements
 
@@ -94,8 +94,8 @@ class BatchNavigator:
         # of using the request (which automatically gets the params from the
         # request.form dict).
         if request.method == 'POST' and (
-            request.form.has_key(self.start_variable_name) or
-            request.form.has_key(self.batch_variable_name)):
+            self.start_variable_name in request.form or
+            self.batch_variable_name in request.form):
             batch_params_source = request
 
         # In this code we ignore invalid request variables since it
