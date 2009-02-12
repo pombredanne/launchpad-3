@@ -65,7 +65,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         branch2 = self.factory.makeAnyBranch()
         collection = GenericBranchCollection(
-            self.store, Branch.product == branch.product)
+            self.store, [Branch.product == branch.product])
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_count(self):
@@ -84,7 +84,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         branch2 = self.factory.makeAnyBranch()
         collection = GenericBranchCollection(
-            self.store, Branch.product == branch.product)
+            self.store, [Branch.product == branch.product])
         self.assertEqual(1, collection.count)
 
     def test_ownedBy(self):

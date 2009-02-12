@@ -23,10 +23,12 @@ class GenericBranchCollection:
 
     implements(IBranchCollection)
 
-    def __init__(self, store, branch_filter_expr=None, name=None,
+    def __init__(self, store, branch_filter_expressions=None, name=None,
                  displayname=None):
         self._store = store
-        self._branch_filter_expr = branch_filter_expr
+        if branch_filter_expressions is None:
+            branch_filter_expressions = []
+        self._branch_filter_expressions = branch_filter_expressions
         self.name = name
         self.displayname = displayname
 
@@ -37,19 +39,12 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
-        # XXX: if branch is duplicated. store as list of expressions
-        # internally that are ANDed together.
-        expression = self._branch_filter_expr
-        if expression is None:
-            return self._store.find(Branch)
-        else:
-            return self._store.find(Branch, expression)
+        return self._store.find(Branch, *(self._branch_filter_expressions))
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
-        expression = (Branch.product == product)
-        if self._branch_filter_expr is not None:
-            expression = And(self._branch_filter_expr, expression)
+        expression = (
+            self._branch_filter_expressions + [Branch.product == product])
         return self.__class__(
             self._store, expression, name=self.name,
             displayname=self.displayname)
@@ -57,9 +52,8 @@ class GenericBranchCollection:
     def ownedBy(self, person):
         """See `IBranchCollection`."""
         # XXX: duplicate of inProduct code -- refactor
-        expression = (Branch.owner == person)
-        if self._branch_filter_expr is not None:
-            expression = And(self._branch_filter_expr, expression)
+        expression = (
+            self._branch_filter_expressions + [Branch.owner == person])
         return self.__class__(
             self._store, expression, name=self.name,
             displayname=self.displayname)
@@ -67,7 +61,7 @@ class GenericBranchCollection:
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
         if person is None:
-            expression = Or(Branch.private == False, Branch.owner == person)
+            expression = [Or(Branch.private == False, Branch.owner == person)]
         elif person == LAUNCHPAD_SERVICES:
             return self
         elif person.inTeam(getUtility(ILaunchpadCelebrities).admin):
@@ -75,9 +69,8 @@ class GenericBranchCollection:
         elif person.inTeam(getUtility(ILaunchpadCelebrities).bazaar_experts):
             return self
         else:
-            expression = Or(Branch.private == False, Branch.owner == person)
-        if self._branch_filter_expr is not None:
-            expression = And(self._branch_filter_expr, expression)
+            expression = [Or(Branch.private == False, Branch.owner == person)]
+        expression += self._branch_filter_expressions
         return self.__class__(
             self._store, expression, name=self.name,
             displayname=self.displayname)
