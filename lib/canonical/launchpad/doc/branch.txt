@@ -903,7 +903,7 @@ extra display information.
     ...     gnome_terminal, [BranchLifecycleStatus.EXPERIMENTAL])
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
-    Development ~name12/gnome-terminal/klingon
+    Experimental ~name12/gnome-terminal/klingon
 
 
 == Getting branches for a project ==
