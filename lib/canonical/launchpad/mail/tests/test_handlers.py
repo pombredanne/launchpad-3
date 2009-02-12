@@ -553,6 +553,29 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(notification['to'],
             message['from'])
 
+    def test_processMissingSubject(self):
+        """process ensures that a subject has been included in the email."""
+        mail = self.factory.makeSignedMessage(
+            body=' review abstain',
+            subject='')
+        bmp = self.factory.makeBranchMergeProposal()
+        _unused = pop_notifications()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(),
+            'Your message did not contain a subject.  Launchpad requires '
+            'all emails to\ncontain subject lines.  Please re-send your '
+            'email including the subject lin=\ne.\n\n'
+            )
+        self.assertEqual(notification['to'],
+            mail['from'])
+
 
 class TestVoteEmailCommand(TestCase):
     """Test the vote and tag processing of the VoteEmailCommand."""
