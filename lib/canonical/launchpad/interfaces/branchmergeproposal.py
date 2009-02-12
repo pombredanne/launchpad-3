@@ -307,7 +307,7 @@ class IBranchMergeProposal(Interface):
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
-    def getVote(id):
+    def getVoteReference(id):
         """Return the CodeReviewVoteReference with the specified ID."""
 
     def getNotificationRecipients(min_level):

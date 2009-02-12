@@ -215,7 +215,7 @@ class BranchMergeProposal(SQLBase):
             raise WrongBranchMergeProposal
         return comment
 
-    def getVote(self, id):
+    def getVoteReference(self, id):
         """See `IBranchMergeProposal`."""
         vote = CodeReviewVoteReference.get(id)
         if vote.branch_merge_proposal != self:
