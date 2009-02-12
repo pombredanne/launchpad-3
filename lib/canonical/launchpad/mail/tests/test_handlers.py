@@ -571,36 +571,36 @@ class TestCodeHandler(TestCaseWithFactory):
         If no URL, target namespace is used, with 'merge' basename.
         """
         submitter = getUtility(ILaunchBag).user
-        product = self.factory.makeProduct()
+        target = self.factory.makeProductBranch()
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
-            None, submitter, product)
+            None, target, submitter)
         namespace = removeSecurityProxy(namespace)
-        self.assertEqual(product, namespace.product)
+        self.assertEqual(target.product, namespace.product)
         self.assertEqual(submitter, namespace.owner)
 
     def test_getNewBranchInfoRemoteURL(self):
         """If a URL is provided, its base is used."""
         submitter = getUtility(ILaunchBag).user
-        product = self.factory.makeProduct()
+        target = self.factory.makeProductBranch()
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
-                'http://foo/bar', submitter, product)
+                'http://foo/bar', target, submitter)
         self.assertEqual('bar', base)
         namespace = removeSecurityProxy(namespace)
-        self.assertEqual(product, namespace.product)
+        self.assertEqual(target.product, namespace.product)
         self.assertEqual(submitter, namespace.owner)
 
     def test_getNewBranchInfoLPURL(self):
         """If an LP URL is provided, we attempt to reproduce it."""
         submitter = getUtility(ILaunchBag).user
-        product = self.factory.makeProduct()
+        target = self.factory.makeAnyBranch()
         url_product = self.factory.makeProduct('uproduct')
         url_person = self.factory.makePerson(name='uuser')
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar',
-            submitter, product)
+            target, submitter)
         self.assertEqual('bar', base)
         namespace = removeSecurityProxy(namespace)
         self.assertEqual(url_product, namespace.product)

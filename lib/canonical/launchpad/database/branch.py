@@ -1097,9 +1097,9 @@ class BranchSet:
             uri = URI(url)
         except InvalidURIError:
             return None
-        unique_name = self.URLToUniqueName(uri)
+        unique_name = self.URIToUniqueName(uri)
         if unique_name is not None:
-            branch = self.getByUniqueName()
+            branch = self.getByUniqueName(unique_name)
         elif uri.scheme == 'lp':
             branch = None
             allowed_hosts = set()

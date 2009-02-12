@@ -10,6 +10,7 @@ __all__ = [
     'IBranchNamespaceSet',
     'InvalidNamespace',
     'lookup_branch_namespace',
+    'split_unique_name',
     ]
 
 from zope.component import getUtility

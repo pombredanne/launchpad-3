@@ -342,7 +342,7 @@ class CodeHandler:
         return mp_source, mp_target
 
     @staticmethod
-    def _getNewBranchInfo(url, submitter, target):
+    def _getNewBranchInfo(url, target, submitter):
         """Return the namespace and basename for a branch.
 
         If an LP URL is provided, the namespace and basename will match the
@@ -357,6 +357,7 @@ class CodeHandler:
 
         :param url: The public URL of the source branch, if any.
         :param target: The target branch.
+        :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
             branches = getUtility(IBranchSet)
@@ -368,7 +369,7 @@ class CodeHandler:
             basename = 'merge'
         else:
             basename = urlparse(url)[2].split('/')[-1]
-        namespace = lookup_branch_namespace(split_unique_name(target)[0])
+        namespace = target.container.getNamespace(submitter)
         return namespace, basename
 
     def _getNewBranch(self, branch_type, url, target, submitter):
@@ -379,7 +380,7 @@ class CodeHandler:
         :param product: The product associated with the branch to create.
         :param submitter: The person who requested the merge.
         """
-        namespace, basename = self._getNewBranchInfo(url, target)
+        namespace, basename = self._getNewBranchInfo(url, target, submitter)
         if branch_type == BranchType.REMOTE:
             db_url = url
         else:
