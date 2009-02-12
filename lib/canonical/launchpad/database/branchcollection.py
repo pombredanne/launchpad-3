@@ -56,7 +56,6 @@ class GenericBranchCollection:
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
-        # XXX: duplicate of inProduct code -- refactor
         return self.filterBy(Branch.owner == person)
 
     def visibleByUser(self, person):
