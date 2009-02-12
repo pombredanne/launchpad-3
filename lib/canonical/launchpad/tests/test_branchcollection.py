@@ -13,6 +13,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -126,6 +127,22 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
         collection = all_branches.ownedBy(person).inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_withLifecycleStatus(self):
+        branch1 = self.factory.makeAnyBranch(
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT)
+        branch2 = self.factory.makeAnyBranch(
+            lifecycle_status=BranchLifecycleStatus.ABANDONED)
+        branch3 = self.factory.makeAnyBranch(
+            lifecycle_status=BranchLifecycleStatus.MATURE)
+        branch4 = self.factory.makeAnyBranch(
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT)
+        all_branches = GenericBranchCollection(self.store)
+        collection = all_branches.withLifecycleStatus(
+            BranchLifecycleStatus.DEVELOPMENT,
+            BranchLifecycleStatus.MATURE)
+        self.assertEqual(
+            set([branch1, branch3, branch4]), set(collection.getBranches()))
 
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):

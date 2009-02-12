@@ -34,16 +34,16 @@ class GenericBranchCollection:
         self.name = name
         self.displayname = displayname
 
+    @property
+    def count(self):
+        """See `IBranchCollection`."""
+        return self.getBranches().count()
+
     def filterBy(self, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
         return self.__class__(
             self._store, self._branch_filter_expressions + list(expressions),
             name=self.name, displayname=self.displayname)
-
-    @property
-    def count(self):
-        """See `IBranchCollection`."""
-        return self.getBranches().count()
 
     def getBranches(self):
         """See `IBranchCollection`."""
@@ -70,3 +70,7 @@ class GenericBranchCollection:
                And(BranchSubscription.branch == Branch.id,
                    BranchSubscription.person == TeamParticipation.teamID,
                    TeamParticipation.person == person)))
+
+    def withLifecycleStatus(self, *statuses):
+        """See `IBranchCollection`."""
+        return self.filterBy(Branch.lifecycle_status.is_in(statuses))
