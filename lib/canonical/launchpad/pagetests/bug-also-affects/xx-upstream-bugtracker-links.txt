@@ -19,9 +19,11 @@ general.
 
     >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
     >>> print extract_text(text)
-    Mozilla Thunderbird doesn't use Launchpad to track its bugs. If you
-    know this bug has been reported in another bug tracker, you can link
-    to it; Launchpad will keep track of its status for you.
+    Mozilla Thunderbird
+    doesn't use Launchpad to track its bugs. If you know this bug
+    has been reported in another bug tracker, you can link to it;
+    Launchpad will keep track of its status for you.
+    I have the URL for the upstream bug...
 
 If we link Thunderbird to an upstream bug tracker, the text will change
 to reflect this.
@@ -65,10 +67,4 @@ will be displayed.
     the link to Launchpad you can use its bug filing form.
     If you want to search for this bug on
     GnomeGBug GTracker before adding the link to Launchpad you can use
-    its search form.
-    I have the URL for the upstream bug:
-    The URL of this bug in the remote bug tracker.
-    I have already emailed an upstream bug contact:
-    The upstream email address that this bug has been forwarded to.
-    I just want to register that it is upstream right now; I don't have any way to link it.
-
+    its search form...
