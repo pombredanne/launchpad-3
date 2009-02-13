@@ -16,14 +16,16 @@ Imports:
   >>> from canonical.launchpad.webapp.batching import BatchNavigator
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-  >>> def build_request(arg=None):
-  ...   if arg is None:
-  ...       arg = {}
+  >>> def build_request(query_string_args=None, method='GET'):
+  ...   if query_string_args is None:
+  ...       query_string = ''
   ...   else:
-  ...       query = "&".join(["%s=%s" % (k,v) for k,v in arg.items()])
-  ...       arg["QUERY_STRING"] = query
+  ...       query_string = "&".join(
+  ...           ["%s=%s" % (k,v) for k,v in query_string_args.items()])
   ...   request = LaunchpadTestRequest(SERVER_URL='http://www.example.com/foo',
-  ...                                  environ=arg)
+  ...                                  method=method,
+  ...                                  environ={'QUERY_STRING': query_string})
+  ...   request.processInputs()
   ...   return request
 
 A dummy request object:
@@ -125,6 +127,20 @@ You can ask for the links for each of the result pages:
   2 http://www.example.com/foo?start=3
   3 http://www.example.com/foo?start=6
   _last_ http://www.example.com/foo?start=6
+
+We ensure that batch arguments supplied in the URL are observed
+for POST operations too:
+
+  >>> request = build_request({'fnorb': 'bar',
+  ...                          'start': '3',
+  ...                          'batch': '3'}, method='POST')
+  >>> reindeer_batch_navigator_post_with_qs = BatchNavigator(
+  ...     reindeer, request)
+
+  >>> reindeer_batch_navigator_post_with_qs.start
+  3
+  >>> reindeer_batch_navigator_post_with_qs.nextBatchURL()
+  'http://www.example.com/foo?fnorb=bar&start=6&batch=3'
 
 We ensure that multiple size and batch arguments supplied in the URL
 (which get turned into lists by Zope) don't blow up the application:

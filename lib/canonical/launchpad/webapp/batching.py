@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-import cgi, urllib
+import urllib
 
 from zope.interface import implements
 
@@ -82,10 +82,30 @@ class BatchNavigator:
         :raises InvalidBatchSizeError: if the requested batch size is higher
             than the maximum allowed.
         """
+        # We grab the request variables directly from the requests
+        # query_string_parameters so that they will be recognized
+        # even during post operations.
+        batch_params_source = {}
+        for key, val in request.query_string_params.items():
+            if key in (self.start_variable_name, self.batch_variable_name):
+                batch_params_source[key] = val[0]
+
+        # For backwards compatibility (as in the past a work-around has been
+        # to include the url batch params in hidden fields within posted
+        # forms), if the request is a POST request, and either the 'start'
+        # or 'batch' params are included then revert to the default behaviour
+        # of using the request (which automatically gets the params from the
+        # request.form dict).
+        if request.method == 'POST' and (
+            self.start_variable_name in request.form or
+            self.batch_variable_name in request.form):
+            batch_params_source = request
+
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We
         # could raise UnexpectedFormData, but is there a good reason?
-        request_start = request.get(self.start_variable_name, None)
+        request_start = batch_params_source.get(
+            self.start_variable_name, None)
         if request_start is None:
             self.start = start
         else:
@@ -96,7 +116,7 @@ class BatchNavigator:
 
         self.default_size = size
 
-        request_size = request.get(self.batch_variable_name, None)
+        request_size = batch_params_source.get(self.batch_variable_name, None)
         if request_size:
             try:
                 size = int(request_size)
@@ -137,21 +157,28 @@ class BatchNavigator:
         self._singular_heading = singular
         self._plural_heading = plural
 
-    def cleanQueryString(self, query_string):
-        """Removes start and batch params from a query string."""
-        query_parts = cgi.parse_qsl(query_string, keep_blank_values=True,
-                                    strict_parsing=False)
+    def getCleanQueryString(self, params=None):
+        """Removes start and batch params if present and returns a query
+        string.
+
+        If ``params`` is None, uses the current request.query_string_params.
+        """
+        if params is None:
+            params = self.request.query_string_params
+
+        # We need the doseq=True because some url params are for multi-value
+        # fields.
         return urllib.urlencode(
-            [(key, value) for (key, value) in query_parts
-             if key not in self.transient_parameters])
+            [(key, value) for (key, value) in sorted(params.items())
+             if key not in self.transient_parameters],
+             doseq=True)
 
     def generateBatchURL(self, batch):
         url = ""
         if not batch:
             return url
 
-        qs = self.request.environment.get('QUERY_STRING', '')
-        qs = self.cleanQueryString(qs)
+        qs = self.getCleanQueryString()
         if qs:
             qs += "&"
 
@@ -160,8 +187,8 @@ class BatchNavigator:
         base_url = str(self.request.URL)
         url = "%s?%s%s=%d" % (base_url, qs, self.start_variable_name, start)
         if size != self.default_size:
-            # The default batch size should only be part of the URL if it's
-            # different from the default value.
+            # The current batch size should only be part of the URL if it's
+            # different from the default batch size.
             url = "%s&%s=%d" % (url, self.batch_variable_name, size)
         return url
 
