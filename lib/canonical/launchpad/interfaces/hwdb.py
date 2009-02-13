@@ -377,7 +377,7 @@ class IHWDriverSet(Interface):
     package_names = List(
         title=u'Package Names',
         description=
-        u'All known distinct package names appearing in HWDriver.',
+            u'All known distinct package names appearing in HWDriver.',
         value_type=TextLine(),
         readonly=True)
 
