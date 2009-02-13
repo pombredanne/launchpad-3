@@ -65,7 +65,7 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces.branch import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor

@@ -23,12 +23,12 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Or, SQL
+from storm.expr import Or
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, sqlvalues)
+    SQLBase, flush_database_updates)
 
 from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
@@ -166,43 +166,37 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
-    # A dict of BugTrackerType: patterns mappings.
-    # `patterns` is a tuple of (filebug_form_pattern, search_pattern).
-    _url_patterns = {
+    _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
-            "%(base_url)s/enter_bug.cgi?product=%(remote_product)s",
-            "%(base_url)s/query.cgi?product=%(remote_product)s",
-            ),
-        BugTrackerType.MANTIS: (
-            "%(base_url)s/bug_report_advanced_page.php",
-            "%(base_url)s/view_all_bug_page.php",
-            ),
-        BugTrackerType.PHPPROJECT: (
-            "%(base_url)s/report.php",
-            "%(base_url)s/search.php",
-            ),
-        BugTrackerType.ROUNDUP: (
-            "%(base_url)s/issue?@template=item",
-            "%(base_url)s/issue?@template=search",
-            ),
+            "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"),
+        BugTrackerType.MANTIS: "%(base_url)s/bug_report_advanced_page.php",
+        BugTrackerType.PHPPROJECT: "%(base_url)s/report.php",
+        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=item",
         BugTrackerType.RT: (
-            "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s",
-            "%(base_url)s/Search/Build.html?Query=Queue = "
-                "'%(remote_product)s'",
-            ),
+            "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"),
         BugTrackerType.SAVANE: (
-            "%(base_url)s/bugs/?func=additem&group=%(remote_product)s",
-            "%(base_url)s/bugs/?func=search&group=%(remote_product)s",
-            ),
+            "%(base_url)s/bugs/?func=additem&group=%(remote_product)s"),
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/%(tracker)s/?func=add&"
-                "group_id=%(group_id)s&atid=%(at_id)s",
-            "http://sourceforge.net/search/?group_id=%(group_id)",
-            ),
-        BugTrackerType.TRAC: (
-            "%(base_url)s/newticket",
-            "%(base_url)s/search?ticket=on",
-            ),
+                "group_id=%(group_id)s&atid=%(at_id)s"),
+        BugTrackerType.TRAC: "%(base_url)s/newticket",
+        }
+
+    _search_url_patterns = {
+        BugTrackerType.BUGZILLA: (
+            "%(base_url)s/query.cgi?product=%(remote_product)s"),
+        BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
+        BugTrackerType.PHPPROJECT: "%(base_url)s/search.php",
+        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
+        BugTrackerType.RT: (
+            "%(base_url)s/Search/Build.html?Query=Queue = "
+                "'%(remote_product)s'"),
+        BugTrackerType.SAVANE: (
+            "%(base_url)s/bugs/?func=search&group=%(remote_product)s"),
+        BugTrackerType.SOURCEFORGE: (
+            "%(base_url)s/search/?group_id=%(group_id)s&"
+                "type_of_search=artifact"),
+        BugTrackerType.TRAC: "%(base_url)s/search?ticket=on",
         }
 
     @property
@@ -220,7 +214,7 @@ class BugTracker(SQLBase):
 
     def getBugFilingAndSearchLinks(self, remote_product):
         """See `IBugTracker`."""
-        bugtracker_urls = {'bug_filing_url': None, 'search_url': None}
+        bugtracker_urls = {'bug_filing_url': None, 'bug_search_url': None}
 
         if remote_product is None and self.multi_product:
             # Don't try to return anything if remote_product is required
@@ -232,12 +226,10 @@ class BugTracker(SQLBase):
             # quote() doesn't blow up later on.
             remote_product = ''
 
-        url_patterns = self._url_patterns.get(self.bugtrackertype, None)
-
-        if url_patterns is None:
-            return bugtracker_urls
-        else:
-            bug_filing_pattern, search_pattern = url_patterns
+        bug_filing_pattern = self._filing_url_patterns.get(
+            self.bugtrackertype, None)
+        bug_search_pattern = self._search_url_patterns.get(
+            self.bugtrackertype, None)
 
         # Make sure that we don't put > 1 '/' in returned URLs.
         base_url = self.baseurl.rstrip('/')
@@ -269,10 +261,12 @@ class BugTracker(SQLBase):
                 'remote_product': quote(remote_product),
                 }
 
-        bugtracker_urls = {
-            'bug_filing_url': bug_filing_pattern % url_components,
-            'search_url': search_pattern % url_components,
-            }
+        if bug_filing_pattern is not None:
+            bugtracker_urls['bug_filing_url'] = (
+                bug_filing_pattern % url_components)
+        if bug_search_pattern is not None:
+            bugtracker_urls['bug_search_url'] = (
+                bug_search_pattern % url_components)
 
         return bugtracker_urls
 
