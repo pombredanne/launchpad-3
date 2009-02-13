@@ -6,21 +6,60 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:portlets>
+<div metal:fill-slot="main"
+  tal:define="context_menu context/menu:context;
+              has_edit context/required:launchpad.Edit">
+    <h1>
+      <tal:title content="context/title">Foo Release</tal:title>
 
-<metal:heading fill-slot="pageheading">
-  <h1 tal:content="context/title">Foo Release</h1>
-</metal:heading>
+      <a tal:condition="context/required:launchpad.Edit"
+        tal:attributes="href context/fmt:url/+delete"
+        title="Delete this release"
+        ><img src="/@@/trash-icon" title="Delete this release" /></a>
+      <a tal:define="link context_menu/edit"
+        tal:condition="link/enabled"
+        tal:attributes="href link/url"
+        ><img
+         tal:attributes="alt link/text;
+                         title link/text" src="/@@/edit" /></a>
+    </h1>
 
-<div metal:fill-slot="main">
+    <table id="Release-details">
+      <tr>
+        <th>Registrant:</th>
+        <td><tal:registrant replace="structure context/owner/fmt:link"/></td>
+      </tr>
+      <tr>
+        <th>When:</th>
+        <td><span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:approximatedate" /></td>
+      </tr>
+      <tr>
+        <th>Project:</th>
+        <td><tal:link replace="structure context/product/fmt:link" /></td>
+      </tr>
+      <tr>
+        <th>Series:</th>
+        <td><span tal:replace="context/productseries/name" /></td>
+      </tr>
+      <tr>
+        <th>Release version:</th>
+        <td><span tal:replace="context/version" /></td>
+      </tr>
+      <tr>
+        <th>Released:</th>
+        <td><span
+          tal:attributes="title context/datereleased/fmt:datetime"
+          tal:content="context/datereleased/fmt:approximatedate" /></td>
+      </tr>
+    </table>
 
     <p class="documentDescription" tal:content="context/summary"
        tal:condition="context/summary">
@@ -34,29 +73,41 @@
         project release notes.
     </div>
 
-    <p tal:condition="not: context/description">
-      <i>This release does not have a description. You may want to edit it
-      and give it a description, including new features and other
-      highlights.</i>
-    </p>
+    <tal:has_edit condition="has_edit">
+      <p tal:condition="not: context/description">
+        <em>This release does not have a description. You may want to edit it
+        and give it a description, including new features and other
+        highlights.</em>
+      </p>
+    </tal:has_edit>
 
     <form method="POST"
-          tal:define="has_edit context/required:launchpad.Edit"
-          tal:condition="context/files"
           tal:attributes="action request/URL">
 
       <h2>Download files for this release</h2>
 
-      <table class="listing">
+      <table id="downloads" class="listing">
         <thead>
           <tr>
-            <th tal:condition="has_edit" width="10%">Delete</th>
             <th>Download</th>
             <th>Description</th>
+            <th tal:condition="has_edit" width="10%">Delete</th>
           </tr>
         </thead>
         <tbody>
           <tr tal:repeat="file context/files">
+            <td>
+              <img alt="download icon" src="/@@/download" />
+              <strong><a
+                tal:attributes="href python:view.fileURL(file.libraryfile)"
+                tal:content="file/libraryfile/filename"
+                >filename</a></strong>
+              (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
+              >md5</a><tal:signature condition="file/signature">,
+              <a tal:attributes="href python:view.fileURL(file.signature)">
+              sig</a></tal:signature>)
+            </td>
+            <td tal:content="file/description">Installer for i386</td>
             <td tal:condition="has_edit"
                 align="center">
               <input type="checkbox"
@@ -64,45 +115,29 @@
                      tal:attributes="value file/libraryfile/id;
                                      name string:checkbox_${cbnum}" />
             </td>
-            <td>
-              <img alt="download icon" src="/@@/download" />
-              <a tal:attributes="href python:view.fileURL(file.libraryfile)"
-                 tal:content="file/libraryfile/filename">filename</a>
-              (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
-              >md5</a><tal:signature condition="file/signature">,
-              <a tal:attributes="href python:view.fileURL(file.signature)">
-              sig</a></tal:signature>)
-            </td>
-            <td tal:content="file/description">Installer for i386</td>
           </tr>
         </tbody>
       </table>
 
-      <input tal:condition="has_edit"
-             type="submit"
-             name="delete_files"
-             value="Delete Files" />
+      <div tal:condition="has_edit">
+        <div style="float:right">
+          <input type="submit" name="delete_files" value="Delete Files"
+            tal:condition="context/files"/>
+        </div>
+        <div
+          tal:define="link context_menu/add_file"
+          tal:condition="link/enabled">
+          <a tal:replace="structure link/render">Add a file</a>
+        </div>
+      </div>
     </form>
 
+    <p style="clear: both"
+      tal:define="link context_menu/download"
+      tal:condition="link/enabled">
+      <a tal:replace="structure link/render">Download RDF metadata</a>
+    </p>
 </div>
-
-<div metal:fill-slot="help">
-  <p>
-  Releases represent new public versions of the project; in general,
-  they imply a new tarball of source code is made available for the
-  project. They are often marked by public announcements of the new
-  version that include a list of changes and fixes in it.
-  </p>
-  <p>
-  If you are the owner of this project, series or release, you can add files
-  for a release by <a href="+adddownloadfile">adding files for download</a>.
-  </p>
-  <p>
-  All files for this project are downloadable at <a tal:attributes="href
-  string:${context/productseries/product/fmt:url}/+download">the project download area</a>.
-  </p>
-</div>
-
 
 </body>
 </html>

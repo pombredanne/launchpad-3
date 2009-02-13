@@ -65,7 +65,7 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces.branch import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
@@ -227,16 +227,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         name='remote_product', allow_none=True, default=None)
 
     @property
-    def upstream_bug_filing_url(self):
-        """Return the URL of the upstream bug filing form for this project.
+    def upstream_bugtracker_links(self):
+        """Return the upstream bugtracker links for this project.
 
-        Return None if self.bugtracker is None or self.remote_product is
-        None and self.bugtracker is a multi-product bugtracker.
+        :return: A dict of the bug filing URL and the search URL as
+            returned by `BugTracker.getBugFilingAndSearchLinks()`. If
+            self.bugtracker is None, return None.
         """
         if not self.bugtracker:
             return None
         else:
-            return self.bugtracker.getBugFilingLink(self.remote_product)
+            return self.bugtracker.getBugFilingAndSearchLinks(
+                self.remote_product)
 
     @property
     def official_anything(self):
@@ -1033,16 +1035,6 @@ class ProductSet:
         if num_products is not None:
             results = results.limit(num_products)
         return results
-
-    def getProductsWithUserDevelopmentBranches(self):
-        """See `IProductSet`."""
-        return Product.select('''
-            Product.active and
-            Product.development_focus = ProductSeries.id and
-            ProductSeries.user_branch = Branch.id and
-            Branch.branch_type in %s
-            ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
-            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

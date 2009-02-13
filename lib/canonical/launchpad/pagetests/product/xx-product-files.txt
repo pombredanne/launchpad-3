@@ -257,14 +257,22 @@ an admin can also delete a release file.
     ...     'http://launchpad.dev/firefox/1.0/1.0.0')
     >>> checkbox = admin_browser.getControl(name='checkbox_0')
     >>> checkbox.value = checkbox.options
-    >>> main_content = find_main_content(admin_browser.contents)
-    >>> checkbox_tag = main_content.find(attrs={'name': 'checkbox_0'})
-    >>> print 'Deleting:', extract_text(
-    ...     checkbox_tag.parent.findNextSibling('td'))
-    Deleting: bar.txt...
+    >>> table = find_tag_by_id(admin_browser.contents, 'downloads')
+    >>> for tr in table.findAll('tr'):
+    ...     print extract_text(tr)
+    Download            Description      Delete
+    bar.txt (md5)       Bar installer
+    foo.txt (md5, sig)  Foo installer
+
+    >>> checkbox_tag = table.find(attrs={'name': 'checkbox_0'})
     >>> admin_browser.getControl("Delete Files").click()
     >>> get_feedback_messages(admin_browser.contents)
     [u'1 file has been deleted.']
+    >>> table = find_tag_by_id(admin_browser.contents, 'downloads')
+    >>> for tr in table.findAll('tr'):
+    ...     print extract_text(tr)
+    Download            Description      Delete
+    foo.txt (md5, sig)  Foo installer
 
 Let's go back to the page where the files are listed and ensure it
 shows up now.  Just to be sure, do it as the non-owner. We also see
@@ -432,22 +440,14 @@ Ensure the file is no longer listed.
 == Listing on the ProductRelease page ==
 
 Download files are shown on the page for the product release.
-
-    >>> non_owner.open('http://launchpad.dev/firefox/trunk/0.9')
-    >>> content = find_main_content(non_owner.contents)
-    >>> rows = content.findAll('tr')
-    >>> for row in rows[1:]:
-    ...     a_list = row.findAll('a')
-    ...     if len(a_list) > 0:
-    ...        print a_list[0].string
-    foo09.txt
-
 Non-administrators do not have the delete option.
 
-    >>> row = content.find('table').find('tr')
-    >>> print extract_text(row)
-    Download
-    Description
+    >>> non_owner.open('http://launchpad.dev/firefox/trunk/0.9')
+    >>> table = find_tag_by_id(non_owner.contents, 'downloads')
+    >>> for tr in table.findAll('tr'):
+    ...     print extract_text(tr)
+    Download         Description
+    foo09.txt (md5)  Foo09 installer
 
 And no "Delete Files" button is shown.
 
@@ -461,12 +461,11 @@ delete files.  In this context the 'Release' column would be redundant
 so it is not shown.
 
     >>> firefox_owner.open('http://launchpad.dev/firefox/trunk/0.9')
-    >>> content = find_main_content(firefox_owner.contents)
-    >>> row = content.find('table').find('tr')
-    >>> print extract_text(row)
-    Delete
-    Download
-    Description
+    >>> table = find_tag_by_id(firefox_owner.contents, 'downloads')
+    >>> for tr in table.findAll('tr'):
+    ...     print extract_text(tr)
+    Download         Description      Delete
+    foo09.txt (md5)  Foo09 installer
 
 A "Delete Files" button is available.
 

@@ -13,20 +13,25 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
+    'IBranchMergeProposalJob',
     'IBranchMergeProposalListingBatchNavigator',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
+    'IMergeProposalCreatedJob',
+    'IMergeProposalCreatedJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import (
+    Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import IBranch, IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
@@ -298,6 +303,12 @@ class IBranchMergeProposal(Interface):
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
 
+    address = exported(
+        TextLine(
+            title=_('The email address for this proposal.'),
+            readonly=True,
+            description=_('Any emails sent to this address will result'
+                          'in comments being added.')))
 
     @operation_parameters(
         id=Int(
@@ -528,6 +539,22 @@ class IBranchMergeProposal(Interface):
         """
 
 
+class IBranchMergeProposalJob(Interface):
+    """A Job related to a Branch Merge Proposal."""
+
+    branch_merge_proposal = Object(
+        title=_('The BranchMergeProposal this job is about'),
+        schema=IBranchMergeProposal, required=True)
+
+    job = Object(title=_('The common Job attributes'), schema=IJob,
+        required=True)
+
+    metadata = Attribute('A dict of data about the job.')
+
+    def destroySelf():
+        """Destroy this object."""
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
@@ -603,3 +630,20 @@ class ICreateMergeProposalJobSource(Interface):
 
     def iterReady():
         """Iterate through jobs that are ready to run."""
+
+
+class IMergeProposalCreatedJob(Interface):
+    """Interface for review diffs."""
+
+    def run():
+        """Perform the diff and email specified by this job."""
+
+
+class IMergeProposalCreatedJobSource(Interface):
+    """Interface for acquiring MergeProposalCreatedJobs."""
+
+    def create(bmp):
+        """Create a MergeProposalCreatedJob for the specified Job."""
+
+    def iterReady():
+        """Iterate through all ready MergeProposalCreatedJobs."""
