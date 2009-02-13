@@ -113,6 +113,18 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = all_branches.inProduct(branch.product)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_inProject(self):
+        # 'inProject' returns a new collection restricted to branches in the
+        # given project.
+        branch = self.factory.makeProductBranch()
+        branch2 = self.factory.makeProductBranch()
+        branch3 = self.factory.makeAnyBranch()
+        project = self.factory.makeProject()
+        removeSecurityProxy(branch.product).project = project
+        all_branches = GenericBranchCollection(self.store)
+        collection = all_branches.inProject(project)
+        self.assertEqual([branch], list(collection.getBranches()))
+
     def test_ownedBy_and_inProduct(self):
         # 'ownedBy' and 'inProduct' can combine to form a collection that is
         # restricted to branches of a particular product owned by a particular

@@ -13,6 +13,7 @@ from zope.interface import implements
 
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
     user_has_special_branch_access)
@@ -59,6 +60,11 @@ class GenericBranchCollection:
     def inProduct(self, product):
         """See `IBranchCollection`."""
         return self.filterBy(Branch.product == product)
+
+    def inProject(self, project):
+        """See `IBranchCollection`."""
+        return self.filterBy(
+            Branch.product == Product.id, Product.project == project)
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
