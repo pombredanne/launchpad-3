@@ -109,7 +109,7 @@ The diff is now visible through the merge proposal.
     branch_merge_proposal_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
-    dependent_revision_id: u'OOPS'
+    dependent_revision_id: None
     diff_lines_count: 7
     diff_text_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
