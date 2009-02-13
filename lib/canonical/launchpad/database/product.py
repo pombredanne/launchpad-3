@@ -20,6 +20,7 @@ from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 from storm.locals import Unicode
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -89,6 +90,8 @@ from canonical.launchpad.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
 def get_license_status(license_approved, license_reviewed, licenses):
     """Decide the license status for an `IProduct`.
@@ -1278,3 +1281,8 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
+
+    def getProductsWithNoneRemoteProduct(self, bugtracker_type=None):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(Product, Product.remote_product == None)
