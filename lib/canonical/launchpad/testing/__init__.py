@@ -9,7 +9,7 @@ import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
-from canonical.codehosting.vfs.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
