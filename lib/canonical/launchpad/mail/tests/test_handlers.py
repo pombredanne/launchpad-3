@@ -503,13 +503,13 @@ class TestCodeHandler(TestCaseWithFactory):
             message['from'])
 
     def test_processNonLaunchpadTarget(self):
-        """process sends an email if the target branch is unknown."""
+        """When target branch is unknown to Launchpad, the user is notified.
+        """
         directive = self.factory.makeMergeDirective(
             target_branch_url='http://www.example.com')
         message = self.factory.makeSignedMessage(body='body',
             subject='This is gonna fail', attachment_contents=''.join(
                 directive.to_lines()))
-
 
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
@@ -520,7 +520,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
-            notification.get_payload(),
+            notification.get_payload(decode=True),
             'The target branch at %s is not known to Launchpad.  It\'s\n'
             'possible that your submit branch is not set correctly, or that '
             'your submit\nbranch has not yet been pushed to Launchpad.\n\n'
@@ -530,7 +530,7 @@ class TestCodeHandler(TestCaseWithFactory):
             message['from'])
 
     def test_processMissingSubject(self):
-        """process ensures that a subject has been included in the email."""
+        """If the subject is missing, the user is warned by email."""
         mail = self.factory.makeSignedMessage(
             body=' review abstain',
             subject='')
@@ -544,10 +544,10 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
-            notification.get_payload(),
-            'Your message did not contain a subject.  Launchpad requires '
-            'all emails to\ncontain subject lines.  Please re-send your '
-            'email including the subject lin=\ne.\n\n'
+            notification.get_payload(decode=True),
+            'Your message did not contain a subject.  Launchpad code '
+            'reviews require all\nemails to contain subject lines.  '
+            'Please re-send your email including the\nsubject line.\n\n'
             )
         self.assertEqual(notification['to'],
             mail['from'])
