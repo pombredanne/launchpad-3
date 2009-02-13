@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 #
 """Tests for `RepositoryIndexFile`."""
 
@@ -32,7 +32,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
             shutil.rmtree(path)
 
     def getRepoFile(self, filename):
-        """Return an `RepositoryIndexFile` for the given filename.
+        """Return a `RepositoryIndexFile` for the given filename.
 
         The `RepositoryIndexFile` is created with the test 'root' and
         'temp_root'.

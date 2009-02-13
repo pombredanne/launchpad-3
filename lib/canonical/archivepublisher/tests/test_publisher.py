@@ -544,7 +544,7 @@ class TestPublisher(TestPublisherBase):
         # Check if apt_handler.release_files_needed has the right requests.
         # 'source' & 'binary-i386' Release files should be regenerated
         # for all breezy-autotest components. Note that 'debian-installer'
-        # partition does not need Release files.
+        # indexes do not need Release files.
 
         # We always regenerate all Releases file for a given suite.
         self.checkAllRequestedReleaseFiles(archive_publisher)

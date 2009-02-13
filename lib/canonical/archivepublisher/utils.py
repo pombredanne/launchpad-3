@@ -140,8 +140,8 @@ def process_in_batches(input, task, logger, goal_seconds=60,
 class RepositoryIndexFile:
     """Facilitates the publication of repository index files.
 
-    It allow callsites to publish index files in different medias
-    (plain and gzip) transparently and attomically.
+    It allows callsites to publish index files in different medias
+    (plain and gzip) transparently and atomically.
     """
 
     def __init__(self, root, temp_root, filename):
@@ -184,9 +184,9 @@ class RepositoryIndexFile:
         self.gz_fd.write(content)
 
     def close(self):
-        """Close both temporary medias and attomically publish them.
+        """Close both temporary medias and atomically publish them.
 
-        It also fix the final files permissions making them readable and
+        It also fixes the final files permissions making them readable and
         writable by their group and readable by others.
 
         If necessary the given 'root' destination is created at this point.

@@ -400,7 +400,9 @@ class Publisher(object):
                       BinaryPackageFormat.UDEB):
                     di_index.write(stanza)
                 else:
-                    self.log.debug("Cannot publish %s" % bpp.displayname)
+                    self.log.debug(
+                        "Cannot publish %s because it is not a DEB or "
+                        "UDEB file" % bpp.displayname)
 
             package_index.close()
             di_index.close()
