@@ -21,7 +21,7 @@ from bzrlib.urlutils import escape, local_path_to_url
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting.branchfs import (
+from canonical.codehosting.vfs.branchfs import (
     AsyncLaunchpadTransport, branch_id_to_path, LaunchpadInternalServer,
     LaunchpadServer, BranchTransportDispatch, TransportDispatch,
     UnknownTransportType)

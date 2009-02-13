@@ -21,7 +21,7 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from canonical.codehosting import get_bzr_path, get_bzr_plugins_path
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs.branchfs import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database

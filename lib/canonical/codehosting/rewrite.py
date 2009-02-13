@@ -6,7 +6,7 @@ import xmlrpclib
 
 from bzrlib import urlutils
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs.branchfs import branch_id_to_path
 from canonical.codehosting.vfs.branchfsclient import BranchFileSystemClient
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (

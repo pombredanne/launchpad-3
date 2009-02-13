@@ -27,7 +27,7 @@ from bzrlib import urlutils
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.branchfs import get_lp_server
+from canonical.codehosting.vfs.branchfs import get_lp_server
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
