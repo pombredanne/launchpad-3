@@ -136,6 +136,7 @@ from canonical.widgets.bugtask import (
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -465,6 +466,10 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
+
+        self.bug_title_edit_widget = TextLineEditorWidget(
+            bug, 'title', canonical_url(self.context, view_name='+edit'),
+            id="bug-title", title="Edit this summary")
 
         if self.user is None:
             return
