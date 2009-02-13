@@ -405,6 +405,9 @@ class IBasicLaunchpadRequest(Interface):
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
 
+    query_string_params = Attribute(
+        'A dictionary of the query string parameters.')
+
     def getNearest(*some_interfaces):
         """Searches for the last traversed object to implement one of
         the given interfaces.

@@ -9,7 +9,7 @@ from canonical.testing import (LaunchpadZopelessLayer)
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
-from canonical.launchpad.database import RevisionMailJob
+from canonical.launchpad.database.branchjob import RevisionMailJob
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)

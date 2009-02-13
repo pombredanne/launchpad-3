@@ -229,7 +229,14 @@ class CodeHandler:
             job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
             return True
         else:
-            return self.processComment(mail, email_addr, file_alias)
+            try:
+                return self.processComment(mail, email_addr, file_alias)
+            except AssertionError:
+                body = get_error_message('messagemissingsubject.txt')
+                simple_sendmail('merge@code.launchpad.net',
+                    [mail.get('from')],
+                    'Error Creating Merge Proposal', body)
+                return
 
     def processComment(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
@@ -368,11 +375,28 @@ class CodeHandler:
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
             return
-        source, target = self._acquireBranchesForProposal(md, submitter)
+
+        try:
+            source, target = self._acquireBranchesForProposal(md, submitter)
+        except NonLaunchpadTarget:
+            body = get_error_message('nonlaunchpadtarget.txt',
+                target_branch=md.target_branch)
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
+
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
+            # XXX: Tim Penhey, 2009-02-12, bug 328271
+            # If the branch is private we should probably use the restricted
+            # librarian.
+            # Using the .txt suffix to allow users to view the file in
+            # firefox without firefox trying to get them to download it.
+            filename = '%s.diff.txt' % source.name
             review_diff = diff_source.acquireFromText(
-                md.base_revision_id, md.revision_id, md.patch)
+                md.base_revision_id, md.revision_id, md.patch,
+                filename=filename)
             transaction.commit()
         else:
             review_diff = None

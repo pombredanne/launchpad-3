@@ -33,15 +33,11 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchCloud',
     'IBranchDelta',
-    'IBranchDiffJob',
-    'IBranchDiffJobSource',
-    'IBranchJob',
+    'IBranchBatchNavigator',
     'IBranchListingFilter',
     'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
     'IBranchSet',
-    'IRevisionMailJob',
-    'IRevisionMailJobSource',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
@@ -76,7 +72,7 @@ from bzrlib.repofmt.weaverepo import (
 from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Int, Choice, Object, Text, TextLine, Datetime)
+    Bool, Int, Choice, Text, TextLine, Datetime)
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
@@ -90,7 +86,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
@@ -876,8 +871,8 @@ class IBranch(IHasOwner):
         """A specific number of the latest revisions in that branch."""
 
     # These attributes actually have a value_type of IBranchMergeProposal,
-    # but uses Interface to prevent circular imports, and the value_type is set
-    # near IBranchMergeProposal.
+    # but uses Interface to prevent circular imports, and the value_type is
+    # set near IBranchMergeProposal.
     landing_targets = exported(
         CollectionField(
             title=_('Landing Targets'),
@@ -1523,73 +1518,6 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
-
-
-class IBranchJob(Interface):
-    """A job related to a branch."""
-
-    branch = Object(
-        title=_('Branch to use for this diff'), required=True,
-        schema=IBranch)
-
-    job = Object(schema=IJob, required=True)
-
-    metadata = Attribute('A dict of data about the job.')
-
-    def destroySelf():
-        """Destroy this object."""
-
-
-class IBranchDiffJob(Interface):
-    """A job to create a static diff from a branch."""
-
-    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
-
-    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
-
-    def run():
-        """Acquire the static diff this job requires.
-
-        :return: the generated StaticDiff.
-        """
-
-
-class IBranchDiffJobSource(Interface):
-
-    def create(branch, from_revision_spec, to_revision_spec):
-        """Construct a new object that implements IBranchDiffJob.
-
-        :param branch: The database branch to diff.
-        :param from_revision_spec: The revision spec to diff from.
-        :param to_revision_spec: The revision spec to diff to.
-        """
-
-
-class IRevisionMailJob(Interface):
-    """A Job to send email a revision change in a branch."""
-
-    revno = Int(title=u'The revno to send mail about.')
-
-    from_address = Bytes(title=u'The address to send mail from.')
-
-    perform_diff = Text(title=u'Determine whether diff should be performed.')
-
-    body = Text(title=u'The main text of the email to send.')
-
-    subject = Text(title=u'The subject of the email to send.')
-
-    def run():
-        """Send the mail as specified by this job."""
-
-
-class IRevisionMailJobSource(Interface):
-    """A utility to create and retrieve RevisionMailJobs."""
-
-    def create(db_branch, revno, email_from, message, perform_diff, subject):
-        """Create and return a new object that implements IRevisionMailJob."""
-
-    def iterReady():
-        """Iterate through ready IRevisionMailJobs."""
 
 
 class IBranchCloud(Interface):

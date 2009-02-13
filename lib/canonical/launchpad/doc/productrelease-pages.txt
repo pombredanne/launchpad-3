@@ -1,0 +1,66 @@
+= ProductRelease pages =
+
+Views that support the ProductRelease object.
+
+
+== Adding a product release ==
+
+A new ProductRelease can be created using ProductReleaseAddView.
+
+    >>> owner = factory.makePerson(name='app-owner')
+    >>> product = factory.makeProduct(name='app', owner=owner)
+    >>> series = factory.makeSeries(name='simple', product=product)
+    >>> form = {
+    ...     'field.version': '0.1',
+    ...     'field.codename': 'monkey',
+    ...     'field.summary': 'Initial release.',
+    ...     'field.description': 'Does cool things.',
+    ...     'field.changelog': 'commits',
+    ...     'field.actions.add': 'Add',
+    ...     }
+    >>> login_person(owner)
+    >>> view = create_initialized_view(series, '+addrelease', form=form)
+    >>> print view.errors
+    []
+    >>> for release in series.releases:
+    ...     print release.version, release.codename, release.summary
+    0.1  monkey  Initial release.
+    >>> transaction.commit()
+
+The version is required. It must be unique.
+
+    >>> view = create_initialized_view(series, '+addrelease', form=form)
+    >>> for error in view.errors:
+    ...     print view.getFieldError(error.field_name)
+    0.1 is already in use by another version in this release series.
+
+And the version cannot be blank.
+
+    >>> form['field.version'] = ''
+    >>> view = create_initialized_view(series, '+addrelease', form=form)
+    >>> for error in view.errors:
+    ...     print view.getFieldError(error.field_name)
+    Required input is missing.
+
+
+== Editing a a product release ==
+
+A ProductRelease can be edited using the ProductReleaseEditView.
+
+    >>> release = series.getRelease('0.1')
+    >>> print release.description
+    Does cool things.
+
+    >>> form = {
+    ...     'field.version': '0.1',
+    ...     'field.codename': 'monkey',
+    ...     'field.summary': 'Initial release.',
+    ...     'field.description': 'revised',
+    ...     'field.changelog': 'commits',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(release, '+edit', form=form)
+    >>> print view.errors
+    []
+    >>> print release.description
+    revised
