@@ -483,8 +483,8 @@ class TestCodeHandler(TestCaseWithFactory):
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
             notification.get_payload(decode=True),
-            'The branch %s is already proposed for merging into %s.\n\n' % (
-                source.bzr_identity, target.bzr_identity))
+            'The branch %s is already proposed for merging into %s.\n\n'
+            % (source.bzr_identity, target.bzr_identity))
         self.assertEqual(notification['to'], message['from'])
 
     def test_processMissingMergeDirective(self):
@@ -610,6 +610,56 @@ class TestCodeHandler(TestCaseWithFactory):
             target, submitter)
         self.assertEqual('~uuser/uproduct', namespace.name)
         self.assertEqual('bar', base)
+
+    def test_processNonLaunchpadTarget(self):
+        """When target branch is unknown to Launchpad, the user is notified.
+        """
+        directive = self.factory.makeMergeDirective(
+            target_branch_url='http://www.example.com')
+        message = self.factory.makeSignedMessage(body='body',
+            subject='This is gonna fail', attachment_contents=''.join(
+                directive.to_lines()))
+
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        code_handler.processMergeProposal(message)
+        transaction.commit()
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(decode=True),
+            'The target branch at %s is not known to Launchpad.  It\'s\n'
+            'possible that your submit branch is not set correctly, or that '
+            'your submit\nbranch has not yet been pushed to Launchpad.\n\n'
+            % ('http://www.example.com')
+            )
+        self.assertEqual(notification['to'],
+            message['from'])
+
+    def test_processMissingSubject(self):
+        """If the subject is missing, the user is warned by email."""
+        mail = self.factory.makeSignedMessage(
+            body=' review abstain',
+            subject='')
+        bmp = self.factory.makeBranchMergeProposal()
+        _unused = pop_notifications()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(decode=True),
+            'Your message did not contain a subject.  Launchpad code '
+            'reviews require all\nemails to contain subject lines.  '
+            'Please re-send your email including the\nsubject line.\n\n'
+            )
+        self.assertEqual(notification['to'],
+            mail['from'])
 
 
 class TestVoteEmailCommand(TestCase):

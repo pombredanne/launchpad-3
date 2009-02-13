@@ -751,6 +751,13 @@ class IProductSet(Interface):
         them.
         """
 
+    def getProductsWithNoneRemoteProduct(bugtracker_type=None):
+        """Get all the IProducts having a `remote_product` of None
+
+        The result can be filtered to only return Products associated
+        with a given bugtracker type.
+        """
+
 
 emptiness_vocabulary = SimpleVocabulary.fromItems(
         [('Empty', True), ('Not Empty', False)])

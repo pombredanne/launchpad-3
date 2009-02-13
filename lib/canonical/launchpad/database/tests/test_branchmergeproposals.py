@@ -520,6 +520,34 @@ class TestMergeProposalGetComment(TestCase):
                           self.merge_proposal2.getComment, self.comment.id)
 
 
+class TestMergeProposalGetVoteReference(TestCaseWithFactory):
+    """Tester for `BranchMergeProposal.getComment`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # Testing behavior, not permissions here.
+        login('foo.bar@canonical.com')
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal2 = self.factory.makeBranchMergeProposal()
+        self.vote = self.merge_proposal.nominateReviewer(
+            reviewer=self.merge_proposal.registrant,
+            registrant=self.merge_proposal.registrant)
+
+    def test_getVoteReference(self):
+        """Tests that we can get a comment."""
+        self.assertEqual(
+            self.vote, self.merge_proposal.getVoteReference(
+                self.vote.id))
+
+    def test_getVoteReferenceWrongBranchMergeProposal(self):
+        """Tests that we can get a comment."""
+        self.assertRaises(WrongBranchMergeProposal,
+                          self.merge_proposal2.getVoteReference,
+                          self.vote.id)
+
+
 class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 
