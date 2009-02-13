@@ -8,4 +8,4 @@ ADD COLUMN hotness_rank INTEGER NOT NULL DEFAULT 0;
 
 CREATE INDEX bug__hotness__idx ON Bug USING btree (hotness);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 25, 0);
