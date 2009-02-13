@@ -103,7 +103,8 @@ A review can be requested of the salgado, since he's a valid reviewer.
     ...     reviewer=person['self_link'], review_type='code')
     >>> print reviewer
     HTTP/1.1 200 Ok ...
-    >>> pprint_entry(reviewer.jsonBody())
+    >>> reviewer_entry = reviewer.jsonBody()
+    >>> pprint_entry(reviewer_entry)
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
     comment_link: None
     date_created: u'...'
@@ -112,6 +113,10 @@ A review can be requested of the salgado, since he's a valid reviewer.
     review_type: u'code'
     reviewer_link: u'http://.../~salgado'
     self_link: u'http://.../~source/fooix/fix-it/+merge/1/+review/3'
+
+    >>> vote = webservice.get(reviewer_entry['self_link'])
+    >>> print vote
+    HTTP/1.1 200 Ok ...
 
 Now the code review should be made.
 

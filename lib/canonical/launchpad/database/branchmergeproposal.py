@@ -209,14 +209,18 @@ class BranchMergeProposal(SQLBase):
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
 
     def getComment(self, id):
-        """See `IBranchMergeProposal`."""
+        """See `IBranchMergeProposal`.
+
+        This function can raise WrongBranchMergeProposal."""
         comment = CodeReviewComment.get(id)
         if comment.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
         return comment
 
     def getVoteReference(self, id):
-        """See `IBranchMergeProposal`."""
+        """See `IBranchMergeProposal`.
+
+        This function can raise WrongBranchMergeProposal."""
         vote = CodeReviewVoteReference.get(id)
         if vote.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
