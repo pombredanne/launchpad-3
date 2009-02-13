@@ -1327,6 +1327,15 @@ HWDriverSet.getByID() returns None if no record with the passed ID exists.
     >>> print driver
     None
 
+HWDriverSet.packages_names is a distinct list of known package names.
+
+    >>> for name in driver_set.package_names:
+    ...     print name
+    <BLANKLINE>
+    linux-image-2.6.24-19-generic
+    linux-image-generic
+    None
+
 
 == HWDeviceDriverLink ==
 
