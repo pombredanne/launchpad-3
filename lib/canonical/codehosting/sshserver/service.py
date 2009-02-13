@@ -17,7 +17,7 @@ from twisted.application import service, strports
 from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.conch.ssh.transport import SSHServerTransport
-from twisted.internet import defer, protocol
+from twisted.internet import defer
 from twisted.python import log
 from twisted.web.xmlrpc import Proxy
 
