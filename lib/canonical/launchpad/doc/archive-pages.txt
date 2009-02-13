@@ -879,6 +879,7 @@ First, ensure that the archives we'll be using are private:
     >>> cprov.archive.private = True
     >>> sabdfl.archive.buildd_secret = 'boing'
     >>> sabdfl.archive.private = True
+    >>> transaction.commit()
     >>> logout()
 
 Initially the view does not display any subscribers, as can be seen
@@ -888,6 +889,18 @@ using the has_subscriptions property:
     >>> view = create_initialized_view(cprov.archive, name="+subscriptions")
     >>> view.has_subscriptions
     False
+
+POSTing with out data just causes the validation to display:
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+subscriptions", method="POST",
+    ...     server_url=
+    ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
+    ...     form={'field.actions.add': 'Add'})
+    >>> for error in view.errors:
+    ...     print error
+    Required field is missing
+
 
 The view can be used to add a new subscriber:
 
@@ -992,3 +1005,6 @@ So we try again with an expiry date in the future:
     ...     print subscription.subscriber.displayname
     Andrew Bennetts
     Launchpad Developers
+
+Put archives back to public
+

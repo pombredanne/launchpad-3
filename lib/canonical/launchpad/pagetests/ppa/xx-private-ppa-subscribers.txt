@@ -89,8 +89,8 @@ Then he sees the correct heading
 
 And there are no subscribers.
 
-    >>> print extract_text(first_tag_by_class(cprov_browser.contents,
-    ...     'subscribers'))
+    >>> print extract_text(find_tag_by_id(cprov_browser.contents,
+    ...     'no-subscribers'))
     This PPA does not yet have any subscribers.
 
 === Scenario 4: A user is added as a subscriber ===

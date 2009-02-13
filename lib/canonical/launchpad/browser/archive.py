@@ -1492,18 +1492,20 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
         Also ensures that the expiry date is in the future.
         """
         form.getWidgetsData(self.widgets, 'field', data)
+        subscriber = data.get('subscriber')
+        date_expires = data.get('date_expires')
 
-        subscriber_set = getUtility(IArchiveSubscriberSet)
-        current_subscription = subscriber_set.getBySubscriber(
-            data['subscriber'], archive=self.context)
+        if subscriber is not None:
+            subscriber_set = getUtility(IArchiveSubscriberSet)
+            current_subscription = subscriber_set.getBySubscriber(
+                subscriber, archive=self.context)
 
-        # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
-        # in storm.
-        if current_subscription.count() > 0:
-            self.setFieldError('subscriber',
-                "%s is already subscribed." % data['subscriber'].displayname)
+            # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
+            # in storm.
+            if current_subscription.count() > 0:
+                self.setFieldError('subscriber',
+                    "%s is already subscribed." % subscriber.displayname)
 
-        date_expires = data['date_expires']
         if date_expires:
             # date_expires includes tzinfo, and is only comparable with
             # other datetime objects that include tzinfo.
