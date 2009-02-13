@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import cgi
 import pytz
 import threading
 import urllib
@@ -468,6 +469,23 @@ class NotFoundRequestPublicationFactory:
         return (ProtocolErrorRequest, ProtocolErrorPublicationFactory(404))
 
 
+def get_query_string_params(request):
+    """Return a dict of the query string params for a request.
+
+    Defined here so that it can be used in both BasicLaunchpadRequest and
+    the LaunchpadTestRequest (which doesn't inherit from
+    BasicLaunchpadRequest).
+    """
+    query_string = request.get('QUERY_STRING', '')
+
+    # Just in case QUERY_STRING is in the environment explicitly as
+    # None (Some tests seem to do this, but not sure if it can ever
+    # happen outside of tests.)
+    if query_string is None:
+        query_string = ''
+
+    return cgi.parse_qs(query_string, keep_blank_values=True)
+
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
 
@@ -517,6 +535,11 @@ class BasicLaunchpadRequest:
             raise KeyError("'%s' already present in wsgi environment." % key)
         self._orig_env[key] = value
         self._wsgi_keys.add(key)
+
+    @cachedproperty
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
@@ -729,6 +752,14 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
 
+    It also provides the query_string_params dict that is available from
+    LaunchpadBrowserRequest.
+
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
+    ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
+    True
+
     It also provides the  hooks for popup calendar iframes:
 
     >>> request.needs_datetimepicker_iframe
@@ -791,6 +822,11 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    @property
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
 
     def setPrincipal(self, principal):
         """See `IPublicationRequest`."""
