@@ -1,10 +1,10 @@
 = Products with no remote_product =
 
-Product.remote_product is used to keep track of which product a Product
-in Launchpad corresponds to in an upstream bug tracker. If a Product
-doesn't have it set, but is associated with an upstream bug tracker, we
-want to set this automatically. For this we need a method to get all the
-Products needing updating.
+Product.remote_product is used to keep track of which remote product in
+an upstream bug tracker, a Product registered in Launchpad corresponds
+to. If a Product doesn't have it set, but is associated with an upstream
+bug tracker, we want to set this automatically. For this we need a
+method to get all the Products needing updating.
 IProductSet.getProductsWithNoneRemoteProduct() is used for this.
 
 
@@ -28,7 +28,7 @@ IProductSet.getProductsWithNoneRemoteProduct() is used for this.
     [u'no-remote-product']
 
 When we update remote_product automatically, different heuristics are
-used depending on which bug tracker is used. Therefor the list of
+used depending on which bug tracker is used. Therefore the list of
 products can be filtered by bug tracker type.
 
     >>> login('foo.bar@canonical.com')
