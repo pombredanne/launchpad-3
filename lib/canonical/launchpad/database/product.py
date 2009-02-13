@@ -21,7 +21,6 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 from storm.expr import And
 from storm.locals import Unicode
-from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
