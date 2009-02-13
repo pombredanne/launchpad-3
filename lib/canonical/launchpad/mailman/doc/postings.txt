@@ -73,7 +73,7 @@ gets discarded.
 
 == Unsubscribed Launchpad members ==
 
-Anne's perferred email address is still validated, and she posts a message
+Anne's preferred email address is still validated, and she posts a message
 from that address.  However, because she has not yet joined the team or
 subscribed to its mailing list, her messages gets held for moderation by the
 team's administrator.
@@ -830,6 +830,10 @@ Only messages which are less than about 40k in size are allowed straight
 through on the mailing list.  A message bigger than that will be held for
 moderator approval.
 
+    >>> from canonical.config import config
+    >>> config.mailman.soft_max_size
+    40000
+
     >>> from email.MIMENonMultipart import MIMENonMultipart
     >>> big_message = MIMENonMultipart('application', 'octet-stream')
     >>> big_message.set_payload('\n'.join(['x' * 50] * 1000))
@@ -869,6 +873,9 @@ Once this message is approved, it is posted through to the mailing list.
 
 There is a hard limit of 1MB, over which the message is summarily logged and
 discarded.
+
+    >>> config.mailman.hard_max_size
+    1000000
 
     >>> huge_message = MIMENonMultipart('application', 'octet-stream')
     >>> huge_message.set_payload('\n'.join(['x' * 50] * 20000))

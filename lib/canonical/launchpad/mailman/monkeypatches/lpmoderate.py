@@ -87,4 +87,3 @@ def hold(mlist, msg, msgdata, annotation):
     # done processing this message, and should not send it through any further
     # handlers.
     raise Errors.HoldMessage
-    
