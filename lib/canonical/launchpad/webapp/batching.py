@@ -164,18 +164,14 @@ class BatchNavigator:
         If ``params`` is None, uses the current request.query_string_params.
         """
         if params is None:
-            params_copy = self.request.query_string_params.copy()
-        else:
-            params_copy = params.copy()
-
-        # Remove the transient parameters from our copy:
-        for param in self.transient_parameters:
-            if param in params_copy:
-                del(params_copy[param])
+            params = self.request.query_string_params
 
         # We need the doseq=True because some url params are for multi-value
         # fields.
-        return urllib.urlencode(sorted(params_copy.items()), doseq=True)
+        return urllib.urlencode(
+            [(key, value) for (key, value) in sorted(params.items())
+             if key not in self.transient_parameters],
+             doseq=True)
 
     def generateBatchURL(self, batch):
         url = ""
