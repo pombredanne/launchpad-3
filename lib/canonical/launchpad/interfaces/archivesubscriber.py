@@ -8,12 +8,14 @@ __metaclass__ = type
 __all__ = [
     'ArchiveSubscriberStatus',
     'IArchiveSubscriber',
+    'IArchiveSubscriberSet'
     ]
 
 from zope.interface import Interface
 from zope.schema import Datetime, Choice, Int, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -59,8 +61,8 @@ class IArchiveSubscriberView(Interface):
         title=_("Date Created"), required=True,
         description=_("The timestamp when the subscription was created."))
 
-    subscriber = Reference(
-        IPerson, title=_("Subscriber"), required=True,
+    subscriber = PublicPersonChoice(
+        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed."))
 
     date_expires = Datetime(
@@ -105,11 +107,13 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
 
-    def getBySubscriber(subscriber):
+    def getBySubscriber(subscriber, archive=None):
         """Return all the subscriptions for a person.
 
         :param subscriber: An `IPerson` for whom to return all
             `ArchiveSubscriber` records.
+        :param archive: An optional `IArchive` which restricts
+            the results to that particular archive.
         """
 
     def getByArchive(archive):

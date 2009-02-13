@@ -15,12 +15,15 @@ __all__ = [
     'ArchiveNavigation',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
+    'ArchiveSubscribersView',
     'ArchiveView',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
 
-from zope.app.form.browser import TextAreaWidget
+import datetime, urllib
+
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
@@ -45,6 +48,8 @@ from canonical.launchpad.interfaces.archive import (
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriber, IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -235,7 +240,7 @@ class ArchiveContextMenu(ContextMenu):
 
     usedfor = IArchive
     links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'copy',
-             'edit_dependencies']
+             'edit_dependencies', 'manage_subscribers']
 
     def ppa(self):
         text = 'View PPA'
@@ -245,6 +250,17 @@ class ArchiveContextMenu(ContextMenu):
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Append')
+    def manage_subscribers(self):
+        text = 'Manage subscriptions'
+        link = Link('+subscriptions', text, icon='edit')
+
+        # This link should only be available for private archives:
+        if not self.context.private:
+            link.enabled = False
+
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1361,3 +1377,81 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')
+
+
+class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
+    """A view for listing and creating archive subscribers."""
+
+    schema = IArchiveSubscriber
+    field_names = ['subscriber', 'date_expires', 'description']
+    custom_widget('description', TextWidget, displayWidth=40)
+
+    def initialize(self):
+        """Ensure that we are dealing with a private archive."""
+        # If this archive is not private, then we should not be
+        # managing the subscribers.
+        if not self.context.private:
+            self.request.response.addNotification(structured(
+                "Only private archives can have subscribers."))
+            self.request.response.redirect(
+                canonical_url(self.context))
+            return
+
+        super(ArchiveSubscribersView, self).initialize()
+
+    @cachedproperty
+    def subscriptions(self):
+        """Return all the subscriptions for this archive."""
+        return getUtility(IArchiveSubscriberSet).getByArchive(self.context)
+
+    @cachedproperty
+    def has_subscriptions(self):
+        """Return whether this archive has any subscribers."""
+        # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.subscriptions.count() > 0
+
+    def validate_new_subscription(self, action, data):
+        """Ensure the subscriber isn't already subscribed.
+
+        Also ensures that the expiry date is in the future.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+        subscriber = data.get('subscriber')
+        date_expires = data.get('date_expires')
+
+        if subscriber is not None:
+            subscriber_set = getUtility(IArchiveSubscriberSet)
+            current_subscription = subscriber_set.getBySubscriber(
+                subscriber, archive=self.context)
+
+            # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
+            # in storm.
+            if current_subscription.count() > 0:
+                self.setFieldError('subscriber',
+                    "%s is already subscribed." % subscriber.displayname)
+
+        if date_expires:
+            # date_expires includes tzinfo, and is only comparable with
+            # other datetime objects that include tzinfo.
+            now = datetime.datetime.now().replace(tzinfo=date_expires.tzinfo)
+            if date_expires < now:
+                self.setFieldError('date_expires',
+                    "The expiry date must be in the future.")
+
+    @action(u"Add", name="add",
+            validator="validate_new_subscription")
+    def create_subscription(self, action, data):
+        """Create a subscription for the supplied user."""
+        self.context.newSubscription(
+            data['subscriber'],
+            self.user,
+            description=data['description'],
+            date_expires=data['date_expires'])
+
+        notification = "%s has been added as a subscriber." % (
+            data['subscriber'].displayname)
+        self.request.response.addNotification(structured(notification))
+
+        # Just ensure a redirect happens (back to ourselves).
+        self.next_url = str(self.request.URL)

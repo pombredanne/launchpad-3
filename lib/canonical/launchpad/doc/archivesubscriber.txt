@@ -107,6 +107,13 @@ And retrieve the subscription by subscriber and archive:
     >>> print sub_set.getByArchive(new_sub.archive)[0].subscriber.name
     name12
 
+The getBySubscriber() method takes an optional archive parameter for
+finding a subscription for a particular user in a particular archive:
+
+    >>> print sub_set.getBySubscriber(
+    ...     new_sub.subscriber, new_sub.archive)[0].archive.title
+    PPA for Celso Providelo
+
 
 == Amending Subscriptions ==
 
