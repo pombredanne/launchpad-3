@@ -19,6 +19,7 @@ import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from storm.expr import And
 from storm.locals import Unicode
 from storm.store import Store
 from zope.interface import implements
@@ -38,6 +39,7 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -1285,4 +1287,10 @@ class ProductSet:
     def getProductsWithNoneRemoteProduct(self, bugtracker_type=None):
         """See `IProductSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(Product, Product.remote_product == None)
+        conditions = [Product.remote_product == None]
+        if bugtracker_type is not None:
+            conditions.extend([
+                Product.bugtracker == BugTracker.id,
+                BugTracker.bugtrackertype == bugtracker_type,
+                ])
+        return store.find(Product, And(*conditions))

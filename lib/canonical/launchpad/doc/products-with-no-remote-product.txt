@@ -26,3 +26,21 @@ IProductSet.getProductsWithNoneRemoteProduct() is used for this.
     >>> products = getUtility(IProductSet).getProductsWithNoneRemoteProduct()
     >>> [product.name for product in products]
     [u'no-remote-product']
+
+When we update remote_product automatically, different heuristics are
+used depending on which bug tracker is used. Therefor the list of
+products can be filtered by bug tracker type.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+    >>> bugzilla_product = factory.makeProduct(name=u'bugzilla-product')
+    >>> bugzilla = factory.makeBugTracker(
+    ...     bugtrackertype=BugTrackerType.BUGZILLA)
+    >>> bugzilla_product.bugtracker = bugzilla
+    >>> trac_product = factory.makeProduct(name=u'trac-product')
+    >>> trac = factory.makeBugTracker(bugtrackertype=BugTrackerType.TRAC)
+    >>> trac_product.bugtracker = trac
+    >>> products = getUtility(IProductSet).getProductsWithNoneRemoteProduct(
+    ...     bugtracker_type=BugTrackerType.BUGZILLA)
+    >>> [product.name for product in products]
+    [u'bugzilla-product']
