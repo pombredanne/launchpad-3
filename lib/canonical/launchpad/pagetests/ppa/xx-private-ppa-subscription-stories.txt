@@ -108,7 +108,7 @@ TBD
 Given a subscription for Celso's private PPA
 
 When Andrew visits his profile (?? where would be the logical place for this?)
-And clicks on the 'Private software' link (only displayed to those with subscriptions)
+And clicks on the 'Private software subscriptions' link (only displayed to those with subscriptions)
 Then a list of Andrew's pending subscriptions is displayed
 And a sources.list snippet is currently empty.
 
@@ -134,7 +134,7 @@ TBD
 
 Given an expired subscription for Celso's private PPA
 
-When Andrew wisits his subscriptions
+When Andrew visits his subscriptions
 Then the page clearly identifies the subscription as no longer valid
 And there is no entry in the sources.list for the expired subscription.
 
@@ -142,7 +142,7 @@ And there is no entry in the sources.list for the expired subscription.
 
 Given a cancelled subscription for Celso's private PPA
 
-When Andrew wisits his subscriptions
+When Andrew visits his subscriptions
 Then the page clearly identifies the subscription as no longer valid
 And there is no entry in the sources.list for the expired subscription.
 
