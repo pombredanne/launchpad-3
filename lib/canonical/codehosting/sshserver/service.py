@@ -32,6 +32,7 @@ from canonical.twistedsupport import gatherResults
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):
 
     def connectionMade(self):
+        SSHServerTransport.connectionMade(self)
         self.transport.setTcpKeepAlive(True)
 
 
@@ -42,8 +43,6 @@ class Factory(SSHFactory):
     and configures the host keys for the SSH server. It also logs connection
     to and disconnection from the SSH server.
     """
-
-    protocol = KeepAliveSettingSSHServerTransport
 
     def __init__(self, portal):
         # Although 'portal' isn't part of the defined interface for
@@ -61,7 +60,7 @@ class Factory(SSHFactory):
         """
         # If Conch let us customize the protocol class, we wouldn't need this.
         # See http://twistedmatrix.com/trac/ticket/3443.
-        transport = protocol.Factory.buildProtocol(self, address)
+        transport = KeepAliveSettingSSHServerTransport()
         transport.supportedPublicKeys = self.privateKeys.keys()
         if not self.primes:
             log.msg('disabling diffie-hellman-group-exchange because we '
