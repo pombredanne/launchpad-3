@@ -17,9 +17,25 @@ __all__ = []
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
+from canonical.launchpad.interfaces.codereviewcomment import (
+    CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from canonical.launchpad.interfaces.product import IProduct
 
 
 IBranch['product'].schema = IProduct
+IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
+IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
+IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
+
+IBranchMergeProposal['getComment'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].schema = ICodeReviewComment
+IBranchMergeProposal['createComment'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['vote'].vocabulary = CodeReviewVote
+IBranchMergeProposal['createComment'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['parent'].schema = \
+        ICodeReviewComment
+IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
+
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
+
