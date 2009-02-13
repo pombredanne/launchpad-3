@@ -1,0 +1,61 @@
+= Links to upstream bug trackers =
+
+Sometimes people will want to mark a bug as being upstream but will
+either not know what the bug's upstream URL is or will know that the bug
+is not yet filed upstream.
+
+If a  project is linked to an upstream bug tracker and there is a record
+of the remote product it uses on that bug tracker, links will be shown
+on the +choose-affected-product form to that bug tracker's bug filing
+and search forms.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/13/')
+    >>> user_browser.getLink(url='+choose-affected-product').click()
+    >>> user_browser.getControl('Project').value = 'thunderbird'
+    >>> user_browser.getControl('Continue').click()
+
+Thunderbird isn't linked to an upstream tracker, so the text is more
+general.
+
+    >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
+    >>> print extract_text(text)
+    Mozilla Thunderbird doesn't use Launchpad to track its bugs. If you
+    know this bug has been reported in another bug tracker, you can link
+    to it; Launchpad will keep track of its status for you.
+
+If we link Thunderbird to an upstream bug tracker, the text will change
+to reflect this.
+
+    >>> admin_browser.open('http://launchpad.dev/thunderbird/+edit')
+    >>> admin_browser.getControl(
+    ...     name='field.bugtracker').value = ['external']
+    >>> admin_browser.getControl(
+    ...     name='field.bugtracker.bugtracker').value = ['1']
+    >>> admin_browser.getControl('Change').click()
+
+    >>> user_browser.open('http://launchpad.dev/bugs/13/')
+    >>> user_browser.getLink(url='+choose-affected-product').click()
+    >>> user_browser.getControl('Project').value = 'thunderbird'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
+    >>> print extract_text(text)
+    Mozilla Thunderbird uses The Mozilla.org Bug Tracker to track its
+    bugs. If you know this bug has been reported there, you can link to
+    it; Launchpad will keep track of its status for you.
+
+If the remote_product attribute of Thunderbird is set, links will be
+displayed to the upstream bug tracker.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/13/')
+    >>> user_browser.getLink(url='+choose-affected-product').click()
+    >>> user_browser.getControl('Project').value = 'thunderbird'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
+    >>> print extract_text(text)
+    Mozilla Thunderbird uses...
+    If you want to report this bug on The Mozilla.org Bug Tracker before
+    adding the link to Launchpad you can use its bug filing form.
+    If you want to search for this bug on The Mozilla.org Bug Tracker
+    before adding the link to Launchpad you can use its search form.
