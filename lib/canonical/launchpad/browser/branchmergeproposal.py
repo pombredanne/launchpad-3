@@ -292,6 +292,17 @@ class BranchMergeProposalNavigation(Navigation):
         """Step to the preview diff."""
         return self.context.preview_diff
 
+    @stepthrough('+review')
+    def review(self, id):
+        """Step to the CodeReviewVoteReference."""
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getVoteReference(id)
+        except WrongBranchMergeProposal:
+            return None
 
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
