@@ -25,7 +25,7 @@ __all__ = [
 
 import copy
 from cStringIO import StringIO
-from datetime import datetime
+from datetime import datetime, date
 from gzip import GzipFile
 import os
 import sha
@@ -98,7 +98,7 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
         """Convert the given object to a simple data structure."""
-        if isinstance(obj, datetime):
+        if isinstance(obj, datetime) or isinstance(obj, date):
             return obj.isoformat()
         if isProxy(obj):
             # We have a security-proxied version of a built-in
