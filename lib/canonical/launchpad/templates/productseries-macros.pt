@@ -15,7 +15,7 @@
   <strong><a tal:attributes="href series/fmt:url"
              tal:content="series/name" >
       1.0
-    </a>
+    </a> series
   </strong>
   <em tal:condition="is_focus">focus of development</em>
   <em tal:condition="not: is_focus" tal:content="series/status/title">

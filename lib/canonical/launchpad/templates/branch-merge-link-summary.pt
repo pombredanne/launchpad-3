@@ -13,9 +13,6 @@
       tal:define="branch context/target_branch">
     <a tal:attributes="href branch/fmt:url"
        tal:content="branch/bzr_identity">lp:product/branch-name</a>
-    <tal:queued condition="context/queue_status/enumvalue:QUEUED">
-      (<a tal:attributes="href view/queue_location">view queue</a>)
-    </tal:queued>
   </tal:source-branch>
   <tal:for-merging condition="context/queue_status/enumvalue:MERGED">
     <tal:have-revno condition="context/merged_revno">

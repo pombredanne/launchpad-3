@@ -28,6 +28,7 @@ Branch merge proposals can be fetched through the API.
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(merge_proposal)
+    address: u'mp+1@code.launchpad.dev'
     all_comments_collection_link: u'http://.../~source/fooix/fix-it/+merge/1/all_comments'
     commit_message: None
     date_created: ...
@@ -108,7 +109,7 @@ The diff is now visible through the merge proposal.
     branch_merge_proposal_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
-    dependent_revision_id: None
+    dependent_revision_id: u'OOPS'
     diff_lines_count: 7
     diff_text_link:
       u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
