@@ -6,7 +6,6 @@ from textwrap import dedent
 import transaction
 import unittest
 
-from storm.locals import Store
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
@@ -20,7 +19,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.database.branchmergeproposal import (
-    CreateMergeProposalJob, MergeProposalCreatedJob)
+    CreateMergeProposalJob)
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -418,19 +417,12 @@ class TestCodeHandler(TestCaseWithFactory):
             self.factory.makeMergeDirectiveEmail())
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
-        pop_notifications()
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source, bmp.source_branch)
         self.assertEqual(target, bmp.target_branch)
         self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
-        # No emails are sent.
-        messages = pop_notifications()
-        self.assertEqual(0, len(messages))
-        # Only a job created.
-        runner = JobRunner.fromReady(MergeProposalCreatedJob)
-        self.assertEqual(1, len(list(runner.jobs)))
         transaction.commit()
 
     def test_processMergeProposalEmptyMessage(self):
@@ -463,29 +455,7 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
         JobRunner.fromReady(CreateMergeProposalJob).runAll()
         self.assertEqual(target, source.landing_targets[0].target_branch)
-        # Ensure the DB operations violate no constraints.
-        transaction.commit()
-
-    def test_processMergeProposalReviewerRequested(self):
-        # The commands in the merge proposal are parsed.
-        eric = self.factory.makePerson(name="eric")
-        message, file_alias, source_branch, target_branch = (
-            self.factory.makeMergeDirectiveEmail(body=dedent("""\
-                This is the comment.
-
-                  reviewer eric
-                """)))
-        self.switchDbUser(config.processmail.dbuser)
-        code_handler = CodeHandler()
-        pop_notifications()
-        bmp, comment = code_handler.processMergeProposal(message)
-        pending_reviews = list(bmp.votes)
-        self.assertEqual(1, len(pending_reviews))
-        self.assertEqual(eric, pending_reviews[0].reviewer)
-        # No emails are sent.
-        messages = pop_notifications()
-        self.assertEqual(0, len(messages))
-        # Ensure the DB operations violate no constraints.
+        # ensure the DB operations violate no constraints.
         transaction.commit()
 
     def test_processMergeProposalExists(self):
@@ -507,8 +477,8 @@ class TestCodeHandler(TestCaseWithFactory):
             notification['Subject'], 'Error Creating Merge Proposal')
         self.assertEqual(
             notification.get_payload(decode=True),
-            'The branch %s is already proposed for merging into %s.\n\n' % (
-                source.bzr_identity, target.bzr_identity))
+            'The branch %s is already proposed for merging into %s.\n\n'
+            % (source.bzr_identity, target.bzr_identity))
         self.assertEqual(notification['to'], message['from'])
 
     def test_processMissingMergeDirective(self):
@@ -532,6 +502,55 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(notification['to'],
             message['from'])
 
+    def test_processNonLaunchpadTarget(self):
+        """When target branch is unknown to Launchpad, the user is notified.
+        """
+        directive = self.factory.makeMergeDirective(
+            target_branch_url='http://www.example.com')
+        message = self.factory.makeSignedMessage(body='body',
+            subject='This is gonna fail', attachment_contents=''.join(
+                directive.to_lines()))
+
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        code_handler.processMergeProposal(message)
+        transaction.commit()
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(decode=True),
+            'The target branch at %s is not known to Launchpad.  It\'s\n'
+            'possible that your submit branch is not set correctly, or that '
+            'your submit\nbranch has not yet been pushed to Launchpad.\n\n'
+            % ('http://www.example.com')
+            )
+        self.assertEqual(notification['to'],
+            message['from'])
+
+    def test_processMissingSubject(self):
+        """If the subject is missing, the user is warned by email."""
+        mail = self.factory.makeSignedMessage(
+            body=' review abstain',
+            subject='')
+        bmp = self.factory.makeBranchMergeProposal()
+        _unused = pop_notifications()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        [notification] = pop_notifications()
+
+        self.assertEqual(
+            notification['Subject'], 'Error Creating Merge Proposal')
+        self.assertEqual(
+            notification.get_payload(decode=True),
+            'Your message did not contain a subject.  Launchpad code '
+            'reviews require all\nemails to contain subject lines.  '
+            'Please re-send your email including the\nsubject line.\n\n'
+            )
+        self.assertEqual(notification['to'],
+            mail['from'])
 
 class TestVoteEmailCommand(TestCase):
     """Test the vote and tag processing of the VoteEmailCommand."""

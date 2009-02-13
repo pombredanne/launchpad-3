@@ -66,12 +66,11 @@ class CodeReviewEmailCommandExecutionContext:
     creation.
     """
 
-    def __init__(self, merge_proposal, user, notify_event_listeners=True):
+    def __init__(self, merge_proposal, user):
         self.merge_proposal = merge_proposal
         self.user = user
         self.vote = None
         self.vote_tags = None
-        self.notify_event_listeners = notify_event_listeners
 
 
 class CodeReviewEmailCommand(EmailCommand):
@@ -189,8 +188,7 @@ class AddReviewerEmailCommand(CodeReviewEmailCommand):
             review_tags = None
 
         context.merge_proposal.nominateReviewer(
-            reviewer, context.user, review_tags,
-            _notify_listeners=context.notify_event_listeners)
+            reviewer, context.user, review_tags)
 
 
 class CodeEmailCommands(EmailCommandCollection):
@@ -231,27 +229,14 @@ class CodeHandler:
             job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
             return True
         else:
-            return self.processComment(mail, email_addr, file_alias)
-
-    def processCommands(self, context, email_body_text):
-        """Process the commadns in the email_body_text against the context."""
-        commands = CodeEmailCommands.getCommands(email_body_text)
-
-        processing_errors = []
-
-        for command in commands:
             try:
-                command.execute(context)
-            except EmailProcessingError, error:
-                processing_errors.append((error, command))
-
-        if len(processing_errors) > 0:
-            errors, commands = zip(*processing_errors)
-            raise IncomingEmailError(
-                '\n'.join(str(error) for error in errors),
-                list(commands))
-
-        return len(commands)
+                return self.processComment(mail, email_addr, file_alias)
+            except AssertionError:
+                body = get_error_message('messagemissingsubject.txt')
+                simple_sendmail('merge@code.launchpad.net',
+                    [mail.get('from')],
+                    'Error Creating Merge Proposal', body)
+                return
 
     def processComment(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
@@ -268,13 +253,24 @@ class CodeHandler:
 
         user = getUtility(ILaunchBag).user
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
+        commands = CodeEmailCommands.getCommands(get_main_body(mail))
         try:
-            email_body_text = get_main_body(mail)
-            processed_count = self.processCommands(context, email_body_text)
-
-            # Make sure that the email is in fact signed.
-            if processed_count > 0:
+            if len(commands) > 0:
                 ensure_not_weakly_authenticated(mail, 'code review')
+
+            processing_errors = []
+
+            for command in commands:
+                try:
+                    command.execute(context)
+                except EmailProcessingError, error:
+                    processing_errors.append((error, command))
+
+            if len(processing_errors) > 0:
+                errors, commands = zip(*processing_errors)
+                raise IncomingEmailError(
+                    '\n'.join(str(error) for error in errors),
+                    list(commands))
 
             message = getUtility(IMessageSet).fromEmail(
                 mail.parsed_string,
@@ -379,30 +375,41 @@ class CodeHandler:
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
             return
-        source, target = self._acquireBranchesForProposal(md, submitter)
+
+        try:
+            source, target = self._acquireBranchesForProposal(md, submitter)
+        except NonLaunchpadTarget:
+            body = get_error_message('nonlaunchpadtarget.txt',
+                target_branch=md.target_branch)
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
+
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
+            # XXX: Tim Penhey, 2009-02-12, bug 328271
+            # If the branch is private we should probably use the restricted
+            # librarian.
+            # Using the .txt suffix to allow users to view the file in
+            # firefox without firefox trying to get them to download it.
+            filename = '%s.diff.txt' % source.name
             review_diff = diff_source.acquireFromText(
-                md.base_revision_id, md.revision_id, md.patch)
+                md.base_revision_id, md.revision_id, md.patch,
+                filename=filename)
             transaction.commit()
         else:
             review_diff = None
-
         try:
             bmp = source.addLandingTarget(submitter, target,
                                           needs_review=True,
                                           review_diff=review_diff)
 
-            context = CodeReviewEmailCommandExecutionContext(
-                bmp, submitter, notify_event_listeners=False)
-            processed_count = self.processCommands(context, comment_text)
-
             if comment_text.strip() == '':
                 comment = None
             else:
                 comment = bmp.createComment(
-                    submitter, message['Subject'], comment_text,
-                    _notify_listeners=False)
+                    submitter, message['Subject'], comment_text)
             return bmp, comment
 
         except BranchMergeProposalExists:
@@ -413,11 +420,4 @@ class CodeHandler:
             simple_sendmail('merge@code.launchpad.net',
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
-            transaction.abort()
-        except IncomingEmailError, error:
-            send_process_error_notification(
-                str(submitter.preferredemail.email),
-                'Submit Request Failure',
-                error.message, comment_text, error.failing_command)
-            transaction.abort()
 
