@@ -711,8 +711,8 @@ If the product's `bugtracker` isn't specified its
     None
 
 Similarly, if the product's `remote_product` attribute is None and its
-bug tracker is one which requires an upstream product,
-its `upstream_bugtracker_links` property will be None.
+bug tracker is one which requires an upstream product, the product's
+`upstream_bugtracker_links` property will be None.
 
     >>> product.bugtracker = bugtracker
     >>> product.remote_product = None

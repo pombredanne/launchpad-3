@@ -64,7 +64,7 @@ will be displayed.
     If you know this bug has been reported there, you can link to it;
     Launchpad will keep track of its status for you.
     If you want to report this bug on GnomeGBug GTracker before adding
-    the link to Launchpad you can use its bug filing form.
-    If you want to search for this bug on
-    GnomeGBug GTracker before adding the link to Launchpad you can use
-    its search form...
+    the link to Launchpad you can use the GnomeGBug GTracker bug filing
+    form. If you want to search for this bug on GnomeGBug GTracker
+    before adding the link to Launchpad you can use the GnomeGBug
+    GTracker search form...

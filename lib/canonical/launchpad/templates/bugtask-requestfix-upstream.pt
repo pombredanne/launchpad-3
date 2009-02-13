@@ -57,7 +57,7 @@
                   tal:content="bugtracker/title">Gnome Bugzilla</a> to
           track its bugs. If you know this bug has been reported there,
           you can link to it; Launchpad will keep track of its status
-          for you. 
+          for you.
         </p>
 
         <tal:bugtracker-links
@@ -66,8 +66,8 @@
           <p condition="links/bug_filing_url">
             If you want to report this bug on
             <tal:bug-tracker content="bugtracker/title" /> before
-            adding the link to Launchpad you can use
-            its
+            adding the link to Launchpad you can use the
+            <tal:bug-tracker content="bugtracker/title" />
             <a id="bug-filing-form-url"
                 tal:attributes="href links/bug_filing_url;
                                 title string:${bugtracker/title}'s bug filing form"
@@ -77,7 +77,8 @@
           <p condition="links/bug_search_url">
             If you want to search for this bug on
             <tal:bug-tracker content="bugtracker/title" /> before adding
-            the link to Launchpad you can use its
+            the link to Launchpad you can use the
+            <tal:bug-tracker content="bugtracker/title" />
             <a id="search-form-url"
                 tal:attributes="href links/bug_search_url;
                                 title string:${bugtracker/title}'s search form"
