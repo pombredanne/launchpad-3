@@ -40,7 +40,6 @@ from canonical.launchpad.testing import (
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
