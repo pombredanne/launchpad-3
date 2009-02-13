@@ -229,11 +229,12 @@ class IArchivePublic(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
-    def getSourcesForDeletion(name=None, status=None):
+    def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
         :param: status: `PackagePublishingStatus` filter, can be a sequence.
+        :param: distroseries: `IDistroSeries` filter.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -812,11 +813,6 @@ class IPPAActivateForm(Interface):
 
 class IArchiveSourceSelectionForm(Interface):
     """Schema used to select sources within an archive."""
-
-    name_filter = TextLine(
-        title=_("Package name"), required=False, default=None,
-        description=_("Display packages only with name matching the given "
-                      "filter."))
 
 
 class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
