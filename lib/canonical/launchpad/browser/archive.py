@@ -403,8 +403,12 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
 
     def setupNameFilterWidget(self):
         """Set the specified name filter property."""
-        self.specified_name_filter = self.request.query_string_params.get(
+        requested_name_filter = self.request.query_string_params.get(
             'field.name_filter')
+
+        self.specified_name_filter = None
+        if requested_name_filter is not None:
+            self.specified_name_filter = requested_name_filter[0]
 
     def setupStatusFilterWidget(self):
         """Build a customized publishing status select widget.
@@ -419,7 +423,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         if requested_status_filter is not None:
             self.selected_status_filter = (
                 self.simplified_status_vocabulary.getTermByToken(
-                    requested_status_filter))
+                    requested_status_filter[0]))
 
         # If the request didn't include a status, or it was invalid, use
         # the default:
@@ -444,9 +448,9 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
         archive distribution, or 'Any Series'.
         """
         series_filter = self.request.query_string_params.get(
-            'field.series_filter', 'any')
+            'field.series_filter', ['any'])
         self.selected_series_filter = (
-            self.series_vocabulary.getTermByToken(series_filter))
+            self.series_vocabulary.getTermByToken(series_filter[0]))
 
         field = Choice(
             __name__='series_filter', title=_("Series Filter"),
