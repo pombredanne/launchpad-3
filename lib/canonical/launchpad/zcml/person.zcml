@@ -42,8 +42,6 @@
     />
 
   <adapter
-    provides="canonical.launchpad.interfaces.IPerson"
-    for="canonical.launchpad.interfaces.IAccount"
     factory="canonical.launchpad.database.person.person_from_account"
     permission="zope.Public"
     />

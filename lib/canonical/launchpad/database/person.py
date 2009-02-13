@@ -28,9 +28,8 @@ import re
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import implements, alsoProvides
-from zope.component import getUtility
-from zope.component.interfaces import ComponentLookupError
+from zope.interface import alsoProvides, implementer, implements
+from zope.component import adapter, getUtility
 from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
@@ -70,7 +69,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccountSet,
+    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
@@ -3825,9 +3824,11 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         random.setstate(random_state)
 
 
+@adapter(IAccount)
+@implementer(IPerson)
 def person_from_account(account):
     """Adapt an IAccount into an IPerson."""
     person = Store.of(account).find(Person, account=account).one()
     if person is None:
-        raise ComponentLookupError('Cannot adapt')
+        return None
     return person

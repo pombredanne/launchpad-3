@@ -246,9 +246,7 @@ We can't adapt an account which has no person associated with, though.
     >>> personless_account = getUtility(IAccountSet).new(
     ...     AccountCreationRationale.UNKNOWN, 'Display name')
     >>> IPerson(personless_account)
-    Traceback (most recent call last):
-    ...
-    TypeError: ('Could not adapt'...
+    None
 
 
 === Personal standing ===
