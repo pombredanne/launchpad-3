@@ -1459,7 +1459,7 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
     schema = IArchiveSubscriber
     field_names = ['subscriber', 'date_expires', 'description']
-    custom_widget('description', TextWidget, displayWidth=80)
+    custom_widget('description', TextWidget, displayWidth=40)
 
     def initialize(self):
         """Ensure that we are dealing with a private archive."""
@@ -1514,7 +1514,7 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
                 self.setFieldError('date_expires',
                     "The expiry date must be in the future.")
 
-    @action(u"Add Subscriber", name="add",
+    @action(u"Add", name="add",
             validator="validate_new_subscription")
     def create_subscription(self, action, data):
         """Create a subscription for the supplied user."""
