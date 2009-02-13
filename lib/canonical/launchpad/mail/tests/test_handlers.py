@@ -6,6 +6,7 @@ from textwrap import dedent
 import transaction
 import unittest
 
+from storm.locals import Store
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
@@ -19,7 +20,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.database.branchmergeproposal import (
-    CreateMergeProposalJob)
+    CreateMergeProposalJob, MergeProposalCreatedJob)
 from canonical.launchpad.interfaces.mail import EmailProcessingError
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -417,12 +418,19 @@ class TestCodeHandler(TestCaseWithFactory):
             self.factory.makeMergeDirectiveEmail())
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
+        pop_notifications()
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source, bmp.source_branch)
         self.assertEqual(target, bmp.target_branch)
         self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
+        # No emails are sent.
+        messages = pop_notifications()
+        self.assertEqual(0, len(messages))
+        # Only a job created.
+        runner = JobRunner.fromReady(MergeProposalCreatedJob)
+        self.assertEqual(1, len(list(runner.jobs)))
         transaction.commit()
 
     def test_processMergeProposalEmptyMessage(self):
@@ -455,7 +463,29 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
         JobRunner.fromReady(CreateMergeProposalJob).runAll()
         self.assertEqual(target, source.landing_targets[0].target_branch)
-        # ensure the DB operations violate no constraints.
+        # Ensure the DB operations violate no constraints.
+        transaction.commit()
+
+    def test_processMergeProposalReviewerRequested(self):
+        # The commands in the merge proposal are parsed.
+        eric = self.factory.makePerson(name="eric")
+        message, file_alias, source_branch, target_branch = (
+            self.factory.makeMergeDirectiveEmail(body=dedent("""\
+                This is the comment.
+
+                  reviewer eric
+                """)))
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        pop_notifications()
+        bmp, comment = code_handler.processMergeProposal(message)
+        pending_reviews = list(bmp.votes)
+        self.assertEqual(1, len(pending_reviews))
+        self.assertEqual(eric, pending_reviews[0].reviewer)
+        # No emails are sent.
+        messages = pop_notifications()
+        self.assertEqual(0, len(messages))
+        # Ensure the DB operations violate no constraints.
         transaction.commit()
 
     def test_processMergeProposalExists(self):
