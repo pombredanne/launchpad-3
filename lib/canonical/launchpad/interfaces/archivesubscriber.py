@@ -107,11 +107,13 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
 
-    def getBySubscriber(subscriber):
+    def getBySubscriber(subscriber, archive=None):
         """Return all the subscriptions for a person.
 
         :param subscriber: An `IPerson` for whom to return all
             `ArchiveSubscriber` records.
+        :param archive: An optional `IArchive` which restricts
+            the results to that particular archive.
         """
 
     def getByArchive(archive):
