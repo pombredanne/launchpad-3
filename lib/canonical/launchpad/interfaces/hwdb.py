@@ -55,6 +55,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
@@ -254,7 +255,7 @@ class IHWSubmissionSet(Interface):
         """
 
     def search(user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None):
+               distroseries=None, architecture=None, owner=None):
         """Return the submissions matiching the given parmeters.
 
         :param user: The `IPerson` running the query. Private submissions
@@ -270,6 +271,7 @@ class IHWSubmissionSet(Interface):
             this `IDistroSeries`.
         :param architecture: Limit results to submissions made for
             a specific architecture.
+        :param owner: Limit results to submissions from this person.
 
         Only one of :distribution: or :distroseries: may be supplied.
         """
@@ -659,11 +661,12 @@ class IHWDevice(Interface):
             description=
                 u'If specified, the result set is limited to sumbissions '
                 'made for the given architecture.',
-            required=False))
+            required=False),
+        owner = copy_field(IHWSubmission['owner']))
     @operation_returns_collection_of(IHWSubmission)
     @export_read_operation()
     def getSubmissions(driver=None, distribution=None,
-                       distroseries=None, architecture=None):
+                       distroseries=None, architecture=None, owner=None):
         """List all submissions which mention this device.
 
         :param driver: Limit results to devices that use the given
@@ -674,6 +677,7 @@ class IHWDevice(Interface):
             `IDistroSeries`.
         :param architecture: Limit results to submissions for this
             architecture.
+        :param owner: Limit results to submissions from this person.
 
         Only submissions matching all given criteria are returned.
         Only one of :distribution: or :distroseries: may be supplied.

@@ -505,6 +505,21 @@ But we can't supply both distribution and distroseries.
     ...
     <BLANKLINE>
 
+We can query for submissions from a particular user.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     owner=webservice.getAbsoluteUrl('/~name12')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     owner=webservice.getAbsoluteUrl('/~name20')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
 
 === Submission Devices ===
 
