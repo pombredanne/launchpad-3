@@ -387,7 +387,11 @@ class TestCaseWithFactory(TestCase):
         self.addCleanup(restore_bzr_home)
 
     def useBzrBranches(self):
-        """Prepare for using bzr branches."""
+        """Prepare for using bzr branches.
+
+        This sets up support for lp-hosted and lp-mirrored URLs,
+        changes to a temp directory, and overrides the bzr home directory.
+        """
         from canonical.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
         from bzrlib.transport import get_transport

@@ -6,8 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.launchpad.database.branchcontainer import (
     PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.testing import TestCaseWithFactory
@@ -29,7 +27,7 @@ class TestPackageContainer(TestCaseWithFactory):
         person = self.factory.makePerson()
         sourcepackage = self.factory.makeSourcePackage()
         context = PackageContainer(sourcepackage)
-        namespace = removeSecurityProxy(context.getNamespace(person))
+        namespace = context.getNamespace(person)
         self.assertEqual(person, namespace.owner)
         self.assertEqual(sourcepackage, namespace.sourcepackage)
 
@@ -47,7 +45,7 @@ class TestPersonContainer(TestCaseWithFactory):
         """Get namespace produces the correct namespace."""
         person = self.factory.makePerson()
         context = PersonContainer(self.factory.makePerson())
-        namespace = removeSecurityProxy(context.getNamespace(person))
+        namespace = context.getNamespace(person)
         self.assertEqual(namespace.owner, person)
         self.assertRaises(AttributeError, lambda: namespace.product)
         self.assertRaises(AttributeError, lambda: namespace.sourcepackage)
@@ -67,7 +65,7 @@ class TestProductContainer(TestCaseWithFactory):
         product = self.factory.makeProduct()
         person = self.factory.makePerson()
         context = ProductContainer(product)
-        namespace = removeSecurityProxy(context.getNamespace(person))
+        namespace = context.getNamespace(person)
         self.assertEqual(namespace.product, product)
         self.assertEqual(namespace.owner, person)
 

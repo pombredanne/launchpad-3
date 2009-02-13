@@ -1083,6 +1083,7 @@ class BranchSet:
 
     @staticmethod
     def URIToUniqueName(uri):
+        """See `IBranchSet`."""
         schemes = ('http', 'sftp', 'bzr+ssh')
         codehosting_host = URI(config.codehosting.supermirror_root).host
         if uri.scheme in schemes and uri.host == codehosting_host:

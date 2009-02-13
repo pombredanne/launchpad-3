@@ -1361,7 +1361,12 @@ class TestGetByUrl(TestCaseWithFactory):
         self.assertEqual(branch, branch2)
 
     def test_URIToUniqueName(self):
-        """Ensure URIToUniqueName works."""
+        """Ensure URIToUniqueName works.
+
+        Only codehosting-based using http, sftp or bzr+ssh URLs will
+        be handled. If any other URL gets passed the returned will be
+        None.
+        """
         branch_set = getUtility(IBranchSet)
         uri = URI(config.codehosting.supermirror_root)
         uri.path = '/~foo/bar/baz'

@@ -526,6 +526,7 @@ class TestCodeHandler(TestCaseWithFactory):
             bzr_errors.NotBranchError, Branch.open,
             bmp.source_branch.warehouse_url)
         local_source = Branch.open(bmp.source_branch.getPullURL())
+        # The hosted branch has the correct last revision.
         self.assertEqual(
             source.branch.last_revision(), local_source.last_revision())
         # A mirror should be scheduled.
@@ -547,6 +548,7 @@ class TestCodeHandler(TestCaseWithFactory):
         tree.commit('rev1')
         lp_source, lp_source_tree = self.create_branch_and_tree(
             'lpsource', branch.product, hosted=True)
+        # The branch is not scheduled to be mirrorred.
         self.assertIs(lp_source.next_mirror_time, None)
         lp_source_tree.pull(tree.branch)
         lp_source_tree.commit('rev2', rev_id='rev2')
@@ -559,52 +561,55 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
+        # The branch merge proposal should use the existing db branch.
         self.assertEqual(lp_source, bmp.source_branch)
+        # Now the branch is not scheduled to be mirrorred.
         self.assertIsNot(None, lp_source.next_mirror_time)
         mirror = removeSecurityProxy(bmp.source_branch).getBzrBranch()
+        # The mirrored copy of the branch has not been updated.
         self.assertEqual('rev2', mirror.last_revision())
         hosted = Branch.open(bmp.source_branch.getPullURL())
+        # The hosted copy of the branch has been updated.
         self.assertEqual('rev3', hosted.last_revision())
 
+    def makeTargetBranch(self):
+        """Helper for getNewBranchInfo tests."""
+        owner = self.factory.makePerson(name='target-owner')
+        product = self.factory.makeProduct(name='target-product')
+        return self.factory.makeProductBranch(product=product, owner=owner)
+
     def test_getNewBranchInfoNoURL(self):
-        """
-        If no URL, target namespace is used, with 'merge' basename.
-        """
-        submitter = getUtility(ILaunchBag).user
-        target = self.factory.makeProductBranch()
+        """If no URL, target namespace is used, with 'merge' basename."""
+        submitter = self.factory.makePerson(name='merge-submitter')
+        target = self.makeTargetBranch()
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             None, target, submitter)
-        namespace = removeSecurityProxy(namespace)
-        self.assertEqual(target.product, namespace.product)
-        self.assertEqual(submitter, namespace.owner)
+        self.assertEqual('~merge-submitter/target-product', namespace.name)
+        self.assertEqual('merge', base)
 
     def test_getNewBranchInfoRemoteURL(self):
-        """If a URL is provided, its base is used."""
-        submitter = getUtility(ILaunchBag).user
-        target = self.factory.makeProductBranch()
+        """If a URL is provided, its base is used, with target namespace."""
+        submitter = self.factory.makePerson(name='merge-submitter')
+        target = self.makeTargetBranch()
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
                 'http://foo/bar', target, submitter)
+        self.assertEqual('~merge-submitter/target-product', namespace.name)
         self.assertEqual('bar', base)
-        namespace = removeSecurityProxy(namespace)
-        self.assertEqual(target.product, namespace.product)
-        self.assertEqual(submitter, namespace.owner)
 
     def test_getNewBranchInfoLPURL(self):
-        """If an LP URL is provided, we attempt to reproduce it."""
-        submitter = getUtility(ILaunchBag).user
-        target = self.factory.makeAnyBranch()
+        """If an LP URL is provided, we attempt to reproduce it exactly."""
+        submitter = self.factory.makePerson(name='merge-submitter')
+        target = self.makeTargetBranch()
         url_product = self.factory.makeProduct('uproduct')
         url_person = self.factory.makePerson(name='uuser')
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar',
             target, submitter)
+        self.assertEqual('~uuser/uproduct', namespace.name)
         self.assertEqual('bar', base)
-        namespace = removeSecurityProxy(namespace)
-        self.assertEqual(url_product, namespace.product)
-        self.assertEqual(url_person, namespace.owner)
 
 
 class TestVoteEmailCommand(TestCase):
