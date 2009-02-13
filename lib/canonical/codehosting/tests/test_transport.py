@@ -12,7 +12,7 @@ from bzrlib.transport.local import LocalTransport
 from bzrlib.urlutils import local_path_to_url
 
 from canonical.codehosting.branchfs import LaunchpadInternalServer
-from canonical.codehosting.branchfsclient import BlockingProxy
+from canonical.codehosting.vfs.branchfsclient import BlockingProxy
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.codehosting.tests.helpers import TestResultWrapper
 
