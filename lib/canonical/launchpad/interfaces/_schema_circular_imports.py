@@ -32,6 +32,9 @@ IBranchMergeProposal['getComment'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].schema = ICodeReviewComment
 IBranchMergeProposal['createComment'].queryTaggedValue(
     'lazr.webservice.exported')['params']['vote'].vocabulary = CodeReviewVote
+IBranchMergeProposal['createComment'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['parent'].schema = \
+        ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
