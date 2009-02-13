@@ -27,7 +27,7 @@ from bzrlib import errors
 
 from canonical.codehosting.branchfs import LaunchpadInternalServer
 from canonical.codehosting.vfs.branchfsclient import BlockingProxy
-from canonical.codehosting.transport import (
+from canonical.codehosting.vfs.transport import (
     get_chrooted_transport, get_readonly_transport, _MultiServer)
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.config import config

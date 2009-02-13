@@ -28,7 +28,7 @@ from canonical.codehosting.branchfs import (
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
-from canonical.codehosting.transport import AsyncVirtualTransport
+from canonical.codehosting.vfs.transport import AsyncVirtualTransport
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
