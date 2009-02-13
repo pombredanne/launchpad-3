@@ -95,7 +95,8 @@
                    condition="view/translation_team"><!--
                   --><tal:has_guidelines
                       tal:condition="view/translation_team/style_guide_url">
-                  and <a tal:attributes="
+                  and <a class="style-guide-url"
+                         tal:attributes="
                            href view/translation_team/style_guide_url"
                          tal:content="string:${context/language/englishname}
                                       guidelines">Serbian guidelines</a><!--
@@ -105,7 +106,8 @@
               <span class="important-notice"
                   tal:condition="not:view/translation_group/translation_guide_url">
                 Before translating, make sure to go through
-                <a tal:content="string:${view/translation_team/translator/displayname}
+                <a class="style-guide-url"
+                   tal:content="string:${view/translation_team/translator/displayname}
                                 guidelines"
                    tal:attributes="href view/translation_team/style_guide_url">
                   Serbian guidelines</a>

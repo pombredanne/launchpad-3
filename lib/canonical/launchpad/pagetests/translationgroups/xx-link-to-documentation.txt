@@ -43,9 +43,9 @@ Back on the translations page, the link is now present, too.
     ...     'http://translations.launchpad.dev/evolution/trunk/'
     ...     '+pots/evolution-2.2/es/+translate')
     >>> style_guide_url = first_tag_by_class(
-    ...     anon_browser.contents, 'style_guide_url')
+    ...     anon_browser.contents, 'style-guide-url')
     >>> print extract_text(style_guide_url)
-    Documentation
+    testing Spanish team guidelines
     >>> print style_guide_url['href']
     http://www.ubuntu.com/
 
