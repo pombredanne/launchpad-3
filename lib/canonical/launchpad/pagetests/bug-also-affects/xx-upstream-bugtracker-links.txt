@@ -40,9 +40,12 @@ to reflect this.
 
     >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
     >>> print extract_text(text)
-    Mozilla Thunderbird uses The Mozilla.org Bug Tracker to track its
-    bugs. If you know this bug has been reported there, you can link to
-    it; Launchpad will keep track of its status for you.
+    Mozilla Thunderbird
+    uses The Mozilla.org Bug Tracker to
+    track its bugs. If you know this bug has been reported there,
+    you can link to it; Launchpad will keep track of its status
+    for you.
+    I have the URL for the upstream bug...
 
 If the project that the user links to is one that has its remote_product
 set, links to the upstream bug tracker's bug filing and search forms
@@ -50,13 +53,22 @@ will be displayed.
 
     >>> user_browser.open('http://launchpad.dev/bugs/13/')
     >>> user_browser.getLink(url='+choose-affected-product').click()
-    >>> user_browser.getControl('Project').value = 'thunderbird'
+    >>> user_browser.getControl('Project').value = 'gnome-terminal'
     >>> user_browser.getControl('Continue').click()
 
     >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
     >>> print extract_text(text)
-    Mozilla Thunderbird uses...
-    If you want to report this bug on The Mozilla.org Bug Tracker before
-    adding the link to Launchpad you can use its bug filing form.
-    If you want to search for this bug on The Mozilla.org Bug Tracker
-    before adding the link to Launchpad you can use its search form.
+    GNOME Terminal uses GnomeGBug GTracker to track its bugs.
+    If you know this bug has been reported there, you can link to it;
+    Launchpad will keep track of its status for you.
+    If you want to report this bug on GnomeGBug GTracker before adding
+    the link to Launchpad you can use its bug filing form.
+    If you want to search for this bug on
+    GnomeGBug GTracker before adding the link to Launchpad you can use
+    its search form.
+    I have the URL for the upstream bug:
+    The URL of this bug in the remote bug tracker.
+    I have already emailed an upstream bug contact:
+    The upstream email address that this bug has been forwarded to.
+    I just want to register that it is upstream right now; I don't have any way to link it.
+
