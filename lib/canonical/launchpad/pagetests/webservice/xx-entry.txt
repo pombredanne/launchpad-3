@@ -59,12 +59,11 @@ representation is "really" what's desired.
   >>> print http("""GET /api/beta/~name12?ws.accept=application/json HTTP/1.1
   ... Host: launchpad.dev
   ... Accept: application/xhtml+xml
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=""")
+  ... Authorization: %s""" % sample_auth)
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
   ...
-
 
 Data is served encoded in UTF-8; a good client will automatically
 convert it into Unicode.
@@ -419,20 +418,20 @@ Bad data is not canonicalized.
     wiki_url: "not-a-url" is not a valid URI
 
 
-=== Conditional PUT and PATCH ===
+=== Conditional GET, PUT and PATCH ===
 
 When you GET an entry you're given an ETag; an opaque string that
 changes whenever the entry changes.
 
   >>> response = webservice.get('/~salgado')
-  >>> etag = response._response.getHeader('ETag')
+  >>> salgado_etag = response._response.getHeader('ETag')
   >>> salgado = response.jsonBody()
 
 The ETag is present in the HTTP response headers when you GET an
 entry, but it's also present in the representation of the entry
 itself.
 
-  >>> salgado['http_etag'] == etag
+  >>> salgado['http_etag'] == salgado_etag
   True
 
 This is so you can get the ETags for all the entries in a collection
@@ -449,6 +448,29 @@ ETag you'd get if you got that entry individually.
   >>> first_person['http_etag'] == first_person_2['http_etag']
   True
 
+When you make a GET request, you can provide the ETag as the
+If-None-Match header. This lets you save time when the resource hasn't
+changed.
+
+  >>> print webservice.get('/~salgado',
+  ...                      headers={'If-None-Match': salgado_etag})
+  HTTP/1.1 304 Not Modified
+  ...
+
+Conditional GET works the same way whether the request goes through
+the 'api' virtual host or through the website-level interface designed
+for Ajax.
+
+  >>> etag = 'dummy-etag'
+  >>> request = """GET /api/beta/~salgado HTTP/1.1
+  ... Host: launchpad.dev
+  ... If-None-Match: %s
+  ... Authorization: %s"""
+  >>> etag = http(request % (etag, sample_auth))._response.getHeader("Etag")
+  >>> print http(request % (etag, sample_auth))
+  HTTP/1.1 304 Not Modified
+  ...
+
 When you make a PUT or PATCH request, you can provide the ETag as the
 If-Match header. This lets you detect changes that other people made
 to the entry, so your changes don't overwrite theirs.
@@ -457,7 +479,7 @@ If the ETag you provide in If-Match matches the entry's current ETag,
 your request goes through.
 
   >>> print modify_person('salgado', salgado, 'PATCH',
-  ...                     {'If-Match' : etag})
+  ...                     {'If-Match' : salgado_etag})
   HTTP/1.1 209 Content Returned
   ...
 
@@ -474,7 +496,7 @@ If you specify a number of ETags, and any of them match, your request
 will go through.
 
   >>> print modify_person('salgado', salgado, 'PATCH',
-  ...                     {'If-Match' : '"an-old-etag", %s' % etag})
+  ...                     {'If-Match' : '"an-old-etag", %s' % salgado_etag})
   HTTP/1.1 209 Content Returned
   ...
 
