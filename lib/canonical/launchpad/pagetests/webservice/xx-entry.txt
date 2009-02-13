@@ -274,6 +274,7 @@ representation of the object.
   HTTP/1.1 209 Content Returned
   ...
   Content-Type: application/json
+  ...
   <BLANKLINE>
   {...}
 
