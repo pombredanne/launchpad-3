@@ -219,7 +219,7 @@ class BugTracker(SQLBase):
         if remote_product is None and self.multi_product:
             # Don't try to return anything if remote_product is required
             # for this BugTrackerType and one hasn't been passed.
-            return bugtracker_urls
+            return None
 
         if remote_product is None:
             # Turn the remote product into an empty string so that
