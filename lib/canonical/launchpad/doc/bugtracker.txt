@@ -490,8 +490,10 @@ the constraints of multi_product=True are not violated by any
 BugTracker.
 
 If you try passing remote_product=None to a multi product bugtracker's
-getBugFilingAndSearchLinks() method you'll get None back, since a
-product is required to be able to generate URLs for those bug trackers.
+getBugFilingAndSearchLinks() method you'll get None back for both URLs,
+since a product is required to be able to generate URLs for those bug
+trackers.
 
-    >>> print mozilla_bugzilla.getBugFilingAndSearchLinks(None)
-    None
+    >>> print_links(mozilla_bugzilla.getBugFilingAndSearchLinks(None))
+    bug_filing_url: None
+    bug_search_url: None
