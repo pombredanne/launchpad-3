@@ -666,3 +666,11 @@ It is also possible to search for a distroseries and architecture.
     ...         submission.distroarchseries.distroseries.name,
     ...         submission.distroarchseries.architecturetag)
     warty amd64
+
+And we can also search for submissions from a particular user.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> owner = getUtility(IPersonSet).getByName('name12')
+    >>> set(submission.owner.name for submission
+    ...     in hw_submission_set.search(owner=owner))
+    set([u'name12'])

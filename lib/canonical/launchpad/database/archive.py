@@ -381,7 +381,8 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None, status=None):
+    def getSourcesForDeletion(self, name=None, status=None,
+            distroseries=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -420,6 +421,11 @@ class Archive(SQLBase):
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
+
+        if distroseries is not None:
+            clauses.append("""
+                SourcePackagePublishingHistory.distroseries = %s
+            """ % sqlvalues(distroseries))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 

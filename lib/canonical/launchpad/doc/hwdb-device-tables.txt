@@ -1083,6 +1083,18 @@ We can even limit the results to a specific distro series and architecture.
     ...     distroseries=ubuntu['hoary'], architecture='powerpc').count()
     0
 
+We can also search for submissions from a particular user.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> owner = getUtility(IPersonSet).getByName('name12')
+    >>> for submission in sata_controller.getSubmissions(owner=owner):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> not_owner = getUtility(IPersonSet).getByName('name20')
+    >>> sata_controller.getSubmissions(owner=not_owner).count()
+    0
+
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via
