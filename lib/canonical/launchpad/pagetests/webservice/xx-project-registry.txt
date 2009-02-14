@@ -324,10 +324,10 @@ It is possible to get a batched list of all the projects.
     >>> len(project_entries)
     5
     >>> project_entries[0]['self_link']
-    u'http://.../arch-mirrors'
+    u'http://.../gnome-terminal'
     >>> for project in project_entries:
     ...   print project['display_name']
-    Arch mirrors
+    GNOME Terminal
     Mozilla Firefox
     Redfish
     The Landscape Project
