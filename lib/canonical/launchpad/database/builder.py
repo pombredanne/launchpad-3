@@ -256,10 +256,11 @@ class Builder(SQLBase):
         chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
             raise CannotBuild(
-                "Missing CHROOT for %s/%s/%s",
-                build_queue_item.build.distroseries.distribution.name,
-                build_queue_item.build.distroseries.name,
-                build_queue_item.build.distroarchseries.architecturetag)
+                "Missing CHROOT for %s/%s/%s" % (
+                    build_queue_item.build.distroseries.distribution.name,
+                    build_queue_item.build.distroseries.name,
+                    build_queue_item.build.distroarchseries.architecturetag)
+                )
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution
