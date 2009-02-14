@@ -443,13 +443,15 @@ both filing and searching URLs.
     bug_filing_url: None
     bug_search_url: None
 
-As does DebBugs, which is also an email-based bugtracker.
+Debbugs - an email-based bug tracker - doesn't provide a bug filing form.
+However, it is possible to obtain a bug search URL for Debbugs-using
+products.
 
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> links = debbugs.getBugFilingAndSearchLinks('testproduct')
     >>> print_links(links)
     bug_filing_url: None
-    bug_search_url: None
+    bug_search_url: http://.../cgi-bin/pkgreport.cgi?package=testproduct
 
 The remote_product values passed to getBugFilingAndSearchLinks() are
 URL-encoded to ensure that the returned URL is valid.

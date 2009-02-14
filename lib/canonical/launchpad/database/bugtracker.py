@@ -185,6 +185,8 @@ class BugTracker(SQLBase):
     _search_url_patterns = {
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/query.cgi?product=%(remote_product)s"),
+        BugTrackerType.DEBBUGS: (
+            "%(base_url)s/cgi-bin/pkgreport.cgi?package=%(remote_product)s"),
         BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
         BugTrackerType.PHPPROJECT: "%(base_url)s/search.php",
         BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
