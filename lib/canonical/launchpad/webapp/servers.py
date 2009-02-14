@@ -1256,12 +1256,12 @@ class WebServicePublication(LaunchpadBrowserPublication):
                     accept = request.response.getHeader(
                         "Accept", "application/json")
                     qs_append = "ws.accept=" + urllib.quote(accept)
-                uri = URI(location)
-                if uri.query is None:
-                    uri.query = qs_append
-                else:
-                    uri.query += '&' + qs_append
-                request.response.setHeader("Location", str(uri))
+                    uri = URI(location)
+                    if uri.query is None:
+                        uri.query = qs_append
+                    else:
+                        uri.query += '&' + qs_append
+                    request.response.setHeader("Location", str(uri))
         return value
 
     def getPrincipal(self, request):
