@@ -296,7 +296,7 @@ an alias.
     >>> pillars = bugtracker_set.getPillarsForBugtrackers(trackers)
     >>> for t in pillars:
     ...     print t.name, [p.name for p in pillars[t]]
-    gnome-bugzilla [u'gnome']
+    gnome-bugzilla [u'gnome-terminal', u'gnome']
 
 
 == Imported bug messages ==
@@ -490,9 +490,8 @@ the constraints of multi_product=True are not violated by any
 BugTracker.
 
 If you try passing remote_product=None to a multi product bugtracker's
-getBugFilingAndSearchLinks() method you'll get no URLs back, since a
+getBugFilingAndSearchLinks() method you'll get None back, since a
 product is required to be able to generate URLs for those bug trackers.
 
-    >>> print_links(mozilla_bugzilla.getBugFilingAndSearchLinks(None))
-    bug_filing_url: None
-    bug_search_url: None
+    >>> print mozilla_bugzilla.getBugFilingAndSearchLinks(None)
+    None
