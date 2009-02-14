@@ -132,12 +132,12 @@ resource yields a 415 error.
 The only supported media types are ones that begin with 'application/json'.
 
   >>> print webservice.patch("/~salgado", 'application/json', "{}")
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print webservice.patch(
   ...     "/~salgado", 'application/json; charset=UTF-8', "{}")
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 
