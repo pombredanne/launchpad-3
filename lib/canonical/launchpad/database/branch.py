@@ -1593,6 +1593,7 @@ class BranchCloud:
         # the last revision date.
         result = store.find(
             (Product, Count(Branch.id), Max(Revision.revision_date)),
+            Branch.private == False,
             Branch.product == Product.id,
             Or(Branch.branch_type == BranchType.HOSTED,
                Branch.branch_type == BranchType.MIRRORED),
