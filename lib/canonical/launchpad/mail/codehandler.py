@@ -412,6 +412,13 @@ class CodeHandler:
                 bmp, submitter, notify_event_listeners=False)
             processed_count = self.processCommands(context, comment_text)
 
+            # If there are no reviews requested yet, request the default
+            # reviewer of the target branch.
+            if bmp.votes.count() == 0:
+                bmp.nominateReviewer(
+                    target.code_reviewer, submitter, None,
+                    _notify_listeners=False)
+
             if comment_text.strip() == '':
                 comment = None
             else:
