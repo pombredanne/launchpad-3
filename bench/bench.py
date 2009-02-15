@@ -24,7 +24,7 @@ def main():
         curl = subprocess.Popen(["curl", url], stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         curl.wait()
-        print "\n".join(curl.stdout.read().splitlines()[-2:])
+        print "\n".join(curl.stdout.read().splitlines()[-3:])
 
         # Benchmark, and write out output
         print "Benchmarking", url
