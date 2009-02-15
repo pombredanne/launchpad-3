@@ -13,31 +13,31 @@ Document Path:          /~sabdfl/+related-software
 Document Length:        22612 bytes
 
 Concurrency Level:      10
-Time taken for tests:   34.861 seconds
+Time taken for tests:   32.511 seconds
 Complete requests:      100
 Failed requests:        0
 Write errors:           0
 Total transferred:      2288800 bytes
 HTML transferred:       2261200 bytes
-Requests per second:    2.87 [#/sec] (mean)
-Time per request:       3486.069 [ms] (mean)
-Time per request:       348.607 [ms] (mean, across all concurrent requests)
-Transfer rate:          64.12 [Kbytes/sec] received
+Requests per second:    3.08 [#/sec] (mean)
+Time per request:       3251.108 [ms] (mean)
+Time per request:       325.111 [ms] (mean, across all concurrent requests)
+Transfer rate:          68.75 [Kbytes/sec] received
 
 Connection Times (ms)
               min  mean[+/-sd] median   max
-Connect:        0    0   0.6      0       3
-Processing:  1161 3380 705.9   3436    4768
-Waiting:     1146 3367 705.7   3435    4762
-Total:       1164 3381 705.5   3436    4768
+Connect:        0    0   0.1      0       0
+Processing:  1218 3136 550.0   3224    3948
+Waiting:     1196 3121 550.8   3198    3948
+Total:       1218 3136 550.0   3224    3948
 
 Percentage of the requests served within a certain time (ms)
-  50%   3436
-  66%   3760
-  75%   3915
-  80%   3955
-  90%   4252
-  95%   4421
-  98%   4550
-  99%   4768
- 100%   4768 (longest request)
+  50%   3224
+  66%   3409
+  75%   3539
+  80%   3576
+  90%   3744
+  95%   3878
+  98%   3935
+  99%   3948
+ 100%   3948 (longest request)
