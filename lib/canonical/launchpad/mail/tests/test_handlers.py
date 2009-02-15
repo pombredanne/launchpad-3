@@ -530,6 +530,29 @@ class TestCodeHandler(TestCaseWithFactory):
         # Ensure the DB operations violate no constraints.
         transaction.commit()
 
+    def test_processMergeProposalDefaultReviewer(self):
+        # The commands in the merge proposal are parsed.
+        message, file_alias, source_branch, target_branch = (
+            self.factory.makeMergeDirectiveEmail(body=dedent("""\
+                This is the comment.
+                """)))
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        pop_notifications()
+        bmp, comment = code_handler.processMergeProposal(message)
+        # If no reviewer is specified, then the default reviewer of the target
+        # branch is requested to review.
+        pending_reviews = list(bmp.votes)
+        self.assertEqual(1, len(pending_reviews))
+        self.assertEqual(
+            target_branch.code_reviewer,
+            pending_reviews[0].reviewer)
+        # No emails are sent.
+        messages = pop_notifications()
+        self.assertEqual(0, len(messages))
+        # Ensure the DB operations violate no constraints.
+        transaction.commit()
+
     def test_processMergeProposalExists(self):
         """processMergeProposal raises BranchMergeProposalExists
 
