@@ -252,7 +252,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates', 'merge_queue',
+             'register_merge', 'landing_candidates',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
@@ -321,13 +321,6 @@ class BranchContextMenu(ContextMenu):
         else:
             text = 'Link to a bug report'
         return Link('+linkbug', text, icon='add')
-
-    def merge_queue(self):
-        text = 'View merge queue'
-        # Only enable this view if the branch is a target of some
-        # branch merge proposals.
-        enabled = self.context.landing_candidates.count() > 0
-        return Link('+merge-queue', text, enabled=enabled)
 
     def link_blueprint(self):
         if self.context.spec_links:

@@ -137,7 +137,7 @@ default and wants to refine the options.
 
     >>> jblack_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
 There we go, James can be certain about which package to select, only
 pmount is presented.
@@ -601,7 +601,7 @@ Packages in other status can be browsed by adjusting the status
 filter dropdown box.
 
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
@@ -835,7 +835,7 @@ insane because PPA-copy-ui is so cool.
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -887,7 +887,7 @@ interface can be used to resurrect deleted packages.
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> deleted_pub_id = getPPAPubIDsFor(
@@ -1103,7 +1103,7 @@ foo-9.9 source from 'James-Friend's PPA.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> jblack_browser.getControl(name='field.name_filter').value = 'foo'
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source     Uploader  Published   Status     Series   Section  Build Status

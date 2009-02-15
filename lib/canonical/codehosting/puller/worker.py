@@ -19,7 +19,7 @@ from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
 from canonical.config import config
-from canonical.codehosting.branchfs import get_puller_server
+from canonical.codehosting.vfs import get_puller_server
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces.branch import (
     BranchType, get_blacklisted_hostnames)
