@@ -68,11 +68,18 @@ XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
 XMLRPC_SUBSCRIPTION_BATCH_SIZE = %(xmlrpc_subscription_batch_size)s
 LAUNCHPAD_SHARED_SECRET = '%(shared_secret)s'
 
-# RFC 2369 header information
+# RFC 2369 header information.
 LIST_HELP_HEADER = '%(list_help_header)s'
 LIST_SUBSCRIPTION_HEADERS = '%(list_subscription_headers)s'
 LIST_ARCHIVE_HEADER_TEMPLATE = '%(archive_url_template)s'
 LIST_OWNER_HEADER_TEMPLATE = '%(list_owner_header_template)s'
+
+# Soft and hard maximum message size limits.  Anything below the soft limit is
+# allowed directly through.  Between the soft and hard limits, the message is
+# held for approval.  Above the hard limit, the message is logged and
+# discarded.  Note that the normal Mailman size thresholds are ignored.
+LAUNCHPAD_SOFT_MAX_SIZE = %(soft_max_size)d
+LAUNCHPAD_HARD_MAX_SIZE = %(hard_max_size)d
 
 SITE_LIST_OWNER = '%(site_list_owner)s'
 
@@ -104,6 +111,8 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     footer=footer,
     var_dir=config.mailman.build_var_dir,
     shared_secret=config.mailman.shared_secret,
+    soft_max_size=config.mailman.soft_max_size,
+    hard_max_size=config.mailman.hard_max_size,
     )
     finally:
         config_file.close()
@@ -125,6 +134,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
                              ('LaunchpadHeaders', 'lpheaders'),
                              ('LPStanding', 'lpstanding'),
                              ('LPModerate', 'lpmoderate'),
+                             ('LPSize', 'lpsize'),
                              ):
         handler_path = os.path.join(
             mailman_path, 'Mailman', 'Handlers', mm_name + '.py')

@@ -245,7 +245,8 @@ class IBugTracker(Interface):
             in the form {'bug_filing_url': foo, 'search_url': bar}. If
             either or both of the URLs is unavailable for the current
             BugTrackerType the relevant values in the dict will be set
-            to None.
+            to None. If the bug tracker requires a `remote_product` but
+            None is passed, return None.
         """
 
     def getBugsWatching(remotebug):

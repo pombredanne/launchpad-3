@@ -1354,13 +1354,18 @@ table#package-requests {
     width: 60em;
     margin: 1em 0;
 }
-table#package-requests td{
+table#package-requests td {
     padding: 0.5em;
+}
+form.package-search-filter {
+    clear: both;
 }
 h1.disabled {
     color: grey;
 }
-
+table#packages_list {
+    margin-top: 1em;
+}
 p.update-failure-message {
     background: url(/@@/no) center left no-repeat;
     padding-left: 18px;

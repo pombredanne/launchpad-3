@@ -142,23 +142,13 @@ div.package-details {
     archive.
   </tal:comment>
 
-  <div style="padding-top: 1em;" tal:define="batch view/search_results">
-    <form name="package_search" action="" method="GET" style="clear:both">
-      <label for="name">Package name contains:</label>
-      <input id="field.name_filter" title="Package Name" size="20"
-              type="text" name="field.name_filter"
-              tal:attributes="value request/field.name_filter|nothing"/>
-      <tal:status_filter
-          replace="structure view/plain_status_filter_widget" /> in
-      <tal:series_filter
-          replace="structure view/plain_series_filter_widget" />
-      <input type="submit" value="Filter" />
-    </form>
+  <div style="padding-top: 1em;" tal:define="batch view/batched_sources">
 
     <tal:navigation_top
         replace="structure view/batchnav/@@+navigation-links-upper" />
 
-    <table class="listing" id="packages_list" tal:condition="batch">
+    <table class="listing" id="packages_list"
+           tal:condition="batch">
       <thead>
         <tr class="archive_package_row">
         <th colspan="2">Source</th>
@@ -171,9 +161,18 @@ div.package-details {
         </tr>
       </thead>
       <tbody>
-        <tal:block repeat="publishing batch"
-                   replace="structure publishing/@@+listing-archive-detailed">
-        </tal:block>
+        <tal:non_selectable repeat="publishing batch"
+                   replace="structure publishing/@@+listing-archive-detailed"
+                   condition="not:view/selectable_sources">
+        </tal:non_selectable>
+        <tal:selectable condition="view/selectable_sources">
+          <tal:each_term define="widget nocall:view/widgets/selected_sources"
+                         repeat="term widget/vocabulary">
+            <tal:block
+              define="pub term/value"
+              replace="structure pub/@@+listing-archive-detailed-selectable" />
+          </tal:each_term>
+        </tal:selectable>
       </tbody>
     </table>
 
@@ -181,7 +180,7 @@ div.package-details {
         replace="structure view/batchnav/@@+navigation-links-lower" />
 
     <div id="empty-result"
-            tal:define="name_filter request/field.name_filter|nothing"
+            tal:define="name_filter view/specified_name_filter|nothing"
             tal:condition="not: batch">
       No matching package for '<tal:name_filter replace="name_filter" />'.
     </div>
@@ -243,83 +242,6 @@ div.package-details {
   </tal:block>
 </metal:package_copy_request_list>
 
-<metal:selectable_sources define-macro="selectable-sources">
-
-  <tal:comment replace="nothing">
-    Presents a table with selectable sources for an
-    IArchiveSelectableSourceView.
-  </tal:comment>
-
-  <tal:search define="name_widget nocall:view/widgets/name_filter;
-                      status_widget nocall:view/widgets/status_filter">
-     <label tal:attributes="for name_widget/name">
-       Show only sources with name matching:
-     </label>
-     <input tal:replace="structure name_widget" />
-     <input tal:replace="structure status_widget" />
-     <input
-       tal:replace="structure view/actions/field.actions.update/render" />
-  </tal:search>
-
-  <tal:no_sources tal:condition="not:view/available_sources_size">
-    <div id="empty-result" style="border: 1px solid;">
-      <p>No matching source packages for '<tal:name_filter
-         tal:replace="request/field.name_filter|nothing" />'.</p>
-    </div>
-  </tal:no_sources>
-
-  <tal:sources condition="view/available_sources_size"
-               define="widget nocall:view/widgets/selected_sources;
-                       field_name widget/context/__name__;
-                       error python:view.getFieldError(field_name);">
-    <table class="listing" style="margin-top: 1em;" id="packages_list">
-      <thead>
-      <tr class="archive_package_row">
-        <th colspan="2">Source</th>
-        <th tal:condition="context/owner/isTeam">Uploader</th>
-        <th>Published</th>
-        <th>Status</th>
-        <th>Series</th>
-        <th>Section</th>
-        <th>Build Status</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tal:terms tal:repeat="term widget/vocabulary">
-        <tal:block
-          define="pub term/value"
-          replace="structure pub/@@+listing-archive-detailed-selectable" />
-      </tal:terms>
-
-      <metal:js
-        use-macro="context/@@+macros/expandable-table-js" />
-
-      </tbody>
-      <tfoot tal:condition="view/has_undisplayed_sources">
-         <tr>
-           <td colspan="8" tal:condition="context/owner/isTeam">
-             <div>Presenting only <tal:presented replace="
-               view/max_sources_presented"/> of <tal:available replace="
-               view/available_sources_size" /> available sources.</div>
-           </td>
-           <td colspan="7" tal:condition="not: context/owner/isTeam">
-             <div>Presenting only <tal:presented replace="
-               view/max_sources_presented"/> of <tal:available replace="
-               view/available_sources_size" /> available sources.</div>
-           </td>
-         </tr>
-      </tfoot>
-    </table>
-    <input tal:attributes="name string:${widget/name}-empty-marker"
-           type="hidden" value="1" />
-    <div class="error message" tal:condition="error"
-         tal:content="structure error">Error message</div>
-
-  </tal:sources>
-
-</metal:selectable_sources>
-
-
 <metal:package_counters define-macro="package-counters">
 
   <tal:comment replace="nothing">
@@ -380,5 +302,24 @@ div.package-details {
     </tbody>
   </table>
 </metal:build_status_summary>
+
+<metal:package_filter_form define-macro="package-filter-form">
+  <tal:comment replace="nothing">
+    Present the filtering form used on a few archive pages.
+  </tal:comment>
+
+  <form class="package-search-filter" action="" method="GET">
+    <label for="name">Package name contains:</label>
+    <input id="field.name_filter" title="Package Name" size="20"
+            type="text" name="field.name_filter"
+            tal:attributes="value request/field.name_filter|nothing"/>
+    <tal:status_filter
+        replace="structure view/plain_status_filter_widget" /> in
+    <tal:series_filter
+        replace="structure view/plain_series_filter_widget" />
+    <input type="submit" value="Filter" />
+  </form>
+
+</metal:package_filter_form>
 
 </tal:root>

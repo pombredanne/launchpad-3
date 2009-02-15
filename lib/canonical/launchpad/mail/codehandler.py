@@ -231,7 +231,14 @@ class CodeHandler:
             job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
             return True
         else:
-            return self.processComment(mail, email_addr, file_alias)
+            try:
+                return self.processComment(mail, email_addr, file_alias)
+            except AssertionError:
+                body = get_error_message('messagemissingsubject.txt')
+                simple_sendmail('merge@code.launchpad.net',
+                    [mail.get('from')],
+                    'Error Creating Merge Proposal', body)
+                return
 
     def processCommands(self, context, email_body_text):
         """Process the commadns in the email_body_text against the context."""
@@ -379,7 +386,17 @@ class CodeHandler:
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
             return
-        source, target = self._acquireBranchesForProposal(md, submitter)
+
+        try:
+            source, target = self._acquireBranchesForProposal(md, submitter)
+        except NonLaunchpadTarget:
+            body = get_error_message('nonlaunchpadtarget.txt',
+                target_branch=md.target_branch)
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
+
         if md.patch is not None:
             diff_source = getUtility(IStaticDiffSource)
             # XXX: Tim Penhey, 2009-02-12, bug 328271

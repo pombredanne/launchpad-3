@@ -1037,6 +1037,10 @@ class BranchSet:
         # "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
 
+        # Run any necessary data massage on the branch URL.
+        if url is not None:
+            url = IBranch['url'].normalize(url)
+
         # Make sure that the new branch has a unique name if not a junk
         # branch.
         namespace = get_branch_namespace(
