@@ -3,7 +3,7 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-<metal:add-branch define-macro="add-branch-content">
+<metal:add-branch metal:define-macro="add-branch-content">
 
   <div id="branch-unique-name-div" style="display:none">
     The resulting location of the branch will be:

@@ -1,7 +1,7 @@
 <metal:page
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  define-macro="master"
+  metal:define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
     version string:Launchpad 2.1.12 (r${revno});
