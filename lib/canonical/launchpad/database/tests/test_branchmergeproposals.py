@@ -672,6 +672,20 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         retrieved = utility.get(merge_proposal.id)
         self.assertEqual(merge_proposal, retrieved)
 
+    def test_getVotesForProposals(self):
+        # Check the resulting format of the dict.
+        mp_no_reviews = self.factory.makeBranchMergeProposal()
+        mp_with_reviews = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        login_person(mp_with_reviews.registrant)
+        vote_reference = mp_with_reviews.nominateReviewer(
+            reviewer, mp_with_reviews.registrant)
+        self.assertEqual(
+            {mp_no_reviews: [],
+             mp_with_reviews: [vote_reference]},
+            getUtility(IBranchMergeProposalGetter).getVotesForProposals(
+                [mp_with_reviews, mp_no_reviews]))
+
 
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
     """Test the getProposalsForContext method."""

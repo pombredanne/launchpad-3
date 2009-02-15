@@ -38,6 +38,7 @@ from canonical.launchpad.database.diff import Diff, PreviewDiff
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageJob, MessageJobAction)
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -687,6 +688,28 @@ class BranchMergeProposalGetter:
         return ('%sBranchMergeProposal.source_branch in (%s) '
                 ' AND BranchMergeProposal.target_branch in (%s)'
                 % (query, private_subquery, private_subquery))
+
+    @staticmethod
+    def getVotesForProposals(proposals):
+        """See `IBranchMergeProposalGetter`."""
+        if len(proposals) == 0:
+            return {}
+        ids = [proposal.id for proposal in proposals]
+        store = Store.of(proposals[0])
+        result = dict([(proposal, []) for proposal in proposals])
+        # Make sure that the Person and the review comment are loaded in the
+        # storm cache.
+        tables = [
+            CodeReviewVoteReference,
+            Join(Person, CodeReviewVoteReference.reviewerID == Person.id),
+            LeftJoin(
+                CodeReviewComment,
+                CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+        for reference, person, comment in store.using(*tables).find(
+            (CodeReviewVoteReference, Person, CodeReviewComment),
+            CodeReviewVoteReference.branch_merge_proposalID.is_in(ids)):
+            result[reference.branch_merge_proposal].append(reference)
+        return result
 
     @staticmethod
     def getVoteSummariesForProposals(proposals):

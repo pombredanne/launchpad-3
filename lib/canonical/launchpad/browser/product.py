@@ -81,7 +81,7 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchmergeproposallisting import (
-    BranchMergeProposalListingView)
+    BranchMergeProposalListingItem, BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -1905,8 +1905,58 @@ class ProductBranchesView(ProductBranchListingView):
 class ProductActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for the product that are needing review."""
 
-    extra_columns = ['date_review_requested', 'vote_summary']
-    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+    show_diffs = False
+
+    def _getReviewGroup(self, proposal, votes):
+        """Return one of to_do, can_do, are_doing, need_doing, in_progress."""
+        result = 'other'
+        for vote in votes:
+            if self.user is not None:
+                if vote.reviewer == self.user:
+                    if vote.comment is None:
+                        return 'to_do'
+                    else:
+                        return 'are_doing'
+                # Since team reviews are always pending, and we've eliminated
+                # the case where the reviewer is ther person, then if the user
+                # is in the reviewer team, it is a can do.
+                if self.user.inTeam(vote.reviewer):
+                    result = 'can_do'
+        return result
+
+    def initialize(self):
+        # Work out the review groups
+        self.review_groups = {}
+        getter = getUtility(IBranchMergeProposalGetter)
+        proposals = list(getter.getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user))
+        all_votes = getter.getVotesForProposals(proposals)
+        vote_summaries = getter.getVoteSummariesForProposals(proposals)
+        for proposal in proposals:
+            proposal_votes = all_votes[proposal]
+            review_group = self._getReviewGroup(
+                proposal, proposal_votes)
+            self.review_groups.setdefault(review_group, []).append(
+                BranchMergeProposalListingItem(
+                    proposal, vote_summaries[proposal], None, proposal_votes))
+            if proposal.preview_diff is not None:
+                self.show_diffs = True
+        self.proposal_count = len(proposals)
+
+    @property
+    def other_heading(self):
+        """If there are no branches in """
+        if self.user is None:
+            return None
+        personal_review_count = (
+            len(self.review_groups.get('to_do', [])) +
+            len(self.review_groups.get('can_do', [])) +
+            len(self.review_groups.get('are_doing', [])))
+        if personal_review_count > 0:
+            return _('Other reviews')
+        else:
+            return None
 
     @property
     def heading(self):

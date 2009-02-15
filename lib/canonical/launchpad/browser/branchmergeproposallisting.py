@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     ]
 
@@ -29,30 +30,44 @@ class BranchMergeProposalListingItem:
 
     delegates(IBranchMergeProposal, 'context')
 
-    def __init__(self, branch_merge_proposal, summary, proposal_reviewer):
+    def __init__(self, branch_merge_proposal, summary, proposal_reviewer,
+                 vote_references=None):
         self.context = branch_merge_proposal
         self.summary = summary
         self.proposal_reviewer = proposal_reviewer
+        if vote_references is None:
+            vote_references = []
+        self.vote_references = vote_references
 
     @property
-    def vote_summary(self):
-        """A short summary of the votes."""
-        votes = []
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+    def vote_summary_items(self):
+        """A generator of votes."""
         for vote in CodeReviewVote.items:
             vote_count = self.summary.get(vote, 0)
             if vote_count > 0:
-                votes.append('<span class="vote%s">%s:&nbsp;%s</span>' % (
-                        vote.name, vote.title, vote_count))
+                reviewers = []
+                for ref in self.vote_references:
+                    if ref.comment is not None and ref.comment.vote == vote:
+                        reviewers.append(ref.reviewer.unique_displayname)
+                yield {'name': vote.name, 'title': vote.title,
+                       'count': vote_count,
+                       'reviewers': ', '.join(sorted(reviewers))}
 
-        comment_count = self.summary['comment_count']
-        if comment_count > 0:
-            votes.append("Comments:&nbsp;%s" % comment_count)
+    @property
+    def vote_count(self):
+        """The number of vote types."""
+        # The dict has one entry for comments and one for each type of vote.
+        return len(self.summary) - 1
 
-        if len(votes) == 0:
-            votes.append('<em>None</em>')
+    @property
+    def comment_count(self):
+        """The number of comments (that aren't votes)."""
+        return self.summary['comment_count']
 
-        return ', '.join(votes)
+    @property
+    def has_no_activity(self):
+        """True if no votes and no comments."""
+        return self.comment_count == 0 and self.vote_count == 0
 
     @property
     def reviewer_vote(self):
