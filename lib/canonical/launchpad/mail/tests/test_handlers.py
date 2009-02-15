@@ -6,8 +6,8 @@ from textwrap import dedent
 import transaction
 import unittest
 
-from storm.locals import Store
 from zope.component import getUtility
+from zope.interface import directlyProvides, directlyProvidedBy
 from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
 
@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.database.branchmergeproposal import (
     CreateMergeProposalJob, MergeProposalCreatedJob)
-from canonical.launchpad.interfaces.mail import EmailProcessingError
+from canonical.launchpad.interfaces.mail import (
+    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
     CodeReviewEmailCommandExecutionContext,
@@ -36,6 +37,7 @@ from canonical.launchpad.testing import (
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
@@ -449,6 +451,46 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertIs(None, comment)
         self.assertEqual(0, bmp.all_comments.count())
         transaction.commit()
+
+    def test_processMergeDirectiveEmailNeedsGPG(self):
+        """process creates a merge proposal from a merge directive email."""
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail())
+        # Ensure the message is stored in the librarian.
+        # mail.incoming.handleMail also explicitly does this.
+        transaction.commit()
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        # In order to fake a non-gpg signed email, we say that the current
+        # principal direcly provides IWeaklyAuthenticatePrincipal, which is
+        # what the surrounding code does.
+        cur_principal = get_current_principal()
+        directlyProvides(
+            cur_principal, directlyProvidedBy(cur_principal),
+            IWeaklyAuthenticatedPrincipal)
+        code_handler.process(message, 'merge@code.launchpad.net', file_alias)
+
+        notification = pop_notifications()[0]
+        self.assertEqual('Submit Request Failure', notification['subject'])
+        # The returned message is a multipart message, the first part is
+        # the message, and the second is the original message.
+        message, original = notification.get_payload()
+        self.assertEqual(dedent("""\
+        An error occurred while processing a mail you sent to Launchpad's email
+        interface.
+
+
+        Error message:
+
+        All emails to merge@code.launchpad.net must be signed with your OpenPGP
+        key.
+
+
+        -- 
+        For more information about using Launchpad by e-mail, see
+        https://help.launchpad.net/EmailInterface
+        or send an email to help@launchpad.net"""),
+                                message.get_payload(decode=True))
 
     def test_processWithMergeDirectiveEmail(self):
         """process creates a merge proposal from a merge directive email."""
