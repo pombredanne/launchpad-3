@@ -25,7 +25,7 @@ from bzrlib.errors import FileExists
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestNotApplicable, TestSkipped
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.testing import TwistedLayer

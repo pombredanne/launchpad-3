@@ -6,23 +6,17 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import get_msgid
-from canonical.launchpad.interfaces import (
-    CodeReviewNotificationLevel, IMergeProposalCreatedJobSource)
+from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mailout.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url
 
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
-    """Notify branch subscribers when merge proposals are created.
-
-    This action is deferred to MergeProposalCreatedJob, so that a diff can be
-    generated first.
-    """
-    getUtility(IMergeProposalCreatedJobSource).create(merge_proposal)
+    """Notify branch subscribers when merge proposals are created."""
+    BMPMailer.forCreation(merge_proposal, merge_proposal.registrant).sendAll()
 
 
 def send_merge_proposal_modified_notifications(merge_proposal, event):

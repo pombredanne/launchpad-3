@@ -13,31 +13,27 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
-    'IBranchMergeProposalJob',
     'IBranchMergeProposalListingBatchNavigator',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
-    'IMergeProposalCreatedJob',
-    'IMergeProposalCreatedJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import (
-    Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.interfaces import IBranch, IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
-from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported,
-    operation_parameters)
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -309,8 +305,16 @@ class IBranchMergeProposal(Interface):
             description=_('Any emails sent to this address will result'
                           'in comments being added.')))
 
+    @operation_parameters(
+        id=Int(
+            title=_("A CodeReviewComment ID.")))
+    @operation_returns_entry(Interface) # ICodeReviewComment
+    @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
+
+    def getVoteReference(id):
+        """Return the CodeReviewVoteReference with the specified ID."""
 
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
@@ -424,6 +428,11 @@ class IBranchMergeProposal(Interface):
         user-entered data like the whiteboard.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A person for which the reviewer status is in question."),
+            schema=IPerson))
+    @export_read_operation()
     def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
@@ -450,6 +459,12 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A reviewer."), schema=IPerson),
+        review_type=Text())
+    @call_with(registrant=REQUEST_USER)
+    @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
 
@@ -463,6 +478,12 @@ class IBranchMergeProposal(Interface):
         :return: A `CodeReviewVoteReference` or None.
         """
 
+    @operation_parameters(
+        subject=Text(), content=Text(),
+        vote=Choice(vocabulary='CodeReviewVote'), review_type=Text(),
+        parent=Reference(schema=Interface))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
@@ -512,26 +533,6 @@ class IBranchMergeProposal(Interface):
         :param conflicts: Text describing the conflicts if any.
         """
 
-
-class IBranchMergeProposalJob(Interface):
-    """A Job related to a Branch Merge Proposal."""
-
-    branch_merge_proposal = Object(
-        title=_('The BranchMergeProposal this job is about'),
-        schema=IBranchMergeProposal, required=True)
-
-    job = Object(title=_('The common Job attributes'), schema=IJob,
-        required=True)
-
-    metadata = Attribute('A dict of data about the job.')
-
-    def destroySelf():
-        """Destroy this object."""
-
-
-IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
-IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
-IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
 
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
@@ -609,20 +610,3 @@ class ICreateMergeProposalJobSource(Interface):
 
     def iterReady():
         """Iterate through jobs that are ready to run."""
-
-
-class IMergeProposalCreatedJob(Interface):
-    """Interface for review diffs."""
-
-    def run():
-        """Perform the diff and email specified by this job."""
-
-
-class IMergeProposalCreatedJobSource(Interface):
-    """Interface for acquiring MergeProposalCreatedJobs."""
-
-    def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
-
-    def iterReady():
-        """Iterate through all ready MergeProposalCreatedJobs."""
