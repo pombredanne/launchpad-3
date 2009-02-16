@@ -4,13 +4,15 @@
 import logging
 
 from twisted.application import service
-from twisted.internet import reactor
+from twisted.internet import reactor, utils
 from twisted.internet.threads import deferToThread
 from twisted.web.xmlrpc import Proxy
 
 from zope.component import getUtility
 from zope.security.management import newInteraction
 
+from canonical.config import config
+from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import read_transaction, write_transaction
@@ -27,13 +29,18 @@ class FakeZTM:
 
 class RecordingSlave:
 
-    def __init__(self, name, url):
+    def __init__(self, name, url, vm_host, virtualized):
         self.name = name
         self.url = url
+        self.vm_host = vm_host
+        self.virtualized = virtualized
+
+        self.resume = False
+
         self.calls = []
 
     def __repr__(self):
-        return '%s - %s' % (self.name, self.url)
+        return '<%s:%s>' % (self.name, self.url)
 
     def ensurepresent(self, *args):
         self.calls.append(('ensurepresent', args))
@@ -42,6 +49,13 @@ class RecordingSlave:
     def build(self, *args):
         self.calls.append(('build', args))
         return ('BuilderStatus.BUILDING', args[0])
+
+    def resumeHost(self):
+        resume_command = config.builddmaster.vm_resume_command % {
+            'vm_host': self.vm_host}
+        resume_argv = [str(part) for part in resume_command.split()]
+        d = utils.getProcessOutputAndValue(resume_argv[0], resume_argv[1:])
+        return d
 
 
 class BuilddManager(service.Service):
@@ -57,13 +71,11 @@ class BuilddManager(service.Service):
         logger.addHandler(ch)
 
     def startService(self):
-        print 'START'
         deferred = deferToThread(self.scanAllBuilders)
-        deferred.addCallback(self.startDispatch)
+        deferred.addCallback(self.resume)
 
     @write_transaction
     def scanAllBuilders(self):
-        print 'SCAN'
         recording_slaves = []
         logger = logging.getLogger('slave-scanner')
 
@@ -89,38 +101,77 @@ class BuilddManager(service.Service):
                     "No candidates available for builder.")
                 continue
 
-            slave = RecordingSlave(builder.name, builder.url)
+            slave = RecordingSlave(
+                builder.name, builder.url, builder.vm_host,
+                builder.virtualized)
+
+            def localResume():
+                slave.resume = True
+
+            from zope.security.proxy import removeSecurityProxy
+            naked_builder = removeSecurityProxy(builder)
+            naked_builder.resumeSlaveHost = localResume
             builder.setSlaveForTesting(slave)
+
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)
 
         return recording_slaves
 
-    @write_transaction
-    def resetBuilder(self, name):
-        builder = getUtility(IBuilderSet)[name]
-        job = builder.currentjob
+    def checkResume(self, response, name):
+        out, err, code = response
+        if code != 0:
+            print 'RESUME FAIL', name, response
+            self.resetBuilder(name)
+
+    def resume(self, recording_slaves):
+        print 'RESUMING:', recording_slaves
+
+        self.rounds = 0
+        def check_rounds(r):
+            self.rounds -= 1
+            if self.rounds == 0:
+                self.dispatch(recording_slaves)
+
+        for slave in recording_slaves:
+            if slave.resume:
+                self.rounds += 1
+                d = slave.resumeHost()
+                d.addCallback(self.checkResume, slave.name)
+                d.addBoth(check_rounds)
+
+        if self.rounds == 0:
+            reactor.stop()
+
+    def _cleanJob(self, job):
         if job is not None:
+            job.build.buildstate = BuildStatus.NEEDSBUILD
             job.builder = None
             job.buildstart = None
+            job.logtail = None
+
+    @write_transaction
+    def resetBuilder(self, name):
+        newInteraction()
+        print 'RESET'
+        builder = getUtility(IBuilderSet)[name]
+        self._cleanJob(builder.currentjob)
 
     def checkDispatch(self, response, name):
         status, info = response
         if not status:
-            print 'FAIL', name, response
+            print 'DISPATCH FAIL', name, response
             self.resetBuilder(name)
 
     @write_transaction
     def dispatchFail(self, error, name):
+        newInteraction()
         print 'ERROR'
         builder = getUtility(IBuilderSet)[name]
         builder.failbuilder(error)
-        job = builder.currentjob
-        if job is not None:
-            job.builder = None
-            job.buildstart = None
+        self._cleanJob(builder.currentjob)
 
-    def startDispatch(self, recording_slaves):
+    def dispatch(self, recording_slaves):
         print 'DISPATCHING:', recording_slaves
 
         self.rounds = 0
@@ -138,7 +189,3 @@ class BuilddManager(service.Service):
                 d.addCallback(self.checkDispatch, slave.name)
                 d.addErrback(self.dispatchFail, slave.name)
                 d.addBoth(check_rounds)
-
-        if self.rounds == 0:
-            reactor.stop()
-
