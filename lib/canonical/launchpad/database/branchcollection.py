@@ -74,14 +74,19 @@ class GenericBranchCollection:
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
-        # XXX: Probably need team-aware versions of this:
-        # - branches owned by person or teams person is in
-        # - branches owned by team or persons in team
         return self.filterBy(Branch.owner == person)
 
     def registeredBy(self, person):
         """See `IBranchCollection`."""
         return self.filterBy(Branch.registrant == person)
+
+    def relatedTo(self, person):
+        """See `IBranchCollection`."""
+        return self.filterBy(
+            Or(Branch.owner == person,
+               Branch.registrant == person,
+               And(BranchSubscription.branch == Branch.id,
+                   BranchSubscription.person == person)))
 
     def subscribedBy(self, person):
         """See `IBranchCollection`."""

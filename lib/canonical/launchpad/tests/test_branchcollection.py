@@ -193,6 +193,22 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = all_branches.subscribedBy(subscriber)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_relatedTo(self):
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(person)
+        branch = self.factory.makeAnyBranch(owner=person)
+        branch2 = self.factory.makeAnyBranch(owner=team, registrant=person)
+        branch3 = self.factory.makeAnyBranch()
+        branch3.subscribe(
+            person, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
+        all_branches = GenericBranchCollection(self.store)
+        related_branches = all_branches.relatedTo(person)
+        self.assertEqual(
+            set([branch, branch2, branch3]),
+            set(related_branches.getBranches()))
+
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
