@@ -321,6 +321,45 @@ class IHWDriver(Interface):
         Choice(
             title=u'License of the Driver', required=False,
             vocabulary=License))
+    @operation_parameters(
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution.',
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution series.',
+            required=False),
+        architecture = TextLine(
+            title=u'A processor architecture',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given architecture.',
+            required=False),
+        owner = copy_field(IHWSubmission['owner']))
+    @operation_returns_collection_of(IHWSubmission)
+    @export_read_operation()
+    def getSubmissions(distribution=None, distroseries=None,
+                       architecture=None, owner=None):
+        """List all submissions which mention this driver.
+
+        :param distribution: Limit results to submissions for this
+            `IDistribution`.
+        :param distroseries: Limit results to submissions for this
+            `IDistroSeries`.
+        :param architecture: Limit results to submissions for this
+            architecture.
+        :param owner: Limit results to submissions from this person.
+
+        Only submissions matching all given criteria are returned.
+        Only one of :distribution: or :distroseries: may be supplied.
+        """
 
 
 class IHWDriverSet(Interface):
