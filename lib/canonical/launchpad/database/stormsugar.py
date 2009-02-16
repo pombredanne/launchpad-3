@@ -33,7 +33,8 @@ class ForeignKey(Reference):
         Reference.__init__(self, None, remote_key)
 
 
-# Use Storm.__metaclass__ because PropertyPublisherMeta isn't in an __all__.
+# Use Storm.__metaclass__ because storm.properties.PropertyPublisherMeta isn't
+# in an __all__.
 class Sugary(Storm.__metaclass__):
     """Metaclass that adds support for ForeignKey."""
 

@@ -24,24 +24,6 @@ class SugarDerived(Sugar):
     status = Int()
 
 
-class ReferencingObject(Sugar):
-
-    __storm_table__ = 'BranchJob'
-
-    branch = Int()
-
-    job_type = Int()
-
-    job = ForeignKey(SugarDerived.id)
-
-
-class ReferencingObjectWithName(Sugar):
-
-    __storm_table__ = 'BranchJob'
-
-    foo = ForeignKey(SugarDerived.id, 'job')
-
-
 class TestSugar(TestCase):
 
     layer = DatabaseFunctionalLayer
@@ -89,14 +71,32 @@ class TestSugar(TestCase):
         self.assertRaises(AssertionError, SugarDerived.selectBy)
 
     def test_ForeignKey(self):
+        """ForeignKey works, and defaults to property name."""
+
+        class ReferencingObject(Sugar):
+
+            __storm_table__ = 'BranchJob'
+
+            job = ForeignKey(SugarDerived.id)
+
         obj1 = SugarDerived(status=0)
-        obj2 = ReferencingObject(job=obj1, branch=1, job_type=0)
-        obj2.sync()
+        obj2 = ReferencingObject(job=obj1)
+        self.assertEqual(obj1, obj2.job)
+        self.assertEqual(obj1.id, obj2._job_id)
 
     def test_ForeignKey_with_name(self):
+        """ForeignKey name correctly overrides property name."""
+
+        class ReferencingObjectWithName(Sugar):
+
+            __storm_table__ = 'BranchJob'
+
+            foo = ForeignKey(SugarDerived.id, 'job')
+
         obj1 = SugarDerived(status=0)
         obj2 = ReferencingObjectWithName(foo=obj1)
         self.assertEqual(obj1, obj2.foo)
+        self.assertEqual(obj1.id, obj2._foo_id)
 
 
 def test_suite():
