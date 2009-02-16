@@ -6,6 +6,7 @@ from unittest import TestLoader
 
 from canonical.testing import DatabaseFunctionalLayer
 
+from canonical.launchpad.database import Branch
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -26,9 +27,9 @@ class TestRecipientReason(TestCaseWithFactory):
         """Test fixture."""
         if subscriber is None:
             subscriber = self.factory.makePerson()
-        source_branch = self.factory.makeBranch(title='foo')
-        target_branch = self.factory.makeBranch(product=source_branch.product,
-            title='bar')
+        source_branch = self.factory.makeProductBranch(title='foo')
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product, title='bar')
         merge_proposal = source_branch.addLandingTarget(
             source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(
@@ -53,11 +54,11 @@ class TestRecipientReason(TestCaseWithFactory):
         login_person(merge_proposal.registrant)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
-        return vote_reference, subscriber
+        return merge_proposal, vote_reference, subscriber
 
     def test_forReviewer(self):
         """Test values when created from a branch subscription."""
-        vote_reference, subscriber = self.makeReviewerAndSubscriber()
+        ignored, vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
@@ -65,12 +66,12 @@ class TestRecipientReason(TestCaseWithFactory):
             vote_reference.branch_merge_proposal.source_branch, reason.branch)
 
     def test_getReasonReviewer(self):
-        vote_reference, subscriber = self.makeReviewerAndSubscriber()
+        bmp, vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(
-            'You are requested to review the proposed merge of'
-            ' lp://dev/~person-name5/product-name11/branch7 into'
-            ' lp://dev/~person-name16/product-name11/branch18.',
+            'You are requested to review the proposed merge of %s into %s.'
+            % (bmp.source_branch.bzr_identity,
+               bmp.target_branch.bzr_identity),
             reason.getReason())
 
     def test_getReasonPerson(self):
@@ -78,9 +79,9 @@ class TestRecipientReason(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
             subscription, subscription.person, '', merge_proposal)
-        self.assertEqual('You are subscribed to branch'
-            ' lp://dev/~person-name5/product-name11/branch7.',
-            reason.getReason())
+        self.assertEqual(
+            'You are subscribed to branch %s.'
+            % merge_proposal.source_branch.bzr_identity, reason.getReason())
 
     def test_getReasonTeam(self):
         """Ensure the correct reason is generated for teams."""
@@ -90,9 +91,30 @@ class TestRecipientReason(TestCaseWithFactory):
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
             subscription, team_member, '', bmp)
-        self.assertEqual('Your team Qux is subscribed to branch'
-            ' lp://dev/~person-name5/product-name11/branch7.',
+        self.assertEqual(
+            'Your team Qux is subscribed to branch %s.'
+            % bmp.source_branch.bzr_identity, reason.getReason())
+
+    def test_usesBranchIdentityCache(self):
+        """Ensure that the cache is used for branches if provided."""
+        branch = self.factory.makeAnyBranch()
+        subscription = branch.getSubscription(branch.owner)
+        branch_cache = {branch: 'lp://fake'}
+        def blowup(self):
+            raise AssertionError('boom')
+        patched = Branch.bzr_identity
+        Branch.bzr_identity = property(blowup)
+        def cleanup():
+            Branch.bzr_identity = patched
+        self.addCleanup(cleanup)
+        self.assertRaises(AssertionError, getattr, branch, 'bzr_identity')
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscription.person, '',
+            branch_identity_cache=branch_cache)
+        self.assertEqual(
+            'You are subscribed to branch lp://fake.',
             reason.getReason())
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

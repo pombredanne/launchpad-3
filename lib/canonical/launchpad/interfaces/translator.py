@@ -3,10 +3,15 @@
 
 __metaclass__ = type
 
-__all__ = ['ITranslator', 'ITranslatorSet']
+__all__ = [
+    'IAdminTranslator',
+    'IEditTranslator',
+    'ITranslator',
+    'ITranslatorSet',
+    ]
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import PublicPersonChoice, URIField
 
 from zope.interface import Interface, Attribute
 
@@ -14,14 +19,30 @@ from zope.schema import Choice, Datetime, Int
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 
-class ITranslator(Interface):
-    """A member of a `TranslationGroup`.
+class IEditTranslator(Interface):
+    """Set of translator attributes that the translator can edit himself as
+    well as being editable by the translation group owner.
 
-    This is not the same thing as what is called a translator in the UI.
-    An `ITranslator` represents a person or team appointed within a
-    translation group to be responsible for a language.  On the other
-    hand, any logged-in Launchpad user can act as a translator by
-    suggesting or entering translations.
+    Translators can edit the data in their `ITranslator` entry.
+    Currently this is just the documentation URL.
+    """
+
+    style_guide_url = URIField(
+        title=_('Translation guidelines'), required=False,
+        allowed_schemes=['http', 'https', 'ftp'],
+        allow_userinfo=False,
+        description=_("The URL of the translation team guidelines "
+                      "to be followed by this particular translation team. "
+                      "Can be any of the http://, https://, or ftp:// links."))
+
+
+class IAdminTranslator(Interface):
+    """Set of attributes that can only be edited by the owner of the
+    translation group this translator is part of.
+
+    These attributes let you add translators to translation groups and set
+    the languages that the translators are responsible for. These are all
+    administrative tasks.
     """
 
     id = Int(
@@ -44,11 +65,25 @@ class ITranslator(Interface):
             "be responsible for the language in this group."))
 
 
+class ITranslator(IEditTranslator, IAdminTranslator):
+    """A member of a `TranslationGroup`.
+
+    This is the aggregation of all the attributes for a translator.
+
+    This is not the same thing as what the UI calls a 'translator'. A
+    translator there is any logged-in Launchpad user, since any such user can
+    suggest or enter translation. An `ITranslator` is a person or team who
+    coordinates translation work done in a language.
+    """
+
+
 class ITranslatorSet(IAddFormCustomization):
     """A container for `ITranslator`s."""
 
     title = Attribute('Title')
 
-    def new(translationgroup, language, translator):
+    def new(translationgroup, language, translator, style_guide_url):
         """Create a new `ITranslator` for a `TranslationGroup`."""
 
+    def getByTranslator(translator):
+        """Return all entries for a certain translator."""

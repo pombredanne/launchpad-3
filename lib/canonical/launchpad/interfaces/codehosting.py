@@ -11,6 +11,7 @@ __all__ = [
     'IBranchPullerApplication',
     'IBranchFileSystem',
     'IBranchFileSystemApplication',
+    'LAUNCHPAD_ANONYMOUS',
     'LAUNCHPAD_SERVICES',
     'READ_ONLY',
     'WRITABLE',
@@ -21,13 +22,19 @@ from zope.interface import Interface
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.validators.name import valid_name
 
-# When this is provided as a login ID to getBranchInformation, the method
-# bypasses the normal security checks and returns the branch ID and the
-# READ_ONLY permission bit. This allows Launchpad services like the puller and
-# branch scanner to access private branches.
+# When LAUNCHPAD_SERVICES is provided as a login ID to XML-RPC methods, they
+# bypass the normal security checks and give read-only access to all branches.
+# This allows Launchpad services like the puller and branch scanner to access
+# private branches.
 LAUNCHPAD_SERVICES = '+launchpad-services'
 assert not valid_name(LAUNCHPAD_SERVICES), (
     "%r should *not* be a valid name." % (LAUNCHPAD_SERVICES,))
+
+# When LAUNCHPAD_ANONYMOUS is passed, the XML-RPC methods behave as if no user
+# was logged in.
+LAUNCHPAD_ANONYMOUS = '+launchpad-anonymous'
+assert not valid_name(LAUNCHPAD_ANONYMOUS), (
+    "%r should *not* be a valid name." % (LAUNCHPAD_ANONYMOUS,))
 
 # These are used as permissions for getBranchInformation.
 READ_ONLY = 'r'
@@ -50,7 +57,7 @@ class IBranchPuller(Interface):
     """
 
     def getBranchPullQueue(branch_type):
-        """Get the list of branches to be pulled by the supermirror.
+        """Get the list of branches to be mirrored.
 
         :param branch_type: One of 'HOSTED', 'MIRRORED', or 'IMPORTED'.
 

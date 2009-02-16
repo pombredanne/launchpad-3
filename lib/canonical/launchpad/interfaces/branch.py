@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BadBranchSearchContext',
     'bazaar_identity',
+    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
@@ -19,31 +20,28 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
+    'BranchMergeControlStatus',
     'BranchPersonSearchContext',
     'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
-    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
     'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'get_blacklisted_hostnames',
     'IBranch',
-    'IBranchSet',
-    'IBranchDelta',
-    'IBranchDiffJob',
-    'IBranchDiffJobSource',
     'IBranchBatchNavigator',
-    'IBranchJob',
+    'IBranchCloud',
+    'IBranchDelta',
+    'IBranchBatchNavigator',
     'IBranchListingFilter',
     'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
+    'IBranchSet',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
     'RepositoryFormat',
-    'IRevisionMailJob',
-    'IRevisionMailJobSource',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
@@ -74,11 +72,11 @@ from bzrlib.repofmt.weaverepo import (
 from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Int, Choice, Object, Text, TextLine, Datetime)
+    Bool, Int, Choice, Text, TextLine, Datetime)
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from canonical.lazr.fields import ReferenceChoice
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported)
 
@@ -88,7 +86,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
@@ -141,6 +138,44 @@ class BranchLifecycleStatus(DBEnumeratedType):
         """)
 
     ABANDONED = DBItem(80, "Abandoned")
+
+
+class BranchMergeControlStatus(DBEnumeratedType):
+    """Branch Merge Control Status
+
+    Does the branch want Launchpad to manage a merge queue, and if it does,
+    how does the branch owner handle removing items from the queue.
+    """
+
+    NO_QUEUE = DBItem(1, """
+        Does not use a merge queue
+
+        The branch does not use the merge queue managed by Launchpad.  Merges
+        are tracked and managed elsewhere.  Users will not be able to queue up
+        approved branch merge proposals.
+        """)
+
+    MANUAL = DBItem(2, """
+        Manual processing of the merge queue
+
+        One or more people are responsible for manually processing the queued
+        branch merge proposals.
+        """)
+
+    ROBOT = DBItem(3, """
+        A branch merge robot is used to process the merge queue
+
+        An external application, like PQM, is used to merge in the queued
+        approved proposed merges.
+        """)
+
+    ROBOT_RESTRICTED = DBItem(4, """
+        The branch merge robot used to process the queue is in restricted mode
+
+        When the robot is in restricted mode, normal queued branches are not
+        returned for merging, only those with "Queued for Restricted
+        merging" will be.
+        """)
 
 
 class BranchType(DBEnumeratedType):
@@ -455,6 +490,25 @@ def get_blacklisted_hostnames():
 
 class BranchURIField(URIField):
 
+    #XXX leonardr 2009-02-12 [bug=328588]:
+    # This code should be removed once the underlying database restriction
+    # is removed.
+    trailing_slash = False
+
+    # XXX leonardr 2009-02-12 [bug=328588]:
+    # This code should be removed once the underlying database restriction
+    # is removed.
+    def normalize(self, input):
+        """Be extra-strict about trailing slashes."""
+        input = super(BranchURIField, self).normalize(input)
+        if self.trailing_slash == False and input[-1] == '/':
+            # ensureNoSlash() doesn't trim the slash if the path
+            # is empty (eg. http://example.com/). Due to the database
+            # restriction on branch URIs, we need to remove a trailing
+            # slash in all circumstances.
+            input = input[:-1]
+        return input
+
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
@@ -467,9 +521,7 @@ class BranchURIField(URIField):
         # reused in the XMLRPC code, and the Authserver.
         # This also means we could get rid of the imports above.
 
-        # URIField has already established that we have a valid URI
-        uri = URI(value)
-        supermirror_root = URI(config.codehosting.supermirror_root)
+        uri = URI(self.normalize(value))
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
@@ -634,8 +686,7 @@ class IBranch(IHasOwner):
 
     mirror_status_message = exported(
         Text(
-            title=_('The last message we got when mirroring this branch '
-                    'into supermirror.'),
+            title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
     private = Bool(
@@ -681,6 +732,14 @@ class IBranch(IHasOwner):
         description=_(
             "The source package that this is a branch of. Source package "
             "branches always belong to a distribution series."))
+
+    distribution = Attribute(
+        "The IDistribution that this branch belongs to. None if not a "
+        "package branch.")
+
+    sourcepackage = Attribute(
+        "The ISourcePackage that this branch belongs to. None if not a "
+        "package branch.")
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -810,16 +869,33 @@ class IBranch(IHasOwner):
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
-    landing_targets = Attribute(
-        "The BranchMergeProposals where this branch is the source branch.")
-    landing_candidates = Attribute(
-        "The BranchMergeProposals where this branch is the target branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
-    dependent_branches = Attribute(
-        "The BranchMergeProposals where this branch is the dependent branch. "
-        "Only active merge proposals are returned (those that have not yet "
-        "been merged).")
+    # These attributes actually have a value_type of IBranchMergeProposal,
+    # but uses Interface to prevent circular imports, and the value_type is
+    # set near IBranchMergeProposal.
+    landing_targets = exported(
+        CollectionField(
+            title=_('Landing Targets'),
+            description=_(
+                'A collection of the merge proposals where this branch is '
+                'the source branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
+    landing_candidates = exported(
+        CollectionField(
+            title=_('Landing Candidates'),
+            description=_(
+                'A collection of the merge proposals where this branch is '
+                'the target branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
+    dependent_branches = exported(
+        CollectionField(
+            title=_('Dependent Branches'),
+            description=_(
+                'A collection of the merge proposals that are dependent '
+                'on this branch.'),
+            readonly=True,
+            value_type=Reference(Interface)))
 
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
@@ -858,6 +934,14 @@ class IBranch(IHasOwner):
         not yet succeeded. Failed branches are included.
         """
 
+    merge_queue = Attribute(
+        "The queue that contains the QUEUED proposals for this branch.")
+
+    merge_control_status = Choice(
+        title=_('Merge Control Status'), required=True,
+        vocabulary=BranchMergeControlStatus,
+        default=BranchMergeControlStatus.NO_QUEUE)
+
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
@@ -867,15 +951,28 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    def codebrowse_url(*extras):
+        """Construct a URL for this branch in codebrowse.
+
+        :param extras: Zero or more path segments that will be joined onto the
+            end of the URL (with `bzrlib.urlutils.join`).
+        """
+
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
-    bzr_identity = Attribute(
-        "The shortest lp spec URL for this branch. "
-        "If the branch is associated with a product as the primary "
-        "development focus, then the result should be lp:product.  If "
-        "the branch is related to a series, then lp:product/series. "
-        "Otherwise the result is lp:~user/product/branch-name.")
+    bzr_identity = exported(
+        Text(
+            title=_('Bazaar Identity'),
+            readonly=True,
+            description=_(
+                'The bzr branch path as accessed by Launchpad. If the '
+                'branch is associated with a product as the primary '
+                'development focus, then the result should be lp:product.  '
+                'If the branch is related to a series, then '
+                'lp:product/series.  Otherwise the result is '
+                'lp:~user/product/branch-name.'
+                )))
 
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
@@ -1067,7 +1164,7 @@ class IBranchSet(Interface):
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            author=None, summary=None, whiteboard=None, date_created=None,
+            summary=None, whiteboard=None, date_created=None,
             distroseries=None, sourcepackagename=None):
         """Create a new branch.
 
@@ -1085,19 +1182,23 @@ class IBranchSet(Interface):
         Return None if no match was found.
         """
 
-    def getRewriteMap():
-        """Return the branches that can appear in the rewrite map.
+    def URIToUniqueName(uri):
+        """Return the unique name for the URL, if the URL is on codehosting.
 
-        This returns only public, non-remote branches. The results *will*
-        include branches that aren't explicitly private but are stacked-on
-        private branches. The rewrite map generator filters these out itself.
+        This does not ensure that the unique name is valid.  It recognizes the
+        codehosting URLs of remote branches and mirrors, but not their
+        remote URLs.
+
+        :param uri: An instance of webapp.uri.URI
+        :return: The unique name if possible, None if the URI is not a valid
+            codehosting URI.
         """
 
     def getByUrl(url, default=None):
         """Find a branch by URL.
 
-        Either from the external specified in Branch.url, or from the
-        supermirror URL on http://bazaar.launchpad.net/.
+        Either from the external specified in Branch.url, or from the URL on
+        http://bazaar.launchpad.net/.
 
         Return the default value if no match was found.
         """
@@ -1118,16 +1219,6 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
-
-    # XXX: This seems like a strangely motivated method. It gets passed many
-    # products and returns a list summaries for each of them. It's really an
-    # implementation detail, not an API.
-    def getActiveUserBranchSummaryForProducts(products):
-        """Return the branch count and last commit time for the products.
-
-        Only active branches are counted (i.e. not Merged or Abandoned),
-        and only non import branches are counted.
-        """
 
     def getRecentlyChangedBranches(
         branch_count=None,
@@ -1440,68 +1531,18 @@ class BranchPersonSearchContext:
         self.restriction = restriction
 
 
-class IBranchJob(Interface):
-    """A job related to a branch."""
+class IBranchCloud(Interface):
+    """A utility to generate data for branch clouds.
 
-    branch = Object(
-        title=_('Branch to use for this diff'), required=True,
-        schema=IBranch)
+    A branch cloud is a tag cloud of products, sized and styled based on the
+    branches in those products.
+    """
 
-    job = Object(schema=IJob, required=True)
+    def getProductsWithInfo(num_products=None):
+        """Get products with their branch activity information.
 
-    metadata = Attribute('A dict of data about the job.')
-
-    def destroySelf():
-        """Destroy this object."""
-
-
-class IBranchDiffJob(Interface):
-    """A job to create a static diff from a branch."""
-
-    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
-
-    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
-
-    def run():
-        """Acquire the static diff this job requires.
-
-        :return: the generated StaticDiff.
+        :return: a `ResultSet` of (product, num_branches, last_revision_date).
         """
-
-
-class IBranchDiffJobSource(Interface):
-
-    def create(branch, from_revision_spec, to_revision_spec):
-        """Construct a new object that implements IBranchDiffJob.
-
-        :param branch: The database branch to diff.
-        :param from_revision_spec: The revision spec to diff from.
-        :param to_revision_spec: The revision spec to diff to.
-        """
-
-
-class IRevisionMailJob(Interface):
-    """A Job to send email a revision change in a branch."""
-
-    revno = Int(title=u'The revno to send mail about.')
-
-    from_address = Bytes(title=u'The address to send mail from.')
-
-    perform_diff = Text(title=u'Determine whether diff should be performed.')
-
-    body = Text(title=u'The main text of the email to send.')
-
-    subject = Text(title=u'The subject of the email to send.')
-
-    def run():
-        """Send the mail as specified by this job."""
-
-
-class IRevisionMailJobSource(Interface):
-    """A utility to create and retrieve RevisionMailJobs."""
-
-    def create(db_branch, revno, email_from, message, perform_diff, subject):
-        """Create and return a new object that implements IRevisionMailJob."""
 
 
 def bazaar_identity(branch, associated_series, is_dev_focus):

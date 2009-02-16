@@ -182,17 +182,15 @@ surrounded by quotes and quoted if necessary:
     "Foo \[Baz\] \" Bar" <foo.bar@canonical.com>
 
 
-If we pass a unicode object or a non-ASCII str object to
-simple_sendmail as the from_addr or to_addrs, an error will occur.
+If we pass a unicode object to send_mail, it will try and covert it.  If a
+non-ASCII str object is passed, it will throw a UnicodeDecodeError.
 
     >>> simple_sendmail(
     ...     from_addr=u'foo.bar@canonical.com',
     ...     to_addrs='test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content')
-    Traceback (most recent call last):
-    ...
-    AssertionError: Expected an ASCII str object, got: u'foo.bar@canonical.com'
+    '20...launchpad@...'
 
     >>> simple_sendmail(
     ...     from_addr='F\xf4\xf4 Bar <foo.bar@canonical.com>',
@@ -201,16 +199,15 @@ simple_sendmail as the from_addr or to_addrs, an error will occur.
     ...     body=u'Content')
     Traceback (most recent call last):
     ...
-    AssertionError: Expected an ASCII str object, got: 'F\xf4\xf4...'
+    UnicodeDecodeError: 'ascii' codec can't decode byte 0xf4 in position 1:
+    ordinal not in range(128)
 
     >>> simple_sendmail(
     ...     from_addr='foo.bar@canonical.com',
     ...     to_addrs=u'test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content')
-    Traceback (most recent call last):
-    ...
-    AssertionError: Expected an ASCII str object, got: u'test@canonical.com'
+    '20...launchpad@...'
 
     >>> simple_sendmail(
     ...     from_addr='Foo Bar <foo.bar@canonical.com>',
@@ -219,7 +216,8 @@ simple_sendmail as the from_addr or to_addrs, an error will occur.
     ...     body=u'Content')
     Traceback (most recent call last):
     ...
-    AssertionError: Expected an ASCII str object, got: 'S\xc4\x85mple...'
+    UnicodeDecodeError: 'ascii' codec can't decode byte 0xc4 in position 1:
+    ordinal not in range(128)
 
 
 simple_sendmail creates a Message instance, and sends it via another

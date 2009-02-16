@@ -17,17 +17,19 @@ from canonical.launchpad.interfaces.branchcontainer import IBranchContainer
 class PackageContainer:
     implements(IBranchContainer)
 
-    def __init__(self, distroseries, sourcepackagename):
-        self.distroseries = distroseries
-        self.sourcepackagename = sourcepackagename
+    def __init__(self, sourcepackage):
+        self.sourcepackage = sourcepackage
 
     @property
     def name(self):
         """See `IBranchContainer`."""
-        return '%s/%s/%s' % (
-            self.distroseries.distribution.name,
-            self.distroseries.name,
-            self.sourcepackagename.name)
+        return self.sourcepackage.path
+
+    def getNamespace(self, owner):
+        """See `IBranchContainer`."""
+        from canonical.launchpad.database.branchnamespace import (
+            PackageNamespace)
+        return PackageNamespace(owner, self.sourcepackage)
 
 
 class PersonContainer:
@@ -37,6 +39,12 @@ class PersonContainer:
 
     def __init__(self, person):
         self.person = person
+
+    def getNamespace(self, owner):
+        """See `IBranchContainer`."""
+        from canonical.launchpad.database.branchnamespace import (
+            PersonalNamespace)
+        return PersonalNamespace(owner)
 
 
 class ProductContainer:
@@ -49,3 +57,9 @@ class ProductContainer:
     def name(self):
         """See `IBranchContainer`."""
         return self.product.name
+
+    def getNamespace(self, owner):
+        """See `IBranchContainer`."""
+        from canonical.launchpad.database.branchnamespace import (
+            ProductNamespace)
+        return ProductNamespace(owner, self.product)

@@ -55,6 +55,9 @@ We can reply to a comment.
 
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Reply').click()
+    >>> print eric_browser.getControl(name='field.comment').value
+    "my body"
+
     >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
     ... 'I wish I had time to review it properly\n\n'
     ... 'This is a longer\nmessage with several\nlines')
@@ -113,3 +116,4 @@ in a table at the top of the page.
     ...     eric_browser.contents, 'code-review-votes'))
     Reviewer         Review Type    Date Requested    Status
     Eric the Viking  timeless       ...               Abstain ...second...ago
+    Review via email: mp+1@code.launchpad.dev

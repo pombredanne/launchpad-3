@@ -8,6 +8,7 @@ from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 from zope.interface.interfaces import IInterface
 from zope.interface import directlyProvides
 from zope.schema.interfaces import IField
+from zope.security.proxy import removeSecurityProxy
 
 
 _marker = object()
@@ -27,6 +28,8 @@ class Snapshot:
     """
     def __init__(self, ob, names=None, providing=None):
         from canonical.launchpad.helpers import shortlist
+
+        ob = removeSecurityProxy(ob)
 
         if names is None and providing is None:
             raise SnapshotCreationError(
@@ -64,4 +67,3 @@ class Snapshot:
 
         if providing is not None:
             directlyProvides(self, providing)
-

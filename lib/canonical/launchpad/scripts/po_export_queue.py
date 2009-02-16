@@ -12,13 +12,20 @@ import psycopg2
 import textwrap
 import traceback
 from StringIO import StringIO
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IPOExportRequestSet, IPOTemplate,
-    ITranslationExporter, ITranslationFileData)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.poexportrequest import (
+    IPOExportRequestSet)
+from canonical.launchpad.interfaces.potemplate import IPOTemplate
+from canonical.launchpad.interfaces.translationcommonformat import (
+    ITranslationFileData)
+from canonical.launchpad.interfaces.translationexporter import (
+    ITranslationExporter)
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad.mail import simple_sendmail
 
 
@@ -81,7 +88,7 @@ class ExportResult:
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
-                from_addr=config.rosettaadmin.email,
+                from_addr=config.rosetta.admin_email,
                 to_addrs=[recipient],
                 subject='Translation download request: %s' % self.name,
                 body=body)
@@ -124,7 +131,7 @@ class ExportResult:
                 %s''') % (person.browsername, template_sentence)
 
         simple_sendmail(
-            from_addr=config.rosettaadmin.email,
+            from_addr=config.rosetta.admin_email,
             to_addrs=[config.launchpad.errors_address],
             subject='Translation download errors: %s' % self.name,
             body=admins_email_body)
@@ -139,14 +146,19 @@ class ExportResult:
         self.failure = exception.read()
 
 
-def generate_translationfiledata(file_list):
+def generate_translationfiledata(file_list, format):
     """Generate `TranslationFileData` objects for POFiles/templates in list.
 
     This builds each `TranslationFileData` in memory only when it's needed, so
     the memory usage for an export doesn't accumulate.
     """
+    if format == TranslationFileFormat.POCHANGED:
+        adaptername = 'changed_messages'
+    else:
+        adaptername = 'all_messages'
+
     for file in file_list:
-        yield ITranslationFileData(file)
+        yield getAdapter(file, ITranslationFileData, adaptername)
 
 
 def process_request(person, objects, format, logger):
@@ -180,7 +192,7 @@ def process_request(person, objects, format, logger):
 
     try:
         exported_file = translation_format_exporter.exportTranslationFiles(
-            generate_translationfiledata(translation_file_list))
+            generate_translationfiledata(translation_file_list, format))
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise

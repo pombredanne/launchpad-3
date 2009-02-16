@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'POExportView',
-    'POFileAppMenus',
     'POFileFacets',
     'POFileFilteredView',
     'POFileNavigation',
@@ -114,13 +113,6 @@ class POFileMenuMixin:
         return Link('+export', text, icon='download')
 
 
-class POFileAppMenus(ApplicationMenu, POFileMenuMixin):
-    """Application menus for `IPOFile` objects."""
-    usedfor = IPOFile
-    facet = 'translations'
-    links = ['description', 'translate', 'upload', 'download']
-
-
 class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
@@ -180,12 +172,15 @@ class POFileView(LaunchpadView):
                 translator = group.query_translator(language)
                 if translator is None:
                     team = None
+                    style_guide_url = None
                 else:
                     team = translator.translator
+                    style_guide_url = translator.style_guide_url
                 managers.append({
                     'group': group,
                     'team': team,
-                })
+                    'style_guide_url': style_guide_url,
+                    })
             groups.add(group)
         return managers
 
@@ -539,8 +534,17 @@ class POFileTranslateView(BaseTranslationView):
         old_show_option = self.request.form.get('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
-        if show_option_changed and 'start' in self.request:
-            del self.request.form['start']
+        if show_option_changed:
+            if 'start' in self.request:
+                del self.request.form['start']
+
+            # Note: the BatchNavigator has now been updated so that it
+            # gets the parameters out of the request.query_string_params
+            # dict by default. Therefore, if the type of translations
+            # we are showing has changed, we need remove the 'start' option
+            # from request.query_string_params as well.
+            if 'start' in self.request.query_string_params:
+                del self.request.query_string_params['start']
 
     def _handleShowAll(self):
         """Get `POTMsgSet`s when filtering for "all" (but possibly searching).
@@ -587,6 +591,12 @@ class POFileTranslateView(BaseTranslationView):
 
 
 class POExportView(BaseExportView):
+
+    def modifyFormat(self, format):
+        pochanged = self.request.form.get("pochanged")
+        if format == 'PO' and pochanged == 'POCHANGED':
+            return 'POCHANGED'
+        return format
 
     def processForm(self):
         return (None, [self.context])

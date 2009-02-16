@@ -25,8 +25,8 @@
                       getBugsWatching getBugWatchesNeedingUpdate
                       getLinkedPersonByName id imported_bug_messages
                       latestwatches name owner products projects
-                      summary title watches getBugFilingLink
-                      has_lp_plugin" />
+                      summary title watches getBugFilingAndSearchLinks
+                      has_lp_plugin multi_product" />
       <require
           permission="launchpad.Edit"
           attributes="destroySelf ensurePersonForSelf linkPersonToSelf"

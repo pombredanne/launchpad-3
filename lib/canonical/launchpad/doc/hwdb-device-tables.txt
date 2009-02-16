@@ -1062,7 +1062,47 @@ We can limit the results to a specific architecture.
     >>> sata_controller.getSubmissions(architecture='amd64').count()
     0
 
+We can limit the results to a specific distro series.
+
+    >>> for submission in sata_controller.getSubmissions(
+    ...     distroseries=ubuntu['hoary']):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> sata_controller.getSubmissions(distroseries=ubuntu['warty']).count()
+    0
+
+We can even limit the results to a specific distro series and architecture.
+
+    >>> for submission in sata_controller.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> sata_controller.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='powerpc').count()
+    0
+
+We can also search for submissions from a particular user.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> owner = getUtility(IPersonSet).getByName('name12')
+    >>> for submission in sata_controller.getSubmissions(owner=owner):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> not_owner = getUtility(IPersonSet).getByName('name20')
+    >>> sata_controller.getSubmissions(owner=not_owner).count()
+    0
+
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+HWDevice.drivers is the set of drivers that are associated via
+HWDeviceDriverLink (see below) with this device.
+
+    >>> for driver in sata_controller.drivers:
+    ...     print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic ahci
 
 
 == HWDeviceNameVariant ==

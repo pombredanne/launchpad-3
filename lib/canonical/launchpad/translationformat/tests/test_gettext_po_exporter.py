@@ -8,7 +8,10 @@ from textwrap import dedent
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.helpers import test_diff
-from canonical.launchpad.interfaces import ITranslationFormatExporter
+from canonical.launchpad.interfaces.translationexporter import (
+    ITranslationFormatExporter)
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad.translationformat import gettext_po_exporter
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPOExporter)
@@ -49,6 +52,20 @@ class GettextPOExporterTestCase(unittest.TestCase):
         self.failUnless(
             verifyObject(ITranslationFormatExporter, self.translation_exporter),
             "GettextPOExporter doesn't follow the interface")
+
+    def testSupportedFormats(self):
+        """Check that the exporter reports the correct formats."""
+        self.failUnlessEqual(
+            self.translation_exporter.format,
+            TranslationFileFormat.PO,
+            "Expected GettextPOExporter to provide PO format "
+            "but got %r instead." % self.translation_exporter.format)
+        self.failUnlessEqual(
+            self.translation_exporter.supported_source_formats ,
+            [TranslationFileFormat.PO, TranslationFileFormat.KDEPO],
+            "Expected GettextPOExporter to support PO and KDEPO source "
+            "formats but got %r instead." % (
+                self.translation_exporter.supported_source_formats))
 
     def testGeneralExport(self):
         """Check different kind of messages export."""

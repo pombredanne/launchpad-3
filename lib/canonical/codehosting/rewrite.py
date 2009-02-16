@@ -6,11 +6,11 @@ import xmlrpclib
 
 from bzrlib import urlutils
 
-from canonical.codehosting.branchfs import branch_id_to_path
-from canonical.codehosting.branchfsclient import BranchFileSystemClient
+from canonical.codehosting.vfs import (
+    branch_id_to_path, BranchFileSystemClient)
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS
-from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
+from canonical.launchpad.interfaces.codehosting import (
+    BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
 from canonical.launchpad.xmlrpc import faults
 from canonical.twistedsupport import extract_result
 
@@ -27,7 +27,12 @@ class BranchRewriter:
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
         self.logger = logger
-        self.client = BranchFileSystemClient(proxy, ANONYMOUS, 1.0)
+        self.client = BranchFileSystemClient(proxy, LAUNCHPAD_ANONYMOUS, 1.0)
+
+    def _codebrowse_url(self, path):
+        return urlutils.join(
+            config.codehosting.internal_codebrowse_root,
+            path)
 
     def rewriteLine(self, resource_location):
         """Rewrite 'resource_location' to a more concrete location.
@@ -58,14 +63,24 @@ class BranchRewriter:
         caller will catch and log them.
         """
         T = time.time()
+        # Codebrowse generates references to its images and stylesheets
+        # starting with "/static", so pass them on unthinkingly.
+        if resource_location.startswith('/static/'):
+            return self._codebrowse_url(resource_location)
         trailingSlash = resource_location.endswith('/')
         deferred = self.client.translatePath(resource_location)
         try:
             transport_type, info, trailing = extract_result(deferred)
         except xmlrpclib.Fault, f:
-            if faults.check_fault(f, faults.PathTranslationError,
-                                  faults.PermissionDenied):
+            if faults.check_fault(f, faults.PathTranslationError):
                 return "NULL"
+            elif faults.check_fault(f, faults.PermissionDenied):
+                # If we get permission denied, send to codebrowse which will
+                # redirect to the https version of the codehost, which doesn't
+                # indirect through here and does authentication via OpenID.
+                # If we could generate a 30x response to the client from here,
+                # we'd do it, but we can't.
+                return self._codebrowse_url(resource_location)
             else:
                 raise
         if transport_type == BRANCH_TRANSPORT:
@@ -76,9 +91,7 @@ class BranchRewriter:
                 if trailingSlash:
                     r += '/'
             else:
-                r = urlutils.join(
-                    config.codehosting.internal_codebrowse_root,
-                    resource_location)
+                r = self._codebrowse_url(resource_location)
             self.logger.info(
                 "%r -> %r (%fs)", resource_location, r, time.time() - T)
             return r

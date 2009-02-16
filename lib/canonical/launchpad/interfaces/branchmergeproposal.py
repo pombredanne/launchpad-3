@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -7,28 +7,33 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BranchMergeProposalExists',
     'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICreateMergeProposalJob',
+    'ICreateMergeProposalJobSource',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, List, Object, Text
+from zope.schema import Bytes, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from canonical.launchpad.interfaces import IBranch
-from canonical.launchpad.interfaces.diff import IStaticDiff
+from canonical.launchpad.interfaces import IBranch, IPerson
+from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -36,6 +41,10 @@ class InvalidBranchMergeProposal(Exception):
 
     The text of the exception is the rule violation.
     """
+
+
+class BranchMergeProposalExists(InvalidBranchMergeProposal):
+    """Raised if there is already a matching BranchMergeProposal."""
 
 
 class UserNotBranchReviewer(Exception):
@@ -168,7 +177,8 @@ class IBranchMergeProposal(Interface):
     queue_status = exported(
         Choice(
             title=_('Status'),
-            vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
+            vocabulary=BranchMergeProposalStatus, required=True,
+            readonly=True,
             description=_("The current state of the proposal.")))
 
     reviewer = exported(
@@ -188,8 +198,15 @@ class IBranchMergeProposal(Interface):
             description=_("The person that accepted (or rejected) the code "
                           "for merging.")))
 
-    review_diff = Object(
-        title=_('The diff to be used for reviews.'), schema=IStaticDiff)
+    review_diff = Reference(
+        IStaticDiff, title=_('The diff to be used for reviews.'),
+        readonly=True)
+
+    preview_diff = exported(
+        Reference(
+            IPreviewDiff,
+            title=_('The current diff of the source branch against the '
+                    'target branch.'), readonly=True))
 
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
@@ -275,11 +292,29 @@ class IBranchMergeProposal(Interface):
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
-    all_comments = Attribute(
-        _("All messages discussing this merge proposal"))
+    all_comments = exported(
+        CollectionField(
+            title=_("All messages discussing this merge proposal"),
+            value_type=Reference(schema=Interface), # ICodeReviewComment
+            readonly=True))
 
+    address = exported(
+        TextLine(
+            title=_('The email address for this proposal.'),
+            readonly=True,
+            description=_('Any emails sent to this address will result'
+                          'in comments being added.')))
+
+    @operation_parameters(
+        id=Int(
+            title=_("A CodeReviewComment ID.")))
+    @operation_returns_entry(Interface) # ICodeReviewComment
+    @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
+
+    def getVoteReference(id):
+        """Return the CodeReviewVoteReference with the specified ID."""
 
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
@@ -393,6 +428,11 @@ class IBranchMergeProposal(Interface):
         user-entered data like the whiteboard.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A person for which the reviewer status is in question."),
+            schema=IPerson))
+    @export_read_operation()
     def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
@@ -419,6 +459,12 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A reviewer."), schema=IPerson),
+        review_type=Text())
+    @call_with(registrant=REQUEST_USER)
+    @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
 
@@ -432,6 +478,12 @@ class IBranchMergeProposal(Interface):
         :return: A `CodeReviewVoteReference` or None.
         """
 
+    @operation_parameters(
+        subject=Text(), content=Text(),
+        vote=Choice(vocabulary='CodeReviewVote'), review_type=Text(),
+        parent=Reference(schema=Interface))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
@@ -456,6 +508,31 @@ class IBranchMergeProposal(Interface):
 
     def deleteProposal():
         """Delete the proposal to merge."""
+
+    @operation_parameters(
+        diff_content=Bytes(), diff_stat=Text(),
+        source_revision_id=TextLine(), target_revision_id=TextLine(),
+        dependent_revision_id=TextLine(), conflicts=Text())
+    @export_write_operation()
+    def updatePreviewDiff(diff_content, diff_stat,
+                        source_revision_id, target_revision_id,
+                        dependent_revision_id=None, conflicts=None):
+        """Update the preview diff for this proposal.
+
+        If there is not an existing preview diff, one will be created.
+
+        :param diff_content: The raw bytes of the diff content to be put in
+            the librarian.
+        :param diff_stat: Text describing the files added, remove or modified.
+        :param source_revision_id: The revision id that was used from the
+            source branch.
+        :param target_revision_id: The revision id that was used from the
+            target branch.
+        :param dependent_revision_id: The revision id that was used from the
+            dependent branch.
+        :param conflicts: Text describing the conflicts if any.
+        """
+
 
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
@@ -514,3 +591,22 @@ class IBranchMergeProposalGetter(Interface):
 for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
+
+class ICreateMergeProposalJob(Interface):
+    """A Job that creates a branch merge proposal.
+
+    It uses a Message, which must contain a merge directive.
+    """
+
+    def run():
+        """Run this job and create the merge proposals."""
+
+
+class ICreateMergeProposalJobSource(Interface):
+    """Acquire MergeProposalJobs."""
+
+    def create(message_bytes):
+        """Return a CreateMergeProposalJob for this message."""
+
+    def iterReady():
+        """Iterate through jobs that are ready to run."""

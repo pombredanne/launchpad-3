@@ -23,12 +23,12 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Or, SQL
+from storm.expr import Or
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, sqlvalues)
+    SQLBase, flush_database_updates)
 
 from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
@@ -38,9 +38,10 @@ from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
-    IBugTrackerSet, NotFoundError)
+    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
@@ -165,7 +166,7 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
-    _bug_filing_url_patterns = {
+    _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"),
         BugTrackerType.MANTIS: "%(base_url)s/bug_report_advanced_page.php",
@@ -176,9 +177,26 @@ class BugTracker(SQLBase):
         BugTrackerType.SAVANE: (
             "%(base_url)s/bugs/?func=additem&group=%(remote_product)s"),
         BugTrackerType.SOURCEFORGE: (
-            "%(base_url)s/%(tracker)s/?"
-            "func=add&group_id=%(group_id)s&atid=%(at_id)s"),
+            "%(base_url)s/%(tracker)s/?func=add&"
+                "group_id=%(group_id)s&atid=%(at_id)s"),
         BugTrackerType.TRAC: "%(base_url)s/newticket",
+        }
+
+    _search_url_patterns = {
+        BugTrackerType.BUGZILLA: (
+            "%(base_url)s/query.cgi?product=%(remote_product)s"),
+        BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
+        BugTrackerType.PHPPROJECT: "%(base_url)s/search.php",
+        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
+        BugTrackerType.RT: (
+            "%(base_url)s/Search/Build.html?Query=Queue = "
+                "'%(remote_product)s'"),
+        BugTrackerType.SAVANE: (
+            "%(base_url)s/bugs/?func=search&group=%(remote_product)s"),
+        BugTrackerType.SOURCEFORGE: (
+            "%(base_url)s/search/?group_id=%(group_id)s&"
+                "type_of_search=artifact"),
+        BugTrackerType.TRAC: "%(base_url)s/search?ticket=on",
         }
 
     @property
@@ -186,13 +204,32 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         return self.watches[:10]
 
-    def getBugFilingLink(self, remote_product):
-        """See `IBugTracker`."""
-        url_pattern = self._bug_filing_url_patterns.get(
-            self.bugtrackertype, None)
+    @property
+    def multi_product(self):
+        """Return True if this BugTracker tracks multiple projects."""
+        if self.bugtrackertype not in SINGLE_PRODUCT_BUGTRACKERTYPES:
+            return True
+        else:
+            return False
 
-        if url_pattern is None:
+    def getBugFilingAndSearchLinks(self, remote_product):
+        """See `IBugTracker`."""
+        bugtracker_urls = {'bug_filing_url': None, 'bug_search_url': None}
+
+        if remote_product is None and self.multi_product:
+            # Don't try to return anything if remote_product is required
+            # for this BugTrackerType and one hasn't been passed.
             return None
+
+        if remote_product is None:
+            # Turn the remote product into an empty string so that
+            # quote() doesn't blow up later on.
+            remote_product = ''
+
+        bug_filing_pattern = self._filing_url_patterns.get(
+            self.bugtrackertype, None)
+        bug_search_pattern = self._search_url_patterns.get(
+            self.bugtrackertype, None)
 
         # Make sure that we don't put > 1 '/' in returned URLs.
         base_url = self.baseurl.rstrip('/')
@@ -211,18 +248,27 @@ class BugTracker(SQLBase):
             else:
                 tracker = 'tracker'
 
-            return url_pattern % ({
+            url_components = {
                 'base_url': base_url,
                 'tracker': quote(tracker),
                 'group_id': quote(group_id),
                 'at_id': quote(at_id),
-                })
+                }
 
         else:
-            return url_pattern % ({
+            url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
-                })
+                }
+
+        if bug_filing_pattern is not None:
+            bugtracker_urls['bug_filing_url'] = (
+                bug_filing_pattern % url_components)
+        if bug_search_pattern is not None:
+            bugtracker_urls['bug_search_url'] = (
+                bug_search_pattern % url_components)
+
+        return bugtracker_urls
 
     def getBugsWatching(self, remotebug):
         """See `IBugTracker`."""
