@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-from storm.locals import Int, Store, Storm
+from storm.locals import Int, Reference, Store, Storm
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
@@ -26,8 +26,32 @@ class UnknownProperty(Exception):
         Exception.__init__(self, msg)
 
 
+class ForeignKey(Reference):
+
+    def __init__(self, remote_key, name=None):
+        self.name = name
+        Reference.__init__(self, None, remote_key)
+
+
+class Sugary(type):
+
+    def __init__(cls, name, bases, dct):
+        super(Sugary, cls).__init__(name, bases, dct)
+        for key in dir(cls):
+            val = getattr(cls, key)
+            if not isinstance(val, ForeignKey):
+                continue
+            col_name = val.name
+            if col_name is None:
+                col_name = key
+            val._local_key = Int(col_name)
+            setattr(cls, '_%s_id' % key, val._local_key)
+
+
 class Sugar:
     """Base class providing convenient Storm API."""
+
+    __metaclass__ = Sugary
 
     __store_type__ = MAIN_STORE
 

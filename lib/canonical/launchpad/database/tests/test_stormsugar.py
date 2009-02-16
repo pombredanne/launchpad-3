@@ -11,7 +11,7 @@ from psycopg2 import IntegrityError
 from storm.locals import Int
 
 from canonical.launchpad.database.stormsugar import (
-    ObjectNotFound, Sugar, UnknownProperty)
+    ForeignKey, ObjectNotFound, Sugar, UnknownProperty)
 from canonical.launchpad.testing import TestCase
 
 
@@ -22,6 +22,24 @@ class SugarDerived(Sugar):
     __storm_table__ = 'Job'
 
     status = Int()
+
+
+class ReferencingObject(Sugar):
+
+    __storm_table__ = 'BranchJob'
+
+    branch = Int()
+
+    job_type = Int()
+
+    job = ForeignKey(SugarDerived.id)
+
+
+class ReferencingObjectWithName(Sugar):
+
+    __storm_table__ = 'BranchJob'
+
+    foo = ForeignKey(SugarDerived.id, 'job')
 
 
 class TestSugar(TestCase):
@@ -69,6 +87,16 @@ class TestSugar(TestCase):
         self.assertEqual([obj1], list(SugarDerived.selectBy(status=5)))
         self.assertEqual([], list(SugarDerived.selectBy(status=4)))
         self.assertRaises(AssertionError, SugarDerived.selectBy)
+
+    def test_ForeignKey(self):
+        obj1 = SugarDerived(status=0)
+        obj2 = ReferencingObject(job=obj1, branch=1, job_type=0)
+        obj2.sync()
+
+    def test_ForeignKey_with_name(self):
+        obj1 = SugarDerived(status=0)
+        obj2 = ReferencingObjectWithName(foo=obj1)
+        self.assertEqual(obj1, obj2.foo)
 
 
 def test_suite():
