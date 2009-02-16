@@ -29,8 +29,10 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IPersonSet, IPasswordEncryptor, OAUTH_CHALLENGE)
+from canonical.launchpad.interfaces.account import IAccountSet
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
     ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
@@ -53,7 +55,7 @@ class PlacelessAuthUtility:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
             if principal is not None:
-                person = getUtility(IPersonSet).get(principal.id)
+                person = getUtility(IPersonSet).get(principal.person.id)
                 if person.is_valid_person:
                     password = credentials.getPassword()
                     if principal.validate(password):
@@ -71,28 +73,33 @@ class PlacelessAuthUtility:
     def _authenticateUsingCookieAuth(self, request):
         session = ISession(request)
         authdata = session['launchpad.authenticateduser']
-        if authdata.get('personid') is None:
+        account_id = authdata.get('accountid')
+        if account_id is None:
+            # This is for backwards compatibility, when we used to store the
+            # person's ID in the session.
+            account_id = authdata.get('personid')
+
+        if account_id is None:
             return None
         else:
-            personid = authdata['personid']
             login_src = getUtility(IPlacelessLoginSource)
             # Note, not notifying a LoggedInEvent here as for session-based
             # auth the login occurs when the login form is submitted, not
             # on each request.
-            principal = login_src.getPrincipal(personid)
+            principal = login_src.getPrincipal(account_id)
             if principal is None:
                 # XXX Stuart Bishop 2006-05-26 bug=33427:
                 # User is authenticated in session, but principal is not"
                 # available in login source. This happens when account has
                 # become invalid for some reason, such as being merged.
                 return None
-            elif getUtility(IPersonSet).get(principal.id).is_valid_person:
+            elif getUtility(IPersonSet).get(
+                    principal.person.id).is_valid_person:
                 request.setPrincipal(principal)
                 login = authdata['login']
                 assert login, 'login is %s!' % repr(login)
                 notify(CookieAuthPrincipalIdentifiedEvent(
-                    principal, request, login
-                    ))
+                    principal, request, login))
                 return principal
             else:
                 return None
@@ -195,9 +202,9 @@ class LaunchpadLoginSource:
 
     def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE,
                      scope=None):
-        """Return an `ILaunchpadPrincipal` for the person with the given id.
+        """Return an `ILaunchpadPrincipal` for the account with the given id.
 
-        Return None if there is no person with the given id.
+        Return None if there is no account with the given id.
 
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
@@ -211,8 +218,9 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        person = getUtility(IPersonSet).get(id)
-        if person is not None:
+        account = getUtility(IAccountSet).get(id)
+        if account is not None:
+            person = IPerson(account)
             return self._principalForPerson(person, access_level, scope)
         else:
             return None
@@ -262,7 +270,7 @@ class LaunchpadLoginSource:
         else:
             password = None
         principal = LaunchpadPrincipal(
-            naked_person.id, naked_person.browsername,
+            naked_person.account.id, naked_person.browsername,
             naked_person.displayname, person, password,
             access_level=access_level, scope=scope)
         principal.__parent__ = self

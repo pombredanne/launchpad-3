@@ -377,7 +377,7 @@ def logInPerson(request, principal, email):
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
-    authdata['personid'] = principal.id
+    authdata['accountid'] = principal.id
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
@@ -418,9 +418,15 @@ def logoutPerson(request):
     """Log the user out."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
-    previous_login = authdata.get('personid')
+    account_variable_name = 'accountid'
+    previous_login = authdata.get(account_variable_name)
+    if previous_login is None:
+        # This is for backwards compatibility, when we used to store the
+        # person's ID in the 'personid' session variable.
+        account_variable_name = 'personid'
+        previous_login = authdata.get(account_variable_name)
     if previous_login is not None:
-        authdata['personid'] = None
+        authdata[account_variable_name] = None
         authdata['logintime'] = datetime.utcnow()
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.unauthenticatedPrincipal()

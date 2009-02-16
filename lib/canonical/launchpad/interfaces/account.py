@@ -58,7 +58,7 @@ INACTIVE_ACCOUNT_STATUSES = [
 
 class AccountCreationRationale(DBEnumeratedType):
     """The rationale for the creation of a given account.
-    
+
     These statuses are seeded from PersonCreationRationale, as our
     initial accounts where split from the Person table. A number of the
     creation rationales only make sense in this historical context (eg.
@@ -250,6 +250,12 @@ class IAccountSet(Interface):
             If False, the password will be encrypted automatically.
 
         :return: The newly created `IAccount` provider.
+        """
+
+    def get(id):
+        """Return the `IAccount` with the given id.
+
+        Return None if it doesn't exist.
         """
 
     def getByEmail(email):

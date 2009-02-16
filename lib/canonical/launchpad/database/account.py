@@ -24,6 +24,8 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -117,6 +119,11 @@ class AccountSet:
             AccountPassword(account=account, password=password)
 
         return account
+
+    def get(self, id):
+        """See `IAccountSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(Account, Account.id == id).one()
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
