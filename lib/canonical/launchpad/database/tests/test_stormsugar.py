@@ -7,6 +7,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from psycopg2 import IntegrityError
 from storm.locals import Int
 
 from canonical.launchpad.database.stormsugar import (
@@ -55,6 +56,19 @@ class TestSugar(TestCase):
         created = SugarDerived(id=500, status=0)
         created.destroySelf()
         self.assertRaises(ObjectNotFound, SugarDerived.get, 500)
+
+    def test_sync_exercises_constraints(self):
+        """Sugar.sync causes constraints to be tested."""
+        created = SugarDerived(id=500)
+        self.assertRaises(IntegrityError, created.sync)
+
+    def test_selectBy(self):
+        """Sugar selectBy works."""
+        obj1 = SugarDerived(id=500, status=5)
+        obj2 = SugarDerived(id=501, status=6)
+        self.assertEqual([obj1], list(SugarDerived.selectBy(status=5)))
+        self.assertEqual([], list(SugarDerived.selectBy(status=4)))
+        self.assertRaises(AssertionError, SugarDerived.selectBy)
 
 
 def test_suite():

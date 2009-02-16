@@ -60,6 +60,19 @@ class Sugar:
             raise ObjectNotFound(klass, id)
         return obj
 
+    @classmethod
+    def selectBy(klass, **kwargs):
+        """Select the instances whose properties match kwargs."""
+        assert len(kwargs) > 0
+        store = klass.getDefaultStore()
+        return store.find(klass, **kwargs)
+
+    def sync(self):
+        """Bi-directionally update this object with the database."""
+        store = Store.of(self)
+        store.flush()
+        store.autoreload(self)
+
     def destroySelf(self):
         """Remote this object from the database."""
         Store.of(self).remove(self)
