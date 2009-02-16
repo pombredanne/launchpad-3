@@ -443,13 +443,15 @@ both filing and searching URLs.
     bug_filing_url: None
     bug_search_url: None
 
-As does DebBugs, which is also an email-based bugtracker.
+Debbugs - an email-based bug tracker - doesn't provide a bug filing form.
+However, it is possible to obtain a bug search URL for Debbugs-using
+products.
 
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> links = debbugs.getBugFilingAndSearchLinks('testproduct')
     >>> print_links(links)
     bug_filing_url: None
-    bug_search_url: None
+    bug_search_url: http://.../cgi-bin/pkgreport.cgi?package=testproduct
 
 The remote_product values passed to getBugFilingAndSearchLinks() are
 URL-encoded to ensure that the returned URL is valid.
@@ -488,8 +490,10 @@ the constraints of multi_product=True are not violated by any
 BugTracker.
 
 If you try passing remote_product=None to a multi product bugtracker's
-getBugFilingAndSearchLinks() method you'll get None back, since a
-product is required to be able to generate URLs for those bug trackers.
+getBugFilingAndSearchLinks() method you'll get None back for both URLs,
+since a product is required to be able to generate URLs for those bug
+trackers.
 
-    >>> print mozilla_bugzilla.getBugFilingAndSearchLinks(None)
-    None
+    >>> print_links(mozilla_bugzilla.getBugFilingAndSearchLinks(None))
+    bug_filing_url: None
+    bug_search_url: None

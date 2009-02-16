@@ -711,13 +711,14 @@ If the product's `bugtracker` isn't specified its
     None
 
 Similarly, if the product's `remote_product` attribute is None and its
-bug tracker is one which requires an upstream product, the product's
-`upstream_bugtracker_links` property will be None.
+bug tracker is one which requires an upstream product, bug bug_filing_url
+and bug_search_url will be None.
 
     >>> product.bugtracker = bugtracker
     >>> product.remote_product = None
-    >>> print product.upstream_bugtracker_links
-    None
+    >>> print_links(product.upstream_bugtracker_links)
+    bug_filing_url: None
+    bug_search_url: None
 
 However, some remote bug trackers, notably Trac, only track one product
 at a time. They don't need a remote product in order to provide a bug
