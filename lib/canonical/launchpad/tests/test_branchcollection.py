@@ -91,6 +91,14 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             self.store, [Branch.product == branch.product])
         self.assertEqual(1, collection.count)
 
+    def test_count_respects_visibleByUser_filter(self):
+        branch = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch(private=True)
+        all_branches = GenericBranchCollection(self.store)
+        collection = all_branches.visibleByUser(branch.owner)
+        self.assertEqual(1, collection.getBranches().count())
+        self.assertEqual(1, collection.count)
+
     def test_ownedBy(self):
         # 'ownedBy' returns a new collection restricted to branches owned by
         # the given person.

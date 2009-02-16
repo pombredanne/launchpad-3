@@ -38,7 +38,7 @@ class GenericBranchCollection:
     @property
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches().count()
+        return self.getBranches().count(distinct=True)
 
     def filterBy(self, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
@@ -48,8 +48,13 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
-        return self._store.find(
-            Branch, *(self._branch_filter_expressions)).config(distinct=True)
+        results = self._store.find(
+            Branch, *(self._branch_filter_expressions))
+        results.config(distinct=True)
+        orig_count = results.count
+        results.count = lambda x=Branch.id, distinct=True: orig_count(
+            x, distinct)
+        return results
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
