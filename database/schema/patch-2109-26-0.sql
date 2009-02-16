@@ -4,4 +4,4 @@ UPDATE Branch
 SET lifecycle_status=30 -- DEVELOPMENT
 WHERE lifecycle_status=1; -- NEW
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 26, 0);
