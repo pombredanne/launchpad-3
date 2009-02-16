@@ -145,7 +145,7 @@ whereas the owner is.
 A Branch may or may not be associated to a product, may have no title,
 no summary, and, depending on the branch type, no URL.
 
-Most branches with no URL are hosted on the supermirror (it is also
+Most branches with no URL are hosted on Launchpad (it is also
 possible for a remote branch to have no URL, but this is rare).
 
     >>> junkowner = factory.makePerson(name='junkowner')
@@ -239,7 +239,7 @@ user to click through.
 
 Changed branches are branches that are owned by real people or groups (as
 opposed to vcs-imports), and have recently had new revisions detected by
-the branch scanner, either through the branch being pushed to the supermirror
+the branch scanner, either through the branch being pushed to Launchpad
 or the branch puller script mirroring a remote branch.
 
 Imported branches are those branches owned by vcs-imports, and are "imported"
@@ -247,7 +247,7 @@ from other VCS hosted code bases.  Again recently imported branches are
 identified by new revisions detected by the branch scanner.
 
 Branches that have been recently registered have either been created by a user
-using the web UI, or by pushing a new branch directly to the supermirror.
+using the web UI, or by pushing a new branch directly to Launchpad.
 
 In order to determine changes in the branches the last_scanned
 timestamp is used.  This is set by the branch scanner when it has
@@ -315,18 +315,18 @@ It is possible to find a branch by URL. Either using the pull URL:
     >>> branchset.getByUrl(new_url) == new_mirrored_branch
     True
 
-Or using the Supermirror URL of the same branch:
+Or using the URL of the mirror of the branch on Launchpad:
 
-    >>> new_branch_supermirror = (
+    >>> new_branch_mirrored = (
     ...     u'http://bazaar.launchpad.dev/' +
     ...     new_mirrored_branch.unique_name)
-    >>> branchset.getByUrl(new_branch_supermirror) == new_mirrored_branch
+    >>> branchset.getByUrl(new_branch_mirrored) == new_mirrored_branch
     True
     >>> new_junk_branch = factory.makePersonalBranch()
-    >>> junkcode_supermirror = (
+    >>> junkcode_mirrored = (
     ...     u'http://bazaar.launchpad.dev/' +
     ...     new_junk_branch.unique_name)
-    >>> branchset.getByUrl(junkcode_supermirror) == new_junk_branch
+    >>> branchset.getByUrl(junkcode_mirrored) == new_junk_branch
     True
 
 The provided URL must not have any trailing slash:
@@ -746,27 +746,6 @@ scanned ID is.
     False
 
 
-== Getting the branch count and last commit for products ==
-
-    >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> products = [
-    ...     productset.getByName('evolution'),
-    ...     productset.getByName('firefox'),
-    ...     productset.getByName('gnome-terminal'),
-    ...     ]
-
-    >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
-    >>> for product in products:
-    ...     print "%s %s %s" % (
-    ...         product.name,
-    ...         summary[product]['branch_count'],
-    ...         summary[product]['last_commit'])
-    evolution      1 None
-    firefox        5 2005-03-09 15:50:00
-    gnome-terminal 7 None
-
-
 == Getting all branches for a person ==
 
 Batching of the branch pages relies (ideally) on a quick simple query
@@ -883,6 +862,8 @@ In order to have batched branch listings the database needs to do as much
 of the work as possible.  This way there are optimal database queries for
 extra display information.
 
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
     >>> gnome_terminal = productset.getByName('gnome-terminal')
     >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING,

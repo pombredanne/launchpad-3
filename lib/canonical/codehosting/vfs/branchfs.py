@@ -67,10 +67,10 @@ from twisted.python import failure
 
 from zope.interface import implements, Interface
 
-from canonical.codehosting.branchfsclient import (
+from canonical.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
-from canonical.codehosting.transport import (
+from canonical.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
@@ -148,9 +148,9 @@ def get_puller_server():
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
-        config.codehosting.branches_root)
+        config.codehosting.hosted_branches_root)
     mirrored_transport = get_chrooted_transport(
-        config.supermirror.branchesdest)
+        config.codehosting.mirrored_branches_root)
     hosted_server = LaunchpadInternalServer(
         'lp-hosted:///', branchfs_endpoint,
         get_readonly_transport(hosted_transport))

@@ -872,6 +872,14 @@ The status filter can also be a sequence of status.
     ...      name='ice', status=irrelevant_status).count()
     1
 
+The series filter can be used to return only sources from a certain
+series:
+
+    >>> cprov_archive.getSourcesForDeletion(distroseries=warty).count()
+    2
+    >>> cprov_archive.getSourcesForDeletion(distroseries=hoary).count()
+    0
+
 The source publication is only excluded from 'deletion list' when its
 binary is also DELETED.
 

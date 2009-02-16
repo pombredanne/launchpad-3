@@ -192,7 +192,8 @@ branches, and the current status.
     >>> print_summary(sample_browser)
     Status: Needs review
     Proposed by: Sample Person ...
-    Target branch: lp://dev/~name12/firefox/main
+    Proposed branch: lp://dev/~sabdfl/firefox/release-0.9
+    Merge into: lp://dev/~name12/firefox/main
 
 The summary of the revisions that are in the source branch but not
 yet in the target branch are also shown.
@@ -260,7 +261,8 @@ The status of the merge proposal is updated to "Needs review".
     >>> print_summary(sample_browser)
     Status: Needs review
     Proposed ...
-    Target branch: lp://dev/~name12/gnome-terminal/main
+    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
+    Merge into: lp://dev/~name12/gnome-terminal/main
 
 Additional reviews can be requested.
 
@@ -311,6 +313,7 @@ Only the last request is listed, showing the last review type.
     Reviewer          Review Type    Date Requested    Status
     Sample Person                                      Pending [Review]
     Mark Shuttleworth second         ... ago           Pending
+    Review via email: mp+1@code.launchpad.dev
                                                  Request another review
 
 
@@ -501,7 +504,8 @@ a link back to the superseded proposal.
     >>> print_summary(sample_browser)
     Status: Needs review
     Proposed by: Sample Person ...
-    Target branch: lp://dev/~name12/gnome-terminal/main
+    Proposed branch: lp://dev/~name12/gnome-terminal/scanned
+    Merge into: lp://dev/~name12/gnome-terminal/main
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-proposal'))
@@ -714,7 +718,7 @@ Create merge proposal with a review diff, and go to its index page.
 
 The text of the review diff is in the page.
     >>> print repr(extract_text(get_review_diff()))
-    u'Review Diff\nFake Diff\u1010'
+    u'Review Diff\nDownload diff\n1\nFake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')

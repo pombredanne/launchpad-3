@@ -115,6 +115,15 @@ code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 a[onclick], .collapsible legend a               {color: #063;}
 a[onclick]:active, .collapsible legend a:active {color: #093;}
 
+/* Help links */
+a.help {
+  border-bottom: 1px dotted #03a;
+  cursor: help;}
+}
+a.help:hover, a.help:hover {
+  text-decoration: none;
+}
+
 h1, h2, h3, h4, h5, h6 {
   background: none;
   clear: left;
@@ -209,10 +218,11 @@ input[type="text"], input[type="search"], input[type="submit"],
 input[type="reset"], textarea {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
-button, input[type="button"], input[type="file"], input[type="password"],
-input[type="submit"], input[type="text"], select, textarea {
+form button, form input[type="button"], form input[type="file"], form input[type="password"],
+form input[type="submit"], form input[type="text"], form select, form textarea {
   margin-right: 0.5em;
 }
+button{padding:0;}
 input.urlTextType {width: 100%;}
 .fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
@@ -429,13 +439,6 @@ form.primary.search {
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
 
-h1 em, h2 em, h3 em, h4 em, h5 em {
-  font-style: normal;
-  color: #353535;
-}
-h1 span, h2 span, h3 span, h4 span, h5 span {
-  color: #656565;
-}
 strong em {
   font-style: normal;
   color: #353535;
@@ -1351,13 +1354,31 @@ table#package-requests {
     width: 60em;
     margin: 1em 0;
 }
-table#package-requests td{
+table#package-requests td {
     padding: 0.5em;
+}
+form.package-search-filter {
+    clear: both;
 }
 h1.disabled {
     color: grey;
 }
+table#packages_list {
+    margin-top: 1em;
+}
+p.update-failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
 
+p.update-in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+
+a.update-retry {
+    padding-left: 1em;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
@@ -1441,9 +1462,28 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   float: right;
 }
 .codereviewcomment {font: 120% monospace;}
-.codereviewcomment .attachment {
+.codereviewcomment .attachment, #review-diff .attachment {
   background-color: #f6f6f6;
 }
+#proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
+table.diff {
+   white-space: pre-wrap;
+   font: 120% monospace;
+   width: 100%;
+   background-color: white;
+}
+table.diff .text { width: 99%; padding-left: 0.5em; }
+table.diff .line-no {
+  text-align: right;
+  background-color: #f6f6f6;
+  color: #999;
+  border-right: solid 4px white;
+}
+table.diff .diff-chunk, table.diff .diff-file, table.diff .diff-header {
+ font-weight: bold;
+}
+table.diff .diff-added { background-color: #92ED92; }
+table.diff .diff-removed { background-color: #FF7F7F; }
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */
