@@ -33,12 +33,13 @@ class ForeignKey(Reference):
         Reference.__init__(self, None, remote_key)
 
 
-class Sugary(type):
+# Use Storm.__metaclass__ because PropertyPublisherMeta isn't in an __all__.
+class Sugary(Storm.__metaclass__):
+    """Metaclass that adds support for ForeignKey."""
 
     def __init__(cls, name, bases, dct):
-        super(Sugary, cls).__init__(name, bases, dct)
         for key in dir(cls):
-            val = getattr(cls, key)
+            val = getattr(cls, key, None)
             if not isinstance(val, ForeignKey):
                 continue
             col_name = val.name
@@ -46,9 +47,12 @@ class Sugary(type):
                 col_name = key
             val._local_key = Int(col_name)
             setattr(cls, '_%s_id' % key, val._local_key)
+        # Do this last, because it wants References to have their local_key
+        # properly set up.
+        super(Sugary, cls).__init__(name, bases, dct)
 
 
-class Sugar:
+class Sugar(Storm):
     """Base class providing convenient Storm API."""
 
     __metaclass__ = Sugary
