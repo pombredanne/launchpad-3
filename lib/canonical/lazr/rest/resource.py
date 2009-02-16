@@ -25,7 +25,7 @@ __all__ = [
 
 import copy
 from cStringIO import StringIO
-from datetime import datetime
+from datetime import datetime, date
 from gzip import GzipFile
 import os
 import sha
@@ -39,6 +39,7 @@ from zope.component import (
     getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
+from zope.publisher.http import init_status_codes, status_reasons
 from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
@@ -74,6 +75,13 @@ from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
                                 'wadl20061109.xsd')
 
+# XXX leonardr 2009-01-29
+# bug=https://bugs.edge.launchpad.net/zope3/+bug/322486:
+# Add nonstandard status methods to Zope's status_reasons dictionary.
+for code, reason in [(209, 'Content Returned')]:
+    if not code in status_reasons:
+        status_reasons[code] = reason
+init_status_codes()
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
     "A page template class for generating web service-related documents."
@@ -90,7 +98,7 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
         """Convert the given object to a simple data structure."""
-        if isinstance(obj, datetime):
+        if isinstance(obj, datetime) or isinstance(obj, date):
             return obj.isoformat()
         if isProxy(obj):
             # We have a security-proxied version of a built-in
@@ -133,6 +141,9 @@ class HTTPResource:
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
     XHTML_TYPE = 'application/xhtml+xml'
+
+    # A preparsed template file for WADL representations of resources.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-resource.pt')
 
     # The representation value used when the client doesn't have
     # authorization to see the real value.
@@ -304,15 +315,14 @@ class HTTPResource:
             getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
-    def toWADL(self, template_name="wadl-resource.pt"):
+    def toWADL(self):
         """Represent this resource as a WADL application.
 
         The WADL document describes the capabilities of this resource.
         """
-        template = LazrPageTemplateFile('../templates/' + template_name)
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
@@ -617,6 +627,9 @@ class ReadWriteResource(HTTPResource):
 class EntryHTMLView:
     """An HTML view of an entry."""
 
+    # A preparsed template file for HTML representations of the resource.
+    HTML_TEMPLATE = LazrPageTemplateFile('../templates/html-resource.pt')
+
     def __init__(self, context, request):
         """Initialize with respect to a data object and request."""
         self.context = context
@@ -625,13 +638,12 @@ class EntryHTMLView:
 
     def __call__(self):
         """Send the entry data through an HTML template."""
-        template = LazrPageTemplateFile('../templates/html-resource.pt')
-        namespace = template.pt_getContext()
+        namespace = self.HTML_TEMPLATE.pt_getContext()
         names_and_values = self.resource.toDataForJSON().items()
         data = sorted([{'name' : name, 'value': value}
                        for name, value in names_and_values])
         namespace['context'] = data
-        return template.pt_render(namespace)
+        return self.HTML_TEMPLATE.pt_render(namespace)
 
 
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
@@ -1039,7 +1051,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                             error = "Validation error"
                         errors.append("%s: %s" % (repr_name, error))
                         continue
-                validated_changeset[name] = value
+                validated_changeset[field] = (name, value)
         # If there are any fields left in the changeset, they're
         # fields that don't correspond to some field in the
         # schema. They're all errors.
@@ -1060,8 +1072,16 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self.context, self.request)
         # Make the changes.
-        for name, value in validated_changeset.items():
-            setattr(self.entry, name, value)
+        for field, (name, value) in validated_changeset.items():
+            field.set(self.entry, value)
+            # Clear any marshalled value for this field from the
+            # cache, so that the upcoming representation generation doesn't
+            # use the cached value.
+            if name in self._unmarshalled_field_cache:
+                del(self._unmarshalled_field_cache[name])
+        # The representation has changed, and etags will need to be
+        # recalculated.
+        self.etags_by_media_type = {}
 
         # Send a notification event.
         event = SQLObjectModifiedEvent(
@@ -1077,7 +1097,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
-        return ''
+            # RFC 2616 says the body of a 301 response, if present,
+            # SHOULD be a note linking to the new object.
+            return ''
+
+        # If the object didn't move, serve up its representation.
+        self.request.response.setStatus(209)
+        self.request.response.setHeader('Content-type', self.JSON_TYPE)
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
 
 class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
@@ -1150,6 +1177,9 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
 class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
+
+    # A preparsed template file for WADL representations of the root.
+    WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-root.pt')
 
     inside = None
     path = ''
@@ -1260,13 +1290,12 @@ class ServiceRootResource(HTTPResource):
                     # We omit IScopedCollection because those are handled
                     # by the entry classes.
                     collection_classes.append(registration.factory)
-        template = LazrPageTemplateFile('../templates/wadl-root.pt')
-        namespace = template.pt_getContext()
+        namespace = self.WADL_TEMPLATE.pt_getContext()
         namespace['context'] = self
         namespace['request'] = self.request
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
-        return template.pt_render(namespace)
+        return self.WADL_TEMPLATE.pt_render(namespace)
 
     def toDataForJSON(self):
         """Return a map of links to top-level collection resources.

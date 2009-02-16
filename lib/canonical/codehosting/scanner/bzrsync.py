@@ -29,8 +29,8 @@ from canonical.launchpad.interfaces import (
     IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
-    IRevisionMailJobSource)
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
+from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (

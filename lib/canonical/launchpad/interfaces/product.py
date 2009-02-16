@@ -484,8 +484,9 @@ class IProductPublic(
             description=_(
                 "The ID of this project on its remote bug tracker.")))
 
-    upstream_bug_filing_url = Attribute(
-        "The URL of bug filing form on this project's upstream bug tracker")
+    upstream_bugtracker_links = Attribute(
+        "The URLs of bug filing and search forms on this project's upstream "
+        "bug tracker")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -748,6 +749,13 @@ class IProductSet(Interface):
     def count_codified():
         """Return the number of projects that have branches associated with
         them.
+        """
+
+    def getProductsWithNoneRemoteProduct(bugtracker_type=None):
+        """Get all the IProducts having a `remote_product` of None
+
+        The result can be filtered to only return Products associated
+        with a given bugtracker type.
         """
 
 

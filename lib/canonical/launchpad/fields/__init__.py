@@ -69,6 +69,7 @@ import re
 from StringIO import StringIO
 from textwrap import dedent
 
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
@@ -82,6 +83,7 @@ from zope.security.interfaces import ForbiddenAttribute
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 
@@ -214,9 +216,19 @@ class IURIField(ITextLine):
         title=_('Whether a trailing slash is required for this field'),
         required=False,
         description=_('If set to True, then the path component of the URI '
-                      'must end in a slash.  If set to False, then the path '
-                      'component must not end in a slash.  If set to None, '
-                      'then no check is performed.'))
+                      'will be automatically normalized to end in a slash. '
+                      'If set to False, any trailing slash will be '
+                      'automatically removed. If set to None, URIs will '
+                      'not be normalized.'))
+
+    def normalize(input):
+        """Normalize a URI.
+
+         * whitespace is stripped from the input value
+         * if the field requires (or forbids) a trailing slash on the URI,
+           ensures that the widget ends in a slash (or doesn't end in a slash).
+         * the URI is canonicalized.
+         """
 
 
 class IBaseImageUpload(IBytes):
@@ -566,18 +578,17 @@ class ProductBugTracker(Choice):
         if ob.official_malone:
             return self.malone_marker
         else:
-            return ob.bugtracker
+            return getattr(ob, self.__name__)
 
     def set(self, ob, value):
         if self.readonly:
             raise TypeError("Can't set values on read-only fields.")
         if value is self.malone_marker:
             ob.official_malone = True
-            ob.bugtracker = None
+            setattr(ob, self.__name__, None)
         else:
             ob.official_malone = False
-            ob.bugtracker = value
-
+            setattr(ob, self.__name__, value)
 
 class URIField(TextLine):
     implements(IURIField)
@@ -593,15 +604,34 @@ class URIField(TextLine):
         self.allow_fragment = allow_fragment
         self.trailing_slash = trailing_slash
 
-    def _validate(self, value):
-        super(URIField, self)._validate(value)
+    def set(self, object, value):
+        """Canonicalize a URL and set it as a field value."""
+        value = self.normalize(value)
+        super(URIField, self).set(object, value)
 
-        # Local import to avoid circular imports:
-        from canonical.launchpad.webapp.uri import URI, InvalidURIError
-        try:
-            uri = URI(value)
-        except InvalidURIError, e:
-            raise LaunchpadValidationError(e)
+    def normalize(self, input):
+        """See `IURIField`."""
+        input = input.strip()
+        if input:
+            try:
+                uri = URI(input)
+            except InvalidURIError, exc:
+                raise LaunchpadValidationError(str(exc))
+            # If there is a policy for whether trailing slashes are
+            # allowed at the end of the path segment, ensure that the
+            # URI conforms.
+            if self.trailing_slash is not None:
+                if self.trailing_slash:
+                    uri = uri.ensureSlash()
+                else:
+                    uri = uri.ensureNoSlash()
+            input = unicode(uri)
+        return input
+
+    def _validate(self, value):
+        """Ensure the value is a valid URI."""
+
+        uri = URI(self.normalize(value))
 
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(
@@ -625,18 +655,7 @@ class URIField(TextLine):
             raise LaunchpadValidationError(
                 'URIs with fragment identifiers are not allowed.')
 
-        if self.trailing_slash is not None:
-            has_slash = uri.path.endswith('/')
-            if self.trailing_slash:
-                if not has_slash:
-                    raise LaunchpadValidationError(
-                        'The URI must end with a slash.')
-            else:
-                # Empty paths are normalised to a single slash, so
-                # allow that.
-                if uri.path != '/' and has_slash:
-                    raise LaunchpadValidationError(
-                        'The URI must not end with a slash.')
+        super(URIField, self)._validate(value)
 
 
 class FieldNotBoundError(Exception):

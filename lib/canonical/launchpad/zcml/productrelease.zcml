@@ -118,22 +118,6 @@
       permission="launchpad.Edit"
       template="../templates/productrelease-edit.pt" />
 
-    <browser:editform
-        name="+review"
-        for="canonical.launchpad.interfaces.IProductRelease"
-        schema="canonical.launchpad.interfaces.IProductRelease"
-        facet="overview"
-        label="Review product release details"
-        fields="version productseries"
-        permission="launchpad.Admin"
-        template="../templates/productrelease-admin.pt"
-        >
-        <browser:widget
-            field="version"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="20" />
-    </browser:editform>
-
     <!-- This is class ProductReleaseFile -->
     <class class="canonical.launchpad.database.ProductReleaseFile">
         <allow interface="canonical.launchpad.interfaces.IProductReleaseFilePublic" />

@@ -261,7 +261,7 @@ Attributes can be edited via the webservice.patch() method.
     ...     }
     >>> print webservice.patch(
     ...     '/firefox', 'application/json', dumps(patch))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 209 Content Returned
     ...
     >>> firefox = webservice.get('/firefox').jsonBody()
     >>> firefox['driver_link']
@@ -324,10 +324,10 @@ It is possible to get a batched list of all the projects.
     >>> len(project_entries)
     5
     >>> project_entries[0]['self_link']
-    u'http://.../arch-mirrors'
+    u'http://.../gnome-terminal'
     >>> for project in project_entries:
     ...   print project['display_name']
-    Arch mirrors
+    GNOME Terminal
     Mozilla Firefox
     Redfish
     The Landscape Project

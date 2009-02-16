@@ -101,7 +101,7 @@ div#package_counters p {
     </metal:block>
 
     <div metal:fill-slot="main"
-         tal:define="archive_active view/is_active;
+         tal:define="archive_active view/has_sources;
                      archive_label view/archive_label"
          tal:attributes="class string:archive">
 
@@ -248,6 +248,9 @@ div#package_counters p {
           condition="link/enabled"
           replace="structure link/render" />
       </div>
+
+      <metal:package_filter_form
+              use-macro="context/@@+macros/package-filter-form" />
 
       <metal:package-list
           use-macro="context/@@+macros/source-package-list" />
