@@ -34,11 +34,8 @@
 
       </div>
       <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
-      <h1>
-        <tal:summary replace="context/bug/title" />
-        <a href="+edit">
-          <img src="/@@/edit" alt="[edit]" title="Edit this summary" />
-        </a>
+      <h1 tal:replace="structure view/bug_title_edit_widget">
+        Bug title
       </h1>
 
       <tal:block condition="view/reportBugInContext" />

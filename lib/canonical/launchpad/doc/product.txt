@@ -678,9 +678,9 @@ branch.
 
 Products that don't use Launchpad for bug tracking can be linked to
 external bug trackers. In order to make it easier for users to file bugs
-on upstream bug trackers, it's possible to get the bug filing URL for a
-given product's upstream bug tracker using its `upstream_bug_filing_url`
-property.
+on upstream bug trackers, it's possible to get the bug filing and search
+URLs for a Product's upstream bug tracker using its
+`upstream_bugtracker_links` property.
 
 We'll link a product to an upstream bug tracker to demonstrate this.
 
@@ -688,28 +688,40 @@ We'll link a product to an upstream bug tracker to demonstrate this.
     >>> product.bugtracker = bugtracker
     >>> product.remote_product = u'foo'
 
-    >>> print product.upstream_bug_filing_url
-    http://example.com/enter_bug.cgi?product=foo
+    >>> def print_links(links_dict):
+    ...     if links_dict is None:
+    ...         print None
+    ...         return
+    ...
+    ...     for key in sorted(links_dict):
+    ...         print "%s: %s" % (key, links_dict[key])
+
+upstream_bugtracker_links is a dict of `bug_filing_url` and
+`bug_search_url`.
+
+    >>> print_links(product.upstream_bugtracker_links)
+    bug_filing_url: http://example.com/enter_bug.cgi?product=foo
+    bug_search_url: http://example.com/query.cgi?product=foo
 
 If the product's `bugtracker` isn't specified its
-`upstream_bug_filing_url` property will be None.
+`upstream_bugtracker_links` property will be None.
 
     >>> product.bugtracker = None
-    >>> print product.upstream_bug_filing_url
+    >>> print_links(product.upstream_bugtracker_links)
     None
 
 Similarly, if the product's `remote_product` attribute is None and its
 bug tracker is one which requires an upstream product, the product's
-`upstream_bug_filing_url` will be None
+`upstream_bugtracker_links` property will be None.
 
     >>> product.bugtracker = bugtracker
     >>> product.remote_product = None
-    >>> print product.upstream_bug_filing_url
+    >>> print product.upstream_bugtracker_links
     None
 
 However, some remote bug trackers, notably Trac, only track one product
 at a time. They don't need a remote product in order to provide a bug
-filing URL, so the `upstream_bug_filing_url` for products linked to such
+filing URL, so the `upstream_bugtracker_links` for products linked to such
 bug trackers will always be a usable URL.
 
     >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
@@ -717,5 +729,6 @@ bug trackers will always be a usable URL.
     ...     'http://trac.example.com', BugTrackerType.TRAC)
     >>> product.bugtracker = trac_bugtracker
 
-    >>> print product.upstream_bug_filing_url
-    http://trac.example.com/newticket
+    >>> print_links(product.upstream_bugtracker_links)
+    bug_filing_url: http://trac.example.com/newticket
+    bug_search_url: http://trac.example.com/search?ticket=on
