@@ -203,7 +203,7 @@ proposals by their status.
     http://.../~source/fooix/fix-it/+merge/1 - Work in progress
 
 
-Or I can look for anything that is approved.
+Or I can look for anything that is approved
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
@@ -215,10 +215,35 @@ Or I can look for anything that is approved.
     >>> fixit_proposal.approveBranch(sample_person, '1')
     >>> logout()
 
-    >>> proposals = webservice.named_get(
-    ...     '/fooix', 'getMergeProposals',
-    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title]).jsonBody()
-    >>> for proposal in proposals['entries']:
-    ...     print_proposal(proposal)
+    >>> def print_fooix_proposals(webservice, status=None):
+    ...     proposals = webservice.named_get(
+    ...         '/fooix', 'getMergeProposals',
+    ...         status=status).jsonBody()
+    ...     for proposal in proposals['entries']:
+    ...         print_proposal(proposal)
+
+    >>> print_fooix_proposals(
+    ...     webservice, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Approved
 
+If the branch is private it is not visible.
+
+    >>> login('admin@canonical.com')
+    >>> fixit_proposal.source_branch.private = True
+    >>> branch_owner = fixit_proposal.source_branch.owner
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> print_fooix_proposals(
+    ...     webservice, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+
+If we get a webservice for the owner of the source branch, then they can see
+the proposal if they have allowed the API to access private bits.
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> service = webservice_for_person(
+    ...     branch_owner, permission=OAuthPermission.READ_PRIVATE)
+    >>> print_fooix_proposals(
+    ...     service, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    http://.../~source/fooix/fix-it/+merge/1 - Approved
