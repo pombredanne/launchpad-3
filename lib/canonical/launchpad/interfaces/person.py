@@ -898,6 +898,19 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         True if this Person is actually a Team, otherwise False.
         """
 
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
+    @operation_returns_collection_of(IBranchMergeProposal)
+    @export_read_operation()
+    def getMergeProposals(status=None):
+        ""        """Returns all merge proposals of a given status.
+
+        :param status: A list of statuses to filter with.
+        :returns: A list of `IBranchMergeProposal`.
+        """
+
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
     # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
