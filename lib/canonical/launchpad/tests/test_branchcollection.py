@@ -88,10 +88,10 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         # The 'count' property of a collection is the number of elements in
         # the collection.
         collection = GenericBranchCollection(self.store)
-        self.assertEqual(0, collection.count)
+        self.assertEqual(0, collection.count())
         for i in range(3):
             self.factory.makeAnyBranch()
-        self.assertEqual(3, collection.count)
+        self.assertEqual(3, collection.count())
 
     def test_count_respects_filter(self):
         # If a collection is a subset of all possible branches, then the count
@@ -101,7 +101,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch()
         collection = GenericBranchCollection(
             self.store, [Branch.product == branch.product])
-        self.assertEqual(1, collection.count)
+        self.assertEqual(1, collection.count())
 
     def test_count_respects_visibleByUser_filter(self):
         branch = self.factory.makeAnyBranch()
@@ -109,7 +109,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         all_branches = GenericBranchCollection(self.store)
         collection = all_branches.visibleByUser(branch.owner)
         self.assertEqual(1, collection.getBranches().count())
-        self.assertEqual(1, collection.count)
+        self.assertEqual(1, collection.count())
 
     def test_ownedBy(self):
         # 'ownedBy' returns a new collection restricted to branches owned by

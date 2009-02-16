@@ -40,7 +40,6 @@ class GenericBranchCollection:
         self.name = name
         self.displayname = displayname
 
-    @property
     def count(self):
         """See `IBranchCollection`."""
         return self.getBranches().count()
