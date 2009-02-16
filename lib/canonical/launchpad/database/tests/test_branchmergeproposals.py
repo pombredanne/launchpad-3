@@ -673,7 +673,9 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         self.assertEqual(merge_proposal, retrieved)
 
     def test_getVotesForProposals(self):
-        # Check the resulting format of the dict.
+        # Check the resulting format of the dict.  getVotesForProposals
+        # returns a dict mapping merge proposals to a list of votes for that
+        # proposal.
         mp_no_reviews = self.factory.makeBranchMergeProposal()
         mp_with_reviews = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson()

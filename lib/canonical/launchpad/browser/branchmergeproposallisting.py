@@ -41,7 +41,15 @@ class BranchMergeProposalListingItem:
 
     @property
     def vote_summary_items(self):
-        """A generator of votes."""
+        """A generator of votes.
+
+        This is iterated over in TAL, and provides a items that are dict's for
+        simple TAL traversal.
+
+        The dicts contain the name and title of the enumerated vote type, the
+        count of those votes and the reviewers whose latest review is of that
+        type.
+        """
         for vote in CodeReviewVote.items:
             vote_count = self.summary.get(vote, 0)
             if vote_count > 0:
@@ -54,8 +62,8 @@ class BranchMergeProposalListingItem:
                        'reviewers': ', '.join(sorted(reviewers))}
 
     @property
-    def vote_count(self):
-        """The number of vote types."""
+    def vote_type_count(self):
+        """The number of vote types used on this proposal."""
         # The dict has one entry for comments and one for each type of vote.
         return len(self.summary) - 1
 

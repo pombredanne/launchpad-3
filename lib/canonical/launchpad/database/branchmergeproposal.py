@@ -705,9 +705,10 @@ class BranchMergeProposalGetter:
             LeftJoin(
                 CodeReviewComment,
                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
-        for reference, person, comment in store.using(*tables).find(
+        results = store.using(*tables).find(
             (CodeReviewVoteReference, Person, CodeReviewComment),
-            CodeReviewVoteReference.branch_merge_proposalID.is_in(ids)):
+            CodeReviewVoteReference.branch_merge_proposalID.is_in(ids))
+        for reference, person, comment in results:
             result[reference.branch_merge_proposal].append(reference)
         return result
 

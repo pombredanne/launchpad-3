@@ -1907,21 +1907,38 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
 
     show_diffs = False
 
+    # The grouping classifications.
+    TO_DO = 'to_do'
+    ARE_DOING = 'are_doing'
+    CAN_DO = 'can_do'
+    OTHER = 'other'
+
     def _getReviewGroup(self, proposal, votes):
-        """Return one of to_do, can_do, are_doing, need_doing, in_progress."""
-        result = 'other'
+        """Return one of TO_DO, CAN_DO, ARE_DOING, or OTHER.
+
+        These groupings define the different tables that the user is able to
+        see.
+
+        If there is a pending vote reference for the logged in user, then the
+        group is TO_DO as the user is expected to review.  If there is a vote
+        reference where it is not pending, this means that the user has
+        reviewed, so the group is ARE_DOING.  If there is a pending review
+        requested of a team that the user is in, then the review becomes a
+        CAN_DO.  All others are OTHER.
+        """
+        result = self.OTHER
         for vote in votes:
             if self.user is not None:
                 if vote.reviewer == self.user:
                     if vote.comment is None:
-                        return 'to_do'
+                        return self.TO_DO
                     else:
-                        return 'are_doing'
+                        return self.ARE_DOING
                 # Since team reviews are always pending, and we've eliminated
                 # the case where the reviewer is ther person, then if the user
                 # is in the reviewer team, it is a can do.
                 if self.user.inTeam(vote.reviewer):
-                    result = 'can_do'
+                    result = self.CAN_DO
         return result
 
     def initialize(self):
@@ -1946,13 +1963,17 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
 
     @property
     def other_heading(self):
-        """If there are no branches in """
+        """Return the heading to be used for the OTHER group.
+
+        If there is no user, or there are no reviews in any user specific
+        group, then don't show a heading for the OTHER group.
+        """
         if self.user is None:
             return None
         personal_review_count = (
-            len(self.review_groups.get('to_do', [])) +
-            len(self.review_groups.get('can_do', [])) +
-            len(self.review_groups.get('are_doing', [])))
+            len(self.review_groups.get(self.TO_DO, [])) +
+            len(self.review_groups.get(self.CAN_DO, [])) +
+            len(self.review_groups.get(self.ARE_DOING, [])))
         if personal_review_count > 0:
             return _('Other reviews')
         else:
