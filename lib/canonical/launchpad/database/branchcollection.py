@@ -37,6 +37,8 @@ class GenericBranchCollection:
             branch_filter_expressions = []
         self._branch_filter_expressions = branch_filter_expressions
         if tables is None:
+            # Join in Product and the Person table as 'Owner' so that we can
+            # sort the results by product name and owner name.
             Owner = ClassAlias(Person, 'Owner')
             tables = [Branch, LeftJoin(Product, Branch.product == Product.id),
                       Join(Owner, Branch.owner == Owner.id)]
