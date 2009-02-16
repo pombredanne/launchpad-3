@@ -19,7 +19,7 @@ class IBranchCollection(Interface):
     count = Attribute("The number of branches in this collection.")
 
     def getBranches():
-        """Return a result sest of all branches in this collection."""
+        """Return a result set of all branches in this collection."""
 
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""

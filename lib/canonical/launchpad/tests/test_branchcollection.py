@@ -12,6 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
+from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
@@ -71,6 +72,17 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = GenericBranchCollection(
             self.store, [Branch.product == branch.product])
         self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_order_by_product_name(self):
+        aardvark = self.factory.makeProduct(name='aardvark')
+        badger = self.factory.makeProduct(name='badger')
+        branch_a = self.factory.makeProductBranch(product=aardvark)
+        branch_b = self.factory.makeProductBranch(product=badger)
+        branch_c = self.factory.makePersonalBranch()
+        all_branches = GenericBranchCollection(self.store)
+        self.assertEqual(
+            [branch_a, branch_b, branch_c],
+            list(all_branches.getBranches().order_by(Product.name)))
 
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
