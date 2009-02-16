@@ -75,7 +75,7 @@ class BranchMergeProposalListingItem:
     @property
     def has_no_activity(self):
         """True if no votes and no comments."""
-        return self.comment_count == 0 and self.vote_count == 0
+        return self.comment_count == 0 and self.vote_type_count == 0
 
     @property
     def reviewer_vote(self):
