@@ -99,7 +99,7 @@ class OpenIDMixin:
         # This is to ensure subclasses don't use self.user, as that will
         # attempt to adapt the principal into an IPerson, which will fail when
         # the account has no Person associated with.
-        raise AssertionError(
+        raise AttributeError(
             'Cannot use self.user here; use self.account instead')
 
     @property
