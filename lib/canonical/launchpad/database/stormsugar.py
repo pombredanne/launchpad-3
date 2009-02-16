@@ -38,19 +38,19 @@ class ForeignKey(Reference):
 class Sugary(Storm.__metaclass__):
     """Metaclass that adds support for ForeignKey."""
 
-    def __init__(cls, name, bases, dct):
-        for key in dir(cls):
-            val = getattr(cls, key, None)
+    def __init__(mcs, name, bases, dct):
+        for key in dir(mcs):
+            val = getattr(mcs, key, None)
             if not isinstance(val, ForeignKey):
                 continue
             col_name = val.name
             if col_name is None:
                 col_name = key
             val._local_key = Int(col_name)
-            setattr(cls, '_%s_id' % key, val._local_key)
+            setattr(mcs, '_%s_id' % key, val._local_key)
         # Do this last, because it wants References to have their local_key
         # properly set up.
-        super(Sugary, cls).__init__(name, bases, dct)
+        super(Sugary, mcs).__init__(name, bases, dct)
 
 
 class Sugar(Storm):
@@ -63,6 +63,7 @@ class Sugar(Storm):
     id = Int(primary=True)
 
     def __init__(self, **kwargs):
+        Storm.__init__(self)
         for key, value in kwargs.items():
             if getattr(self.__class__, key, None) is None:
                 raise UnknownProperty(self.__class__, key)
