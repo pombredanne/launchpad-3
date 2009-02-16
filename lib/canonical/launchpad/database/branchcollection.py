@@ -11,6 +11,8 @@ from storm.expr import And, Or
 
 from zope.interface import implements
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.product import Product
@@ -38,7 +40,7 @@ class GenericBranchCollection:
     @property
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches().count(distinct=True)
+        return self.getBranches().count()
 
     def filterBy(self, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
@@ -48,13 +50,12 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
-        results = self._store.find(
-            Branch, *(self._branch_filter_expressions))
+        results = self._store.find(Branch, *(self._branch_filter_expressions))
         results.config(distinct=True)
-        orig_count = results.count
-        results.count = lambda x=Branch.id, distinct=True: orig_count(
-            x, distinct)
-        return results
+        def identity(x):
+            return x
+        # Decorate the result set to work around bug 217644.
+        return DecoratedResultSet(results, identity)
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
