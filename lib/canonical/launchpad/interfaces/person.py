@@ -903,7 +903,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary='BranchMergeProposalStatus')))
-    @operation_returns_collection_of(Interface)
+    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
     @export_read_operation()
     def getMergeProposals(status=None):
         """Returns all merge proposals of a given status.

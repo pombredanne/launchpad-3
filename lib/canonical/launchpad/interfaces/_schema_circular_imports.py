@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
-from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.person import IPersonPublic
 from canonical.launchpad.interfaces.product import IProduct
 
 
@@ -40,8 +40,8 @@ IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
-IPerson['getMergeProposals'].queryTaggedValue(
+IPersonPublic['getMergeProposals'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].schema = IBranchMergeProposal
-IPerson['getMergeProposals'].queryTaggedValue('lazr.webservice.exported'
+IPersonPublic['getMergeProposals'].queryTaggedValue('lazr.webservice.exported'
     )['params']['status'].value_type.vocabulary = BranchMergeProposalStatus
 
