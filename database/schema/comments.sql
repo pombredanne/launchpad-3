@@ -1879,6 +1879,8 @@ COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were buil
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
+COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
+COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 
 -- ArchiveAuthToken
 
